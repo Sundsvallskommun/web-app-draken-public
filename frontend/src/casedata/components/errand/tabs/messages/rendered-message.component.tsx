@@ -75,15 +75,25 @@ export const RenderedMessage: React.FC<{
             </>
           ) : null}
           <span className="text-xs whitespace-nowrap">
-            {message.messageType === 'SMS'
-              ? 'Via SMS'
-              : message.messageType === 'EMAIL'
-              ? 'Via e-post'
-              : message.messageType === 'DIGITAL_MAIL'
-              ? 'Via digital brevlåda'
-              : message.messageType === 'WEBMESSAGE' || message.externalCaseID
-              ? 'Via e-tjänst'
-              : ''}
+            {message.messageType === 'SMS' ? (
+              <>
+                <Icon name="smartphone" size="1.5rem" className="align-sub mx-sm" /> Via SMS
+              </>
+            ) : message.messageType === 'EMAIL' ? (
+              <>
+                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via e-post
+              </>
+            ) : message.messageType === 'DIGITAL_MAIL' ? (
+              <>
+                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
+              </>
+            ) : message.messageType === 'WEBMESSAGE' || message.externalCaseID ? (
+              <>
+                <Icon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+              </>
+            ) : (
+              ''
+            )}
           </span>
         </div>
         <div>
