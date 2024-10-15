@@ -28,11 +28,13 @@ import {
   cx,
   useConfirm,
   useSnackbar,
+  Combobox,
 } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
+import { PrettyRole, Role } from '@casedata/interfaces/role';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -334,6 +336,56 @@ export const MessageComposer: React.FC<{
       <div className="my-md py-8 px-40 flex flex-col gap-12 ">
         <Input type="hidden" {...register('headerReplyTo')} />
         <Input type="hidden" {...register('headerReferences')} />
+
+        {!replying ? (
+          <fieldset className="flex mt-8 gap-lg justify-start items-start w-full" data-cy="radio-button-group">
+            <legend className="text-md my-sm">
+              <strong>Kontaktväg</strong>
+            </legend>
+            <RadioButton
+              tabIndex={props.show ? 0 : -1}
+              data-cy="useEmail-radiobutton-true"
+              size="lg"
+              className="mr-sm"
+              name="useEmail"
+              id="useEmail"
+              value={'email'}
+              defaultChecked={!errand.externalCaseId}
+              {...register('contactMeans')}
+            >
+              E-post
+            </RadioButton>
+            <RadioButton
+              tabIndex={props.show ? 0 : -1}
+              data-cy="useSms-radiobutton-true"
+              size="lg"
+              className="mr-sm"
+              name="useSms"
+              id="useSms"
+              value={'sms'}
+              defaultChecked={false}
+              {...register('contactMeans')}
+            >
+              SMS
+            </RadioButton>
+            {!!errand.externalCaseId && (
+              <RadioButton
+                tabIndex={props.show ? 0 : -1}
+                data-cy="useWebMessage-radiobutton-true"
+                size="lg"
+                className="mr-sm"
+                name="useWebMessage"
+                id="useWebMessage"
+                value={'webmessage'}
+                defaultChecked={!!errand.externalCaseId}
+                {...register('contactMeans')}
+              >
+                OpenE
+              </RadioButton>
+            )}
+          </fieldset>
+        ) : null}
+
         {!isMEX() && (
           <FormControl className="w-full my-12" size="sm" required id="messageClassification">
             <FormLabel>Välj meddelandetyp</FormLabel>
@@ -416,64 +468,37 @@ export const MessageComposer: React.FC<{
             )}
           </FormControl>
         ) : null}
-        {!replying ? (
-          <fieldset className="flex mt-8 gap-lg justify-start items-start w-full" data-cy="radio-button-group">
-            <legend className="text-md my-sm">
-              <strong>Kontaktväg</strong>
-            </legend>
-            <RadioButton
-              tabIndex={props.show ? 0 : -1}
-              data-cy="useEmail-radiobutton-true"
-              size="lg"
-              className="mr-sm"
-              name="useEmail"
-              id="useEmail"
-              value={'email'}
-              defaultChecked={!errand.externalCaseId}
-              {...register('contactMeans')}
-            >
-              E-post
-            </RadioButton>
-            <RadioButton
-              tabIndex={props.show ? 0 : -1}
-              data-cy="useSms-radiobutton-true"
-              size="lg"
-              className="mr-sm"
-              name="useSms"
-              id="useSms"
-              value={'sms'}
-              defaultChecked={false}
-              {...register('contactMeans')}
-            >
-              SMS
-            </RadioButton>
-            {!!errand.externalCaseId && (
-              <RadioButton
-                tabIndex={props.show ? 0 : -1}
-                data-cy="useWebMessage-radiobutton-true"
-                size="lg"
-                className="mr-sm"
-                name="useWebMessage"
-                id="useWebMessage"
-                value={'webmessage'}
-                defaultChecked={!!errand.externalCaseId}
-                {...register('contactMeans')}
-              >
-                OpenE
-              </RadioButton>
-            )}
-          </fieldset>
-        ) : null}
         {contactMeans === 'email' ? (
           <FormControl id="messageEmail" className="w-full">
             <FormLabel>Skicka till följande e-postadress</FormLabel>
-            <Input
+
+            <div>
+              <Combobox multiple className="w-full">
+                <Combobox.Input {...register('messageEmail')} placeholder="Placeholder" className="w-full" />
+                <Combobox.List>
+                  {errand.stakeholders?.map((stakeholder) => {
+                    console.log(stakeholder);
+                    {
+                      return stakeholder.emails?.map((email, index) => {
+                        return (
+                          <Combobox.Option value={email.value} key={index} className="justify-between">
+                            {`${email.value}` + ' ' + `${stakeholder.roles.map((role) => `${PrettyRole[role]}`) + ' '}`}
+                          </Combobox.Option>
+                        );
+                      });
+                    }
+                  })}
+                </Combobox.List>
+              </Combobox>
+            </div>
+
+            {/*<Input
               tabIndex={props.show ? 0 : -1}
               size="sm"
               className={cx(errors.messageEmail ? 'border border-error' : null)}
               data-cy="messageEmail-input"
               {...register('messageEmail')}
-            />
+            />*/}
 
             {errors.messageEmail && (
               <div className="my-sm" data-cy="messageEmail-error">

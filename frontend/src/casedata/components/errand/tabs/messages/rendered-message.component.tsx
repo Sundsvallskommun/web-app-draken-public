@@ -24,7 +24,7 @@ export const RenderedMessage: React.FC<{
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
   const getSenderInitials = (msg: ErrandMessageResponse) =>
-    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '?';
+    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
 
   return (
     <>

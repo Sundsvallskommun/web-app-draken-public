@@ -4,7 +4,7 @@ import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
 import { Avatar, Button, LucideIcon as Icon, cx, useSnackbar, Divider } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
@@ -52,10 +52,32 @@ export const CasedataMessagesTab: React.FC<{
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
   const getSenderInitials = (msg: ErrandMessageResponse) =>
-    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '?';
+    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
 
-  const getMessageType = (msg: ErrandMessageResponse) =>
+  /* const getMessageType = (msg: ErrandMessageResponse) =>
     msg?.messageType === 'EMAIL' ? 'E-post' : msg?.messageType === 'SMS' ? 'Sms' : '';
+*/
+  const getMessageType = (msg: ErrandMessageResponse) => {
+    if (msg?.messageType === 'WEBMESSAGE' || msg?.externalCaseID) {
+      return (
+        <>
+          <Icon name="monitor" size="1.5rem" className="my-1" /> Via e-tjänst
+        </>
+      );
+    } else if (msg?.messageType === 'SMS') {
+      return (
+        <>
+          <Icon name="smartphone" size="1.5rem" className="my-1" /> Via SMS
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Icon name="mail" size="1.5rem" className="my-1" /> Via e-post
+        </>
+      );
+    }
+  };
 
   const messageAvatar = (message: ErrandMessageResponse) => (
     <div className="w-[4rem]" data-cy="message-avatar">
@@ -122,10 +144,11 @@ export const CasedataMessagesTab: React.FC<{
             <div>
               <div className="relative">
                 <div className="flex justify-between items-center my-12">
-                  <div className={cx(`relative flex gap-md items-center justify-start pr-lg text-md`)}>
+                  <div className={cx(`relative flex gap-md justify-start pr-lg text-md`)}>
                     {messageAvatar(selectedMessage)}
                     <div>
-                      <p className="my-0">
+                      <p className="text-small my-0">
+                        <strong>Från: </strong>
                         <strong
                           className="mr-md"
                           dangerouslySetInnerHTML={{
@@ -134,18 +157,22 @@ export const CasedataMessagesTab: React.FC<{
                           data-cy="sender"
                         ></strong>
                       </p>
-                      <p className="my-0">
-                        {dayjs(selectedMessage?.sent).format('YYYY-MM-DD HH:mm')} {getMessageType(selectedMessage)}
+                      <p>
+                        <strong>Till: </strong>
                       </p>
+                      <div className="flex text-small gap-16">
+                        {dayjs(selectedMessage?.sent).format('YYYY-MM-DD HH:mm')}
+                        <Divider className="m-2" orientation="vertical" />
+                        {getMessageType(selectedMessage)}
+                      </div>
                     </div>
                   </div>
                   {selectedMessage?.direction === 'INBOUND' &&
                   (selectedMessage.messageType === 'EMAIL' || selectedMessage.messageType === 'WEBMESSAGE') ? (
                     <Button
                       type="button"
-                      color="vattjom"
                       disabled={isErrandLocked(errand) || !allowed}
-                      size="sm"
+                      size="md"
                       variant="primary"
                       onClick={() => {
                         setSelectedMessage(selectedMessage);
