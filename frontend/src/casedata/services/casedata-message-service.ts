@@ -41,75 +41,83 @@ export const sendMessage: (
 ) => Promise<boolean> = async (municipalityId, errand, data) => {
   const url =
     data.contactMeans === 'webmessage' ? `casedata/${municipalityId}/webmessage` : `casedata/${municipalityId}/email`;
-  const messageFormData = new FormData();
-  const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] =
-    data.newAttachments?.map(async (f) => {
-      const fileItem = f.file[0];
-      const fileData = await toBase64(fileItem);
-      const attachment: Attachment = {
-        category: 'MESSAGE_ATTACHMENT',
-        name: fileItem.name,
-        note: '',
-        extension: fileItem.name.split('.').pop(),
-        mimeType: fileItem.type,
-        file: fileData,
-      };
-      const buf = Buffer.from(attachment.file, 'base64');
-      const blob = new Blob([buf], { type: attachment.mimeType });
-      return Promise.resolve({ attachment, blob });
-    }) || [];
-  return Promise.allSettled(newAttachmentPromises)
-    .then((r) => {
-      r.forEach((r) => {
-        if (r.status === 'fulfilled') {
-          const attachment = r.value.attachment;
-          const blob = r.value.blob;
-          messageFormData.append(`files`, blob, attachment.name);
-        } else {
-          console.error(`Error: attachment could not be processed for the following reason: ${r.reason}`);
-        }
-      });
-    })
-    .then(() => {
-      data.existingAttachments?.forEach((attachment) => {
+
+  const msgPromises = [...data.emails].map(async (target) => {
+    const messageFormData = new FormData();
+    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] =
+      data.newAttachments?.map(async (f) => {
+        const fileItem = f.file[0];
+        const fileData = await toBase64(fileItem);
+        const attachment: Attachment = {
+          category: 'MESSAGE_ATTACHMENT',
+          name: fileItem.name,
+          note: '',
+          extension: fileItem.name.split('.').pop(),
+          mimeType: fileItem.type,
+          file: fileData,
+        };
         const buf = Buffer.from(attachment.file, 'base64');
         const blob = new Blob([buf], { type: attachment.mimeType });
-        messageFormData.append(`files`, blob, attachment.name);
-      });
-      const email = data.messageEmail;
-      messageFormData.append('email', email);
-      messageFormData.append('contactMeans', data.contactMeans);
-      messageFormData.append('subject', `Ärende #${errand.errandNumber}`);
-      messageFormData.append('text', data.contactMeans === 'webmessage' ? data.messageBodyPlaintext : data.messageBody);
-      messageFormData.append('attachUtredning', data.attachUtredning ? 'true' : 'false');
-      messageFormData.append('errandId', errand.id.toString());
-      messageFormData.append('municipalityId', municipalityId);
-      messageFormData.append('messageClassification', data.messageClassification || '');
-      messageFormData.append('reply_to', data.headerReplyTo || '');
-      messageFormData.append('references', data.headerReferences || '');
-      return apiService
-        .post<boolean, FormData>(url, messageFormData, { headers: { 'Content-Type': 'multipart/form-data' } })
-        .then(() => {
-          if (data.newAttachments.length) {
-            const attachmentsToSave: { type: string; file: FileList; attachmentName: string }[] =
-              data.newAttachments?.map((f) => {
-                return {
-                  type: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
-                  file: f.file,
-                  attachmentName: f.file[0].name,
-                };
-              });
-
-            sendAttachments(municipalityId, errand.errandNumber, attachmentsToSave);
+        return Promise.resolve({ attachment, blob });
+      }) || [];
+    return Promise.allSettled(newAttachmentPromises)
+      .then((r) => {
+        r.forEach((r) => {
+          if (r.status === 'fulfilled') {
+            const attachment = r.value.attachment;
+            const blob = r.value.blob;
+            messageFormData.append(`files`, blob, attachment.name);
+          } else {
+            console.error(`Error: attachment could not be processed for the following reason: ${r.reason}`);
           }
-
-          return true;
-        })
-        .catch((e) => {
-          console.error('Something went wrong when sending message for errand:', errand);
-          throw new Error('Något gick fel när beslutet skulle skickas');
         });
-    });
+      })
+      .then(() => {
+        data.existingAttachments?.forEach((attachment) => {
+          const buf = Buffer.from(attachment.file, 'base64');
+          const blob = new Blob([buf], { type: attachment.mimeType });
+          messageFormData.append(`files`, blob, attachment.name);
+        });
+
+        messageFormData.append('email', Object(target).value);
+        messageFormData.append('contactMeans', data.contactMeans);
+        messageFormData.append('subject', `Ärende #${errand.errandNumber}`);
+        messageFormData.append(
+          'text',
+          data.contactMeans === 'webmessage' ? data.messageBodyPlaintext : data.messageBody
+        );
+        messageFormData.append('attachUtredning', data.attachUtredning ? 'true' : 'false');
+        messageFormData.append('errandId', errand.id.toString());
+        messageFormData.append('municipalityId', municipalityId);
+        messageFormData.append('messageClassification', data.messageClassification || '');
+        messageFormData.append('reply_to', data.headerReplyTo || '');
+        messageFormData.append('references', data.headerReferences || '');
+
+        return apiService
+          .post<boolean, FormData>(url, messageFormData, { headers: { 'Content-Type': 'multipart/form-data' } })
+          .then(() => {
+            if (data.newAttachments.length) {
+              const attachmentsToSave: { type: string; file: FileList; attachmentName: string }[] =
+                data.newAttachments?.map((f) => {
+                  return {
+                    type: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
+                    file: f.file,
+                    attachmentName: f.file[0].name,
+                  };
+                });
+
+              sendAttachments(municipalityId, errand.errandNumber, attachmentsToSave);
+            }
+
+            return true;
+          })
+          .catch((e) => {
+            console.error('Something went wrong when sending message for errand:', errand);
+            throw new Error('Något gick fel när beslutet skulle skickas');
+          });
+      });
+  });
+  return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
 export const sendSms: (
@@ -117,23 +125,26 @@ export const sendSms: (
   errand: IErrand,
   data: CasedataMessageTabFormModel
 ) => Promise<boolean> = async (municipalityId, errand, data) => {
-  const messageData: { errandId: string; municipalityId: string; phonenumber: string; text: string } = {
-    phonenumber: data.messagePhone,
-    text: data.messageBodyPlaintext,
-    errandId: errand.id.toString(),
-    municipalityId: municipalityId,
-  };
-  return apiService
-    .post<boolean, any>(`casedata/${municipalityId}/sms`, messageData, {
-      headers: { 'Content-Type': 'application/json' },
-    })
-    .then((res) => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when sending message for errand:', errand);
-      throw e;
-    });
+  const msgPromises = [...data.phoneNumbers].map(async (target) => {
+    const messageData: { errandId: string; municipalityId: string; phonenumber: string; text: string } = {
+      phonenumber: Object(target).value.replace('-', ''),
+      text: data.messageBodyPlaintext,
+      errandId: errand.id.toString(),
+      municipalityId: municipalityId,
+    };
+    return apiService
+      .post<boolean, any>(`casedata/${municipalityId}/sms`, messageData, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+      .then((res) => {
+        return true;
+      })
+      .catch((e) => {
+        console.error('Something went wrong when sending message for errand:', errand);
+        throw e;
+      });
+  });
+  return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
 const sortBySentDate = (a, b) =>
@@ -230,6 +241,27 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
     .then((res) => {
       const tree = buildTree(res);
       return tree;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);
+      throw e;
+    });
+};
+
+export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise<ErrandMessageResponse[]> = (
+  municipalityId,
+  errand
+) => {
+  if (!errand?.errandNumber || !municipalityId) {
+    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
+  }
+  return apiService
+    .get<ApiResponse<ErrandMessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .then((res) => {
+      const list: ErrandMessageResponse[] = res.data.data.sort((a, b) =>
+        dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
+      );
+      return list;
     })
     .catch((e) => {
       console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);

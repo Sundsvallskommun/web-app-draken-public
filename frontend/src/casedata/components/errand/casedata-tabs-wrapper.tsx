@@ -3,7 +3,7 @@ import { CasedataOverviewTab } from '@casedata/components/errand/tabs/overview/c
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
-import { countUnreadMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
+import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
@@ -22,7 +22,8 @@ import { CasedataAppealTab } from './tabs/appeal/casedata-appeal-tab';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export const CasedataTabsWrapper: React.FC = () => {
-  const { municipalityId, errand, setErrand, messages, setMessages, setAssets, assets, uiPhase } = useAppContext();
+  const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
+    useAppContext();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);
@@ -35,8 +36,18 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   useEffect(() => {
     if (errand && errand.errandNumber) {
-      fetchMessagesTree(municipalityId, errand)
+      fetchMessages(municipalityId, errand)
         .then(setMessages)
+        .catch((e) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när meddelanden hämtades',
+            status: 'error',
+          });
+        });
+      fetchMessagesTree(municipalityId, errand)
+        .then(setMessageTree)
         .catch((e) => {
           toastMessage({
             position: 'bottom',

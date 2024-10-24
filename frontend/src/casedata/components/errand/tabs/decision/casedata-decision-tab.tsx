@@ -318,8 +318,11 @@ export const CasedataDecisionTab: React.FC<{
       const messageBody: CasedataMessageTabFormModel = {
         contactMeans,
         messageClassification: MessageClassification.Informationsmeddelande,
-        messageEmail: recipient,
-        messagePhone: '',
+        emails: [{ value: recipient }],
+        newEmail: '',
+        phoneNumbers: [],
+        newPhoneNumber: '',
+        messageAttachments: [],
         messageBody: base64Decode(renderedHtml.htmlBase64),
         messageBodyPlaintext: data.descriptionPlaintext,
         attachUtredning: false,

@@ -65,7 +65,7 @@ export const RenderedMessage: React.FC<{
         <div className="inline-flex items-start flex-nowrap">
           <span className="text-xs whitespace-nowrap">{dayjs(message.sent).format('YYYY-MM-DD HH:mm')}</span>
           <span className="text-xs mx-sm">|</span>
-          {message.attachments?.length > -1 ? (
+          {message.attachments?.length > 0 ? (
             <>
               <div className="mx-sm inline-flex items-center gap-xs">
                 <Icon name="paperclip" size="1.5rem" />

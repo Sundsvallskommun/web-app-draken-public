@@ -1,8 +1,8 @@
-import { fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
+import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
-import { Avatar, Button, LucideIcon as Icon, cx, useSnackbar, Divider } from '@sk-web-gui/react';
+import { Avatar, Button, LucideIcon as Icon, cx, useSnackbar, Divider, RadioButton } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
@@ -14,10 +14,12 @@ export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, messages, setMessages, user } = useAppContext();
+  const { municipalityId, errand, messages, messageTree, setMessages, setMessageTree, user } = useAppContext();
   const [selectedMessage, setSelectedMessage] = useState<ErrandMessageResponse>();
   const [showSelectedMessage, setShowSelectedMessage] = useState(false);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
+  const [sortMessages, setSortMessages] = useState<number>(0);
+  const [sortedMessages, setSortedMessages] = useState(messages);
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
@@ -28,7 +30,18 @@ export const CasedataMessagesTab: React.FC<{
   const setMessageViewed = (msg: ErrandMessageResponse) => {
     setMessageViewStatus(municipalityId, msg.messageID, true)
       .then(() =>
-        fetchMessagesTree(municipalityId, errand).catch((e) => {
+        fetchMessagesTree(municipalityId, errand).catch(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när meddelanden hämtades',
+            status: 'error',
+          });
+        })
+      )
+      .then(setMessageTree)
+      .then(() =>
+        fetchMessages(municipalityId, errand).catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -85,6 +98,20 @@ export const CasedataMessagesTab: React.FC<{
     </div>
   );
 
+  useEffect(() => {
+    if (messages && messageTree) {
+      if (sortMessages === 1) {
+        let filteredMessages = messages.filter((message: ErrandMessageResponse) => message.direction === 'INBOUND');
+        setSortedMessages(filteredMessages);
+      } else if (sortMessages === 2) {
+        let filteredMessages = messages.filter((message: ErrandMessageResponse) => message.direction === 'OUTBOUND');
+        setSortedMessages(filteredMessages);
+      } else {
+        setSortedMessages(messageTree);
+      }
+    }
+  }, [messages, messageTree, sortMessages]);
+
   return (
     <>
       <div className="w-full py-24 px-32">
@@ -115,9 +142,22 @@ export const CasedataMessagesTab: React.FC<{
             ärendets olika intressenter.
           </p>
         </div>
-        {messages?.length ? (
+
+        <RadioButton.Group inline className="mt-16">
+          <RadioButton value={0} defaultChecked={true} onChange={() => setSortMessages(0)}>
+            Alla
+          </RadioButton>
+          <RadioButton value={1} onChange={() => setSortMessages(1)}>
+            Mottagna
+          </RadioButton>
+          <RadioButton value={2} onChange={() => setSortMessages(2)}>
+            Skickade
+          </RadioButton>
+        </RadioButton.Group>
+
+        {sortedMessages?.length ? (
           <MessageTreeComponent
-            nodes={messages}
+            nodes={sortedMessages}
             selected={selectedMessage?.messageID}
             onSelect={(msg: ErrandMessageResponse) => {
               setMessageViewed(msg);
@@ -128,10 +168,11 @@ export const CasedataMessagesTab: React.FC<{
           />
         ) : (
           <>
-            <Divider className="pt-16" />
+            <Divider className="pt-24" />
             <p className="pt-24 text-dark-disabled">Inga meddelanden</p>
           </>
         )}
+
         <MessageWrapper
           label="Meddelande"
           closeHandler={() => {
