@@ -822,6 +822,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             <>
               <div className="my-md">
                 <CommonNestedEmailArrayV2
+                  required={false}
+                  errand={supportErrand}
+                  addingStakeholder={true}
                   disabled={props.disabled}
                   error={!!formState.errors.emails}
                   key={`nested-email-array`}
@@ -1087,6 +1090,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             </div>
           </>
           <CommonNestedEmailArrayV2
+            required={false}
+            errand={supportErrand}
+            addingStakeholder={true}
             disabled={props.disabled}
             error={!!formState.errors.emails}
             key={`nested-email-array`}

@@ -188,6 +188,27 @@ export const fetchSupportMessagesTree: (errandId: string, municipalityId: string
     });
 };
 
+export const fetchSupportMessages: (errandId: string, municipalityId: string) => Promise<MessageNode[]> = (
+  errandId,
+  municipalityId
+) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot fetch messages. Returning.');
+  }
+  return apiService
+    .get<Message[]>(`supportmessage/${municipalityId}/errands/${errandId}/communication`)
+    .then((res) => {
+      const list: Message[] = res.data.sort((a, b) =>
+        dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
+      );
+      return list;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching messages for errand:', errandId);
+      throw e;
+    });
+};
+
 export const setMessageViewStatus: (
   errandId: string,
   municipalityId: string,
