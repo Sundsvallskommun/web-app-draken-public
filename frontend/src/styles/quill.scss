@@ -1,0 +1,55 @@
+.quill {
+  .ql-editor {
+    @apply bg-background-content text-dark-primary;
+    @apply rounded-b-button;
+    @apply border-divider;
+  }
+
+  .ql-toolbar {
+    @apply bg-tertiary-surface;
+    @apply rounded-t-button;
+    @apply border-divider;
+    .ql-formats {
+      button {
+        @apply text-dark-secondary;
+        @apply rounded-button-sm;
+        @apply h-32 w-32;
+        @apply flex justify-center items-center;
+        svg {
+          @apply w-20 h-20;
+        }
+        .ql-fill {
+          fill: currentColor;
+        }
+        .ql-stroke {
+          stroke: currentColor;
+        }
+        &:hover,
+        &.ql-active:hover {
+          @apply text-dark-primary;
+          @apply bg-tertiary-surface-hover;
+          .ql-fill {
+            fill: currentColor;
+          }
+          .ql-stroke {
+            stroke: currentColor;
+          }
+        }
+        &.ql-active {
+          @apply text-dark-primary;
+          @apply bg-inverted-vattjom-surface-primary;
+          .ql-fill {
+            fill: currentColor;
+          }
+          .ql-stroke {
+            stroke: currentColor;
+          }
+        }
+      }
+    }
+  }
+
+  pre.ql-container {
+    @apply rounded-b-button;
+  }
+}

@@ -1,0 +1,45 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import './material-icons.scss';
+@import './raleway.scss';
+@import './quill.scss';
+
+// @import "https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.x/dist/typography.min.css";
+
+@layer base {
+  .container {
+    @apply px-8;
+  }
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h4,
+h6,
+.btn {
+  font-family: raleway, sans-serif;
+}
+
+// NOTE: sticky footer
+html,
+body,
+#__next {
+  min-height: 100vh;
+}
+
+#__next {
+  display: flex;
+  flex-direction: column;
+}
+
+main.container {
+  flex: 1 0 auto;
+}

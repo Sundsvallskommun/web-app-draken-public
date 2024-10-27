@@ -1,0 +1,28 @@
+export const mockNotifications = [
+  {
+    acknowledged: false,
+    content: 'Och något innehåll här',
+    created: '2024-04-30T07:09:18.712+02:00',
+    createdBy: 'kctest2',
+    description: 'Beskrivning av notifieringen här',
+    errandId: '403740f0-1ca7-4e26-9023-683f2029ccea',
+    expires: '2024-10-30T23:30:00Z',
+    id: 'bb893d57-04e9-44af-a271-aff5df530bba',
+    ownerFullName: 'Test Testorsson',
+    ownerId: 'kctest',
+    type: 'CREATE',
+  },
+  {
+    acknowledged: false,
+    content: 'En notis om något',
+    created: '2024-04-30T07:09:18.712+02:00',
+    createdBy: 'kctest2',
+    description: 'Beskrivning av notifieringen här',
+    errandId: '403740f0-1ca7-4e26-9023-683f2029ccea',
+    expires: '2024-10-30T23:30:00Z',
+    id: 'bb893d57-04e9-44af-a271-aff5df530cca',
+    ownerFullName: 'Test Testorsson',
+    ownerId: 'kctest',
+    type: 'CREATE',
+  },
+];

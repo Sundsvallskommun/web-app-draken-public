@@ -1,0 +1,33 @@
+export const mockAttachments = {
+  data: [
+    {
+      id: 4120,
+      version: 0,
+      created: '2024-05-31T15:02:28.987021+02:00',
+      updated: '2024-05-31T15:02:28.987059+02:00',
+      category: 'PROTOCOL',
+      name: 'image.24982.2505690.jpg',
+      note: '',
+      extension: 'jpg',
+      mimeType: 'image/jpeg',
+      file: '/test/',
+      errandNumber: 'MEX-2024-000306',
+      extraParameters: {},
+    },
+    {
+      id: 4121,
+      version: 0,
+      created: '2024-05-31T15:02:41.422334+02:00',
+      updated: '2024-05-31T15:02:41.422355+02:00',
+      category: 'LEASE_REQUEST',
+      name: '15634.pdf',
+      note: '',
+      extension: 'pdf',
+      mimeType: 'application/pdf',
+      file: '/test/',
+      errandNumber: 'MEX-2024-000306',
+      extraParameters: {},
+    },
+  ],
+  message: 'success',
+};

@@ -1,0 +1,66 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "types": ["cypress", "node"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      // "@common/components/*": [
+      //   "src/components/*"
+      // ],
+      // "@interfaces/*": [
+      //   "src/interfaces/*"
+      // ],
+      // "@utils/*": [
+      //   "src/utils/*"
+      // ],
+      "@pages/*": [
+        "src/pages/*"
+      ],
+      "@public/*": [
+        "src/public/*"
+      ],
+      // "@services/*": [
+      //   "src/services/*"
+      // ],
+      "@contexts/*": [
+        "src/common/contexts/*"
+      ],
+      "@supportmanagement/*": [
+        "src/supportmanagement/*"
+      ],
+      "@casedata/*": [
+        "src/casedata/*"
+      ],
+      "@common/*": [
+        "src/common/*"
+      ],
+      "@jestRoot/*": [".jest/*"]
+    },
+  },
+  "include": [
+    "next-env.d.ts",
+    "node_modules/dayjs/plugin/utc.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
