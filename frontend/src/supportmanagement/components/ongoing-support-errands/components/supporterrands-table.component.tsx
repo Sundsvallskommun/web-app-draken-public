@@ -94,7 +94,7 @@ export const SupportErrandsTable: React.FC = () => {
     {
       label: 'Parkerade ärenden',
       key: Status.SUSPENDED,
-      statuses: [Status.SUSPENDED],
+      statuses: [Status.SUSPENDED, Status.ASSIGNED],
       icon: 'circle-pause',
       totalStatusErrands: suspendedSupportErrands.totalElements,
     },
@@ -132,7 +132,7 @@ export const SupportErrandsTable: React.FC = () => {
   };
 
   const serverSideSortableColsLOP: { [key: number]: string } =
-    data.errands && data.errands[0]?.status === Status.SUSPENDED
+    data.errands && (data.errands[0]?.status === Status.SUSPENDED || data.errands[0]?.status === Status.ASSIGNED)
       ? {
           0: 'status',
           1: 'category',
