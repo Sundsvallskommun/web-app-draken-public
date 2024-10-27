@@ -43,12 +43,10 @@ import {
 import {
   emptyContact,
   ExternalIdType,
-  getSupportErrandById,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
-import { updateSupportErrandStakeholders } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -56,8 +54,10 @@ import * as yup from 'yup';
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
   contact: SupportStakeholderFormModel;
+  editing: boolean;
   setUnsaved: (unsaved: boolean) => void;
   disabled?: boolean;
+  onSave?: (data: any) => void;
   onClose?: () => void;
   label: string;
   id: string;
@@ -67,6 +67,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
+    onSave = () => {},
     label = '',
     id,
   } = props;
@@ -143,8 +144,6 @@ export const SupportSimplifiedContactForm: React.FC<{
           value: yup.string().trim().email('E-postadress har fel format'),
         })
       ),
-      // .min(1, 'Ange minst en e-postadress och ett telefonnummer')
-      // .required('Ange minst en e-postadress och ett telefonnummer'),
       primaryContact: yup.boolean(),
       messageAllowed: yup.boolean(),
       role: yup.string(),
@@ -156,7 +155,8 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { supportErrand, setSupportErrand, municipalityId, user } = useAppContext();
+  const { supportErrand, stakeholderContacts, stakeholderCustomers } = useAppContext();
+
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -192,6 +192,8 @@ export const SupportSimplifiedContactForm: React.FC<{
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
+  // UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
   const externalId = watch(`externalId`);
   const externalIdType = watch(`externalIdType`);
   const metadata = watch('metadata');
@@ -218,12 +220,11 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   // Restricted editing means that personNumber, firstName, lastName,
   // organizationName and orgName cannot be changed.
-  const editing = !!contact.internalId;
+  const editing = props.editing;
   const restrictedEditing = editing;
 
   const resetPersonNumber = () => {
     setValue(`personNumber`, '', { shouldDirty: false });
-    // setValue(`personId`, '', { shouldDirty: false });
   };
 
   useEffect(() => {
@@ -248,12 +249,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     (emails && emails.length > 0 && !errors.emails) || (phoneNumbers && phoneNumbers.length > 0);
 
   useEffect(() => {
-    if (!validEmailOrPhonenumberExists()) {
-      // setValue(`messageAllowed`, false);
-    }
-  }, [emails, phoneNumbers]);
-
-  useEffect(() => {
     if (
       (manual || editing) &&
       (formState.dirtyFields?.firstName || formState.dirtyFields?.lastName || formState.dirtyFields?.organizationName)
@@ -268,62 +263,25 @@ export const SupportSimplifiedContactForm: React.FC<{
       reset({}, { keepErrors: true });
     }
   }, [organizationNumber, personNumber]);
-  // }, [organizationNumber]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
     setIsLoading(true);
-    const customer = supportErrand.customer?.map((c) =>
-      c.internalId === e.internalId && e.role === SupportStakeholderRole.PRIMARY ? e : c
-    );
-    const contacts = supportErrand.contacts?.map((c) =>
-      c.internalId === e.internalId && e.role === SupportStakeholderRole.CONTACT ? e : c
-    );
-
-    if (!editing) {
-      if (e.role === SupportStakeholderRole.PRIMARY) {
-        customer.push(e);
-      } else if (e.role === SupportStakeholderRole.CONTACT) {
-        contacts.push(e);
-      }
+    setModalOpen(false);
+    setManual(false);
+    setSearchResult(false);
+    if (isLOP()) {
+      setSearchMode('employee');
+    } else {
+      setSearchMode('person');
     }
 
-    const data = { customer, contacts };
+    onClose();
+    resetPersonNumber();
 
-    const b = await updateSupportErrandStakeholders(supportErrand.id, municipalityId, data)
-      .then((res) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Kontaktpersonen sparades',
-          status: 'success',
-        });
-        props.setUnsaved(false);
-        setModalOpen(false);
-        setManual(false);
-        setSearchResult(false);
-        if (isLOP()) {
-          setSearchMode('employee');
-        } else {
-          setSearchMode('person');
-        }
-        setIsLoading(false);
-        onClose();
-        resetPersonNumber();
-        setValue('organizationNumber', '');
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-        return res;
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när kontaktspersonen skulle sparas',
-          status: 'error',
-        });
-      });
-
-    return b;
+    onSave(e);
+    setIsLoading(false);
   };
+
   const onError = () => {};
 
   const doSearch = (val: string) => {

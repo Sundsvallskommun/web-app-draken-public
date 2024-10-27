@@ -5,9 +5,9 @@ import {
   Avatar,
   Button,
   Disclosure,
-  LucideIcon,
   FormControl,
   FormLabel,
+  LucideIcon,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
@@ -18,11 +18,10 @@ import {
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   emptyContact,
-  getSupportErrandById,
   isSupportErrandLocked,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { makeOwner, updateSupportErrandStakeholders } from '@supportmanagement/services/support-stakeholder-service';
+import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
@@ -55,6 +54,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   const updateConfirm = useConfirm();
   const toastMessage = useSnackbar();
 
+  const { setStakeholderContacts, stakeholderContacts, setStakeholderCustomers, stakeholderCustomers } =
+    useAppContext();
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
   useEffect(() => {
@@ -63,6 +64,11 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setSelectedContact(undefined);
     reset(supportErrand);
   }, [user, supportErrand]);
+
+  useEffect(() => {
+    setStakeholderContacts(supportErrand.contacts);
+    setStakeholderCustomers(supportErrand.customer);
+  }, []);
 
   const {
     register,
@@ -106,63 +112,30 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   const allowsOrganization = !isLOP();
 
   const onRemove = async (c: SupportStakeholderFormModel) => {
-    const customer = supportErrand.customer.filter((cus) => cus.internalId !== c.internalId);
-    const contacts = supportErrand.contacts.filter((con) => con.internalId !== c.internalId);
+    const customer = stakeholderCustomers.filter((cus) => JSON.stringify(cus) !== JSON.stringify(c));
+    const contacts = stakeholderContacts.filter((con) => JSON.stringify(con) !== JSON.stringify(c));
+
     const data = { customer, contacts };
-    const b = await updateSupportErrandStakeholders(supportErrand.id, municipalityId, data)
-      .then((res) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Kontaktpersonen togs bort',
-          status: 'success',
-        });
-        props.update();
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-        return res;
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när kontaktspersonen skulle tas bort',
-          status: 'error',
-        });
-        props.update();
-      });
-    return b;
+    const stakeholders = buildStakeholdersList(data);
+
+    setValue('stakeholders', stakeholders);
+    setValue('contacts', contacts, { shouldDirty: true });
+    setValue('customer', customer, { shouldDirty: true });
+    setStakeholderContacts(contacts);
+    setStakeholderCustomers(customer);
   };
 
-  const onMakeOwner: (stakeholder: SupportStakeholderFormModel, errand: SupportErrand) => void = (
-    stakeholder,
-    errand
-  ) => {
+  const onMakeOwner = async (stakeholder: SupportStakeholderFormModel) => {
     stakeholder.role = SupportStakeholderRole.PRIMARY;
 
-    makeOwner(stakeholder, municipalityId, errand)
-      .then((res) => {
-        if (res) {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ärendeägare uppdaterad',
-            status: 'success',
-          });
-          props.update();
-          getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-        } else {
-          Promise.reject('Something went wrong');
-        }
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när ärendeägaren skulle uppdateras',
-          status: 'error',
-        });
-        props.update();
-      });
+    const customer = stakeholderCustomers;
+    const contacts = stakeholderContacts.filter((con) => con.internalId !== stakeholder.internalId);
+    customer.push(stakeholder);
+
+    setValue('contacts', contacts, { shouldDirty: true });
+    setValue('customer', customer, { shouldDirty: true });
+    setStakeholderContacts(contacts);
+    setStakeholderCustomers(customer);
   };
 
   const renderContact = (contact: SupportStakeholderFormModel, index, header) => {
@@ -172,12 +145,30 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         data-cy={`rendered-${contact.role}`}
         className="w-full bg-background-content border rounded-button"
       >
-        {selectedContact?.internalId === contact.internalId ? (
+        {JSON.stringify(selectedContact) === JSON.stringify(contact) ? (
           <SupportSimplifiedContactForm
             disabled={isSupportErrandLocked(supportErrand)}
             setUnsaved={props.setUnsaved}
             contact={contact}
+            editing={true}
             label={header}
+            onSave={(e) => {
+              if (e.role === SupportStakeholderRole.PRIMARY) {
+                let stakeholderIndex = stakeholderCustomers.findIndex((custom) => custom.internalId === e.internalId);
+
+                if (JSON.stringify(stakeholderCustomers[stakeholderIndex]) !== JSON.stringify(e)) {
+                  stakeholderCustomers[stakeholderIndex] = e;
+                  setValue('customer', stakeholderCustomers, { shouldDirty: true });
+                }
+              } else if (e.role === SupportStakeholderRole.CONTACT) {
+                let stakeholderIndex = stakeholderContacts.findIndex((contact) => contact.internalId === e.internalId);
+
+                if (JSON.stringify(stakeholderContacts[stakeholderIndex]) !== JSON.stringify(e)) {
+                  stakeholderContacts[stakeholderIndex] = e;
+                  setValue('contacts', stakeholderContacts, { shouldDirty: true });
+                }
+              }
+            }}
             onClose={() => setSelectedContact(undefined)}
             allowOrganization={allowsOrganization}
             id="edit"
@@ -226,7 +217,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 Ta bort
               </Button>
 
-              {contact.role === SupportStakeholderRole.CONTACT && supportErrand.customer.length === 0 ? (
+              {contact.role === SupportStakeholderRole.CONTACT && stakeholderCustomers.length === 0 ? (
                 <Button
                   disabled={isSupportErrandLocked(supportErrand)}
                   data-cy="make-stakeholder-owner-button"
@@ -244,7 +235,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                       )
                       .then((confirmed) => {
                         if (confirmed) {
-                          onMakeOwner(contact, supportErrand);
+                          onMakeOwner(contact);
                         }
                       });
                   }}
@@ -344,21 +335,33 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     );
   };
 
+  const addStakeholder = (stakeholder) => {
+    if (stakeholder.role === SupportStakeholderRole.PRIMARY) {
+      stakeholderCustomers.push(stakeholder);
+      setValue('customer', stakeholderCustomers, { shouldDirty: true });
+    } else if (stakeholder.role === SupportStakeholderRole.CONTACT) {
+      stakeholderContacts.push(stakeholder);
+      setValue('contacts', stakeholderContacts, { shouldDirty: true });
+    }
+  };
+
   return (
     <>
       <div className="mt-md">
         <Disclosure variant="alt" icon={<LucideIcon name="users" />} header="Ärendeägare" initalOpen={true}>
           <div data-cy="registered-applicants">
             <div className="flex flex-row gap-12 flex-wrap">
-              {supportErrand.customer.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Ärendeägare'))}
+              {stakeholderCustomers.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Ärendeägare'))}
             </div>
             <div className="w-full">
-              {customerFields.length === 0 ? (
+              {stakeholderCustomers.length === 0 ? (
                 <SupportSimplifiedContactForm
                   disabled={isSupportErrandLocked(supportErrand)}
                   allowOrganization={allowsOrganization}
                   setUnsaved={props.setUnsaved}
+                  onSave={(contact) => addStakeholder(contact)}
                   contact={{ ...emptyContact, role: SupportStakeholderRole.PRIMARY }}
+                  editing={false}
                   label="Ärendeägare"
                   id="owner"
                 />
@@ -376,6 +379,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 allowOrganization={allowsOrganization}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, role: SupportStakeholderRole.CONTACT }}
+                editing={false}
+                onSave={(contact) => addStakeholder(contact)}
                 label="Övrig part"
                 id="person"
               />
@@ -385,7 +390,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <FormControl className="mt-40 w-full">
                 <FormLabel>Tillagda parter</FormLabel>
                 <div className="flex flex-row gap-12 flex-wrap">
-                  {contactsFields.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Övrig part'))}
+                  {stakeholderContacts.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Övrig part'))}
                 </div>
               </FormControl>
             ) : null}

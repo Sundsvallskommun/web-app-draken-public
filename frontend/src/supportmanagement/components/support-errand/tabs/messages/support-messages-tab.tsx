@@ -16,7 +16,7 @@ export const SupportMessagesTab: React.FC<{
   update: () => void;
   municipalityId: string;
 }> = (props) => {
-  const { supportErrand, municipalityId, user } = useAppContext();
+  const { supportErrand, municipalityId, user, stakeholderCustomers } = useAppContext();
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [selected, setSelected] = useState<string>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
@@ -203,8 +203,8 @@ export const SupportMessagesTab: React.FC<{
             locked={isSupportErrandLocked(supportErrand)}
             showMessageForm={showMessageForm}
             setShowMessageForm={setShowMessageForm}
-            prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
-            prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
+            prefillEmail={stakeholderCustomers?.[0]?.emails?.[0]?.value}
+            prefillPhone={stakeholderCustomers?.[0]?.phoneNumbers?.[0]?.value}
             supportErrandId={supportErrand.id}
             setUnsaved={(val) => {
               props.setUnsaved(val);
