@@ -20,13 +20,15 @@ import {
 } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { SidebarButton } from '@common/interfaces/sidebar-button';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
-  const { municipalityId, errands: data } = useAppContext();
+  const { municipalityId, errands: data, setSidebarButtons } = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -35,6 +37,42 @@ export const ErrandsTable: React.FC = () => {
 
   const { theme } = useGui();
   const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
+
+  //NOTE: mock buttons at the moment, needs proper implementation
+  const casedataSidebarButtons: SidebarButton[] = [
+    {
+      label: 'Nya ärenden',
+      key: ErrandStatus.ArendeInkommit,
+      statuses: [ErrandStatus.ArendeInkommit],
+      icon: 'inbox',
+      totalStatusErrands: 20,
+    },
+    {
+      label: 'Öppnade ärenden',
+      key: ErrandStatus.UnderGranskning,
+      statuses: [ErrandStatus.UnderGranskning, ErrandStatus.VantarPaKomplettering],
+      icon: 'clipboard-pen',
+      totalStatusErrands: 45,
+    },
+    {
+      label: 'Parkerade ärenden',
+      key: ErrandStatus.UnderRemiss,
+      statuses: [ErrandStatus.UnderRemiss],
+      icon: 'circle-pause',
+      totalStatusErrands: 15,
+    },
+    {
+      label: 'Avslutade ärenden',
+      key: ErrandStatus.ArendeAvslutat,
+      statuses: [ErrandStatus.ArendeAvslutat],
+      icon: 'circle-check-big',
+      totalStatusErrands: 78,
+    },
+  ];
+
+  useEffect(() => {
+    setSidebarButtons(casedataSidebarButtons);
+  }, [data]);
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',

@@ -1,6 +1,6 @@
 import { useAppContext } from '@contexts/app.context';
 import { LucideIcon as Icon, Button, Badge } from '@sk-web-gui/react';
-import { SidebarButton } from '@supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component';
+import { SidebarButton } from '@common/interfaces/sidebar-button';
 import store from '@supportmanagement/services/storage-service';
 import { Status } from '@supportmanagement/services/support-errand-service';
 import { useEffect } from 'react';
@@ -21,9 +21,9 @@ export const SupportManagementFilterStatus: React.FC<{
     setSelectedErrandStatuses,
     selectedErrandStatuses,
     sidebarButtons,
-  }: { setSelectedErrandStatuses; selectedErrandStatuses: Status[]; sidebarButtons: SidebarButton[] } = useAppContext();
+  }: { setSelectedErrandStatuses; selectedErrandStatuses: string[]; sidebarButtons: SidebarButton[] } = useAppContext();
 
-  const updateStatusFilter = (ss: Status[]) => {
+  const updateStatusFilter = (ss: string[]) => {
     try {
       const storedFilter = store.get('filter');
       const jsonparsedstatus = JSON.parse(storedFilter);
