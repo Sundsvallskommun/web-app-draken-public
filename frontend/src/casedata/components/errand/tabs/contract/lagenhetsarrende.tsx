@@ -292,7 +292,7 @@ export const Lagenhetsarrende: React.FC<{
     <>
       <Disclosure
         data-cy="parties-disclosure"
-        icon={'users'}
+        icon={<Icon name="users" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
         // label={watch().omrade?.length ? 'Sparad' : ''}
         initalOpen={true}
@@ -410,7 +410,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'map-pin'}
+        icon={<Icon name="map-pin" />}
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
         //label={existingContract.omrade?.length > 8 ? 'Färdigställt' : ''}
@@ -564,7 +564,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'info'}
+        icon={<Icon name="info" />}
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
         // label={watch().andamal?.length ? 'Sparad' : ''}
@@ -853,7 +853,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'calendar'}
+        icon={<Icon name="calendar" />}
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
         // label={watch().arrendetid?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1048,7 +1048,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'wallet'}
+        icon={<Icon name="wallet" />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
         // label={watch().arrendeavgift?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1364,7 +1364,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'shovel'}
+        icon={<Icon name="shovel" />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
         // label={watch().bygglov?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1473,7 +1473,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'repeat'}
+        icon={<Icon name="repeat" />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
         // label={watch().overlatelse?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1571,7 +1571,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
       <Disclosure
         data-cy="enrollment-disclosure"
-        icon={'square-pen'}
+        icon={<Icon name="square-pen" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
         // label={watch().inskrivning?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
@@ -1612,7 +1612,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'person-standing'}
+        icon={<Icon name="person-standing" />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
         // label={watch().skick?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1715,7 +1715,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'slash'}
+        icon={<Icon name="slash" />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
         // label={watch().ledningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1812,7 +1812,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'calculator'}
+        icon={<Icon name="calculator" />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
         // label={watch().kostnader?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1909,7 +1909,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'mountain-snow'}
+        icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
         // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -2062,7 +2062,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'clipboard-list'}
+        icon={<Icon name="clipboard-list" />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
         // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -2230,7 +2230,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'map-pin'}
+        icon={<Icon name="map-pin" />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
         // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -2369,7 +2369,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
 
       <Disclosure
-        icon={'file-plus-2'}
+        icon={<Icon name="file-plus-2" />}
         data-cy="additional-terms-disclosure"
         header={
           <h2 className="text-h4-sm md:text-h4-md">
@@ -2419,7 +2419,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
 
       <Disclosure
-        icon={'file-plus-2'}
+        icon={<Icon name="file-plus-2" />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
         // label={watch().sarskilda?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -2513,7 +2513,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'file-plus-2'}
+        icon={<Icon name="file-plus-2" />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
         // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -2621,7 +2621,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'pen'}
+        icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
         // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
