@@ -338,9 +338,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                   key={`${option}-${index}`}
                   data-cy={`${assignment.field}-checkbox-${index}`}
                   onChange={(val) => {
-                    const splitValues: string[] = getValues(assignment.field)
-                      .split(',')
-                      .filter((v) => v !== '' && v !== ' ');
+                    const splitValues: string[] =
+                      getValues(assignment.field)
+                        ?.split(',')
+                        ?.filter((v) => v !== '' && v !== ' ') || [];
                     const uniqueValues = val.currentTarget.checked
                       ? [...splitValues, option.value]
                       : splitValues.filter((v) => v !== option.value);
