@@ -99,6 +99,11 @@ export default function Layout({ title, children }) {
         inverted = false;
         icon = 'circle-pause';
         break;
+      case 'AWAITING_INTERNAL_RESPONSE':
+        color = 'gronsta';
+        inverted = true;
+        icon = 'clock-10';
+        break;
       default:
         color = 'tertiary';
         break;
