@@ -1,6 +1,5 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { useAppContext } from '@common/contexts/app.context';
 import {
   AddressResult,
   fetchPersonId,
@@ -37,27 +36,27 @@ import {
   Modal,
   RadioButton,
   SearchField,
-  Select,
-  useSnackbar,
+  Select
 } from '@sk-web-gui/react';
 import {
   emptyContact,
   ExternalIdType,
-  getSupportErrandById,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
-import { updateSupportErrandStakeholders } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
   contact: SupportStakeholderFormModel;
+  editing: boolean;
   setUnsaved: (unsaved: boolean) => void;
   disabled?: boolean;
+  onSave?: (data: any) => void;
   onClose?: () => void;
   label: string;
   id: string;
@@ -67,6 +66,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
+    onSave = () => {},
     label = '',
     id,
   } = props;
@@ -143,8 +143,6 @@ export const SupportSimplifiedContactForm: React.FC<{
           value: yup.string().trim().email('E-postadress har fel format'),
         })
       ),
-      // .min(1, 'Ange minst en e-postadress och ett telefonnummer')
-      // .required('Ange minst en e-postadress och ett telefonnummer'),
       primaryContact: yup.boolean(),
       messageAllowed: yup.boolean(),
       role: yup.string(),
@@ -156,7 +154,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { supportErrand, setSupportErrand, municipalityId, user } = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -207,7 +204,6 @@ export const SupportSimplifiedContactForm: React.FC<{
   const personNumber = watch(`personNumber`);
   const organizationNumber = watch(`organizationNumber`);
   const stakeholderType = watch(`stakeholderType`);
-  const toastMessage = useSnackbar();
 
   const { append: appendPhonenumber, replace: replacePhonenumbers } = useFieldArray({
     control,
@@ -218,12 +214,11 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   // Restricted editing means that personNumber, firstName, lastName,
   // organizationName and orgName cannot be changed.
-  const editing = !!contact.internalId;
+  const editing = props.editing;
   const restrictedEditing = editing;
 
   const resetPersonNumber = () => {
     setValue(`personNumber`, '', { shouldDirty: false });
-    // setValue(`personId`, '', { shouldDirty: false });
   };
 
   useEffect(() => {
@@ -248,12 +243,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     (emails && emails.length > 0 && !errors.emails) || (phoneNumbers && phoneNumbers.length > 0);
 
   useEffect(() => {
-    if (!validEmailOrPhonenumberExists()) {
-      // setValue(`messageAllowed`, false);
-    }
-  }, [emails, phoneNumbers]);
-
-  useEffect(() => {
     if (
       (manual || editing) &&
       (formState.dirtyFields?.firstName || formState.dirtyFields?.lastName || formState.dirtyFields?.organizationName)
@@ -268,62 +257,27 @@ export const SupportSimplifiedContactForm: React.FC<{
       reset({}, { keepErrors: true });
     }
   }, [organizationNumber, personNumber]);
-  // }, [organizationNumber]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
-    setIsLoading(true);
-    const customer = supportErrand.customer?.map((c) =>
-      c.internalId === e.internalId && e.role === SupportStakeholderRole.PRIMARY ? e : c
-    );
-    const contacts = supportErrand.contacts?.map((c) =>
-      c.internalId === e.internalId && e.role === SupportStakeholderRole.CONTACT ? e : c
-    );
-
     if (!editing) {
-      if (e.role === SupportStakeholderRole.PRIMARY) {
-        customer.push(e);
-      } else if (e.role === SupportStakeholderRole.CONTACT) {
-        contacts.push(e);
-      }
+      e.internalId = uuidv4();
     }
-
-    const data = { customer, contacts };
-
-    const b = await updateSupportErrandStakeholders(supportErrand.id, municipalityId, data)
-      .then((res) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Kontaktpersonen sparades',
-          status: 'success',
-        });
-        props.setUnsaved(false);
-        setModalOpen(false);
-        setManual(false);
-        setSearchResult(false);
-        if (isLOP()) {
-          setSearchMode('employee');
-        } else {
-          setSearchMode('person');
-        }
-        setIsLoading(false);
-        onClose();
-        resetPersonNumber();
-        setValue('organizationNumber', '');
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-        return res;
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när kontaktspersonen skulle sparas',
-          status: 'error',
-        });
-      });
-
-    return b;
+    setIsLoading(true);
+    onSave(e);
+    setModalOpen(false);
+    setManual(false);
+    setSearchResult(false);
+    if (isLOP()) {
+      setSearchMode('employee');
+    } else {
+      setSearchMode('person');
+    }
+    onClose();
+    setIsLoading(false);
+    reset();
+    resetPersonNumber();
   };
+
   const onError = () => {};
 
   const doSearch = (val: string) => {
@@ -368,6 +322,11 @@ export const SupportSimplifiedContactForm: React.FC<{
             if (res.email) {
               appendEmail({ value: res.email });
             }
+
+            if (searchMode === 'enterprise') {
+              setValue(`organizationName`, res.organizationName);
+            }
+
             //moved to here so it doesnt select when empty (giving empty card, false email and phone data)
             clearErrors([`firstName`, `lastName`, `organizationName`]);
             setUnsaved(true);
@@ -414,7 +373,6 @@ export const SupportSimplifiedContactForm: React.FC<{
             setValue('address', '');
             clearErrors(['organizationNumber']);
             setSearchResult(undefined);
-            //setSearchResultArray([]);
             setSelectedUser(undefined);
             setValue(`externalIdType`, ExternalIdType.EMPLOYEE);
             setTimeout(() => {
@@ -670,8 +628,6 @@ export const SupportSimplifiedContactForm: React.FC<{
                       trigger(`personNumber`);
                     }}
                     onSearch={(e) => {
-                      // Do we need to reset the form here?
-                      // reset({}, { keepErrors: true });
                       setSearching(true);
                       doSearch(e);
                     }}
@@ -711,6 +667,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <>
                   <Input.Group size="md" disabled={props.disabled || manual}>
                     <Input
+                      placeholder={'KKLLMM-NNNN'}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}
@@ -925,7 +882,6 @@ export const SupportSimplifiedContactForm: React.FC<{
                     <Input
                       size="sm"
                       disabled={props.disabled}
-                      // readOnly={editing && restrictedEditing}
                       className={cx(
                         formState.errors.firstName ? 'border-2 border-error' : null,
                         'read-only:bg-gray-lighter read-only:cursor-not-allowed'
@@ -949,7 +905,6 @@ export const SupportSimplifiedContactForm: React.FC<{
                     <Input
                       size="sm"
                       disabled={props.disabled}
-                      // readOnly={editing && restrictedEditing}
                       className={cx(
                         formState.errors.lastName ? 'border-2 border-error' : null,
                         'read-only:bg-gray-lighter read-only:cursor-not-allowed'

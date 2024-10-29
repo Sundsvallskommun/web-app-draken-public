@@ -1,23 +1,23 @@
+import { Asset } from '@casedata/interfaces/asset';
 import { ErrandsData, IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { ParsedErrandHistory } from '@casedata/interfaces/history';
-import { Asset } from '@casedata/interfaces/asset';
 import { emptyErrandList } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { User } from '@common/interfaces/user';
 import { Admin, emptyUser } from '@common/services/user-service';
+import { SidebarButton } from '@supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Status,
   SupportErrand,
   SupportErrandsData,
+  SupportStakeholderFormModel,
   emptySupportErrandList,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { SupportNotification } from '@supportmanagement/services/support-notification-service';
 import { createContext, useContext, useState } from 'react';
-import { SidebarButton } from '@supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component';
 
 export interface AppContextInterface {
   subPage: string;
@@ -58,6 +58,12 @@ export interface AppContextInterface {
 
   supportAdmins;
   setSupportAdmins: (admins: SupportAdmin[]) => void;
+
+  stakeholderContacts;
+  setStakeholderContacts: (stakeholderContacts: SupportStakeholderFormModel[]) => void;
+
+  stakeholderCustomers;
+  setStakeholderCustomers: (stakeholderCustomers: SupportStakeholderFormModel[]) => void;
 
   supportNotifications;
   setSupportNotifications: (notifications: SupportNotification[]) => void;
@@ -121,6 +127,9 @@ export function AppWrapper({ children }) {
   const [supportAttachments, setSupportAttachments] = useState<SupportAttachment[]>();
   const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<Status[]>([Status.NEW]);
   const [supportAdmins, setSupportAdmins] = useState<SupportAdmin[]>([]);
+  const [stakeholderContacts, setStakeholderContacts] = useState<SupportStakeholderFormModel[]>([]);
+  const [stakeholderCustomers, setStakeholderCustomers] = useState<SupportStakeholderFormModel[]>([]);
+
   const [municipalityId, setMunicipalityId] = useState<string>();
   const [sidebarButtons, setSidebarButtons] = useState<
     {
@@ -174,6 +183,14 @@ export function AppWrapper({ children }) {
 
         supportAdmins,
         setSupportAdmins: (admins: SupportAdmin[]) => setSupportAdmins(admins),
+
+        stakeholderContacts,
+        setStakeholderContacts: (stakeholderContacts: SupportStakeholderFormModel[]) =>
+          setStakeholderContacts(stakeholderContacts),
+
+        stakeholderCustomers,
+        setStakeholderCustomers: (stakeholderCustomers: SupportStakeholderFormModel[]) =>
+          setStakeholderCustomers(stakeholderCustomers),
 
         municipalityId,
         setMunicipalityId: (municipalityId: string) => setMunicipalityId(municipalityId),
