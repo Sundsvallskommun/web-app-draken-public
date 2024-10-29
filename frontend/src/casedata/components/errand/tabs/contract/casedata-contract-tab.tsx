@@ -8,7 +8,7 @@ import {
   LagenhetsArrendeStakeholder,
 } from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand, isAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {

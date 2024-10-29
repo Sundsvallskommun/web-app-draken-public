@@ -277,7 +277,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="delete-note-button"
-                                  leftIcon={<Icon name="eye" />}
+                                  leftIcon={<Icon name="trash" />}
                                   onClick={() => {
                                     confirm
                                       .showConfirmation(
