@@ -3,7 +3,7 @@ import { cleanEnv, port, str, url } from 'envalid';
 
 // NOTE: Make sure we got these in ENV
 const validateEnv = () => {
-  if(isMEX() || isPT()) {
+  if (isMEX() || isPT()) {
     cleanEnv(process.env, {
       NODE_ENV: str(),
       SECRET_KEY: str(),
@@ -32,9 +32,9 @@ const validateEnv = () => {
       CASEDATA_REPLY_TO: str(),
       CASEDATA_SENDER: str(),
       CASEDATA_SENDER_SMS: str(),
+      CASEDATA_NAMESPACE: str(),
     });
-  }
-   else {
+  } else {
     cleanEnv(process.env, {
       NODE_ENV: str(),
       SECRET_KEY: str(),
@@ -64,7 +64,7 @@ const validateEnv = () => {
       SUPPORTMANAGEMENT_TEST_EMAIL: str(),
       SUPPORTMANAGEMENT_SENDER_EMAIL: str(),
       SUPPORTMANAGEMENT_SENDER_SMS: str(),
-    });    
+    });
   }
 };
 
