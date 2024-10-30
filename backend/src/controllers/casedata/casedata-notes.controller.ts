@@ -20,7 +20,7 @@ export interface ResponseData {
 @Controller()
 export class CasedataNotesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   @Patch('/casedata/:municipalityId/errands/:id/notes')
   @HttpCode(201)
@@ -37,7 +37,7 @@ export class CasedataNotesController {
       // Public notes ("tjänsteanteckningar") are not allowed to be created by the user other than the errands administrator
       throw new HttpException(403, 'Not allowed');
     }
-    const url = `${municipalityId}/errands/${errandId}/notes`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<ErrandDTO, CreateErrandNoteDto>({ url, baseURL, data: noteData }, req.user).catch(e => {
       logger.error('Something went wrong when patching note');
@@ -88,7 +88,7 @@ export class CasedataNotesController {
     if (noteIsTjansteanteckning(note.data.noteType)) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${municipalityId}/errands/${errandId}/notes/${noteId}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
     const response = await this.apiService.delete<boolean>({ url, baseURL }, req.user).catch(e => {
       throw e;
     });

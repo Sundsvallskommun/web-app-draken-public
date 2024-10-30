@@ -15,7 +15,7 @@ import { apiURL } from '@/utils/util';
 @Controller()
 export class CaseDataDecisionsController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   async isUnsigning(municipalityId: string, decision: Decision, user: User) {
     const url = `${municipalityId}/decisions/${decision.id}`;
@@ -38,7 +38,7 @@ export class CaseDataDecisionsController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${municipalityId}/errands/${errandId}/decisions`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
       logger.error(`Error when patching decision: ${e}`);

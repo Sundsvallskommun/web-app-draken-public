@@ -16,7 +16,7 @@ export interface ResponseData {
 
 @Controller()
 export class CaseDataAppealController {
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
   private apiService = new ApiService();
 
   @Patch('/casedata/:municipalityId/errands/:errandId/appeals')
@@ -36,7 +36,7 @@ export class CaseDataAppealController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${municipalityId}/errands/${errandId}/appeals`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/appeals`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.patch<any, PatchAppealDTO>({ url, baseURL, data: appealData }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;

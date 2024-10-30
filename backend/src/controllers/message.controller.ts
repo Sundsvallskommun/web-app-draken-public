@@ -144,7 +144,7 @@ export class MessageController {
     @Param('municipalityId') municipalityId: string,
     @Body() messageDto: { errandId: string },
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
-    const errandsUrl = `${municipalityId}/errands/${messageDto.errandId}`;
+    const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     const decision = errandData.data?.decisions.find(d => d.decisionType === 'FINAL');
@@ -224,7 +224,7 @@ export class MessageController {
     @Body() smsDto: { errandId: string; municipalityId: string; phonenumber: string; text: string },
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
     await validateRequestBody(SmsDto, smsDto);
-    const errandsUrl = `${smsDto.municipalityId}/errands/${smsDto.errandId}`;
+    const errandsUrl = `${smsDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${smsDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
@@ -247,7 +247,7 @@ export class MessageController {
     @Body() messageDto: MessageDto,
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
     await validateRequestBody(MessageDto, messageDto);
-    const errandsUrl = `${messageDto.municipalityId}/errands/${messageDto.errandId}`;
+    const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     let url;
@@ -306,7 +306,7 @@ export class MessageController {
     @Body() messageDto: MessageDto,
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
     await validateRequestBody(MessageDto, messageDto);
-    const errandsUrl = `${messageDto.municipalityId}/errands/${messageDto.errandId}`;
+    const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     let url;

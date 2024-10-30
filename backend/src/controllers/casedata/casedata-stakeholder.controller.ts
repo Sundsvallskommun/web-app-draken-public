@@ -17,7 +17,7 @@ interface ResponseData {
 @Controller()
 export class CasedataStakeholderController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   @Patch('/casedata/:municipalityId/errands/:errandId/stakeholders/:id')
   @HttpCode(201)
@@ -49,7 +49,7 @@ export class CasedataStakeholderController {
     @Param('municipalityId') municipalityId: string,
     @Param('stakeholderId') stakeholderId: string,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const url = `${municipalityId}/errands/${errandId}/stakeholders/${stakeholderId}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${stakeholderId}`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.delete<ErrandDTO>({ url, baseURL }, req.user).catch(e => {
       logger.error('Something went wrong when deleting stakeholder');
@@ -84,7 +84,7 @@ export class CasedataStakeholderController {
     @Param('municipalityId') municipalityId: string,
     @Body() stakeholderData: CreateStakeholderDto,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const url = `${municipalityId}/errands/${errandId}/stakeholders`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<ErrandDTO, StakeholderDTO>({ url, baseURL, data: stakeholderData }, req.user).catch(e => {
       logger.error('Something went wrong when patching stakeholder');

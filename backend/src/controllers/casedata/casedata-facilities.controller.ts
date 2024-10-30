@@ -16,7 +16,7 @@ interface ResponseData {
 @Controller()
 export class caseDataFacilitiesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   @Post('/casedata/:municipalityId/errande/:errandeId/facilities')
   @OpenAPI({ summary: 'Save facilities by errande' })
@@ -31,7 +31,7 @@ export class caseDataFacilitiesController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `${municipalityId}/errands/${errandeId}/facilities`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandeId}/facilities`;
     const baseURL = apiURL(this.SERVICE);
     const data = JSON.stringify(facilities);
 

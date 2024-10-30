@@ -14,7 +14,7 @@ interface ResponseData {
 @Controller()
 export class CaseDataHistoryController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   @Get('/:municipalityId/errands/:errandId/history')
   @OpenAPI({ summary: 'Fetch history for errand' })
@@ -27,7 +27,7 @@ export class CaseDataHistoryController {
     if (!errandId) {
       throw 'Errand id not found. Cannot fetch history.';
     }
-    const url = `${municipalityId}/errands/${errandId}/history`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/history`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<HistoryDTO>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
