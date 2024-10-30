@@ -355,7 +355,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
     ...(data.status && { status: data.status }),
     ...(data.phase && { phase: data.phase }),
     stakeholders: stakeholders,
-    extraParameters: {},
+    extraParameters: [],
   };
   return e;
 };

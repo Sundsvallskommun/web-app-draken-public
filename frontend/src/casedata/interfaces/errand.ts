@@ -9,6 +9,7 @@ import { ApiErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
 import { ApiExtraParameters, ExtraParameters } from './extra-parameters';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 export interface ApiErrand {
   id: number;
@@ -132,5 +133,5 @@ export interface RegisterErrandData {
   attachments: string[] | FileList[];
   applicationReceived: string;
   decision: string;
-  extraParameters: ApiExtraParameters;
+  extraParameters: ExtraParameter[];
 }

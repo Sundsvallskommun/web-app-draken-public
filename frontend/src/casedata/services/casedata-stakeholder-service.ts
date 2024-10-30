@@ -19,11 +19,15 @@ export const getLastUpdatedAdministrator = (stakeholders: Stakeholder[]) => {
   );
 };
 
-export const fetchStakeholder: (stakeholderId: string) => Promise<ApiResponse<Stakeholder>> = (stakeholderId) => {
+export const fetchStakeholder: (
+  municipalityId: string,
+  errandId: number,
+  stakeholderId: string
+) => Promise<ApiResponse<Stakeholder>> = (municipalityId, errandId, stakeholderId) => {
   if (!stakeholderId) {
     console.error('No stakeholder id found, cannot fetch. Returning.');
   }
-  const url = `stakeholders/${stakeholderId}`;
+  const url = `/casedata/${municipalityId}/errands/${errandId}/stakeholders/${stakeholderId}`;
   return apiService
     .get<ApiResponse<Stakeholder>>(url)
     .then((res) => res.data)

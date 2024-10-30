@@ -317,7 +317,7 @@ export class CaseDataErrandController {
             ?.filter(s => s.id)
             .map(async (stakeholder, idx) => {
               const data = stakeholder;
-              const url = `${municipalityId}/stakeholders/${stakeholder.id}`;
+              const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/stakeholders/${stakeholder.id}`;
               const baseURL = apiURL(this.SERVICE);
               const putStakeholder = () =>
                 this.apiService.put<any, StakeholderDTO>({ url, baseURL, data }, req.user).catch(e => {
