@@ -2062,7 +2062,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="clipboard-list" />}
+        icon={<Icon name="undo" />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
         // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -2230,7 +2230,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="map-pin" />}
+        icon={<Icon name="clipboard-list" />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
         // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
