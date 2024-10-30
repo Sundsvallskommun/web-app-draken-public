@@ -413,6 +413,12 @@ export const SidebarInfo: React.FC<{
     console.error('Something went wrong when saving');
   };
 
+  const hasClosedErrandPassedLimit = () => {
+    const limit = process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT;
+    const lastModified = dayjs(supportErrand.modified);
+    return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
+  };
+
   return (
     <div className="relative h-full flex flex-col justify-start">
       <div className="px-0 flex justify-between items-center">
@@ -540,6 +546,7 @@ export const SidebarInfo: React.FC<{
                         }
                       });
                   }}
+                  disabled={hasClosedErrandPassedLimit()}
                 >
                   Återöppna ärende
                 </Button>
