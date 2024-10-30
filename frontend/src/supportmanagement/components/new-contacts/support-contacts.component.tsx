@@ -67,7 +67,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   useEffect(() => {
     setStakeholderContacts(supportErrand.contacts);
     setStakeholderCustomers(supportErrand.customer);
-    console.log(supportErrand.contacts);
   }, []);
 
   const {
@@ -153,7 +152,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             editing={true}
             label={header}
             onSave={(e) => {
-              console.log('e: ', e);
               if (e.role === SupportStakeholderRole.PRIMARY) {
                 let stakeholderIndex = stakeholderCustomers.findIndex((custom) => custom.internalId === e.internalId);
 
@@ -162,10 +160,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                   setValue('customer', stakeholderCustomers, { shouldDirty: true });
                 }
               } else if (e.role === SupportStakeholderRole.CONTACT) {
-                console.log('stakeholderContacts: ', stakeholderContacts.internalId);
-
                 let stakeholderIndex = stakeholderContacts.findIndex((contact) => contact.internalId === e.internalId);
-                console.log('stakeholderContacts: ', stakeholderIndex);
 
                 if (JSON.stringify(stakeholderContacts[stakeholderIndex]) !== JSON.stringify(e)) {
                   stakeholderContacts[stakeholderIndex] = e;
@@ -354,7 +349,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       stakeholderContacts.push(stakeholder);
       setValue('contacts', stakeholderContacts, { shouldDirty: true });
     }
-    console.log('stakeholderContacts: ', stakeholderContacts);
   };
 
   return (
