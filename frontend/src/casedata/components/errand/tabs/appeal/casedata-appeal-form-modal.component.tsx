@@ -138,7 +138,7 @@ export const AppealFormModal: React.FC<{
             }));
 
           setIsLoading(true);
-          const apiCall = sendAttachments(municipalityId, errand.errandNumber, attachmentsData);
+          const apiCall = sendAttachments(municipalityId, errand.id, errand.errandNumber, attachmentsData);
           apiCall
             .then(() =>
               getErrand(municipalityId, errand.id.toString())

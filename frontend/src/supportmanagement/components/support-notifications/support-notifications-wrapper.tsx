@@ -27,9 +27,14 @@ export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (ar
 
   useEffect(() => {
     municipalityId &&
-      getSupportNotifications(municipalityId).then((res) => {
-        setSupportNotifications(res);
-      });
+      getSupportNotifications(municipalityId)
+        .then((res) => {
+          setSupportNotifications(res);
+        })
+        .catch((e) => {
+          console.error('Something went wrong when fetching notifications');
+          return [];
+        });
   }, [municipalityId]);
 
   const acknowledgedNotifications = sortBy(
