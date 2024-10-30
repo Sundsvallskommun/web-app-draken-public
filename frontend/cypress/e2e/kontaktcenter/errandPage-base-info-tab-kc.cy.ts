@@ -699,6 +699,62 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="stakeholder-phone"]').contains('+4670000000');
     });
 
+    it.only('make contact to errande owner', () => {
+      cy.intercept('PATCH', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin', {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      }).as('patchErrandContacts');
+
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      }).as('getErrandWithoutStakeholders');
+
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getErrandWithoutStakeholders');
+      cy.get('[data-cy="search-button-owner"]').should('be.disabled');
+
+      cy.get('[data-cy="save-button"]').should('be.disabled');
+      cy.get('[data-cy="description-input"]').type('  Test value');
+      cy.get('[data-cy="save-button"]').should('be.enabled');
+
+      cy.get('[data-cy="add-manually-button-person"]').click();
+
+      cy.get('[data-cy="submit-contact-button"]').should('be.disabled');
+      cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
+      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+      cy.get('[data-cy="contact-firstName"]').type('Test');
+      cy.get('[data-cy="contact-lastName"]').type('Testsson');
+      cy.get('[data-cy="contact-address"]').type('Testaddress');
+      cy.get('[data-cy="contact-careOf"]').type('TestcareOf');
+      cy.get('[data-cy="contact-zipCode"]').type('12345');
+      cy.get('[data-cy="contact-city"]').type('Teststaden');
+
+      cy.get('[data-cy="submit-contact-button"]').should('be.enabled');
+      cy.get('[data-cy="submit-contact-button"]').click();
+
+      cy.get('[data-cy="stakeholder-name"]').contains('Test');
+      cy.get('[data-cy="stakeholder-name"]').contains('Testsson');
+      cy.get('[data-cy="stakeholder-adress"]').contains('Testaddress');
+      cy.get('[data-cy="stakeholder-adress"]').contains('12345');
+      cy.get('[data-cy="stakeholder-adress"]').contains('Teststaden');
+
+      cy.get('[data-cy="make-stakeholder-owner-button"]').should('be.enabled');
+      cy.get('[data-cy="make-stakeholder-owner-button"]').click();
+
+      cy.get('button').contains('Ja').should('exist').click();
+
+      cy.get('[data-cy="save-button"]').should('be.enabled');
+      cy.get('[data-cy="description-input"]').contains('Test value');
+
+      cy.get('[data-cy="save-button"]').click();
+      cy.get('[data-cy="save-button"]').should('be.disabled');
+    });
+
     it('shows the correct estate information', () => {
       const patchFacility = {
         id: 123,
