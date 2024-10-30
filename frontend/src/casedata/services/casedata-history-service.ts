@@ -247,10 +247,11 @@ const genericFailedFetch = () => {
   return data;
 };
 
-export const fetchChangeData: (municipalityId: string, c: ParsedErrandChange) => Promise<GenericChangeData> = (
-  municipalityId,
-  c
-) => {
+export const fetchChangeData: (
+  municipalityId: string,
+  errandId: number,
+  c: ParsedErrandChange
+) => Promise<GenericChangeData> = (municipalityId, errandId, c) => {
   if (c?.changeType === 'ListChange') {
     if (c.elementChanges?.[0].elementChangeType === 'ValueAdded') {
       switch (c.property) {
@@ -281,7 +282,7 @@ export const fetchChangeData: (municipalityId: string, c: ParsedErrandChange) =>
             })
             .catch(genericFailedFetch);
         case 'attachments':
-          return fetchAttachment(municipalityId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchAttachment(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny bilaga',

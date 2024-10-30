@@ -100,7 +100,7 @@ export const sendMessage: (
                 };
               });
 
-            sendAttachments(municipalityId, errand.errandNumber, attachmentsToSave);
+            sendAttachments(municipalityId, errand.id, errand.errandNumber, attachmentsToSave);
           }
 
           return true;

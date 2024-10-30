@@ -274,6 +274,7 @@ export const editAttachment = (
 
 export const sendAttachments = (
   municipalityId: string,
+  errandId: number,
   errandNumber: string,
   attachmentData: { type: string; file: FileList; attachmentName: string }[]
 ) => {
@@ -309,7 +310,7 @@ export const sendAttachments = (
 
     const postAttachment = () =>
       apiService
-        .post<boolean, FormData>(`casedata/${municipalityId}/attachments`, formData, {
+        .post<boolean, FormData>(`casedata/${municipalityId}/errands/${errandId}/attachments`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((res) => {
@@ -346,14 +347,15 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
     });
 };
 
-export const fetchAttachment: (municipalityId: string, attachmentId: string) => Promise<ApiResponse<Attachment>> = (
-  municipalityId,
-  attachmentId
-) => {
+export const fetchAttachment: (
+  municipalityId: string,
+  errandId: number,
+  attachmentId: string
+) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/attachments/${attachmentId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
     .then((res) => res.data)
@@ -363,10 +365,10 @@ export const fetchAttachment: (municipalityId: string, attachmentId: string) => 
     });
 };
 
-export const fetchErrandAttachments: (
-  municipalityId: string,
-  errandNumber: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandNumber) => {
+export const fetchErrandAttachments: (municipalityId: string, errandNumber: string) => Promise<ApiResponse<Attachment[]>> = (
+  municipalityId,
+  errandNumber
+) => {
   if (!errandNumber) {
     console.error('No errand id found, cannot fetch. Returning.');
   }

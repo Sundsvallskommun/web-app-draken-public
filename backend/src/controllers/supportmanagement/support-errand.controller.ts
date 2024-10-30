@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import {
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
@@ -656,7 +656,7 @@ export class SupportErrandController {
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const url = `${municipalityId}/errands`;
-    const CASEDATA_SERVICE = `case-data/8.0`;
+    const CASEDATA_SERVICE = `case-data/9.0`;
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
       .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand }, req.user)
@@ -703,7 +703,7 @@ export class SupportErrandController {
       });
 
       const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
-        const casedataAttachmentsUrl = `${municipalityId}/attachments`;
+        const casedataAttachmentsUrl = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
           .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
           .then(res => res.data)
