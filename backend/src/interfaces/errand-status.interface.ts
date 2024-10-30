@@ -1,4 +1,4 @@
-import { StatusDTO as IStatusDTO } from '@/data-contracts/case-data/data-contracts';
+import { Status as IStatusDTO } from '@/data-contracts/case-data/data-contracts';
 import { IsString } from 'class-validator';
 
 export enum ErrandStatus {

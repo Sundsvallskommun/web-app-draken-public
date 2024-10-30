@@ -1,4 +1,4 @@
-import { FacilityDTO } from '@/data-contracts/case-data/data-contracts';
+import { Facility as FacilityDTO } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';

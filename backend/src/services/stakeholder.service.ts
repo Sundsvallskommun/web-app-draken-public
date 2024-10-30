@@ -3,7 +3,7 @@ import { Role } from '@interfaces/role';
 import { CreateStakeholderDto } from '@interfaces/stakeholder.interface';
 import ApiService from './api.service';
 import { latestBy } from '@/utils/util';
-import { ErrandDTO, StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 
 export const getOwnerStakeholder: (e: ErrandDTO) => StakeholderDTO = e => e.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
 

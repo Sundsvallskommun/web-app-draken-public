@@ -25,7 +25,7 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
-import { ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 
 export enum MessageClassification {

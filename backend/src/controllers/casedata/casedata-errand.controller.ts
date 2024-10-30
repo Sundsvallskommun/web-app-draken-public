@@ -16,7 +16,12 @@ import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, R
 import { OpenAPI } from 'routing-controllers-openapi';
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
 import { ErrandPhase } from '@interfaces/errand-phase.interface';
-import { ErrandDTO, PageErrandDTO, PatchErrandDTO, StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
+import {
+  Errand as ErrandDTO,
+  PageErrand as PageErrandDTO,
+  PatchErrand as PatchErrandDTO,
+  Stakeholder as StakeholderDTO,
+} from '@/data-contracts/case-data/data-contracts';
 
 interface SingleErrandResponseData {
   data: ErrandDTO;

@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { GenericExtraParameters } from './extra-parameters.interface';
-import { AttachmentDTO } from '@/data-contracts/case-data/data-contracts';
+import { Attachment as AttachmentDTO } from '@/data-contracts/case-data/data-contracts';
 
 export class Attachment implements AttachmentDTO {
   @IsNumber()

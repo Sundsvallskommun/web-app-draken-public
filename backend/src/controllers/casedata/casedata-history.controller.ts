@@ -1,4 +1,3 @@
-import { HistoryDTO } from '@/data-contracts/case-data/data-contracts';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -29,7 +28,7 @@ export class CaseDataHistoryController {
     }
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/history`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<HistoryDTO>({ url, baseURL }, req.user);
+    const res = await this.apiService.get<string>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
 }

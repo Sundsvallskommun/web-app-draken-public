@@ -3,7 +3,7 @@ import ApiService from './api.service';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
 import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { User } from '@/interfaces/users.interface';
-import { ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 
 const SERVICE = `case-data/8.0`;
 
