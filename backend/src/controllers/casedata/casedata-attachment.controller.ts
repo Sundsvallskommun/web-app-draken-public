@@ -1,4 +1,4 @@
-import { ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { Attachment, CreateAttachmentDto } from '@interfaces/attachment.interface';

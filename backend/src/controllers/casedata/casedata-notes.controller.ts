@@ -9,7 +9,7 @@ import { logger } from '@/utils/logger';
 import { noteIsTjansteanteckning } from '@/services/errand-note.service';
 import { apiURL } from '@/utils/util';
 import { validateAction } from '@services/errand.service';
-import { ErrandDTO, NoteDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data/data-contracts';
 import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
 
 export interface ResponseData {

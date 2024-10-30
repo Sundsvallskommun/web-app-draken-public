@@ -1,4 +1,4 @@
-import { ErrandDTO, StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import {
   EmailAttachment,
   EmailRequest,

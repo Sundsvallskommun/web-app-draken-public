@@ -4,7 +4,7 @@ import { Body, Controller, Get, Param, Patch, Req, Res, UseBefore } from 'routin
 import { OpenAPI } from 'routing-controllers-openapi';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import { apiURL } from '@/utils/util';
-import { PatchAppealDTO } from '@/data-contracts/case-data/data-contracts';
+import { PatchAppeal as PatchAppealDTO } from '@/data-contracts/case-data/data-contracts';
 import { validateAction } from '@/services/errand.service';
 import { HttpException } from '@/exceptions/HttpException';
 import { Appeal } from '@/interfaces/decision.interface';
