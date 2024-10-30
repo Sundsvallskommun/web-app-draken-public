@@ -56,9 +56,13 @@ export const Oversikt: React.FC = () => {
           ) : null}
         </SidebarLayout>
       ) : (
-        <Layout title={`${getApplicationName()} - Översikt`}>
+        <SidebarLayout
+          setShowAttestationTable={setShowAttestationTable}
+          showAttestationTable={showAttestationTable}
+          title={`${getApplicationName()} - Översikt`}
+        >
           {isPT() ? <OngoingCaseDataErrands /> : isMEX() ? <OngoingCaseDataErrands /> : <></>}
-        </Layout>
+        </SidebarLayout>
       )}
     </>
   );
