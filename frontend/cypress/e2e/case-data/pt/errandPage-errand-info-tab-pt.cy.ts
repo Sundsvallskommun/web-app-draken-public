@@ -30,7 +30,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('PATCH', '**/errands/*', mockPTErrand_base).as('patchErrand');
-      cy.intercept('POST', '**/errande/*/facilities', mockPTErrand_base);
+      cy.intercept('POST', '**/errands/*/facilities', mockPTErrand_base);
     });
 
     const goToErrandInformationTab = () => {
