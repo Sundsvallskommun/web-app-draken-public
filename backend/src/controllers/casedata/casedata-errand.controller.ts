@@ -32,7 +32,7 @@ interface ResponseData {
 @UseBefore(hasPermissions(['canEditCasedata']))
 export class CaseDataErrandController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
     const applicant: StakeholderDTO & { personalNumber?: string } = errandData.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
@@ -76,7 +76,7 @@ export class CaseDataErrandController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<SingleErrandResponseData> {
-    const url = `${municipalityId}/errands/${id}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const errandResponse = await this.apiService.get<ErrandDTO>({ url, baseURL }, req.user);
     const errandData = errandResponse.data;
@@ -92,7 +92,7 @@ export class CaseDataErrandController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<SingleErrandResponseData> {
-    const url = `${municipalityId}/errands?filter=errandNumber:'${errandNumber}'`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands?filter=errandNumber:'${errandNumber}'`;
     const baseURL = apiURL(this.SERVICE);
     const errandResponse = await this.apiService.get<PageErrandDTO>({ url, baseURL }, req.user);
     const errandData = errandResponse.data.content[0];
@@ -121,7 +121,7 @@ export class CaseDataErrandController {
     @QueryParam('propertyDesignation') propertyDesignation: string, //Added
     @Res() response: any,
   ): Promise<ResponseData> {
-    let url = `${municipalityId}/errands?page=${page || 0}&size=${size || 8}`;
+    let url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands?page=${page || 0}&size=${size || 8}`;
     const baseURL = apiURL(this.SERVICE);
     const filterList = [];
     if (query) {
@@ -240,7 +240,7 @@ export class CaseDataErrandController {
     const { user } = req;
     const data = makeErrandApiData(errandData, undefined);
 
-    const url = `${municipalityId}/errands`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService
       .post<ErrandDTO, Partial<ErrandDTO>>({ url, baseURL, data: data }, req.user)
@@ -273,7 +273,7 @@ export class CaseDataErrandController {
     const administratorCheckedData = errandData;
 
     const data = makeErrandApiData(administratorCheckedData, errandId.toString());
-    const url = `${municipalityId}/errands/${data.id}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}`;
     const baseURL = apiURL(this.SERVICE);
     const strippedStakeholders = { ...data, stakeholders: [] };
     const patchResponse = await this.apiService
@@ -281,7 +281,7 @@ export class CaseDataErrandController {
       .then(errandPatchResponse => {
         const statusPutPromises =
           data.statuses?.map(async (status, idx) => {
-            const url = `${municipalityId}/errands/${data.id}/statuses`;
+            const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/statuses`;
             const baseURL = apiURL(this.SERVICE);
             const putStatus = () =>
               this.apiService.put<any, StatusDTO[]>({ url, baseURL, data: [status] }, req.user).catch(e => {
@@ -296,7 +296,7 @@ export class CaseDataErrandController {
           data.stakeholders
             ?.filter(s => !s.id)
             .map(async (stakeholder, idx) => {
-              const url = `${municipalityId}/errands/${data.id}/stakeholders`;
+              const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/stakeholders`;
               const baseURL = apiURL(this.SERVICE);
               const patchStakeholder = () =>
                 this.apiService.patch<any, StakeholderDTO>({ url, baseURL, data: stakeholder }, req.user).catch(e => {
