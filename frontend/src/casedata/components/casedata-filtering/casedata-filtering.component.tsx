@@ -86,9 +86,13 @@ const CaseDataFiltering: React.FC<{
 
         <div className={cx(show ? 'visible' : 'hidden')}>
           <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
-            {!isPT() && (
+            {!isPT() ? (
               <div className="relative max-md:w-full">
                 <CasedataFilterPropertyDesignation />
+              </div>
+            ) : (
+              <div className="relative max-md:w-full">
+                <CasedataFilterStatus />
               </div>
             )}
             <div className="relative max-md:w-full">
@@ -103,7 +107,11 @@ const CaseDataFiltering: React.FC<{
             <div className="relative max-md:w-full">
               <CasedataFilterAdmins administrators={administrators} />
             </div>
-            {isPT() && (
+            {!isPT() ? (
+              <div className="relative max-md:w-full">
+                <CasedataFilterStatus />
+              </div>
+            ) : (
               <div className="relative max-md:w-full">
                 <CasedataFilterPhase />
               </div>

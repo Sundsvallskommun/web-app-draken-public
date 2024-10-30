@@ -1,11 +1,10 @@
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { useAppContext } from '@contexts/app.context';
-import { Badge, Button, LucideIcon as Icon } from '@sk-web-gui/react';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Checkbox, LucideIcon as Icon, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface CaseStatusFilter {
-  status: string[];
+  status: ErrandStatus[];
 }
 
 export const CaseStatusValues = {
@@ -16,42 +15,42 @@ export const CasedataFilterStatus: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
   const [query, setQuery] = useState<string>('');
 
-  const {
-    setSelectedErrandStatuses,
-    selectedErrandStatuses,
-    sidebarButtons,
-  }: { setSelectedErrandStatuses; selectedErrandStatuses: string[]; sidebarButtons: SidebarButton[] } = useAppContext();
-
-  const updateStatusFilter = (ss: string[]) => {
-    alert(`tab, ${ss}`);
-  };
-
   return (
-    <>
-      {sidebarButtons?.map((button) => {
-        return (
-          <Button
-            onClick={() => {
-              updateStatusFilter(button.statuses);
-            }}
-            aria-label={`status-button-${button.key}`}
-            variant={selectedErrandStatuses.includes(button.key) ? 'primary' : 'ghost'}
-            className={`justify-start ${!selectedErrandStatuses.includes(button.key) && 'hover:bg-dark-ghost'}`}
-            leftIcon={<Icon name={button.icon as any} />}
-            key={button.key}
-          >
-            <span className="w-full flex justify-between">
-              {button.label}
-              <Badge
-                className="min-w-fit px-4"
-                inverted={!selectedErrandStatuses.includes(button.key)}
-                color={selectedErrandStatuses.includes(button.key) ? 'tertiary' : 'vattjom'}
-                counter={button.totalStatusErrands || '0'}
-              />
-            </span>
-          </Button>
-        );
-      })}
-    </>
+    <PopupMenu>
+      <PopupMenu.Button
+        rightIcon={<Icon name="chevron-down" />}
+        data-cy="Status-filter"
+        variant="tertiary"
+        showBackground={false}
+        size="sm"
+        className="max-md:w-full"
+      >
+        Status
+      </PopupMenu.Button>
+      <PopupMenu.Panel className="max-md:w-full">
+        <SearchField
+          size="md"
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onReset={() => setQuery('')}
+          placeholder="Skriv för att söka"
+        />
+        <PopupMenu.Items autoFocus={false}>
+          {Object.entries(ErrandStatus)
+            .filter(
+              (s: [string, string]) =>
+                s[0].toLowerCase().includes(query.toLowerCase()) || s[1].toLowerCase().includes(query.toLowerCase())
+            )
+            .map((s: [string, string], idx) => (
+              <PopupMenu.Item key={`${s[1]}-${idx}`}>
+                <Checkbox labelPosition="left" value={s[0]} {...register('status')} data-cy={`Status-filter-${s[0]}`}>
+                  {s[1]}
+                </Checkbox>
+              </PopupMenu.Item>
+            ))}
+        </PopupMenu.Items>
+      </PopupMenu.Panel>
+    </PopupMenu>
   );
 };

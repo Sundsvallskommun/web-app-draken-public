@@ -3,10 +3,9 @@ import { LucideIcon as Icon, Button, Badge } from '@sk-web-gui/react';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import store from '@supportmanagement/services/storage-service';
 import { Status } from '@supportmanagement/services/support-errand-service';
-import { useEffect } from 'react';
 
 export interface SupportManagementStatusFilter {
-  status: string[];
+  status: Status[];
 }
 
 export const SupportManagementStatusValues = {
@@ -21,9 +20,9 @@ export const SupportManagementFilterStatus: React.FC<{
     setSelectedErrandStatuses,
     selectedErrandStatuses,
     sidebarButtons,
-  }: { setSelectedErrandStatuses; selectedErrandStatuses: string[]; sidebarButtons: SidebarButton[] } = useAppContext();
+  }: { setSelectedErrandStatuses; selectedErrandStatuses: Status[]; sidebarButtons: SidebarButton[] } = useAppContext();
 
-  const updateStatusFilter = (ss: string[]) => {
+  const updateStatusFilter = (ss: Status[]) => {
     try {
       const storedFilter = store.get('filter');
       const jsonparsedstatus = JSON.parse(storedFilter);
@@ -43,12 +42,16 @@ export const SupportManagementFilterStatus: React.FC<{
         return (
           <Button
             onClick={() => {
-              updateStatusFilter(button.statuses);
+              updateStatusFilter(button.statuses as Status[]);
               setShowAttestationTable(false);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={selectedErrandStatuses.includes(button.key) && !showAttestationTable ? 'primary' : 'ghost'}
-            className={`justify-start ${!selectedErrandStatuses.includes(button.key) && 'hover:bg-dark-ghost'}`}
+            variant={
+              selectedErrandStatuses.includes(button.key as Status) && !showAttestationTable ? 'primary' : 'ghost'
+            }
+            className={`justify-start ${
+              !selectedErrandStatuses.includes(button.key as Status) && 'hover:bg-dark-ghost'
+            }`}
             leftIcon={<Icon name={button.icon as any} />}
             key={button.key}
           >
@@ -56,8 +59,12 @@ export const SupportManagementFilterStatus: React.FC<{
               {button.label}
               <Badge
                 className="min-w-fit px-4"
-                inverted={!selectedErrandStatuses.includes(button.key) || showAttestationTable}
-                color={selectedErrandStatuses.includes(button.key) && !showAttestationTable ? 'tertiary' : 'vattjom'}
+                inverted={!selectedErrandStatuses.includes(button.key as Status) || showAttestationTable}
+                color={
+                  selectedErrandStatuses.includes(button.key as Status) && !showAttestationTable
+                    ? 'tertiary'
+                    : 'vattjom'
+                }
                 counter={button.totalStatusErrands || '0'}
               />
             </span>

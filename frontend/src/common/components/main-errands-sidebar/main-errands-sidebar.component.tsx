@@ -23,6 +23,7 @@ import {
   CasedataFilterStatus,
   CaseStatusValues,
 } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -107,7 +108,7 @@ export const MainErrandsSidebar: React.FC<{
           ) : (
             (isMEX() || isPT()) && (
               <FormProvider {...casedataFilterForm}>
-                <CasedataFilterStatus />
+                <CasedataFilterSidebarStatusSelector />
               </FormProvider>
             )
           )}
