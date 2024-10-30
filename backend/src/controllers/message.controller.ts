@@ -133,7 +133,7 @@ const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkerings
 @Controller()
 export class MessageController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   @Post('/casedata/:municipalityId/message/decision')
   @HttpCode(201)
@@ -349,7 +349,7 @@ export class MessageController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: ErrandMessageResponse[],
   ): Promise<{ data: ErrandMessageResponse[]; message: string }> {
-    const url = `${municipalityId}/messages/${errandNumber}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/messages/${errandNumber}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<ErrandMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching messages for errand: ', errandNumber);
@@ -368,7 +368,7 @@ export class MessageController {
     @Param('isViewed') isViewed: boolean,
     @Res() response: ErrandMessageResponse[],
   ): Promise<{ data: ErrandMessageResponse[]; message: string }> {
-    const url = `${municipalityId}/messages/${messageId}/viewed/${isViewed}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<any, any>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' };
