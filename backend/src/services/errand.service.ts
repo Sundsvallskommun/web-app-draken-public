@@ -7,8 +7,9 @@ import ApiService from './api.service';
 import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
 import { Errand as ErrandDTO, PatchErrandCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import { CASEDATA_NAMESPACE } from '@/config';
 
-const SERVICE = `case-data/8.0`;
+const SERVICE = `case-data/9.0`;
 
 export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) => Promise<boolean> = async (errand, user) => {
   const apiService = new ApiService();
@@ -74,7 +75,7 @@ export const withAdministratorIfChanged: (errandData: CreateErrandDto, errandId:
 export const validateAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (municipalityId, errandId, user) => {
   let allowed = false;
   const apiService = new ApiService();
-  const url = `${municipalityId}/errands/${errandId}`;
+  const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
   if (existingErrand.data.extraParameters?.['process.displayPhase'] === UiPhase.registrerad) {

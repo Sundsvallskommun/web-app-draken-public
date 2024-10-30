@@ -256,7 +256,7 @@ export const fetchChangeData: (
     if (c.elementChanges?.[0].elementChangeType === 'ValueAdded') {
       switch (c.property) {
         case 'notes':
-          return fetchNote(municipalityId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchNote(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: res.data.extraParameters['type'] === 'comment' ? 'Ny kommentar' : 'Ny tjänsteanteckning',
