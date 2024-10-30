@@ -72,7 +72,7 @@ export class CreateErrandDto implements ErrandDTO {
   @IsString()
   @IsOptional()
   decisions?: DecisionDTO[];
-  @IsObject()
+  @IsArray()
   @IsOptional()
   extraParameters?: ExtraParameter[];
 }

@@ -268,7 +268,7 @@ export const fetchChangeData: (
             })
             .catch(genericFailedFetch);
         case 'stakeholders':
-          return fetchStakeholder(c.elementChanges?.[0].value.cdoId.toString())
+          return fetchStakeholder(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny handläggare/intressent',

@@ -1,3 +1,4 @@
+import { CASEDATA_NAMESPACE } from '@/config';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -30,7 +31,7 @@ export class CasedataStakeholderController {
     @Param('municipalityId') municipalityId: string,
     @Body() stakeholderData: CreateStakeholderDto,
   ): Promise<{ data: CreateStakeholderDto; message: string }> {
-    const url = `${municipalityId}/stakeholders/${stakeholderId}`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${stakeholderId}`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<any, CreateStakeholderDto>({ url, baseURL, data: stakeholderData }, req.user).catch(e => {
       logger.error('Error when adding stakeholder:', e);
@@ -59,28 +60,29 @@ export class CasedataStakeholderController {
     return { data: response.data, message: `Stakeholder removed from errand ${errandId}` };
   }
 
-  @Get('/casedata/:municipalityId/stakeholders/:id')
+  @Get('/casedata/:municipalityId/errands/:errandId/stakeholders/:id')
   @OpenAPI({ summary: 'Return a stakeholder by id' })
   @UseBefore(authMiddleware)
   async getStakeholder(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
+    @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `${municipalityId}/stakeholders/${id}`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<StakeholderDTO[]>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Patch('/casedata/:municipalityId/errands/:id/stakeholders')
+  @Patch('/casedata/:municipalityId/errands/:errandId/stakeholders')
   @HttpCode(201)
   @OpenAPI({ summary: 'Add a stakeholder to an errand by id' })
   @UseBefore(authMiddleware, validationMiddleware(CreateStakeholderDto, 'body'))
   async newStakeholder(
     @Req() req: RequestWithUser,
-    @Param('id') errandId: number,
+    @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
     @Body() stakeholderData: CreateStakeholderDto,
   ): Promise<{ data: ErrandDTO; message: string }> {
