@@ -198,13 +198,11 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIS() || isLOP() || isMEX() ? (
-                      <PopupMenu.Item>
-                        <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                          <Icon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt ärende
-                        </Link>
-                      </PopupMenu.Item>
-                    ) : null}
+                    <PopupMenu.Item>
+                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                        <Icon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt ärende
+                      </Link>
+                    </PopupMenu.Item>
                   </PopupMenu.Group>
 
                   {userMenuGroups.map((group, groupindex) => (
