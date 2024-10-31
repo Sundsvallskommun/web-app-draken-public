@@ -22,7 +22,7 @@ export const getFacilities: (municipalityId: string, errandId: string) => Promis
     });
 };
 
-export const saveFacilities = (municipalityId: string, errandId: string, estate: FacilityDTO[]) => {
+export const saveFacilities = (municipalityId: string, errandId: number, estate: FacilityDTO[]) => {
   if (!errandId || !municipalityId) {
     console.error('No errand id or municipality id found, cannot save. Returning.');
     return Promise.resolve();

@@ -23,7 +23,7 @@ export class caseDataFacilitiesController {
   @UseBefore(authMiddleware)
   async saveFacility(
     @Req() req: RequestWithUser,
-    @Param('errandId') errandId: string,
+    @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
     @Body() facilities: FacilityDTO[],
   ) {
