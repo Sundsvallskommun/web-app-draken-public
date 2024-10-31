@@ -140,7 +140,7 @@ export const CasedataAppealTab: React.FC<{}> = () => {
                 className="appeal-item flex justify-between gap-12 rounded-sm p-12 text-md border-t hover:bg-gray-100"
                 onClick={() => {
                   setModalFetching(true);
-                  fetchAppeal(municipalityId, appeal.id)
+                  fetchAppeal(municipalityId, errand.id, appeal.id)
                     .then((res) => setFetchedAppeal(res.data))
                     .then(() => {
                       setModalFetching(false);
