@@ -30,7 +30,7 @@ export const updateAppeal: (
     throw e;
   });
 };
-//casedata/:municipalityId/:errandId/appeals/:appealId
+
 export const fetchAppeal: (
   municipalityId: string,
   errandId: number,
