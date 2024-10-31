@@ -60,22 +60,23 @@ export class CaseDataAppealController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${municipalityId}/appeals/${appealId}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/appeals/${appealId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.patch<any, PatchAppealDTO>({ url, baseURL, data: appealData }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;
   }
 
-  @Get('/:municipalityId/appeals/:appealId')
+  @Get('casedata/:municipalityId/:errandId/appeals/:appealId')
   @OpenAPI({ summary: 'Return an appeal by id' })
   @UseBefore(authMiddleware)
   async appeal(
     @Req() req: RequestWithUser,
+    @Param('errandId') errandId: number,
     @Param('appealId') appealId: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `${municipalityId}/appeals/${appealId}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/appeals/${appealId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Appeal>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
