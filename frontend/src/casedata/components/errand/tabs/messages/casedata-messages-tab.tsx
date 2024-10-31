@@ -1,14 +1,14 @@
+import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
-import { Avatar, Button, LucideIcon as Icon, cx, useSnackbar, Divider } from '@sk-web-gui/react';
+import { Avatar, Button, Divider, LucideIcon as Icon, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
-import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -26,7 +26,7 @@ export const CasedataMessagesTab: React.FC<{
   }, [user, errand]);
 
   const setMessageViewed = (msg: ErrandMessageResponse) => {
-    setMessageViewStatus(municipalityId, msg.messageID, true)
+    setMessageViewStatus(errand.id, municipalityId, msg.messageID, true)
       .then(() =>
         fetchMessagesTree(municipalityId, errand).catch((e) => {
           toastMessage({
