@@ -650,9 +650,7 @@ export class SupportErrandController {
           dateTime: new Date().toISOString(),
         },
       ],
-      extraParameters: {
-        supportManagementErrandNumber: existingSupportErrand.data.errandNumber,
-      },
+      extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const url = `${municipalityId}/errands`;

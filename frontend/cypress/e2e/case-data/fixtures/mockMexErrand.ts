@@ -1,3 +1,5 @@
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+
 // This person number is for test purposes, from the Swedish Tax Agency
 export const MOCK_PERSON_NUMBER = Cypress.env('mockPersonNumber');
 
@@ -302,13 +304,32 @@ export const mockMexErrand_base = {
     updatedByClient: 'WSO2_Camunda',
     createdBy: Cypress.env('mockAdUsername'),
     updatedBy: 'UNKNOWN',
-    extraParameters: {
-      contractId: '2024-01026',
-      'process.phaseStatus': 'WAITING',
-      'process.phaseAction': 'UNKNOWN',
-      'process.displayPhase': 'Utredning',
-      propertyDesignation: 'Test property',
-    },
+    extraParameters: [
+      {
+        key: 'dummyItem',
+        values: ['dummyValue1', 'dummyValue2'],
+      },
+      {
+        key: 'contractId',
+        values: ['2024-01026'],
+      },
+      {
+        key: 'process.phaseStatus',
+        values: ['COMPLETED'],
+      },
+      {
+        key: 'process.phaseAction',
+        values: ['UNKNOWN'],
+      },
+      {
+        key: 'process.displayPhase',
+        values: ['Utredning'],
+      },
+      {
+        key: 'propertyDesignation',
+        values: ['Test property'],
+      },
+    ],
   },
   message: 'success',
 };
@@ -325,15 +346,19 @@ export const modifyField: (
 });
 
 export const modifyGetExtraParameter: (
-  base: { data: { [key: string]: any }; message: string },
-  obj: { [key: string]: any }
-) => { data: { [key: string]: any }; message: string } = (base, obj) => ({
-  data: {
-    ...base.data,
-    extraParameters: { ...base.data['extraParameters'], ...obj },
-  },
-  message: '',
-});
+  base: { data: { extraParameters: ExtraParameter[]; [key: string]: any }; message: string },
+  obj: ExtraParameter
+) => { data: { extraParameters: ExtraParameter[]; [key: string]: any }; message: string } = (base, obj) => {
+  base.data['extraParameters'].forEach((extraParameter) => {
+    if (extraParameter.key === obj.key) {
+      extraParameter.values = obj.values;
+    }
+  });
+  return {
+    data: base.data,
+    message: '',
+  };
+};
 
 export const mockPostErrand_base = {
   id: '',
@@ -376,22 +401,64 @@ export const mockPostErrand_base = {
       },
     },
   ],
-  extraParameters: {
-    'application.applicant.capacity': 'DRIVER',
-    'application.reason': '',
-    'application.role': 'SELF',
-    'application.applicant.testimonial': 'true',
-    'application.applicant.signingAbility': 'false',
-    'disability.aid': 'Inget',
-    'disability.walkingAbility': 'true',
-    'disability.walkingDistance.beforeRest': '',
-    'disability.walkingDistance.max': '',
-    'disability.duration': 'P6M',
-    'disability.canBeAloneWhileParking': 'true',
-    'disability.canBeAloneWhileParking.note': '',
-    'consent.contact.doctor': 'false',
-    'consent.view.transportationServiceDetails': 'false',
-  },
+  extraParameters: [
+    {
+      key: 'application.applicant.capacity',
+      values: ['DRIVER'],
+    },
+    {
+      key: 'application.reason',
+      values: [''],
+    },
+    {
+      key: 'application.role',
+      values: ['SELF'],
+    },
+    {
+      key: 'application.applicant.testimonial',
+      values: ['true'],
+    },
+    {
+      key: 'application.applicant.signingAbility',
+      values: ['false'],
+    },
+    {
+      key: 'disability.aid',
+      values: ['Inget'],
+    },
+    {
+      key: 'disability.walkingAbility',
+      values: ['true'],
+    },
+    {
+      key: 'disability.walkingDistance.beforeRest',
+      values: [''],
+    },
+    {
+      key: 'disability.walkingDistance.max',
+      values: [''],
+    },
+    {
+      key: 'disability.duration',
+      values: ['P6M'],
+    },
+    {
+      key: 'disability.canBeAloneWhileParking',
+      values: ['true'],
+    },
+    {
+      key: 'disability.canBeAloneWhileParking.note',
+      values: [''],
+    },
+    {
+      key: 'consent.contact.doctor',
+      values: ['false'],
+    },
+    {
+      key: 'consent.view.transportationServiceDetails',
+      values: ['false'],
+    },
+  ],
 };
 
 export const mockPostErrand_full = {
@@ -435,22 +502,64 @@ export const mockPostErrand_full = {
       lastName: 'Drsson',
     },
   ],
-  extraParameters: {
-    'application.applicant.capacity': 'DRIVER',
-    'application.reason': 'Kan inte gå bra',
-    'application.role': 'SELF',
-    'application.applicant.testimonial': 'true',
-    'application.applicant.signingAbility': 'true',
-    'disability.aid': 'Krycka/kryckor/käpp,Rullator',
-    'disability.walkingAbility': 'true',
-    'disability.walkingDistance.beforeRest': '100',
-    'disability.walkingDistance.max': '200',
-    'disability.duration': 'P3Y',
-    'disability.canBeAloneWhileParking': 'true',
-    'disability.canBeAloneWhileParking.note': '',
-    'consent.contact.doctor': 'true',
-    'consent.view.transportationServiceDetails': 'true',
-  },
+  extraParameters: [
+    {
+      key: 'application.applicant.capacity',
+      values: ['DRIVER'],
+    },
+    {
+      key: 'application.reason',
+      values: ['Kan inte gå bra'],
+    },
+    {
+      key: 'application.role',
+      values: ['SELF'],
+    },
+    {
+      key: 'application.applicant.testimonial',
+      values: ['true'],
+    },
+    {
+      key: 'application.applicant.signingAbility',
+      values: ['true'],
+    },
+    {
+      key: 'disability.aid',
+      values: ['Krycka/kryckor/käpp', 'Rullator'],
+    },
+    {
+      key: 'disability.walkingAbility',
+      values: ['true'],
+    },
+    {
+      key: 'disability.walkingDistance.beforeRest',
+      values: ['100'],
+    },
+    {
+      key: 'disability.walkingDistance.max',
+      values: ['200'],
+    },
+    {
+      key: 'disability.duration',
+      values: ['P3Y'],
+    },
+    {
+      key: 'disability.canBeAloneWhileParking',
+      values: ['true'],
+    },
+    {
+      key: 'disability.canBeAloneWhileParking.note',
+      values: [''],
+    },
+    {
+      key: 'consent.contact.doctor',
+      values: ['true'],
+    },
+    {
+      key: 'consent.view.transportationServiceDetails',
+      values: ['true'],
+    },
+  ],
 };
 
 export const mockPatchErrand_base = {
@@ -492,22 +601,64 @@ export const mockPatchErrand_base = {
       lastName: 'Testhandläggare',
     },
   ],
-  extraParameters: {
-    'application.applicant.capacity': 'PASSENGER',
-    'application.reason': 'Har svårt att gå',
-    'application.role': 'SELF',
-    'application.applicant.testimonial': 'true',
-    'application.applicant.signingAbility': 'false',
-    'disability.aid': 'Elrullstol,Rullstol (manuell)',
-    'disability.walkingAbility': 'true',
-    'disability.walkingDistance.beforeRest': '100',
-    'disability.walkingDistance.max': '150',
-    'disability.duration': 'P0Y',
-    'disability.canBeAloneWhileParking': 'false',
-    'disability.canBeAloneWhileParking.note': '',
-    'consent.contact.doctor': 'false',
-    'consent.view.transportationServiceDetails': 'true',
-  },
+  extraParameters: [
+    {
+      key: 'application.applicant.capacity',
+      values: ['PASSENGER'],
+    },
+    {
+      key: 'application.reason',
+      values: ['Har svårt att gå'],
+    },
+    {
+      key: 'application.role',
+      values: ['SELF'],
+    },
+    {
+      key: 'application.applicant.testimonial',
+      values: ['true'],
+    },
+    {
+      key: 'application.applicant.signingAbility',
+      values: ['false'],
+    },
+    {
+      key: 'disability.aid',
+      values: ['Elrullstol', 'Rullstol (manuell)'],
+    },
+    {
+      key: 'disability.walkingAbility',
+      values: ['true'],
+    },
+    {
+      key: 'disability.walkingDistance.beforeRest',
+      values: ['100'],
+    },
+    {
+      key: 'disability.walkingDistance.max',
+      values: ['150'],
+    },
+    {
+      key: 'disability.duration',
+      values: ['P0Y'],
+    },
+    {
+      key: 'disability.canBeAloneWhileParking',
+      values: ['false'],
+    },
+    {
+      key: 'disability.canBeAloneWhileParking.note',
+      values: [''],
+    },
+    {
+      key: 'consent.contact.doctor',
+      values: ['false'],
+    },
+    {
+      key: 'consent.view.transportationServiceDetails',
+      values: ['true'],
+    },
+  ],
 };
 
 export const modifyPatchExtraParameter: (
