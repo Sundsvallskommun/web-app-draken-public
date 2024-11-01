@@ -250,7 +250,7 @@ export const SidebarInfo: React.FC<{}> = () => {
             status: 'success',
           });
 
-          cancelErrandPhaseChange(municipalityId, errand.id.toString())
+          cancelErrandPhaseChange(municipalityId, errand)
             .then(() => {
               toastMessage({
                 position: 'bottom',
@@ -289,7 +289,7 @@ export const SidebarInfo: React.FC<{}> = () => {
   };
 
   const triggerPhaseChange = () => {
-    return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+    return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
       .then((res) => setErrand(res.errand))
       .then(() => {

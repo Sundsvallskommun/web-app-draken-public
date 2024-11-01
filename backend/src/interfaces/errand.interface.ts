@@ -122,7 +122,7 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   @IsString()
   @IsOptional()
   decisions?: DecisionDTO[];
-  @IsObject()
+  @IsArray()
   @IsOptional()
   extraParameters?: ExtraParameter[];
 }

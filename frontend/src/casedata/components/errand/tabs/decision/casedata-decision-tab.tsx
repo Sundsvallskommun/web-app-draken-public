@@ -222,7 +222,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {
-    return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+    return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
       .then((res) => setErrand(res.errand))
       .then(() => {

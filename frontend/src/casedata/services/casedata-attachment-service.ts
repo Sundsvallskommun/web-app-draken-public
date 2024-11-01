@@ -201,11 +201,14 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
     const passportPhotoExists =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length == 1;
     const medicalConfirmationValid =
-      errand.extraParameters['application.renewal.medicalConfirmationRequired'] === 'no' ||
+      errand.extraParameters.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values[0] ===
+        'no' ||
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0;
     const signatureValid =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'SIGNATURE').length ==
-      (errand.extraParameters['application.applicant.signingAbility'] === 'true' ? 1 : 0);
+      (errand.extraParameters.find((p) => p.key === 'application.applicant.signingAbility')?.values[0] === 'true'
+        ? 1
+        : 0);
     const rsn = [];
     if (!passportPhotoExists) {
       rsn.push('ett passfoto');
