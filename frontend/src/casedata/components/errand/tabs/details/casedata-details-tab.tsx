@@ -192,10 +192,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         : true;
     return dependent ? (
       <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
-        {detail.field === `account${EXTRAPARAMETER_SEPARATOR}ownerIdentifier` ||
-        detail.field === `account${EXTRAPARAMETER_SEPARATOR}owner` ||
-        detail.field === `account${EXTRAPARAMETER_SEPARATOR}bank` ||
-        detail.field === `account${EXTRAPARAMETER_SEPARATOR}number` ? null : (
+        {detail.field === `account.ownerIdentifier` ||
+        detail.field === `account.owner` ||
+        detail.field === `account.bank` ||
+        detail.field === `account.number` ? null : (
           <FormLabel className="mt-lg">{detail.label}</FormLabel>
         )}
         {detail.formField.type === 'text' ||
@@ -217,7 +217,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                       <FormLabel className="mt-lg">{detail.label}</FormLabel>
                       <Input
                         type={detail.formField.type}
-                        {...register(detail.field)}
+                        {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
                         className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
                         data-cy={`${detail.field}-input`}
                       />
@@ -233,7 +233,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                         <FormLabel className="mt-lg">{detail.label}</FormLabel>
                         <Input
                           type={detail.formField.type}
-                          {...register(detail.field)}
+                          {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
                           className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
                           data-cy={`${detail.field}-input`}
                         />
@@ -244,7 +244,11 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             </>
           )
         ) : detail.formField.type === 'select' ? (
-          <Select {...register(detail.field)} className="w-content" data-cy={`${detail.field}-select`}>
+          <Select
+            {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
+            className="w-content"
+            data-cy={`${detail.field}-select`}
+          >
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, oIdx) => (
               <Select.Option key={`${o}-${oIdx}`} value={o.value}>
@@ -257,7 +261,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <textarea
               rows={3}
               className="w-full rounded-12 p-md rows={3}-medium text-base"
-              {...register(detail.field)}
+              {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
               data-cy={`${detail.field}-textarea`}
             />
           </>
@@ -267,7 +271,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               {detail.formField.options.map((option, index) => (
                 <RadioButton
                   value={option.value}
-                  {...register(detail.field)}
+                  {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
                   key={`${option}-${index}`}
                   data-cy={`${detail.field}-radio-button-${index}`}
                 >
@@ -278,7 +282,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           </>
         ) : detail.formField.type === 'radioPlus' ? (
           <>
-            <Input {...register(detail.field)} hidden></Input>
+            <Input {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))} hidden></Input>
             <RadioButton.Group
               defaultValue={
                 detail.formField.options.find((option) => option.value === getValues(detail.field))?.value ||
@@ -324,7 +328,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           </>
         ) : detail.formField.type === 'checkbox' ? (
           <>
-            <Input {...register(detail.field)} type="hidden"></Input>
+            <Input {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))} type="hidden"></Input>
             <Checkbox.Group direction="row">
               {detail.formField.options.map((option, index) => (
                 <Checkbox
