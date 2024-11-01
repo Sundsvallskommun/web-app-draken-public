@@ -653,7 +653,7 @@ export class SupportErrandController {
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
-    const url = `${municipalityId}/errands`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
     const CASEDATA_SERVICE = `case-data/9.0`;
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
