@@ -45,11 +45,8 @@ export default function Layout({ title, children }) {
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
-  const errandNumber = isMEX()
-    ? errand?.errandNumber
-    : isKC() || isIS() || isLOP()
-    ? supportErrand?.errandNumber
-    : undefined;
+  const errandNumber =
+    isMEX() || isPT() ? errand?.errandNumber : isKC() || isIS() || isLOP() ? supportErrand?.errandNumber : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
