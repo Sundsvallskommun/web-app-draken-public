@@ -51,10 +51,12 @@ export class estateInfoController {
         throw new HttpException(400, 'Could not find estate for designation: ' + designation);
       });
 
+      const indexOfEstate = res.data.findIndex((estate) => estate.designation === designation);
+
       if (res.data.length !== 0) {
         const url = `/estateinfo/1.0/estate-data`;
         const result = await this.apiService
-          .get<EstateInformation>({ url, params: { objectidentifier: res.data[0].objectidentifier } }, req.user)
+          .get<EstateInformation>({ url, params: { objectidentifier: res.data[indexOfEstate].objectidentifier } }, req.user)
           .catch(e => {
             throw new HttpException(400, 'Could not find estate information for objectidentifier: ' + res.data[0].objectidentifier);
           });
