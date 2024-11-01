@@ -2,17 +2,8 @@ import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
-import {
-  Button,
-  Divider,
-  FormControl,
-  FormLabel,
-  LucideIcon as Icon,
-  Label,
-  Select,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -367,7 +358,7 @@ export const SidebarInfo: React.FC<{
     <>
       <div className="flex">
         <Label rounded>
-          <Icon size="1.5rem" name={icon} /> {label}
+          <LucideIcon size="1.5rem" name={icon} /> {label}
         </Label>{' '}
         <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
       </div>
@@ -529,7 +520,7 @@ export const SidebarInfo: React.FC<{
                 <Button
                   className="w-full mt-20"
                   color="vattjom"
-                  leftIcon={<Icon name="undo-2" />}
+                  leftIcon={<LucideIcon name="undo-2" />}
                   variant="secondary"
                   onClick={() => {
                     confirm
@@ -548,7 +539,7 @@ export const SidebarInfo: React.FC<{
               <>
                 <div className="flex">
                   <Label>
-                    <Icon size="1.5rem" name="circle-pause" />{' '}
+                    <LucideIcon size="1.5rem" name="circle-pause" />{' '}
                     {supportErrand?.status === Status.SUSPENDED ? 'Parkerat ' : 'Tilldelat '}
                   </Label>
                   <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
@@ -573,7 +564,7 @@ export const SidebarInfo: React.FC<{
                   className="w-full"
                   color="vattjom"
                   data-cy="suspend-button"
-                  leftIcon={<Icon name="circle-play" />}
+                  leftIcon={<LucideIcon name="circle-play" />}
                   variant="secondary"
                   disabled={!allowed}
                   loading={isLoading === 'status'}

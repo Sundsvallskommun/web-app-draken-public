@@ -1,19 +1,10 @@
 import { AttachmentLabels, MAX_FILE_SIZE_MB, PTAttachmentLabels } from '@casedata/services/casedata-attachment-service';
 import { isIS, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
-import {
-  Button,
-  cx,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  LucideIcon as Icon,
-  Input,
-  Select,
-} from '@sk-web-gui/react';
+import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister } from 'react-hook-form';
 
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { UploadCloud } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
 
@@ -324,7 +315,10 @@ const FileUpload: React.FC<{
                       <div className="flex justify-between">
                         <div className="flex w-5/6 gap-10">
                           <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                            <Icon name={imageMimeTypes.includes(field.file[0]?.type) ? 'image' : 'file'} size={25} />
+                            <LucideIcon
+                              name={imageMimeTypes.includes(field.file[0]?.type) ? 'image' : 'file'}
+                              size={25}
+                            />
                           </div>
                           <div className="overflow-hidden">
                             <p className="self-center" title={field.file[0]?.name}>
@@ -343,7 +337,7 @@ const FileUpload: React.FC<{
                               remove(index);
                             }}
                           >
-                            <Icon name="x" />
+                            <LucideIcon name="x" />
                           </Button>
                         </div>
                       </div>

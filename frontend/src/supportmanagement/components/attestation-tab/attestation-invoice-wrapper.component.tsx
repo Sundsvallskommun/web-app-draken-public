@@ -1,4 +1,5 @@
-import { Button, Header, LucideIcon as Icon, cx } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Header, cx } from '@sk-web-gui/react';
 import React from 'react';
 
 export const AttestationInvoiceWrapperComponent: React.FC<{
@@ -17,7 +18,7 @@ export const AttestationInvoiceWrapperComponent: React.FC<{
     >
       <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
         <div className="text-h4-sm flex items-center gap-12">
-          <Icon name="glasses" /> {label}
+          <LucideIcon name="glasses" /> {label}
         </div>
         <Button
           tabIndex={show ? 0 : -1}
@@ -29,7 +30,7 @@ export const AttestationInvoiceWrapperComponent: React.FC<{
           }}
           data-cy="close-invoice-wrapper"
         >
-          <Icon name="x" data-cy="close-invoice-wrapper-icon" />
+          <LucideIcon name="x" data-cy="close-invoice-wrapper-icon" />
         </Button>
       </Header>
       {children}

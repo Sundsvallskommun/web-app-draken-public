@@ -1,6 +1,7 @@
 import Facilities from '@common/components/facilities/facilities';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { Disclosure, LucideIcon } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Disclosure } from '@sk-web-gui/react';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';

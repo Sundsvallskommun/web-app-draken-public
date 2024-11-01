@@ -1,5 +1,12 @@
+import {
+  CasePhaseFilter,
+  CasePhaseValues,
+  CasedataFilterPhase,
+} from '@casedata/components/casedata-filtering/components/casedata-filter-phase.component';
+import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
-import { Button, Checkbox, LucideIcon as Icon, cx } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Checkbox, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import {
@@ -30,12 +37,6 @@ import {
   CasedataFilterStatus,
 } from './components/casedata-filter-status.component';
 import { CasedataFilterTags } from './components/casedata-filter-tags.component';
-import { isPT } from '@common/services/application-service';
-import {
-  CasedataFilterPhase,
-  CasePhaseFilter,
-  CasePhaseValues,
-} from '@casedata/components/casedata-filtering/components/casedata-filter-phase.component';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -78,7 +79,7 @@ const CaseDataFiltering: React.FC<{
             color="vattjom"
             variant={show ? 'tertiary' : 'primary'}
             inverted={show ? false : true}
-            leftIcon={<Icon name="list-filter" size="1.8rem" />}
+            leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
           >
             {show ? 'Dölj filter' : 'Filter'}
           </Button>

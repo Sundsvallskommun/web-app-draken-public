@@ -1,16 +1,17 @@
-import { Button, Divider, LucideIcon as Icon, Logo, Avatar, Badge } from '@sk-web-gui/react';
-import { useAppContext } from '@contexts/app.context';
-import NextLink from 'next/link';
 import { getApplicationEnvironment, getApplicationName, isLOP } from '@common/services/application-service';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
+import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
+import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
+import { SupportManagementFilterStatus } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-status.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import { SupportManagementFilterStatus } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-status.component';
-import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
-import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
+import NextLink from 'next/link';
 import { useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -77,7 +78,7 @@ export const MainErrandsSidebar: React.FC<{
             <div className="flex flex-col gap-8 py-24">
               <Button
                 onClick={() => setShowAttestationTable(true)}
-                leftIcon={<Icon name="square-pen" />}
+                leftIcon={<LucideIcon name="square-pen" />}
                 className="w-full text-right justify-between"
                 variant={showAttestationTable ? 'primary' : 'ghost'}
               >

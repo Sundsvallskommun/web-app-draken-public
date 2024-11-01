@@ -5,19 +5,8 @@ import { getErrandPropertyDesignations } from '@casedata/services/casedata-facil
 import { isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
-import {
-  Badge,
-  Button,
-  LucideIcon as Icon,
-  Input,
-  Label,
-  Pagination,
-  Select,
-  Spinner,
-  Table,
-  cx,
-  useGui,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Badge, Button, Input, Label, Pagination, Select, Spinner, Table, cx, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import NextLink from 'next/link';
 import { useState } from 'react';
@@ -230,7 +219,7 @@ export const ErrandsTable: React.FC = () => {
                 isErrandClosed(errand) && !isPT() ? 'sk-btn-secondary' : 'sk-btn-tertiary'
               )}
             >
-              <Button.Content rightIcon={!isMobile && !isPT() && <Icon name="external-link" />}>
+              <Button.Content rightIcon={!isMobile && !isPT() && <LucideIcon name="external-link" />}>
                 {isPT() ? (
                   errand.administrator ? (
                     <>
@@ -246,12 +235,12 @@ export const ErrandsTable: React.FC = () => {
                     {isErrandClosed(errand) ? (
                       <>
                         <span className="hidden md:inline">Visa</span>
-                        <Icon className="inline md:hidden" name="view" />
+                        <LucideIcon className="inline md:hidden" name="view" />
                       </>
                     ) : (
                       <>
                         <span className="hidden md:inline">Hantera</span>
-                        <Icon className="inline md:hidden" name="pencil" />
+                        <LucideIcon className="inline md:hidden" name="pencil" />
                       </>
                     )}
                   </>

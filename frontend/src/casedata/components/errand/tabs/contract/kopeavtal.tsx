@@ -7,13 +7,13 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 import { getContractStakeholderName } from '@casedata/services/contract-service';
 import { numberToSwedishWords } from '@common/services/number-service';
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
   Disclosure,
   FormControl,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -226,7 +226,7 @@ export const KopeAvtal: React.FC<{
       <Disclosure
         icon={'users'}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
-        // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         data-cy="parties-disclosure"
         labelColor={sellersFields?.length > 0 && buyersFields.length > 0 ? 'success' : `warning`}
         initalOpen={true}
@@ -353,7 +353,7 @@ export const KopeAvtal: React.FC<{
         icon={'clipboard-list'}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
-        // label={watch().overlatelseforklaring?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().overlatelseforklaring?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().overlatelseforklaring?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().overlatelseforklaring?.length > 0}
         color="gronsta"
@@ -367,7 +367,7 @@ export const KopeAvtal: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowOverlatelse(true)}
             >
               Fyll i villkor
@@ -515,7 +515,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
         icon={'wallet'}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
-        // label={watch().kopeskilling?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().kopeskilling?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().kopeskilling?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().kopeskilling?.length > 0}
         color="gronsta"
@@ -529,7 +529,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowKopeskilling(true)}
             >
               Fyll i villkor
@@ -662,7 +662,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'calendar'}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
-        // label={watch().tilltrade?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().tilltrade?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().tilltrade?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().tilltrade?.length > 0}
         color="gronsta"
@@ -676,7 +676,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowTilltrade(true)}
             >
               Fyll i villkor
@@ -784,7 +784,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'mountain-snow'}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().markfororeningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
@@ -798,7 +798,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowMarkfororeningar(true)}
             >
               Fyll i villkor
@@ -924,7 +924,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'trees'}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
-        // label={watch().skog?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().skog?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().skog?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skog?.length > 0}
         color="gronsta"
@@ -935,7 +935,12 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
-            <Button color="vattjom" inverted={true} rightIcon={<Icon name="pen" />} onClick={() => setShowSkog(true)}>
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowSkog(true)}
+            >
               Fyll i villkor
             </Button>
             <Checkbox
@@ -1062,7 +1067,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'file-check'}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
-        // label={watch().forpliktelser?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().forpliktelser?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().forpliktelser?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().forpliktelser?.length > 0}
         color="gronsta"
@@ -1076,7 +1081,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowForpliktelser(true)}
             >
               Fyll i villkor
@@ -1178,7 +1183,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'calculator'}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
-        // label={watch().utgifter?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().utgifter?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().utgifter?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().utgifter?.length > 0}
         color="gronsta"
@@ -1192,7 +1197,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowUtgifter(true)}
             >
               Fyll i villkor
@@ -1311,7 +1316,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'home'}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
-        // label={watch().fastighetsbildning?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().fastighetsbildning?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().fastighetsbildning?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().fastighetsbildning?.length > 0}
         color="gronsta"
@@ -1325,7 +1330,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowFastighetsbildning(true)}
             >
               Fyll i villkor
@@ -1436,7 +1441,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'info'}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
-        // label={watch().other?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().other?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().other?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().other?.length > 0}
         color="gronsta"
@@ -1447,7 +1452,12 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
-            <Button color="vattjom" inverted={true} rightIcon={<Icon name="pen" />} onClick={() => setShowOther(true)}>
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowOther(true)}
+            >
               Fyll i villkor
             </Button>
             <Checkbox
@@ -1570,7 +1580,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={'pen'}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
@@ -1584,7 +1594,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSignature(true)}
             >
               Fyll i villkor

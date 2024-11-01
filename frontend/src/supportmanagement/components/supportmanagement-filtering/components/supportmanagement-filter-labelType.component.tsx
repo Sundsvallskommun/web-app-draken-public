@@ -1,11 +1,11 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import { Checkbox, LucideIcon as Icon, Input, PopupMenu, SearchField } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-import { set } from 'cypress/types/lodash';
 
 export interface LabelTypeFilter {
   labelType: string[];
@@ -51,7 +51,7 @@ export const SupportManagementFilterLabelType: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="Ärendekategori-filter"
         variant="tertiary"
         showBackground={false}
