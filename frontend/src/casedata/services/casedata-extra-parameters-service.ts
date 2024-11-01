@@ -1004,22 +1004,6 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
   return obj;
 };
 
-// Unused?
-// export const uppgifterToExtraParametersMapper: (
-//   data: { [key: string]: { [key: string]: string } },
-//   errand: IErrand
-// ) => ExtraParameter[] = (data, errand) => {
-//   const params = [];
-//   for (const ct in data) {
-//     for (const field in data[ct]) {
-//       const key = `${ct}.${field.replaceAll(EXTRAPARAMETER_SEPARATOR, '.')}`;
-//       const val = data[ct][field];
-//       params.push({ key, values: [val] });
-//     }
-//   }
-//   return params;
-// };
-
 export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
   const nullFilteredData: ExtraParameter[] = data.filter(
     (d) => d.values[0] !== null && typeof d.values[0] !== 'undefined'

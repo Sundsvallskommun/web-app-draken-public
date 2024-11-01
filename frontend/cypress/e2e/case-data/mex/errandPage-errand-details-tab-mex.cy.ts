@@ -273,16 +273,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="location_1-input"]').should('exist').type('Torget 1');
       cy.get('[data-cy="location_2-input"]').should('exist').type('Torget 2');
       cy.get('[data-cy="location_3-input"]').should('exist').type('Torget 3');
-      cy.get('[data-cy="occasion1@fromDate-input"]').should('exist').type('2024-06-15');
-      cy.get('[data-cy="occasion1@toDate-input"]').should('exist').type('2024-06-16');
-      cy.get('[data-cy="occasion2@fromDate-input"]').should('exist').type('2024-07-15');
-      cy.get('[data-cy="occasion2@toDate-input"]').should('exist').type('2024-07-16');
-      cy.get('[data-cy="occasion3@fromDate-input"]').should('exist').type('2024-08-15');
-      cy.get('[data-cy="occasion3@toDate-input"]').should('exist').type('2024-08-16');
-      cy.get('[data-cy="occasion4@fromDate-input"]').should('exist').type('2024-09-15');
-      cy.get('[data-cy="occasion4@toDate-input"]').should('exist').type('2024-09-16');
-      cy.get('[data-cy="occasion5@fromDate-input"]').should('exist').type('2024-10-15');
-      cy.get('[data-cy="occasion5@toDate-input"]').should('exist').type('2024-10-16');
+      cy.get('[data-cy="occasion1.fromDate-input"]').should('exist').type('2024-06-15');
+      cy.get('[data-cy="occasion1.toDate-input"]').should('exist').type('2024-06-16');
+      cy.get('[data-cy="occasion2.fromDate-input"]').should('exist').type('2024-07-15');
+      cy.get('[data-cy="occasion2.toDate-input"]').should('exist').type('2024-07-16');
+      cy.get('[data-cy="occasion3.fromDate-input"]').should('exist').type('2024-08-15');
+      cy.get('[data-cy="occasion3.toDate-input"]').should('exist').type('2024-08-16');
+      cy.get('[data-cy="occasion4.fromDate-input"]').should('exist').type('2024-09-15');
+      cy.get('[data-cy="occasion4.toDate-input"]').should('exist').type('2024-09-16');
+      cy.get('[data-cy="occasion5.fromDate-input"]').should('exist').type('2024-10-15');
+      cy.get('[data-cy="occasion5.toDate-input"]').should('exist').type('2024-10-16');
 
       cy.get('[data-cy="electricity-radio-button-group"]').should('exist');
       cy.get('[data-cy="electricity-radio-button-0"]').should('have.value', 'Ja').check();
@@ -372,15 +372,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="account@type-radio-button-group"]').should('exist');
-      cy.get('[data-cy="account@type-radio-button-0"]').should('have.value', 'Bankgiro');
-      cy.get('[data-cy="account@type-radio-button-1"]').should('have.value', 'Plusgiro');
-      cy.get('[data-cy="account@type-radio-button-2"]').should('have.value', 'Bankkonto').check();
+      cy.get('[data-cy="account.type-radio-button-group"]').should('exist');
+      cy.get('[data-cy="account.type-radio-button-0"]').should('have.value', 'Bankgiro');
+      cy.get('[data-cy="account.type-radio-button-1"]').should('have.value', 'Plusgiro');
+      cy.get('[data-cy="account.type-radio-button-2"]').should('have.value', 'Bankkonto').check();
 
-      cy.get('[data-cy="account@bank-input"]').should('exist').type('Testbank');
-      cy.get('[data-cy="account@owner-input"]').should('exist').type('Test Testarsson');
-      cy.get('[data-cy="account@ownerIdentifier-input"]').should('exist').type(Cypress.env('mockPersonNumber'));
-      cy.get('[data-cy="account@number-input"]').should('exist').type('1234567890');
+      cy.get('[data-cy="account.bank-input"]').should('exist').type('Testbank');
+      cy.get('[data-cy="account.owner-input"]').should('exist').type('Test Testarsson');
+      cy.get('[data-cy="account.ownerIdentifier-input"]').should('exist').type(Cypress.env('mockPersonNumber'));
+      cy.get('[data-cy="account.number-input"]').should('exist').type('1234567890');
 
       cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
       cy.get('button').should('exist').contains('Ja').click();
@@ -620,7 +620,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="reason-radio-button-1"]').should('have.value', 'Jag har flyttat').check();
       cy.get('[data-cy="reason-radio-button-2"]').should('have.value', 'Arrendatorn har avlidit');
 
-      cy.get('[data-cy="reason@other-textarea"]').should('exist').type('Mock text 1');
+      cy.get('[data-cy="reason.other-textarea"]').should('exist').type('Mock text 1');
       cy.get('[data-cy="fromDate-input"]').should('exist').type('2024-06-05');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 

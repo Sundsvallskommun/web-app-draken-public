@@ -1,5 +1,3 @@
-import { MEXCaseType } from '@casedata/interfaces/case-type';
-import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   UppgiftField,
@@ -26,9 +24,6 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { get } from 'cypress/types/lodash';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -52,12 +47,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
-
-  // Handle dots i field name
-  // Object.keys(errand.extraParameters).map((key) => {
-  //   const newKey = key.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-  //   errand.extraParameters[newKey] = errand.extraParameters[key];
-  // });
 
   const {
     register,
@@ -330,26 +319,33 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           <>
             <Input {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))} type="hidden"></Input>
             <Checkbox.Group direction="row">
-              {detail.formField.options.map((option, index) => (
-                <Checkbox
-                  value={option.name}
-                  name={option.name}
-                  key={`${option}-${index}`}
-                  data-cy={`${detail.field}-checkbox-${index}`}
-                  onChange={(val) => {
-                    const splitValues: string[] = getValues(detail.field)
-                      .split(',')
-                      .filter((v) => v !== '' && v !== ' ');
-                    const uniqueValues = val.currentTarget.checked
-                      ? [...splitValues, option.value]
-                      : splitValues.filter((v) => v !== option.value);
-                    setValue(detail.field, uniqueValues.join());
-                  }}
-                  defaultChecked={getValues(detail.field)?.split(',').includes(option.value)}
-                >
-                  {option.label}
-                </Checkbox>
-              ))}
+              {detail.formField.options.map((option, index) => {
+                const formFieldKey = detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+                const currentValuesArray = getValues(formFieldKey)
+                  ?.split(',')
+                  .filter((v) => v !== '' && v !== ' ');
+                const thisValue = option.value;
+                const thisIsSelected = currentValuesArray?.includes(thisValue);
+
+                return (
+                  <Checkbox
+                    value={option.name}
+                    name={option.name}
+                    key={`${option}-${index}`}
+                    data-cy={`${detail.field}-checkbox-${index}`}
+                    onChange={(val) => {
+                      if (!val.currentTarget.checked) {
+                        setValue(formFieldKey, currentValuesArray.filter((v) => v !== thisValue).join() || '');
+                      } else {
+                        setValue(formFieldKey, [...currentValuesArray, thisValue].join());
+                      }
+                    }}
+                    checked={thisIsSelected}
+                  >
+                    {option.label}
+                  </Checkbox>
+                );
+              })}
             </Checkbox.Group>
           </>
         ) : null}

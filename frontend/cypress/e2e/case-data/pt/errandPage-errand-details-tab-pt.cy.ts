@@ -54,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         .should('exist')
         .should('not.be.checked');
 
-      cy.get('[data-cy="application@reason-textarea"]').should('exist').and('have.value', 'Kan inte gå');
+      cy.get('[data-cy="application.reason-textarea"]').should('exist').and('have.value', 'Kan inte gå');
 
       cy.get('input[name="CRUTCH"]').should('exist').should('not.be.checked');
       cy.get('input[name="CRUTCH"]').should('exist').should('not.be.checked');
@@ -70,7 +70,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.get('input[name="disability@walkingDistance@max"]').should('exist').and('have.value', '150');
 
-      cy.get('[data-cy="disability@duration-select"]').should('exist').and('have.value', 'P0Y');
+      cy.get('[data-cy="disability.duration-select"]').should('exist').and('have.value', 'P0Y');
 
       cy.get('input[name="consent@contact@doctor"][value="true"]').should('exist').should('not.be.checked');
       cy.get('input[name="consent@contact@doctor"][value="false"]').should('exist').should('be.checked');
