@@ -16,6 +16,7 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
+import { CASEDATA_NAMESPACE } from '@/config';
 
 export interface SaveMessage {
   messageID: string;
@@ -254,7 +255,7 @@ export const saveMessageOnErrand: (
   const apiService = new ApiService();
 
   // Fetch message info from Messaging and construct SaveMessage object
-  const messagingUrl = `messaging/5.0/${municipalityId}/${process.env.CASEDATA_NAMESPACE}/message/${message.id}`;
+  const messagingUrl = `messaging/5.0/${municipalityId}/message/${message.id}`;
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
@@ -285,7 +286,7 @@ export const saveMessageOnErrand: (
     emailHeaders: emailHeaders,
   };
 
-  const url = `case-data/8.0/${municipalityId}/messages`;
+  const url = `case-data/9.0/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/messages`;
   const saveIdResponse = await apiService
     .post<any, SaveMessage>({ url, data: saveMessage }, user)
     .then(res => {
