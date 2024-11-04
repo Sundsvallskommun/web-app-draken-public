@@ -109,7 +109,7 @@ export const SupportErrandsTable: React.FC = () => {
 
   useEffect(() => {
     setSidebarButtons(supportSidebarButtons);
-  }, [data]);
+  }, [data, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]);
 
   useEffect(() => {
     setCategories(supportMetadata?.categories);
