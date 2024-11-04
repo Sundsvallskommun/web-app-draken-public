@@ -224,7 +224,7 @@ export const KopeAvtal: React.FC<{
   return (
     <>
       <Disclosure
-        icon={'users'}
+        icon={<Icon name="users" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
         // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <Icon size={18} name="check" /> : ''}
         data-cy="parties-disclosure"
@@ -350,7 +350,7 @@ export const KopeAvtal: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={'clipboard-list'}
+        icon={<Icon name="clipboard-list" />}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
         // label={watch().overlatelseforklaring?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -512,7 +512,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
         </div>
       </Disclosure>
       <Disclosure
-        icon={'wallet'}
+        icon={<Icon name="wallet" />}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
         // label={watch().kopeskilling?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -659,7 +659,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'calendar'}
+        icon={<Icon name="calendar" />}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
         // label={watch().tilltrade?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -781,7 +781,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'mountain-snow'}
+        icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
         // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -921,7 +921,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'trees'}
+        icon={<Icon name="trees" />}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
         // label={watch().skog?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1059,7 +1059,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'file-check'}
+        icon={<Icon name="file-check" />}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
         // label={watch().forpliktelser?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1175,7 +1175,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'calculator'}
+        icon={<Icon name="calculator" />}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
         // label={watch().utgifter?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1308,7 +1308,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'home'}
+        icon={<Icon name="home" />}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
         // label={watch().fastighetsbildning?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1433,7 +1433,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'info'}
+        icon={<Icon name="info" />}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
         // label={watch().other?.length > 0 ? <Icon size={18} name="check" /> : ''}
@@ -1567,7 +1567,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={'pen'}
+        icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
         // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
