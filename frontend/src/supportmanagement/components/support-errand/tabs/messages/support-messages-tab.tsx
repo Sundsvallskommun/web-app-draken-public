@@ -27,12 +27,12 @@ export const SupportMessagesTab: React.FC<{
   const [sortMessages, setSortMessages] = useState<number>(0);
   const [sortedMessages, setSortedMessages] = useState(props.messages);
 
-  const emailBody = `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>${
+  const emailBody = `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>${
     isLOP()
       ? `Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
       : 'Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Kontakt Sundsvall</strong><br><br><strong>Sundsvalls kommun</strong><br>Kommunstyrelsekontoret<br>851 85 Sundsvall<br>E-post <a href="mailto:kontakt@sundsvall.se">kontakt@sundsvall.se</a><br>Telefon +46 60 19 10 00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>'
   }.`;
-  const smsBody = `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>${
+  const smsBody = `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>${
     isLOP() ? 'Lön och pension' : 'Kontakt Sundsvall'
   }</strong>`;
 
