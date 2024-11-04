@@ -21,7 +21,6 @@ import {
   Select,
   Textarea,
   cx,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
@@ -38,7 +37,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<string>();
   const toastMessage = useSnackbar();
-  const saveConfirm = useConfirm();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
@@ -375,13 +373,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 values: [getValues('propertyDesignation')],
               });
 
-              saveConfirm.showConfirmation('Spara uppgifterna', 'Vill du spara uppgifterna?').then((confirmed) => {
-                if (confirmed) {
-                  setIsLoading(label);
-                  onSave(data);
-                }
-                return confirmed ? () => true : () => {};
-              });
+              setIsLoading(label);
+              onSave(data);
             } catch (error) {
               console.error('Error: ', error);
             }
