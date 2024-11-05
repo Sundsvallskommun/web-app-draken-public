@@ -428,10 +428,7 @@ export const renderContractPdf: (
   if (!contract?.contractId) {
     console.error('No contract id found. Cannot render contract pdf.');
   }
-  // const templateIdentifier = `mex.contract.${contract.type.toLowerCase()}`;
-  let isDraftText = isDraft
-    ? '<p style="text-align: center; font-size: 28px; margin: 25px 25px;">DOKUMENT UTKAST!</p>'
-    : '';
+
   const templateIdentifier =
     contract.type === 'PURCHASE_AGREEMENT'
       ? `mex.contract.purchaseagreement`
@@ -446,13 +443,10 @@ export const renderContractPdf: (
   const renderBody: TemplateSelector = {
     identifier: templateIdentifier,
     parameters: {
-      header:
-        contract.type === 'PURCHASE_AGREEMENT'
-          ? '<div style="text-align: center; margin-bottom: 40px;">KÖPEAVTAL</div>'
-          : '<div style="text-align: center; margin-bottom: 40px;">AVTAL OM LÄGENHETSARRENDE</div>',
-      description: `<b>Avtals ID:</b> ${contract.contractId} <br />
-                    <b>Ärendenummer:</b> ${errand.errandNumber} <br />
-                    ${isDraftText}`,
+      header: contract.type === 'PURCHASE_AGREEMENT' ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
+      description: `<b>Avtals ID:</b> ${contract.contractId}<br />
+                    <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
+      isDraft: isDraft,
 
       stakeholders: contract.stakeholders.map((s) => ({
         name: s.type === 'PERSON' ? s.firstName + ' ' + s.lastName : s.organizationName + ' ' + s.organizationNumber,
