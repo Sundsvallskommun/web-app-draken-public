@@ -53,7 +53,7 @@ export class estateInfoController {
 
       const indexOfEstate = res.data.findIndex((estate) => estate.designation === designation);
 
-      if (res.data.length !== 0) {
+      if (res.data.length !== 0 && indexOfEstate !== -1) {
         const url = `/estateinfo/1.0/estate-data`;
         const result = await this.apiService
           .get<EstateInformation>({ url, params: { objectidentifier: res.data[indexOfEstate].objectidentifier } }, req.user)
