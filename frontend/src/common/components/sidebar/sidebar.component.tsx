@@ -1,15 +1,10 @@
-import { Button, cx, LucideIcon as Icon, Tooltip, useGui } from '@sk-web-gui/react';
-import { KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { SidebarNotes } from '../../../casedata/components/errand/sidebar/sidebar-notes.component';
+import { isPT } from '@common/services/application-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, cx, useGui } from '@sk-web-gui/react';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
-import { SidebarComments } from '../../../casedata/components/errand/sidebar/sidebar-comments.component';
-import { SidebarInfo } from '../../../casedata/components/errand/sidebar/sidebar-info.component';
-import { SidebarUtredning } from '../../../casedata/components/errand/sidebar/sidebar-utredning.component';
-import { SidebarHistory } from '../../../casedata/components/errand/sidebar/sidebar-history.component';
-import { SidebarGuide } from '../../../casedata/components/errand/sidebar/sidebar-guide.component';
+import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
-import { isPT } from '@common/services/application-service';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -111,7 +106,7 @@ export const Sidebar: React.FC<{
                   iconButton
                   leftIcon={
                     <>
-                      <Icon name={b.icon as keyof typeof dynamicIconImports} />
+                      <LucideIcon name={b.icon as keyof typeof dynamicIconImports} />
                     </>
                   }
                 />
@@ -128,7 +123,7 @@ export const Sidebar: React.FC<{
             aria-label={open ? 'Stäng sidomeny' : 'Öppna sidomeny'}
             iconButton
             tabIndex={active === buttons.length ? 0 : -1}
-            leftIcon={open ? <Icon name="chevrons-right" /> : <Icon name="chevrons-left" />}
+            leftIcon={open ? <LucideIcon name="chevrons-right" /> : <LucideIcon name="chevrons-left" />}
             onClick={() => setOpen(!open)}
             onKeyDown={(e) => handleKeyboard(e, buttons.length)}
           />

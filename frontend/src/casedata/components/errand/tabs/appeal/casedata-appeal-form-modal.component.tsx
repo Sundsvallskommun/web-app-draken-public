@@ -1,17 +1,20 @@
+import { AppealAttachmentsComponent } from '@casedata/components/errand/tabs/appeal/casedata-appeal-attachments.component';
 import { Appeal, AppealStatusLabels, TimelinessReview, TimelinessReviewLabel } from '@casedata/interfaces/appeal';
 import { DecisionOutcomeLabel } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { registerAppeal, updateAppeal } from '@casedata/services/casedata-appeal-service';
+import { sendAttachments } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked, updateErrandStatus } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@contexts/app.context';
 import CheckIcon from '@mui/icons-material/Check';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   DatePicker,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -35,9 +38,6 @@ import {
   UseFormWatch,
 } from 'react-hook-form';
 import { CaseDataRegisterAppealFormModel } from './casedata-appeal-tab';
-import { AppealAttachmentsComponent } from '@casedata/components/errand/tabs/appeal/casedata-appeal-attachments.component';
-import { sendAttachments } from '@casedata/services/casedata-attachment-service';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export const AppealFormModal: React.FC<{
   modalFetching?: boolean;
@@ -225,7 +225,7 @@ export const AppealFormModal: React.FC<{
               <div className="mb-lg flex flex-col">
                 <div className="flex gap-12 w-full items-center mb-lg">
                   <div className="self-center bg-vattjom-surface-accent p-12 rounded">
-                    <Icon name="undo-2" className="block" size={24} />
+                    <LucideIcon name="undo-2" className="block" size={24} />
                   </div>
                   <div className="w-full flex-1 items-center">
                     <div className="w-full flex justify-between items-center">

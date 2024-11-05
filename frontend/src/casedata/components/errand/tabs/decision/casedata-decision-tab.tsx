@@ -44,6 +44,7 @@ import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Dialog,
@@ -51,7 +52,6 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Select,
   Spinner,
@@ -549,7 +549,7 @@ export const CasedataDecisionTab: React.FC<{
                   return (
                     <div className="flex m-16 items-start" key={`list-decision-${id}`}>
                       <div className="rounded-8 bg-vattjom-surface-accent mr-18">
-                        <Icon name="gavel" className="m-12 w-24 h-24" />
+                        <LucideIcon name="gavel" className="m-12 w-24 h-24" />
                       </div>
                       <div className="w-full">
                         <div className="flex justify-between">
@@ -561,17 +561,17 @@ export const CasedataDecisionTab: React.FC<{
 
                             {appealed(decision) ? (
                               <div className="flex items-center">
-                                <Icon name="undo-2" size={16} className="ml-12 mr-4" />
+                                <LucideIcon name="undo-2" size={16} className="ml-12 mr-4" />
                                 <p className="text-small">Beslut överklagat</p>
                               </div>
                             ) : sent(decision) ? (
                               <div className="flex items-center">
-                                <Icon name="mail-check" size={16} className="ml-12 mr-4" />
+                                <LucideIcon name="mail-check" size={16} className="ml-12 mr-4" />
                                 <p className="text-small">Beslut skickat</p>
                               </div>
                             ) : (
                               <div className="flex items-center">
-                                <Icon name="pen" size={16} className="ml-12 mr-4" />
+                                <LucideIcon name="pen" size={16} className="ml-12 mr-4" />
                                 <p className="text-small">Beslut ej skickat</p>
                               </div>
                             )}
@@ -598,7 +598,7 @@ export const CasedataDecisionTab: React.FC<{
               size="sm"
               disabled={!formState.isValid || !allowed}
               onClick={getPdfPreview}
-              rightIcon={isPreviewLoading ? <Spinner size={2} /> : <Icon name="download" />}
+              rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
             >
               {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
             </Button>
@@ -772,7 +772,7 @@ export const CasedataDecisionTab: React.FC<{
                 size="md"
                 disabled={!formState.isValid || !allowed}
                 onClick={getPdfPreview}
-                rightIcon={isPreviewLoading ? <Spinner size={2} /> : <Icon name="download" />}
+                rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
               >
                 {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
               </Button>
@@ -818,7 +818,7 @@ export const CasedataDecisionTab: React.FC<{
                   }
                 }}
                 rightIcon={
-                  isSaveAndSendLoading ? <Spinner size={2} className="mr-sm" /> : <Icon name="send-horizontal" />
+                  isSaveAndSendLoading ? <Spinner size={2} className="mr-sm" /> : <LucideIcon name="send-horizontal" />
                 }
               >
                 {isSaveAndSendLoading ? 'Skickar' : 'Skicka beslut'}

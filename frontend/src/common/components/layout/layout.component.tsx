@@ -12,18 +12,8 @@ import {
   isPT,
 } from '@common/services/application-service';
 import { useMediaQuery } from '@mui/material';
-import {
-  Button,
-  CookieConsent,
-  Divider,
-  LucideIcon as Icon,
-  Label,
-  Link,
-  Logo,
-  PopupMenu,
-  UserMenu,
-  useGui,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
 import { Resolution, Status, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
@@ -110,7 +100,7 @@ export default function Layout({ title, children }) {
     }
     return (
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto mr-8`}>
-        {icon ? <Icon name={icon} size={16} /> : null}{' '}
+        {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
         {resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED
           ? 'Eskalerat'
           : StatusLabel[status]}
@@ -184,7 +174,7 @@ export default function Layout({ title, children }) {
                   color={isMEX() || isPT() ? 'primary' : 'vattjom'}
                   variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
                   rightIcon={
-                    isMEX() || isPT() ? <Icon name="external-link" color="primary" variant="tertiary" /> : null
+                    isMEX() || isPT() ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
                   }
                 >
                   Nytt ärende
@@ -195,7 +185,7 @@ export default function Layout({ title, children }) {
           mobileMenu={
             <PopupMenu align="end">
               <PopupMenu.Button iconButton>
-                <Icon name="menu" />
+                <LucideIcon name="menu" />
               </PopupMenu.Button>
               <PopupMenu.Panel>
                 <PopupMenu.Group>
@@ -206,7 +196,8 @@ export default function Layout({ title, children }) {
                     {isKC() || isIS() || isLOP() || isMEX() ? (
                       <PopupMenu.Item>
                         <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                          <Icon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt ärende
+                          <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
+                          ärende
                         </Link>
                       </PopupMenu.Item>
                     ) : null}

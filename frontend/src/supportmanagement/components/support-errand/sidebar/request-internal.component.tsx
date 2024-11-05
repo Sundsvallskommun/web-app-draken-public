@@ -5,6 +5,7 @@ import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from 
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
@@ -12,7 +13,6 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -193,7 +193,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
           className="w-full"
           data-cy="forward-button"
           color="vattjom"
-          leftIcon={<Icon name="file-input" />}
+          leftIcon={<LucideIcon name="file-input" />}
           variant="secondary"
           disabled={disabled}
           onClick={() => setShowModal(true)}
@@ -318,7 +318,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
                     type="button"
                     variant="primary"
                     size="sm"
-                    leftIcon={<Icon name="plus" size="lg" className="mr-sm" />}
+                    leftIcon={<LucideIcon name="plus" size="lg" className="mr-sm" />}
                     disabled={!isAttachmentSelected}
                     color="primary"
                     onClick={(e) => {

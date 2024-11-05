@@ -14,13 +14,13 @@ import { Relation } from '@casedata/interfaces/role';
 import { getContractStakeholderName } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
   Disclosure,
   FormControl,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -422,7 +422,12 @@ export const Lagenhetsarrende: React.FC<{
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
-            <Button color="vattjom" inverted={true} rightIcon={<Icon name="pen" />} onClick={() => setShowOmrade(true)}>
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowOmrade(true)}
+            >
               Fyll i villkor
             </Button>
             <Checkbox
@@ -580,7 +585,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowAndamal(true)}
             >
               Fyll i villkor
@@ -856,7 +861,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="calendar" />}
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
-        // label={watch().arrendetid?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().arrendetid?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().arrendetid?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendetid?.length > 0}
         color="gronsta"
@@ -870,7 +875,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowArrendetid(true)}
             >
               Fyll i villkor
@@ -1051,7 +1056,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="wallet" />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
-        // label={watch().arrendeavgift?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().arrendeavgift?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().arrendeavgift?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendeavgift?.length > 0}
         color="gronsta"
@@ -1065,7 +1070,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowArrendeavgift(true)}
             >
               Fyll i villkor
@@ -1367,7 +1372,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="shovel" />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
-        // label={watch().bygglov?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().bygglov?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().bygglov?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().bygglov?.length > 0}
         color="gronsta"
@@ -1381,7 +1386,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowBygglov(true)}
             >
               Fyll i villkor
@@ -1476,7 +1481,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="repeat" />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
-        // label={watch().overlatelse?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().overlatelse?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().overlatelse?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().overlatelse?.length > 0}
         color="gronsta"
@@ -1490,7 +1495,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowOverlatelse(true)}
             >
               Fyll i villkor
@@ -1573,7 +1578,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="enrollment-disclosure"
         icon={<Icon name="square-pen" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
-        // label={watch().inskrivning?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().inskrivning?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().inskrivning?.length > 0}
         color="gronsta"
@@ -1615,7 +1620,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="person-standing" />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
-        // label={watch().skick?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().skick?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().skick?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skick?.length > 0}
         color="gronsta"
@@ -1626,7 +1631,12 @@ export const Lagenhetsarrende: React.FC<{
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
-            <Button color="vattjom" inverted={true} rightIcon={<Icon name="pen" />} onClick={() => setShowSkick(true)}>
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowSkick(true)}
+            >
               Fyll i villkor
             </Button>
             <Checkbox
@@ -1718,7 +1728,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="slash" />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
-        // label={watch().ledningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().ledningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().ledningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().ledningar?.length > 0}
         color="gronsta"
@@ -1732,7 +1742,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowLedningar(true)}
             >
               Fyll i villkor
@@ -1815,7 +1825,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="calculator" />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
-        // label={watch().kostnader?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().kostnader?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().kostnader?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().kostnader?.length > 0}
         color="gronsta"
@@ -1829,7 +1839,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowKostnader(true)}
             >
               Fyll i villkor
@@ -1912,7 +1922,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().markfororeningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
@@ -1926,7 +1936,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowMarkfororeningar(true)}
             >
               Fyll i villkor
@@ -2065,7 +2075,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="undo" />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
-        // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().upphorande?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().upphorande?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().upphorande?.length > 0}
         color="gronsta"
@@ -2079,7 +2089,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowUpphorande(true)}
             >
               Fyll i villkor
@@ -2233,7 +2243,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="clipboard-list" />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().skadaansvar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().skadaansvar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skadaansvar?.length > 0}
         color="gronsta"
@@ -2247,7 +2257,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSkadaansvar(true)}
             >
               Fyll i villkor
@@ -2378,7 +2388,7 @@ export const Lagenhetsarrende: React.FC<{
               : 'Övriga villkor'}{' '}
           </h2>
         }
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().skadaansvar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().additionalTerms?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().additionalTerms?.length > 0}
         color="gronsta"
@@ -2422,7 +2432,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="file-plus-2" />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
-        // label={watch().sarskilda?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().sarskilda?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().sarskilda?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().sarskilda?.length > 0}
         color="gronsta"
@@ -2436,7 +2446,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSarskilda(true)}
             >
               Fyll i villkor
@@ -2516,7 +2526,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="file-plus-2" />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().jordabalken?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().jordabalken?.length > 0}
         color="gronsta"
@@ -2530,7 +2540,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowJordabalken(true)}
             >
               Fyll i villkor
@@ -2624,7 +2634,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
@@ -2638,7 +2648,7 @@ export const Lagenhetsarrende: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSignature(true)}
             >
               Fyll i villkor

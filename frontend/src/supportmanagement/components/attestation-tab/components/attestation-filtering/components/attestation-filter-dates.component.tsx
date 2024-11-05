@@ -1,4 +1,5 @@
-import { Button, DatePicker, LucideIcon as Icon, PopupMenu } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -28,7 +29,7 @@ export const AttestationFilterDatesComponent: React.FC = () => {
   return (
     <PopupMenu type="dialog" open={open} onToggleOpen={setOpen}>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="Tidsperiod-filter"
         variant="tertiary"
         showBackground={false}

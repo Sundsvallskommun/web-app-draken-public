@@ -1,4 +1,4 @@
-import { LucideIcon as Icon, List, Select } from '@sk-web-gui/react';
+import { List, Select } from '@sk-web-gui/react';
 import { useState } from 'react';
 
 export const SidebarGuide: React.FC<{}> = () => {

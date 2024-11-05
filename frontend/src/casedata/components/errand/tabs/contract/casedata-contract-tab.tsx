@@ -8,7 +8,7 @@ import {
   LagenhetsArrendeStakeholder,
 } from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
-import { getErrand, isAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {
@@ -29,12 +29,12 @@ import {
 } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
   FormControl,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   RadioButton,
   Spinner,
@@ -292,7 +292,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                       (!allowed && !existingContract)
                     }
                     size="sm"
-                    rightIcon={<Icon name="external-link" />}
+                    rightIcon={<LucideIcon name="external-link" />}
                     onClick={() => {
                       onRenderContract(contractForm.getValues());
                     }}
@@ -319,7 +319,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                       data-cy="add-attachment-button"
                       disabled={isErrandLocked(errand)}
                       color="vattjom"
-                      rightIcon={<Icon name="external-link" />}
+                      rightIcon={<LucideIcon name="external-link" />}
                       inverted={allowed}
                       size="sm"
                       className="mr-8"
@@ -338,7 +338,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                       data-cy="add-attachment-button"
                       disabled={isErrandLocked(errand) || !allowed}
                       color="error"
-                      rightIcon={<Icon name="trash" />}
+                      rightIcon={<LucideIcon name="trash" />}
                       inverted={allowed}
                       size="sm"
                       onClick={() => {

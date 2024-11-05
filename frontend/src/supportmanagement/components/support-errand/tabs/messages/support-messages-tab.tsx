@@ -2,7 +2,8 @@ import { MessageWrapper } from '@casedata/components/errand/tabs/messages/messag
 import { isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
-import { Avatar, Button, cx, Divider, LucideIcon as Icon } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, cx, Divider } from '@sk-web-gui/react';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
@@ -68,7 +69,7 @@ export const SupportMessagesTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isSupportErrandLocked(supportErrand) || !allowed)}
-            rightIcon={<Icon name="mail" size={18} />}
+            rightIcon={<LucideIcon name="mail" size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
               setShowSelectedMessage(false);
@@ -158,13 +159,15 @@ export const SupportMessagesTab: React.FC<{
                 </div>
                 {selectedMessage?.communicationAttachments.length > 0 ? (
                   <ul className="flex flex-row gap-sm items-center my-12">
-                    <Icon name="paperclip" size="1.6rem" />
+                    <LucideIcon name="paperclip" size="1.6rem" />
                     {selectedMessage?.communicationAttachments?.map((a, idx) => (
                       <Button
                         key={`${a.name}-${idx}`}
                         onClick={() => {}}
                         role="listitem"
-                        leftIcon={a.name.endsWith('pdf') ? <Icon name="paperclip" /> : <Icon name="image" />}
+                        leftIcon={
+                          a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />
+                        }
                         variant="tertiary"
                       >
                         {a.name}

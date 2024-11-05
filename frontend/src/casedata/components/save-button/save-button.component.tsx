@@ -1,10 +1,11 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { getErrand, isErrandLocked, saveErrand } from '@casedata/services/casedata-errand-service';
-import { deepFlattenToObject } from '@common/services/helper-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { Button, ButtonProps, FormErrorMessage, LucideIcon as Icon, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { deepFlattenToObject } from '@common/services/helper-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -209,7 +210,7 @@ export const SaveButtonComponent: React.FC<{
                 | 'bjornstigen'
                 | 'juniskar') || 'primary'
             }
-            rightIcon={props.icon ? <Icon name="arrow-right" size={18} /> : null}
+            rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
             loading={isLoadingContinue}
             loadingText="Sparar"
           >

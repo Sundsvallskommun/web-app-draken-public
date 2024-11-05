@@ -16,13 +16,13 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Modal,
   Select,
   Textarea,
@@ -446,7 +446,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         errand.appeals.find((x) => x.status === 'NEW' && x.timelinessReview === 'REJECTED')) ? (
         <>
           <Button
-            leftIcon={<Icon name="gavel" />}
+            leftIcon={<LucideIcon name="gavel" />}
             className="mt-16"
             variant="secondary"
             onClick={() => {

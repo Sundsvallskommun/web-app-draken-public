@@ -1,4 +1,5 @@
-import { PopupMenu, LucideIcon as Icon, RadioButton, useGui } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { PopupMenu, RadioButton, useGui } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useEffect } from 'react';
 
@@ -27,7 +28,7 @@ export const ColorSchemeItems = () => {
           }}
           checked={colorScheme === 'light'}
         >
-          Ljust <Icon name="sun" className={colorScheme === 'light' ? '' : 'opacity-50'} />
+          Ljust <LucideIcon name="sun" className={colorScheme === 'light' ? '' : 'opacity-50'} />
         </RadioButton>
       </PopupMenu.Item>
       <PopupMenu.Item>
@@ -38,7 +39,7 @@ export const ColorSchemeItems = () => {
           }}
           checked={colorScheme === 'dark'}
         >
-          Mörkt <Icon name="moon" className={colorScheme === 'dark' ? '' : 'opacity-50'} />
+          Mörkt <LucideIcon name="moon" className={colorScheme === 'dark' ? '' : 'opacity-50'} />
         </RadioButton>
       </PopupMenu.Item>
       <PopupMenu.Item>
@@ -49,7 +50,7 @@ export const ColorSchemeItems = () => {
           }}
           checked={colorScheme === 'system'}
         >
-          System <Icon name="monitor" className={colorScheme === 'system' ? '' : 'opacity-50'} />
+          System <LucideIcon name="monitor" className={colorScheme === 'system' ? '' : 'opacity-50'} />
         </RadioButton>
       </PopupMenu.Item>
     </PopupMenu.Items>
