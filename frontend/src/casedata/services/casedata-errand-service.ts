@@ -486,7 +486,6 @@ export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
 };
 
 export const phaseChangeInProgress = (errand: IErrand) => {
-  return false;
   if (!errand?.id) {
     return false;
   }
