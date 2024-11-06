@@ -11,7 +11,7 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 import { TermGroup } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { MEXRelation } from '@casedata/interfaces/role';
-import { getContractStakeholderName } from '@casedata/services/contract-service';
+import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import {
