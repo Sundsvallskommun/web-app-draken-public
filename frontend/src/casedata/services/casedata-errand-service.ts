@@ -13,7 +13,11 @@ import {
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
-import { MAX_FILE_SIZE_MB, fetchErrandAttachments } from '@casedata/services/casedata-attachment-service';
+import {
+  MAX_FILE_SIZE_MB,
+  fetchErrandAttachments,
+  validateAttachmentsForDecision,
+} from '@casedata/services/casedata-attachment-service';
 import {
   getLastUpdatedAdministrator,
   makeStakeholdersList,
@@ -482,7 +486,7 @@ export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
     return false;
   }
 
-  return validateStatusForDecision(e).valid; // && validateAttachmentsForDecision(e).valid;
+  return validateStatusForDecision(e).valid && validateAttachmentsForDecision(e).valid;
 };
 
 export const phaseChangeInProgress = (errand: IErrand) => {

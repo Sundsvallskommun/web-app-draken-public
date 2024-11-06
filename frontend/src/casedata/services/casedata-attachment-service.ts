@@ -178,7 +178,7 @@ export const getImageAspect: (attachment: Attachment) => number = (attachment) =
     : undefined;
 
 const uniqueAttachments: AttachmentCategory[] = [];
-const uniquePTAttachments: PTAttachmentCategory[] = [];
+const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
 export const onlyOneAllowed: (cat: AttachmentCategory | PTAttachmentCategory) => boolean = (
   cat: AttachmentCategory & PTAttachmentCategory
@@ -211,13 +211,13 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
         : 0);
     const rsn = [];
     if (!passportPhotoExists) {
-      rsn.push('ett passfoto');
+      rsn.push('passfoto saknas');
     }
     if (!medicalConfirmationValid) {
-      rsn.push('läkarintyg');
+      rsn.push('läkarintyg saknas');
     }
     if (!signatureValid) {
-      rsn.push('en underskrift om den sökande kan signera');
+      rsn.push('signaturfoto måste bifogas om den sökande kan signera');
     }
 
     const reason = rsn.map((r, i) => {
