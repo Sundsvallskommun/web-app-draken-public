@@ -11,7 +11,7 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 import { TermGroup } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { Relation } from '@casedata/interfaces/role';
-import { getContractStakeholderName } from '@casedata/services/contract-service';
+import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import {
@@ -132,6 +132,9 @@ export const Lagenhetsarrende: React.FC<{
   const [loading, setIsLoading] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [signatures, setSignatures] = useState<String[]>([]);
+
+  const [doneMark, setDoneMark] = useState<string[]>([]);
+  const initialRender = useRef(true);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -265,36 +268,68 @@ export const Lagenhetsarrende: React.FC<{
     setSignature(watch().signature);
   }, [watch().signature]);
 
-  const saveButton = () => {
+  useEffect(() => {
+    const doneMarkedElements =
+      errand.extraParameters.find((parameters) => parameters.key === 'lagenhetsarrende')?.values || [];
+    setDoneMark(doneMarkedElements);
+  }, []);
+
+  useEffect(() => {
+    // Prevent dubble saving on initialRender
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
+  }, [doneMark]);
+
+
+  const saveButton = (inSection) => {
     return (
       <div className="my-md">
         {loading ? (
           <Button disabled={true}>Sparar</Button>
         ) : (
-          <Button
-            disabled={!allowed}
-            onClick={() => {
-              setIsLoading(true);
-              onSave(getValues()).then(() => {
-                setIsLoading(undefined);
-                setTextIsDirty(false);
-              });
-            }}
-          >
-            Spara
-          </Button>
+          <div className="flex gap-20">
+            <Button
+              disabled={!allowed}
+              onClick={() => {
+                setIsLoading(true);
+                onSave(getValues()).then(() => {
+                  setIsLoading(undefined);
+                  setTextIsDirty(false);
+                });
+              }}
+            >
+              Spara
+            </Button>
+            <Button
+              variant="tertiary"
+              onClick={() => {
+                markSectionAsDone(inSection);
+              }}
+            >
+              Färdigställt
+            </Button>
+          </div>
         )}
       </div>
     );
   };
 
+  const markSectionAsDone = (inSection: string) => {
+    if (doneMark.findIndex((temp) => temp === inSection) === -1) {
+      setDoneMark((prevArray) => [...prevArray, inSection]);
+    } else {
+      setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
+    }
+  };
   return (
     <>
       <Disclosure
         data-cy="parties-disclosure"
         icon={<Icon name="users" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
-        // label={watch().omrade?.length ? 'Sparad' : ''}
         initalOpen={true}
         color="gronsta"
         variant="alt"
@@ -413,7 +448,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="map-pin" />}
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
-        //label={existingContract.omrade?.length > 8 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Färdigställt' : ''}
         color="gronsta"
         variant="alt"
         onClick={() => {
@@ -560,14 +595,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('omrade')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="info" />}
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
-        // label={watch().andamal?.length ? 'Sparad' : ''}
+        label={doneMark.findIndex((temp) => temp === 'andamal') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().andamal?.length > 0}
         color="gronsta"
         variant="alt"
@@ -849,15 +884,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('andamal')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="calendar" />}
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
-        // label={watch().arrendetid?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().arrendetid?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'arrendetid') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().arrendetid?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1044,15 +1078,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('arrendetid')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="wallet" />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
-        // label={watch().arrendeavgift?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().arrendeavgift?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'arrendeavgift') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().arrendeavgift?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1360,15 +1393,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('arrendeavgift')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="shovel" />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
-        // label={watch().bygglov?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().bygglov?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'bygglov') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().bygglov?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1469,15 +1501,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('bygglov')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="repeat" />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
-        // label={watch().overlatelse?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().overlatelse?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'overlatelse') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().overlatelse?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1566,15 +1597,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('overlatelse')}
         </div>
       </Disclosure>
       <Disclosure
         data-cy="enrollment-disclosure"
         icon={<Icon name="square-pen" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
-        // label={watch().inskrivning?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'inskrivning') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().inskrivning?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1608,15 +1638,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('inskrivning')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="person-standing" />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
-        // label={watch().skick?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().skick?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'skick') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().skick?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1711,15 +1740,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('skick')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="slash" />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
-        // label={watch().ledningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().ledningar?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'ledningar') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().ledningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1808,15 +1836,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('ledningar')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="calculator" />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
-        // label={watch().kostnader?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().kostnader?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'kostnader') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().kostnader?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1905,15 +1932,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('kostnader')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2058,15 +2084,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('markfororeningar')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="undo" />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
-        // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().upphorande?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'upphorande') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().upphorande?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2226,15 +2251,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('upphorande')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="clipboard-list" />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().skadaansvar?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'skadaansvar') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().skadaansvar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2364,7 +2388,7 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('skadaansvar')}
         </div>
       </Disclosure>
 
@@ -2378,8 +2402,7 @@ export const Lagenhetsarrende: React.FC<{
               : 'Övriga villkor'}{' '}
           </h2>
         }
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().additionalTerms?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'additionalTerms') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().additionalTerms?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2414,7 +2437,7 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('additionalTerms')}
         </div>
       </Disclosure>
 
@@ -2422,8 +2445,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="file-plus-2" />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
-        // label={watch().sarskilda?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().sarskilda?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'sarskilda') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().sarskilda?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2509,15 +2531,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('sarskilda')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="file-plus-2" />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().jordabalken?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'jordabalken') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().jordabalken?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2617,15 +2638,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('jordabalken')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2789,7 +2809,7 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('signature')}
         </div>
       </Disclosure>
     </>
