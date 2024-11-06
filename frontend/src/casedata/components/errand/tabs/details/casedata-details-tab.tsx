@@ -359,7 +359,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         <Button
           key={`section-${label}`}
           variant="primary"
-          disabled={isErrandLocked(errand) || !allowed}
+          disabled={isErrandLocked(errand)}
           onClick={() => {
             try {
               const data: ExtraParameter[] = [];

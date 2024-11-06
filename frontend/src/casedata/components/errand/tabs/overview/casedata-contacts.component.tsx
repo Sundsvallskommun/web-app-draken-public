@@ -3,7 +3,7 @@ import {
   SimplifiedContactForm,
 } from '@casedata/components/errand/forms/simplified-contact-form.component';
 import { IErrand } from '@casedata/interfaces/errand';
-import { Relation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import {
@@ -15,7 +15,16 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
-import { Avatar, Button, Divider, FormControl, FormLabel, LucideIcon as Icon, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import {
+  Avatar,
+  Button,
+  Divider,
+  FormControl,
+  FormLabel,
+  LucideIcon as Icon,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -149,7 +158,9 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         >
           <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between">
             <div className="font-bold text-small">
-              {getStakeholderRelation(contact) ? Relation[getStakeholderRelation(contact)] : label}
+              {getStakeholderRelation(contact)
+                ? MEXRelation[getStakeholderRelation(contact)] || PTRelation[getStakeholderRelation(contact)]
+                : label}
             </div>
 
             <div className="flex flex-wrap gap-16 text-small">
@@ -303,7 +314,8 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         </Divider.Section>
         <div data-cy="registered-applicants" className="my-lg px-0 md:px-24 lg:px-40 pb-40 pt-0">
           <div className="w-full">
-            {stakeholdersFields.filter((caseData, idx) => caseData.roles.includes(Role.APPLICANT)).length === 0 ? (
+            {stakeholdersFields.filter((stakeholder, idx) => stakeholder.roles.includes(Role.APPLICANT)).length ===
+            0 ? (
               <SimplifiedContactForm
                 disabled={isErrandLocked(errand)}
                 allowRelation={true}
@@ -317,10 +329,9 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
           </div>
 
           <div className="flex flex-row gap-md flex-wrap mt-20">
-            {[
-              ...(getOwnerStakeholder(errand) ? [getOwnerStakeholder(errand)] : []),
-              ...getFellowApplicants(errand),
-            ].map((caseData, idx) => renderContact(caseData, idx, 'Ärendeägare'))}
+            {[...(getOwnerStakeholder(errand) ? [getOwnerStakeholder(errand)] : [])].map((caseData, idx) =>
+              renderContact(caseData, idx, 'Ärendeägare')
+            )}
           </div>
         </div>
 

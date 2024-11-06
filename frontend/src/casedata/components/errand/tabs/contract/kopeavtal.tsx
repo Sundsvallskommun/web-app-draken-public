@@ -1,5 +1,5 @@
 import { KopeAvtalsData, KopeavtalStakeholder, KopeavtalsTemplate } from '@casedata/interfaces/kopeavtals-data';
-import { Relation } from '@casedata/interfaces/role';
+import { MEXRelation } from '@casedata/interfaces/role';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { getSSNFromPersonId, getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
@@ -1670,7 +1670,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                             }}
                           />
                           {b.firstName ? `${b.firstName} ${b.lastName} ` : `${b.organizationName}`}{' '}
-                          {getStakeholderRelation(b) ? `(${Relation[getStakeholderRelation(b)]})` : ''}
+                          {getStakeholderRelation(b) ? `(${MEXRelation[getStakeholderRelation(b)]})` : ''}
                         </Table.Column>
                       </Table.Row>
                     ))}
@@ -1709,7 +1709,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                     let stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
                     content += `
                         <p><b>${
-                          getStakeholderRelation(stakeholder) ? Relation[getStakeholderRelation(stakeholder)] : ''
+                          getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : ''
                         }</b></p>
                         <p>${
                           stakeholder.firstName

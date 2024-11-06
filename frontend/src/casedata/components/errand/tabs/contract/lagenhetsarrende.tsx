@@ -10,8 +10,8 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 
 import { TermGroup } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { Relation } from '@casedata/interfaces/role';
-import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
+import { MEXRelation } from '@casedata/interfaces/role';
+import { getContractStakeholderName } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import {
@@ -2720,7 +2720,7 @@ export const Lagenhetsarrende: React.FC<{
                             }}
                           />
                           {b.firstName ? `${b.firstName} ${b.lastName} ` : `${b.organizationName}`}{' '}
-                          {getStakeholderRelation(b) ? `(${Relation[getStakeholderRelation(b)]})` : ''}
+                          {getStakeholderRelation(b) ? `(${MEXRelation[getStakeholderRelation(b)]})` : ''}
                         </Table.Column>
                       </Table.Row>
                     ))}
@@ -2759,7 +2759,7 @@ export const Lagenhetsarrende: React.FC<{
                     let stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
                     content += `
                         <p><b>${
-                          getStakeholderRelation(stakeholder) ? Relation[getStakeholderRelation(stakeholder)] : ''
+                          getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : ''
                         }</b></p>
                         <p>${
                           stakeholder.firstName

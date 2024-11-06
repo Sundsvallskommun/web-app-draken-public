@@ -1,5 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
-import { Relation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import {
@@ -42,7 +42,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,
@@ -673,7 +673,7 @@ export const SimplifiedContactForm: React.FC<{
                     <Select.Option key="" value="">
                       Välj roll
                     </Select.Option>
-                    {Object.entries(Relation)
+                    {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
                       .sort((a, b) => (a[1] > b[1] ? 1 : -1))
                       .map(([key, relation]) => {
                         return (
@@ -774,7 +774,7 @@ export const SimplifiedContactForm: React.FC<{
                       <Select.Option key="" value="">
                         Välj roll
                       </Select.Option>
-                      {Object.entries(Relation)
+                      {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
                         .sort((a, b) => (a[1] > b[1] ? 1 : -1))
                         .map(([key, relation]) => {
                           return (
@@ -875,7 +875,7 @@ export const SimplifiedContactForm: React.FC<{
                       <Select.Option key="" value="">
                         Välj roll
                       </Select.Option>
-                      {Object.entries(Relation)
+                      {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
                         .sort((a, b) => (a[1] > b[1] ? 1 : -1))
                         .map(([key, relation]) => {
                           return (
