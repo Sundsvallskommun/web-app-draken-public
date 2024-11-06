@@ -283,7 +283,14 @@ export const Lagenhetsarrende: React.FC<{
     saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
   }, [doneMark]);
 
-
+  const markSectionAsDone = (inSection: string) => {
+    if (doneMark.findIndex((temp) => temp === inSection) === -1) {
+      setDoneMark((prevArray) => [...prevArray, inSection]);
+    } else {
+      setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
+    }
+  };
+  
   const saveButton = (inSection) => {
     return (
       <div className="my-md">
@@ -317,13 +324,6 @@ export const Lagenhetsarrende: React.FC<{
     );
   };
 
-  const markSectionAsDone = (inSection: string) => {
-    if (doneMark.findIndex((temp) => temp === inSection) === -1) {
-      setDoneMark((prevArray) => [...prevArray, inSection]);
-    } else {
-      setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
-    }
-  };
   return (
     <>
       <Disclosure
