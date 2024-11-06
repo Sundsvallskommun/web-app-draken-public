@@ -222,7 +222,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {
-    return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+    return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
       .then((res) => setErrand(res.errand))
       .then(() => {
@@ -793,8 +793,19 @@ export const CasedataDecisionTab: React.FC<{
                   !allowed
                 }
                 onClick={() => {
-                  if (existingContract && existingContract.status === 'DRAFT') {
-                    setControlContractIsOpen(true);
+                  if (existingContract) {
+                    if (existingContract.status === 'DRAFT') {
+                      setControlContractIsOpen(true);
+                    } else {
+                      saveConfirm
+                        .showConfirmation('Spara och skicka', 'Vill du spara och skicka beslutet?')
+                        .then((confirmed) => {
+                          if (confirmed) {
+                            saveAndSend(getValues());
+                            return Promise.resolve(true);
+                          }
+                        });
+                    }
                   } else {
                     saveConfirm
                       .showConfirmation('Spara och skicka', 'Vill du spara och skicka beslutet?')

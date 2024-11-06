@@ -334,37 +334,6 @@ export const MessageComposer: React.FC<{
       <div className="my-md py-8 px-40 flex flex-col gap-12 ">
         <Input type="hidden" {...register('headerReplyTo')} />
         <Input type="hidden" {...register('headerReferences')} />
-        {!isMEX() && (
-          <FormControl className="w-full my-12" size="sm" required id="messageClassification">
-            <FormLabel>Välj meddelandetyp</FormLabel>
-            <Select
-              tabIndex={props.show ? 0 : -1}
-              {...register('messageClassification')}
-              className="w-full text-dark-primary"
-              variant="tertiary"
-              size="sm"
-              value={getValues('messageClassification')}
-              onChange={(e) => {
-                setValue('messageClassification', e.currentTarget.value, { shouldDirty: true });
-              }}
-            >
-              {Object.keys(MessageClassification).map((messageType: string) => {
-                const id = messageType;
-                const label = messageType;
-                return (
-                  <Select.Option
-                    key={`channel-${id}`}
-                    value={label}
-                    className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                  >
-                    {label}
-                  </Select.Option>
-                );
-              })}
-            </Select>
-          </FormControl>
-        )}
-
         <FormControl className="w-full my-12" size="sm" id="messageTemplate">
           <FormLabel>Välj meddelandemall</FormLabel>
           <Select

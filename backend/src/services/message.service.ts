@@ -1,4 +1,4 @@
-import { ErrandDTO, StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import {
   EmailAttachment,
   EmailRequest,
@@ -16,6 +16,7 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
+import { CASEDATA_NAMESPACE } from '@/config';
 
 export interface SaveMessage {
   messageID: string;
@@ -285,7 +286,7 @@ export const saveMessageOnErrand: (
     emailHeaders: emailHeaders,
   };
 
-  const url = `case-data/8.0/${municipalityId}/messages`;
+  const url = `case-data/9.0/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/messages`;
   const saveIdResponse = await apiService
     .post<any, SaveMessage>({ url, data: saveMessage }, user)
     .then(res => {

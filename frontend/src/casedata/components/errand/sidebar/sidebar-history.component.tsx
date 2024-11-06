@@ -33,7 +33,7 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     if (selectedChange) {
-      fetchChangeData(municipalityId, selectedChange)
+      fetchChangeData(municipalityId, errand?.id, selectedChange)
         .then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);

@@ -1,14 +1,14 @@
-import { MEXCaseType } from '@casedata/interfaces/case-type';
-import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   UppgiftField,
   extraParametersToUppgiftMapper,
   saveExtraParameters,
+  EXTRAPARAMETER_SEPARATOR,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { isMEX } from '@common/services/application-service';
 import {
@@ -21,11 +21,8 @@ import {
   Select,
   Textarea,
   cx,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -35,14 +32,11 @@ interface CasedataDetailsProps {
   registeringNewErrand: boolean;
 }
 
-export const specialSign = '@';
-
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<string>();
   const toastMessage = useSnackbar();
-  const saveConfirm = useConfirm();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
@@ -51,12 +45,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
-
-  // Handle dots i field name
-  Object.keys(errand.extraParameters).map((key) => {
-    const newKey = key.replace(/\./g, specialSign);
-    errand.extraParameters[newKey] = errand.extraParameters[key];
-  });
 
   const {
     register,
@@ -70,8 +58,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     trigger,
     reset,
     formState: { errors },
-  } = useForm<RegisterSupportErrandFormModel & SupportErrand & any>({
-    defaultValues: errand.extraParameters,
+  } = useForm<any>({
+    // TODO - Correct default values?
+    // defaultValues: errand.extraParameters,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -141,16 +130,16 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     });
   };
 
-  const onSave = async (extraParams: GenericExtraParameters) => {
+  const onSave = async (extraParams: ExtraParameter[]) => {
     if (isMEX()) {
       saveFacilities(municipalityId, errand.id, getValues().facilities);
     }
 
-    saveExtraParameters(municipalityId, extraParams, errand).then((res) => {
-      setIsLoading(undefined);
-      props.setUnsaved(false);
-      getErrand(municipalityId, errand.id.toString())
-        .then((res) => {
+    saveExtraParameters(municipalityId, extraParams, errand)
+      .then((res) => {
+        setIsLoading(undefined);
+        props.setUnsaved(false);
+        getErrand(municipalityId, errand.id.toString()).then((res) => {
           setErrand(res.errand);
           toastMessage({
             position: 'bottom',
@@ -159,83 +148,81 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             status: 'success',
           });
           setIsLoading(undefined);
-        })
-        .catch((e) => {
-          setIsLoading(undefined);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när uppgifterna skulle sparas',
-            status: 'error',
-          });
         });
-    });
+      })
+      .catch((e) => {
+        setIsLoading(undefined);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när uppgifterna skulle sparas',
+          status: 'error',
+        });
+      });
   };
 
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
     const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType];
 
-    // Handle dots i field name
-    uppgifterFields?.map((data, index) => {
-      data.field = data.field.replace(/\./g, specialSign);
-    });
-
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);
+    uppgifterFields?.forEach((f) => {
+      setValue(f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR), f.value);
+    });
   }, [errand]);
 
-  const renderFormControl = (assignment: UppgiftField, idx: number) => {
+  const renderFormControl = (detail: UppgiftField, idx: number) => {
     const dependent: boolean =
-      assignment.dependsOn?.length > 0
-        ? assignment.dependsOn.every((d) => getValues(d.field.replace(/\./g, specialSign)) === d.value)
+      detail.dependsOn?.length > 0
+        ? detail.dependsOn.every((d) => getValues(d.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)) === d.value)
         : true;
     return dependent ? (
-      <FormControl className="w-full" key={`${assignment.field}-${idx}`} disabled={isErrandLocked(errand)}>
-        {assignment.field === 'account2ownerIdentifier' ||
-        assignment.field === 'account2owner' ||
-        assignment.field === 'account2bank' ||
-        assignment.field === 'account2number' ? null : (
-          <FormLabel className="mt-lg">{assignment.label}</FormLabel>
+      <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
+        {detail.field === `account.ownerIdentifier` ||
+        detail.field === `account.owner` ||
+        detail.field === `account.bank` ||
+        detail.field === `account.number` ? null : (
+          <FormLabel className="mt-lg">{detail.label}</FormLabel>
         )}
-        {assignment.formField.type === 'text' ||
-        assignment.formField.type === 'date' ||
-        assignment.formField.type === 'datetime-local' ? (
+        {detail.formField.type === 'text' ||
+        detail.formField.type === 'date' ||
+        detail.formField.type === 'datetime-local' ? (
           errand.caseType !== 'MEX_APPLICATION_FOR_ROAD_ALLOWANCE' ? (
             <Input
-              type={assignment.formField.type}
-              {...register(assignment.field)}
-              className={cx(assignment.formField.type === 'date' ? `w-1/2` : 'w-full')}
-              data-cy={`${assignment.field}-input`}
+              type={detail.formField.type}
+              {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
+              className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
+              data-cy={`${detail.field}-input`}
             />
           ) : (
             <>
-              {getValues('account@type') === 'Bankkonto' ? (
+              {getValues(`account${EXTRAPARAMETER_SEPARATOR}type`) === 'Bankkonto' ? (
                 <>
-                  {assignment.label !== 'Giro-nummer' && assignment.label !== 'Giro-ägare' && (
+                  {detail.label !== 'Giro-nummer' && detail.label !== 'Giro-ägare' && (
                     <>
-                      <FormLabel className="mt-lg">{assignment.label}</FormLabel>
+                      <FormLabel className="mt-lg">{detail.label}</FormLabel>
                       <Input
-                        type={assignment.formField.type}
-                        {...register(assignment.field)}
-                        className={cx(assignment.formField.type === 'date' ? `w-1/2` : 'w-full')}
-                        data-cy={`${assignment.field}-input`}
+                        type={detail.formField.type}
+                        {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
+                        className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
+                        data-cy={`${detail.field}-input`}
                       />
                     </>
                   )}
                 </>
               ) : (
                 <>
-                  {assignment.label !== 'Kontonummer' &&
-                    assignment.label !== 'Kontoägarens personnummer' &&
-                    assignment.label !== 'Kontoägare' && (
+                  {detail.label !== 'Kontonummer' &&
+                    detail.label !== 'Kontoägarens personnummer' &&
+                    detail.label !== 'Kontoägare' && (
                       <>
-                        <FormLabel className="mt-lg">{assignment.label}</FormLabel>
+                        <FormLabel className="mt-lg">{detail.label}</FormLabel>
                         <Input
-                          type={assignment.formField.type}
-                          {...register(assignment.field)}
-                          className={cx(assignment.formField.type === 'date' ? `w-1/2` : 'w-full')}
-                          data-cy={`${assignment.field}-input`}
+                          type={detail.formField.type}
+                          {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
+                          className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
+                          data-cy={`${detail.field}-input`}
                         />
                       </>
                     )}
@@ -243,61 +230,62 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               )}
             </>
           )
-        ) : assignment.formField.type === 'select' ? (
-          <Select {...register(assignment.field)} className="w-content" data-cy={`${assignment.field}-select`}>
+        ) : detail.formField.type === 'select' ? (
+          <Select
+            {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
+            className="w-content"
+            data-cy={`${detail.field}-select`}
+          >
             <Select.Option value="">Välj</Select.Option>
-            {assignment.formField.options.map((o, oIdx) => (
+            {detail.formField.options.map((o, oIdx) => (
               <Select.Option key={`${o}-${oIdx}`} value={o.value}>
                 {o.label}
               </Select.Option>
             ))}
           </Select>
-        ) : assignment.formField.type === 'textarea' ? (
+        ) : detail.formField.type === 'textarea' ? (
           <>
             <textarea
               rows={3}
               className="w-full rounded-12 p-md rows={3}-medium text-base"
-              {...register(assignment.field)}
-              data-cy={`${assignment.field}-textarea`}
+              {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
+              data-cy={`${detail.field}-textarea`}
             />
           </>
-        ) : assignment.formField.type === 'radio' ? (
+        ) : detail.formField.type === 'radio' ? (
           <>
-            <RadioButton.Group
-              defaultValue={getValues(assignment.field)}
-              data-cy={`${assignment.field}-radio-button-group`}
-            >
-              {assignment.formField.options.map((option, index) => (
+            <RadioButton.Group defaultValue={getValues(detail.field)} data-cy={`${detail.field}-radio-button-group`}>
+              {detail.formField.options.map((option, index) => (
                 <RadioButton
                   value={option.value}
-                  {...register(assignment.field)}
+                  {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
                   key={`${option}-${index}`}
-                  data-cy={`${assignment.field}-radio-button-${index}`}
+                  data-cy={`${detail.field}-radio-button-${index}`}
                 >
                   {option.label}
                 </RadioButton>
               ))}
             </RadioButton.Group>
           </>
-        ) : assignment.formField.type === 'radioPlus' ? (
+        ) : detail.formField.type === 'radioPlus' ? (
           <>
-            <Input {...register(assignment.field)} hidden></Input>
+            <Input {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))} hidden></Input>
             <RadioButton.Group
               defaultValue={
-                assignment.formField.options.find((option) => option.value === getValues(assignment.field))?.value ||
+                detail.formField.options.find((option) => option.value === getValues(detail.field))?.value ||
                 'ownOption'
               }
-              data-cy={`${assignment.field}-radio-button-group`}
+              data-cy={`${detail.field}-radio-button-group`}
             >
-              {assignment.formField.options.map((option, index) => (
+              {detail.formField.options.map((option, index) => (
                 <RadioButton
                   value={option.value}
                   onClick={(event) => {
                     const element = event.currentTarget as HTMLInputElement;
-                    setValue(assignment.field, element.value);
+                    setValue(detail.field, element.value);
                   }}
                   key={`${option}-${index}`}
-                  data-cy={`${assignment.field}-radio-button-${index}`}
+                  data-cy={`${detail.field}-radio-button-${index}`}
                 >
                   {option.label}
                 </RadioButton>
@@ -305,53 +293,57 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
               <RadioButton
                 checked={
-                  assignment.formField.options.findIndex((option) => option.value === getValues(assignment.field)) ===
-                  -1
+                  detail.formField.options.findIndex((option) => option.value === getValues(detail.field)) === -1
                 }
                 value="ownOption"
-                data-cy={`${assignment.field}-radio-button`}
+                data-cy={`${detail.field}-radio-button`}
               >
-                {assignment.formField.ownOption}:
+                {detail.formField.ownOption}:
                 <Input
                   onChange={(event) => {
-                    setValue(assignment.field, event.target.value);
+                    setValue(detail.field, event.target.value);
                   }}
                   value={
-                    assignment.formField.options.findIndex((option) => option.value === getValues(assignment.field)) ===
-                    -1
-                      ? getValues(assignment.field)
+                    detail.formField.options.findIndex((option) => option.value === getValues(detail.field)) === -1
+                      ? getValues(detail.field)
                       : ''
                   }
-                  data-cy={`${assignment.field}-input`}
+                  data-cy={`${detail.field}-input`}
                 ></Input>
               </RadioButton>
             </RadioButton.Group>
           </>
-        ) : assignment.formField.type === 'checkbox' ? (
+        ) : detail.formField.type === 'checkbox' ? (
           <>
-            <Input {...register(assignment.field)} type="hidden"></Input>
+            <Input {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))} type="hidden"></Input>
             <Checkbox.Group direction="row">
-              {assignment.formField.options.map((option, index) => (
-                <Checkbox
-                  value={option.name}
-                  name={option.name}
-                  key={`${option}-${index}`}
-                  data-cy={`${assignment.field}-checkbox-${index}`}
-                  onChange={(val) => {
-                    const splitValues: string[] =
-                      getValues(assignment.field)
-                        ?.split(',')
-                        ?.filter((v) => v !== '' && v !== ' ') || [];
-                    const uniqueValues = val.currentTarget.checked
-                      ? [...splitValues, option.value]
-                      : splitValues.filter((v) => v !== option.value);
-                    setValue(assignment.field, uniqueValues.join());
-                  }}
-                  defaultChecked={getValues(assignment.field)?.split(',').includes(option.value)}
-                >
-                  {option.label}
-                </Checkbox>
-              ))}
+              {detail.formField.options.map((option, index) => {
+                const formFieldKey = detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+                const currentValuesArray = getValues(formFieldKey)
+                  ?.split(',')
+                  .filter((v) => v !== '' && v !== ' ');
+                const thisValue = option.value;
+                const thisIsSelected = currentValuesArray?.includes(thisValue);
+
+                return (
+                  <Checkbox
+                    value={option.name}
+                    name={option.name}
+                    key={`${option}-${index}`}
+                    data-cy={`${detail.field}-checkbox-${index}`}
+                    onChange={(val) => {
+                      if (!val.currentTarget.checked) {
+                        setValue(formFieldKey, currentValuesArray.filter((v) => v !== thisValue).join() || '');
+                      } else {
+                        setValue(formFieldKey, [...currentValuesArray, thisValue].join());
+                      }
+                    }}
+                    checked={thisIsSelected}
+                  >
+                    {option.label}
+                  </Checkbox>
+                );
+              })}
             </Checkbox.Group>
           </>
         ) : null}
@@ -369,25 +361,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           disabled={isErrandLocked(errand) || !allowed}
           onClick={() => {
             try {
-              const data = {};
+              const data: ExtraParameter[] = [];
               fields.forEach((f) => {
-                if (f.field.indexOf(specialSign) !== -1) {
-                  // Insert dots
-                  const replaceField = f.field.replaceAll(specialSign, '.');
-                  data[replaceField] = getValues()[f.field];
-                } else {
-                  data[f.field] = getValues()[f.field];
-                }
+                data.push({
+                  key: f.field,
+                  values: [getValues()[f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)]],
+                });
               });
-              data['propertyDesignation'] = getValues('propertyDesignation');
+              data.push({
+                key: 'propertyDesignation',
+                values: [getValues('propertyDesignation')],
+              });
 
-              saveConfirm.showConfirmation('Spara uppgifterna', 'Vill du spara uppgifterna?').then((confirmed) => {
-                if (confirmed) {
-                  setIsLoading(label);
-                  onSave(data);
-                }
-                return confirmed ? () => true : () => {};
-              });
+              setIsLoading(label);
+              onSave(data);
             } catch (error) {
               console.error('Error: ', error);
             }

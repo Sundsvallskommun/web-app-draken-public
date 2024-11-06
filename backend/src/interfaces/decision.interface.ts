@@ -3,12 +3,12 @@ import { GenericExtraParameters } from './extra-parameters.interface';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-  AppealDTO,
-  DecisionDTO,
-  DecisionDtoDecisionOutcomeEnum,
-  DecisionDtoDecisionTypeEnum,
-  LawDTO,
-  StakeholderDTO,
+  Appeal as AppealDTO,
+  Decision as DecisionDTO,
+  DecisionDecisionOutcomeEnum,
+  DecisionDecisionTypeEnum,
+  Law as LawDTO,
+  Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
 
 export class Appeal implements AppealDTO {
@@ -63,9 +63,9 @@ export class Decision implements DecisionDTO {
   @IsOptional()
   id: number;
   @IsString()
-  decisionType: DecisionDtoDecisionTypeEnum;
+  decisionType: DecisionDecisionTypeEnum;
   @IsString()
-  decisionOutcome: DecisionDtoDecisionOutcomeEnum;
+  decisionOutcome: DecisionDecisionOutcomeEnum;
   @IsString()
   @IsOptional()
   description?: string;

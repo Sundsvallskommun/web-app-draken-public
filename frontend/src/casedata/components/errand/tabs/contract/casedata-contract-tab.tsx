@@ -8,7 +8,7 @@ import {
   LagenhetsArrendeStakeholder,
 } from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand, isAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {
@@ -50,6 +50,10 @@ import { Lagenhetsarrende } from './lagenhetsarrende';
 interface CasedataContractProps {
   update: () => void;
   setUnsaved: Dispatch<SetStateAction<boolean>>;
+}
+
+interface ContractStatus {
+  status?: 'DRAFT' | 'ACTIVE';
 }
 
 // TODO
@@ -130,7 +134,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     }
   }, [errand, existingContract]);
 
-  const contractForm = useForm<ContractData & KopeavtalsTemplate & LagenhetsArendeTemplate>({
+  const contractForm = useForm<ContractData & ContractStatus & KopeavtalsTemplate & LagenhetsArendeTemplate>({
     defaultValues:
       existingContract?.contractType === ContractType.PURCHASE_AGREEMENT
         ? defaultKopeavtal
@@ -257,6 +261,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     document.body.appendChild(link);
     link.click();
   };
+
+  const { status } = contractForm.watch();
 
   return (
     <FormProvider {...contractForm}>
@@ -399,7 +405,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                     value={ContractType.PURCHASE_AGREEMENT}
                     name="contractType"
                     defaultChecked={contractForm.getValues().contractType === ContractType.PURCHASE_AGREEMENT}
-                    onClick={() => {
+                    onChange={() => {
                       contractForm.setValue('contractType', ContractType.PURCHASE_AGREEMENT);
                     }}
                   >
@@ -411,7 +417,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                     value={ContractType.LAND_LEASE}
                     name="contractType"
                     defaultChecked={contractForm.getValues().contractType === ContractType.LAND_LEASE}
-                    onClick={() => {
+                    onChange={() => {
                       contractForm.setValue('contractType', ContractType.LAND_LEASE);
                     }}
                   >
@@ -426,9 +432,15 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                 </FormLabel>
                 {loading === undefined && (
                   <Checkbox
-                    defaultChecked={existingContract?.status === 'DRAFT'}
+                    disabled={isErrandLocked(errand) || !allowed}
+                    checked={contractForm.getValues().status === 'DRAFT' ? true : false}
+                    value={contractForm.getValues().status}
                     onChange={() => {
-                      contractForm.setValue('status', existingContract?.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE');
+                      contractForm.setValue(
+                        'status',
+                        contractForm.getValues()?.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE'
+                      );
+                      contractForm.trigger('status');
                       onSave(contractForm.getValues());
                     }}
                     indeterminate={false}

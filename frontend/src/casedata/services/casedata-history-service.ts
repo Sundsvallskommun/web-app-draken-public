@@ -247,15 +247,16 @@ const genericFailedFetch = () => {
   return data;
 };
 
-export const fetchChangeData: (municipalityId: string, c: ParsedErrandChange) => Promise<GenericChangeData> = (
-  municipalityId,
-  c
-) => {
+export const fetchChangeData: (
+  municipalityId: string,
+  errandId: number,
+  c: ParsedErrandChange
+) => Promise<GenericChangeData> = (municipalityId, errandId, c) => {
   if (c?.changeType === 'ListChange') {
     if (c.elementChanges?.[0].elementChangeType === 'ValueAdded') {
       switch (c.property) {
         case 'notes':
-          return fetchNote(municipalityId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchNote(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: res.data.extraParameters['type'] === 'comment' ? 'Ny kommentar' : 'Ny tjänsteanteckning',
@@ -267,7 +268,7 @@ export const fetchChangeData: (municipalityId: string, c: ParsedErrandChange) =>
             })
             .catch(genericFailedFetch);
         case 'stakeholders':
-          return fetchStakeholder(c.elementChanges?.[0].value.cdoId.toString())
+          return fetchStakeholder(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny handläggare/intressent',
@@ -281,7 +282,7 @@ export const fetchChangeData: (municipalityId: string, c: ParsedErrandChange) =>
             })
             .catch(genericFailedFetch);
         case 'attachments':
-          return fetchAttachment(municipalityId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchAttachment(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny bilaga',

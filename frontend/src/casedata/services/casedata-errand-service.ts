@@ -28,6 +28,8 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { Role } from '@casedata/interfaces/role';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { replaceExtraParameter } from './casedata-extra-parameters-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -158,9 +160,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       appeals: e.appeals,
       attachments: [],
       messageIds: [],
-      extraParameters: {
-        ...e.extraParameters,
-      },
+      extraParameters: e.extraParameters,
     };
     return ierrand;
   } catch (e) {
@@ -355,7 +355,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
     ...(data.status && { status: data.status }),
     ...(data.phase && { phase: data.phase }),
     stakeholders: stakeholders,
-    extraParameters: {},
+    extraParameters: [],
   };
   return e;
 };
@@ -489,17 +489,20 @@ export const phaseChangeInProgress = (errand: IErrand) => {
   if (!errand?.id) {
     return false;
   }
-  if (errand.extraParameters?.['process.phaseAction'] === 'CANCEL') {
-    return errand.extraParameters?.['process.phaseStatus'] !== 'CANCELED';
+  if (errand.extraParameters.find((p) => p.key === 'process.phaseAction')?.values[0] === 'CANCEL') {
+    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'CANCELED';
   }
 
   if (errand.status === ErrandStatus.ArendeAvslutat) {
     return false;
   }
-  if (typeof errand.extraParameters?.['process.phaseStatus'] === 'undefined') {
+  if (typeof errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === 'undefined') {
     return true;
   }
-  if (errand.extraParameters?.['process.displayPhase'] === UiPhase.registrerad && !!errand.administrator) {
+  if (
+    errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad &&
+    !!errand.administrator
+  ) {
     return true;
   }
   if (
@@ -508,55 +511,60 @@ export const phaseChangeInProgress = (errand: IErrand) => {
     errand.phase === ErrandPhase.beslut ||
     errand.phase === ErrandPhase.uppfoljning
   ) {
-    return errand.extraParameters?.['process.phaseAction'] === 'COMPLETE';
+    return errand.extraParameters?.find((p) => p.key === 'process.phaseAction')?.values[0] === 'COMPLETE';
   } else {
-    return errand.extraParameters?.['process.phaseStatus'] !== 'WAITING';
+    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'WAITING';
   }
 };
 
-export const cancelErrandPhaseChange = async (municipalityId: string, errandId: string) => {
-  if (!errandId) {
+export const cancelErrandPhaseChange = async (municipalityId: string, errand: IErrand) => {
+  if (!errand.id) {
     console.error('No id found. Cannot update errand wihout id. Returning.');
     return;
   }
+  const newParameter: ExtraParameter = {
+    key: 'process.phaseAction',
+    values: ['CANCEL'],
+  };
   const e: Partial<RegisterErrandData> = {
-    id: errandId,
-    extraParameters: {
-      'process.phaseAction': 'CANCEL',
-    },
+    id: errand.id.toString(),
+    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
   };
   return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errandId}`, e)
+    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
     .catch((e) => {
       console.error('Something went wrong when cancelling errand phase change', e);
       throw e;
     });
 };
 
-export const triggerErrandPhaseChange = async (municipalityId: string, errandId: string) => {
-  if (!errandId) {
+export const triggerErrandPhaseChange = async (municipalityId: string, errand: IErrand) => {
+  if (!errand?.id) {
     console.error('No id found. Cannot update errand wihout id. Returning.');
     return;
   }
+  const newParameter: ExtraParameter = {
+    key: 'process.phaseAction',
+    values: ['COMPLETE'],
+  };
   const e: Partial<RegisterErrandData> = {
-    id: errandId,
-    extraParameters: {
-      'process.phaseAction': 'COMPLETE',
-    },
+    id: errand.id.toString(),
+    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
   };
   return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errandId}`, e)
+    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
     .catch((e) => {
       console.error('Something went wrong when triggering errand phase change', e);
       throw e;
     });
 };
 
-export const getUiPhase: (errand: IErrand) => UiPhase = (errand) => errand.extraParameters?.['process.displayPhase'];
+export const getUiPhase: (errand: IErrand) => UiPhase = (errand) =>
+  errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] as UiPhase;
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;
-  if (errand?.extraParameters?.['process.displayPhase'] === UiPhase.registrerad) {
+  if (errand?.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {
     allowed = true;
   }
   if (user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase()) {
@@ -572,3 +580,4 @@ export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, 
 export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
 };
+

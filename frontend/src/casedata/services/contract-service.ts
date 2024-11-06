@@ -19,6 +19,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 export enum ContractType {
   LAND_LEASE = 'LAND_LEASE',
@@ -385,7 +386,12 @@ export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
 };
 
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
-  const data = { contractId: contractId };
+  const data: ExtraParameter[] = [
+    {
+      key: 'contractId',
+      values: [contractId],
+    },
+  ];
   return saveExtraParameters(municipalityId, data, errand);
 };
 
@@ -393,7 +399,7 @@ export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | La
   if (!errand) {
     return Promise.reject('No errand found, cannot fetch contract. Returning.');
   }
-  const contractId = errand.extraParameters['contractId'];
+  const contractId = errand.extraParameters.find((p) => p.key === 'contractId')?.values[0];
   if (!contractId) {
     return Promise.reject('No contract id found on errand, cannot fetch contract. Returning.');
   }
@@ -422,10 +428,7 @@ export const renderContractPdf: (
   if (!contract?.contractId) {
     console.error('No contract id found. Cannot render contract pdf.');
   }
-  // const templateIdentifier = `mex.contract.${contract.type.toLowerCase()}`;
-  let isDraftText = isDraft
-    ? '<p style="text-align: center; font-size: 28px; margin: 25px 25px;">DOKUMENT UTKAST!</p>'
-    : '';
+
   const templateIdentifier =
     contract.type === 'PURCHASE_AGREEMENT'
       ? `mex.contract.purchaseagreement`
@@ -440,13 +443,10 @@ export const renderContractPdf: (
   const renderBody: TemplateSelector = {
     identifier: templateIdentifier,
     parameters: {
-      header:
-        contract.type === 'PURCHASE_AGREEMENT'
-          ? '<div style="text-align: center; margin-bottom: 40px;">KÖPEAVTAL</div>'
-          : '<div style="text-align: center; margin-bottom: 40px;">AVTAL OM LÄGENHETSARRENDE</div>',
-      description: `<b>Avtals ID:</b> ${contract.contractId} <br />
-                    <b>Ärendenummer:</b> ${errand.errandNumber} <br />
-                    ${isDraftText}`,
+      header: contract.type === 'PURCHASE_AGREEMENT' ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
+      description: `<b>Avtals ID:</b> ${contract.contractId}<br />
+                    <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
+      isDraft: isDraft,
 
       stakeholders: contract.stakeholders.map((s) => ({
         name: s.type === 'PERSON' ? s.firstName + ' ' + s.lastName : s.organizationName + ' ' + s.organizationNumber,

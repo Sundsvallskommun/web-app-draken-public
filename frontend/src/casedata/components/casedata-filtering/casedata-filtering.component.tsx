@@ -68,9 +68,9 @@ const CaseDataFiltering: React.FC<{
         <div className="w-full flex items-start md:items-center justify-between flex-col md:flex-row gap-12">
           <h1 className="p-0 m-0">Ärenden</h1>
 
-          <div className="w-full md:max-w-[48rem]">
+          {/* <div className="w-full md:max-w-[48rem]">
             <CasedataFilterQuery />
-          </div>
+          </div> */}
           <Button
             className="w-full md:w-auto"
             onClick={() => setShow(!show)}

@@ -153,7 +153,7 @@ export const PhaseChanger = () => {
       .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+          return triggerErrandPhaseChange(municipalityId, errand)
             .then(() => getErrand(municipalityId, errand.id.toString()))
             .then((res) => setErrand(res.errand))
             .then(() => {

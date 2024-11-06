@@ -45,11 +45,8 @@ export default function Layout({ title, children }) {
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
-  const errandNumber = isMEX()
-    ? errand?.errandNumber
-    : isKC() || isIS() || isLOP()
-    ? supportErrand?.errandNumber
-    : undefined;
+  const errandNumber =
+    isMEX() || isPT() ? errand?.errandNumber : isKC() || isIS() || isLOP() ? supportErrand?.errandNumber : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
@@ -98,6 +95,11 @@ export default function Layout({ title, children }) {
         color = 'warning';
         inverted = false;
         icon = 'circle-pause';
+        break;
+      case 'AWAITING_INTERNAL_RESPONSE':
+        color = 'gronsta';
+        inverted = true;
+        icon = 'clock-10';
         break;
       default:
         color = 'tertiary';
@@ -198,13 +200,11 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIS() || isLOP() || isMEX() ? (
-                      <PopupMenu.Item>
-                        <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                          <Icon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt ärende
-                        </Link>
-                      </PopupMenu.Item>
-                    ) : null}
+                    <PopupMenu.Item>
+                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                        <Icon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt ärende
+                      </Link>
+                    </PopupMenu.Item>
                   </PopupMenu.Group>
 
                   {userMenuGroups.map((group, groupindex) => (

@@ -17,8 +17,7 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { SupportNotification } from '@supportmanagement/services/support-notification-service';
 import { createContext, useContext, useState } from 'react';
-import { SidebarButton } from '@supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component';
-
+import { SidebarButton } from '@common/interfaces/sidebar-button';
 export interface AppContextInterface {
   subPage: string;
   setSubPage: (subPage: string) => void;
@@ -81,14 +80,7 @@ export interface AppContextInterface {
   setSolvedSupportErrands: (supportErrands: SupportErrandsData) => void;
 
   sidebarButtons;
-  setSidebarButtons: (
-    sidebarButtons: {
-      label: string;
-      key: Status;
-      icon: string;
-      totalStatusErrands: number;
-    }[]
-  ) => void;
+  setSidebarButtons: (sidebarButtons: SidebarButton[]) => void;
 
   administrators;
   setAdministrators: (admins: Admin[]) => void;
@@ -122,14 +114,7 @@ export function AppWrapper({ children }) {
   const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<Status[]>([Status.NEW]);
   const [supportAdmins, setSupportAdmins] = useState<SupportAdmin[]>([]);
   const [municipalityId, setMunicipalityId] = useState<string>();
-  const [sidebarButtons, setSidebarButtons] = useState<
-    {
-      label: string;
-      key: Status;
-      icon: string;
-      totalStatusErrands: number;
-    }[]
-  >();
+  const [sidebarButtons, setSidebarButtons] = useState<SidebarButton[]>();
   const [administrators, setAdministrators] = useState<Admin[]>([]);
   const [isCookieConsentOpen, setIsCookieConsentOpen] = useState(true);
   const [supportNotifications, setSupportNotifications] = useState<SupportNotification[]>([]);

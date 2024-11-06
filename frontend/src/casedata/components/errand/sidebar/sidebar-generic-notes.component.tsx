@@ -260,7 +260,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<Icon name="eye" />}
+                                    leftIcon={<Icon name="trash" />}
                                     onClick={() => {
                                       removeNote(note);
                                     }}
