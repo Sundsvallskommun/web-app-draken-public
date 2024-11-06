@@ -836,7 +836,7 @@ const template: ExtraParametersObject = {
     },
     {
       field: 'disability.canBeAloneWhileParking',
-      dependsOn: [{ field: 'application.capacity', value: 'PASSENGER' }],
+      dependsOn: [{ field: 'application.applicant.capacity', value: 'PASSENGER' }],
       value: '',
       label: 'Kan den sökande lämnas ensam en kort stund medan föraren parkerar fordonet?',
       formField: {
@@ -855,7 +855,7 @@ const template: ExtraParametersObject = {
       field: 'disability.canBeAloneWhileParking.note',
       dependsOn: [
         { field: 'disability.canBeAloneWhileParking', value: 'false' },
-        { field: 'application.capacity', value: 'PASSENGER' },
+        { field: 'application.applicant.capacity', value: 'PASSENGER' },
       ],
       value: '',
       label: 'Beskriv behovet av...',
