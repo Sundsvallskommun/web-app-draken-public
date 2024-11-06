@@ -319,9 +319,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Checkbox.Group direction="row">
               {detail.formField.options.map((option, index) => {
                 const formFieldKey = detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-                const currentValuesArray = getValues(formFieldKey)
-                  ?.split(',')
-                  .filter((v) => v !== '' && v !== ' ');
+                const currentValuesArray =
+                  getValues(formFieldKey)
+                    ?.split(',')
+                    ?.filter((v) => v !== '' && v !== ' ') || [];
                 const thisValue = option.value;
                 const thisIsSelected = currentValuesArray?.includes(thisValue);
 
