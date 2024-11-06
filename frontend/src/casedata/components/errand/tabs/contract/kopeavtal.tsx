@@ -4,7 +4,7 @@ import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { getSSNFromPersonId, getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import renderContractTermCheckboxList from '@casedata/services/contract-render-service';
-import { getContractStakeholderName } from '@casedata/services/contract-service';
+import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
 import { numberToSwedishWords } from '@common/services/number-service';
 import { useAppContext } from '@contexts/app.context';
 import {
@@ -92,6 +92,9 @@ export const KopeAvtal: React.FC<{
   const [loading, setIsLoading] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [signatures, setSignatures] = useState<String[]>([]);
+
+  const [doneMark, setDoneMark] = useState<string[]>([]);
+  const initialRender = useRef(true);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -198,24 +201,57 @@ export const KopeAvtal: React.FC<{
     }
   }, [amountNumber]);
 
-  const saveButton = () => {
+  useEffect(() => {
+    const doneMarkedElements =
+      errand.extraParameters.find((parameters) => parameters.key === 'kopeavtal')?.values || [];
+    setDoneMark(doneMarkedElements);
+  }, []);
+
+  useEffect(() => {
+    // Prevent dubble saving on initialRender
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
+    saveDoneMarksOnErrande(municipalityId, errand, 'kopeavtal', doneMark);
+  }, [doneMark]);
+
+  const markSectionAsDone = (inSection: string) => {
+    if (doneMark.findIndex((temp) => temp === inSection) === -1) {
+      setDoneMark((prevArray) => [...prevArray, inSection]);
+    } else {
+      setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
+    }
+  };
+
+  const saveButton = (inSection) => {
     return (
       <div className="my-md">
         {loading ? (
           <Button disabled={true}>Sparar</Button>
         ) : (
-          <Button
-            disabled={!allowed}
-            onClick={() => {
-              setIsLoading(true);
-              onSave(getValues()).then(() => {
-                setIsLoading(undefined);
-                setTextIsDirty(false);
-              });
-            }}
-          >
-            Spara
-          </Button>
+          <div className="flex gap-20">
+            <Button
+              disabled={!allowed}
+              onClick={() => {
+                setIsLoading(true);
+                onSave(getValues()).then(() => {
+                  setIsLoading(undefined);
+                  setTextIsDirty(false);
+                });
+              }}
+            >
+              Spara
+            </Button>
+            <Button
+              variant="tertiary"
+              onClick={() => {
+                markSectionAsDone(inSection);
+              }}
+            >
+              Färdigställt
+            </Button>
+          </div>
         )}
       </div>
     );
@@ -226,7 +262,6 @@ export const KopeAvtal: React.FC<{
       <Disclosure
         icon={<Icon name="users" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
-        // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <Icon size={18} name="check" /> : ''}
         data-cy="parties-disclosure"
         labelColor={sellersFields?.length > 0 && buyersFields.length > 0 ? 'success' : `warning`}
         initalOpen={true}
@@ -353,8 +388,7 @@ export const KopeAvtal: React.FC<{
         icon={<Icon name="clipboard-list" />}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
-        // label={watch().overlatelseforklaring?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().overlatelseforklaring?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'overlatelseforklaring') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().overlatelseforklaring?.length > 0}
         color="gronsta"
         variant="alt"
@@ -508,15 +542,14 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('overlatelseforklaring')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="wallet" />}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
-        // label={watch().kopeskilling?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().kopeskilling?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'kopeskilling') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().kopeskilling?.length > 0}
         color="gronsta"
         variant="alt"
@@ -655,15 +688,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('kopeskilling')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="calendar" />}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
-        // label={watch().tilltrade?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().tilltrade?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'tilltrade') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().tilltrade?.length > 0}
         color="gronsta"
         variant="alt"
@@ -777,15 +809,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('tilltrade')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -917,15 +948,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('markfororeningar')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="trees" />}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
-        // label={watch().skog?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().skog?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'skog') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().skog?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1055,15 +1085,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('skog')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="file-check" />}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
-        // label={watch().forpliktelser?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().forpliktelser?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'forpliktelser') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().forpliktelser?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1171,15 +1200,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('forpliktelser')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="calculator" />}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
-        // label={watch().utgifter?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().utgifter?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'utgifter') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().utgifter?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1304,15 +1332,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('utgifter')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="home" />}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
-        // label={watch().fastighetsbildning?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().fastighetsbildning?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'fastighetsbildning') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().fastighetsbildning?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1429,15 +1456,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('fastighetsbildning')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="info" />}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
-        // label={watch().other?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().other?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'other') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().other?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1563,15 +1589,14 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('other')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Färdigställt' : ''}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1735,7 +1760,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('signature')}
         </div>
       </Disclosure>
     </>
