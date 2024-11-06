@@ -451,7 +451,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="map-pin" />}
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
-        label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Komplett' : ''}
         color="gronsta"
         variant="alt"
         onClick={() => {
@@ -605,7 +605,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="info" />}
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
-        label={doneMark.findIndex((temp) => temp === 'andamal') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'andamal') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().andamal?.length > 0}
         color="gronsta"
         variant="alt"
@@ -894,7 +894,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="calendar" />}
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'arrendetid') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'arrendetid') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().arrendetid?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1088,7 +1088,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="wallet" />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
-        label={doneMark.findIndex((temp) => temp === 'arrendeavgift') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'arrendeavgift') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().arrendeavgift?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1403,7 +1403,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="shovel" />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
-        label={doneMark.findIndex((temp) => temp === 'bygglov') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'bygglov') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().bygglov?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1511,7 +1511,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="repeat" />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
-        label={doneMark.findIndex((temp) => temp === 'overlatelse') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'overlatelse') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().overlatelse?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1607,7 +1607,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="enrollment-disclosure"
         icon={<Icon name="square-pen" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'inskrivning') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'inskrivning') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().inskrivning?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1648,7 +1648,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="person-standing" />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
-        label={doneMark.findIndex((temp) => temp === 'skick') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'skick') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().skick?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1750,7 +1750,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="slash" />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
-        label={doneMark.findIndex((temp) => temp === 'ledningar') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'ledningar') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().ledningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1846,7 +1846,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="calculator" />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
-        label={doneMark.findIndex((temp) => temp === 'kostnader') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'kostnader') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().kostnader?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1942,7 +1942,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2094,7 +2094,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="undo" />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'upphorande') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'upphorande') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().upphorande?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2261,7 +2261,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="clipboard-list" />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
-        label={doneMark.findIndex((temp) => temp === 'skadaansvar') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'skadaansvar') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().skadaansvar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2405,7 +2405,7 @@ export const Lagenhetsarrende: React.FC<{
               : 'Övriga villkor'}{' '}
           </h2>
         }
-        label={doneMark.findIndex((temp) => temp === 'additionalTerms') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'additionalTerms') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().additionalTerms?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2448,7 +2448,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="file-plus-2" />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
-        label={doneMark.findIndex((temp) => temp === 'sarskilda') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'sarskilda') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().sarskilda?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2541,7 +2541,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="file-plus-2" />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
-        label={doneMark.findIndex((temp) => temp === 'jordabalken') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'jordabalken') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().jordabalken?.length > 0}
         color="gronsta"
         variant="alt"
@@ -2648,7 +2648,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
         variant="alt"

@@ -390,7 +390,7 @@ export const KopeAvtal: React.FC<{
         icon={<Icon name="clipboard-list" />}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
-        label={doneMark.findIndex((temp) => temp === 'overlatelseforklaring') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'overlatelseforklaring') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().overlatelseforklaring?.length > 0}
         color="gronsta"
         variant="alt"
@@ -551,7 +551,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
         icon={<Icon name="wallet" />}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'kopeskilling') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'kopeskilling') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().kopeskilling?.length > 0}
         color="gronsta"
         variant="alt"
@@ -697,7 +697,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="calendar" />}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
-        label={doneMark.findIndex((temp) => temp === 'tilltrade') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'tilltrade') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().tilltrade?.length > 0}
         color="gronsta"
         variant="alt"
@@ -818,7 +818,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -957,7 +957,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="trees" />}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
-        label={doneMark.findIndex((temp) => temp === 'skog') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'skog') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().skog?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1094,7 +1094,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="file-check" />}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
-        label={doneMark.findIndex((temp) => temp === 'forpliktelser') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'forpliktelser') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().forpliktelser?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1209,7 +1209,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="calculator" />}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
-        label={doneMark.findIndex((temp) => temp === 'utgifter') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'utgifter') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().utgifter?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1341,7 +1341,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="home" />}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'fastighetsbildning') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'fastighetsbildning') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().fastighetsbildning?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1465,7 +1465,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="info" />}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
-        label={doneMark.findIndex((temp) => temp === 'other') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'other') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().other?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1598,7 +1598,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
         variant="alt"
