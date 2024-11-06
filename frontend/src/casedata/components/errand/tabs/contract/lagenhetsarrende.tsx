@@ -297,7 +297,7 @@ export const Lagenhetsarrende: React.FC<{
         {loading ? (
           <Button disabled={true}>Sparar</Button>
         ) : (
-          <div className="flex gap-20">
+          <div>
             <Button
               disabled={!allowed}
               onClick={() => {
@@ -310,14 +310,17 @@ export const Lagenhetsarrende: React.FC<{
             >
               Spara
             </Button>
-            <Button
-              variant="tertiary"
-              onClick={() => {
-                markSectionAsDone(inSection);
-              }}
-            >
-              Färdigställt
-            </Button>
+
+            <div className='mt-24'>
+              <Checkbox
+                onClick={() => {
+                  markSectionAsDone(inSection);
+                }}
+                checked={doneMark.findIndex((temp) => temp === inSection) !== -1 ? true : false}
+              >
+                Markera avsnittet som komplett
+              </Checkbox>
+            </div>
           </div>
         )}
       </div>
