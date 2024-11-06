@@ -208,7 +208,7 @@ export const KopeAvtal: React.FC<{
   }, []);
 
   useEffect(() => {
-    // Prevent dubble saving on initialRender
+    // Prevent dubble saving on initial render.
     if (initialRender.current) {
       initialRender.current = false;
       return;
