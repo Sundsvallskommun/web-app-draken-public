@@ -243,7 +243,7 @@ export const KopeAvtal: React.FC<{
             >
               Spara
             </Button>
-            <div className='mt-24'>
+            <div className="mt-24">
               <Checkbox
                 onClick={() => {
                   markSectionAsDone(inSection);
