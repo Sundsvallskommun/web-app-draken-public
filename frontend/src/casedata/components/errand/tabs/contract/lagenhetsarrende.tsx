@@ -275,7 +275,7 @@ export const Lagenhetsarrende: React.FC<{
   }, []);
 
   useEffect(() => {
-    // Prevent dubble saving on initialRender
+    // Prevent dubble saving on initial render.
     if (initialRender.current) {
       initialRender.current = false;
       return;
@@ -290,7 +290,7 @@ export const Lagenhetsarrende: React.FC<{
       setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
     }
   };
-  
+
   const saveButton = (inSection) => {
     return (
       <div className="my-md">
