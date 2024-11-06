@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { Relation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import {
   CasedataOwnerOrContact,
   ContactInfoType,
@@ -253,7 +253,7 @@ export const getStakeholdersByRelation: (e: IErrand, relation: Role) => Casedata
   e.stakeholders?.filter((s) => s.roles.includes(relation));
 
 export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) => Role = (s) => {
-  const relations = Object.entries(Relation).map(([key, value]) => key);
+  const relations = [...Object.entries(MEXRelation), ...Object.entries(PTRelation)].map(([key, value]) => key);
   return s.roles.find((r) => relations.includes(r)) || undefined;
 };
 
