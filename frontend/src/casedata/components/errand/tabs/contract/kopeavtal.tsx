@@ -14,6 +14,7 @@ import {
   Disclosure,
   FormControl,
   FormLabel,
+  Icon,
   Input,
   Modal,
   RadioButton,
@@ -224,7 +225,7 @@ export const KopeAvtal: React.FC<{
   return (
     <>
       <Disclosure
-        icon={<Icon name="users" />}
+        icon={<Icon icon={<LucideIcon name="users" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
         // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         data-cy="parties-disclosure"
@@ -350,7 +351,7 @@ export const KopeAvtal: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="clipboard-list" />}
+        icon={<Icon icon={<LucideIcon name="clipboard-list" />} />}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
         // label={watch().overlatelseforklaring?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -512,7 +513,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="wallet" />}
+        icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
         // label={watch().kopeskilling?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -659,7 +660,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="calendar" />}
+        icon={<Icon icon={<LucideIcon name="calendar" />} />}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
         // label={watch().tilltrade?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -781,7 +782,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="mountain-snow" />}
+        icon={<Icon icon={<LucideIcon name="mountain-snow" />} />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
         // label={watch().markfororeningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -921,7 +922,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="trees" />}
+        icon={<Icon icon={<LucideIcon name="trees" />} />}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
         // label={watch().skog?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1064,7 +1065,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="file-check" />}
+        icon={<Icon icon={<LucideIcon name="file-check" />} />}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
         // label={watch().forpliktelser?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1180,7 +1181,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="calculator" />}
+        icon={<Icon icon={<LucideIcon name="calculator" />} />}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
         // label={watch().utgifter?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1313,7 +1314,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="home" />}
+        icon={<Icon icon={<LucideIcon name="home" />} />}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
         // label={watch().fastighetsbildning?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1438,7 +1439,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="info" />}
+        icon={<Icon icon={<LucideIcon name="info" />} />}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
         // label={watch().other?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1577,7 +1578,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="pen" />}
+        icon={<Icon icon={<LucideIcon name="pen" />} />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
         // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
