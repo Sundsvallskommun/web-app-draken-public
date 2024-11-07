@@ -1,16 +1,8 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isLOP } from '@common/services/application-service';
-import {
-  Avatar,
-  Button,
-  Disclosure,
-  LucideIcon,
-  FormControl,
-  FormLabel,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,

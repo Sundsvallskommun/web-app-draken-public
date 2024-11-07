@@ -1,25 +1,26 @@
 import { Admin } from '@common/services/user-service';
-import { Button, Checkbox, LucideIcon as Icon, cx } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { useState } from 'react';
+import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Checkbox, cx } from '@sk-web-gui/react';
+import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import {
   AttestationDatesFilter,
   AttestationDatesValues,
   AttestationFilterDatesComponent,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-dates.component';
 import {
-  AttestationFilterTypeComponent,
-  AttestationTypeFilter,
-  AttestationTypeValues,
-} from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-type.component';
-import {
   AttestationFilterStatusComponent,
   AttestationStatusFilter,
   AttestationStatusValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { AttestationFilterTagsComponent } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-tags.component';
-import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
-import { useAppContext } from '@contexts/app.context';
+import {
+  AttestationFilterTypeComponent,
+  AttestationTypeFilter,
+  AttestationTypeValues,
+} from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-type.component';
+import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
+import { useState } from 'react';
 
 export type AttestationFilter = AttestationTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
 export const AttestationValues = {
@@ -54,7 +55,7 @@ export const AttestationsFilteringComponent: React.FC<{
             color="vattjom"
             variant={show ? 'tertiary' : 'primary'}
             inverted={!show}
-            leftIcon={<Icon name="list-filter" size="1.8rem" />}
+            leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
           >
             {show ? 'Dölj filter' : 'Filter'}
           </Button>

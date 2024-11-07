@@ -2,15 +2,14 @@ import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { getImageAspect } from '@casedata/services/casedata-attachment-service';
 import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useDebounceEffect } from '@common/utils/useDebounceEffect';
+import { useAppContext } from '@contexts/app.context';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import CheckIcon from '@mui/icons-material/Check';
-import { Button, cx, LucideIcon as Icon, Image } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, cx, Image } from '@sk-web-gui/react';
 import { useRef, useState } from 'react';
 import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
 
 export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
   props
@@ -178,7 +177,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
                 onClick={() => {
                   setSave(false);
                 }}
-                leftIcon={<Icon name="arrow-left" />}
+                leftIcon={<LucideIcon name="arrow-left" />}
               >
                 Ångra
               </Button>
@@ -197,7 +196,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
                     }, 250);
                   }, 1000);
                 }}
-                leftIcon={<Icon name="check" />}
+                leftIcon={<LucideIcon name="check" />}
               >
                 Ja, spara
               </Button>
@@ -214,7 +213,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
               onClick={() => {
                 setSave(true);
               }}
-              leftIcon={<Icon name="check" />}
+              leftIcon={<LucideIcon name="check" />}
             >
               Spara
             </Button>

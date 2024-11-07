@@ -1,4 +1,5 @@
-import { Checkbox, LucideIcon as Icon, PopupMenu, SearchField } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -18,7 +19,7 @@ export const SupportManagementFilterChannel: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="Channel-filter"
         variant="tertiary"
         showBackground={false}

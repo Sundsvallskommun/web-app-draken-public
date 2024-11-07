@@ -9,13 +9,13 @@ import { User } from '@common/interfaces/user';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -532,7 +532,7 @@ export const SupportMessageForm: React.FC<{
           <Button
             variant="tertiary"
             color="primary"
-            leftIcon={<Icon name="paperclip" />}
+            leftIcon={<LucideIcon name="paperclip" />}
             onClick={() => setIsAttachmentModalOpen(true)}
             data-cy="add-attachment-button"
           >
@@ -553,7 +553,7 @@ export const SupportMessageForm: React.FC<{
                 >
                   <div className="flex w-5/6 gap-10">
                     <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                      <Icon name="file" size={25} />
+                      <LucideIcon name="file" size={25} />
                     </div>
                     <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
                   </div>
@@ -565,7 +565,7 @@ export const SupportMessageForm: React.FC<{
                       className="self-end"
                       onClick={() => removeMessageAttachment(index)}
                     >
-                      <Icon name="x" />
+                      <LucideIcon name="x" />
                     </Button>
                   </div>
                 </div>
@@ -579,7 +579,7 @@ export const SupportMessageForm: React.FC<{
         {messageVerification ? (
           <div className="text-md text-secondary my-sm">
             {/* TODO FIX */}
-            {/* <Icon name="check" fontSize="inherit" className="ml-sm mr-sm" /> */}
+            {/* <LucideIcon name="check" fontSize="inherit" className="ml-sm mr-sm" /> */}
             <span>Meddelandet har skickats</span>
           </div>
         ) : (

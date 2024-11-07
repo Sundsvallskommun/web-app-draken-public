@@ -4,7 +4,8 @@ import { isIS, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
-import { LucideIcon as Icon, Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
@@ -109,7 +110,7 @@ export const SupportErrandsTable: React.FC = () => {
 
   useEffect(() => {
     setSidebarButtons(supportSidebarButtons);
-  }, [data]);
+  }, [data, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]);
 
   useEffect(() => {
     setCategories(supportMetadata?.categories);
@@ -255,7 +256,7 @@ export const SupportErrandsTable: React.FC = () => {
     };
     return (
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-        {icon ? <Icon name={icon} size={16} /> : null} {solvedErrandText()}
+        {icon ? <LucideIcon name={icon} size={16} /> : null} {solvedErrandText()}
       </Label>
     );
   };

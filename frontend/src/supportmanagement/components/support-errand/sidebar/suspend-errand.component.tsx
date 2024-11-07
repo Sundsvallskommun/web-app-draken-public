@@ -1,16 +1,8 @@
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import {
-  Button,
-  FormControl,
-  FormLabel,
-  LucideIcon as Icon,
-  Input,
-  Modal,
-  Textarea,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Status,
@@ -110,7 +102,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             className="w-full"
             color="vattjom"
             data-cy="suspend-button"
-            leftIcon={<Icon name="circle-pause" />}
+            leftIcon={<LucideIcon name="circle-pause" />}
             variant="secondary"
             disabled={disabled}
             onClick={() => setShowModal(true)}

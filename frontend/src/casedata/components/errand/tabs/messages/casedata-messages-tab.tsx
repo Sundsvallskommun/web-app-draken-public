@@ -1,14 +1,15 @@
+import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
-import { Avatar, Button, LucideIcon as Icon, cx, useSnackbar, Divider, RadioButton } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Divider, Icon, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
-import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -74,19 +75,19 @@ export const CasedataMessagesTab: React.FC<{
     if (msg?.messageType === 'WEBMESSAGE' || msg?.externalCaseID) {
       return (
         <>
-          <Icon name="monitor" size="1.5rem" className="my-1" /> Via e-tjänst
+          <Icon icon={<LucideIcon name="monitor" />} size="1.5rem" className="my-1" /> Via e-tjänst
         </>
       );
     } else if (msg?.messageType === 'SMS') {
       return (
         <>
-          <Icon name="smartphone" size="1.5rem" className="my-1" /> Via SMS
+          <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="my-1" /> Via SMS
         </>
       );
     } else {
       return (
         <>
-          <Icon name="mail" size="1.5rem" className="my-1" /> Via e-post
+          <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="my-1" /> Via e-post
         </>
       );
     }
@@ -126,7 +127,7 @@ export const CasedataMessagesTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<Icon name="mail" size={18} />}
+            rightIcon={<LucideIcon name="mail" size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
               setShowMessageComposer(true);
@@ -228,13 +229,15 @@ export const CasedataMessagesTab: React.FC<{
                 </div>
                 {selectedMessage?.attachments.length > 0 ? (
                   <ul className="flex flex-row gap-sm items-center my-12">
-                    <Icon name="paperclip" size="1.6rem" />
+                    <LucideIcon name="paperclip" size="1.6rem" />
                     {selectedMessage?.attachments?.map((a, idx) => (
                       <Button
                         key={`${a.name}-${idx}`}
                         onClick={() => {}}
                         role="listitem"
-                        leftIcon={a.name.endsWith('pdf') ? <Icon name="paperclip" /> : <Icon name="image" />}
+                        leftIcon={
+                          a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />
+                        }
                         variant="tertiary"
                         data-cy={`message-attachment-${idx}`}
                       >

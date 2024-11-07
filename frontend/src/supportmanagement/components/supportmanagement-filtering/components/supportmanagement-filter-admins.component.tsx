@@ -1,5 +1,6 @@
 import { Admin } from '@common/services/user-service';
-import { Checkbox, LucideIcon as Icon, PopupMenu, SearchField } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -24,7 +25,7 @@ export const SupportManagementFilterAdmins: React.FC<SupportManagementFilterAdmi
     administrators && (
       <PopupMenu>
         <PopupMenu.Button
-          rightIcon={<Icon name="chevron-down" />}
+          rightIcon={<LucideIcon name="chevron-down" />}
           data-cy="Handläggare-filter"
           variant="tertiary"
           showBackground={false}

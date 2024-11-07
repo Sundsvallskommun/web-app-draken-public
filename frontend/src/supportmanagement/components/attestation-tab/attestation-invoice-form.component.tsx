@@ -1,24 +1,24 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   RadioButton,
   Select,
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { AttestationInvoiceRequest } from '@supportmanagement/services/support-invoice-service';
+import NextLink from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { AttestationInvoiceRequest, updateSupportInvoice } from '@supportmanagement/services/support-invoice-service';
-import NextLink from 'next/link';
 
 export interface AttestationInvoiceFormModel {
   id: string;
@@ -506,7 +506,7 @@ export const AttestationInvoiceForm: React.FC<{
           <div>
             <div className="pt-16 gap-md flex justify-end">
               <Button inverted variant="primary" color="gronsta">
-                <Icon name="check" /> Godkänd
+                <LucideIcon name="check" /> Godkänd
               </Button>
               <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
                 Ändra beslut
@@ -525,7 +525,7 @@ export const AttestationInvoiceForm: React.FC<{
         <div>
           <div className="pt-16 gap-md flex justify-end">
             <Button inverted variant="primary" color="error">
-              <Icon name="thumbs-down" /> Avslag
+              <LucideIcon name="thumbs-down" /> Avslag
             </Button>
             <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
               Ändra beslut

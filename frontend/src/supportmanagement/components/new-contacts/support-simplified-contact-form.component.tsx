@@ -25,13 +25,13 @@ import {
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { isLOP } from '@common/services/application-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   isArray,
   Modal,
@@ -636,7 +636,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                             setValue('stakeholderType', 'PERSON');
                           }}
                         >
-                          <Icon name="x" />
+                          <LucideIcon name="x" />
                         </Button>
                       ) : (
                         <Button
@@ -735,7 +735,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                             setValue('stakeholderType', 'ORGANIZATION');
                           }}
                         >
-                          <Icon name="x" />
+                          <LucideIcon name="x" />
                         </Button>
                       ) : (
                         <Button

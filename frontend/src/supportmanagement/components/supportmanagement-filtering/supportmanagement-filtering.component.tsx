@@ -1,6 +1,6 @@
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
-import { Button, Checkbox, LucideIcon as Icon, Label, cx } from '@sk-web-gui/react';
+import { Button, Checkbox, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import {
@@ -28,11 +28,28 @@ import {
   SupportManagementQueryValues,
 } from './components/supportmanagement-filter-query.component';
 
+import { isLOP } from '@common/services/application-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   ChannelFilter,
   ChannelValues,
   SupportManagementFilterChannel,
 } from './components/supportmanagement-filter-channel.component';
+import {
+  LabelCategoryFilter,
+  LabelCategoryValues,
+  SupportManagementFilterLabelCategory,
+} from './components/supportmanagement-filter-labelCategory.component';
+import {
+  LabelSubTypeFilter,
+  LabelSubTypeValues,
+  SupportManagementFilterLabelSubType,
+} from './components/supportmanagement-filter-labelSubType.component';
+import {
+  LabelTypeFilter,
+  LabelTypeValues,
+  SupportManagementFilterLabelType,
+} from './components/supportmanagement-filter-labelType.component';
 import {
   SupportManagementStatusFilter,
   SupportManagementStatusValues,
@@ -43,22 +60,6 @@ import {
   TypeFilter,
   TypeValues,
 } from './components/supportmanagement-filter-type.component';
-import {
-  LabelTypeFilter,
-  LabelTypeValues,
-  SupportManagementFilterLabelType,
-} from './components/supportmanagement-filter-labelType.component';
-import {
-  LabelCategoryFilter,
-  LabelCategoryValues,
-  SupportManagementFilterLabelCategory,
-} from './components/supportmanagement-filter-labelCategory.component';
-import { isLOP } from '@common/services/application-service';
-import {
-  LabelSubTypeFilter,
-  LabelSubTypeValues,
-  SupportManagementFilterLabelSubType,
-} from './components/supportmanagement-filter-labelSubType.component';
 
 export type SupportManagementFilter = CategoryFilter &
   LabelCategoryFilter &
@@ -116,7 +117,7 @@ const SupportManagementFiltering: React.FC<{
             color="vattjom"
             variant={show ? 'tertiary' : 'primary'}
             inverted={show ? false : true}
-            leftIcon={<Icon name="list-filter" size="1.8rem" />}
+            leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
           >
             {show ? 'Dölj filter' : 'Filter'}
           </Button>
