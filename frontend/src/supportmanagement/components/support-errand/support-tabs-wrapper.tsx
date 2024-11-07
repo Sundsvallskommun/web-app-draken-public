@@ -8,9 +8,9 @@ import {
 } from '@supportmanagement/services/support-attachment-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
+  buildTree,
   countUnreadMessages,
   fetchSupportMessages,
-  fetchSupportMessagesTree,
 } from '@supportmanagement/services/support-message-service';
 import { getSupportNotes, SupportNoteData } from '@supportmanagement/services/support-note-service';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
@@ -63,8 +63,11 @@ export const SupportTabsWrapper: React.FC<{
       getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
       getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
       getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-      fetchSupportMessages(supportErrand.id, municipalityId).then(setMessages);
-      fetchSupportMessagesTree(supportErrand.id, municipalityId).then(setMessageTree);
+      fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+        const tree = buildTree(res);
+        setMessageTree(tree);
+        setMessages(res);
+      });
     }
   };
 
@@ -72,8 +75,11 @@ export const SupportTabsWrapper: React.FC<{
     if (supportErrand.id) {
       getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
       getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-      fetchSupportMessages(supportErrand.id, municipalityId).then(setMessages);
-      fetchSupportMessagesTree(supportErrand.id, municipalityId).then(setMessageTree);
+      fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+        const tree = buildTree(res);
+        setMessageTree(tree);
+        setMessages(res);
+      });
     }
   }, [supportErrand]);
 
