@@ -1078,7 +1078,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                 color="primary"
                 onClick={handleSubmit(onSubmit, onError)}
               >
-                Spara uppgifter
+                {editing ? 'Ändra uppgifter' : 'Lägg till uppgifter'}
               </Button>
             </div>
           </div>
