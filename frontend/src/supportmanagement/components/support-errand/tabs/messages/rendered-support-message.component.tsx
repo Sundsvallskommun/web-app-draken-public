@@ -1,6 +1,6 @@
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, cx } from '@sk-web-gui/react';
+import { Avatar, cx, Icon } from '@sk-web-gui/react';
 import { Message } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -78,11 +78,11 @@ export const RenderedSupportMessage: React.FC<{
           <span className="text-xs whitespace-nowrap">
             {message.communicationType === 'SMS' ? (
               <>
-                <Icon name="smartphone" size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
               </>
             ) : message.communicationType === 'EMAIL' ? (
               <>
-                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
               </>
             ) : (
               // : message.communicationType === 'WEBMESSAGE' || message.externalCaseID
