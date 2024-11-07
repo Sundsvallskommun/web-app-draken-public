@@ -25,14 +25,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-
-export interface SidebarButton {
-  label: string;
-  key: Status;
-  statuses: Status[];
-  icon: string;
-  totalStatusErrands: number;
-}
+import { SidebarButton } from '@common/interfaces/sidebar-button';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();

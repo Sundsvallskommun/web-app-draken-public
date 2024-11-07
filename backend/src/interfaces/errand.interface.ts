@@ -1,11 +1,12 @@
 import {
-  DecisionDTO,
-  ErrandDTO,
-  ErrandDtoChannelEnum,
-  PatchErrandDTO as IPatchErrandDTO,
-  PatchErrandDtoCaseTypeEnum,
-  PatchErrandDtoPriorityEnum,
-  StakeholderDTO,
+  Decision as DecisionDTO,
+  Errand as ErrandDTO,
+  ErrandChannelEnum,
+  PatchErrand as IPatchErrandDTO,
+  PatchErrandCaseTypeEnum,
+  PatchErrandPriorityEnum,
+  Stakeholder as StakeholderDTO,
+  ExtraParameter,
 } from '@/data-contracts/case-data/data-contracts';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
@@ -26,10 +27,10 @@ export class CreateErrandDto implements ErrandDTO {
   externalCaseId?: string;
   @IsString()
   @IsOptional()
-  caseType?: PatchErrandDtoCaseTypeEnum;
+  caseType?: PatchErrandCaseTypeEnum;
   @IsString()
   @IsOptional()
-  channel?: ErrandDtoChannelEnum;
+  channel?: ErrandChannelEnum;
   @IsString()
   @IsOptional()
   priority?: any;
@@ -71,9 +72,9 @@ export class CreateErrandDto implements ErrandDTO {
   @IsString()
   @IsOptional()
   decisions?: DecisionDTO[];
-  @IsObject()
+  @IsArray()
   @IsOptional()
-  extraParameters?: GenericExtraParameters;
+  extraParameters?: ExtraParameter[];
 }
 
 export class CPatchErrandDto implements IPatchErrandDTO {
@@ -91,10 +92,10 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   statusDescription?: string;
   @IsString()
   @IsOptional()
-  caseType?: PatchErrandDtoCaseTypeEnum;
+  caseType?: PatchErrandCaseTypeEnum;
   @IsString()
   @IsOptional()
-  priority?: PatchErrandDtoPriorityEnum;
+  priority?: PatchErrandPriorityEnum;
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -121,7 +122,7 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   @IsString()
   @IsOptional()
   decisions?: DecisionDTO[];
-  @IsObject()
+  @IsArray()
   @IsOptional()
-  extraParameters?: GenericExtraParameters;
+  extraParameters?: ExtraParameter[];
 }

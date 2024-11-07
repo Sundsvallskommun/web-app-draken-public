@@ -13,7 +13,18 @@ import {
 } from '@common/services/application-service';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
+import {
+  Button,
+  CookieConsent,
+  Divider,
+  Icon,
+  Label,
+  Link,
+  Logo,
+  PopupMenu,
+  UserMenu,
+  useGui,
+} from '@sk-web-gui/react';
 import { Resolution, Status, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
@@ -35,11 +46,8 @@ export default function Layout({ title, children }) {
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
-  const errandNumber = isMEX()
-    ? errand?.errandNumber
-    : isKC() || isIS() || isLOP()
-    ? supportErrand?.errandNumber
-    : undefined;
+  const errandNumber =
+    isMEX() || isPT() ? errand?.errandNumber : isKC() || isIS() || isLOP() ? supportErrand?.errandNumber : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
@@ -193,14 +201,17 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIS() || isLOP() || isMEX() ? (
-                      <PopupMenu.Item>
-                        <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                          <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
-                          ärende
-                        </Link>
-                      </PopupMenu.Item>
-                    ) : null}
+                    <PopupMenu.Item>
+                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                        <Icon
+                          icon={<LucideIcon name="external-link" />}
+                          className="h-md"
+                          color="primary"
+                          variant="tertiary"
+                        />{' '}
+                        Nytt ärende
+                      </Link>
+                    </PopupMenu.Item>
                   </PopupMenu.Group>
 
                   {userMenuGroups.map((group, groupindex) => (

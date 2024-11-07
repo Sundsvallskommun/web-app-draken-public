@@ -3,6 +3,7 @@ import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
 import { mockProposedDecision, mockRecommendedDecision } from './mockDecisions';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 // This person number is for test purposes, from the Swedish Tax Agency
 export const MOCK_PERSON_NUMBER = '199001162396';
@@ -184,34 +185,93 @@ export const mockPTErrand_base: { data: ApiErrand; message: string } = {
       },
     ],
     messageIds: [],
-    extraParameters: {
-      'disability.walkingAbility': 'false',
-      'disability.walkingDistance.beforeRest': '85',
-      'disability.walkingDistance.max': '150',
-      'process.phaseStatus': 'WAITING',
-      'application.applicant.testimonial': 'true',
-      'consent.view.transportationServiceDetails': 'false',
-      'disability.aid': 'Elrullstol,Rullator',
-      'application.role': 'SELF',
-      'application.applicant.capacity': 'DRIVER',
-      'application.applicant.signingAbility': 'true',
-      'application.renewal.changedCircumstances': 'Y',
-      'application.renewal.expirationDate': '2023-12-14',
-      'application.renewal.medicalConfirmationRequired': 'yes',
-      'application.lostPermit.policeReportNumber': '123456',
-      'consent.contact.doctor': 'false',
-      'application.reason': 'Kan inte gå',
-      'process.phaseAction': 'UNKNOWN',
-      'disability.duration': 'P0Y',
-    },
+    extraParameters: [
+      {
+        key: 'disability.walkingAbility',
+        values: ['false'],
+      },
+      {
+        key: 'disability.walkingDistance.beforeRest',
+        values: ['85'],
+      },
+      {
+        key: 'disability.walkingDistance.max',
+        values: ['150'],
+      },
+      {
+        key: 'process.phaseStatus',
+        values: ['WAITING'],
+      },
+      {
+        key: 'application.applicant.testimonial',
+        values: ['true'],
+      },
+      {
+        key: 'consent.view.transportationServiceDetails',
+        values: ['false'],
+      },
+      {
+        key: 'disability.aid',
+        values: ['Elrullstol,Rullator'],
+      },
+      {
+        key: 'application.role',
+        values: ['SELF'],
+      },
+      {
+        key: 'application.applicant.capacity',
+        values: ['DRIVER'],
+      },
+      {
+        key: 'application.applicant.signingAbility',
+        values: ['true'],
+      },
+      {
+        key: 'application.renewal.changedCircumstances',
+        values: ['Y'],
+      },
+      {
+        key: 'application.renewal.expirationDate',
+        values: ['2023-12-14'],
+      },
+      {
+        key: 'application.renewal.medicalConfirmationRequired',
+        values: ['yes'],
+      },
+      {
+        key: 'application.lostPermit.policeReportNumber',
+        values: ['123456'],
+      },
+      {
+        key: 'consent.contact.doctor',
+        values: ['false'],
+      },
+      {
+        key: 'application.reason',
+        values: ['Kan inte gå'],
+      },
+      {
+        key: 'process.phaseAction',
+        values: ['UNKNOWN'],
+      },
+      {
+        key: 'disability.duration',
+        values: ['P0Y'],
+      },
+    ],
   },
   message: 'success',
 };
 
 export const modifyPatchExtraParameter: (
-  base: { [key: string]: any },
-  obj: { [key: string]: any }
-) => { [key: string]: any } = (base, obj) => ({
-  ...base,
-  extraParameters: { ...base.extraParameters, ...obj },
-});
+  base: ExtraParameter[],
+  param: { key: string; values: string[] }
+) => ExtraParameter[] = (base, param) => {
+  const index = base.findIndex((p) => p.key === param.key);
+  if (index === -1) {
+    return [...base, param];
+  }
+  const updated = [...base];
+  updated[index] = param;
+  return updated;
+};

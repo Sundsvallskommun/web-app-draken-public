@@ -10,7 +10,7 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 
 import { TermGroup } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { Relation } from '@casedata/interfaces/role';
+import { MEXRelation } from '@casedata/interfaces/role';
 import { getContractStakeholderName } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
@@ -292,7 +292,7 @@ export const Lagenhetsarrende: React.FC<{
     <>
       <Disclosure
         data-cy="parties-disclosure"
-        icon={<Icon name="users" />}
+        icon={<LucideIcon name="users" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
         // label={watch().omrade?.length ? 'Sparad' : ''}
         initalOpen={true}
@@ -410,7 +410,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="map-pin" />}
+        icon={<LucideIcon name="map-pin" />}
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
         //label={existingContract.omrade?.length > 8 ? 'Färdigställt' : ''}
@@ -569,7 +569,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="info" />}
+        icon={<LucideIcon name="info" />}
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
         // label={watch().andamal?.length ? 'Sparad' : ''}
@@ -858,7 +858,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="calendar" />}
+        icon={<LucideIcon name="calendar" />}
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
         // label={watch().arrendetid?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1053,7 +1053,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="wallet" />}
+        icon={<LucideIcon name="wallet" />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
         // label={watch().arrendeavgift?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1369,7 +1369,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="shovel" />}
+        icon={<LucideIcon name="shovel" />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
         // label={watch().bygglov?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1478,7 +1478,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="repeat" />}
+        icon={<LucideIcon name="repeat" />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
         // label={watch().overlatelse?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1576,7 +1576,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
       <Disclosure
         data-cy="enrollment-disclosure"
-        icon={<Icon name="square-pen" />}
+        icon={<LucideIcon name="square-pen" />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
         // label={watch().inskrivning?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
         labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
@@ -1617,7 +1617,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="person-standing" />}
+        icon={<LucideIcon name="person-standing" />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
         // label={watch().skick?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1725,7 +1725,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="slash" />}
+        icon={<LucideIcon name="slash" />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
         // label={watch().ledningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1822,7 +1822,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="calculator" />}
+        icon={<LucideIcon name="calculator" />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
         // label={watch().kostnader?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -1919,7 +1919,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="mountain-snow" />}
+        icon={<LucideIcon name="mountain-snow" />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
         // label={watch().markfororeningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -2072,7 +2072,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="undo" />}
+        icon={<LucideIcon name="undo" />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
         // label={watch().upphorande?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -2240,7 +2240,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="clipboard-list" />}
+        icon={<LucideIcon name="clipboard-list" />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
         // label={watch().skadaansvar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -2379,7 +2379,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
 
       <Disclosure
-        icon={<Icon name="file-plus-2" />}
+        icon={<LucideIcon name="file-plus-2" />}
         data-cy="additional-terms-disclosure"
         header={
           <h2 className="text-h4-sm md:text-h4-md">
@@ -2429,7 +2429,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
 
       <Disclosure
-        icon={<Icon name="file-plus-2" />}
+        icon={<LucideIcon name="file-plus-2" />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
         // label={watch().sarskilda?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -2523,7 +2523,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="file-plus-2" />}
+        icon={<LucideIcon name="file-plus-2" />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
         // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -2631,7 +2631,7 @@ export const Lagenhetsarrende: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="pen" />}
+        icon={<LucideIcon name="pen" />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
         // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
@@ -2707,7 +2707,7 @@ export const Lagenhetsarrende: React.FC<{
                             }}
                           />
                           {b.firstName ? `${b.firstName} ${b.lastName} ` : `${b.organizationName}`}{' '}
-                          {getStakeholderRelation(b) ? `(${Relation[getStakeholderRelation(b)]})` : ''}
+                          {getStakeholderRelation(b) ? `(${MEXRelation[getStakeholderRelation(b)]})` : ''}
                         </Table.Column>
                       </Table.Row>
                     ))}
@@ -2746,7 +2746,7 @@ export const Lagenhetsarrende: React.FC<{
                     let stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
                     content += `
                         <p><b>${
-                          getStakeholderRelation(stakeholder) ? Relation[getStakeholderRelation(stakeholder)] : ''
+                          getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : ''
                         }</b></p>
                         <p>${
                           stakeholder.firstName

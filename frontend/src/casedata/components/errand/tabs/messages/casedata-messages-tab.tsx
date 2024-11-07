@@ -29,7 +29,7 @@ export const CasedataMessagesTab: React.FC<{
   }, [user, errand]);
 
   const setMessageViewed = (msg: ErrandMessageResponse) => {
-    setMessageViewStatus(municipalityId, msg.messageID, true)
+    setMessageViewStatus(errand.id, municipalityId, msg.messageID, true)
       .then(() =>
         fetchMessagesTree(municipalityId, errand).catch(() => {
           toastMessage({

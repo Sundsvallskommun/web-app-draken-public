@@ -1,7 +1,7 @@
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, cx } from '@sk-web-gui/react';
+import { Avatar, cx, Icon } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React from 'react';
 
@@ -78,19 +78,20 @@ export const RenderedMessage: React.FC<{
           <span className="text-xs whitespace-nowrap">
             {message.messageType === 'SMS' ? (
               <>
-                <Icon name="smartphone" size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
               </>
             ) : message.messageType === 'EMAIL' ? (
               <>
-                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
               </>
             ) : message.messageType === 'DIGITAL_MAIL' ? (
               <>
-                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
+                <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via digital
+                brevlåda
               </>
             ) : message.messageType === 'WEBMESSAGE' || message.externalCaseID ? (
               <>
-                <Icon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                <Icon icon={<LucideIcon name="monitor" />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
               </>
             ) : (
               ''

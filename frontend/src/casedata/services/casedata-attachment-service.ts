@@ -178,7 +178,7 @@ export const getImageAspect: (attachment: Attachment) => number = (attachment) =
     : undefined;
 
 const uniqueAttachments: AttachmentCategory[] = [];
-const uniquePTAttachments: PTAttachmentCategory[] = [];
+const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
 export const onlyOneAllowed: (cat: AttachmentCategory | PTAttachmentCategory) => boolean = (
   cat: AttachmentCategory & PTAttachmentCategory
@@ -201,20 +201,23 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
     const passportPhotoExists =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length == 1;
     const medicalConfirmationValid =
-      errand.extraParameters['application.renewal.medicalConfirmationRequired'] === 'no' ||
+      errand.extraParameters.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values[0] ===
+        'no' ||
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0;
     const signatureValid =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'SIGNATURE').length ==
-      (errand.extraParameters['application.applicant.signingAbility'] === 'true' ? 1 : 0);
+      (errand.extraParameters.find((p) => p.key === 'application.applicant.signingAbility')?.values[0] === 'true'
+        ? 1
+        : 0);
     const rsn = [];
     if (!passportPhotoExists) {
-      rsn.push('ett passfoto');
+      rsn.push('passfoto saknas');
     }
     if (!medicalConfirmationValid) {
-      rsn.push('läkarintyg');
+      rsn.push('läkarintyg saknas');
     }
     if (!signatureValid) {
-      rsn.push('en underskrift om den sökande kan signera');
+      rsn.push('signaturfoto måste bifogas om den sökande kan signera');
     }
 
     const reason = rsn.map((r, i) => {
@@ -274,6 +277,7 @@ export const editAttachment = (
 
 export const sendAttachments = (
   municipalityId: string,
+  errandId: number,
   errandNumber: string,
   attachmentData: { type: string; file: FileList; attachmentName: string }[]
 ) => {
@@ -309,7 +313,7 @@ export const sendAttachments = (
 
     const postAttachment = () =>
       apiService
-        .post<boolean, FormData>(`casedata/${municipalityId}/attachments`, formData, {
+        .post<boolean, FormData>(`casedata/${municipalityId}/errands/${errandId}/attachments`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((res) => {
@@ -346,14 +350,15 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
     });
 };
 
-export const fetchAttachment: (municipalityId: string, attachmentId: string) => Promise<ApiResponse<Attachment>> = (
-  municipalityId,
-  attachmentId
-) => {
+export const fetchAttachment: (
+  municipalityId: string,
+  errandId: number,
+  attachmentId: string
+) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/attachments/${attachmentId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
     .then((res) => res.data)
@@ -363,10 +368,10 @@ export const fetchAttachment: (municipalityId: string, attachmentId: string) => 
     });
 };
 
-export const fetchErrandAttachments: (
-  municipalityId: string,
-  errandNumber: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandNumber) => {
+export const fetchErrandAttachments: (municipalityId: string, errandNumber: string) => Promise<ApiResponse<Attachment[]>> = (
+  municipalityId,
+  errandNumber
+) => {
   if (!errandNumber) {
     console.error('No errand id found, cannot fetch. Returning.');
   }

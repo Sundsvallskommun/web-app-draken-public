@@ -6,9 +6,10 @@ import { apiURL, latestBy } from '@utils/util';
 import ApiService from './api.service';
 import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
-import { ErrandDTO, PatchErrandDtoCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, PatchErrandCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import { CASEDATA_NAMESPACE } from '@/config';
 
-const SERVICE = `case-data/8.0`;
+const SERVICE = `case-data/9.0`;
 
 export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) => Promise<boolean> = async (errand, user) => {
   const apiService = new ApiService();
@@ -26,7 +27,7 @@ export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) =>
 export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, errandId: string) => CreateErrandDto = (errandData, errandId) => {
   const newErrand: CreateErrandDto = {
     ...(errandId && { id: parseInt(errandId, 10) }),
-    ...(errandData.caseType && { caseType: errandData.caseType as unknown as PatchErrandDtoCaseTypeEnum }),
+    ...(errandData.caseType && { caseType: errandData.caseType as unknown as PatchErrandCaseTypeEnum }),
     ...(errandData.priority && { priority: errandData.priority as any }),
     ...(errandData.description && { description: errandData.description }),
     ...(errandData.caseTitleAddition && { caseTitleAddition: errandData.caseTitleAddition }),
@@ -74,10 +75,10 @@ export const withAdministratorIfChanged: (errandData: CreateErrandDto, errandId:
 export const validateAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (municipalityId, errandId, user) => {
   let allowed = false;
   const apiService = new ApiService();
-  const url = `${municipalityId}/errands/${errandId}`;
+  const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
-  if (existingErrand.data.extraParameters?.['process.displayPhase'] === UiPhase.registrerad) {
+  if (existingErrand.data.extraParameters.find(p => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {
     allowed = true;
   }
   if (user.username.toLocaleLowerCase() === getLastUpdatedAdministrator(existingErrand.data.stakeholders)?.adAccount.toLocaleLowerCase()) {

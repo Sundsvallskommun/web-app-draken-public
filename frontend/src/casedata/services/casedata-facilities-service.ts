@@ -22,17 +22,17 @@ export const getFacilities: (municipalityId: string, errandId: string) => Promis
     });
 };
 
-export const saveFacilities = (municipalityId: string, errandeId: string, estate: FacilityDTO[]) => {
-  if (!errandeId || !municipalityId) {
+export const saveFacilities = (municipalityId: string, errandId: number, estate: FacilityDTO[]) => {
+  if (!errandId || !municipalityId) {
     console.error('No errand id or municipality id found, cannot save. Returning.');
     return Promise.resolve();
   }
-  const url = `casedata/${municipalityId}/errande/${errandeId}/facilities`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/facilities`;
   return apiService
     .post<ApiResponse<ApiErrand>, Partial<FacilityDTO[]>>(url, estate)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when saving facilities for errand: ', errandeId);
+      console.error('Something went wrong when saving facilities for errand: ', errandId);
       throw e;
     });
 };

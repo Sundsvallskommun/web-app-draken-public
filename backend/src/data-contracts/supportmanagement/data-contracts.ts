@@ -52,8 +52,8 @@ export interface Problem {
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  detail?: string;
   title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -123,8 +123,8 @@ export interface ThrowableProblem {
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  detail?: string;
   title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -954,10 +954,11 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -966,22 +967,21 @@ export interface PageErrand {
   sort?: SortObject[];
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  unpaged?: boolean;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject[];
+  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject[];
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1185,10 +1185,11 @@ export enum EventType {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1197,7 +1198,6 @@ export interface PageEvent {
   sort?: SortObject[];
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   empty?: boolean;

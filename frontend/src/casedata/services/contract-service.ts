@@ -19,6 +19,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 export enum ContractType {
   LAND_LEASE = 'LAND_LEASE',
@@ -385,7 +386,12 @@ export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
 };
 
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
-  const data = { contractId: contractId };
+  const data: ExtraParameter[] = [
+    {
+      key: 'contractId',
+      values: [contractId],
+    },
+  ];
   return saveExtraParameters(municipalityId, data, errand);
 };
 
@@ -393,7 +399,7 @@ export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | La
   if (!errand) {
     return Promise.reject('No errand found, cannot fetch contract. Returning.');
   }
-  const contractId = errand.extraParameters['contractId'];
+  const contractId = errand.extraParameters.find((p) => p.key === 'contractId')?.values[0];
   if (!contractId) {
     return Promise.reject('No contract id found on errand, cannot fetch contract. Returning.');
   }

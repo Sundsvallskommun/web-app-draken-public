@@ -1,13 +1,13 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import {
-  AddressDtoAddressCategoryEnum,
-  ContactInformationDtoContactTypeEnum,
-  ErrandDTO as CasedataErrandDTO,
-  ErrandDtoChannelEnum as CasedataErrandDtoChannelEnum,
-  ErrandDtoPriorityEnum as CasedataErrandDtoPriorityEnum,
-  FacilityDTO,
-  StakeholderDTO as CasedataStakeholderDTO,
-  StakeholderDtoTypeEnum as CasedataStakeholderDtoTypeEnum,
+  Errand as CasedataErrandDTO,
+  ErrandChannelEnum as CasedataErrandDtoChannelEnum,
+  ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
+  Facility as FacilityDTO,
+  Stakeholder as CasedataStakeholderDTO,
+  StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
+  AddressAddressCategoryEnum,
+  ContactInformationContactTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
 import {
   Errand as SupportErrand,
@@ -526,7 +526,7 @@ export class SupportErrandController {
           addresses: s.address
             ? [
                 {
-                  addressCategory: AddressDtoAddressCategoryEnum.POSTAL_ADDRESS,
+                  addressCategory: AddressAddressCategoryEnum.POSTAL_ADDRESS,
                   street: s.address,
                   postalCode: s.zipCode || '',
                   city: s.city || '',
@@ -539,12 +539,12 @@ export class SupportErrandController {
               ? s.contactChannels.map(c =>
                   c.type === ContactChannelType.PHONE
                     ? {
-                        contactType: ContactInformationDtoContactTypeEnum.PHONE,
+                        contactType: ContactInformationContactTypeEnum.PHONE,
                         value: c.value,
                       }
                     : c.type === ContactChannelType.EMAIL
                     ? {
-                        contactType: ContactInformationDtoContactTypeEnum.EMAIL,
+                        contactType: ContactInformationContactTypeEnum.EMAIL,
                         value: c.value,
                       }
                     : null,
@@ -562,7 +562,7 @@ export class SupportErrandController {
           addresses: s.address
             ? [
                 {
-                  addressCategory: AddressDtoAddressCategoryEnum.POSTAL_ADDRESS,
+                  addressCategory: AddressAddressCategoryEnum.POSTAL_ADDRESS,
                   street: s.address,
                   postalCode: s.zipCode || '',
                   city: s.city || '',
@@ -575,12 +575,12 @@ export class SupportErrandController {
               ? s.contactChannels.map(c =>
                   c.type === ContactChannelType.PHONE
                     ? {
-                        contactType: ContactInformationDtoContactTypeEnum.PHONE,
+                        contactType: ContactInformationContactTypeEnum.PHONE,
                         value: c.value,
                       }
                     : c.type === ContactChannelType.EMAIL
                     ? {
-                        contactType: ContactInformationDtoContactTypeEnum.EMAIL,
+                        contactType: ContactInformationContactTypeEnum.EMAIL,
                         value: c.value,
                       }
                     : null,
@@ -650,13 +650,11 @@ export class SupportErrandController {
           dateTime: new Date().toISOString(),
         },
       ],
-      extraParameters: {
-        supportManagementErrandNumber: existingSupportErrand.data.errandNumber,
-      },
+      extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
-    const url = `${municipalityId}/errands`;
-    const CASEDATA_SERVICE = `case-data/8.0`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
+    const CASEDATA_SERVICE = `case-data/9.0`;
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
       .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand }, req.user)
@@ -703,7 +701,7 @@ export class SupportErrandController {
       });
 
       const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
-        const casedataAttachmentsUrl = `${municipalityId}/attachments`;
+        const casedataAttachmentsUrl = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
           .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
           .then(res => res.data)

@@ -32,9 +32,10 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import { LucideIcon as Icon } from '@sk-web-gui/icon';
+import { Icon } from '@sk-web-gui/icon';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -626,7 +627,7 @@ export const MessageComposer: React.FC<{
                   <Button
                     variant="tertiary"
                     color="primary"
-                    leftIcon={<Icon name="paperclip" />}
+                    leftIcon={<Icon icon={<LucideIcon name="paperclip" />} />}
                     onClick={() => setIsAttachmentModalOpen(true)}
                     data-cy="add-attachment-button"
                   >
@@ -647,7 +648,7 @@ export const MessageComposer: React.FC<{
                         >
                           <div className="flex w-5/6 gap-10">
                             <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                              <Icon name="file" size={25} />
+                              <Icon icon={<LucideIcon name="file" size={25} />} />
                             </div>
                             <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
                           </div>
@@ -659,7 +660,7 @@ export const MessageComposer: React.FC<{
                               className="self-end"
                               onClick={() => removeMessageAttachment(index)}
                             >
-                              <Icon name="x" />
+                              <Icon icon={<LucideIcon name="x" />} />
                             </Button>
                           </div>
                         </div>
