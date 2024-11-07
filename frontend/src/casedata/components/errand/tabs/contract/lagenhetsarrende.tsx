@@ -134,7 +134,7 @@ export const Lagenhetsarrende: React.FC<{
   const [signatures, setSignatures] = useState<String[]>([]);
 
   const [doneMark, setDoneMark] = useState<string[]>([]);
-  const initialRender = useRef(true);
+  const [unsaved, setUnsaved] = useState<boolean>(false);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -275,12 +275,10 @@ export const Lagenhetsarrende: React.FC<{
   }, []);
 
   useEffect(() => {
-    // Prevent dubble saving on initial render.
-    if (initialRender.current) {
-      initialRender.current = false;
-      return;
+    if (unsaved) {
+      saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
+      setUnsaved(false);
     }
-    saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
   }, [doneMark]);
 
   const markSectionAsDone = (inSection: string) => {
@@ -289,6 +287,7 @@ export const Lagenhetsarrende: React.FC<{
     } else {
       setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
     }
+    setUnsaved(true);
   };
 
   const saveButton = (inSection) => {
