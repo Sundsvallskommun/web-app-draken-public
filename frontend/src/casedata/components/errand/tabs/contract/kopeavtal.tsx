@@ -7,13 +7,14 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
 import { numberToSwedishWords } from '@common/services/number-service';
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
   Disclosure,
   FormControl,
   FormLabel,
-  LucideIcon as Icon,
+  Icon,
   Input,
   Modal,
   RadioButton,
@@ -261,8 +262,9 @@ export const KopeAvtal: React.FC<{
   return (
     <>
       <Disclosure
-        icon={<Icon name="users" />}
+        icon={<Icon icon={<LucideIcon name="users" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
+        // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <Icon size={18} name="check" /> : ''}
         data-cy="parties-disclosure"
         labelColor={sellersFields?.length > 0 && buyersFields.length > 0 ? 'success' : `warning`}
         initalOpen={true}
@@ -386,10 +388,11 @@ export const KopeAvtal: React.FC<{
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="clipboard-list" />}
+        icon={<Icon icon={<LucideIcon name="clipboard-list" />} />}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
-        label={doneMark.findIndex((temp) => temp === 'overlatelseforklaring') !== -1 ? 'Komplett' : ''}
+        // label={watch().overlatelseforklaring?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().overlatelseforklaring?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().overlatelseforklaring?.length > 0}
         color="gronsta"
         variant="alt"
@@ -402,7 +405,7 @@ export const KopeAvtal: React.FC<{
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowOverlatelse(true)}
             >
               Fyll i villkor
@@ -547,10 +550,11 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="wallet" />}
+        icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'kopeskilling') !== -1 ? 'Komplett' : ''}
+        // label={watch().kopeskilling?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().kopeskilling?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().kopeskilling?.length > 0}
         color="gronsta"
         variant="alt"
@@ -563,7 +567,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowKopeskilling(true)}
             >
               Fyll i villkor
@@ -693,10 +697,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="calendar" />}
+        icon={<Icon icon={<LucideIcon name="calendar" />} />}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
-        label={doneMark.findIndex((temp) => temp === 'tilltrade') !== -1 ? 'Komplett' : ''}
+        // label={watch().tilltrade?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().tilltrade?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().tilltrade?.length > 0}
         color="gronsta"
         variant="alt"
@@ -709,7 +714,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowTilltrade(true)}
             >
               Fyll i villkor
@@ -814,10 +819,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="mountain-snow" />}
+        icon={<Icon icon={<LucideIcon name="mountain-snow" />} />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Komplett' : ''}
+        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -830,7 +836,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowMarkfororeningar(true)}
             >
               Fyll i villkor
@@ -953,10 +959,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="trees" />}
+        icon={<Icon icon={<LucideIcon name="trees" />} />}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
-        label={doneMark.findIndex((temp) => temp === 'skog') !== -1 ? 'Komplett' : ''}
+        // label={watch().skog?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().skog?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skog?.length > 0}
         color="gronsta"
         variant="alt"
@@ -966,7 +973,12 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
-            <Button color="vattjom" inverted={true} rightIcon={<Icon name="pen" />} onClick={() => setShowSkog(true)}>
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowSkog(true)}
+            >
               Fyll i villkor
             </Button>
             <Checkbox
@@ -1090,10 +1102,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="file-check" />}
+        icon={<Icon icon={<LucideIcon name="file-check" />} />}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
-        label={doneMark.findIndex((temp) => temp === 'forpliktelser') !== -1 ? 'Komplett' : ''}
+        // label={watch().forpliktelser?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().forpliktelser?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().forpliktelser?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1106,7 +1119,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowForpliktelser(true)}
             >
               Fyll i villkor
@@ -1205,10 +1218,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="calculator" />}
+        icon={<Icon icon={<LucideIcon name="calculator" />} />}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
-        label={doneMark.findIndex((temp) => temp === 'utgifter') !== -1 ? 'Komplett' : ''}
+        // label={watch().utgifter?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().utgifter?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().utgifter?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1221,7 +1235,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowUtgifter(true)}
             >
               Fyll i villkor
@@ -1337,10 +1351,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="home" />}
+        icon={<Icon icon={<LucideIcon name="home" />} />}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
-        label={doneMark.findIndex((temp) => temp === 'fastighetsbildning') !== -1 ? 'Komplett' : ''}
+        // label={watch().fastighetsbildning?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().fastighetsbildning?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().fastighetsbildning?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1353,7 +1368,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowFastighetsbildning(true)}
             >
               Fyll i villkor
@@ -1461,10 +1476,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="info" />}
+        icon={<Icon icon={<LucideIcon name="info" />} />}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
-        label={doneMark.findIndex((temp) => temp === 'other') !== -1 ? 'Komplett' : ''}
+        // label={watch().other?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().other?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().other?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1474,7 +1490,12 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
-            <Button color="vattjom" inverted={true} rightIcon={<Icon name="pen" />} onClick={() => setShowOther(true)}>
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowOther(true)}
+            >
               Fyll i villkor
             </Button>
             <Checkbox
@@ -1594,10 +1615,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         </div>
       </Disclosure>
       <Disclosure
-        icon={<Icon name="pen" />}
+        icon={<Icon icon={<LucideIcon name="pen" />} />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Komplett' : ''}
+        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1610,7 +1632,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             <Button
               color="vattjom"
               inverted={true}
-              rightIcon={<Icon name="pen" />}
+              rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSignature(true)}
             >
               Fyll i villkor

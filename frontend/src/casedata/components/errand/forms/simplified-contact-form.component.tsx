@@ -2,6 +2,11 @@ import { Channels } from '@casedata/interfaces/channels';
 import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { getErrand } from '@casedata/services/casedata-errand-service';
+import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
+import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import { useAppContext } from '@common/contexts/app.context';
 import {
   AddressResult,
   fetchPersonId,
@@ -9,11 +14,7 @@ import {
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
-import { getErrand } from '@casedata/services/casedata-errand-service';
-import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { useAppContext } from '@common/contexts/app.context';
+import { isMEX } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -25,12 +26,12 @@ import {
   ssnPattern,
 } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -500,7 +501,7 @@ export const SimplifiedContactForm: React.FC<{
                               setValue('stakeholderType', 'PERSON');
                             }}
                           >
-                            <Icon name="x" />
+                            <LucideIcon name="x" />
                           </Button>
                         ) : (
                           <Button
@@ -551,7 +552,7 @@ export const SimplifiedContactForm: React.FC<{
                               setValue('stakeholderType', 'ORGANIZATION');
                             }}
                           >
-                            <Icon name="x" />
+                            <LucideIcon name="x" />
                           </Button>
                         ) : (
                           <Button
@@ -705,7 +706,7 @@ export const SimplifiedContactForm: React.FC<{
                 className="mt-20"
                 disabled={!formState.isValid}
                 onClick={handleSubmit(onSubmit, onError)}
-                leftIcon={<Icon name="plus"></Icon>}
+                leftIcon={<LucideIcon name="plus"></LucideIcon>}
               >
                 {label}
               </Button>

@@ -5,7 +5,6 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   getErrand,
-  getUiPhase,
   isErrandLocked,
   phaseChangeInProgress,
   triggerErrandPhaseChange,
@@ -16,18 +15,8 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  LucideIcon as Icon,
-  Modal,
-  Select,
-  Spinner,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, FormControl, FormLabel, Modal, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 
@@ -204,7 +193,7 @@ export const PhaseChanger = () => {
         onClick={() => {
           setSelectingAdmin(true);
         }}
-        rightIcon={<Icon name="arrow-right" size={18} />}
+        rightIcon={<LucideIcon name="arrow-right" size={18} />}
       >
         Tilldela handläggare
       </Button>
@@ -267,26 +256,18 @@ export const PhaseChanger = () => {
       </Modal>
     </>
   ) : uiPhase === UiPhase.beslut || errand.status === ErrandStatus.ArendeAvslutat ? null : (
-    <>
-      <Button
-        variant="primary"
-        // disabled={
-        //   isErrandLocked(errand) || !allowed || (uiPhase === UiPhase.utredning && !validateErrandForDecision(errand))
-        // }
-        disabled={isErrandLocked(errand) || !allowed || phaseChangeText.disabled}
-        color="vattjom"
-        loadingText="Sparar"
-        loading={isLoading}
-        onClick={triggerPhaseChange}
-        rightIcon={<Icon name="arrow-right" size={18} />}
-      >
-        {phaseChangeText?.button}
-      </Button>
-      {phaseChangeText.disabledMessage ? (
-        <FormErrorMessage data-cy="status-error-message" className="mt-md left-2 right-2 leading-16 text-error">
-          {phaseChangeText.disabledMessage}
-        </FormErrorMessage>
-      ) : null}
-    </>
+    <Button
+      variant="primary"
+      disabled={
+        isErrandLocked(errand) || !allowed || (uiPhase === UiPhase.utredning && !validateErrandForDecision(errand))
+      }
+      color="vattjom"
+      loadingText="Sparar"
+      loading={isLoading}
+      onClick={triggerPhaseChange}
+      rightIcon={<Icon name="arrow-right" size={18} />}
+    >
+      {phaseChangeText?.button}
+    </Button>
   );
 };

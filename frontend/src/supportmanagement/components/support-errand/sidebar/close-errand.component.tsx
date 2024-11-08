@@ -2,16 +2,9 @@ import { User } from '@common/interfaces/user';
 import { isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import {
-  Button,
-  Checkbox,
-  FormControl,
-  LucideIcon as Icon,
-  Modal,
-  RadioButton,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Checkbox, FormControl, Modal, RadioButton, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Resolution,
   ResolutionLabel,
@@ -20,11 +13,10 @@ import {
   closeSupportErrand,
   getSupportErrandById,
 } from '@supportmanagement/services/support-errand-service';
+import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
-import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
@@ -96,7 +88,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         className="w-full"
         color="vattjom"
         data-cy="solved-button"
-        leftIcon={<Icon name="check" />}
+        leftIcon={<LucideIcon name="check" />}
         variant="primary"
         disabled={disabled}
         onClick={() => {

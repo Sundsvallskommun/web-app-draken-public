@@ -4,14 +4,13 @@ import { isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
-  Checkbox,
   cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -30,7 +29,7 @@ import {
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
+import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
@@ -200,7 +199,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         className="w-full"
         data-cy="forward-button"
         color="vattjom"
-        leftIcon={<Icon name="forward" />}
+        leftIcon={<LucideIcon name="forward" />}
         variant="secondary"
         disabled={disabled}
         onClick={() => setShowModal(true)}

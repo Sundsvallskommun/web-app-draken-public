@@ -1,5 +1,6 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Checkbox, LucideIcon as Icon, PopupMenu, SearchField } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -18,7 +19,7 @@ export const CasedataFilterStatus: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="Status-filter"
         variant="tertiary"
         showBackground={false}

@@ -161,7 +161,7 @@ export const Facilities: React.FC<{
         </fieldset>
         <Input type="text" {...register('propertyDesignation')} hidden />
 
-        <SearchField.Suggestions autofilter={false}>
+        <SearchField.Suggestions autofilter={true}>
           <SearchField.SuggestionsInput
             disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             value={searchQuery}
@@ -174,39 +174,25 @@ export const Facilities: React.FC<{
           />
           <>
             {/* TODO add spinner to search  */}
-            {showSpinner === true ? (
-              <SearchField.SuggestionsList className="w-full">
-                <SearchField.SuggestionsOption key="searchHit-0" value="">
-                  Söker...
-                </SearchField.SuggestionsOption>
+            {searchResult.length >= 0 && (
+              <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full">
+                {searchResult.map((estate, index) => (
+                  <SearchField.SuggestionsOption
+                    key={`searchHit-${index}`}
+                    value={searchValue}
+                    onChange={(event) => {
+                      event.stopPropagation();
+                      setRealEstates([...realEstates, makeFacility(estate)]);
+                      setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
+                      setInternalUnsaved(true);
+                      setUnsaved(true);
+                    }}
+                    data-cy={`searchHit-${index}`}
+                  >
+                    {searchType === 'ADDRESS' ? `${estate.address}` : removeMunicipalityName(estate.designation)}
+                  </SearchField.SuggestionsOption>
+                ))}
               </SearchField.SuggestionsList>
-            ) : searchResult.length === 0 && searchQuery.length > 2 ? (
-              <SearchField.SuggestionsList className="w-full">
-                <SearchField.SuggestionsOption key="searchHit-0" value="">
-                  Ingen sökträff
-                </SearchField.SuggestionsOption>
-              </SearchField.SuggestionsList>
-            ) : (
-              searchResult.length >= 0 && (
-                <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full">
-                  {searchResult.map((estate, index) => (
-                    <SearchField.SuggestionsOption
-                      key={`searchHit-${index}`}
-                      value={searchValue}
-                      onChange={(event) => {
-                        event.stopPropagation();
-                        setRealEstates([...realEstates, makeFacility(estate)]);
-                        setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
-                        setInternalUnsaved(true);
-                        setUnsaved(true);
-                      }}
-                      data-cy={`searchHit-${index}`}
-                    >
-                      {searchType === 'ADDRESS' ? `${estate.address}` : removeMunicipalityName(estate.designation)}
-                    </SearchField.SuggestionsOption>
-                  ))}
-                </SearchField.SuggestionsList>
-              )
             )}
           </>
         </SearchField.Suggestions>

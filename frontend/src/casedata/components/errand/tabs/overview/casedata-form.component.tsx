@@ -6,16 +6,8 @@ import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { getCaseLabels, isErrandLocked, municipalityIds } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
-import {
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  LucideIcon as Icon,
-  Input,
-  Select,
-  cx,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
@@ -89,7 +81,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
     <div className="w-full py-24 px-32">
       <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
         <div className="flex gap-sm items-center">
-          <Icon name="circle-alert"></Icon>
+          <LucideIcon name="circle-alert"></LucideIcon>
           <h2 className="text-h4-sm md:text-h4-md">Om ärendet</h2>
         </div>
       </Divider.Section>

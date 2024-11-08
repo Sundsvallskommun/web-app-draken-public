@@ -1,15 +1,16 @@
 import { Appeal, AppealStatus, TimelinessReview } from '@casedata/interfaces/appeal';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { fetchAppeal } from '@casedata/services/casedata-appeal-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Divider, LucideIcon as Icon } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Divider } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Fragment, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { AppealFormModal } from './casedata-appeal-form-modal.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export interface CaseDataRegisterAppealFormModel {
   description?: string;
@@ -113,7 +114,7 @@ export const CasedataAppealTab: React.FC<{}> = () => {
               variant="primary"
               color="vattjom"
               inverted={!(isErrandLocked(errand) || !allowed)}
-              rightIcon={<Icon name="plus" size={18} />}
+              rightIcon={<LucideIcon name="plus" size={18} />}
               onClick={() => {
                 openRegisterAppealHandler();
               }}
@@ -150,7 +151,7 @@ export const CasedataAppealTab: React.FC<{}> = () => {
               >
                 <div className="flex gap-12 w-full">
                   <div className="self-center bg-vattjom-surface-accent p-12 rounded">
-                    <Icon name="undo-2" className="block" size={24} />
+                    <LucideIcon name="undo-2" className="block" size={24} />
                   </div>
                   <div className="w-full flex-1">
                     <p className="w-full flex justify-between items-center">

@@ -1,4 +1,5 @@
-import { LucideIcon as Icon, Link, PopupMenu } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Link, PopupMenu } from '@sk-web-gui/react';
 import { ColorSchemeItems } from './color-scheme-items.component';
 
 export const userMenuImageGroups = [
@@ -33,10 +34,10 @@ export const userMenuImageGroups = [
         element: () => (
           <PopupMenu.Item>
             <PopupMenu position="right" align="start">
-              <PopupMenu.Button className="justify-between w-full" leftIcon={<Icon name="palette" />}>
+              <PopupMenu.Button className="justify-between w-full" leftIcon={<LucideIcon name="palette" />}>
                 <span className="w-full flex justify-between">
                   Färgläge
-                  <Icon name="chevron-right" />
+                  <LucideIcon name="chevron-right" />
                 </span>
               </PopupMenu.Button>
               <PopupMenu.Panel>
