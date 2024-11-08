@@ -25,7 +25,7 @@ export const RenderedMessage: React.FC<{
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
   const getSenderInitials = (msg: ErrandMessageResponse) =>
-    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '?';
+    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
 
   return (
     <>
@@ -66,7 +66,7 @@ export const RenderedMessage: React.FC<{
         <div className="inline-flex items-start flex-nowrap">
           <span className="text-xs whitespace-nowrap">{dayjs(message.sent).format('YYYY-MM-DD HH:mm')}</span>
           <span className="text-xs mx-sm">|</span>
-          {message.attachments?.length > -1 ? (
+          {message.attachments?.length > 0 ? (
             <>
               <div className="mx-sm inline-flex items-center gap-xs">
                 <LucideIcon name="paperclip" size="1.5rem" />
@@ -76,15 +76,25 @@ export const RenderedMessage: React.FC<{
             </>
           ) : null}
           <span className="text-xs whitespace-nowrap">
-            {message.messageType === 'SMS'
-              ? 'Via SMS'
-              : message.messageType === 'EMAIL'
-              ? 'Via e-post'
-              : message.messageType === 'DIGITAL_MAIL'
-              ? 'Via digital brevlåda'
-              : message.messageType === 'WEBMESSAGE' || message.externalCaseID
-              ? 'Via e-tjänst'
-              : ''}
+            {message.messageType === 'SMS' ? (
+              <>
+                <Icon name="smartphone" size="1.5rem" className="align-sub mx-sm" /> Via SMS
+              </>
+            ) : message.messageType === 'EMAIL' ? (
+              <>
+                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via e-post
+              </>
+            ) : message.messageType === 'DIGITAL_MAIL' ? (
+              <>
+                <Icon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
+              </>
+            ) : message.messageType === 'WEBMESSAGE' || message.externalCaseID ? (
+              <>
+                <Icon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+              </>
+            ) : (
+              ''
+            )}
           </span>
         </div>
         <div>

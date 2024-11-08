@@ -1,12 +1,12 @@
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
+import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, cx, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Divider, Icon, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
@@ -15,10 +15,12 @@ export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, messages, setMessages, user } = useAppContext();
+  const { municipalityId, errand, messages, messageTree, setMessages, setMessageTree, user } = useAppContext();
   const [selectedMessage, setSelectedMessage] = useState<ErrandMessageResponse>();
   const [showSelectedMessage, setShowSelectedMessage] = useState(false);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
+  const [sortMessages, setSortMessages] = useState<number>(0);
+  const [sortedMessages, setSortedMessages] = useState(messages);
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
@@ -29,7 +31,18 @@ export const CasedataMessagesTab: React.FC<{
   const setMessageViewed = (msg: ErrandMessageResponse) => {
     setMessageViewStatus(errand.id, municipalityId, msg.messageID, true)
       .then(() =>
-        fetchMessagesTree(municipalityId, errand).catch((e) => {
+        fetchMessagesTree(municipalityId, errand).catch(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när meddelanden hämtades',
+            status: 'error',
+          });
+        })
+      )
+      .then(setMessageTree)
+      .then(() =>
+        fetchMessages(municipalityId, errand).catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -53,16 +66,52 @@ export const CasedataMessagesTab: React.FC<{
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
   const getSenderInitials = (msg: ErrandMessageResponse) =>
-    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '?';
+    msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
 
-  const getMessageType = (msg: ErrandMessageResponse) =>
+  /* const getMessageType = (msg: ErrandMessageResponse) =>
     msg?.messageType === 'EMAIL' ? 'E-post' : msg?.messageType === 'SMS' ? 'Sms' : '';
+*/
+  const getMessageType = (msg: ErrandMessageResponse) => {
+    if (msg?.messageType === 'WEBMESSAGE' || msg?.externalCaseID) {
+      return (
+        <>
+          <Icon icon={<LucideIcon name="monitor" />} size="1.5rem" className="my-1" /> Via e-tjänst
+        </>
+      );
+    } else if (msg?.messageType === 'SMS') {
+      return (
+        <>
+          <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="my-1" /> Via SMS
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="my-1" /> Via e-post
+        </>
+      );
+    }
+  };
 
   const messageAvatar = (message: ErrandMessageResponse) => (
     <div className="w-[4rem]" data-cy="message-avatar">
       <Avatar rounded color="juniskar" size="md" initials={getSenderInitials(message)} />
     </div>
   );
+
+  useEffect(() => {
+    if (messages && messageTree) {
+      if (sortMessages === 1) {
+        let filteredMessages = messages.filter((message: ErrandMessageResponse) => message.direction === 'INBOUND');
+        setSortedMessages(filteredMessages);
+      } else if (sortMessages === 2) {
+        let filteredMessages = messages.filter((message: ErrandMessageResponse) => message.direction === 'OUTBOUND');
+        setSortedMessages(filteredMessages);
+      } else {
+        setSortedMessages(messageTree);
+      }
+    }
+  }, [messages, messageTree, sortMessages]);
 
   return (
     <>
@@ -94,9 +143,22 @@ export const CasedataMessagesTab: React.FC<{
             ärendets olika intressenter.
           </p>
         </div>
-        {messages?.length ? (
+
+        <RadioButton.Group inline className="mt-16">
+          <RadioButton value={0} defaultChecked={true} onChange={() => setSortMessages(0)}>
+            Alla
+          </RadioButton>
+          <RadioButton value={1} onChange={() => setSortMessages(1)}>
+            Mottagna
+          </RadioButton>
+          <RadioButton value={2} onChange={() => setSortMessages(2)}>
+            Skickade
+          </RadioButton>
+        </RadioButton.Group>
+
+        {sortedMessages?.length ? (
           <MessageTreeComponent
-            nodes={messages}
+            nodes={sortedMessages}
             selected={selectedMessage?.messageID}
             onSelect={(msg: ErrandMessageResponse) => {
               setMessageViewed(msg);
@@ -107,10 +169,11 @@ export const CasedataMessagesTab: React.FC<{
           />
         ) : (
           <>
-            <Divider className="pt-16" />
+            <Divider className="pt-24" />
             <p className="pt-24 text-dark-disabled">Inga meddelanden</p>
           </>
         )}
+
         <MessageWrapper
           label="Meddelande"
           closeHandler={() => {
@@ -123,10 +186,11 @@ export const CasedataMessagesTab: React.FC<{
             <div>
               <div className="relative">
                 <div className="flex justify-between items-center my-12">
-                  <div className={cx(`relative flex gap-md items-center justify-start pr-lg text-md`)}>
+                  <div className={cx(`relative flex gap-md justify-start pr-lg text-md`)}>
                     {messageAvatar(selectedMessage)}
                     <div>
-                      <p className="my-0">
+                      <p className="text-small my-0">
+                        <strong>Från: </strong>
                         <strong
                           className="mr-md"
                           dangerouslySetInnerHTML={{
@@ -135,18 +199,22 @@ export const CasedataMessagesTab: React.FC<{
                           data-cy="sender"
                         ></strong>
                       </p>
-                      <p className="my-0">
-                        {dayjs(selectedMessage?.sent).format('YYYY-MM-DD HH:mm')} {getMessageType(selectedMessage)}
+                      <p>
+                        <strong>Till: </strong>
                       </p>
+                      <div className="flex text-small gap-16">
+                        {dayjs(selectedMessage?.sent).format('YYYY-MM-DD HH:mm')}
+                        <Divider className="m-2" orientation="vertical" />
+                        {getMessageType(selectedMessage)}
+                      </div>
                     </div>
                   </div>
                   {selectedMessage?.direction === 'INBOUND' &&
                   (selectedMessage.messageType === 'EMAIL' || selectedMessage.messageType === 'WEBMESSAGE') ? (
                     <Button
                       type="button"
-                      color="vattjom"
                       disabled={isErrandLocked(errand) || !allowed}
-                      size="sm"
+                      size="md"
                       variant="primary"
                       onClick={() => {
                         setSelectedMessage(selectedMessage);

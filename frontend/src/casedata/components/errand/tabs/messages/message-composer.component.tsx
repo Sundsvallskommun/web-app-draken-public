@@ -1,9 +1,8 @@
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
-import { validateAction } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { renderMessageWithTemplates, sendMessage, sendSms } from '@casedata/services/casedata-message-service';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
@@ -13,8 +12,6 @@ import { isMEX } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import AddIcon from '@mui/icons-material/Add';
-import CheckIcon from '@mui/icons-material/Check';
 import {
   Button,
   Chip,
@@ -28,23 +25,31 @@ import {
   cx,
   useConfirm,
   useSnackbar,
+  Modal,
 } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
+import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
+import { LucideIcon as Icon } from '@sk-web-gui/icon';
+import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
   messageClassification: string;
   messageTemplate?: string;
-  messageEmail: string;
-  messagePhone: string;
+  emails: { value: string }[];
+  newEmail: string;
+  phoneNumbers: string[];
+  newPhoneNumber: string;
   messageBody: string;
   messageBodyPlaintext: string;
   attachUtredning: boolean;
   existingAttachments: Attachment[];
   addExisting: string;
+  messageAttachments: { file: FileList | undefined }[];
   newAttachments: { file: FileList | undefined }[];
   newItem: FileList | undefined;
   headerReplyTo: string;
@@ -53,8 +58,10 @@ export interface CasedataMessageTabFormModel {
 
 const defaultMessage = {
   contactMeans: 'email' as const,
-  messageEmail: '',
-  messagePhone: '+46',
+  emails: [],
+  newEmail: '',
+  phoneNumbers: [],
+  newPhoneNumber: '',
   messageBody: '',
   messageBodyPlaintext: '',
   attachUtredning: false,
@@ -73,19 +80,42 @@ let formSchema = yup
     contactMeans: yup.string(),
     messageClassification: yup.string(),
     messageTemplate: yup.string(),
-    messageEmail: yup.string().when('contactMeans', {
+    emails: yup.array().when('contactMeans', {
       is: (means: string) => means === 'email',
-      then: yup.string().required('Epost måste anges för e-postmeddelande').email('E-postadressen har fel format'),
+      then: yup
+        .array()
+        .of(
+          yup
+            .object()
+            .shape({
+              value: yup.string().email('E-postadress har fel format'),
+            })
+            .required()
+        )
+        .min(1, 'Ange minst en E-postadress'),
     }),
-    messagePhone: yup.string().when('contactMeans', {
+    newEmail: yup.string().when('contactMeans', {
+      is: (means: string) => means === 'email',
+      then: yup.string().email('E-postadressen har fel format'),
+    }),
+    phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
       then: yup
-        .string()
-        .required('Telefonnummer måste anges för sms-meddelande')
-        .trim()
-        .transform((val) => val && val.replace('-', ''))
-        .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+        .array()
+        .of(
+          yup.object().shape({
+            value: yup
+              .string()
+              .required('Telefonnummer måste anges för sms-meddelande')
+              .trim()
+              .transform((val) => val && val.replace('-', ''))
+              .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+          })
+        )
+        .min(1, 'Ange minst ett telefonnummer')
+        .required('Ange minst ett telefonnummer'),
     }),
+    newPhoneNumber: yup.string(),
     messageBody: yup.string().required('Text måste anges'),
     messageBodyPlaintext: yup.string(),
     attachUtredning: yup.bool(),
@@ -129,6 +159,12 @@ export const MessageComposer: React.FC<{
     setAllowed(_a);
   }, [user, errand]);
 
+  const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
+
+  const closeAttachmentModal = () => {
+    setIsAttachmentModalOpen(false);
+  };
+
   const {
     register,
     control,
@@ -161,10 +197,19 @@ export const MessageComposer: React.FC<{
     name: 'newAttachments',
   });
 
+  const {
+    fields: messageAttachments,
+    append: appendMessageAttachment,
+    remove: removeMessageAttachment,
+  } = useFieldArray({
+    control,
+    name: 'messageAttachments',
+  });
+
   const clearAndClose = () => {
     setTimeout(() => {
       setValue('messageBody', '', { shouldDirty: true });
-      setValue('messageEmail', '', { shouldDirty: true });
+      setValue('emails', [], { shouldDirty: true });
       removeNewAttachment();
       setRichText('');
       remove();
@@ -248,15 +293,8 @@ export const MessageComposer: React.FC<{
   }, [existingAttachments]);
 
   useEffect(() => {
-    if (contactMeans === 'email') {
-      setValue(
-        'messageEmail',
-        !!props.message?.messageID && props.message?.email
-          ? props.message.email
-          : getOwnerStakeholder(errand)?.emails?.[0]?.value
-      );
-    } else if (contactMeans === 'sms') {
-      setValue('messagePhone', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '+46');
+    if (contactMeans === 'sms') {
+      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '+46');
     }
     setTimeout(() => {
       props.setUnsaved(false);
@@ -272,7 +310,7 @@ export const MessageComposer: React.FC<{
       references.push(replyTo);
       setValue('headerReplyTo', replyTo);
       setValue('headerReferences', references.join(','));
-      setValue('messageEmail', props.message.email);
+      setValue('emails', [{ value: props.message.email }]);
       setValue('contactMeans', props.message.messageType === 'WEBMESSAGE' ? 'webmessage' : 'email');
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
       setRichText(historyHeader + props.message.message);
@@ -281,7 +319,6 @@ export const MessageComposer: React.FC<{
       setRichText('');
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
-      setValue('messageEmail', getOwnerStakeholder(errand)?.emails?.[0]?.value);
       setValue('contactMeans', !!errand.externalCaseId ? 'webmessage' : 'email');
     }
   }, [props.message, errand]);
@@ -330,291 +367,388 @@ export const MessageComposer: React.FC<{
   };
 
   return (
-    <MessageWrapper label="Nytt meddelande" closeHandler={clearAndClose} show={props.show}>
-      <div className="my-md py-8 px-40 flex flex-col gap-12 ">
-        <Input type="hidden" {...register('headerReplyTo')} />
-        <Input type="hidden" {...register('headerReferences')} />
-        <FormControl className="w-full my-12" size="sm" id="messageTemplate">
-          <FormLabel>Välj meddelandemall</FormLabel>
-          <Select
-            tabIndex={props.show ? 0 : -1}
-            {...register('messageTemplate')}
-            className="w-full text-dark-primary"
-            variant="tertiary"
-            size="sm"
-            onChange={(e) => {
-              changeTemplate(e.currentTarget.value);
-            }}
-            data-cy="messageTemplate"
-          >
-            <Select.Option value="">Välj mall</Select.Option>
-            <Select.Option value="feedbackPrio">Återkoppling – Prio</Select.Option>
-            <Select.Option value="feedbackNormal">Återkoppling – Normal prio</Select.Option>
-            <Select.Option value="additionalInformation">Begära in kompletterande uppgifter</Select.Option>
-            <Select.Option value="internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
-            <Select.Option value="internalReferralWire">Internremiss ledningar</Select.Option>
-            <Select.Option value="internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
-          </Select>
-        </FormControl>
+    <>
+      <MessageWrapper label="Nytt meddelande" closeHandler={clearAndClose} show={props.show}>
+        <div className="my-md py-8 px-40 flex flex-col gap-12 ">
+          <Input type="hidden" {...register('headerReplyTo')} />
+          <Input type="hidden" {...register('headerReferences')} />
 
-        {props.show ? (
-          <FormControl id="message-body" className="w-full">
-            <FormLabel>Ditt meddelande</FormLabel>
-            <Input data-cy="message-body-input" type="hidden" {...register('messageBody')} />
-            <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
-            <div className={cx(`h-[28rem] mb-12`)} data-cy="decision-richtext-wrapper">
-              <RichTextEditor
-                ref={quillRef}
-                value={richText}
-                isMaximizable={false}
-                errors={!!errors.messageBody}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
-                  props.setUnsaved(true);
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(value);
-                }}
-              />
-            </div>
-            {!!errors.messageBody && (
-              <div className="-mt-lg mb-lg">
-                <FormErrorMessage className="text-error">{errors.messageBody?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        ) : null}
-        {!replying ? (
-          <fieldset className="flex mt-8 gap-lg justify-start items-start w-full" data-cy="radio-button-group">
-            <legend className="text-md my-sm">
-              <strong>Kontaktväg</strong>
-            </legend>
-            <RadioButton
-              tabIndex={props.show ? 0 : -1}
-              data-cy="useEmail-radiobutton-true"
-              size="lg"
-              className="mr-sm"
-              name="useEmail"
-              id="useEmail"
-              value={'email'}
-              defaultChecked={!errand.externalCaseId}
-              {...register('contactMeans')}
-            >
-              E-post
-            </RadioButton>
-            <RadioButton
-              tabIndex={props.show ? 0 : -1}
-              data-cy="useSms-radiobutton-true"
-              size="lg"
-              className="mr-sm"
-              name="useSms"
-              id="useSms"
-              value={'sms'}
-              defaultChecked={false}
-              {...register('contactMeans')}
-            >
-              SMS
-            </RadioButton>
-            {!!errand.externalCaseId && (
+          {!replying ? (
+            <fieldset className="flex mt-8 gap-lg justify-start items-start w-full" data-cy="radio-button-group">
+              <legend className="text-md my-sm">
+                <strong>Kontaktväg</strong>
+              </legend>
               <RadioButton
                 tabIndex={props.show ? 0 : -1}
-                data-cy="useWebMessage-radiobutton-true"
+                data-cy="useEmail-radiobutton-true"
                 size="lg"
                 className="mr-sm"
-                name="useWebMessage"
-                id="useWebMessage"
-                value={'webmessage'}
-                defaultChecked={!!errand.externalCaseId}
+                name="useEmail"
+                id="useEmail"
+                value={'email'}
+                defaultChecked={!errand.externalCaseId}
                 {...register('contactMeans')}
               >
-                OpenE
+                E-post
               </RadioButton>
-            )}
-          </fieldset>
-        ) : null}
-        {contactMeans === 'email' ? (
-          <FormControl id="messageEmail" className="w-full">
-            <FormLabel>Skicka till följande e-postadress</FormLabel>
-            <Input
-              tabIndex={props.show ? 0 : -1}
-              size="sm"
-              className={cx(errors.messageEmail ? 'border border-error' : null)}
-              data-cy="messageEmail-input"
-              {...register('messageEmail')}
-            />
-
-            {errors.messageEmail && (
-              <div className="my-sm" data-cy="messageEmail-error">
-                <FormErrorMessage className="text-error">{errors.messageEmail?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        ) : contactMeans === 'sms' ? (
-          <FormControl id="messagePhone" className="w-full">
-            <FormLabel>Skicka till telefonnummer (t ex +46701740635)</FormLabel>
-            <Input
-              tabIndex={props.show ? 0 : -1}
-              size="sm"
-              className={cx(errors.messagePhone ? 'border border-error' : null)}
-              data-cy="messagePhone-input"
-              placeholder="+467..."
-              {...register('messagePhone')}
-            />
-
-            {errors.messagePhone && (
-              <div className="my-sm">
-                <FormErrorMessage className="text-error" data-cy="messagePhone-error">
-                  {errors.messagePhone?.message}
-                </FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        ) : null}
-
-        {contactMeans === 'email' || contactMeans === 'webmessage' ? (
-          <>
-            <FormControl id="addExisting" className="w-full">
-              <FormLabel>Bilagor från ärendet</FormLabel>
-              <div className="flex items-center justify-between">
-                {/* <Input type="hidden" {...register('addExisting')} /> */}
-                <Select
+              <RadioButton
+                tabIndex={props.show ? 0 : -1}
+                data-cy="useSms-radiobutton-true"
+                size="lg"
+                className="mr-sm"
+                name="useSms"
+                id="useSms"
+                value={'sms'}
+                defaultChecked={false}
+                {...register('contactMeans')}
+              >
+                SMS
+              </RadioButton>
+              {!!errand.externalCaseId && (
+                <RadioButton
                   tabIndex={props.show ? 0 : -1}
-                  {...register('addExisting')}
-                  className="w-full"
-                  size="sm"
-                  placeholder="Välj bilaga"
-                  onChange={(r) => {
-                    setValue('addExisting', r.currentTarget.value);
-                  }}
-                  value={getValues('addExisting')}
-                  data-cy="select-errand-attachment"
+                  data-cy="useWebMessage-radiobutton-true"
+                  size="lg"
+                  className="mr-sm"
+                  name="useWebMessage"
+                  id="useWebMessage"
+                  value={'webmessage'}
+                  defaultChecked={!!errand.externalCaseId}
+                  {...register('contactMeans')}
                 >
-                  <Select.Option value="">Välj bilaga</Select.Option>
-                  {errand.attachments
-                    ?.filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
-                    .map((att, idx) => {
-                      const label = `${getAttachmentLabel(att)}: ${att.name}`;
-                      return (
-                        <Select.Option
-                          value={att.name}
-                          key={`attachmentId-${idx}`}
-                          className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                        >
-                          {label}
-                        </Select.Option>
-                      );
-                    })}
-                </Select>
-                <Button
-                  tabIndex={props.show ? 0 : -1}
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<AddIcon fontSize="large" className="mr-sm" />}
-                  disabled={!addExisting}
-                  color="primary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (addExisting) {
-                      const att = errand.attachments.find((a) => a.name === addExisting);
-                      append(att);
-                      setValue(`addExisting`, undefined);
+                  OpenE
+                </RadioButton>
+              )}
+            </fieldset>
+          ) : null}
+
+          {!isMEX() && (
+            <FormControl className="w-full my-12" size="sm" required id="messageClassification">
+              <FormLabel>Välj meddelandetyp</FormLabel>
+              <Select
+                tabIndex={props.show ? 0 : -1}
+                {...register('messageClassification')}
+                className="w-full text-dark-primary"
+                variant="tertiary"
+                size="sm"
+                value={getValues('messageClassification')}
+                onChange={(e) => {
+                  setValue('messageClassification', e.currentTarget.value, { shouldDirty: true });
+                }}
+              >
+                {Object.keys(MessageClassification).map((messageType: string) => {
+                  const id = messageType;
+                  const label = messageType;
+                  return (
+                    <Select.Option
+                      key={`channel-${id}`}
+                      value={label}
+                      className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                    >
+                      {label}
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          )}
+
+          <FormControl className="w-full my-12" size="sm" id="messageTemplate">
+            <FormLabel>Välj meddelandemall</FormLabel>
+            <Select
+              tabIndex={props.show ? 0 : -1}
+              {...register('messageTemplate')}
+              className="w-full text-dark-primary"
+              variant="tertiary"
+              size="sm"
+              onChange={(e) => {
+                changeTemplate(e.currentTarget.value);
+              }}
+              data-cy="messageTemplate"
+            >
+              <Select.Option value="">Välj mall</Select.Option>
+              <Select.Option value="feedbackPrio">Återkoppling – Prio</Select.Option>
+              <Select.Option value="feedbackNormal">Återkoppling – Normal prio</Select.Option>
+              <Select.Option value="additionalInformation">Begära in kompletterande uppgifter</Select.Option>
+              <Select.Option value="internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
+              <Select.Option value="internalReferralWire">Internremiss ledningar</Select.Option>
+              <Select.Option value="internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
+            </Select>
+          </FormControl>
+
+          {props.show ? (
+            <FormControl id="message-body" className="w-full">
+              <FormLabel>Ditt meddelande</FormLabel>
+              <Input data-cy="message-body-input" type="hidden" {...register('messageBody')} />
+              <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
+              <div className={cx(`h-[28rem] mb-12`)} data-cy="decision-richtext-wrapper">
+                <RichTextEditor
+                  ref={quillRef}
+                  value={richText}
+                  isMaximizable={false}
+                  errors={!!errors.messageBody}
+                  toggleModal={() => {}}
+                  onChange={(value, delta, source, editor) => {
+                    props.setUnsaved(true);
+                    if (source === 'user') {
+                      setTextIsDirty(true);
                     }
+                    return onRichTextChange(value);
                   }}
-                  className="w-96 rounded-lg ml-sm"
-                  data-cy="add-selected-attachment"
-                >
-                  Lägg till
-                </Button>
+                />
               </div>
-              {errors.addExisting && (
-                <div className="my-sm">
-                  <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
+              {!!errors.messageBody && (
+                <div className="-mt-lg mb-lg">
+                  <FormErrorMessage className="text-error">{errors.messageBody?.message}</FormErrorMessage>
                 </div>
               )}
             </FormControl>
-            {fields.length > 0 ? (
-              <div className="flex items-center w-full flex-wrap justify-start gap-md">
-                {fields.map((field, k) => {
-                  const att = field as Attachment;
-                  return (
-                    <div key={`${att?.id}-${k}`}>
-                      <Chip
-                        aria-label={`Ta bort bilaga ${att.name}`}
-                        key={field.id}
-                        onClick={() => {
-                          remove(k);
-                        }}
-                      >
-                        {getAttachmentLabel(att)}: {att.name}
-                      </Chip>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-            {props.show ? (
-              <FormControl id="addNew" data-cy="new-attachment-error" className="w-full">
-                <FormLabel>Lägg till en ny bilaga</FormLabel>
-                <FileUpload
-                  fieldName="newAttachments"
-                  fields={newAttachmentsFields}
-                  items={newAttachments}
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  errors={errors}
-                  append={appendNewAttachment}
-                  remove={removeNewAttachment}
-                  editing={false}
-                  allowMultiple={true}
-                  allowNameChange={false}
-                  accept={ACCEPTED_UPLOAD_FILETYPES}
-                  uniqueFileUploaderKey="casedata-messages-tab"
-                  dragDrop={false}
+          ) : null}
+          {contactMeans === 'email' ? (
+            <>
+              <FormControl id="messageEmail" className="w-full">
+                <CommonNestedEmailArrayV2
+                  errand={errand}
+                  disabled={isErrandLocked(errand)}
+                  data-cy="email-input"
+                  key={`nested-email-array`}
+                  {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
                 />
               </FormControl>
-            ) : null}
-          </>
-        ) : null}
-        <div className="flex justify-start gap-lg">
-          <Button
-            key="cancelButton"
-            type="button"
-            variant="tertiary"
-            onClick={abortHandler}
-            tabIndex={props.show ? 0 : -1}
-          >
-            Avbryt
-          </Button>
-          <Button
-            tabIndex={props.show ? 0 : -1}
-            data-cy="send-message-button"
-            type="button"
-            onClick={handleSubmit(
-              () => {
-                return submitConfirm
-                  .showConfirmation('Skicka', 'Vill du skicka meddelandet?', 'Ja', 'Nej', 'info', 'info')
-                  .then((confirmed) => {
-                    if (confirmed) {
-                      onSubmit(getValues());
-                    }
-                    return confirmed ? () => true : () => {};
-                  });
-              },
-              () => {}
-            )}
-            variant="primary"
-            color="primary"
-            disabled={isLoading || !formState.isValid || !allowed}
-            leftIcon={isLoading ? <Spinner size={2} className="mr-sm" /> : null}
-          >
-            {isLoading ? 'Skickar' : 'Skicka'}
-          </Button>
+
+              {errors?.emails ? (
+                <div className="text-error">
+                  <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
+                </div>
+              ) : null}
+            </>
+          ) : contactMeans === 'sms' ? (
+            <>
+              <FormControl id="phoneNumbers" className="w-full mb-16">
+                <CommonNestedPhoneArrayV2
+                  disabled={isErrandLocked(errand)}
+                  data-cy="newPhoneNumber"
+                  required
+                  error={!!formState.errors.phoneNumbers}
+                  key={`nested-phone-array`}
+                  {...{ control, register, errors, watch, setValue, trigger }}
+                />
+              </FormControl>
+
+              {errors?.newPhoneNumber && (
+                <div className="my-sm text-error">
+                  <FormErrorMessage>{errors?.newPhoneNumber?.message}</FormErrorMessage>
+                </div>
+              )}
+            </>
+          ) : null}
+
+          {contactMeans === 'email' || contactMeans === 'webmessage' ? (
+            <>
+              <FormControl id="addExisting" className="w-full">
+                <FormLabel>Bilagor från ärendet</FormLabel>
+                <div className="flex gap-16">
+                  {/* <Input type="hidden" {...register('addExisting')} /> */}
+                  <Select
+                    tabIndex={props.show ? 0 : -1}
+                    {...register('addExisting')}
+                    className="w-full"
+                    placeholder="Välj bilaga"
+                    onChange={(r) => {
+                      setValue('addExisting', r.currentTarget.value);
+                    }}
+                    value={getValues('addExisting')}
+                    data-cy="select-errand-attachment"
+                  >
+                    <Select.Option value="">Välj bilaga</Select.Option>
+                    {errand.attachments
+                      ?.filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
+                      .map((att, idx) => {
+                        const label = `${getAttachmentLabel(att)}: ${att.name}`;
+                        return (
+                          <Select.Option
+                            value={att.name}
+                            key={`attachmentId-${idx}`}
+                            className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                          >
+                            {label}
+                          </Select.Option>
+                        );
+                      })}
+                  </Select>
+                  <Button
+                    tabIndex={props.show ? 0 : -1}
+                    type="button"
+                    variant="tertiary"
+                    disabled={!addExisting}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (addExisting) {
+                        const att = errand.attachments.find((a) => a.name === addExisting);
+                        append(att);
+                        setValue(`addExisting`, undefined);
+                      }
+                    }}
+                    className="rounded"
+                    data-cy="add-selected-attachment"
+                  >
+                    Lägg till
+                  </Button>
+                </div>
+                {errors.addExisting && (
+                  <div className="my-sm">
+                    <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+              {fields.length > 0 ? (
+                <div className="flex items-center w-full flex-wrap justify-start gap-md">
+                  {fields.map((field, k) => {
+                    const att = field as Attachment;
+                    return (
+                      <div key={`${att?.id}-${k}`}>
+                        <Chip
+                          aria-label={`Ta bort bilaga ${att.name}`}
+                          key={field.id}
+                          onClick={() => {
+                            remove(k);
+                          }}
+                        >
+                          {getAttachmentLabel(att)}: {att.name}
+                        </Chip>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {props.show ? (
+                <div className="flex mb-24 mt-8">
+                  <Button
+                    variant="tertiary"
+                    color="primary"
+                    leftIcon={<Icon name="paperclip" />}
+                    onClick={() => setIsAttachmentModalOpen(true)}
+                    data-cy="add-attachment-button"
+                  >
+                    Bifoga fil
+                  </Button>
+                </div>
+              ) : null}
+
+              {messageAttachments.length > 0 ? (
+                <>
+                  <strong className="text-md">Bifogade filer</strong>
+                  <div className="flex flex-col items-center w-full gap-8 mt-8 pb-8">
+                    {messageAttachments.map((attachment, index) => {
+                      return (
+                        <div
+                          key={'attachment-' + index}
+                          className="flex w-full border-1 rounded-16 px-12 py-8 border-divider justify-between"
+                        >
+                          <div className="flex w-5/6 gap-10">
+                            <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
+                              <Icon name="file" size={25} />
+                            </div>
+                            <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
+                          </div>
+                          <div>
+                            <Button
+                              aria-label={`Ta bort ${attachment.file[0]?.name}`}
+                              iconButton
+                              inverted
+                              className="self-end"
+                              onClick={() => removeMessageAttachment(index)}
+                            >
+                              <Icon name="x" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : null}
+            </>
+          ) : null}
+          <div className="flex justify-start gap-lg">
+            <Button
+              key="cancelButton"
+              type="button"
+              variant="tertiary"
+              onClick={abortHandler}
+              tabIndex={props.show ? 0 : -1}
+            >
+              Avbryt
+            </Button>
+            <Button
+              tabIndex={props.show ? 0 : -1}
+              data-cy="send-message-button"
+              type="button"
+              onClick={handleSubmit(
+                () => {
+                  return submitConfirm
+                    .showConfirmation('Skicka', 'Vill du skicka meddelandet?', 'Ja', 'Nej', 'info', 'info')
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        onSubmit(getValues());
+                      }
+                      return confirmed ? () => true : () => {};
+                    });
+                },
+                () => {}
+              )}
+              variant="primary"
+              color="primary"
+              disabled={isLoading || !formState.isValid || !allowed}
+              leftIcon={isLoading ? <Spinner size={2} className="mr-sm" /> : null}
+            >
+              {isLoading ? 'Skickar meddelande' : 'Skicka meddelande'}
+            </Button>
+          </div>
+          {error && <FormErrorMessage>Något gick fel när meddelandet sparades.</FormErrorMessage>}
         </div>
-        {error && <FormErrorMessage>Något gick fel när meddelandet sparades.</FormErrorMessage>}
-      </div>
-    </MessageWrapper>
+      </MessageWrapper>
+
+      <Modal show={isAttachmentModalOpen} onClose={closeAttachmentModal} label="Ladda upp bilaga" className="w-[40rem]">
+        <Modal.Content>
+          <FormControl id="newAttachments" className="w-full">
+            <FormLabel className="flex-grow"></FormLabel>
+            <FileUpload
+              editing={false}
+              fieldName="newAttachments"
+              fields={newAttachmentsFields}
+              uniqueFileUploaderKey="message-tab"
+              items={newAttachments}
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              errors={errors}
+              append={appendNewAttachment}
+              remove={removeNewAttachment}
+              allowMultiple={true}
+              accept={ACCEPTED_UPLOAD_FILETYPES}
+              dragDrop={false}
+            />
+          </FormControl>
+        </Modal.Content>
+
+        <Modal.Footer>
+          <Button
+            className="w-full"
+            disabled={!newAttachments.length}
+            onClick={() => {
+              newAttachmentsFields.forEach((field) => {
+                appendMessageAttachment(field);
+              });
+              setValue('newAttachments', []);
+              closeAttachmentModal();
+            }}
+            data-cy="upload-button"
+          >
+            Ladda upp
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };

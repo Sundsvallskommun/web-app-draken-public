@@ -166,7 +166,7 @@ export const getSupportMessages: (errandId: string, municipalityId: string) => P
     });
 };
 
-export const fetchSupportMessagesTree: (errandId: string, municipalityId: string) => Promise<MessageNode[]> = (
+export const fetchSupportMessages: (errandId: string, municipalityId: string) => Promise<MessageNode[]> = (
   errandId,
   municipalityId
 ) => {
@@ -176,11 +176,10 @@ export const fetchSupportMessagesTree: (errandId: string, municipalityId: string
   return apiService
     .get<Message[]>(`supportmessage/${municipalityId}/errands/${errandId}/communication`)
     .then((res) => {
-      return res.data;
-    })
-    .then((res) => {
-      const tree = buildTree(res);
-      return tree;
+      const list: Message[] = res.data.sort((a, b) =>
+        dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
+      );
+      return list;
     })
     .catch((e) => {
       console.error('Something went wrong when fetching messages for errand:', errandId);
@@ -211,7 +210,7 @@ export interface MessageNode extends Message {
   children?: MessageNode[];
 }
 
-const buildTree = (_list: Message[]) => {
+export const buildTree = (_list: Message[]) => {
   const nodesMap: Map<string, MessageNode> = new Map();
   const roots: MessageNode[] = [];
   const list: Message[] = _list.sort((a, b) =>

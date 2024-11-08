@@ -640,6 +640,8 @@ export const SimplifiedContactForm: React.FC<{
             <>
               <div className="my-md">
                 <CommonNestedEmailArrayV2
+                  addingStakeholder={true}
+                  errand={errand}
                   disabled={props.disabled}
                   required
                   error={!!formState.errors.emails}
@@ -984,6 +986,8 @@ export const SimplifiedContactForm: React.FC<{
             </div>
           </>
           <CommonNestedEmailArrayV2
+            addingStakeholder={true}
+            errand={errand}
             disabled={props.disabled}
             required
             error={!!formState.errors.emails}

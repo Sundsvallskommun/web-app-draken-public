@@ -72,4 +72,5 @@ export enum PrettyRole {
   GRANTOR = 'Upplåtare',
   LAND_RIGHT_OWNER = 'Tomträttshavare',
   USUFRUCTUARY = 'Nyttjanderättshavare',
+  PERSON = 'Privatperson',
 }

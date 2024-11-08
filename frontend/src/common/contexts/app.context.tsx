@@ -38,6 +38,9 @@ export interface AppContextInterface {
   messages;
   setMessages: (messages: MessageNode[]) => void;
 
+  messageTree;
+  setMessageTree: (messages: MessageNode[]) => void;
+
   assets;
   setAssets: (assets: Asset[]) => void;
 
@@ -114,6 +117,7 @@ export function AppWrapper({ children }) {
   const [solvedSupportErrands, setSolvedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [errand, setErrand] = useState<IErrand>();
   const [messages, setMessages] = useState<MessageNode[]>();
+  const [messageTree, setMessageTree] = useState<MessageNode[]>();
   const [assets, setAssets] = useState<Asset[]>();
   const [supportErrand, setSupportErrand] = useState<SupportErrand>();
   const [supportMetadata, setSupportMetadata] = useState<SupportMetadata>();
@@ -150,6 +154,9 @@ export function AppWrapper({ children }) {
 
         messages,
         setMessages: (messages: MessageNode[]) => setMessages(messages),
+
+        messageTree,
+        setMessageTree: (messages: MessageNode[]) => setMessageTree(messages),
 
         assets,
         setAssets: (assets: Asset[]) => setAssets(assets),
