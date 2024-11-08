@@ -1,10 +1,10 @@
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
-import { Avatar, Button, LucideIcon as Icon, cx, useSnackbar, Divider } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Divider, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';

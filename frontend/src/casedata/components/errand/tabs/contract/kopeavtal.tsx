@@ -264,7 +264,6 @@ export const KopeAvtal: React.FC<{
       <Disclosure
         icon={<Icon icon={<LucideIcon name="users" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
-        // label={sellersFields?.length > 0 && buyersFields.length > 0 ? <Icon size={18} name="check" /> : ''}
         data-cy="parties-disclosure"
         labelColor={sellersFields?.length > 0 && buyersFields.length > 0 ? 'success' : `warning`}
         initalOpen={true}
@@ -391,8 +390,7 @@ export const KopeAvtal: React.FC<{
         icon={<Icon icon={<LucideIcon name="clipboard-list" />} />}
         data-cy="transfer-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelseförklaring</h2>}
-        // label={watch().overlatelseforklaring?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().overlatelseforklaring?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'overlatelseforklaring') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().overlatelseforklaring?.length > 0}
         color="gronsta"
         variant="alt"
@@ -553,8 +551,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
         icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="purchase-price-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Köpeskilling och betalning</h2>}
-        // label={watch().kopeskilling?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().kopeskilling?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'kopeskilling') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().kopeskilling?.length > 0}
         color="gronsta"
         variant="alt"
@@ -700,8 +697,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="calendar" />} />}
         data-cy="access-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Tillträde</h2>}
-        // label={watch().tilltrade?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().tilltrade?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'tilltrade') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().tilltrade?.length > 0}
         color="gronsta"
         variant="alt"
@@ -822,8 +818,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="mountain-snow" />} />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
         variant="alt"
@@ -962,8 +957,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="trees" />} />}
         data-cy="forest-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skog</h2>}
-        // label={watch().skog?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().skog?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'skog') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().skog?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1105,8 +1099,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="file-check" />} />}
         data-cy="sellers-obligation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Säljarens förpliktelser</h2>}
-        // label={watch().forpliktelser?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().forpliktelser?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'forpliktelser') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().forpliktelser?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1221,8 +1214,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="calculator" />} />}
         data-cy="expenses-costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Utgifter och kostnader</h2>}
-        // label={watch().utgifter?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().utgifter?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'utgifter') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().utgifter?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1354,8 +1346,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="home" />} />}
         data-cy="property-formation-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Fastighetsbildning</h2>}
-        // label={watch().fastighetsbildning?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().fastighetsbildning?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'fastighetsbildning') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().fastighetsbildning?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1479,8 +1470,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="info" />} />}
         data-cy="other-conditions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Övriga villkor</h2>}
-        // label={watch().other?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().other?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'other') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().other?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1618,8 +1608,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
         icon={<Icon icon={<LucideIcon name="pen" />} />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
-        labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
         variant="alt"

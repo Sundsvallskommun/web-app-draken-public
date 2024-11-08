@@ -1,3 +1,4 @@
+import NextLink from 'next/link';
 import {
   getApplicationEnvironment,
   getApplicationName,
@@ -6,6 +7,7 @@ import {
   isMEX,
   isPT,
 } from '@common/services/application-service';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
@@ -16,8 +18,12 @@ import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import NextLink from 'next/link';
 import { useState } from 'react';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import {
+  CaseStatusValues,
+} from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -81,7 +87,7 @@ export const MainErrandsSidebar: React.FC<{
                 iconButton
                 leftIcon={
                   <>
-                    <Icon name={'bell'} />
+                    <LucideIcon name={'bell'} />
                   </>
                 }
               >

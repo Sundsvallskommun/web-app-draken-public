@@ -14,7 +14,7 @@ import {
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
-import { isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -43,7 +43,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { isMEX, isPT } from '@common/services/application-service';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,

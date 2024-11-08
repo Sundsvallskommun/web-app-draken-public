@@ -265,7 +265,7 @@ export const PhaseChanger = () => {
       loadingText="Sparar"
       loading={isLoading}
       onClick={triggerPhaseChange}
-      rightIcon={<Icon name="arrow-right" size={18} />}
+      rightIcon={<LucideIcon name="arrow-right" size={18} />}
     >
       {phaseChangeText?.button}
     </Button>
