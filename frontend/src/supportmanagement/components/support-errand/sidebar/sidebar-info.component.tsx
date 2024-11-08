@@ -115,7 +115,7 @@ export const SidebarInfo: React.FC<{
       return updateSupportErrand(municipalityId, formdata)
         .then((res) => {
           setIsLoading(false);
-          if (formState.dirtyFields.admin) {
+          if (supportErrand.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount) {
             saveAdmin();
           }
 
@@ -174,10 +174,10 @@ export const SidebarInfo: React.FC<{
     } else {
       return updateSupportErrand(municipalityId, getValues())
         .then((res) => {
-          setIsLoading(false);
-          if (formState.dirtyFields.admin) {
+          setIsLoading(false);          
+          if (supportErrand.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount) {
             saveAdmin();
-          } else if (formState.dirtyFields.status) {
+          } else if (supportErrand.status !== Status[findStatusKeyForStatusLabel(getValues().status)]) {
             updateSupportErrandStatus(Status[findStatusKeyForStatusLabel(getValues().status)]);
           }
 
