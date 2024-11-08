@@ -4,12 +4,12 @@ import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Avatar,
   Button,
   Divider,
   FormControl,
-  LucideIcon as Icon,
   Input,
   Modal,
   PopupMenu,
@@ -256,7 +256,7 @@ export const SidebarGenericNotes: React.FC<{
                           className="bg-transparent"
                           variant="ghost"
                         >
-                          <Icon name="ellipsis" />
+                          <LucideIcon name="ellipsis" />
                         </PopupMenu.Button>
                         <PopupMenu.Panel>
                           <PopupMenu.Items>
@@ -264,7 +264,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="edit-note-button"
-                                  leftIcon={<Icon name="pencil" />}
+                                  leftIcon={<LucideIcon name="pencil" />}
                                   onClick={() => {
                                     updateNote(note);
                                   }}
@@ -277,7 +277,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="delete-note-button"
-                                  leftIcon={<Icon name="trash" />}
+                                  leftIcon={<LucideIcon name="trash" />}
                                   onClick={() => {
                                     confirm
                                       .showConfirmation(

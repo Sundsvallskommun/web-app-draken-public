@@ -1,14 +1,15 @@
 import { Attachment } from '@casedata/interfaces/attachment';
 import { ACCEPTED_UPLOAD_FILETYPES, PTAttachmentLabels } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Chip, FormControl, FormErrorMessage, LucideIcon as Icon, Input, Modal } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Chip, FormControl, FormErrorMessage, Input, Modal } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 
 export interface SingleAppealAttachment {
   file: File | undefined;
@@ -169,7 +170,7 @@ export const AppealAttachmentsComponent: React.FC = () => {
           <Button
             data-cy="add-attachment-button"
             disabled={isErrandLocked(errand) || !allowed}
-            leftIcon={<Icon name="paperclip" />}
+            leftIcon={<LucideIcon name="paperclip" />}
             variant="tertiary"
             onClick={() => {
               setAttachmentTypeExists(false);

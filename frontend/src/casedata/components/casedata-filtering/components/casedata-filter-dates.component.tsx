@@ -1,10 +1,8 @@
-import { Priority } from '@casedata/interfaces/priority';
-import { getPriorityColor } from '@casedata/services/casedata-errand-service';
-import { PopupMenu, LucideIcon as Icon, Checkbox, DatePicker, Button } from '@sk-web-gui/react';
-import { useFormContext } from 'react-hook-form';
-import { CasePriorityFilter } from './casedata-filter-priority.component';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CaseDatesFilter {
   startdate: string;
@@ -31,7 +29,7 @@ export const CasedataFilterDates: React.FC = () => {
   return (
     <PopupMenu type="dialog" open={open} onToggleOpen={setOpen}>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="Tidsperiod-filter"
         variant="tertiary"
         showBackground={false}

@@ -15,16 +15,8 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
-import {
-  Avatar,
-  Button,
-  Divider,
-  FormControl,
-  FormLabel,
-  LucideIcon as Icon,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Divider, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -308,7 +300,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
       <div className="mt-md">
         <Divider.Section>
           <div className="flex gap-sm items-center">
-            <Icon name="user"></Icon>
+            <LucideIcon name="user"></LucideIcon>
             <h2 className="text-h4-sm md:text-h4-md">Ärendeägare</h2>
           </div>
         </Divider.Section>
@@ -337,7 +329,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
         <Divider.Section>
           <div className="flex gap-sm items-center">
-            <Icon name="users"></Icon>
+            <LucideIcon name="users"></LucideIcon>
             <h2 className="text-h4-sm md:text-h4-md">Övriga ärendeintressenter</h2>
           </div>
         </Divider.Section>

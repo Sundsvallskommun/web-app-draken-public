@@ -1,6 +1,7 @@
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
-import { Avatar, LucideIcon as Icon, cx } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, cx } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React from 'react';
 
@@ -45,7 +46,7 @@ export const RenderedMessage: React.FC<{
           <div className="w-5/6 ml-sm">
             <div className="my-0 flex justify-between">
               <div>
-                {!root ? <Icon size={16} className="mr-sm" name="corner-down-right" /> : null}
+                {!root ? <LucideIcon size={16} className="mr-sm" name="corner-down-right" /> : null}
                 <span
                   className={cx(`mr-md break-all font-bold`)}
                   dangerouslySetInnerHTML={{
@@ -68,7 +69,7 @@ export const RenderedMessage: React.FC<{
           {message.attachments?.length > -1 ? (
             <>
               <div className="mx-sm inline-flex items-center gap-xs">
-                <Icon name="paperclip" size="1.5rem" />
+                <LucideIcon name="paperclip" size="1.5rem" />
                 <span className="text-xs">{message.attachments?.length}</span>
               </div>
               <span className="text-xs mx-sm">|</span>

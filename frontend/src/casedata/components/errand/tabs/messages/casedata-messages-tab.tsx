@@ -3,7 +3,8 @@ import { fetchMessagesTree, setMessageViewStatus } from '@casedata/services/case
 import { useAppContext } from '@common/contexts/app.context';
 import { ErrandMessageResponse } from '@common/interfaces/message';
 import sanitized from '@common/services/sanitizer-service';
-import { Avatar, Button, Divider, LucideIcon as Icon, cx, useSnackbar } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Divider, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
@@ -77,7 +78,7 @@ export const CasedataMessagesTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<Icon name="mail" size={18} />}
+            rightIcon={<LucideIcon name="mail" size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
               setShowMessageComposer(true);
@@ -160,13 +161,15 @@ export const CasedataMessagesTab: React.FC<{
                 </div>
                 {selectedMessage?.attachments.length > 0 ? (
                   <ul className="flex flex-row gap-sm items-center my-12">
-                    <Icon name="paperclip" size="1.6rem" />
+                    <LucideIcon name="paperclip" size="1.6rem" />
                     {selectedMessage?.attachments?.map((a, idx) => (
                       <Button
                         key={`${a.name}-${idx}`}
                         onClick={() => {}}
                         role="listitem"
-                        leftIcon={a.name.endsWith('pdf') ? <Icon name="paperclip" /> : <Icon name="image" />}
+                        leftIcon={
+                          a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />
+                        }
                         variant="tertiary"
                         data-cy={`message-attachment-${idx}`}
                       >

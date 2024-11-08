@@ -1,16 +1,17 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Button, LucideIcon as Icon, Modal, Spinner, Avatar } from '@sk-web-gui/react';
-import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
-import { ResolutionLabel, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
+import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
+import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
+import { ResolutionLabel, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
-import { Priority } from '@supportmanagement/interfaces/priority';
+import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
+import dayjs from 'dayjs';
+import { useEffect, useRef, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const {
@@ -143,7 +144,7 @@ export const SidebarHistory: React.FC<{}> = () => {
             show={isOpen}
             label={
               <div className="flex items-center gap-md">
-                <Icon name="history" />
+                <LucideIcon name="history" />
                 <h3 className="text-h3-sm md:text-h3-md xl:text-h3-lg">Detaljer</h3>
               </div>
             }

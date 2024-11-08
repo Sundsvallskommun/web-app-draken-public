@@ -1,5 +1,6 @@
 import { useAppContext } from '@contexts/app.context';
-import { Badge, Button, LucideIcon as Icon } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Badge, Button } from '@sk-web-gui/react';
 import { SupportNotification } from '@supportmanagement/services/support-notification-service';
 
 export const SupportNotificationsBell = (props: { toggleShow: () => void }) => {
@@ -18,7 +19,7 @@ export const SupportNotificationsBell = (props: { toggleShow: () => void }) => {
       iconButton
       leftIcon={
         <>
-          <Icon name={'bell'} />
+          <LucideIcon name={'bell'} />
         </>
       }
     >

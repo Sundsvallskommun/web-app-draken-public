@@ -1,5 +1,6 @@
 import { useAppContext } from '@contexts/app.context';
-import { LucideIcon as Icon, Button, Badge } from '@sk-web-gui/react';
+import { Button, Badge } from '@sk-web-gui/react';
+import { LucideIcon } from '@sk-web-gui/lucide-icon'
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import store from '@supportmanagement/services/storage-service';
 import { Status } from '@supportmanagement/services/support-errand-service';
@@ -52,7 +53,7 @@ export const SupportManagementFilterStatus: React.FC<{
             className={`justify-start ${
               !selectedErrandStatuses.includes(button.key as Status) && 'hover:bg-dark-ghost'
             }`}
-            leftIcon={<Icon name={button.icon as any} />}
+            leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
           >
             <span className="w-full flex justify-between">

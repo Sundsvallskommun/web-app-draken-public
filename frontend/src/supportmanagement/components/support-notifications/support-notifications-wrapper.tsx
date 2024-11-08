@@ -1,7 +1,8 @@
 import { User } from '@common/interfaces/user';
 import { sortBy } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import { Button, Divider, LucideIcon as Icon, cx } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Divider, cx } from '@sk-web-gui/react';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportNotification, getSupportNotifications } from '@supportmanagement/services/support-notification-service';
 import { useEffect } from 'react';
@@ -59,7 +60,7 @@ export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (ar
           >
             <div className="py-16 px-40 w-full flex justify-between items-center shadow-lg h-[8rem]">
               <div className="text-h4-sm flex items-center gap-12">
-                <Icon name="bell" /> Notiser
+                <LucideIcon name="bell" /> Notiser
               </div>
               <Button
                 tabIndex={show ? 0 : -1}
@@ -70,7 +71,7 @@ export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (ar
                   setShow(false);
                 }}
               >
-                <Icon name="x" />
+                <LucideIcon name="x" />
               </Button>
             </div>
           </div>

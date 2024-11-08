@@ -5,6 +5,7 @@ import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from 
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
@@ -12,7 +13,6 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Modal,
   RadioButton,
@@ -220,7 +220,7 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
           className="w-full"
           color="vattjom"
           data-cy="suspend-button"
-          leftIcon={<Icon name="circle-play" />}
+          leftIcon={<LucideIcon name="circle-play" />}
           variant="secondary"
           disabled={disabled}
           loading={isLoading}
@@ -243,7 +243,7 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
             className="w-full"
             data-cy="forward-button"
             color="vattjom"
-            leftIcon={<Icon name="file-plus" />}
+            leftIcon={<LucideIcon name="file-plus" />}
             variant="secondary"
             disabled={disabled}
             onClick={() => setShowModal(true)}
@@ -369,7 +369,7 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
                         type="button"
                         variant="primary"
                         size="sm"
-                        leftIcon={<Icon name="plus" size="lg" className="mr-sm" />}
+                        leftIcon={<LucideIcon name="plus" size="lg" className="mr-sm" />}
                         disabled={!isAttachmentSelected}
                         color="primary"
                         onClick={(e) => {

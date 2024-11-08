@@ -1,12 +1,13 @@
-import FileUpload from '@common/components/file-upload/file-upload.component';
-import { Button, FormControl, FormLabel, LucideIcon as Icon, Input, Modal, useSnackbar } from '@sk-web-gui/react';
-import { useAppContext } from '@contexts/app.context';
-import { useEffect, useState } from 'react';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { useFieldArray, useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
 import { saveSignedContractAttachment } from '@casedata/services/contract-service';
+import FileUpload from '@common/components/file-upload/file-upload.component';
+import { useAppContext } from '@contexts/app.context';
+import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, FormControl, FormLabel, Input, Modal, useSnackbar } from '@sk-web-gui/react';
+import { useEffect, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import * as yup from 'yup';
 
 export interface CasedataSignedContractAttachmentFormModel {
   id?: string;
@@ -158,7 +159,7 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
         data-cy="add-attachment-button"
         disabled={isErrandLocked(errand) || !allowed || !contractId}
         color="vattjom"
-        rightIcon={<Icon name="upload" size={16} />}
+        rightIcon={<LucideIcon name="upload" size={16} />}
         inverted={allowed}
         size="sm"
         onClick={() => {
