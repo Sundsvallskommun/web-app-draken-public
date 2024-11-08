@@ -1,5 +1,6 @@
 import { getPriorityColor } from '@casedata/services/casedata-errand-service';
-import { Checkbox, LucideIcon as Icon, PopupMenu } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { useFormContext } from 'react-hook-form';
 
@@ -17,7 +18,7 @@ export const SupportManagementFilterPriority: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="Prioritet-filter"
         variant="tertiary"
         showBackground={false}
@@ -37,7 +38,7 @@ export const SupportManagementFilterPriority: React.FC = () => {
                 data-cy={`Prioritet-filter-${s[0]}`}
               >
                 <span className="flex gap-12 items-center">
-                  <Icon name="circle-dot" className={getPriorityColor(s[1] as Priority)} />
+                  <LucideIcon name="circle-dot" className={getPriorityColor(s[1] as Priority)} />
 
                   {s[1]}
                 </span>

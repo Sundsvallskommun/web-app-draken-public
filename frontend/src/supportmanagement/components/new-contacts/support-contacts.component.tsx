@@ -7,10 +7,10 @@ import {
   Disclosure,
   FormControl,
   FormLabel,
-  LucideIcon,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,

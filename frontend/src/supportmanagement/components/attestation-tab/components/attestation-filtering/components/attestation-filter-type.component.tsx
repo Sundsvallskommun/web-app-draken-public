@@ -1,6 +1,7 @@
-import { Checkbox, LucideIcon as Icon, PopupMenu } from '@sk-web-gui/react';
-import { useFormContext } from 'react-hook-form';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import React from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface AttestationTypeFilter {
   type: string[];
@@ -27,7 +28,7 @@ export const AttestationFilterTypeComponent: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<Icon name="chevron-down" />}
+        rightIcon={<LucideIcon name="chevron-down" />}
         data-cy="attestationType-filter"
         variant="tertiary"
         showBackground={false}

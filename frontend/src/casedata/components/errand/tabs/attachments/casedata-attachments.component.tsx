@@ -21,12 +21,12 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';
 import { Dialog, Transition } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
   FormControl,
   FormErrorMessage,
-  LucideIcon as Icon,
   Image,
   Input,
   Modal,
@@ -254,7 +254,7 @@ export const CasedataAttachments: React.FC = () => {
                         onClick={() => {
                           setIsCropping(!isCropping);
                         }}
-                        leftIcon={<Icon name="crop" />}
+                        leftIcon={<LucideIcon name="crop" />}
                       >
                         {isCropping ? 'Spara' : 'Beskär bild'}
                       </Button>
@@ -417,7 +417,7 @@ export const CasedataAttachments: React.FC = () => {
               data-cy="add-attachment-button"
               disabled={isErrandLocked(errand)}
               color="vattjom"
-              rightIcon={<Icon name="upload" size={16} />}
+              rightIcon={<LucideIcon name="upload" size={16} />}
               inverted
               size="sm"
               onClick={() => {
@@ -451,7 +451,7 @@ export const CasedataAttachments: React.FC = () => {
               >
                 <div className="flex gap-12">
                   <div className="self-center bg-vattjom-surface-accent p-12 rounded">
-                    <Icon name="clipboard-check" className="block" size={24} />
+                    <LucideIcon name="clipboard-check" className="block" size={24} />
                   </div>
                   <div>
                     <p>
@@ -479,14 +479,14 @@ export const CasedataAttachments: React.FC = () => {
                       iconButton
                       inverted
                     >
-                      <Icon name="ellipsis" />
+                      <LucideIcon name="ellipsis" />
                     </PopupMenu.Button>
                     <PopupMenu.Panel>
                       <PopupMenu.Items>
                         <PopupMenu.Group>
                           <PopupMenu.Item>
                             <Button
-                              leftIcon={<Icon name="eye" />}
+                              leftIcon={<LucideIcon name="eye" />}
                               data-cy={`open-attachment-${attachment.id}`}
                               onClick={() => {
                                 if (documentMimeTypes.includes(attachment.mimeType)) {
@@ -520,7 +520,7 @@ export const CasedataAttachments: React.FC = () => {
                             <PopupMenu.Item>
                               <Button
                                 data-cy={`edit-attachment-${attachment.id}`}
-                                leftIcon={<Icon name="pencil" />}
+                                leftIcon={<LucideIcon name="pencil" />}
                                 onClick={() => {
                                   setValue(`attachmentType`, attachment.category);
                                   setValue(`attachmentName`, attachment.name);
@@ -542,7 +542,7 @@ export const CasedataAttachments: React.FC = () => {
                               <PopupMenu.Item>
                                 <Button
                                   data-cy={`delete-attachment-${attachment.id}`}
-                                  leftIcon={<Icon name="trash" />}
+                                  leftIcon={<LucideIcon name="trash" />}
                                   onClick={() => {
                                     removeConfirm
                                       .showConfirmation(

@@ -4,7 +4,6 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import {
   getErrand,
-  getUiPhase,
   isErrandLocked,
   phaseChangeInProgress,
   triggerErrandPhaseChange,
@@ -14,17 +13,8 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
-import {
-  Button,
-  FormControl,
-  FormLabel,
-  LucideIcon as Icon,
-  Modal,
-  Select,
-  Spinner,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, FormControl, FormLabel, Modal, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 
@@ -193,7 +183,7 @@ export const PhaseChanger = () => {
         onClick={() => {
           setSelectingAdmin(true);
         }}
-        rightIcon={<Icon name="arrow-right" size={18} />}
+        rightIcon={<LucideIcon name="arrow-right" size={18} />}
       >
         Tilldela handläggare
       </Button>
@@ -265,7 +255,7 @@ export const PhaseChanger = () => {
       loadingText="Sparar"
       loading={isLoading}
       onClick={triggerPhaseChange}
-      rightIcon={<Icon name="arrow-right" size={18} />}
+      rightIcon={<LucideIcon name="arrow-right" size={18} />}
     >
       {phaseChangeText?.button}
     </Button>

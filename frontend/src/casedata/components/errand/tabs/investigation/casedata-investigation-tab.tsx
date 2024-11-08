@@ -16,12 +16,12 @@ import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import CheckIcon from '@mui/icons-material/Check';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
   Input,
   Select,
   Spinner,
@@ -281,7 +281,7 @@ export const CasedataInvestigationTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<Icon name="download" size={18} />}
+            rightIcon={<LucideIcon name="download" size={18} />}
             onClick={getPdfPreview}
             data-cy="preview-investigation-button"
           >
@@ -292,7 +292,7 @@ export const CasedataInvestigationTab: React.FC<{
           {errand?.decisions && errand?.decisions[0]?.decisionType === 'RECOMMENDED' && (
             <div className="bg-background-200 rounded-groups gap-12 flex py-10 px-16 mb-lg">
               <div>
-                <Icon name="info" color="vattjom" />
+                <LucideIcon name="info" color="vattjom" />
               </div>
               <div>
                 <p className="m-0 pr-24" data-cy="recommended-decision">

@@ -8,7 +8,8 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Badge, Button, LucideIcon as Icon, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -241,7 +242,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                 }}
                                 label="Registrera"
                                 color="vattjom"
-                                icon={<Icon name="arrow-right" size={18} />}
+                                icon={<LucideIcon name="arrow-right" size={18} />}
                               />
                             </div>
                           </div>
