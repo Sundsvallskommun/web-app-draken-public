@@ -14,6 +14,7 @@ import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -43,13 +44,17 @@ export const ErrandsTable: React.FC = () => {
       icon: 'clipboard-pen',
       totalStatusErrands: 45,
     },
-    {
-      label: 'Parkerade ärenden',
-      key: ErrandStatus.UnderRemiss,
-      statuses: [ErrandStatus.UnderRemiss],
-      icon: 'circle-pause',
-      totalStatusErrands: 15,
-    },
+    ...(isSuspendEnabled()
+      ? [
+          {
+            label: 'Parkerade ärenden',
+            key: ErrandStatus.UnderRemiss,
+            statuses: [ErrandStatus.UnderRemiss],
+            icon: 'circle-pause',
+            totalStatusErrands: 15,
+          },
+        ]
+      : []),
     {
       label: 'Avslutade ärenden',
       key: ErrandStatus.ArendeAvslutat,

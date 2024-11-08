@@ -24,6 +24,7 @@ import {
   CaseStatusValues,
 } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
+import { isNotificationsEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -74,27 +75,9 @@ export const MainErrandsSidebar: React.FC<{
               {user.firstName} {user.lastName}
             </span>
           </div>
-          {isLOP() || isKC() ? (
+          {isNotificationsEnabled() ? (
             <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          ) : (
-            (isMEX() || isPT()) && (
-              <Button
-                role="menuitem"
-                size={'md'}
-                aria-label={'Notifieringar'}
-                className="mx-md"
-                variant="tertiary"
-                iconButton
-                leftIcon={
-                  <>
-                    <LucideIcon name={'bell'} />
-                  </>
-                }
-              >
-                <Badge className="absolute -top-10 -right-10 text-white" rounded color="vattjom" counter={99} />
-              </Button>
-            )
-          )}
+          ) : null}
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
@@ -136,7 +119,9 @@ export const MainErrandsSidebar: React.FC<{
           </>
         )}
       </div>
-      <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      {isNotificationsEnabled() ? (
+        <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      ) : null}
     </aside>
   );
 };
