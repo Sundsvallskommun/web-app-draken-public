@@ -1,14 +1,14 @@
 import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/messages/message-composer.component';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
+import { sendAttachments } from '@casedata/services/casedata-attachment-service';
 import { ErrandMessageResponse, Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { isMEX } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
-import { sendAttachments } from '@casedata/services/casedata-attachment-service';
-import { isMEX } from '@common/services/application-service';
 
 interface MessageResponse {
   messageId: string;
@@ -304,14 +304,15 @@ export const messageStatusMap = (s: MessageStatus) => {
 };
 
 export const setMessageViewStatus: (
+  errandId: string,
   municipalityId: string,
   messageId: string,
   isViewed: boolean
-) => Promise<ApiResponse<any>> = (municipalityId, messageId, isViewed) => {
+) => Promise<ApiResponse<any>> = (municipalityId, errandId, messageId, isViewed) => {
   if (!messageId) {
     console.error('No message id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/messages/${messageId}/viewed/${isViewed}`;
+  const url = `casedata/${municipalityId}errande/${errandId}/messages/${messageId}/viewed/${isViewed}`;
   return apiService
     .put<ApiResponse<any>, any>(url, {})
     .then((res) => res.data)

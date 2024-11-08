@@ -26,7 +26,7 @@ export enum Role {
   RIGHTS_HOLDER = 'RIGHTS_HOLDER',
 }
 
-export enum Relation {
+export enum MEXRelation {
   LEASEHOLDER = 'Arrendator',
   COMPANY_SIGNATORY = 'Firmatecknare',
   ASSOCIATION_REPRESENTATIVE = 'Föreningsrepresentant',
@@ -42,9 +42,16 @@ export enum Relation {
   RIGHTS_HOLDER = 'Rättighetshavare',
 }
 
+export enum PTRelation {
+  FELLOW_APPLICANT = 'Medsökande',
+  DRIVER = 'Förare',
+  PASSENGER = 'Passagerare',
+  DOCTOR = 'Läkare',
+}
+
 export enum PrettyRole {
   CONTROL_OFFICIAL = 'CONTROL_OFFICIAL',
-  APPLICANT = 'Sökande',
+  APPLICANT = 'Ärendeägare',
   PROPERTY_OWNER = 'Fastighetsägare',
   PAYMENT_PERSON = 'PAYMENT_PERSON',
   INVOICE_RECIPENT = 'Fakturamottagare',
@@ -54,7 +61,7 @@ export enum PrettyRole {
   FELLOW_APPLICANT = 'Medsökande',
   DRIVER = 'Förare',
   PASSENGER = 'Passagerare',
-  DOCTOR = 'Doktor',
+  DOCTOR = 'Läkare',
   LEASEHOLDER = 'Arrendator',
   COMPANY_SIGNATORY = 'Firmatecknare',
   ASSOCIATION_REPRESENTATIVE = 'Föreningsrepresentant',

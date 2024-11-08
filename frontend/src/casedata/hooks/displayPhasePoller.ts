@@ -7,14 +7,15 @@ function useDisplayPhasePoller() {
   const { municipalityId, errand, setErrand }: { municipalityId: string; errand: IErrand; setErrand: any } =
     useAppContext();
   const pollDisplayPhase = () => {
-    let displayPhase = errand.extraParameters['process.displayPhase'] as UiPhase;
+    let displayPhase = errand.extraParameters.find((p) => p.key === 'process.displayPhase')?.values?.[0] as UiPhase;
     const displayPhasePoll = setInterval(() => {
       if (displayPhase !== UiPhase.registrerad) {
         clearInterval(displayPhasePoll);
       } else {
         getErrand(municipalityId, errand.id.toString()).then((res) => {
           setErrand(res.errand);
-          displayPhase = res.errand.extraParameters['process.displayPhase'];
+          displayPhase = res.errand.extraParameters.find((p) => p.key === 'process.displayPhase')
+            ?.values?.[0] as UiPhase;
         });
       }
     }, 1000);

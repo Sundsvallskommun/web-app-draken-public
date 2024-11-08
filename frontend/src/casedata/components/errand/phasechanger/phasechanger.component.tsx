@@ -2,6 +2,7 @@ import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   getErrand,
   isErrandLocked,
@@ -9,6 +10,7 @@ import {
   triggerErrandPhaseChange,
   validateAction,
   validateErrandForDecision,
+  validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
@@ -56,6 +58,8 @@ export const PhaseChanger = () => {
     button: string;
     title: string;
     message: string | JSX.Element;
+    disabled?: boolean;
+    disabledMessage?: string;
   }>({
     button: 'Inled fasbyte',
     title: 'Vill du byta fas?',
@@ -87,6 +91,12 @@ export const PhaseChanger = () => {
             <p className="my-md">Är du säker på att du vill fortsätta?</p>
           </>
         ),
+        disabled: !validateErrandForDecision(errand),
+        disabledMessage: !validateAttachmentsForDecision(errand).valid
+          ? `Ärendet har felaktiga bilagor: ${validateAttachmentsForDecision(errand).reason}`
+          : !validateStatusForDecision(errand).valid
+          ? 'Ärendet har fel status för att beslut ska kunna fattas.'
+          : null,
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ button: 'N/A', title: 'N/A?', message: '' });
@@ -143,7 +153,7 @@ export const PhaseChanger = () => {
       .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+          return triggerErrandPhaseChange(municipalityId, errand)
             .then(() => getErrand(municipalityId, errand.id.toString()))
             .then((res) => setErrand(res.errand))
             .then(() => {

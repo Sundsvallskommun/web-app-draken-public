@@ -31,14 +31,15 @@ export const updateAppeal: (
   });
 };
 
-export const fetchAppeal: (municipalityId: string, appealId: number) => Promise<ApiResponse<Appeal>> = (
-  municipalityId,
-  appealId
-) => {
+export const fetchAppeal: (
+  municipalityId: string,
+  errandId: number,
+  appealId: number
+) => Promise<ApiResponse<Appeal>> = (municipalityId, errandId, appealId) => {
   if (!appealId) {
     console.error('No appeal id found, cannot fetch. Returning.');
   }
-  const url = `${municipalityId}/appeals/${appealId}`;
+  const url = `casedata/${municipalityId}/${errandId}/appeals/${appealId}`;
   return apiService
     .get<ApiResponse<Appeal>>(url)
     .then((res) => res.data)

@@ -1,8 +1,10 @@
 import { MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
-import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+// import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { apiService } from '@common/services/api-service';
 
+export const EXTRAPARAMETER_SEPARATOR = '@';
 export interface UppgiftField {
   field: string;
   value: string;
@@ -834,7 +836,7 @@ const template: ExtraParametersObject = {
     },
     {
       field: 'disability.canBeAloneWhileParking',
-      dependsOn: [{ field: 'application.capacity', value: 'PASSENGER' }],
+      dependsOn: [{ field: 'application.applicant.capacity', value: 'PASSENGER' }],
       value: '',
       label: 'Kan den sökande lämnas ensam en kort stund medan föraren parkerar fordonet?',
       formField: {
@@ -853,7 +855,7 @@ const template: ExtraParametersObject = {
       field: 'disability.canBeAloneWhileParking.note',
       dependsOn: [
         { field: 'disability.canBeAloneWhileParking', value: 'false' },
-        { field: 'application.capacity', value: 'PASSENGER' },
+        { field: 'application.applicant.capacity', value: 'PASSENGER' },
       ],
       value: '',
       label: 'Beskriv behovet av...',
@@ -969,9 +971,11 @@ const template: ExtraParametersObject = {
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
   const obj: Partial<ExtraParametersObject> = { ...template };
-  for (let param in errand.extraParameters) {
-    const [caseType, field, ...rest] = param.split('.');
-    const value = errand.extraParameters[param] || '';
+  errand.extraParameters.forEach((param) => {
+    const caseType = errand.caseType;
+    const field = param['key'];
+
+    const value = param?.values[0] || '';
 
     if (caseType in MEXCaseType || caseType in PTCaseType) {
       const templateField = (template[caseType] as UppgiftField[])?.find((f) => f.field === field);
@@ -996,37 +1000,30 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
         }
       }
     }
-  }
+  });
   return obj;
 };
 
-export const uppgifterToExtraParametersMapper: (
-  data: { [key: string]: { [key: string]: string } },
-  errand: IErrand
-) => GenericExtraParameters = (data, errand) => {
-  const obj = {};
-  for (const ct in data) {
-    for (const field in data[ct]) {
-      const key = `${ct}.${field}`;
-      const val = data[ct][field];
-      obj[key] = val;
-    }
-  }
-  return obj;
-};
-
-export const saveExtraParameters = (municipalityId: string, data: GenericExtraParameters, errand: IErrand) => {
-  const nullFilteredData = Object.keys(data).reduce((acc, key) => {
-    if (data[key] !== null) {
-      acc[key] = data[key];
-    }
-    return acc;
-  }, {});
-  return apiService.patch<any, { id: string; extraParameters: GenericExtraParameters }>(
+export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
+  const nullFilteredData: ExtraParameter[] = data.filter(
+    (d) => d.values[0] !== null && typeof d.values[0] !== 'undefined'
+  );
+  let newExtraParameters = [...errand.extraParameters];
+  nullFilteredData.forEach((p) => {
+    newExtraParameters = replaceExtraParameter(newExtraParameters, p);
+  });
+  return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(
     `casedata/${municipalityId}/errands/${errand.id}`,
     {
       id: errand.id.toString(),
-      extraParameters: nullFilteredData,
+      extraParameters: newExtraParameters,
     }
   );
+};
+
+// If parameter exists, replace the existing one, otherwise append to list
+export const replaceExtraParameter = (extraParameters: ExtraParameter[], newParameter: ExtraParameter) => {
+  return extraParameters.some((p) => p.key === newParameter.key)
+    ? extraParameters.map((p) => (p.key === newParameter.key ? newParameter : p))
+    : [...extraParameters, newParameter];
 };

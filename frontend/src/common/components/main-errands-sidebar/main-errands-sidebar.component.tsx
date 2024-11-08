@@ -1,4 +1,13 @@
-import { getApplicationEnvironment, getApplicationName, isLOP } from '@common/services/application-service';
+import NextLink from 'next/link';
+import {
+  getApplicationEnvironment,
+  getApplicationName,
+  isKC,
+  isLOP,
+  isMEX,
+  isPT,
+} from '@common/services/application-service';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
@@ -9,15 +18,19 @@ import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import NextLink from 'next/link';
 import { useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import {
+  CaseStatusValues,
+} from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
-  const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
+  const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
+  const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user } = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -61,16 +74,44 @@ export const MainErrandsSidebar: React.FC<{
               {user.firstName} {user.lastName}
             </span>
           </div>
-          <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          {isLOP() || isKC() ? (
+            <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          ) : (
+            (isMEX() || isPT()) && (
+              <Button
+                role="menuitem"
+                size={'md'}
+                aria-label={'Notifieringar'}
+                className="mx-md"
+                variant="tertiary"
+                iconButton
+                leftIcon={
+                  <>
+                    <LucideIcon name={'bell'} />
+                  </>
+                }
+              >
+                <Badge className="absolute -top-10 -right-10 text-white" rounded color="vattjom" counter={99} />
+              </Button>
+            )
+          )}
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
-          <FormProvider {...filterForm}>
-            <SupportManagementFilterStatus
-              showAttestationTable={showAttestationTable}
-              setShowAttestationTable={setShowAttestationTable}
-            />
-          </FormProvider>
+          {isLOP || isKC() ? (
+            <FormProvider {...suppportManagementFilterForm}>
+              <SupportManagementFilterStatus
+                showAttestationTable={showAttestationTable}
+                setShowAttestationTable={setShowAttestationTable}
+              />
+            </FormProvider>
+          ) : (
+            (isMEX() || isPT()) && (
+              <FormProvider {...casedataFilterForm}>
+                <CasedataFilterSidebarStatusSelector />
+              </FormProvider>
+            )
+          )}
         </div>
         {isLOP() && user.permissions?.canViewAttestations && getApplicationEnvironment() === 'TEST' && (
           <>

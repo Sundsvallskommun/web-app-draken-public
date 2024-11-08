@@ -1,5 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
-import { Relation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getErrand } from '@casedata/services/casedata-errand-service';
@@ -14,7 +14,7 @@ import {
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
-import { isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -132,29 +132,25 @@ export const SimplifiedContactForm: React.FC<{
         .trim()
         .transform((val) => val && val.replace('-', ''))
         .matches(newNumberPhonePattern, invalidPhoneMessage),
-      phoneNumbers: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup
-              .string()
-              .trim()
-              .transform((val) => val.replace('-', ''))
-              .matches(phonePattern, invalidPhoneMessage),
-          })
-        )
-        .min(1, 'Ange minst en e-postadress och ett telefonnummer')
-        .required('Ange minst en e-postadress och ett telefonnummer'),
+      phoneNumbers: yup.array().of(
+        yup.object().shape({
+          value: yup
+            .string()
+            .trim()
+            .transform((val) => val.replace('-', ''))
+            .matches(phonePattern, invalidPhoneMessage),
+        })
+      ),
+      // .min(1, 'Ange minst en e-postadress och ett telefonnummer')
+      // .required('Ange minst en e-postadress och ett telefonnummer'),
       newEmail: yup.string().trim().email('E-postadress har fel format'),
-      emails: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup.string().trim().email('E-postadress har fel format'),
-          })
-        )
-        .min(1, 'Ange minst en e-postadress och ett telefonnummer')
-        .required('Ange minst en e-postadress och ett telefonnummer'),
+      emails: yup.array().of(
+        yup.object().shape({
+          value: yup.string().trim().email('E-postadress har fel format'),
+        })
+      ),
+      // .min(1, 'Ange minst en e-postadress och ett telefonnummer')
+      // .required('Ange minst en e-postadress och ett telefonnummer'),
       primaryContact: yup.boolean(),
       messageAllowed: yup.boolean(),
       roles: yup.array().of(yup.string()),
@@ -675,7 +671,7 @@ export const SimplifiedContactForm: React.FC<{
                     <Select.Option key="" value="">
                       Välj roll
                     </Select.Option>
-                    {Object.entries(Relation)
+                    {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
                       .sort((a, b) => (a[1] > b[1] ? 1 : -1))
                       .map(([key, relation]) => {
                         return (
@@ -720,22 +716,18 @@ export const SimplifiedContactForm: React.FC<{
         </>
       ) : null}
 
-      {isMEX() && (
-        <>
-          {editing ? null : (
-            <div className="">
-              <Button
-                className="mt-20"
-                color="vattjom"
-                variant="link"
-                onClick={() => setManual(true)}
-                disabled={props.disabled}
-              >
-                {label} manuellt
-              </Button>
-            </div>
-          )}
-        </>
+      {editing ? null : (
+        <div className="">
+          <Button
+            className="mt-20"
+            color="vattjom"
+            variant="link"
+            onClick={() => setManual(true)}
+            disabled={props.disabled}
+          >
+            {label} manuellt
+          </Button>
+        </div>
       )}
 
       <Modal show={manual || editing} className="w-[56rem]" onClose={closeHandler} label={label}>
@@ -776,7 +768,7 @@ export const SimplifiedContactForm: React.FC<{
                       <Select.Option key="" value="">
                         Välj roll
                       </Select.Option>
-                      {Object.entries(Relation)
+                      {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
                         .sort((a, b) => (a[1] > b[1] ? 1 : -1))
                         .map(([key, relation]) => {
                           return (
@@ -877,7 +869,7 @@ export const SimplifiedContactForm: React.FC<{
                       <Select.Option key="" value="">
                         Välj roll
                       </Select.Option>
-                      {Object.entries(Relation)
+                      {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
                         .sort((a, b) => (a[1] > b[1] ? 1 : -1))
                         .map(([key, relation]) => {
                           return (

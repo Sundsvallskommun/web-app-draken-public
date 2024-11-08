@@ -9,6 +9,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
+import { Button, Link } from '@sk-web-gui/react';
+import { CasedataFilterQuery } from '../casedata-filtering/components/casedata-filter-query.component';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -207,28 +209,48 @@ export const OngoingCaseDataErrands: React.FC = () => {
   );
 
   return (
-    <main className="px-24 md:px-40 pb-40">
-      <div className="container mx-auto p-0 max-w-content ">
-        <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
-          <div>
-            <FormProvider {...filterForm}>
-              <CaseDataFiltering
-                ownerFilterHandler={(e) => {
-                  return setOwnerFilter(e);
-                }}
-                ownerFilter={ownerFilter}
-                administrators={administrators}
-              />
-            </FormProvider>
-          </div>
-
-          <Disclosure.Panel static>
-            <FormProvider {...tableForm}>
-              <ErrandsTable />
-            </FormProvider>
-          </Disclosure.Panel>
-        </Disclosure>
+    <div className="w-full">
+      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+        <div className="container px-0 flex flex-wrap gap-16 items-center">
+          <FormProvider {...filterForm}>
+            {/* <SupportManagementFilterQuery /> */}
+            <CasedataFilterQuery />
+          </FormProvider>
+          <Link
+            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+            target="_blank"
+            data-cy="register-new-errand-button"
+          >
+            <Button color={'primary'} variant={'tertiary'}>
+              Nytt ärende
+            </Button>
+          </Link>
+        </div>
       </div>
-    </main>
+
+      <main className="px-24 md:px-40 pb-40 w-full">
+        <div className="container mx-auto p-0 w-full">
+          <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
+            <div>
+              <FormProvider {...filterForm}>
+                <CaseDataFiltering
+                  ownerFilterHandler={(e) => {
+                    return setOwnerFilter(e);
+                  }}
+                  ownerFilter={ownerFilter}
+                  administrators={administrators}
+                />
+              </FormProvider>
+            </div>
+
+            <Disclosure.Panel static>
+              <FormProvider {...tableForm}>
+                <ErrandsTable />
+              </FormProvider>
+            </Disclosure.Panel>
+          </Disclosure>
+        </div>
+      </main>
+    </div>
   );
 };
