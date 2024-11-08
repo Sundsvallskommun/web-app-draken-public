@@ -269,7 +269,11 @@ export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): L
 
 export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label => {
   const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  const allSubTypesFlattened = allTypesFlattened?.map((l) => l.labels).flat();
+  const allSubTypesFlattened =
+    allTypesFlattened
+      ?.filter((l) => l.labels?.length > 0)
+      ?.map((l) => l.labels)
+      ?.flat() || [];
   return allSubTypesFlattened?.find((t) => t.name === name);
 };
 
