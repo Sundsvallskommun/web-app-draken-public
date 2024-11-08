@@ -175,7 +175,7 @@ export const SidebarInfo: React.FC<{
       return updateSupportErrand(municipalityId, getValues())
         .then((res) => {
           setIsLoading(false);          
-          if (supportErrand.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount) {
+          if (supportErrand?.assignedUserId !== undefined && supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount) {
             saveAdmin();
           } else if (supportErrand.status !== Status[findStatusKeyForStatusLabel(getValues().status)]) {
             updateSupportErrandStatus(Status[findStatusKeyForStatusLabel(getValues().status)]);
