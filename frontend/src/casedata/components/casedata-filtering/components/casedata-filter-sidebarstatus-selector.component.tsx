@@ -1,10 +1,11 @@
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { useAppContext } from '@contexts/app.context';
-import { Badge, Button, LucideIcon as Icon } from '@sk-web-gui/react';
+import { Badge, Button } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CaseStatusFilter } from './casedata-filter-status.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
@@ -35,7 +36,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
             className={`justify-start ${
               !selectedErrandStatuses.includes(button.key as ErrandStatus) && 'hover:bg-dark-ghost'
             }`}
-            leftIcon={<Icon name={button.icon as any} />}
+            leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
           >
             <span className="w-full flex justify-between">
