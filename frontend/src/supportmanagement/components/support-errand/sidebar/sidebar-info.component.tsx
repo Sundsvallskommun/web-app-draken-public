@@ -178,7 +178,7 @@ export const SidebarInfo: React.FC<{
         .then((res) => {
           setIsLoading(false);
           if (
-            supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount
+            supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin)?.adAccount
           ) {
             saveAdmin();
           } else if (supportErrand.status !== Status[findStatusKeyForStatusLabel(getValues().status)]) {
