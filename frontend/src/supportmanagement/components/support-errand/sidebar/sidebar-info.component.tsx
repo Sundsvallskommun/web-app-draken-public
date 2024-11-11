@@ -553,9 +553,9 @@ export const SidebarInfo: React.FC<{
                 </div>
                 <p className="text-small">
                   {getValues('admin') === 'Välj handläggare' ? (
-                    <p className="mb-24">Ärendet parkerades utan en handläggare.</p>
+                    <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
                   ) : (
-                    <p className="mb-24">
+                    <span className="mb-24">
                       <strong>{getValues('admin')}</strong>
                       {supportErrand?.status === Status.SUSPENDED
                         ? ' parkerade ärendet med en påminnelse '
@@ -563,7 +563,7 @@ export const SidebarInfo: React.FC<{
                       {supportErrand.suspension?.suspendedTo
                         ? dayjs(supportErrand.suspension?.suspendedTo).format('DD MMM, HH:mm')
                         : supportErrand?.status === Status.SUSPENDED && '(datum saknas)'}
-                    </p>
+                    </span>
                   )}
                 </p>
 
