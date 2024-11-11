@@ -309,8 +309,6 @@ export const useErrands = (
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {
-      console.log('filter:', filter);
-      // setErrands({ ...errands, isLoading: true, page: page });
       await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
           setErrands({ ...res, isLoading: false });

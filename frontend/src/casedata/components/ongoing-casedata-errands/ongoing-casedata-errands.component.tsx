@@ -61,7 +61,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('selectedErrandStatuses', selectedErrandStatuses);
     setValue('status', selectedErrandStatuses);
   }, [selectedErrandStatuses]);
 
@@ -225,7 +224,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
       <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
-            {/* <SupportManagementFilterQuery /> */}
             <CasedataFilterQuery />
           </FormProvider>
           <Link
