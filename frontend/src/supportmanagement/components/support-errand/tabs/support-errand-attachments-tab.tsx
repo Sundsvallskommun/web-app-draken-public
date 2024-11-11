@@ -4,12 +4,12 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isIS, isKC } from '@common/services/application-service';
 import { Dialog, Transition } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
   FormControl,
   FormErrorMessage,
-  LucideIcon as Icon,
   Image,
   Input,
   Modal,
@@ -380,7 +380,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
               data-cy="add-attachment-button"
               disabled={isSupportErrandLocked(supportErrand)}
               color="vattjom"
-              rightIcon={<Icon name="upload" size={16} />}
+              rightIcon={<LucideIcon name="upload" size={16} />}
               inverted
               size="sm"
               onClick={() => {
@@ -414,7 +414,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                 >
                   <div className="flex gap-12">
                     <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
-                      <Icon
+                      <LucideIcon
                         name={documentMimeTypes.find((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'}
                         className="block"
                         size={24}
@@ -440,7 +440,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                           inverted
                           onClick={() => setSelectedAttachment(attachment)}
                         >
-                          <Icon name="ellipsis" />
+                          <LucideIcon name="ellipsis" />
                         </PopupMenu.Button>
                         <PopupMenu.Panel>
                           <PopupMenu.Items>
@@ -448,7 +448,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy={`open-attachment-${attachment.id}`}
-                                  leftIcon={<Icon name="eye" />}
+                                  leftIcon={<LucideIcon name="eye" />}
                                   onClick={() => {
                                     if (documentMimeTypes.includes(attachment.mimeType)) {
                                       downloadDocument(attachment);
@@ -482,7 +482,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy={`delete-attachment-${attachment.id}`}
-                                  leftIcon={<Icon name="trash" />}
+                                  leftIcon={<LucideIcon name="trash" />}
                                   onClick={onDelete}
                                 >
                                   Ta bort

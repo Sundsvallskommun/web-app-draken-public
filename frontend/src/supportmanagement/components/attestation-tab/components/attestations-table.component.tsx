@@ -1,15 +1,16 @@
 import { useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
-import { Button, LucideIcon as Icon, Input, Pagination, Select, Table, useGui } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Input, Pagination, Select, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import {
   SupportErrandsData,
   attestationLabels,
   findAttestationStatusLabelForAttestationStatusKey,
 } from '@supportmanagement/services/support-errand-service';
+import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import NextLink from 'next/link';
 
 export interface AttestationTableForm {
   sortOrder: 'asc' | 'desc';
@@ -179,7 +180,7 @@ export const AttestationsTable: React.FC<{
           setShowSelectedInvoice(true);
         }}
       >
-        {icon ? <Icon name={icon} size={16} /> : null}{' '}
+        {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
         {findAttestationStatusLabelForAttestationStatusKey(invoice.status)}
       </Button>
     );

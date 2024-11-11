@@ -1,4 +1,5 @@
-import { Button, Header, LucideIcon as Icon, cx } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Header, cx } from '@sk-web-gui/react';
 
 export const MessageWrapper: React.FC<{
   show: boolean;
@@ -16,7 +17,7 @@ export const MessageWrapper: React.FC<{
     >
       <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
         <div className="text-h4-sm flex items-center gap-12">
-          <Icon name="mail" /> {label}
+          <LucideIcon name="mail" /> {label}
         </div>
         <Button
           tabIndex={show ? 0 : -1}
@@ -28,7 +29,7 @@ export const MessageWrapper: React.FC<{
           }}
           data-cy="close-message-wrapper"
         >
-          <Icon name="x" data-cy="close-message-wrapper-icon" />
+          <LucideIcon name="x" data-cy="close-message-wrapper-icon" />
         </Button>
       </Header>
       {children}

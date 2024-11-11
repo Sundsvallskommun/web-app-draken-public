@@ -7,6 +7,7 @@ import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service
 import {
   cancelErrandPhaseChange,
   getErrand,
+  isErrandAdmin,
   isErrandLocked,
   triggerErrandPhaseChange,
   updateErrandStatus,
@@ -14,16 +15,14 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
 import { Admin } from '@common/services/user-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  LucideIcon as Icon,
-  Input,
   Modal,
   Select,
   Textarea,
@@ -204,9 +203,6 @@ export const SidebarInfo: React.FC<{}> = () => {
   const { admin, status } = watch();
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
-  const isErrandAdmin = (errand: IErrand, user: User) => {
-    return errand.administrator?.adAccount.toLocaleLowerCase() === user.username.toLocaleLowerCase();
-  };
 
   const exitErande = () => {
     let createNote = true;
@@ -450,7 +446,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         errand.appeals.find((x) => x.status === 'NEW' && x.timelinessReview === 'REJECTED')) ? (
         <>
           <Button
-            leftIcon={<Icon name="gavel" />}
+            leftIcon={<LucideIcon name="gavel" />}
             className="mt-16"
             variant="secondary"
             onClick={() => {
@@ -477,18 +473,24 @@ export const SidebarInfo: React.FC<{}> = () => {
       ) : (
         <>
           <PhaseChanger />
-          <Button
-            className="mt-16"
-            color="primary"
-            variant="secondary"
-            onClick={() => {
-              setModalIsOpen(true);
-              setCauseIsEmpty(false);
-            }}
-            disabled={!(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut)}
-          >
-            Avsluta ärendet
-          </Button>
+          {uiPhase !== UiPhase.slutfor && (
+            <Button
+              className="mt-16"
+              color="primary"
+              variant="secondary"
+              onClick={() => {
+                setModalIsOpen(true);
+                setCauseIsEmpty(false);
+              }}
+              disabled={
+                !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
+                !isErrandAdmin(errand, user) ||
+                isErrandLocked(errand)
+              }
+            >
+              Avsluta ärendet
+            </Button>
+          )}
 
           <Modal
             label="Avsluta ärendet"
@@ -520,7 +522,9 @@ export const SidebarInfo: React.FC<{}> = () => {
                 color="vattjom"
                 className="w-full mt-8"
                 disabled={
-                  !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut)
+                  !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
+                  isErrandLocked(errand) ||
+                  !isErrandAdmin(errand, user)
                 }
                 onClick={() => {
                   exitErande();

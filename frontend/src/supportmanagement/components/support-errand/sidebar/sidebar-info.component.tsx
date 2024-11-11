@@ -2,17 +2,8 @@ import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
-import {
-  Button,
-  Divider,
-  FormControl,
-  FormLabel,
-  LucideIcon as Icon,
-  Label,
-  Select,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -124,7 +115,9 @@ export const SidebarInfo: React.FC<{
       return updateSupportErrand(municipalityId, formdata)
         .then((res) => {
           setIsLoading(false);
-          if (formState.dirtyFields.admin) {
+          if (
+            supportErrand.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount
+          ) {
             saveAdmin();
           }
 
@@ -184,9 +177,11 @@ export const SidebarInfo: React.FC<{
       return updateSupportErrand(municipalityId, getValues())
         .then((res) => {
           setIsLoading(false);
-          if (formState.dirtyFields.admin) {
+          if (
+            supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin)?.adAccount
+          ) {
             saveAdmin();
-          } else if (formState.dirtyFields.status) {
+          } else if (supportErrand.status !== Status[findStatusKeyForStatusLabel(getValues().status)]) {
             updateSupportErrandStatus(Status[findStatusKeyForStatusLabel(getValues().status)]);
           }
 
@@ -367,7 +362,7 @@ export const SidebarInfo: React.FC<{
     <>
       <div className="flex">
         <Label rounded>
-          <Icon size="1.5rem" name={icon} /> {label}
+          <LucideIcon size="1.5rem" name={icon} /> {label}
         </Label>{' '}
         <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
       </div>
@@ -411,6 +406,12 @@ export const SidebarInfo: React.FC<{
 
   const onError = () => {
     console.error('Something went wrong when saving');
+  };
+
+  const hasClosedErrandPassedLimit = () => {
+    const limit = process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT;
+    const lastModified = dayjs(supportErrand.modified);
+    return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
   };
 
   return (
@@ -529,7 +530,7 @@ export const SidebarInfo: React.FC<{
                 <Button
                   className="w-full mt-20"
                   color="vattjom"
-                  leftIcon={<Icon name="undo-2" />}
+                  leftIcon={<LucideIcon name="undo-2" />}
                   variant="secondary"
                   onClick={() => {
                     confirm
@@ -540,6 +541,7 @@ export const SidebarInfo: React.FC<{
                         }
                       });
                   }}
+                  disabled={hasClosedErrandPassedLimit()}
                 >
                   Återöppna ärende
                 </Button>
@@ -548,16 +550,16 @@ export const SidebarInfo: React.FC<{
               <>
                 <div className="flex">
                   <Label>
-                    <Icon size="1.5rem" name="circle-pause" />{' '}
+                    <LucideIcon size="1.5rem" name="circle-pause" />{' '}
                     {supportErrand?.status === Status.SUSPENDED ? 'Parkerat ' : 'Tilldelat '}
                   </Label>
                   <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
                 </div>
                 <p className="text-small">
                   {getValues('admin') === 'Välj handläggare' ? (
-                    <p className="mb-24">Ärendet parkerades utan en handläggare.</p>
+                    <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
                   ) : (
-                    <p className="mb-24">
+                    <span className="mb-24">
                       <strong>{getValues('admin')}</strong>
                       {supportErrand?.status === Status.SUSPENDED
                         ? ' parkerade ärendet med en påminnelse '
@@ -565,7 +567,7 @@ export const SidebarInfo: React.FC<{
                       {supportErrand.suspension?.suspendedTo
                         ? dayjs(supportErrand.suspension?.suspendedTo).format('DD MMM, HH:mm')
                         : supportErrand?.status === Status.SUSPENDED && '(datum saknas)'}
-                    </p>
+                    </span>
                   )}
                 </p>
 
@@ -573,7 +575,7 @@ export const SidebarInfo: React.FC<{
                   className="w-full"
                   color="vattjom"
                   data-cy="suspend-button"
-                  leftIcon={<Icon name="circle-play" />}
+                  leftIcon={<LucideIcon name="circle-play" />}
                   variant="secondary"
                   disabled={!allowed}
                   loading={isLoading === 'status'}

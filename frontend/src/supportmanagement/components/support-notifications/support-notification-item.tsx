@@ -1,6 +1,7 @@
 import { prettyTime } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import { LucideIcon as Icon, cx, useSnackbar } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { cx, useSnackbar } from '@sk-web-gui/react';
 import {
   SupportNotification,
   acknowledgeSupportNotification,
@@ -23,7 +24,7 @@ export const SupportNotificationItem: React.FC<{ notification: SupportNotificati
   return (
     <div className="p-16 flex gap-12 items-start justify-between text-small">
       <div className="flex items-center my-xs">
-        <Icon.Padded name="message-circle" color={color} inverted size="4rem" />
+        <LucideIcon.Padded name="message-circle" color={color} inverted size="4rem" />
       </div>
       <div className="flex-grow">
         <div>

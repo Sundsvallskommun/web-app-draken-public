@@ -10,18 +10,8 @@ import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-ser
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
-import {
-  Avatar,
-  Button,
-  Divider,
-  FormControl,
-  LucideIcon as Icon,
-  Modal,
-  PopupMenu,
-  Textarea,
-  cx,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Divider, FormControl, Modal, PopupMenu, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
@@ -241,14 +231,14 @@ export const SidebarGenericNotes: React.FC<{
                             className="bg-transparent"
                             variant="ghost"
                           >
-                            <Icon name="ellipsis" />
+                            <LucideIcon name="ellipsis" />
                           </PopupMenu.Button>
                           <PopupMenu.Panel>
                             <PopupMenu.Items>
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<Icon name="pencil" />}
+                                    leftIcon={<LucideIcon name="pencil" />}
                                     onClick={() => {
                                       updateNote(note);
                                     }}
@@ -260,7 +250,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<Icon name="eye" />}
+                                    leftIcon={<LucideIcon name="trash" />}
                                     onClick={() => {
                                       removeNote(note);
                                     }}
