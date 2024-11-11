@@ -13,16 +13,14 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
 import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
 import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
-import { SupportManagementFilterStatus } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-status.component';
+import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 import { useState } from 'react';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
-import {
-  CaseStatusValues,
-} from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 import { isNotificationsEnabled } from '@common/services/feature-flag-service';
 
@@ -81,19 +79,17 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
-          {isLOP || isKC() ? (
+          {isLOP() || isKC() ? (
             <FormProvider {...suppportManagementFilterForm}>
-              <SupportManagementFilterStatus
+              <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
                 setShowAttestationTable={setShowAttestationTable}
               />
             </FormProvider>
           ) : (
-            (isMEX() || isPT()) && (
-              <FormProvider {...casedataFilterForm}>
-                <CasedataFilterSidebarStatusSelector />
-              </FormProvider>
-            )
+            <FormProvider {...casedataFilterForm}>
+              <CasedataFilterSidebarStatusSelector />
+            </FormProvider>
           )}
         </div>
         {isLOP() && user.permissions?.canViewAttestations && getApplicationEnvironment() === 'TEST' && (

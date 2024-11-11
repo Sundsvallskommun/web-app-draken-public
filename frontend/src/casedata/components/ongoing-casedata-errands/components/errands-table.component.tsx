@@ -18,7 +18,14 @@ import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
-  const { municipalityId, errands: data, setSidebarButtons } = useAppContext();
+  const {
+    municipalityId,
+    errands: data,
+    newErrands,
+    ongoingErrands,
+    closedErrands,
+    setSidebarButtons,
+  } = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -28,21 +35,30 @@ export const ErrandsTable: React.FC = () => {
   const { theme } = useGui();
   const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
 
-  //NOTE: mock buttons at the moment, needs proper implementation
   const casedataSidebarButtons: SidebarButton[] = [
     {
       label: 'Nya ärenden',
       key: ErrandStatus.ArendeInkommit,
       statuses: [ErrandStatus.ArendeInkommit],
       icon: 'inbox',
-      totalStatusErrands: 20,
+      totalStatusErrands: newErrands.totalElements,
     },
     {
       label: 'Öppnade ärenden',
       key: ErrandStatus.UnderGranskning,
-      statuses: [ErrandStatus.UnderGranskning, ErrandStatus.VantarPaKomplettering],
+      statuses: [
+        ErrandStatus.UnderGranskning,
+        ErrandStatus.VantarPaKomplettering,
+        ErrandStatus.KompletteringInkommen,
+        ErrandStatus.InterntKomplettering,
+        ErrandStatus.InterntAterkoppling,
+        ErrandStatus.UnderRemiss,
+        ErrandStatus.AterkopplingRemiss,
+        ErrandStatus.UnderUtredning,
+        ErrandStatus.UnderBeslut,
+      ],
       icon: 'clipboard-pen',
-      totalStatusErrands: 45,
+      totalStatusErrands: ongoingErrands.totalElements,
     },
     ...(isSuspendEnabled()
       ? [
@@ -51,22 +67,22 @@ export const ErrandsTable: React.FC = () => {
             key: ErrandStatus.UnderRemiss,
             statuses: [ErrandStatus.UnderRemiss],
             icon: 'circle-pause',
-            totalStatusErrands: 15,
+            totalStatusErrands: 0,
           },
         ]
       : []),
     {
       label: 'Avslutade ärenden',
       key: ErrandStatus.ArendeAvslutat,
-      statuses: [ErrandStatus.ArendeAvslutat],
+      statuses: [ErrandStatus.ArendeAvslutat, ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt],
       icon: 'circle-check-big',
-      totalStatusErrands: 78,
+      totalStatusErrands: closedErrands.totalElements,
     },
   ];
 
   useEffect(() => {
     setSidebarButtons(casedataSidebarButtons);
-  }, [data]);
+  }, [data, newErrands, ongoingErrands, closedErrands]);
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',

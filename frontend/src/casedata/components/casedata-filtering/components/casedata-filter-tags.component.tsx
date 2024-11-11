@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { Admin } from '@common/services/user-service';
 import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
+import { useAppContext } from '@contexts/app.context';
 
 interface CasedataFilterTagsProps {
   administrators: (SupportAdmin | Admin)[];
@@ -23,6 +24,8 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
   const admins = watch('admins');
   const propertyDesignation = watch('propertyDesignation');
   const phases = watch('phase');
+
+  const { selectedErrandStatuses }: { selectedErrandStatuses } = useAppContext();
 
   const hasTags =
     types.length > 0 ||
@@ -75,6 +78,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
 
   const handleReset = () => {
     reset(CaseDataValues);
+    setValue('status', selectedErrandStatuses);
   };
 
   return (

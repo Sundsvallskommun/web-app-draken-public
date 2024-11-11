@@ -6,6 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import { CaseStatusFilter } from './casedata-filter-status.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import store from '@supportmanagement/services/storage-service';
 
 export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
@@ -19,8 +20,22 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
     useAppContext();
 
   const updateStatusFilter = (ss: ErrandStatus[]) => {
-    //NOTE: needs iplementation
-    alert(`tab, ${ss}`);
+    try {
+      const labelsToKeys = {};
+      Object.entries(ErrandStatus).forEach(([k, v]) => {
+        labelsToKeys[v] = k;
+      });
+      const statusKeys = ss.map((s) => labelsToKeys[s]);
+      const storedFilter = store.get('filter');
+      const jsonparsedstatus = JSON.parse(storedFilter);
+      const status = statusKeys.join(',');
+      jsonparsedstatus.status = status;
+      const stringified = JSON.stringify(jsonparsedstatus);
+      store.set('filter', stringified);
+      setSelectedErrandStatuses(statusKeys as ErrandStatus[]);
+    } catch (error) {
+      console.error('Error updating status filter');
+    }
   };
 
   return (
@@ -32,7 +47,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
               updateStatusFilter(button.statuses as ErrandStatus[]);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={selectedErrandStatuses.includes(button.key as ErrandStatus) ? 'primary' : 'ghost'}
+            variant={selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(button.key) ? 'primary' : 'ghost'}
             className={`justify-start ${
               !selectedErrandStatuses.includes(button.key as ErrandStatus) && 'hover:bg-dark-ghost'
             }`}

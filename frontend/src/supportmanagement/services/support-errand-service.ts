@@ -461,6 +461,7 @@ export const useSupportErrands = (
   } = useAppContext();
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      console.log('filter:', filter);
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });

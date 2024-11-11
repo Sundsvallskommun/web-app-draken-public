@@ -34,7 +34,7 @@ export const SupportErrandsTable: React.FC = () => {
     supportMetadata,
     supportAdmins,
     municipalityId,
-    selectedErrandStatuses,
+    selectedSupportErrandStatuses,
     setSidebarButtons,
     newSupportErrands,
     ongoingSupportErrands,
@@ -46,7 +46,7 @@ export const SupportErrandsTable: React.FC = () => {
     supportAdmins;
     setSupportAdmins;
     municipalityId;
-    selectedErrandStatuses;
+    selectedSupportErrandStatuses;
     setSidebarButtons;
     newSupportErrands;
     ongoingSupportErrands;
@@ -65,7 +65,7 @@ export const SupportErrandsTable: React.FC = () => {
   const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
   const currentStatusHaserrands =
     data.errands.filter((e) => {
-      return selectedErrandStatuses.includes(e.status) || e.status === Status.PENDING;
+      return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;
     }).length !== 0
       ? true
       : false;
@@ -170,7 +170,7 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errandId}`, '_blank');
   };
 
-  const headers = getOngoingSupportErrandLabels(selectedErrandStatuses).map((header, index) => (
+  const headers = getOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>

@@ -53,7 +53,7 @@ import {
 import {
   SupportManagementStatusFilter,
   SupportManagementStatusValues,
-} from './components/supportmanagement-filter-status.component';
+} from './components/supportmanagement-filter-sidebarstatus-selector.component';
 import { SupportManagementFilterTags } from './components/supportmanagement-filter-tags.component';
 import {
   SupportManagementFilterType,
@@ -92,15 +92,15 @@ const SupportManagementFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(false);
-  const { selectedErrandStatuses, sidebarButtons } = useAppContext();
+  const { selectedSupportErrandStatuses: selectedSupportErrandStatuses, sidebarButtons } = useAppContext();
 
   return (
     <>
       <div className="flex flex-col w-full gap-24">
         <div className="w-full flex items-start md:items-center justify-between flex-col md:flex-row gap-12">
           <h1 className="p-0 m-0">
-            {sidebarButtons && selectedErrandStatuses
-              ? sidebarButtons?.find((s) => selectedErrandStatuses.includes(s.key))?.label
+            {sidebarButtons && selectedSupportErrandStatuses
+              ? sidebarButtons?.find((s) => selectedSupportErrandStatuses.includes(s.key))?.label
               : 'Ärenden'}
           </h1>
 
