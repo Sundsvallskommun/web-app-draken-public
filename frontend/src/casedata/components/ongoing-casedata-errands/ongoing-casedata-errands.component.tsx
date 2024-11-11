@@ -1,5 +1,5 @@
 import { useErrands } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Disclosure } from '@headlessui/react';
@@ -24,12 +24,19 @@ export interface TableForm {
 
 export const OngoingCaseDataErrands: React.FC = () => {
   const filterForm = useForm<CaseDataFilter>({ defaultValues: CaseDataValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue } = filterForm;
   const tableForm = useForm<TableForm>({ defaultValues: { sortColumn: 'updated', sortOrder: 'desc', pageSize: 12 } });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
-  const { municipalityId, setErrand, setAdministrators, administrators } = useAppContext();
+  const {
+    municipalityId,
+    setErrand,
+    setAdministrators,
+    administrators,
+    selectedErrandStatuses,
+    setSelectedErrandStatuses,
+  }: AppContextInterface = useAppContext();
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
   const queryFilter = watchFilter('query');
@@ -52,6 +59,10 @@ export const OngoingCaseDataErrands: React.FC = () => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
+
+  useEffect(() => {
+    setValue('status', selectedErrandStatuses);
+  }, [selectedErrandStatuses]);
 
   const router = useRouter();
   const { user, setUser } = useAppContext();
@@ -213,7 +224,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
       <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
-            {/* <SupportManagementFilterQuery /> */}
             <CasedataFilterQuery />
           </FormProvider>
           <Link

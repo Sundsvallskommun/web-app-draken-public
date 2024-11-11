@@ -62,8 +62,8 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     setAvatar,
     supportAdmins,
     municipalityId,
-    selectedErrandStatuses,
-    setSelectedErrandStatuses,
+    selectedSupportErrandStatuses,
+    setSelectedSupportErrandStatuses,
   } = useAppContext();
 
   const startdate = watchFilter('startdate');
@@ -88,8 +88,8 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const initialFocus = useRef(null);
 
   useEffect(() => {
-    setValue('status', selectedErrandStatuses);
-  }, [selectedErrandStatuses]);
+    setValue('status', selectedSupportErrandStatuses);
+  }, [selectedSupportErrandStatuses]);
 
   const setInitialFocus = () => {
     setTimeout(() => {
@@ -160,7 +160,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         setOwnerFilter(true);
       }
       if (storedFilters.status) {
-        setSelectedErrandStatuses(storedFilters.status || [Status.ONGOING]);
+        setSelectedSupportErrandStatuses(storedFilters.status || [Status.ONGOING]);
       }
       resetFilter(storedFilters);
       triggerFilter();

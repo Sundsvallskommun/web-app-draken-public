@@ -13,17 +13,16 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
 import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
 import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
-import { SupportManagementFilterStatus } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-status.component';
+import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 import { useState } from 'react';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
-import {
-  CaseStatusValues,
-} from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
+import { isNotificationsEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -74,43 +73,23 @@ export const MainErrandsSidebar: React.FC<{
               {user.firstName} {user.lastName}
             </span>
           </div>
-          {isLOP() || isKC() ? (
+          {isNotificationsEnabled() ? (
             <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          ) : (
-            (isMEX() || isPT()) && (
-              <Button
-                role="menuitem"
-                size={'md'}
-                aria-label={'Notifieringar'}
-                className="mx-md"
-                variant="tertiary"
-                iconButton
-                leftIcon={
-                  <>
-                    <LucideIcon name={'bell'} />
-                  </>
-                }
-              >
-                <Badge className="absolute -top-10 -right-10 text-white" rounded color="vattjom" counter={99} />
-              </Button>
-            )
-          )}
+          ) : null}
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
-          {isLOP || isKC() ? (
+          {isLOP() || isKC() ? (
             <FormProvider {...suppportManagementFilterForm}>
-              <SupportManagementFilterStatus
+              <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
                 setShowAttestationTable={setShowAttestationTable}
               />
             </FormProvider>
           ) : (
-            (isMEX() || isPT()) && (
-              <FormProvider {...casedataFilterForm}>
-                <CasedataFilterSidebarStatusSelector />
-              </FormProvider>
-            )
+            <FormProvider {...casedataFilterForm}>
+              <CasedataFilterSidebarStatusSelector />
+            </FormProvider>
           )}
         </div>
         {isLOP() && user.permissions?.canViewAttestations && getApplicationEnvironment() === 'TEST' && (
@@ -136,7 +115,9 @@ export const MainErrandsSidebar: React.FC<{
           </>
         )}
       </div>
-      <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      {isNotificationsEnabled() ? (
+        <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      ) : null}
     </aside>
   );
 };

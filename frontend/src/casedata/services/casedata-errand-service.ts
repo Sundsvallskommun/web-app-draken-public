@@ -295,12 +295,21 @@ export const useErrands = (
   extraParameters?: { [key: string]: string }
 ): ErrandsData => {
   const toastMessage = useSnackbar();
-  const { setErrands, errands } = useAppContext();
+  const {
+    setErrands,
+    setNewErrands,
+    setOngoingErrands,
+    setSuspendedErrands,
+    setClosedErrands,
+    errands,
+    newErrands,
+    ongoingErrands,
+    closedErrands,
+  } = useAppContext();
 
   const fetchErrands = useCallback(
-    (page: number = 0) => {
-      setErrands({ ...errands, isLoading: true, page: page });
-      getErrands(municipalityId, page, size, filter, sort, extraParameters)
+    async (page: number = 0) => {
+      await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
           setErrands({ ...res, isLoading: false });
           if (res.error && res.error !== '404') {
@@ -316,12 +325,82 @@ export const useErrands = (
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Ärenden kunde inte hämtas',
+            message: 'Nya ärenden kunde inte hämtas',
+            status: 'error',
+          });
+        });
+
+      getErrands(municipalityId, page, size, { ...filter, status: 'ArendeInkommit' }, sort)
+        .then((res) => {
+          setNewErrands(res);
+        })
+        .catch((err) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Nya ärenden kunde inte hämtas',
+            status: 'error',
+          });
+        });
+
+      getErrands(
+        municipalityId,
+        page,
+        size,
+        {
+          ...filter,
+          status: `UnderGranskning,VantarPaKomplettering,KompletteringInkommen,InterntKomplettering,InterntAterkoppling,UnderRemiss,AterkopplingRemiss,UnderUtredning,UnderBeslut`,
+        },
+        sort
+      )
+        .then((res) => {
+          setOngoingErrands(res);
+        })
+        .catch((err) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Pågående ärenden kunde inte hämtas',
+            status: 'error',
+          });
+        });
+
+      getErrands(
+        municipalityId,
+        page,
+        size,
+        {
+          ...filter,
+          status: `Beslutad,BeslutVerkstallt,ArendeAvslutat`,
+        },
+        sort
+      )
+        .then((res) => {
+          setClosedErrands(res);
+        })
+        .catch((err) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Avslutade ärenden kunde inte hämtas',
             status: 'error',
           });
         });
     },
-    [setErrands, errands, size, filter, sort, toastMessage]
+    [
+      setErrands,
+      setNewErrands,
+      setOngoingErrands,
+      setClosedErrands,
+      errands,
+      newErrands,
+      ongoingErrands,
+      closedErrands,
+      size,
+      filter,
+      sort,
+      toastMessage,
+    ]
   );
 
   useEffect(() => {

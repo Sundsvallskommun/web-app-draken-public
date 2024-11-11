@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface CaseStatusFilter {
-  status: ErrandStatus[];
+  status: string[];
 }
 
 export const CaseStatusValues = {
