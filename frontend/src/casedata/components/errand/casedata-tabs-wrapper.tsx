@@ -251,7 +251,6 @@ export const CasedataTabsWrapper: React.FC = () => {
       visibleFor:
         isPT() && errand?.id
           ? [
-              ErrandPhase.aktualisering,
               ErrandPhase.utredning,
               ErrandPhase.beslut,
               ErrandPhase.hantera,
