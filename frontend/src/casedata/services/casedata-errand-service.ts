@@ -481,12 +481,19 @@ export const validateStatusForDecision: (e: IErrand) => { valid: boolean; reason
   return { valid: true, reason: e.status };
 };
 
-export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
-  if (isPT() && !e.stakeholders.map((s) => s.newRole).includes(Role.APPLICANT)) {
-    return false;
+export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
+  if (isPT() && !e.stakeholders.some((s) => s.roles.includes(Role.APPLICANT))) {
+    return { valid: false, reason: 'Ärendeägare saknas' };
   }
+  return { valid: true, reason: '' };
+};
 
-  return validateStatusForDecision(e).valid && validateAttachmentsForDecision(e).valid;
+export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
+  return (
+    validateStakeholdersForDecision(e).valid &&
+    validateStatusForDecision(e).valid &&
+    validateAttachmentsForDecision(e).valid
+  );
 };
 
 export const phaseChangeInProgress = (errand: IErrand) => {

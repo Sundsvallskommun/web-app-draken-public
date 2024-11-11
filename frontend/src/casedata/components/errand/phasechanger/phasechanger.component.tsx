@@ -10,13 +10,24 @@ import {
   triggerErrandPhaseChange,
   validateAction,
   validateErrandForDecision,
+  validateStakeholdersForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, FormControl, FormLabel, Modal, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import {
+  Button,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Modal,
+  Select,
+  Spinner,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 
@@ -96,6 +107,8 @@ export const PhaseChanger = () => {
           ? `Ärendet har felaktiga bilagor: ${validateAttachmentsForDecision(errand).reason}`
           : !validateStatusForDecision(errand).valid
           ? 'Ärendet har fel status för att beslut ska kunna fattas.'
+          : !validateStakeholdersForDecision(errand).valid
+          ? 'Ärendet saknar ärendeägare.'
           : null,
       });
     } else if (uiPhase === UiPhase.beslut) {
@@ -256,18 +269,23 @@ export const PhaseChanger = () => {
       </Modal>
     </>
   ) : uiPhase === UiPhase.beslut || errand.status === ErrandStatus.ArendeAvslutat ? null : (
-    <Button
-      variant="primary"
-      disabled={
-        isErrandLocked(errand) || !allowed || (uiPhase === UiPhase.utredning && !validateErrandForDecision(errand))
-      }
-      color="vattjom"
-      loadingText="Sparar"
-      loading={isLoading}
-      onClick={triggerPhaseChange}
-      rightIcon={<LucideIcon name="arrow-right" size={18} />}
-    >
-      {phaseChangeText?.button}
-    </Button>
+    <>
+      <Button
+        variant="primary"
+        disabled={isErrandLocked(errand) || !allowed || phaseChangeText.disabled}
+        color="vattjom"
+        loadingText="Sparar"
+        loading={isLoading}
+        onClick={triggerPhaseChange}
+        rightIcon={<LucideIcon name="arrow-right" size={18} />}
+      >
+        {phaseChangeText?.button}
+      </Button>
+      {phaseChangeText.disabledMessage ? (
+        <FormErrorMessage data-cy="status-error-message" className="mt-md left-2 right-2 leading-16 text-error">
+          {phaseChangeText.disabledMessage}
+        </FormErrorMessage>
+      ) : null}
+    </>
   );
 };
