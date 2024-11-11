@@ -3,47 +3,12 @@ import { GenericExtraParameters } from './extra-parameters.interface';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-  Appeal as AppealDTO,
   Decision as DecisionDTO,
   DecisionDecisionOutcomeEnum,
   DecisionDecisionTypeEnum,
   Law as LawDTO,
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
-
-export class Appeal implements AppealDTO {
-  /////********NOTE: DATA IS NOT ALIGNED WITH DESIGN, NEEDS CORRECTION WHEN BOTH ARE UP TO DATE*/
-  @IsString()
-  @IsOptional()
-  id?: number;
-  @IsString()
-  @IsOptional()
-  version?: number;
-  @IsString()
-  @IsOptional()
-  created?: string;
-  @IsString()
-  @IsOptional()
-  updated?: string;
-  @IsString()
-  @IsOptional()
-  description?: string;
-  @IsString()
-  @IsOptional()
-  registeredAt?: string;
-  @IsString()
-  @IsOptional()
-  appealConcernCommunicatedAt: string;
-  @IsString()
-  @IsOptional()
-  status: string;
-  @IsString()
-  @IsOptional()
-  timelinessReview: string;
-  @IsNumber()
-  @IsOptional()
-  decisionId?: number;
-}
 
 export class Law implements LawDTO {
   @IsString()
@@ -88,10 +53,6 @@ export class Decision implements DecisionDTO {
   @ValidateNested({ each: true })
   @Type(() => Attachment)
   attachments: Attachment[];
-  @ValidateNested({ each: true })
-  @Type(() => Appeal)
-  @IsOptional()
-  appeal?: Appeal;
   @IsObject()
   @IsOptional()
   extraParameters: GenericExtraParameters;

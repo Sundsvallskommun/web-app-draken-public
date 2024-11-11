@@ -446,10 +446,6 @@ export const CasedataDecisionTab: React.FC<{
     trigger('description');
   };
 
-  const decisionsAppeal = (d) => {
-    return errand.appeals.find((x) => x.decisionId === d);
-  };
-
   const sortedDec = errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
   useEffect(() => {
@@ -458,17 +454,13 @@ export const CasedataDecisionTab: React.FC<{
     setValue('errandId', errand.id);
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
-      if (!decisionsAppeal(existingDecision.id)) {
-        setValue('id', existingDecision.id);
-        setValue('description', existingDecision.description);
-        setRichText(existingDecision.description);
-        setLawHeading(existingDecision.law[0].heading);
-        setValue('outcome', DecisionOutcomeLabel[existingDecision.decisionOutcome]);
-        setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
-        setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
-      } else {
-        setValue('id', undefined);
-      }
+      setValue('id', existingDecision.id);
+      setValue('description', existingDecision.description);
+      setRichText(existingDecision.description);
+      setLawHeading(existingDecision.law[0].heading);
+      setValue('outcome', DecisionOutcomeLabel[existingDecision.decisionOutcome]);
+      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
+      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
     } else {
       setValue('id', undefined);
     }
@@ -515,18 +507,6 @@ export const CasedataDecisionTab: React.FC<{
     );
   };
 
-  const appealed = (decision) => {
-    return (
-      (errand.status === ErrandStatus.Beslutad ||
-        errand.status === ErrandStatus.BeslutVerkstallt ||
-        errand.status === ErrandStatus.BeslutOverklagat ||
-        errand.status === ErrandStatus.ArendeAvslutat) &&
-      (decisionsAppeal(decision?.id)?.status === 'COMPLETED' ||
-        (decisionsAppeal(decision?.id)?.status === 'NEW' &&
-          decisionsAppeal(decision?.id)?.timelinessReview === 'REJECTED'))
-    );
-  };
-
   return (
     <>
       {(errand.phase === ErrandPhase.verkstalla && errand.status !== ErrandStatus.UnderBeslut) ||
@@ -562,12 +542,7 @@ export const CasedataDecisionTab: React.FC<{
                               {Object.entries(DecisionOutcomeLabel).find((x) => x[0] === decision.decisionOutcome)[1]}
                             </p>
 
-                            {appealed(decision) ? (
-                              <div className="flex items-center">
-                                <LucideIcon name="undo-2" size={16} className="ml-12 mr-4" />
-                                <p className="text-small">Beslut överklagat</p>
-                              </div>
-                            ) : sent(decision) ? (
+                            {sent(decision) ? (
                               <div className="flex items-center">
                                 <LucideIcon name="mail-check" size={16} className="ml-12 mr-4" />
                                 <p className="text-small">Beslut skickat</p>

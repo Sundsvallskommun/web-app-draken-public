@@ -441,101 +441,69 @@ export const SidebarInfo: React.FC<{}> = () => {
       ) : null}
 
       <Divider className="my-20"></Divider>
-      {(errand.status === ErrandStatus.BeslutOverklagat && errand.appeals.find((x) => x.status === 'COMPLETED')) ||
-      (errand.status === ErrandStatus.BeslutOverklagat &&
-        errand.appeals.find((x) => x.status === 'NEW' && x.timelinessReview === 'REJECTED')) ? (
-        <>
-          <Button
-            leftIcon={<LucideIcon name="gavel" />}
-            className="mt-16"
-            variant="secondary"
-            onClick={() => {
-              confirm
-                .showConfirmation(
-                  'Redo att ompröva ditt beslut?',
-                  'För att kunna fatta ett välgrundat beslut är det avgörande att du har slutfört all nödvändig utredning och besitter all relevant information för ärendet. Är du säker på att du vill fortsätta?',
-                  'Ja',
-                  'Nej',
-                  'info',
-                  'info'
-                )
-                .then(async (confirmed) => {
-                  if (confirmed) {
-                    await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.UnderBeslut);
-                    await triggerPhaseChange();
-                  }
-                });
-            }}
-          >
-            Fatta nytt beslut
-          </Button>
-        </>
-      ) : (
-        <>
-          <PhaseChanger />
-          {uiPhase !== UiPhase.slutfor && (
-            <Button
-              className="mt-16"
-              color="primary"
-              variant="secondary"
-              onClick={() => {
-                setModalIsOpen(true);
-                setCauseIsEmpty(false);
-              }}
-              disabled={
-                !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
-                !isErrandAdmin(errand, user) ||
-                isErrandLocked(errand)
-              }
-            >
-              Avsluta ärendet
-            </Button>
-          )}
 
-          <Modal
-            label="Avsluta ärendet"
-            show={modalIsOpen}
-            onClose={() => {
-              setModalIsOpen(false);
-            }}
-            className="min-w-[48rem]"
-          >
-            <Modal.Content className="pb-0">
-              <FormControl className="w-full">
-                <FormLabel>
-                  Beskriv orsak till avslut<span aria-hidden="true">*</span>
-                </FormLabel>
-                <Textarea className="w-full" rows={4} {...register('publicNote')} />
-
-                {causeIsEmpty ? (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>Orsak till avslut måste anges.</FormErrorMessage>
-                  </div>
-                ) : null}
-
-                <small className="my-0 text-dark-secondary">Texten sparas som en tjänsteanteckning på ärendet.</small>
-              </FormControl>
-            </Modal.Content>
-            <Modal.Footer>
-              <Button
-                variant="primary"
-                color="vattjom"
-                className="w-full mt-8"
-                disabled={
-                  !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
-                  isErrandLocked(errand) ||
-                  !isErrandAdmin(errand, user)
-                }
-                onClick={() => {
-                  exitErande();
-                }}
-              >
-                Avsluta ärendet
-              </Button>
-            </Modal.Footer>
-          </Modal>
-        </>
+      <PhaseChanger />
+      {uiPhase !== UiPhase.slutfor && (
+        <Button
+          className="mt-16"
+          color="primary"
+          variant="secondary"
+          onClick={() => {
+            setModalIsOpen(true);
+            setCauseIsEmpty(false);
+          }}
+          disabled={
+            !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
+            !isErrandAdmin(errand, user) ||
+            isErrandLocked(errand)
+          }
+        >
+          Avsluta ärendet
+        </Button>
       )}
+
+      <Modal
+        label="Avsluta ärendet"
+        show={modalIsOpen}
+        onClose={() => {
+          setModalIsOpen(false);
+        }}
+        className="min-w-[48rem]"
+      >
+        <Modal.Content className="pb-0">
+          <FormControl className="w-full">
+            <FormLabel>
+              Beskriv orsak till avslut<span aria-hidden="true">*</span>
+            </FormLabel>
+            <Textarea className="w-full" rows={4} {...register('publicNote')} />
+
+            {causeIsEmpty ? (
+              <div className="my-sm text-error">
+                <FormErrorMessage>Orsak till avslut måste anges.</FormErrorMessage>
+              </div>
+            ) : null}
+
+            <small className="my-0 text-dark-secondary">Texten sparas som en tjänsteanteckning på ärendet.</small>
+          </FormControl>
+        </Modal.Content>
+        <Modal.Footer>
+          <Button
+            variant="primary"
+            color="vattjom"
+            className="w-full mt-8"
+            disabled={
+              !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
+              isErrandLocked(errand) ||
+              !isErrandAdmin(errand, user)
+            }
+            onClick={() => {
+              exitErande();
+            }}
+          >
+            Avsluta ärendet
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

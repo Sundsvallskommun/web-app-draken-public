@@ -161,7 +161,6 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
         dayjs(a.updated).isAfter(dayjs(b.updated)) ? -1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? 1 : 0
       ),
       decisions: e.decisions,
-      appeals: e.appeals,
       attachments: [],
       messageIds: [],
       extraParameters: e.extraParameters,
