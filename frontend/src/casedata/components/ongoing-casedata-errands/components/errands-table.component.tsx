@@ -9,23 +9,13 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Input, Label, Pagination, Select, Spinner, Table, cx, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import NextLink from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
-  const {
-    municipalityId,
-    errands: data,
-    newErrands,
-    ongoingErrands,
-    closedErrands,
-    setSidebarButtons,
-  } = useAppContext();
+  const { municipalityId, errands: data } = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -34,55 +24,6 @@ export const ErrandsTable: React.FC = () => {
 
   const { theme } = useGui();
   const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
-
-  const casedataSidebarButtons: SidebarButton[] = [
-    {
-      label: 'Nya ärenden',
-      key: ErrandStatus.ArendeInkommit,
-      statuses: [ErrandStatus.ArendeInkommit],
-      icon: 'inbox',
-      totalStatusErrands: newErrands.totalElements,
-    },
-    {
-      label: 'Öppnade ärenden',
-      key: ErrandStatus.UnderGranskning,
-      statuses: [
-        ErrandStatus.UnderGranskning,
-        ErrandStatus.VantarPaKomplettering,
-        ErrandStatus.KompletteringInkommen,
-        ErrandStatus.InterntKomplettering,
-        ErrandStatus.InterntAterkoppling,
-        ErrandStatus.UnderRemiss,
-        ErrandStatus.AterkopplingRemiss,
-        ErrandStatus.UnderUtredning,
-        ErrandStatus.UnderBeslut,
-      ],
-      icon: 'clipboard-pen',
-      totalStatusErrands: ongoingErrands.totalElements,
-    },
-    ...(isSuspendEnabled()
-      ? [
-          {
-            label: 'Parkerade ärenden',
-            key: ErrandStatus.UnderRemiss,
-            statuses: [ErrandStatus.UnderRemiss],
-            icon: 'circle-pause',
-            totalStatusErrands: 0,
-          },
-        ]
-      : []),
-    {
-      label: 'Avslutade ärenden',
-      key: ErrandStatus.ArendeAvslutat,
-      statuses: [ErrandStatus.ArendeAvslutat, ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt],
-      icon: 'circle-check-big',
-      totalStatusErrands: closedErrands.totalElements,
-    },
-  ];
-
-  useEffect(() => {
-    setSidebarButtons(casedataSidebarButtons);
-  }, [data, newErrands, ongoingErrands, closedErrands]);
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',

@@ -1,9 +1,10 @@
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, Badge } from '@sk-web-gui/react';
 import { LucideIcon } from '@sk-web-gui/lucide-icon';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import store from '@supportmanagement/services/storage-service';
 import { Status } from '@supportmanagement/services/support-errand-service';
+import { useMemo } from 'react';
 
 export interface SupportManagementStatusFilter {
   status: Status[];
@@ -18,11 +19,14 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   setShowAttestationTable;
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
   const {
+    setSidebarLabel,
     setSelectedSupportErrandStatuses,
     selectedSupportErrandStatuses,
-    sidebarButtons,
-  }: { setSelectedSupportErrandStatuses; selectedSupportErrandStatuses: Status[]; sidebarButtons: SidebarButton[] } =
-    useAppContext();
+    newSupportErrands,
+    ongoingSupportErrands,
+    suspendedSupportErrands,
+    solvedSupportErrands,
+  }: AppContextInterface = useAppContext();
 
   const updateStatusFilter = (ss: Status[]) => {
     try {
@@ -38,13 +42,48 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
     }
   };
 
+  const supportSidebarButtons: SidebarButton[] = useMemo(
+    () => [
+      {
+        label: 'Nya ärenden',
+        key: Status.NEW,
+        statuses: [Status.NEW],
+        icon: 'inbox',
+        totalStatusErrands: newSupportErrands.totalElements,
+      },
+      {
+        label: 'Öppnade ärenden',
+        key: Status.ONGOING,
+        statuses: [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE],
+        icon: 'clipboard-pen',
+        totalStatusErrands: ongoingSupportErrands.totalElements,
+      },
+      {
+        label: 'Parkerade ärenden',
+        key: Status.SUSPENDED,
+        statuses: [Status.SUSPENDED, Status.ASSIGNED],
+        icon: 'circle-pause',
+        totalStatusErrands: suspendedSupportErrands.totalElements,
+      },
+      {
+        label: 'Avslutade ärenden',
+        key: Status.SOLVED,
+        statuses: [Status.SOLVED],
+        icon: 'circle-check-big',
+        totalStatusErrands: solvedSupportErrands.totalElements,
+      },
+    ],
+    [, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]
+  );
+
   return (
     <>
-      {sidebarButtons?.map((button) => {
+      {supportSidebarButtons?.map((button) => {
         return (
           <Button
             onClick={() => {
               updateStatusFilter(button.statuses as Status[]);
+              setSidebarLabel(button.label);
               setShowAttestationTable(false);
             }}
             aria-label={`status-button-${button.key}`}

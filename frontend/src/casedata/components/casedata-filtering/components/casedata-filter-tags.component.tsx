@@ -29,7 +29,6 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
 
   const hasTags =
     types.length > 0 ||
-    statuses.length > 0 ||
     priorities.length > 0 ||
     startdate ||
     enddate ||
@@ -86,15 +85,6 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
       {types.map((type, typeIndex) => (
         <Chip data-cy="tag-caseType" key={`caseType-${typeIndex}`} onClick={() => handleRemoveType(type)}>
           {findCaseLabelForCaseType(type)}
-        </Chip>
-      ))}
-      {statuses.map((status, statusIndex) => (
-        <Chip
-          data-cy={`tag-status-${status}`}
-          key={`caseStatus-${statusIndex}`}
-          onClick={() => handleRemoveStatus(status)}
-        >
-          {ErrandStatus[status]}
         </Chip>
       ))}
       {priorities.map((priority, prioIndex) => (

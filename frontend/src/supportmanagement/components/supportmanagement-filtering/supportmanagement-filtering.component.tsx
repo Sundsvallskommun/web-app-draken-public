@@ -92,17 +92,13 @@ const SupportManagementFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(false);
-  const { selectedSupportErrandStatuses: selectedSupportErrandStatuses, sidebarButtons } = useAppContext();
+  const { selectedSupportErrandStatuses: selectedSupportErrandStatuses, sidebarLabel } = useAppContext();
 
   return (
     <>
       <div className="flex flex-col w-full gap-24">
         <div className="w-full flex items-start md:items-center justify-between flex-col md:flex-row gap-12">
-          <h1 className="p-0 m-0">
-            {sidebarButtons && selectedSupportErrandStatuses
-              ? sidebarButtons?.find((s) => selectedSupportErrandStatuses.includes(s.key))?.label
-              : 'Ärenden'}
-          </h1>
+          <h1 className="p-0 m-0">{sidebarLabel || 'Ärenden'}</h1>
 
           <div className="w-full md:max-w-[48rem]">
             {/*

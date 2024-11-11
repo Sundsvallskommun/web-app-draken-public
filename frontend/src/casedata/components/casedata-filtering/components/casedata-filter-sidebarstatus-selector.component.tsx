@@ -1,12 +1,13 @@
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Badge, Button } from '@sk-web-gui/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CaseStatusFilter } from './casedata-filter-status.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import store from '@supportmanagement/services/storage-service';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
@@ -15,9 +16,11 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const {
     setSelectedErrandStatuses,
     selectedErrandStatuses,
-    sidebarButtons,
-  }: { setSelectedErrandStatuses; selectedErrandStatuses: ErrandStatus[]; sidebarButtons: SidebarButton[] } =
-    useAppContext();
+    setSidebarLabel,
+    newErrands,
+    ongoingErrands,
+    closedErrands,
+  }: AppContextInterface = useAppContext();
 
   const updateStatusFilter = (ss: ErrandStatus[]) => {
     try {
@@ -38,13 +41,62 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
     }
   };
 
+  const casedataSidebarButtons: SidebarButton[] = useMemo(
+    () => [
+      {
+        label: 'Nya ärenden',
+        key: ErrandStatus.ArendeInkommit,
+        statuses: [ErrandStatus.ArendeInkommit],
+        icon: 'inbox',
+        totalStatusErrands: newErrands.totalElements,
+      },
+      {
+        label: 'Öppnade ärenden',
+        key: ErrandStatus.UnderGranskning,
+        statuses: [
+          ErrandStatus.UnderGranskning,
+          ErrandStatus.VantarPaKomplettering,
+          ErrandStatus.KompletteringInkommen,
+          ErrandStatus.InterntKomplettering,
+          ErrandStatus.InterntAterkoppling,
+          ErrandStatus.UnderRemiss,
+          ErrandStatus.AterkopplingRemiss,
+          ErrandStatus.UnderUtredning,
+          ErrandStatus.UnderBeslut,
+        ],
+        icon: 'clipboard-pen',
+        totalStatusErrands: ongoingErrands.totalElements,
+      },
+      ...(isSuspendEnabled()
+        ? [
+            {
+              label: 'Parkerade ärenden',
+              key: ErrandStatus.UnderRemiss,
+              statuses: [ErrandStatus.UnderRemiss],
+              icon: 'circle-pause',
+              totalStatusErrands: 0,
+            },
+          ]
+        : []),
+      {
+        label: 'Avslutade ärenden',
+        key: ErrandStatus.ArendeAvslutat,
+        statuses: [ErrandStatus.ArendeAvslutat, ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt],
+        icon: 'circle-check-big',
+        totalStatusErrands: closedErrands.totalElements,
+      },
+    ],
+    [newErrands, ongoingErrands, closedErrands]
+  );
+
   return (
     <>
-      {sidebarButtons?.map((button) => {
+      {casedataSidebarButtons?.map((button) => {
         return (
           <Button
             onClick={() => {
               updateStatusFilter(button.statuses as ErrandStatus[]);
+              setSidebarLabel(button.label);
             }}
             aria-label={`status-button-${button.key}`}
             variant={selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(button.key) ? 'primary' : 'ghost'}

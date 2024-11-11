@@ -2,7 +2,7 @@ import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIS, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
@@ -35,24 +35,7 @@ export const SupportErrandsTable: React.FC = () => {
     supportAdmins,
     municipalityId,
     selectedSupportErrandStatuses,
-    setSidebarButtons,
-    newSupportErrands,
-    ongoingSupportErrands,
-    suspendedSupportErrands,
-    solvedSupportErrands,
-  }: {
-    supportErrands: SupportErrandsData;
-    supportMetadata;
-    supportAdmins;
-    setSupportAdmins;
-    municipalityId;
-    selectedSupportErrandStatuses;
-    setSidebarButtons;
-    newSupportErrands;
-    ongoingSupportErrands;
-    suspendedSupportErrands;
-    solvedSupportErrands;
-  } = useAppContext();
+  }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -69,41 +52,6 @@ export const SupportErrandsTable: React.FC = () => {
     }).length !== 0
       ? true
       : false;
-
-  const supportSidebarButtons: SidebarButton[] = [
-    {
-      label: 'Nya ärenden',
-      key: Status.NEW,
-      statuses: [Status.NEW],
-      icon: 'inbox',
-      totalStatusErrands: newSupportErrands.totalElements,
-    },
-    {
-      label: 'Öppnade ärenden',
-      key: Status.ONGOING,
-      statuses: [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE],
-      icon: 'clipboard-pen',
-      totalStatusErrands: ongoingSupportErrands.totalElements,
-    },
-    {
-      label: 'Parkerade ärenden',
-      key: Status.SUSPENDED,
-      statuses: [Status.SUSPENDED, Status.ASSIGNED],
-      icon: 'circle-pause',
-      totalStatusErrands: suspendedSupportErrands.totalElements,
-    },
-    {
-      label: 'Avslutade ärenden',
-      key: Status.SOLVED,
-      statuses: [Status.SOLVED],
-      icon: 'circle-check-big',
-      totalStatusErrands: solvedSupportErrands.totalElements,
-    },
-  ];
-
-  useEffect(() => {
-    setSidebarButtons(supportSidebarButtons);
-  }, [data, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]);
 
   useEffect(() => {
     setCategories(supportMetadata?.categories);

@@ -57,8 +57,8 @@ export interface AppContextInterface {
   supportAttachments;
   setSupportAttachments: (supportAttachments: SupportAttachment[]) => void;
 
-  selectedErrandStatuses: ErrandStatus[];
-  setSelectedErrandStatuses: (selectedErrandStatuses: ErrandStatus[]) => void;
+  selectedErrandStatuses: string[];
+  setSelectedErrandStatuses: (selectedErrandStatuses: string[]) => void;
 
   selectedSupportErrandStatuses;
   setSelectedSupportErrandStatuses: (selectedSupportErrandStatuses: Status[]) => void;
@@ -105,8 +105,8 @@ export interface AppContextInterface {
   solvedSupportErrands;
   setSolvedSupportErrands: (supportErrands: SupportErrandsData) => void;
 
-  sidebarButtons;
-  setSidebarButtons: (sidebarButtons: SidebarButton[]) => void;
+  sidebarLabel;
+  setSidebarLabel: (sidebarLabel: string) => void;
 
   administrators;
   setAdministrators: (admins: Admin[]) => void;
@@ -149,7 +149,7 @@ export function AppWrapper({ children }) {
   const [stakeholderCustomers, setStakeholderCustomers] = useState<SupportStakeholderFormModel[]>([]);
 
   const [municipalityId, setMunicipalityId] = useState<string>();
-  const [sidebarButtons, setSidebarButtons] = useState<SidebarButton[]>();
+  const [sidebarLabel, setSidebarLabel] = useState<string>();
   const [administrators, setAdministrators] = useState<Admin[]>([]);
   const [isCookieConsentOpen, setIsCookieConsentOpen] = useState(true);
   const [supportNotifications, setSupportNotifications] = useState<SupportNotification[]>([]);
@@ -191,12 +191,12 @@ export function AppWrapper({ children }) {
         supportAttachments,
         setSupportAttachments: (supportAttachments: SupportAttachment[]) => setSupportAttachments(supportAttachments),
 
-        selectedSupportErrandStatuses: selectedSupportErrandStatuses,
+        selectedSupportErrandStatuses,
         setSelectedSupportErrandStatuses: (selectedSupportErrandStatuses: Status[]) =>
           setSelectedSupportErrandStatuses(selectedSupportErrandStatuses),
 
-        selectedErrandStatuses: selectedErrandStatuses,
-        setSelectedErrandStatuses: (selectedErrandStatuses: ErrandStatus[]) =>
+        selectedErrandStatuses,
+        setSelectedErrandStatuses: (selectedErrandStatuses: string[]) =>
           setSelectedErrandStatuses(selectedErrandStatuses),
 
         supportAdmins,
@@ -245,8 +245,8 @@ export function AppWrapper({ children }) {
         solvedSupportErrands,
         setSolvedSupportErrands: (supportErrands: SupportErrandsData) => setSolvedSupportErrands(supportErrands),
 
-        sidebarButtons,
-        setSidebarButtons: (sidebarButtons: SidebarButton[]) => setSidebarButtons(sidebarButtons),
+        sidebarLabel,
+        setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),
 
         supportNotifications,
         setSupportNotifications: (notifications: SupportNotification[]) => setSupportNotifications(notifications),
