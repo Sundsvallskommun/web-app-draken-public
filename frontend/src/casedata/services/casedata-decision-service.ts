@@ -201,12 +201,17 @@ export const renderPdf: (
       : formData.outcome === 'CANCELLATION'
       ? 'cancellation'
       : '';
+
+  const extraParametersCapacity = errand.extraParameters.find(
+    (parameter) => parameter.key === 'application.applicant.capacity'
+  ).values[0];
+
   const capacity =
     outcome === 'cancellation'
       ? 'all'
-      : errand.extraParameters['application.applicant.capacity'] === 'DRIVER'
+      : extraParametersCapacity === 'DRIVER'
       ? 'driver'
-      : errand.extraParameters['application.applicant.capacity'] === 'PASSENGER'
+      : extraParametersCapacity === 'PASSENGER'
       ? 'passenger'
       : '';
   const identifier = isMEX()
