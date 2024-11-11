@@ -12,6 +12,7 @@ export const documentMimeTypes = [
   'application/pdf',
   'application/rtf',
   'application/msword',
+  'application/x-tika-msoffice',
   'text/plain',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
