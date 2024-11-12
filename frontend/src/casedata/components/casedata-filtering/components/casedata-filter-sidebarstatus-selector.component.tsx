@@ -8,6 +8,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import store from '@supportmanagement/services/storage-service';
 import { isSuspendEnabled } from '@common/services/feature-flag-service';
+import { closedStatuses, newStatuses, ongoingStatuses } from '@casedata/services/casedata-errand-service';
 
 export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
@@ -45,25 +46,15 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
     () => [
       {
         label: 'Nya ärenden',
-        key: ErrandStatus.ArendeInkommit,
-        statuses: [ErrandStatus.ArendeInkommit],
+        key: newStatuses[0],
+        statuses: newStatuses,
         icon: 'inbox',
         totalStatusErrands: newErrands.totalElements,
       },
       {
         label: 'Öppnade ärenden',
         key: ErrandStatus.UnderGranskning,
-        statuses: [
-          ErrandStatus.UnderGranskning,
-          ErrandStatus.VantarPaKomplettering,
-          ErrandStatus.KompletteringInkommen,
-          ErrandStatus.InterntKomplettering,
-          ErrandStatus.InterntAterkoppling,
-          ErrandStatus.UnderRemiss,
-          ErrandStatus.AterkopplingRemiss,
-          ErrandStatus.UnderUtredning,
-          ErrandStatus.UnderBeslut,
-        ],
+        statuses: ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingErrands.totalElements,
       },
@@ -80,8 +71,8 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
         : []),
       {
         label: 'Avslutade ärenden',
-        key: ErrandStatus.ArendeAvslutat,
-        statuses: [ErrandStatus.ArendeAvslutat, ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt],
+        key: closedStatuses[0],
+        statuses: closedStatuses,
         icon: 'circle-check-big',
         totalStatusErrands: closedErrands.totalElements,
       },
