@@ -140,12 +140,15 @@ export const getPhrases: (
   outcome: DecisionOutcome,
   templateType: 'investigation' | 'decision'
 ) => Promise<{ phrases: string }> = (errand, outcome, templateType) => {
+  const extraParametersCapacity = errand.extraParameters.find(
+    (parameter) => parameter.key === 'application.applicant.capacity'
+  ).values[0];
   const capacity =
     outcome === 'CANCELLATION'
       ? 'all'
-      : errand.extraParameters['application.applicant.capacity'] === 'DRIVER'
+      : extraParametersCapacity === 'DRIVER'
       ? 'driver'
-      : errand.extraParameters['application.applicant.capacity'] === 'PASSENGER'
+      : extraParametersCapacity === 'PASSENGER'
       ? 'passenger'
       : '';
   const identifier = `sbk.rph.${templateType}.phrases.${capacity}.${outcome.toLowerCase()}`;

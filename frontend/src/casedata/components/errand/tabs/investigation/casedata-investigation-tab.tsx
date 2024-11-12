@@ -48,7 +48,7 @@ export interface UtredningFormModel {
 
 let formSchema = yup
   .object({
-    id: yup.number(),
+    id: yup.string(),
     errandNumber: yup.string(),
     description: yup.string().required('Text måste anges'),
     law: yup.string().required('Lagrum måste anges'),
@@ -338,6 +338,9 @@ export const CasedataInvestigationTab: React.FC<{
                   placeholder="Välj beslut"
                   value={getValues('outcome') ? getValues('outcome') : errand.decisionOutcome}
                 >
+                  <Select.Option data-cy="outcome-input-item" value={undefined}>
+                    Välj utfall
+                  </Select.Option>
                   <Select.Option data-cy="outcome-input-item" value={'APPROVAL'}>
                     Bifall
                   </Select.Option>
