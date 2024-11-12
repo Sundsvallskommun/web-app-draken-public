@@ -1,4 +1,4 @@
-import { ErrandMessageResponse } from '@common/interfaces/message';
+import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, cx } from '@sk-web-gui/react';
@@ -6,13 +6,13 @@ import dayjs from 'dayjs';
 import React from 'react';
 
 export const RenderedMessage: React.FC<{
-  message: ErrandMessageResponse;
+  message: MessageResponse;
   selected: string;
-  onSelect: (msg: ErrandMessageResponse) => void;
+  onSelect: (msg: MessageResponse) => void;
   root?: boolean;
   children: any;
 }> = ({ message, selected, onSelect, root = false, children }) => {
-  const messageAvatar = (message: ErrandMessageResponse) => (
+  const messageAvatar = (message: MessageResponse) => (
     <Avatar
       rounded
       color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'}
@@ -21,25 +21,25 @@ export const RenderedMessage: React.FC<{
     />
   );
 
-  const getSender = (msg: ErrandMessageResponse) =>
+  const getSender = (msg: MessageResponse) =>
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
-  const getSenderInitials = (msg: ErrandMessageResponse) =>
+  const getSenderInitials = (msg: MessageResponse) =>
     msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
 
   return (
     <>
       <div
-        key={`message-${message.messageID}`}
+        key={`message-${message.messageId}`}
         onClick={() => {
           onSelect(message);
         }}
         className={cx(
           ` relative flex gap-md items-start justify-between rounded-4 m-0 py-sm px-sm text-md hover:bg-background-color-mixin-1 hover:cursor-pointer ${
-            selected === message.messageID ? 'bg-background-color-mixin-1 rounded-xl' : null
+            selected === message.messageId ? 'bg-background-color-mixin-1 rounded-xl' : null
           }`
         )}
-        data-cy={`node-${message?.emailHeaders[0]?.values || message?.messageID}`}
+        data-cy={`node-${message?.emailHeaders[0]?.values || message?.messageId}`}
       >
         <div className="flex w-full">
           {messageAvatar(message)}
@@ -88,7 +88,7 @@ export const RenderedMessage: React.FC<{
               <>
                 <LucideIcon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
               </>
-            ) : message.messageType === 'WEBMESSAGE' || message.externalCaseID ? (
+            ) : message.messageType === 'WEBMESSAGE' || message.externalCaseId ? (
               <>
                 <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
               </>

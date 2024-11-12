@@ -2,17 +2,14 @@ import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/me
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { sendAttachments } from '@casedata/services/casedata-attachment-service';
-import { ErrandMessageResponse, Message, MessageStatus } from '@common/interfaces/message';
+import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
+import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
-
-interface MessageResponse {
-  messageId: string;
-}
 
 export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
   municipalityId,
@@ -190,14 +187,14 @@ export const countUnreadMessages = (tree: MessageNode[]): number => {
 //   return c;
 // };
 
-export interface MessageNode extends ErrandMessageResponse {
+export interface MessageNode extends MessageResponse {
   children?: MessageNode[];
 }
 
-const buildTree = (_list: ErrandMessageResponse[]) => {
+const buildTree = (_list: MessageResponse[]) => {
   const nodesMap: Map<string, MessageNode> = new Map();
   const roots: MessageNode[] = [];
-  const list: ErrandMessageResponse[] = _list.sort((a, b) =>
+  const list: MessageResponse[] = _list.sort((a, b) =>
     dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
   );
   list.forEach((msg) => {
@@ -205,7 +202,7 @@ const buildTree = (_list: ErrandMessageResponse[]) => {
     const id =
       msg.messageType === 'EMAIL'
         ? msg.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
-        : msg.messageID;
+        : msg.messageId;
     nodesMap.set(id, { ...msg, children: [] });
   });
 
@@ -213,7 +210,7 @@ const buildTree = (_list: ErrandMessageResponse[]) => {
     const id =
       msg.messageType === 'EMAIL'
         ? msg.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
-        : msg.messageID;
+        : msg.messageId;
     const parent = msg.emailHeaders.find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];
     if (parent) {
       const parentMsg = nodesMap.get(parent);
@@ -234,7 +231,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<ErrandMessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
     .then((res) => {
       return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
     })
@@ -248,7 +245,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
     });
 };
 
-export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise<ErrandMessageResponse[]> = (
+export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise<MessageResponse[]> = (
   municipalityId,
   errand
 ) => {
@@ -256,9 +253,9 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<ErrandMessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
     .then((res) => {
-      const list: ErrandMessageResponse[] = res.data.data.sort((a, b) =>
+      const list: MessageResponse[] = res.data.data.sort((a, b) =>
         dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
       );
       return list;
@@ -308,11 +305,11 @@ export const setMessageViewStatus: (
   municipalityId: string,
   messageId: string,
   isViewed: boolean
-) => Promise<ApiResponse<any>> = (municipalityId, errandId, messageId, isViewed) => {
+) => Promise<ApiResponse<any>> = (errandId, municipalityId, messageId, isViewed) => {
   if (!messageId) {
     console.error('No message id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}errande/${errandId}/messages/${messageId}/viewed/${isViewed}`;
+  const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/viewed/${isViewed}`;
   return apiService
     .put<ApiResponse<any>, any>(url, {})
     .then((res) => res.data)
