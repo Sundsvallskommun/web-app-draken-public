@@ -18,7 +18,6 @@ import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { getAssets } from '@casedata/services/asset-service';
-import { CasedataAppealTab } from './tabs/appeal/casedata-appeal-tab';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export const CasedataTabsWrapper: React.FC = () => {
@@ -290,24 +289,6 @@ export const CasedataTabsWrapper: React.FC = () => {
             ErrandPhase.overklagad,
           ]
         : [],
-    },
-    {
-      label: `Överklagan (${(errand?.appeals && errand?.appeals.length) || 0})`,
-      content: errand && <CasedataAppealTab />,
-      disabled: !errand?.id,
-      visibleFor:
-        isPT() && errand?.id
-          ? errand.status === ErrandStatus.ArendeAvslutat
-            ? [ErrandPhase.aktualisering]
-            : [
-                ErrandPhase.beslut,
-                ErrandPhase.hantera,
-                ErrandPhase.verkstalla,
-                ErrandPhase.uppfoljning,
-                ErrandPhase.canceled,
-                ErrandPhase.overklagad,
-              ]
-          : [],
     },
   ];
 

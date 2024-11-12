@@ -159,7 +159,6 @@ export const mockPTErrand_base: { data: ApiErrand; message: string } = {
         extraParameters: {},
       },
     ],
-    appeals: [],
     notes: [
       {
         id: '437',

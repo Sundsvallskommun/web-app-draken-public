@@ -1,5 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
-import { Appeal, Decision } from '@casedata/interfaces/decision';
+import { Decision } from '@casedata/interfaces/decision';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { All, Priority } from '@casedata/interfaces/priority';
 import { FacilityDTO } from '@common/interfaces/facilities';
@@ -28,7 +28,6 @@ export interface ApiErrand {
   applicationReceived: string;
   extraParameters: ExtraParameter[];
   decisions: Decision[];
-  appeals: Appeal[];
   created: string;
   updated: string;
   stakeholders: Stakeholder[];
@@ -90,7 +89,6 @@ export interface IErrand {
   updated: string;
   notes: ErrandNote[];
   decisions: Decision[];
-  appeals: Appeal[];
   attachments: Attachment[];
   messageIds: { messageId: string; adAccount: string }[];
   extraParameters: ExtraParameter[];

@@ -30,28 +30,6 @@ export interface Decision {
   attachments?: Attachment[];
 }
 
-export interface Appeal {
-  id?: number;
-  version?: number;
-  created?: string;
-  updated?: string;
-  description?: string;
-  registeredAt?: string;
-  appealConcernCommunicatedAt?: string;
-  status?: string;
-  timelinessReview?: string;
-  decisionId?: number;
-}
-
-export interface RegisterAppeal {
-  description?: string;
-  registeredAt?: string;
-  appealConcernCommunicatedAt?: string;
-  status?: string;
-  timelinessReview?: string;
-  decisionId?: number;
-}
-
 export interface Law {
   heading: string;
   sfs: string;

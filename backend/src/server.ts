@@ -25,7 +25,6 @@ import { CasedataContractsController } from './controllers/contract.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
 import { AssetController } from './controllers/asset.controller';
-import { CaseDataAppealController } from './controllers/casedata/casedata-appeal.controller';
 
 validateEnv();
 
@@ -34,7 +33,6 @@ const app = new App([
   CaseDataErrandController,
   CasedataStakeholderController,
   CaseDataAttachmentController,
-  CaseDataAppealController,
   AddressController,
   estateInfoController,
   UserController,
