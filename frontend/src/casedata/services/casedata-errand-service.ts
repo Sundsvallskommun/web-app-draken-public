@@ -72,6 +72,25 @@ export const ongoingCaseDataPTErrandLabels = [
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
+export const newStatuses = [ErrandStatus.ArendeInkommit];
+
+export const ongoingStatuses = [
+  ErrandStatus.UnderGranskning,
+  ErrandStatus.VantarPaKomplettering,
+  ErrandStatus.KompletteringInkommen,
+  ErrandStatus.InterntKomplettering,
+  ErrandStatus.InterntAterkoppling,
+  ErrandStatus.UnderRemiss,
+  ErrandStatus.AterkopplingRemiss,
+  ErrandStatus.UnderUtredning,
+  ErrandStatus.UnderBeslut,
+  ErrandStatus.Beslutad,
+  ErrandStatus.BeslutVerkstallt,
+  ErrandStatus.BeslutOverklagat,
+];
+
+export const closedStatuses = [ErrandStatus.ArendeAvslutat];
+
 export const findPriorityKeyForPriorityLabel = (key: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
 
@@ -80,14 +99,6 @@ export const findStatusKeyForStatusLabel = (statusKey: string) =>
 
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1];
-
-// This might be instance specific in the future, meaning
-// it will need to be configurable
-export const ongoingStatuses =
-  'Ärende inkommit,Väntar på komplettering,Under utredning,Under beslut,Handläggare tilldelad,Komplettering inkommen';
-export const ongoingStatusKeys = ongoingStatuses.split(',').map(findStatusKeyForStatusLabel).join(',');
-
-export const errandIsOngoing = (e: IErrand) => e.status && ongoingStatuses.includes(e.status);
 
 export const getCaseTypes = () => (isPT() ? PTCaseType : isMEX() ? MEXCaseType : CaseTypes.ALL);
 export const getCaseLabels = () => (isPT() ? PTCaseLabel : isMEX() ? MEXCaseLabel : CaseLabels.ALL);
@@ -330,7 +341,13 @@ export const useErrands = (
           });
         });
 
-      getErrands(municipalityId, page, size, { ...filter, status: 'ArendeInkommit' }, sort)
+      getErrands(
+        municipalityId,
+        page,
+        size,
+        { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') },
+        sort
+      )
         .then((res) => {
           setNewErrands(res);
         })
@@ -349,7 +366,7 @@ export const useErrands = (
         size,
         {
           ...filter,
-          status: `UnderGranskning,VantarPaKomplettering,KompletteringInkommen,InterntKomplettering,InterntAterkoppling,UnderRemiss,AterkopplingRemiss,UnderUtredning,UnderBeslut`,
+          status: ongoingStatuses.map(findStatusKeyForStatusLabel).join(','),
         },
         sort
       )
@@ -393,7 +410,29 @@ export const useErrands = (
         size,
         {
           ...filter,
-          status: `Beslutad,BeslutVerkstallt,ArendeAvslutat`,
+          status: `Tilldelat`,
+        },
+        sort
+      )
+        .then((res) => {
+          setAssignedErrands(res);
+        })
+        .catch((err) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Tilldelade ärenden kunde inte hämtas',
+            status: 'error',
+          });
+        });
+
+      getErrands(
+        municipalityId,
+        page,
+        size,
+        {
+          ...filter,
+          status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
         },
         sort
       )

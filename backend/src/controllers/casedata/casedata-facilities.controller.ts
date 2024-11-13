@@ -19,7 +19,7 @@ export class caseDataFacilitiesController {
   SERVICE = `case-data/9.0`;
 
   @Post('/casedata/:municipalityId/errands/:errandId/facilities')
-  @OpenAPI({ summary: 'Save facilities by errande' })
+  @OpenAPI({ summary: 'Save facilities by errand' })
   @UseBefore(authMiddleware)
   async saveFacility(
     @Req() req: RequestWithUser,

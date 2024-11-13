@@ -6,7 +6,6 @@ import { IsString } from 'class-validator';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
-import { ErrandMessageResponse } from '@controllers/message.controller';
 import { MUNICIPALITY_ID } from '@/config';
 import { logger } from '@/utils/logger';
 
