@@ -63,12 +63,12 @@ export const ongoingCaseDataErrandLabels = [
 
 export const ongoingCaseDataPTErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Prioritet', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendenummer', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Prioritet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendeägare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Registrerat', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Uppdaterad', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
@@ -343,7 +343,7 @@ export const useErrands = (
       getErrands(
         municipalityId,
         page,
-        size,
+        1,
         { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') },
         sort
       )
@@ -362,7 +362,7 @@ export const useErrands = (
       getErrands(
         municipalityId,
         page,
-        size,
+        1,
         {
           ...filter,
           status: ongoingStatuses.map(findStatusKeyForStatusLabel).join(','),
@@ -384,7 +384,7 @@ export const useErrands = (
       getErrands(
         municipalityId,
         page,
-        size,
+        1,
         {
           ...filter,
           status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
@@ -686,4 +686,3 @@ export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, 
 export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
 };
-
