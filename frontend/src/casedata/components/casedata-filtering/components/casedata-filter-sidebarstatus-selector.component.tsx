@@ -1,4 +1,5 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { closedStatuses, newStatuses, ongoingStatuses } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isSuspendEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
@@ -8,11 +9,6 @@ import store from '@supportmanagement/services/storage-service';
 import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CaseStatusFilter } from './casedata-filter-status.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import store from '@supportmanagement/services/storage-service';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
-import { closedStatuses, newStatuses, ongoingStatuses } from '@casedata/services/casedata-errand-service';
 
 export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
