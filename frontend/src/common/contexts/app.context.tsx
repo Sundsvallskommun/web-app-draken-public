@@ -17,8 +17,6 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { SupportNotification } from '@supportmanagement/services/support-notification-service';
 import { createContext, useContext, useState } from 'react';
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export interface AppContextInterface {
   subPage: string;
@@ -87,6 +85,9 @@ export interface AppContextInterface {
   suspendedErrands;
   setSuspendedErrands: (errands: ErrandsData) => void;
 
+  assignedErrands;
+  setAssignedErrands: (errands: ErrandsData) => void;
+
   closedErrands;
   setClosedErrands: (errands: ErrandsData) => void;
 
@@ -129,6 +130,7 @@ export function AppWrapper({ children }) {
   const [newErrands, setNewErrands] = useState<ErrandsData>(emptyErrandList);
   const [ongoingErrands, setOngoingErrands] = useState<ErrandsData>(emptyErrandList);
   const [suspendedErrands, setSuspendedErrands] = useState<ErrandsData>(emptyErrandList);
+  const [assignedErrands, setAssignedErrands] = useState<ErrandsData>(emptyErrandList);
   const [closedErrands, setClosedErrands] = useState<ErrandsData>(emptyErrandList);
   const [supportErrands, setSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [newSupportErrands, setNewSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
@@ -224,6 +226,9 @@ export function AppWrapper({ children }) {
 
         suspendedErrands,
         setSuspendedErrands: (errands: ErrandsData) => setSuspendedErrands(errands),
+
+        assignedErrands,
+        setAssignedErrands: (errands: ErrandsData) => setAssignedErrands(errands),
 
         closedErrands,
         setClosedErrands: (errands: ErrandsData) => setClosedErrands(errands),

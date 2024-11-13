@@ -16,7 +16,6 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
@@ -91,6 +90,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       ErrandStatus.InterntKomplettering,
       ErrandStatus.InterntAterkoppling,
       ErrandStatus.AterkopplingRemiss,
+      ErrandStatus.Tilldelat,
     ];
     if (errand?.phase === ErrandPhase.aktualisering) {
       s.unshift(ErrandStatus.ArendeInkommit);

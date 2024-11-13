@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
-import { CaseLabels, PTCaseLabel, MEXCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, PTCaseType, MEXCaseType } from '@casedata/interfaces/case-type';
+import { CaseLabels, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
+import { CaseTypes, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -24,15 +24,15 @@ import {
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
 
+import { Role } from '@casedata/interfaces/role';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isPT, isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
-import { Role } from '@casedata/interfaces/role';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { replaceExtraParameter } from './casedata-extra-parameters-service';
 
 export const municipalityIds = [
@@ -299,6 +299,7 @@ export const useErrands = (
     setNewErrands,
     setOngoingErrands,
     setSuspendedErrands,
+    setAssignedErrands,
     setClosedErrands,
     errands,
     newErrands,
@@ -360,6 +361,28 @@ export const useErrands = (
             position: 'bottom',
             closeable: false,
             message: 'Pågående ärenden kunde inte hämtas',
+            status: 'error',
+          });
+        });
+
+      getErrands(
+        municipalityId,
+        page,
+        size,
+        {
+          ...filter,
+          status: `Tilldelat`,
+        },
+        sort
+      )
+        .then((res) => {
+          setAssignedErrands(res);
+        })
+        .catch((err) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Tilldelade ärenden kunde inte hämtas',
             status: 'error',
           });
         });
@@ -669,4 +692,3 @@ export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, 
 export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
 };
-
