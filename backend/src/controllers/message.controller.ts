@@ -1,4 +1,4 @@
-import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, MessageResponse } from '@/data-contracts/case-data/data-contracts';
 import {
   DigitalMailAttachment,
   DigitalMailAttachmentContentTypeEnum,
@@ -8,7 +8,7 @@ import {
   EmailRequest,
   SmsRequest,
   WebMessageAttachment,
-  WebMessageRequest
+  WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { isPT } from '@/services/application.service';
@@ -104,27 +104,6 @@ export interface LetterResponse {
       }[];
     },
   ];
-}
-
-export interface ErrandMessageResponse {
-  messageID: string;
-  errandNumber: string;
-  direction: string;
-  familyID: string;
-  externalCaseID: string;
-  message: string;
-  sent: string;
-  subject: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  userID: string;
-  viewed: boolean;
-  attachments: {
-    attachmentID: string;
-    name: string;
-  }[];
 }
 
 const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkeringstillstånd' : 'Meddelande från MEX';
@@ -249,8 +228,6 @@ export class MessageController {
     const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
-    let url;
-    let message: WebMessageRequest | EmailRequest;
     const MESSAGE_ID = generateMessageId();
 
     let recipientEmail = messageDto.email;
@@ -268,8 +245,7 @@ export class MessageController {
         contentType: file.mimetype,
       } as EmailAttachment;
     });
-    url = `messaging/5.0/${municipalityId}/email`;
-    message = {
+    const message: EmailRequest = {
       party: {
         // Fake uuid since Messaging demands one
         partyId: uuidv4(),
@@ -346,18 +322,18 @@ export class MessageController {
     @Req() req: RequestWithUser,
     @Param('errandNumber') errandNumber: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: ErrandMessageResponse[],
-  ): Promise<{ data: ErrandMessageResponse[]; message: string }> {
+    @Res() response: MessageResponse[],
+  ): Promise<{ data: MessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/messages/${errandNumber}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<ErrandMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
+    const res = await this.apiService.get<MessageResponse[]>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching messages for errand: ', errandNumber);
       throw e;
     });
     return { data: res.data, message: 'success' };
   }
 
-  @Put('/casedata/:municipalityId/errande/:errandId/messages/:messageId/viewed/:isViewed')
+  @Put('/casedata/:municipalityId/errand/:errandId/messages/:messageId/viewed/:isViewed')
   @OpenAPI({ summary: 'Set message isViewed status' })
   @UseBefore(authMiddleware)
   async setMessageViewed(
@@ -366,8 +342,8 @@ export class MessageController {
     @Param('messageId') messageId: string,
     @Param('municipalityId') municipalityId: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: ErrandMessageResponse[],
-  ): Promise<{ data: ErrandMessageResponse[]; message: string }> {
+    @Res() response: MessageResponse[],
+  ): Promise<{ data: MessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<any, any>({ url, baseURL }, req.user);

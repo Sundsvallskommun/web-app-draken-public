@@ -6,7 +6,6 @@ import { renderMessageWithTemplates, sendMessage, sendSms } from '@casedata/serv
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { ErrandMessageResponse, MessageClassification } from '@common/interfaces/message';
 import { User } from '@common/interfaces/user';
 import { isMEX } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
@@ -35,6 +34,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -136,7 +136,7 @@ let formSchema = yup
   .required();
 
 export const MessageComposer: React.FC<{
-  message: ErrandMessageResponse;
+  message: MessageResponse;
   show: boolean;
   closeHandler: () => void;
   setUnsaved: (unsaved: boolean) => void;
@@ -302,7 +302,7 @@ export const MessageComposer: React.FC<{
   }, [contactMeans]);
 
   useEffect(() => {
-    setReplying(!!props.message?.messageID);
+    setReplying(!!props.message?.messageId);
     setValue('messageTemplate', '');
     if (props.message) {
       const replyTo = props.message?.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values[0];
