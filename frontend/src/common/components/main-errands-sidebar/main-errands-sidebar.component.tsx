@@ -11,8 +11,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
-import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
-import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
+import { NotificationsBell } from '@common/components/notifications/notifications-bell';
+import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
@@ -74,7 +74,7 @@ export const MainErrandsSidebar: React.FC<{
             </span>
           </div>
           {isNotificationsEnabled() ? (
-            <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
           ) : null}
         </div>
         <Divider />
@@ -116,7 +116,7 @@ export const MainErrandsSidebar: React.FC<{
         )}
       </div>
       {isNotificationsEnabled() ? (
-        <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+        <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
       ) : null}
     </aside>
   );
