@@ -410,28 +410,6 @@ export const useErrands = (
         size,
         {
           ...filter,
-          status: `Tilldelat`,
-        },
-        sort
-      )
-        .then((res) => {
-          setAssignedErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Tilldelade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
-
-      getErrands(
-        municipalityId,
-        page,
-        size,
-        {
-          ...filter,
           status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
         },
         sort
