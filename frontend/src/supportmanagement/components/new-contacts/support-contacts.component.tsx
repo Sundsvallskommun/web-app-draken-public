@@ -6,6 +6,7 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
+  Relation,
   SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
@@ -388,7 +389,9 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <FormControl className="mt-40 w-full">
                 <FormLabel>Tillagda parter</FormLabel>
                 <div className="flex flex-row gap-12 flex-wrap">
-                  {stakeholderContacts.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Övrig part'))}
+                  {stakeholderContacts.map((stakeholder, idx) =>
+                    renderContact(stakeholder, idx, Relation[stakeholder.role])
+                  )}
                 </div>
               </FormControl>
             ) : null}
