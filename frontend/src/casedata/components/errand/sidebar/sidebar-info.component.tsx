@@ -119,10 +119,14 @@ export const SidebarInfo: React.FC<{}> = () => {
           message: 'Handläggare sparades',
           status: 'success',
         });
-        setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-        reset();
-        pollDisplayPhase();
+
+        const status = Object.entries(ErrandStatus).find(([key, label]) => label === 'Tilldelat')[1];
+        updateErrandStatus(municipalityId, errand.id.toString(), status).then(() => {
+          setIsLoading(false);
+          getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+          reset();
+          pollDisplayPhase();
+        });
       })
       .catch((e) => {
         toastMessage({
