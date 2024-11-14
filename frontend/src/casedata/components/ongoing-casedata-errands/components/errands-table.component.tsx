@@ -43,9 +43,9 @@ export const ErrandsTable: React.FC = () => {
   const serverSideSortableColsPT: { [key: number]: string } = {
     0: 'statuses.statusType',
     1: 'caseType',
-    2: 'errandId',
+    2: 'errandNumber',
     3: 'priority',
-    4: 'stakeholder',
+    4: 'stakeholders.lastName',
     5: 'created',
     6: 'updated',
     7: 'administrator',
