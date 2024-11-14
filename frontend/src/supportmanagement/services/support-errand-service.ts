@@ -6,6 +6,7 @@ import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './s
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isIS, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
@@ -17,8 +18,6 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
-import { IErrand } from '@casedata/interfaces/errand';
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export interface Customer {
   id: string;
@@ -456,6 +455,8 @@ export const useSupportErrands = (
     ongoingSupportErrands,
     setSuspendedSupportErrands,
     suspendedSupportErrands,
+    setAssignedSupportErrands,
+    assignedSupportErrands,
     setSolvedSupportErrands,
     solvedSupportErrands,
   } = useAppContext();
@@ -528,6 +529,22 @@ export const useSupportErrands = (
           });
         });
 
+      getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+        .then((res) => {
+          if (res.error) {
+            throw new Error('Error occurred when fetching errands');
+          }
+          setAssignedSupportErrands(res);
+        })
+        .catch((err) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Tilldelade ärenden kunde inte hämtas',
+            status: 'error',
+          });
+        });
+
       getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
         .then((res) => {
           setSolvedSupportErrands(res);
@@ -546,11 +563,13 @@ export const useSupportErrands = (
       setNewSupportErrands,
       setOngoingSupportErrands,
       setSuspendedSupportErrands,
+      setAssignedSupportErrands,
       setSolvedSupportErrands,
       supportErrands,
       newSupportErrands,
       ongoingSupportErrands,
       suspendedSupportErrands,
+      assignedSupportErrands,
       solvedSupportErrands,
       size,
       filter,

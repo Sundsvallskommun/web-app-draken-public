@@ -16,6 +16,7 @@ export enum ErrandStatus {
   BeslutVerkstallt = 'Beslut verkställt',
   BeslutOverklagat = 'Beslut överklagat',
   ArendeAvslutat = 'Ärende avslutat',
+  Tilldelat = 'Tilldelat',
 }
 
 export class StatusDTO implements IStatusDTO {

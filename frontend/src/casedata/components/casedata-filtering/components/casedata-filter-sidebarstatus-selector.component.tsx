@@ -1,14 +1,14 @@
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { closedStatuses, newStatuses, ongoingStatuses } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button } from '@sk-web-gui/react';
+import store from '@supportmanagement/services/storage-service';
 import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CaseStatusFilter } from './casedata-filter-status.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import store from '@supportmanagement/services/storage-service';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
-import { closedStatuses, newStatuses, ongoingStatuses } from '@casedata/services/casedata-errand-service';
 
 export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
@@ -20,6 +20,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
     setSidebarLabel,
     newErrands,
     ongoingErrands,
+    assignedErrands,
     closedErrands,
   }: AppContextInterface = useAppContext();
 
@@ -69,6 +70,14 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
             },
           ]
         : []),
+
+      {
+        label: 'Tilldelade ärenden',
+        key: ErrandStatus.Tilldelat,
+        statuses: [ErrandStatus.Tilldelat],
+        icon: 'file-plus',
+        totalStatusErrands: assignedErrands.totalElements,
+      },
       {
         label: 'Avslutade ärenden',
         key: closedStatuses[0],
@@ -77,7 +86,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
         totalStatusErrands: closedErrands.totalElements,
       },
     ],
-    [newErrands, ongoingErrands, closedErrands]
+    [newErrands, ongoingErrands, assignedErrands, closedErrands]
   );
 
   return (
