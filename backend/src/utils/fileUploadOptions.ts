@@ -34,6 +34,7 @@ const allowedMimeTypes = [
   'application/vnd.oasis.opendocument.text',
   'application/vnd.oasis.opendocument.spreadsheet',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ];
 
 const fileFilter = (_request: Request, file: Express.Multer.File, callback: FilterFileNameCallback): void => {
