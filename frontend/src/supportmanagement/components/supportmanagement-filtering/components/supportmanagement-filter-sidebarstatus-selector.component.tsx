@@ -62,7 +62,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
       {
         label: 'Parkerade ärenden',
         key: Status.SUSPENDED,
-        statuses: [Status.SUSPENDED, Status.ASSIGNED],
+        statuses: [Status.SUSPENDED],
         icon: 'circle-pause',
         totalStatusErrands: suspendedSupportErrands.totalElements,
       },
@@ -81,7 +81,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
         totalStatusErrands: solvedSupportErrands.totalElements,
       },
     ],
-    [, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]
+    [, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
   );
 
   return (
