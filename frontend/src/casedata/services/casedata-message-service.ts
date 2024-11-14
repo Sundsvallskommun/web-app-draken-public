@@ -39,10 +39,11 @@ export const sendMessage: (
   const url =
     data.contactMeans === 'webmessage' ? `casedata/${municipalityId}/webmessage` : `casedata/${municipalityId}/email`;
 
-  const msgPromises = [...data.emails].map(async (target) => {
+  const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails];
+  const msgPromises = targets.map(async (target) => {
     const messageFormData = new FormData();
-    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] =
-      data.newAttachments?.map(async (f) => {
+    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] = data.newAttachments?.map(
+      async (f) => {
         const fileItem = f.file[0];
         const fileData = await toBase64(fileItem);
         const attachment: Attachment = {
@@ -56,7 +57,8 @@ export const sendMessage: (
         const buf = Buffer.from(attachment.file, 'base64');
         const blob = new Blob([buf], { type: attachment.mimeType });
         return Promise.resolve({ attachment, blob });
-      }) || [];
+      }
+    ) || [new Promise((resolve) => resolve({ attachment: null, blob: null }))];
     return Promise.allSettled(newAttachmentPromises)
       .then((r) => {
         r.forEach((r) => {

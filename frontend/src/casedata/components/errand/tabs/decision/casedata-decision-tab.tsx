@@ -315,7 +315,7 @@ export const CasedataDecisionTab: React.FC<{
         });
         return;
       }
-      const messageBody: CasedataMessageTabFormModel = {
+      const messageData: CasedataMessageTabFormModel = {
         contactMeans,
         messageClassification: MessageClassification.Informationsmeddelande,
         emails: [{ value: recipient }],
@@ -334,7 +334,7 @@ export const CasedataDecisionTab: React.FC<{
         headerReferences: '',
       };
       const sentMessage = isMEX()
-        ? await sendMessage(municipalityId, errand, messageBody)
+        ? await sendMessage(municipalityId, errand, messageData)
         : isPT()
         ? await sendDecisionMessage(municipalityId, errand)
         : () => {
