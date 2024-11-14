@@ -353,7 +353,9 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               <FormLabel>Tillagda parter</FormLabel>
               <div className="flex flex-row gap-md flex-wrap">
                 {stakeholdersFields.map((caseData, idx) =>
-                  caseData.roles.includes(Role.CONTACT_PERSON) ? renderContact(caseData, idx, 'Ärendeintressent') : null
+                  !caseData.roles.includes(Role.APPLICANT) && !caseData.roles.includes(Role.ADMINISTRATOR)
+                    ? renderContact(caseData, idx, 'Ärendeintressent')
+                    : null
                 )}
               </div>
             </FormControl>
