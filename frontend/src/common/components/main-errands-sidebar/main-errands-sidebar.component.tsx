@@ -11,8 +11,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
-import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
-import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
+import { NotificationsBell } from '@common/components/notifications/notifications-bell';
+import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
@@ -22,7 +22,6 @@ import { useState } from 'react';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
-import { isNotificationsEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -73,9 +72,7 @@ export const MainErrandsSidebar: React.FC<{
               {user.firstName} {user.lastName}
             </span>
           </div>
-          {isNotificationsEnabled() ? (
-            <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          ) : null}
+          <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
@@ -115,9 +112,7 @@ export const MainErrandsSidebar: React.FC<{
           </>
         )}
       </div>
-      {isNotificationsEnabled() ? (
-        <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
-      ) : null}
+      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
     </aside>
   );
 };

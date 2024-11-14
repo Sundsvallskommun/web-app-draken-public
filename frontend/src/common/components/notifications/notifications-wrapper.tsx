@@ -1,36 +1,26 @@
-import { User } from '@common/interfaces/user';
+import { getCasedataNotifications } from '@casedata/services/casedata-notification-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, cx } from '@sk-web-gui/react';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { SupportNotification, getSupportNotifications } from '@supportmanagement/services/support-notification-service';
+import { getSupportNotifications } from '@supportmanagement/services/support-notification-service';
 import { useEffect } from 'react';
-import { SupportNotificationItem } from './support-notification-item';
+import { NotificationItem } from './notification-item';
 
-export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
+export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
   show,
   setShow,
 }) => {
-  const {
-    user,
-    supportErrand,
-    municipalityId,
-    supportNotifications,
-    setSupportNotifications,
-  }: {
-    user: User;
-    supportErrand: SupportErrand;
-    municipalityId: string;
-    supportNotifications: SupportNotification[];
-    setSupportNotifications: (notifications: SupportNotification[]) => void;
-  } = useAppContext();
+  const { user, supportErrand, municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
 
   useEffect(() => {
+    const getNotifications = isPT() || isMEX() ? getCasedataNotifications : getSupportNotifications;
+
     municipalityId &&
-      getSupportNotifications(municipalityId)
+      getNotifications(municipalityId)
         .then((res) => {
-          setSupportNotifications(res);
+          setNotifications(res);
         })
         .catch((e) => {
           console.error('Something went wrong when fetching notifications');
@@ -39,11 +29,11 @@ export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (ar
   }, [municipalityId]);
 
   const acknowledgedNotifications = sortBy(
-    supportNotifications.filter((n) => n.acknowledged),
+    notifications.filter((n) => n.acknowledged),
     'created'
   ).reverse();
   const newNotifications = sortBy(
-    supportNotifications.filter((n) => !n.acknowledged),
+    notifications.filter((n) => !n.acknowledged),
     'created'
   ).reverse();
 
@@ -92,7 +82,7 @@ export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (ar
                   <ul>
                     {newNotifications.map((notification) => (
                       <li key={notification.id}>
-                        <SupportNotificationItem notification={notification} />
+                        <NotificationItem notification={notification} />
                       </li>
                     ))}
                   </ul>
@@ -111,7 +101,7 @@ export const SupportNotificationsWrapper: React.FC<{ show: boolean; setShow: (ar
                   <ul>
                     {acknowledgedNotifications.map((notification) => (
                       <li key={notification.id}>
-                        <SupportNotificationItem notification={notification} />
+                        <NotificationItem notification={notification} />
                       </li>
                     ))}
                   </ul>

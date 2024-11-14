@@ -1,39 +1,5 @@
-import { User } from '@common/interfaces/user';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
-import dayjs from 'dayjs';
-
-export interface SupportNotification {
-  id: string;
-  created?: string;
-  modified?: string;
-  ownerFullName: string;
-  ownerId: string;
-  createdBy: string;
-  createdByFullName: string;
-  type: string;
-  description: string;
-  content?: string;
-  expires?: string;
-  acknowledged?: boolean;
-  errandId?: string;
-  errandNumber?: string;
-}
-
-export interface SupportNotificationDto {
-  id: string;
-  ownerFullName?: string;
-  ownerId?: string;
-  created?: string;
-  createdBy?: string;
-  createdByFullName?: string;
-  type?: string;
-  description?: string;
-  content?: string;
-  expires?: string;
-  acknowledged?: boolean;
-  errandId?: string;
-  errandNumber?: string;
-}
 
 export const getSupportNotifications: (municipalityId: string) => Promise<SupportNotification[]> = (municipalityId) => {
   return apiService
@@ -47,31 +13,16 @@ export const getSupportNotifications: (municipalityId: string) => Promise<Suppor
     });
 };
 
-export const getSupportNotificationById: (
-  municipalityId: string,
-  notificationId: string
-) => Promise<SupportNotification[]> = (municipalityId, notificationId) => {
-  return apiService
-    .get<SupportNotification[]>(`supportnotifications/${municipalityId}/${notificationId}`)
-    .then((res) => {
-      return res.data;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching notificiation');
-      throw e;
-    });
-};
-
 export const acknowledgeSupportNotification: (
   municipalityId: string,
-  notification: SupportNotificationDto
+  notification: SupportNotification
 ) => Promise<boolean> = (municipalityId, notification) => {
   if (!notification.id) {
     return Promise.reject('Missing id on notification');
   }
   const data = { ...notification, ownerFullName: notification.ownerFullName || '', acknowledged: true };
   return apiService
-    .patch<boolean, SupportNotificationDto>(`supportnotifications/${municipalityId}`, data)
+    .patch<boolean, SupportNotification>(`supportnotifications/${municipalityId}`, data)
     .then((res) => {
       return true;
     })

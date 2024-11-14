@@ -15,7 +15,8 @@ import {
   emptySupportErrandList,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { SupportNotification } from '@supportmanagement/services/support-notification-service';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { createContext, useContext, useState } from 'react';
 
 export interface AppContextInterface {
@@ -70,8 +71,8 @@ export interface AppContextInterface {
   stakeholderCustomers;
   setStakeholderCustomers: (stakeholderCustomers: SupportStakeholderFormModel[]) => void;
 
-  supportNotifications;
-  setSupportNotifications: (notifications: SupportNotification[]) => void;
+  notifications: (SupportNotification | CaseDataNotification)[];
+  setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
 
   errands;
   setErrands: (errands: ErrandsData) => void;
@@ -158,7 +159,7 @@ export function AppWrapper({ children }) {
   const [sidebarLabel, setSidebarLabel] = useState<string>();
   const [administrators, setAdministrators] = useState<Admin[]>([]);
   const [isCookieConsentOpen, setIsCookieConsentOpen] = useState(true);
-  const [supportNotifications, setSupportNotifications] = useState<SupportNotification[]>([]);
+  const [notifications, setNotifications] = useState<(SupportNotification | CaseDataNotification)[]>([]);
   const [uiPhase, setUiPhase] = useState<UiPhase>();
 
   return (
@@ -258,8 +259,8 @@ export function AppWrapper({ children }) {
         sidebarLabel,
         setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),
 
-        supportNotifications,
-        setSupportNotifications: (notifications: SupportNotification[]) => setSupportNotifications(notifications),
+        notifications,
+        setNotifications: (notifications: []) => setNotifications(notifications),
 
         administrators,
         setAdministrators: (admins: Admin[]) => {
