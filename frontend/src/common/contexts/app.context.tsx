@@ -103,6 +103,9 @@ export interface AppContextInterface {
   suspendedSupportErrands;
   setSuspendedSupportErrands: (supportErrands: SupportErrandsData) => void;
 
+  assignedSupportErrands;
+  setAssignedSupportErrands: (SupportErrand: SupportErrandsData) => void;
+
   solvedSupportErrands;
   setSolvedSupportErrands: (supportErrands: SupportErrandsData) => void;
 
@@ -136,6 +139,7 @@ export function AppWrapper({ children }) {
   const [newSupportErrands, setNewSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [ongoingSupportErrands, setOngoingSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [suspendedSupportErrands, setSuspendedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
+  const [assignedSupportErrands, setAssignedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [solvedSupportErrands, setSolvedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [errand, setErrand] = useState<IErrand>();
   const [messages, setMessages] = useState<MessageNode[]>();
@@ -233,8 +237,6 @@ export function AppWrapper({ children }) {
         closedErrands,
         setClosedErrands: (errands: ErrandsData) => setClosedErrands(errands),
 
-        //----------------------------------------------
-
         supportErrands,
         setSupportErrands: (errands: SupportErrandsData) => setSupportErrands(errands),
 
@@ -246,6 +248,9 @@ export function AppWrapper({ children }) {
 
         suspendedSupportErrands,
         setSuspendedSupportErrands: (supportErrands: SupportErrandsData) => setSuspendedSupportErrands(supportErrands),
+
+        assignedSupportErrands,
+        setAssignedSupportErrands: (supportErrand: SupportErrandsData) => setAssignedSupportErrands(supportErrand),
 
         solvedSupportErrands,
         setSolvedSupportErrands: (supportErrands: SupportErrandsData) => setSolvedSupportErrands(supportErrands),

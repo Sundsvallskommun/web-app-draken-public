@@ -1,7 +1,7 @@
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Button, Badge } from '@sk-web-gui/react';
-import { LucideIcon } from '@sk-web-gui/lucide-icon';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { LucideIcon } from '@sk-web-gui/lucide-icon';
+import { Badge, Button } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { Status } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
@@ -24,6 +24,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
     selectedSupportErrandStatuses,
     newSupportErrands,
     ongoingSupportErrands,
+    assignedSupportErrands,
     suspendedSupportErrands,
     solvedSupportErrands,
   }: AppContextInterface = useAppContext();
@@ -64,6 +65,13 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
         statuses: [Status.SUSPENDED, Status.ASSIGNED],
         icon: 'circle-pause',
         totalStatusErrands: suspendedSupportErrands.totalElements,
+      },
+      {
+        label: 'Tilldelade ärenden',
+        key: Status.ASSIGNED,
+        statuses: [Status.ASSIGNED],
+        icon: 'file-plus',
+        totalStatusErrands: assignedSupportErrands.totalElements,
       },
       {
         label: 'Avslutade ärenden',
