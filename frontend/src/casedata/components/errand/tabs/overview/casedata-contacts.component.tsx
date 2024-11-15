@@ -8,10 +8,9 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import {
   editStakeholder,
-  getFellowApplicants,
   getOwnerStakeholder,
   getStakeholderRelation,
-  removeStakeholder,
+  removeStakeholder
 } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
@@ -348,18 +347,16 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
             </div>
           ) : null}
 
-          {stakeholdersFields.map((stakehodler) => stakehodler.roles.includes(Role.CONTACT_PERSON)).length !== 0 ? (
-            <FormControl className="mt-40 w-full">
-              <FormLabel>Tillagda parter</FormLabel>
-              <div className="flex flex-row gap-md flex-wrap">
-                {stakeholdersFields.map((caseData, idx) =>
-                  !caseData.roles.includes(Role.APPLICANT) && !caseData.roles.includes(Role.ADMINISTRATOR)
-                    ? renderContact(caseData, idx, 'Ärendeintressent')
-                    : null
-                )}
-              </div>
-            </FormControl>
-          ) : null}
+          {stakeholdersFields.map((stakeholder, idx) =>
+            !stakeholder.roles.includes(Role.APPLICANT) && !stakeholder.roles.includes(Role.ADMINISTRATOR) ? (
+              <FormControl className="mt-40 w-full">
+                <FormLabel>Tillagda parter</FormLabel>
+                <div className="flex flex-row gap-md flex-wrap">
+                  {renderContact(stakeholder, idx, 'Ärendeintressent')}
+                </div>
+              </FormControl>
+            ) : null
+          )}
         </div>
         <div className="h-xl"></div>
       </div>
