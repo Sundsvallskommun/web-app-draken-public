@@ -304,7 +304,7 @@ export const CasedataAttachments: React.FC = () => {
                       editing={selectedAttachment ? true : false}
                       accept={ACCEPTED_UPLOAD_FILETYPES}
                       helperText="Maximal filstorlek: 10 MB"
-                      allowMultiple={isMEX() ? true : false}
+                      allowMultiple={true}
                     />
                   </FormControl>
 
@@ -421,7 +421,7 @@ export const CasedataAttachments: React.FC = () => {
               inverted
               size="sm"
               onClick={() => {
-                setDragDrop(isMEX() ? true : false);
+                setDragDrop(true);
                 setSizeError(false);
                 setAttachmentTypeExists(false);
                 reset();
