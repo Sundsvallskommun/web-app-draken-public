@@ -3,14 +3,14 @@ import { GenericExtraParameters } from './extra-parameters.interface';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-  Decision as DecisionDTO,
+  Decision,
   DecisionDecisionOutcomeEnum,
   DecisionDecisionTypeEnum,
-  Law as LawDTO,
+  Law,
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
 
-export class Law implements LawDTO {
+export class LawDTO implements Law {
   @IsString()
   heading: string;
   @IsString()
@@ -23,7 +23,7 @@ export class Law implements LawDTO {
 
 // export type DecisionOutcome = 'APPROVAL' | 'REJECTION' | 'UNKNOWN';
 
-export class Decision implements DecisionDTO {
+export class DecisionDTO implements Decision {
   @IsNumber()
   @IsOptional()
   id: number;
@@ -35,8 +35,8 @@ export class Decision implements DecisionDTO {
   @IsOptional()
   description?: string;
   @ValidateNested({ each: true })
-  @Type(() => Law)
-  law: LawDTO[];
+  @Type(() => LawDTO)
+  law: Law[];
   @IsOptional()
   decidedBy?: StakeholderDTO;
   @IsString()

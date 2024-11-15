@@ -46,17 +46,18 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
           'have.text',
           mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'RECOMMENDED')?.description
         );
-      cy.get('[data-cy="lagrum-select"]')
-        .should('exist')
-        .should('have.value', '13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
+      cy.get('[data-cy="investigation-law-select"]').should('exist').should('have.value', '');
+      cy.get('[data-cy="investigation-law-select"]').select('13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
       cy.get('[data-cy="outcome-select"]').should('exist').should('have.value', 'APPROVAL');
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').contains('Utredningstext');
     });
 
-    it('can edit decision2 fields', () => {
+    it('can edit investigation fields', () => {
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
 
-      cy.get('[data-cy="lagrum-select"]').should('exist').select(0);
+      cy.get('[data-cy="investigation-law-select"]')
+        .should('exist')
+        .select('13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
       cy.get('[data-cy="outcome-select"]').should('exist').select('REJECTION');
       cy.get('button').should('exist').contains('Ja').click();
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').clear().type('Mock text');
@@ -64,9 +65,18 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('button').should('exist').contains('Ja').click();
 
       cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.id).to.equal(29);
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('PROPOSED');
         expect(request.body.decisionOutcome).to.equal('REJECTION');
+        expect(request.body.law).to.deep.equal([
+          {
+            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+            sfs: 'Trafikförordningen (1998:1276)',
+            chapter: '13',
+            article: '8',
+          },
+        ]);
       });
     });
 

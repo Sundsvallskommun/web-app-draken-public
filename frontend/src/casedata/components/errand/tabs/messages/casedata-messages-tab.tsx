@@ -29,7 +29,7 @@ export const CasedataMessagesTab: React.FC<{
   }, [user, errand]);
 
   const setMessageViewed = (msg: MessageResponse) => {
-    setMessageViewStatus(errand.id, municipalityId, msg.messageId, true)
+    setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId, true)
       .then(() =>
         fetchMessagesTree(municipalityId, errand).catch(() => {
           toastMessage({
@@ -75,19 +75,25 @@ export const CasedataMessagesTab: React.FC<{
     if (msg?.messageType === 'WEBMESSAGE' || msg?.externalCaseId) {
       return (
         <>
-          <Icon icon={<LucideIcon name="monitor" />} size="1.5rem" className="my-1" /> Via e-tjänst
+          <LucideIcon name="monitor" size="1.5rem" className="my-1" /> Via e-tjänst
         </>
       );
     } else if (msg?.messageType === 'SMS') {
       return (
         <>
-          <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="my-1" /> Via SMS
+          <LucideIcon name="smartphone" size="1.5rem" className="my-1" /> Via SMS
+        </>
+      );
+    } else if (msg?.messageType === 'DIGITAL_MAIL') {
+      return (
+        <>
+          <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via digital brevlåda
         </>
       );
     } else {
       return (
         <>
-          <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="my-1" /> Via e-post
+          <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via e-post
         </>
       );
     }
