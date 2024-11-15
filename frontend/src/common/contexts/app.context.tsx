@@ -32,7 +32,7 @@ export interface AppContextInterface {
   avatar: string;
   setAvatar: (avatar: string) => void;
 
-  errand;
+  errand: IErrand;
   setErrand: (errand: IErrand) => void;
 
   messages;

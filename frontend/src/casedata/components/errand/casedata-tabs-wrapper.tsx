@@ -18,7 +18,7 @@ import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { getAssets } from '@casedata/services/asset-service';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Role } from '@casedata/interfaces/role';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
@@ -56,8 +56,8 @@ export const CasedataTabsWrapper: React.FC = () => {
           });
         });
       isPT() &&
-        errand.stakeholders.find((p) => p.roles.includes('APPLICANT'))?.personId &&
-        getAssets(errand.stakeholders.find((p) => p.roles.includes('APPLICANT')).personId, 'PARKINGPERMIT')
+        errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
+        getAssets(errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT)).personId, 'PARKINGPERMIT')
           .then((res) => setAssets(res.data))
           .catch((e) => {
             toastMessage({
@@ -245,7 +245,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     },
     {
       label: `Utredning`,
-      content: errand?.id && <CasedataInvestigationTab errand={errand} setUnsaved={() => {}} />,
+      content: errand?.id && <CasedataInvestigationTab errand={errand} setUnsaved={setUnsavedUtredning} />,
       disabled: !errand?.id,
       visibleFor:
         isPT() && errand?.id

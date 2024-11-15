@@ -11,6 +11,7 @@ import {
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -23,7 +24,7 @@ export interface UtredningFormModel {
   id?: number;
   errandNumber?: string;
   description: string;
-  law: string;
+  law: Law;
   outcome: string;
   validFrom?: string;
   validTo?: string;
@@ -143,7 +144,7 @@ export const SidebarUtredning: React.FC = () => {
         data = {
           id: decision.id,
           description: decision.description,
-          law: decision.law[0].heading,
+          law: decision.law[0],
           outcome: DecisionOutcomeKey.Bifall,
           validFrom: decision.validFrom,
           validTo: decision.validTo,

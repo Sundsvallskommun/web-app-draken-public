@@ -1,4 +1,4 @@
-import { Decision } from './decision.interface';
+import { Decision } from '@/data-contracts/case-data/data-contracts';
 
 export type AssetStatus = 'ACTIVE' | 'EXPIRED' | 'BLOCKED';
 
