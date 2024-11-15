@@ -3,13 +3,14 @@ import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/cas
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
+import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
-import { Law } from '@common/data-contracts/case-data/data-contracts';
 
 export const lawMapping: Law[] = [
   {
@@ -57,6 +58,19 @@ export const saveDecision: (
     };
     atts.push(att);
   }
+  const { adAccount, addresses, contactInformation, extraParameters, firstName, lastName, roles, type } =
+    errand.administrator;
+  const decidedBy: CreateStakeholderDto = {
+    adAccount,
+    addresses,
+    contactInformation,
+    extraParameters,
+    firstName,
+    lastName,
+    roles,
+    type,
+  };
+
   const obj: Decision = {
     ...(formData.id && { id: formData.id }),
     decisionType,
@@ -81,7 +95,7 @@ export const saveDecision: (
       isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : undefined,
     validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : undefined,
     decidedAt: dayjs().toISOString(),
-    decidedBy: JSON.parse(JSON.stringify(errand.administrator)),
+    decidedBy: decidedBy,
     attachments: atts,
     ...(formData.extraParameters && { extraParameters: formData.extraParameters }),
   };
