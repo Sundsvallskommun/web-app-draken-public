@@ -18,12 +18,6 @@ export const lawMapping: Law[] = [
     chapter: '13',
     article: '8',
   },
-  {
-    heading: '14 kap. 2§ Låtsaslagen',
-    sfs: 'Hittepåförordningen (1298:1676)',
-    chapter: '14',
-    article: '2',
-  },
 ];
 
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
