@@ -243,7 +243,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         </div>
 
         <div className="md:flex md:gap-24 px-16 py-12">
-          <div className="md:w-1/3 flex gap-8 items-center break-all">
+          <div className={`md:w-1/3 flex gap-8 break-all ${administrationName ? `items-start` : `items-center`}`}>
             <Avatar
               rounded
               color={(avatarColorArray[index % 4] as 'vattjom') || 'juniskar' || 'gronsta' || 'bjornstigen'}
@@ -281,6 +281,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
                   </>
                 )}
               </div>
@@ -298,7 +299,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 ? `${contact.address} ${contact.zipCode} ${contact.city || ''}`
                 : '(adress saknas)'}
             </p>
-            <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
           </div>
           <div className="md:w-1/3 md:mt-0 mt-md">
             <div data-cy={`stakeholder-phone`} className="text-small">
