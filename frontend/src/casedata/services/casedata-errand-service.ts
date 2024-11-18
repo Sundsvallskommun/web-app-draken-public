@@ -89,7 +89,25 @@ export const ongoingStatuses = [
   ErrandStatus.BeslutOverklagat,
 ];
 
+export const assignedStatuses = [ErrandStatus.Tilldelat];
+
 export const closedStatuses = [ErrandStatus.ArendeAvslutat];
+
+export const getStatusLabel = (statuses: ErrandStatus[]) => {
+  if (statuses.length > 0) {
+    if (statuses.some((s) => newStatuses.includes(s))) {
+      return 'Nya ärenden';
+    } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
+      return 'Öppnade ärenden';
+    } else if (statuses.some((s) => assignedStatuses.includes(s))) {
+      return 'Tilldelade ärenden';
+    } else if (statuses.some((s) => closedStatuses.includes(s))) {
+      return 'Avslutade ärenden';
+    } else {
+      return 'Ärenden';
+    }
+  }
+};
 
 export const findPriorityKeyForPriorityLabel = (key: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
@@ -320,6 +338,9 @@ export const useErrands = (
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      if (!filter) {
+        return;
+      }
       await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
           setErrands({ ...res, isLoading: false });
@@ -407,7 +428,7 @@ export const useErrands = (
       getErrands(
         municipalityId,
         page,
-        size,
+        1,
         {
           ...filter,
           status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
