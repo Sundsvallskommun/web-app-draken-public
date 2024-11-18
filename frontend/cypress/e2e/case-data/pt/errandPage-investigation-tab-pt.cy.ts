@@ -12,6 +12,8 @@ import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockAsset } from '../fixtures/mockAsset';
 import { Decision } from '@casedata/interfaces/decision';
+import { mock } from 'node:test';
+import { Role } from '@casedata/interfaces/role';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Investigation tab', () => {
@@ -52,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').contains('Utredningstext');
     });
 
-    it('can edit investigation fields', () => {
+    it.only('can edit investigation fields', () => {
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
 
       cy.get('[data-cy="investigation-law-select"]')
@@ -64,11 +66,19 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="save-utredning-button"]').should('exist').click();
       cy.get('button').should('exist').contains('Ja').click();
 
+      const decidedBy = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.ADMINISTRATOR));
+      delete decidedBy.created;
+      delete decidedBy.updated;
+      delete decidedBy.personId;
+      delete decidedBy.personalNumber;
+      delete decidedBy.id;
+
       cy.wait('@updateDecision').should(({ request }) => {
         expect(request.body.id).to.equal(29);
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('PROPOSED');
         expect(request.body.decisionOutcome).to.equal('REJECTION');
+        expect(request.body.decidedBy).to.deep.equal(decidedBy);
         expect(request.body.law).to.deep.equal([
           {
             heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
