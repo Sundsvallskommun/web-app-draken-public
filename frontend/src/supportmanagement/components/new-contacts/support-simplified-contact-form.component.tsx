@@ -512,6 +512,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       setValue(`careOf`, selectedUser.careof, { shouldDirty: true });
       setValue(`zipCode`, selectedUser.zip, { shouldDirty: true });
       setValue(`city`, selectedUser.city, { shouldDirty: true });
+      setValue(`metadata`, selectedUser.metadata, { shouldDirty: true });
       if (selectedUser.phone) {
         appendPhonenumber({ value: selectedUser.phone });
       }
@@ -743,7 +744,6 @@ export const SupportSimplifiedContactForm: React.FC<{
           </FormControl>
         </div>
       ) : null}
-
       {searchResult ? (
         <>
           <div data-cy={`search-result`} className="bg-content-main border rounded-16 p-16 my-sm relative">
@@ -757,6 +757,10 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
                   {personNumber || '(personnummer saknas)'}
                 </p>
+                {metadata?.hasOwnProperty('administrationName') ? (
+                  <p className="my-xs mt-0">{metadata['administrationName']}</p>
+                ) : null}
+
                 <p className="my-xs mt-0" data-cy={`stakeholder-adress`}>
                   {address || zipCode ? `${address} ${zipCode} ${city}` : '(adress saknas)'}
                 </p>

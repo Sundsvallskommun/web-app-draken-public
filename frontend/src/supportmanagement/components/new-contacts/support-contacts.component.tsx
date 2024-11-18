@@ -1,8 +1,8 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isLOP } from '@common/services/application-service';
-import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
@@ -131,6 +131,10 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   };
 
   const renderContact = (contact: SupportStakeholderFormModel, index, header) => {
+    let administrationName = '';
+    contact.metadata && contact.metadata.hasOwnProperty('administrationName')
+      ? (administrationName = contact.metadata['administrationName'])
+      : null;
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -240,7 +244,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         </div>
 
         <div className="md:flex md:gap-24 px-16 py-12">
-          <div className="md:w-1/3 flex gap-8 items-center break-all">
+          <div className={`md:w-1/3 flex gap-8 break-all ${administrationName ? `items-start` : `items-center`}`}>
             <Avatar
               rounded
               color={(avatarColorArray[index % 4] as 'vattjom') || 'juniskar' || 'gronsta' || 'bjornstigen'}
@@ -278,6 +282,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
                   </>
                 )}
               </div>
