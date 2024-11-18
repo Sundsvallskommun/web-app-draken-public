@@ -39,6 +39,7 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       inverted = true;
       icon = 'clock-10';
       break;
+    //  Lines below to be used for suspended errands shortly
     // case ErrandStatus.Parkerat:
     //   color = 'warning';
     //   inverted = true;
