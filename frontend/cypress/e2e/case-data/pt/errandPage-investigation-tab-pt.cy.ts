@@ -54,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').contains('Utredningstext');
     });
 
-    it.only('can edit investigation fields', () => {
+    it('can edit investigation fields', () => {
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
 
       cy.get('[data-cy="investigation-law-select"]')
