@@ -1,9 +1,10 @@
+import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum, Law } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
+import { DecisionDTO } from '@/interfaces/decision.interface';
 import { User } from '@/interfaces/users.interface';
 import { validateAction } from '@/services/errand.service';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
-import { Decision } from '@interfaces/decision.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
@@ -27,7 +28,7 @@ export class CaseDataDecisionsController {
   @Patch('/:municipalityId/errands/:id/decisions')
   @HttpCode(201)
   @OpenAPI({ summary: 'Add a decision to an errand by id' })
-  @UseBefore(authMiddleware, validationMiddleware(Decision, 'body'))
+  @UseBefore(authMiddleware, validationMiddleware(DecisionDTO, 'body'))
   async newDecision(
     @Req() req: RequestWithUser,
     @Param('id') errandId: number,
@@ -38,9 +39,21 @@ export class CaseDataDecisionsController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
+    const patchData: Decision = {
+      decisionType: decisionData.decisionType as unknown as DecisionDecisionTypeEnum,
+      decisionOutcome: decisionData.decisionOutcome as unknown as DecisionDecisionOutcomeEnum,
+      description: decisionData.description,
+      decidedBy: decisionData.decidedBy,
+      law: decisionData.law,
+      ...(decisionData.decidedAt && { decidedAt: decisionData.decidedAt }),
+      ...(decisionData.validFrom && { validFrom: decisionData.validFrom }),
+      ...(decisionData.validTo && { validTo: decisionData.validTo }),
+      ...(decisionData.validTo && { validTo: decisionData.validTo }),
+      extraParameters: decisionData.extraParameters || {},
+    };
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions`;
     const baseURL = apiURL(this.SERVICE);
-    const response = await this.apiService.patch<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
+    const response = await this.apiService.patch<any, Decision>({ url, baseURL, data: patchData }, req.user).catch(e => {
       logger.error(`Error when patching decision: ${e}`);
       throw e;
     });
@@ -50,7 +63,7 @@ export class CaseDataDecisionsController {
   @Put('/:municipalityId/errands/:id/decisions/:decisionId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a decision by id' })
-  @UseBefore(authMiddleware, validationMiddleware(Decision, 'body'))
+  @UseBefore(authMiddleware, validationMiddleware(DecisionDTO, 'body'))
   async replaceDecision(
     @Req() req: RequestWithUser,
     @Param('id') errandId: number,

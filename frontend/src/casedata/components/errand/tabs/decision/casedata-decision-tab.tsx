@@ -4,6 +4,7 @@ import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
+  lawMapping,
   renderBeslutPdf,
   renderHtml,
   saveDecision,
@@ -15,7 +16,7 @@ import {
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
@@ -60,6 +61,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -69,7 +71,7 @@ export interface DecisionFormModel {
   errandNumber?: string;
   description: string;
   descriptionPlaintext: string;
-  law: {};
+  law: Law[];
   decisionTemplate: string;
   outcome: string;
   validFrom: string;
@@ -84,7 +86,7 @@ let formSchema = yup
     description: yup.string(),
     descriptionPlaintext: yup.string(),
     errandId: yup.number(),
-    law: yup.mixed(),
+    law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup
       .string()
       .required('Förslag till beslut måste anges')
@@ -124,12 +126,7 @@ export const CasedataDecisionTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-  }: { municipalityId: string; user: User; errand: IErrand; setErrand: (e: IErrand) => void } = useAppContext();
+  const { municipalityId, user, errand, setErrand, administrators }: AppContextInterface = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -146,16 +143,6 @@ export const CasedataDecisionTab: React.FC<{
   const [lawHeading, setLawHeading] = useState<string>('');
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-
-  const lawMapping = [
-    {
-      id: 1,
-      heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
-      sfs: 'Trafikförordningen (1998:1276)',
-      chapter: '13',
-      article: '8',
-    },
-  ];
 
   useEffect(() => {
     if (lawHeading) {
@@ -583,6 +570,7 @@ export const CasedataDecisionTab: React.FC<{
           </div>
           <div className="mt-24">
             <Input type="hidden" {...register('id')} />
+            <Input type="hidden" {...register('decidedBy')} value={user.username} />
             <div className="w-full mt-md flex justify-start gap-md mb-24">
               <FormControl data-cy="decision-outcome-dropdown" className="w-full">
                 <FormLabel>Beslut</FormLabel>
@@ -623,24 +611,27 @@ export const CasedataDecisionTab: React.FC<{
                 <>
                   <FormControl className="w-full">
                     <FormLabel>Lagrum</FormLabel>
-                    <Input
-                      type="hidden"
-                      {...register('law')}
-                      value={lawMapping.find((l) => l.id === selectedLaw).heading}
-                    />
+                    <Input type="hidden" {...register('law')} />
                     <Select
-                      className="w-full"
+                      className={cx(`w-full`, errors.law ? 'border-error' : '')}
                       data-cy="law-select"
                       name="law"
                       size="sm"
                       onChange={(e) => {
-                        setLawHeading(e.target.value);
+                        setValue(
+                          'law',
+                          lawMapping.filter((law) => {
+                            return law.heading === e.target.value;
+                          }),
+                          { shouldDirty: true }
+                        );
+                        props.setUnsaved(true);
                         trigger();
                       }}
                       placeholder="Välj lagrum"
-                      value={lawHeading}
+                      value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                     >
-                      <Select.Option>Välj lagrum</Select.Option>
+                      <Select.Option value={''}>Välj lagrum</Select.Option>
                       {lawMapping.map((law, index) => {
                         return (
                           <Select.Option key={index} value={law.heading}>
@@ -649,6 +640,11 @@ export const CasedataDecisionTab: React.FC<{
                         );
                       })}
                     </Select>
+                    <div className="my-sm text-error">
+                      {errors.law && formState.dirtyFields.law && (
+                        <FormErrorMessage>{errors.law.message}</FormErrorMessage>
+                      )}
+                    </div>
                   </FormControl>
 
                   <FormControl className="w-full">
