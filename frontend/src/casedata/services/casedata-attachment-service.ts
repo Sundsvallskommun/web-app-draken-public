@@ -198,8 +198,10 @@ export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (er
 export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boolean; reason: string } = (errand) => {
   if (isPT()) {
     const uniqueAttachmentsOnlyOnce = validateAttachmentsForUtredning(errand);
-    const passportPhotoExists =
-      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length == 1;
+    const passportPhotoMissing =
+      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length === 0;
+    const tooManypassportPhotos =
+      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length > 1;
     const medicalConfirmationValid =
       errand.extraParameters.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values[0] ===
         'no' ||
@@ -210,8 +212,11 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
         ? 1
         : 0);
     const rsn = [];
-    if (!passportPhotoExists) {
+    if (passportPhotoMissing) {
       rsn.push('passfoto saknas');
+    }
+    if (tooManypassportPhotos) {
+      rsn.push('endast ett passfoto får bifogas');
     }
     if (!medicalConfirmationValid) {
       rsn.push('läkarintyg saknas');
@@ -228,7 +233,12 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
     });
 
     return {
-      valid: uniqueAttachmentsOnlyOnce && passportPhotoExists && medicalConfirmationValid && signatureValid,
+      valid:
+        uniqueAttachmentsOnlyOnce &&
+        !passportPhotoMissing &&
+        !tooManypassportPhotos &&
+        medicalConfirmationValid &&
+        signatureValid,
       reason: reason.join(', '),
     };
   }
