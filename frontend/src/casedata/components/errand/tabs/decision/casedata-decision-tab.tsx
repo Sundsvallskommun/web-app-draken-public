@@ -282,10 +282,7 @@ export const CasedataDecisionTab: React.FC<{
       const saved = await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
-      const recipient = owner?.emails?.[0]?.value;
-      if (!recipient) {
-        throw new Error('Ingen mottagare hittades');
-      }
+      const recipientEmail = owner?.emails?.[0]?.value;
       const contactMeans: ContactMeans = errand.externalCaseId
         ? 'webmessage'
         : validateOwnerForSendingDecisionByEmail(errand)
@@ -293,6 +290,9 @@ export const CasedataDecisionTab: React.FC<{
         : validateOwnerForSendingDecisionByLetter(errand)
         ? 'digitalmail'
         : false;
+      if (contactMeans === 'email' && !recipientEmail) {
+        throw new Error('Ingen e-postadress för mottagare hittades');
+      }
       if (!contactMeans) {
         toastMessage({
           position: 'bottom',
@@ -305,7 +305,7 @@ export const CasedataDecisionTab: React.FC<{
       const messageData: CasedataMessageTabFormModel = {
         contactMeans,
         messageClassification: MessageClassification.Informationsmeddelande,
-        emails: [{ value: recipient }],
+        emails: [{ value: recipientEmail }],
         newEmail: '',
         phoneNumbers: [],
         newPhoneNumber: '',
