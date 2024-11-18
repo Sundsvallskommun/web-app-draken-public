@@ -575,13 +575,17 @@ export const SupportMessageForm: React.FC<{
           </div>
         ) : (
           <>
-            <Button onClick={() => {
-              props.setShowMessageForm(false);
-              setValue('emails', []);
-              setValue('newEmail', props.prefillEmail);
-              setValue('phoneNumbers', []);
-              setValue('newPhoneNumber', props.prefillPhone);
-              }} variant="secondary" color="primary">
+            <Button
+              onClick={() => {
+                props.setShowMessageForm(false);
+                setValue('emails', []);
+                setValue('newEmail', props.prefillEmail);
+                setValue('phoneNumbers', []);
+                setValue('newPhoneNumber', props.prefillPhone);
+              }}
+              variant="secondary"
+              color="primary"
+            >
               Avbryt
             </Button>
             <Button
