@@ -234,6 +234,13 @@ export const SupportMessageForm: React.FC<{
     trigger('messageBody');
   };
 
+  const clearParameters = () => {
+    setValue('emails', []);
+    setValue('newEmail', props.prefillEmail);
+    setValue('phoneNumbers', []);
+    setValue('newPhoneNumber', props.prefillPhone);
+  };
+
   const onSubmit = (data, event) => {
     send();
   };
@@ -282,6 +289,7 @@ export const SupportMessageForm: React.FC<{
         setTimeout(() => {
           props.setUnsaved(false);
           setValue('messageBody', emailBody);
+          clearParameters();
           clearErrors();
           props.setShowMessageForm(false);
         }, 0);
@@ -527,7 +535,6 @@ export const SupportMessageForm: React.FC<{
             onClick={() => setIsAttachmentModalOpen(true)}
             data-cy="add-attachment-button"
           >
-            {' '}
             Bifoga fil
           </Button>
         </div>
@@ -576,8 +583,15 @@ export const SupportMessageForm: React.FC<{
           </div>
         ) : (
           <>
-            <Button onClick={() => props.setShowMessageForm(false)} variant="secondary" color="primary">
-              Avbryt{' '}
+            <Button
+              onClick={() => {
+                props.setShowMessageForm(false);
+                clearParameters();
+              }}
+              variant="secondary"
+              color="primary"
+            >
+              Avbryt
             </Button>
             <Button
               variant="primary"
