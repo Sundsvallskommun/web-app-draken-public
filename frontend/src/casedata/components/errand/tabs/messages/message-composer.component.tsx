@@ -3,14 +3,19 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { renderMessageWithTemplates, sendMessage, sendSms } from '@casedata/services/casedata-message-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
+import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
@@ -18,23 +23,18 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Modal,
   RadioButton,
   Select,
   Spinner,
   cx,
   useConfirm,
   useSnackbar,
-  Modal,
 } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
-import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -211,7 +211,7 @@ export const MessageComposer: React.FC<{
       setValue('messageBody', '', { shouldDirty: true });
       setValue('emails', [], { shouldDirty: true });
       removeNewAttachment();
-      setRichText('');
+      isPT() ? setTemplateForPT() : setRichText('');
       remove();
       props.closeHandler();
     }, 0);
@@ -269,6 +269,28 @@ export const MessageComposer: React.FC<{
     }
   };
 
+  const setTemplateForPT = () => {
+    let content = 'Hej,<br><br>';
+
+    content +=
+      `<br><br>
+      <p><b>Sundsvalls kommun</b></p>
+      <p>` +
+      errand.administratorName +
+      `</p>
+      <p>Gatuavdelningen, Trafiksektionen</p>
+      <p>851 85 Sundsvall </p>
+      <p>Besöksadress: Norrmalmsgatan 4</p>
+      <p>Växel: 060-19 10 00</p>
+      <br>
+      <a href="www.sundsvall.se">www.sundsvall.se</a>`;
+
+    // GDPR
+    content += `<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="http://www.sundsvall.se/personuppgifter" target="_blank">Behandling av personuppgifter, Sundsvalls kommun</a>`;
+
+    setRichText(content);
+  };
+
   const addExisting = watch('addExisting');
   const existingAttachments = watch('existingAttachments');
   const newAttachments = watch('newAttachments');
@@ -323,8 +345,14 @@ export const MessageComposer: React.FC<{
     }
   }, [props.message, errand]);
 
+  useEffect(() => {
+    if (isPT()) {
+      setTemplateForPT();
+    }
+  }, []);
+
   const changeTemplate = (inTemplateValue) => {
-    let content = 'Hej!<br><br>';
+    let content = 'Hej,<br><br>';
     if (inTemplateValue === 'feedbackPrio') {
       content +=
         'Tack för att du kontaktar oss med visat intresse för Sundsvall!<br><br>Vi har tagit emot din förfrågan gällande xx, som kräver utredning av handläggare. Vi har hög inströmning av ärenden just nu med anledning av att många vill använda och utveckla kommunens mark. <br><br>Vi prioriterar förfrågningar från företag och föreningar. <br><br>En preliminär bedömning är att ditt ärende kommer tilldelas en handläggare om ca fyra månader. När du står på tur kontaktar handläggaren dig för mer information.';
@@ -422,28 +450,30 @@ export const MessageComposer: React.FC<{
             </fieldset>
           ) : null}
 
-          <FormControl className="w-full my-12" size="sm" id="messageTemplate">
-            <FormLabel>Välj meddelandemall</FormLabel>
-            <Select
-              tabIndex={props.show ? 0 : -1}
-              {...register('messageTemplate')}
-              className="w-full text-dark-primary"
-              variant="tertiary"
-              size="sm"
-              onChange={(e) => {
-                changeTemplate(e.currentTarget.value);
-              }}
-              data-cy="messageTemplate"
-            >
-              <Select.Option value="">Välj mall</Select.Option>
-              <Select.Option value="feedbackPrio">Återkoppling – Prio</Select.Option>
-              <Select.Option value="feedbackNormal">Återkoppling – Normal prio</Select.Option>
-              <Select.Option value="additionalInformation">Begära in kompletterande uppgifter</Select.Option>
-              <Select.Option value="internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
-              <Select.Option value="internalReferralWire">Internremiss ledningar</Select.Option>
-              <Select.Option value="internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
-            </Select>
-          </FormControl>
+          {isMEX() ? (
+            <FormControl className="w-full my-12" size="sm" id="messageTemplate">
+              <FormLabel>Välj meddelandemall</FormLabel>
+              <Select
+                tabIndex={props.show ? 0 : -1}
+                {...register('messageTemplate')}
+                className="w-full text-dark-primary"
+                variant="tertiary"
+                size="sm"
+                onChange={(e) => {
+                  changeTemplate(e.currentTarget.value);
+                }}
+                data-cy="messageTemplate"
+              >
+                <Select.Option value="">Välj mall</Select.Option>
+                <Select.Option value="feedbackPrio">Återkoppling – Prio</Select.Option>
+                <Select.Option value="feedbackNormal">Återkoppling – Normal prio</Select.Option>
+                <Select.Option value="additionalInformation">Begära in kompletterande uppgifter</Select.Option>
+                <Select.Option value="internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
+                <Select.Option value="internalReferralWire">Internremiss ledningar</Select.Option>
+                <Select.Option value="internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
+              </Select>
+            </FormControl>
+          ) : null}
 
           {props.show ? (
             <FormControl id="message-body" className="w-full">
