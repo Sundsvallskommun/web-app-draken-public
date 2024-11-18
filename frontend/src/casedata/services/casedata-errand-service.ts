@@ -638,6 +638,7 @@ export const phaseChangeInProgress = (errand: IErrand) => {
     errand.phase === ErrandPhase.aktualisering ||
     errand.phase === ErrandPhase.utredning ||
     errand.phase === ErrandPhase.beslut ||
+    errand.phase === ErrandPhase.verkstalla ||
     errand.phase === ErrandPhase.uppfoljning
   ) {
     return errand.extraParameters?.find((p) => p.key === 'process.phaseAction')?.values[0] === 'COMPLETE';

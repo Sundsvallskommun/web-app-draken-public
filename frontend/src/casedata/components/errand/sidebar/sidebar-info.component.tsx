@@ -208,7 +208,7 @@ export const SidebarInfo: React.FC<{}> = () => {
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
 
-  const exitErande = () => {
+  const exitErrand = () => {
     let createNote = true;
 
     if (getValues('publicNote').length === 0) {
@@ -447,7 +447,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       <Divider className="my-20"></Divider>
 
       <PhaseChanger />
-      {uiPhase !== UiPhase.slutfor && (
+      {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
         <Button
           className="mt-16"
           color="primary"
@@ -501,7 +501,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               !isErrandAdmin(errand, user)
             }
             onClick={() => {
-              exitErande();
+              exitErrand();
             }}
           >
             Avsluta ärendet
@@ -511,6 +511,3 @@ export const SidebarInfo: React.FC<{}> = () => {
     </div>
   );
 };
-function trigger(arg0: string) {
-  throw new Error('Function not implemented.');
-}

@@ -268,7 +268,9 @@ export const PhaseChanger = () => {
         </Modal.Footer>
       </Modal>
     </>
-  ) : uiPhase === UiPhase.beslut || errand.status === ErrandStatus.ArendeAvslutat ? null : (
+  ) : uiPhase === UiPhase.beslut ||
+    errand.phase === ErrandPhase.verkstalla ||
+    errand.status === ErrandStatus.ArendeAvslutat ? null : (
     <>
       <Button
         variant="primary"
