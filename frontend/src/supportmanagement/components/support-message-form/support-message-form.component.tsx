@@ -527,7 +527,6 @@ export const SupportMessageForm: React.FC<{
             onClick={() => setIsAttachmentModalOpen(true)}
             data-cy="add-attachment-button"
           >
-            {' '}
             Bifoga fil
           </Button>
         </div>
@@ -576,8 +575,14 @@ export const SupportMessageForm: React.FC<{
           </div>
         ) : (
           <>
-            <Button onClick={() => props.setShowMessageForm(false)} variant="secondary" color="primary">
-              Avbryt{' '}
+            <Button onClick={() => {
+              props.setShowMessageForm(false);
+              setValue('emails', []);
+              setValue('newEmail', props.prefillEmail);
+              setValue('phoneNumbers', []);
+              setValue('newPhoneNumber', props.prefillPhone);
+              }} variant="secondary" color="primary">
+              Avbryt
             </Button>
             <Button
               variant="primary"
