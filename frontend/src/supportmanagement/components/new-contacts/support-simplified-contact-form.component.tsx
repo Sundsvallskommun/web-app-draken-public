@@ -756,7 +756,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
                   {personNumber || '(personnummer saknas)'}
                 </p>
-                {metadata.hasOwnProperty('administrationName') ? (
+                {metadata?.hasOwnProperty('administrationName') ? (
                 <p className="my-xs mt-0">{metadata['administrationName']}</p>
                 ) : null}
 
