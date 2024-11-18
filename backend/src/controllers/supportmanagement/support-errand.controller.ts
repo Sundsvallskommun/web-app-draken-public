@@ -191,7 +191,7 @@ export class SupportErrandController {
       customer.personNumber = personNumberRes.data;
     }
     const contacts: (SupportStakeholder & { personNumber?: string })[] =
-      errandData.stakeholders.filter(s => s.role === SupportStakeholderRole.CONTACT) || [];
+      errandData.stakeholders.filter(s => s.role !== SupportStakeholderRole.PRIMARY) || [];
     const contactsPromises = contacts.map(contact => {
       if (
         contact &&

@@ -19,6 +19,7 @@ export const documentMimeTypes = [
   'application/vnd.oasis.opendocument.text',
   'application/vnd.oasis.opendocument.spreadsheet',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ];
 
 export const ACCEPTED_UPLOAD_FILETYPES = [
@@ -38,6 +39,7 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   'txt',
   'xlsx',
   'xls',
+  'pptx',
   'odt',
   'ods',
   'text/html',

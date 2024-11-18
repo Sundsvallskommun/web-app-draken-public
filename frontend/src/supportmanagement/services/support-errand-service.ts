@@ -35,6 +35,11 @@ export enum ExternalIdType {
 export enum SupportStakeholderRole {
   PRIMARY = 'PRIMARY',
   CONTACT = 'CONTACT',
+  APPROVER = 'APPROVER',
+  EMPLOYEE = 'EMPLOYEE',
+  MANAGER = 'MANAGER',
+  SUBSTITUTE = 'SUBSTITUTE',
+  USER = 'USER',
 }
 
 export enum ContactChannelType {
@@ -45,7 +50,12 @@ export enum ContactChannelType {
 export enum Relation {
   PERSON = 'PERSON',
   PRIMARY = 'Ärendeägare',
-  CONTACT = 'Ärendeintressent',
+  CONTACT = 'Övrig part',
+  APPROVER = 'Godkännande chef',
+  EMPLOYEE = 'Anställd',
+  MANAGER = 'Chef',
+  SUBSTITUTE = 'Ersättare',
+  USER = 'Användare',
 }
 
 export enum PrettyRelation {
@@ -642,7 +652,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           })) || [],
       contacts:
         e.stakeholders
-          ?.filter((s) => s.role === SupportStakeholderRole.CONTACT)
+          ?.filter((s) => s.role !== SupportStakeholderRole.PRIMARY)
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
