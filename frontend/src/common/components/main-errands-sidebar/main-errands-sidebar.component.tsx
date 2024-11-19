@@ -8,7 +8,7 @@ import {
   isPT,
 } from '@common/services/application-service';
 import { FormProvider, useForm } from 'react-hook-form';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
@@ -29,7 +29,7 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user } = useAppContext();
+  const { user }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const applicationName = getApplicationName();

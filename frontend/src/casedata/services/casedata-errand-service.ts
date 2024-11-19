@@ -31,7 +31,7 @@ import { isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { replaceExtraParameter } from './casedata-extra-parameters-service';
 
@@ -324,6 +324,7 @@ export const useErrands = (
 ): ErrandsData => {
   const toastMessage = useSnackbar();
   const {
+    setIsLoading,
     setErrands,
     setNewErrands,
     setOngoingErrands,
@@ -338,6 +339,7 @@ export const useErrands = (
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      setIsLoading(true);
       if (!filter) {
         return;
       }
@@ -362,90 +364,93 @@ export const useErrands = (
           });
         });
 
-      getErrands(
-        municipalityId,
-        page,
-        1,
-        { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') },
-        sort
-      )
-        .then((res) => {
-          setNewErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Nya ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+      const fetchPromises = [
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') },
+          sort
+        )
+          .then((res) => {
+            setNewErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Nya ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getErrands(
-        municipalityId,
-        page,
-        1,
-        {
-          ...filter,
-          status: ongoingStatuses.map(findStatusKeyForStatusLabel).join(','),
-        },
-        sort
-      )
-        .then((res) => {
-          setOngoingErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Pågående ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
+            status: ongoingStatuses.map(findStatusKeyForStatusLabel).join(','),
+          },
+          sort
+        )
+          .then((res) => {
+            setOngoingErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Pågående ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getErrands(
-        municipalityId,
-        page,
-        1,
-        {
-          ...filter,
-          status: `Tilldelat`,
-        },
-        sort
-      )
-        .then((res) => {
-          setAssignedErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Tilldelade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
+            status: `Tilldelat`,
+          },
+          sort
+        )
+          .then((res) => {
+            setAssignedErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Tilldelade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getErrands(
-        municipalityId,
-        page,
-        1,
-        {
-          ...filter,
-          status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
-        },
-        sort
-      )
-        .then((res) => {
-          setClosedErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Avslutade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
+            status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
+          },
+          sort
+        )
+          .then((res) => {
+            setClosedErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Avslutade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+      ];
+      return Promise.allSettled(fetchPromises);
     },
     [
       setErrands,
@@ -465,12 +470,12 @@ export const useErrands = (
 
   useEffect(() => {
     if (size && size > 0) {
-      fetchErrands();
+      fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== errands.page) fetchErrands(page);
+    if (page !== errands.page) fetchErrands(page).then(() => setIsLoading(false));
     //eslint-disable-next-line
   }, [page]);
 

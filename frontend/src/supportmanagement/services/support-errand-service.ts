@@ -447,6 +447,7 @@ export const useSupportErrands = (
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
   const {
+    setIsLoading,
     setSupportErrands,
     supportErrands,
     setNewSupportErrands,
@@ -462,6 +463,7 @@ export const useSupportErrands = (
   } = useAppContext();
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      setIsLoading(true);
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
@@ -475,88 +477,91 @@ export const useSupportErrands = (
           });
         });
 
-      getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
-        .then((res) => {
-          setNewSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Nya ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+      const fetchPromises = [
+        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
+          .then((res) => {
+            setNewSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Nya ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(
-        municipalityId,
-        page,
-        size,
-        { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
-        sort
-      )
-        .then((res) => {
-          setOngoingSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Pågående ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(
+          municipalityId,
+          page,
+          size,
+          { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
+          sort
+        )
+          .then((res) => {
+            setOngoingSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Pågående ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(
-        municipalityId,
-        page,
-        size,
-        { ...filter, status: `${Status.SUSPENDED},${Status.ASSIGNED}` },
-        sort
-      )
-        .then((res) => {
-          if (res.error) {
-            throw new Error('Error occurred when fetching errands');
-          }
-          setSuspendedSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Parkerade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(
+          municipalityId,
+          page,
+          size,
+          { ...filter, status: `${Status.SUSPENDED},${Status.ASSIGNED}` },
+          sort
+        )
+          .then((res) => {
+            if (res.error) {
+              throw new Error('Error occurred when fetching errands');
+            }
+            setSuspendedSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Parkerade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
-        .then((res) => {
-          if (res.error) {
-            throw new Error('Error occurred when fetching errands');
-          }
-          setAssignedSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Tilldelade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+          .then((res) => {
+            if (res.error) {
+              throw new Error('Error occurred when fetching errands');
+            }
+            setAssignedSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Tilldelade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
-        .then((res) => {
-          setSolvedSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Avslutade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
+          .then((res) => {
+            setSolvedSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Avslutade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+      ];
+      return Promise.allSettled(fetchPromises);
     },
     [
       setSupportErrands,
@@ -580,12 +585,14 @@ export const useSupportErrands = (
 
   useEffect(() => {
     if (size && size > 0) {
-      fetchErrands();
+      fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== supportErrands.page) fetchErrands(page);
+    if (page !== supportErrands.page) {
+      fetchErrands(page).then(() => setIsLoading(false));
+    }
     //eslint-disable-next-line
   }, [page]);
 

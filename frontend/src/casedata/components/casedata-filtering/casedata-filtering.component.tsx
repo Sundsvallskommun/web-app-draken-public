@@ -38,6 +38,7 @@ import {
 } from './components/casedata-filter-status.component';
 import { CasedataFilterTags } from './components/casedata-filter-tags.component';
 import { useAppContext } from '@contexts/app.context';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -93,11 +94,11 @@ const CaseDataFiltering: React.FC<{
               <div className="relative max-md:w-full">
                 <CasedataFilterPropertyDesignation />
               </div>
-            ) : (
+            ) : ['ArendeAvslutat', 'ArendeInkommit', 'Tilldelat'].every((s) => !selectedErrandStatuses.includes(s)) ? (
               <div className="relative max-md:w-full">
                 <CasedataFilterStatus />
               </div>
-            )}
+            ) : null}
             <div className="relative max-md:w-full">
               <CasedataFilterCaseType />
             </div>
@@ -110,7 +111,8 @@ const CaseDataFiltering: React.FC<{
             <div className="relative max-md:w-full">
               <CasedataFilterAdmins administrators={administrators} />
             </div>
-            {!isPT() ? (
+            {!isPT() &&
+            ['ArendeAvslutat', 'ArendeInkommit', 'Tilldelat'].every((s) => !selectedErrandStatuses.includes(s)) ? (
               <div className="relative max-md:w-full">
                 <CasedataFilterStatus />
               </div>

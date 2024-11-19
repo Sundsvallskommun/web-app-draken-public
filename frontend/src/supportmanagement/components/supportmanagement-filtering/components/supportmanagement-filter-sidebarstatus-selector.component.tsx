@@ -19,6 +19,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   setShowAttestationTable;
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
   const {
+    isLoading,
     setSidebarLabel,
     setSelectedSupportErrandStatuses,
     selectedSupportErrandStatuses,
@@ -87,6 +88,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   return (
     <>
       {supportSidebarButtons?.map((button) => {
+        const buttonIsActive = selectedSupportErrandStatuses.includes(button.key as Status);
         return (
           <Button
             onClick={() => {
@@ -95,14 +97,8 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
               setShowAttestationTable(false);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={
-              selectedSupportErrandStatuses.includes(button.key as Status) && !showAttestationTable
-                ? 'primary'
-                : 'ghost'
-            }
-            className={`justify-start ${
-              !selectedSupportErrandStatuses.includes(button.key as Status) && 'hover:bg-dark-ghost'
-            }`}
+            variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
+            className={`justify-start ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
             leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
           >
@@ -116,7 +112,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
                     ? 'tertiary'
                     : 'vattjom'
                 }
-                counter={button.totalStatusErrands || '0'}
+                counter={isLoading ? '-' : button.totalStatusErrands || '0'}
               />
             </span>
           </Button>
