@@ -1,5 +1,5 @@
 import { User } from '@common/interfaces/user';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -38,7 +38,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedResolution, setSelectedResolution] = useState<Resolution>(
-    isLOP() ? Resolution.CLOSED : Resolution.SOLVED
+    isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
   );
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
 
@@ -52,7 +52,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         if (msg) {
           const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
           const adminName = getAdminName(admin, supportErrand);
-          const resolutionLabel = isLOP() ? ResolutionLabelLOP[resolution] : ResolutionLabel[resolution];
+          const resolutionLabel = isLOP() || isIK() ? ResolutionLabelLOP[resolution] : ResolutionLabel[resolution];
           return sendClosingMessage(adminName, supportErrand, resolutionLabel, municipalityId);
         }
       })
@@ -124,7 +124,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               <p className="text-content font-semibold">Välj en lösning</p>
               <FormControl id="resolution" className="w-full" required>
                 <RadioButton.Group data-cy="solve-radiolist">
-                  {Object.entries(isLOP() ? ResolutionLabelLOP : ResolutionLabel)
+                  {Object.entries(isLOP() || isIK() ? ResolutionLabelLOP : ResolutionLabel)
                     .sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([_key, _label], idx) => (
                       <RadioButton
@@ -140,7 +140,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               </FormControl>
             </Modal.Content>
             <Modal.Footer className="flex flex-col">
-              {isLOP() && (
+              {(isLOP() || isIK()) && (
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"

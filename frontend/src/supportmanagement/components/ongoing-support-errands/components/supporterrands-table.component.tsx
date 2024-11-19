@@ -1,6 +1,6 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIS, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
@@ -158,7 +158,7 @@ export const SupportErrandsTable: React.FC = () => {
         };
 
   const handleSort = (index: number) => {
-    if (isKC() || isIS()) {
+    if (isKC()) {
       if (sortColumn === serverSideSortableColsKC[index]) {
         setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
       } else {
@@ -184,9 +184,7 @@ export const SupportErrandsTable: React.FC = () => {
       ) : header.sortable ? (
         <Table.SortButton
           isActive={
-            isKC() || isIS()
-              ? sortColumn === serverSideSortableColsKC[index]
-              : sortColumn === serverSideSortableColsLOP[index]
+            isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
           }
           sortOrder={sortOrders[sortOrder] as SortMode}
           onClick={() => handleSort(index)}
@@ -277,34 +275,34 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {isKC() || isIS() || errand.labels.length < 1 ? (
+          {isKC() || errand.labels.length < 1 ? (
             <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() ? (
+          ) : isLOP() || isIK() ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {isKC() || isIS() || errand.labels.length < 2 ? (
+            {isKC() || errand.labels.length < 2 ? (
               <p className="m-0">
                 {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
                   ?.displayName || errand.type}
               </p>
-            ) : isLOP() ? (
+            ) : isLOP() || isIK() ? (
               <p className="m-0">{getLabelType(errand, supportMetadata)?.displayName || ''}</p>
             ) : null}
             <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
           </div>
         </Table.Column>
-        {isLOP() && (
+        {(isLOP() || isIK()) && (
           <Table.Column>
             <div className="max-w-[280px]">
               <p className="m-0">{getLabelSubType(errand, supportMetadata)?.displayName || ''}</p>
             </div>
           </Table.Column>
         )}
-        {isLOP() && <Table.Column>{Channels[errand?.channel]}</Table.Column>}
+        {(isLOP() || isIK()) && <Table.Column>{Channels[errand?.channel]}</Table.Column>}
         <Table.Column>
           <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
         </Table.Column>
@@ -318,7 +316,7 @@ export const SupportErrandsTable: React.FC = () => {
             Priority[errand.priority]
           )}
         </Table.Column>
-        {(isKC() || isIS()) && <Table.Column>{Channels[errand.channel]}</Table.Column>}
+        {isKC() && <Table.Column>{Channels[errand.channel]}</Table.Column>}
         <Table.Column>
           {getAdminName(
             supportAdmins?.find((a: SupportAdmin) =>

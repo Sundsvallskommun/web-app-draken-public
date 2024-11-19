@@ -7,7 +7,7 @@ import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
 import { User } from '@common/interfaces/user';
-import { isIS, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -368,7 +368,7 @@ export const ongoingSupportErrandLabelsLoP = [
 ];
 
 export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
-  const ongoingSupportErrandLabels = isKC() || isIS() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
+  const ongoingSupportErrandLabels = isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
   return ongoingSupportErrandLabels.filter(
     (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
   );
@@ -707,7 +707,7 @@ export const getSupportErrands: (
         size: res.data.pageable.pageSize,
         totalPages: res.data.totalPages,
         totalElements: res.data.totalElements,
-        labels: isKC() || isIS() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
+        labels: isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
       } as SupportErrandsData;
       return response;
     })

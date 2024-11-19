@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isIS, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { Checkbox, Combobox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -78,11 +78,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </FormControl>
       ) : null}
 
-      {isKC() || isIS() ? (
+      {isKC() ? (
         <div className="flex gap-24">
           <div className="flex my-md gap-xl w-1/2">
             <FormControl id="category" className="w-full">
-              <FormLabel>{isKC() || isIS() ? 'Verksamhet' : 'Ärendekategori'}*</FormLabel>
+              <FormLabel>{isKC() ? 'Verksamhet' : 'Ärendekategori'}*</FormLabel>
               <Select
                 {...register('category')}
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -145,7 +145,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             </FormControl>
           </div>
         </div>
-      ) : isLOP() ? (
+      ) : isLOP() || isIK() ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
