@@ -6,6 +6,7 @@ import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './s
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isIS, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
@@ -17,8 +18,6 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
-import { IErrand } from '@casedata/interfaces/errand';
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export interface Customer {
   id: string;
@@ -325,13 +324,13 @@ export const ongoingSupportErrandLabelsKC = [
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: Status.SUSPENDED },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED],
   },
+  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: Status.SUSPENDED },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   // { label: 'Kontaktperson', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -350,7 +349,7 @@ export const ongoingSupportErrandLabelsLoP = [
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED],
   },
   {
     label: 'Påminnelse',

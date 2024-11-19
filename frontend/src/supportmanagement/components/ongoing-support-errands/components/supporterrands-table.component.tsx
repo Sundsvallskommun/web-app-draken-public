@@ -311,13 +311,12 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
         </Table.Column>
-        <Table.Column>
-          {errand.status === Status.SUSPENDED ? (
+        <Table.Column>{Priority[errand.priority]}</Table.Column>
+        {errand.status === Status.SUSPENDED || errand.status === Status.ASSIGNED ? (
+          <Table.Column>
             <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
-          ) : (
-            Priority[errand.priority]
-          )}
-        </Table.Column>
+          </Table.Column>
+        ) : null}
         {(isKC() || isIS()) && <Table.Column>{Channels[errand.channel]}</Table.Column>}
         <Table.Column>
           {getAdminName(
