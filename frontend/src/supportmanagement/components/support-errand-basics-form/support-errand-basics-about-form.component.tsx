@@ -151,7 +151,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {!isLOP() && (
+      {!isLOP() && !isIK() && (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
             <Checkbox
@@ -189,7 +189,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {!isLOP() && (
+        {!isLOP() && !isIK() && (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
               <FormLabel>Orsak till kontakt</FormLabel>
@@ -263,7 +263,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
           </FormControl>
         </div>
       </div>
-      {!isLOP() && (
+      {!isLOP() && !isIK() && (
         <div className="w-full mt-md mb-lg">
           {/* TO DO: missing data from API. needs implementation */}
           <Checkbox
