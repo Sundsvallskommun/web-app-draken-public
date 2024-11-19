@@ -1,4 +1,5 @@
 import { Attachment } from '@casedata/interfaces/attachment';
+import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -199,13 +200,15 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
   if (isPT()) {
     const uniqueAttachmentsOnlyOnce = validateAttachmentsForUtredning(errand);
     const passportPhotoMissing =
+      errand.caseType === PTCaseType.PARKING_PERMIT &&
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length === 0;
     const tooManypassportPhotos =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length > 1;
     const medicalConfirmationValid =
       errand.extraParameters.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values[0] ===
         'no' ||
-      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0;
+      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0 ||
+      errand.caseType !== PTCaseType.PARKING_PERMIT;
     const signatureValid =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'SIGNATURE').length ==
       (errand.extraParameters.find((p) => p.key === 'application.applicant.signingAbility')?.values[0] === 'true'
