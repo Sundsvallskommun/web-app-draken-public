@@ -211,7 +211,7 @@ export const MessageComposer: React.FC<{
       setValue('messageBody', '', { shouldDirty: true });
       setValue('emails', [], { shouldDirty: true });
       removeNewAttachment();
-      isPT() ? setTemplateForPT() : setRichText('');
+      setRichText('');
       remove();
       props.closeHandler();
     }, 0);
@@ -269,28 +269,6 @@ export const MessageComposer: React.FC<{
     }
   };
 
-  const setTemplateForPT = () => {
-    let content = 'Hej,<br><br>';
-
-    content +=
-      `<br><br>
-      <p><b>Sundsvalls kommun</b></p>
-      <p>` +
-      errand.administratorName +
-      `</p>
-      <p>Gatuavdelningen, Trafiksektionen</p>
-      <p>851 85 Sundsvall </p>
-      <p>Besöksadress: Norrmalmsgatan 4</p>
-      <p>Växel: 060-19 10 00</p>
-      <br>
-      <a href="www.sundsvall.se">www.sundsvall.se</a>`;
-
-    // GDPR
-    content += `<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="http://www.sundsvall.se/personuppgifter" target="_blank">Behandling av personuppgifter, Sundsvalls kommun</a>`;
-
-    setRichText(content);
-  };
-
   const addExisting = watch('addExisting');
   const existingAttachments = watch('existingAttachments');
   const newAttachments = watch('newAttachments');
@@ -345,38 +323,39 @@ export const MessageComposer: React.FC<{
     }
   }, [props.message, errand]);
 
-  useEffect(() => {
-    if (isPT()) {
-      setTemplateForPT();
-    }
-  }, []);
-
   const changeTemplate = (inTemplateValue) => {
     let content = 'Hej,<br><br>';
-    if (inTemplateValue === 'feedbackPrio') {
+    if (inTemplateValue === 'mex-feedbackPrio') {
       content +=
         'Tack för att du kontaktar oss med visat intresse för Sundsvall!<br><br>Vi har tagit emot din förfrågan gällande xx, som kräver utredning av handläggare. Vi har hög inströmning av ärenden just nu med anledning av att många vill använda och utveckla kommunens mark. <br><br>Vi prioriterar förfrågningar från företag och föreningar. <br><br>En preliminär bedömning är att ditt ärende kommer tilldelas en handläggare om ca fyra månader. När du står på tur kontaktar handläggaren dig för mer information.';
-    } else if (inTemplateValue === 'feedbackNormal') {
+    } else if (inTemplateValue === 'mex-feedbackNormal') {
       content +=
         'Tack för att du kontaktar oss.<br><br>Vi har tagit emot din förfrågan gällande xx, som kräver utredning av handläggare. Vi har hög inströmning av ärenden just nu med anledning av att många vill använda och utveckla kommunens mark. Vi prioriterar förfrågningar från företag och föreningar och handlägger övriga förfrågningar i turordning.<br><br>En preliminär bedömning är att ditt ärende kommer tilldelas en handläggare om ca sex månader. När det är din tur kontaktar handläggaren dig för mer information.<br><br>Vi hörs vidare!';
-    } else if (inTemplateValue === 'additionalInformation') {
+    } else if (inTemplateValue === 'mex-additionalInformation') {
       content +=
         'Vi behöver få mer information från er om vad er förfrågan gäller samt vilket område det handlar om innan vi kan ta ärendet vidare. Det är viktigt för oss att veta eftersom det avgör hur vi ska prioritera ärendet för vidare handläggning och även för att bedöma vem eller vilka som ska hantera det. När det handlar om kommunägd mark är det flera förvaltningar inom kommunen som har olika ansvar, det gör att flera förvaltningar kan blir inblandade i handläggningen av ärendet.<br><br>För att kunna hjälpa er på bästa sätt måste ni inkomma med en beskrivning av er förfrågan, område och ändamål/syfte.';
-    } else if (inTemplateValue === 'internalReferralBuildingPermit') {
+    } else if (inTemplateValue === 'mex-internalReferralBuildingPermit') {
       content +=
         'Vi önskar yttrande från er i denna fråga då den berör mark där ni har ett förvaltningsansvar. Det gäller ett bygglov, se bifogade handlingar.<br><br>Vänligen skicka skriftligt yttrande till oss senast inom 5 arbetsdagar.<br>Vid uteblivet svar kommer vi yttra oss enligt vårt kompetensområde.';
-    } else if (inTemplateValue === 'internalReferralWire') {
+    } else if (inTemplateValue === 'mex-internalReferralWire') {
       content +=
         'Vi önskar yttrande från er i denna fråga då den berör mark där ni har ett förvaltningsansvar. Det gäller en ny ledningssträcka, se bifogade handlingar. Kartan visar den föreslagna sträckan men det kan också finnas annat att ta hänsyn till, som exempelvis nya kabelskåp, transformatorstationer mm. Vi vill att ni svarar oss utifrån er kompetens om ni tycker sträckan är lämplig eller om ni önskar att något justeras. Det är sedan vi som undertecknar avtalet.<br><br>Skriftligt yttrande ska vara skickat till mig via e-post senast inom 7 dagar. Vid uteblivet svar kommer vi handlägga frågan utifrån vårt kompetensområde.';
-    } else if (inTemplateValue === 'internalReferralWireCheck') {
+    } else if (inTemplateValue === 'mex-internalReferralWireCheck') {
       content +=
         'Tack för din förfrågan.<br><br>Vi på mark- och exploateringsavdelningen kan tyvärr inte svara på frågor om ledningar i kommunens mark. Du ska istället att vända dig till respektive ledningsägare för att få informationen du söker. Här nedan följer kontaktuppgifter till de kommunala bolagen och för kommunal gatubelysning.<br><br>MittSverige Vatten & Avfall lämnar upplysningar om va-ledningsnätet.<br>Tel kundservice: 020-120 25 00<br>E-post: kundservice@msva.se<br><br>Sundsvall Energi AB lämnar uppgifter om fjärrvärmeledningsnätet<br>Tel växel: 060-19 20 80<br>E-post: info@sundsvallenergi.se<br><br>Sundsvalls Elnät lämnar uppgifter om elkraft.<br>Tel: 060-600 50 20<br>E-post: info@sundsvallelnat.se<br><br>ServaNet lämnar uppgifter om bredband<br>Tel kundcenter: 0200-12 00 35<br><br>Gatuavdelningen belysningsingenjör lämnar upplysningar om kommunens ledningar för gatubelysning.<br>E-post: gatuavdelningen@sundsvall.se';
     }
 
     // Meddelande avslut
-    content +=
-      '<br><br>Med vänliga hälsningar<br><br>Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen<br>Handläggare ' +
-      errand.administratorName;
+    content += `<br><br><p>Med vänliga hälsningar</p><br>`;
+
+    content += isMEX()
+      ? `<p>Stadsbyggnadskontoret</p>
+         <p>Mark- och exploateringsavdelningen</p>`
+      : isPT()
+      ? `
+         <p>Gatuavdelningen, Trafiksektionen</p>`
+      : null;
+    content += `<p>Handläggare: ` + errand.administratorName + `</p>`;
 
     // info
     content += '<br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande';
@@ -385,8 +364,8 @@ export const MessageComposer: React.FC<{
     content +=
       '<br><br>De personuppgifter du lämnar kommer att behandlas i enlighet med dataskyddsförordningen GDPR. Läs mer om hur vi hanterar personuppgifter, <a href="http://www.sundsvall.se/personuppgifter" target="_blank">Behandling av personuppgifter, Sundsvalls kommun</a>';
 
-    // lägger till enbart för feedbackPrio och feedbackNormal
-    if (inTemplateValue === 'feedbackPrio' || inTemplateValue === 'feedbackNormal') {
+    // lägger till enbart för mex-feedbackPrio och mex-feedbackNormal
+    if (inTemplateValue === 'mex-feedbackPrio' || inTemplateValue === 'mex-feedbackNormal') {
       content +=
         '<br><br><a href="http://www.sundsvall.se/allmanhandling" target="_blank">Läs mer om allmänna handlingar, Allmän och offentlig handling, Sundsvalls kommun</a>';
     }
@@ -450,30 +429,36 @@ export const MessageComposer: React.FC<{
             </fieldset>
           ) : null}
 
-          {isMEX() ? (
-            <FormControl className="w-full my-12" size="sm" id="messageTemplate">
-              <FormLabel>Välj meddelandemall</FormLabel>
-              <Select
-                tabIndex={props.show ? 0 : -1}
-                {...register('messageTemplate')}
-                className="w-full text-dark-primary"
-                variant="tertiary"
-                size="sm"
-                onChange={(e) => {
-                  changeTemplate(e.currentTarget.value);
-                }}
-                data-cy="messageTemplate"
-              >
-                <Select.Option value="">Välj mall</Select.Option>
-                <Select.Option value="feedbackPrio">Återkoppling – Prio</Select.Option>
-                <Select.Option value="feedbackNormal">Återkoppling – Normal prio</Select.Option>
-                <Select.Option value="additionalInformation">Begära in kompletterande uppgifter</Select.Option>
-                <Select.Option value="internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
-                <Select.Option value="internalReferralWire">Internremiss ledningar</Select.Option>
-                <Select.Option value="internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
-              </Select>
-            </FormControl>
-          ) : null}
+          <FormControl className="w-full my-12" size="sm" id="messageTemplate">
+            <FormLabel>Välj meddelandemall</FormLabel>
+            <Select
+              tabIndex={props.show ? 0 : -1}
+              {...register('messageTemplate')}
+              className="w-full text-dark-primary"
+              variant="tertiary"
+              size="sm"
+              onChange={(e) => {
+                changeTemplate(e.currentTarget.value);
+              }}
+              data-cy="messageTemplate"
+            >
+              <Select.Option value="">Välj mall</Select.Option>
+              {isMEX() ? (
+                <>
+                  <Select.Option value="mex-feedbackPrio">Återkoppling – Prio</Select.Option>
+                  <Select.Option value="mex-feedbackNormal">Återkoppling – Normal prio</Select.Option>
+                  <Select.Option value="mex-additionalInformation">Begära in kompletterande uppgifter</Select.Option>
+                  <Select.Option value="mex-internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
+                  <Select.Option value="mex-internalReferralWire">Internremiss ledningar</Select.Option>
+                  <Select.Option value="mex-internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
+                </>
+              ) : isPT() ? (
+                <>
+                  <Select.Option value="pt-grundmall">Grundmall</Select.Option>
+                </>
+              ) : null}
+            </Select>
+          </FormControl>
 
           {props.show ? (
             <FormControl id="message-body" className="w-full">
