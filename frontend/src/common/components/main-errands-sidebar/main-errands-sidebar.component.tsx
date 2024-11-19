@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
+import { isNotificicationEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -72,7 +73,9 @@ export const MainErrandsSidebar: React.FC<{
               {user.firstName} {user.lastName}
             </span>
           </div>
-          <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          {isNotificicationEnabled() && (
+            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          )}
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
@@ -112,7 +115,7 @@ export const MainErrandsSidebar: React.FC<{
           </>
         )}
       </div>
-      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
     </aside>
   );
 };
