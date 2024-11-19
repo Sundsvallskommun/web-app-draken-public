@@ -64,42 +64,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
-  const [menuStatus, setMenuStatus] = useState([
-    {
-      label: 'Övergripande',
-      openState: true,
-    },
-    {
-      label: 'Datum',
-      openState: false,
-    },
-    {
-      label: 'Uppsägning',
-      openState: false,
-    },
-    {
-      label: 'Köpa & sälja',
-      openState: false,
-    },
-    {
-      label: 'Vägbidrag',
-      openState: false,
-    },
-  ]);
-
-  const openCloseDisclsure = (inLabel) => {
-    const element = menuStatus.find((item) => item.label === inLabel);
-    const elementIndex = menuStatus.findIndex((item) => item.label === inLabel);
-    if (element.openState) {
-      element.openState = false;
-    } else {
-      element.openState = true;
-    }
-    const newFeatures = [...menuStatus];
-    newFeatures[elementIndex] = element;
-    setMenuStatus(newFeatures);
-  };
-
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then((res) => {
       setIsLoading(undefined);
@@ -131,9 +95,14 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   const onSave = async (extraParams: ExtraParameter[]) => {
-    if (isMEX()) {
-      saveFacilities(municipalityId, errand.id, getValues().facilities);
-    }
+    // If saving facilities is done when saving extraparameters, we must do them in
+    // sequence, not in parallel. Otherwise the requests may collide and casedata
+    // will give an error response. For now, do not save facilities and extraparameters
+    // with the same button.
+    //
+    // if (isMEX()) {
+    //   await saveFacilities(municipalityId, errand.id, getValues().facilities);
+    // }
 
     saveExtraParameters(municipalityId, extraParams, errand)
       .then((res) => {
@@ -434,33 +403,11 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 label: 'Vägbidrag',
                 icon: 'helping-hand',
               },
-            ].map(({ label, icon }, idx) => {
+            ].map(({ label }, idx) => {
               const filtered = fields?.filter((f) => f.section === label);
               const fieldCount = filtered?.length || 0;
-              let nonEmptyFieldCount = filtered
-                ?.map((f) => getValues()?.[f.field.split('.')[0]] !== '')
-                .filter(Boolean).length;
 
-              return fieldCount > 0 ? (
-                // <Disclosure
-                //   key={`disclosure-${idx}`}
-                //   icon={icon as any}
-                //   header={<h2 className="text-h4-sm md:text-h4-md">{label}</h2>}
-                //   label={`${nonEmptyFieldCount} av ${fieldCount}`}
-                //   labelColor={fieldCount > nonEmptyFieldCount ? `warning` : `gronsta`}
-                //   color="gronsta"
-                //   variant="alt"
-                //   onToggleOpen={() => {
-                //     openCloseDisclsure(label);
-                //   }}
-                //   open={menuStatus.find((item) => item.label === label).openState}
-                // >
-                <div key={`section-${idx}`}>
-                  {/* {renderDefaultFields()} */}
-                  {renderSection(filtered, label)}
-                </div>
-              ) : // </Disclosure>
-              null;
+              return fieldCount > 0 ? <div key={`section-${idx}`}>{renderSection(filtered, label)}</div> : null;
             })}
             <div className="flex my-24 gap-xl">
               <FormControl id="description" className="w-full">
@@ -479,53 +426,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               </FormControl>
             </div>
           </div>
-          {/* <div className="w-1/5 pl-40 lg:block hidden">
-            {fields.length !== 0 ? <h2 className="text-h4-sm md:text-h4-md mb-md">Innehåll</h2> : null}
-            {[
-              {
-                label: 'Övergripande',
-              },
-              {
-                label: 'Datum',
-              },
-              {
-                label: 'Uppsägning',
-              },
-              {
-                label: 'Köpa & sälja',
-              },
-              {
-                label: 'Vägbidrag',
-              },
-            ].map(({ label }, idx) => {
-              const filtered = fields?.filter((f) => f.section === label);
-              const fieldCount = filtered?.length || 0;
-              return fieldCount > 0 ? (
-                <div className="flex gap-12 items-center mb-7" key={idx}>
-                  <Badge
-                    id={'badge-' + label}
-                    rounded
-                    className="!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px]"
-                    style={
-                      menuStatus.find((item) => item.label === label).openState
-                        ? { backgroundColor: 'black' }
-                        : { backgroundColor: 'lightgray' }
-                    }
-                  />
-                  <Link
-                    variant="tertiary"
-                    href="#"
-                    alt={'Öppna ' + label}
-                    onClick={() => {
-                      openCloseDisclsure(label);
-                    }}
-                  >
-                    {label}
-                  </Link>
-                </div>
-              ) : null;
-            })}
-          </div> */}
         </div>
       </div>
     </form>
