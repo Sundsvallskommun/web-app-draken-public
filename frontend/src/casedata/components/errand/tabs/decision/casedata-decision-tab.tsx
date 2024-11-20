@@ -23,7 +23,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { KopeAvtalsData } from '@casedata/interfaces/kopeavtals-data';
@@ -40,8 +39,8 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
-import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -61,7 +60,6 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
-import { Law } from '@common/data-contracts/case-data/data-contracts';
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -671,7 +669,7 @@ export const CasedataDecisionTab: React.FC<{
                 </>
               )}
 
-              {isMEX() || isPT() ? (
+              {isMEX() ? (
                 <FormControl className="w-full">
                   <FormLabel>Välj beslutsmall</FormLabel>
                   <Input
