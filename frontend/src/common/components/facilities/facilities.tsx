@@ -2,7 +2,7 @@ import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { User } from '@common/interfaces/user';
-import { isIS, isKC } from '@common/services/application-service';
+import { isKC } from '@common/services/application-service';
 import {
   getFacilityByAddress,
   getFacilityByDesignation,
@@ -132,7 +132,7 @@ export const Facilities: React.FC<{
 
         <fieldset className="flex flex-row gap-12" data-cy="radio-button-group">
           <RadioButton
-            disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             value="PROPERTY"
             onClick={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -147,7 +147,7 @@ export const Facilities: React.FC<{
           </RadioButton>
           <RadioButton
             value="ADDRESS"
-            disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             onClick={(e) => {
               const target = e.target as HTMLTextAreaElement;
               setSearchType(target.value);
@@ -163,7 +163,7 @@ export const Facilities: React.FC<{
 
         <SearchField.Suggestions autofilter={true}>
           <SearchField.SuggestionsInput
-            disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
@@ -231,7 +231,7 @@ export const Facilities: React.FC<{
                       <div className="w-96 flex justify-center">
                         <Spinner id={`realEstate-spinner-${index}`} size={2} className="hidden" />
                         <Link
-                          disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+                          disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
                           id={`realEstate-link-${index}`}
                           variant="tertiary"
                           href="#"
@@ -244,7 +244,7 @@ export const Facilities: React.FC<{
                     <Table.Column>
                       <Button
                         variant="tertiary"
-                        disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+                        disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
                         onClick={() => {
                           setRealEstates((realEstates) => realEstates.filter((item) => item !== realEstate));
                           setValue(
@@ -270,7 +270,7 @@ export const Facilities: React.FC<{
         {props.onSave && internalUnsaved ? (
           <Button
             className="mt-md"
-            disabled={isKC() || isIS() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             data-cy="save-propertysearch-button"
             variant="primary"
             onClick={() => {

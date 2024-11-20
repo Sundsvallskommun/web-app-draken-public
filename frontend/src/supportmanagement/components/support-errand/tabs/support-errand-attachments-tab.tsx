@@ -1,7 +1,7 @@
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isIS, isKC } from '@common/services/application-service';
+import { isIK, isKC } from '@common/services/application-service';
 import { Dialog, Transition } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -303,7 +303,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       accept={ACCEPTED_UPLOAD_FILETYPES}
                       helperText="Maximal filstorlek: 10 MB"
                       dragDrop={dragDrop}
-                      allowMultiple={isKC() || isIS() ? true : false}
+                      allowMultiple={isKC() ? true : false}
                     />
                   </FormControl>
 
