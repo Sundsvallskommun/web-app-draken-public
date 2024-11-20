@@ -1,7 +1,7 @@
 import { useFormContext } from 'react-hook-form';
 import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
 import { Chip } from '@sk-web-gui/react';
-import { findCaseLabelForCaseType } from '@casedata/services/casedata-errand-service';
+import { findCaseLabelForCaseType, findStatusKeyForStatusLabel } from '@casedata/services/casedata-errand-service';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Priority } from '@casedata/interfaces/priority';
 import dayjs from 'dayjs';
@@ -87,6 +87,22 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
           {findCaseLabelForCaseType(type)}
         </Chip>
       ))}
+      {statuses
+        .filter(
+          (status) =>
+            ![ErrandStatus.ArendeInkommit, ErrandStatus.ArendeAvslutat, ErrandStatus.Tilldelat]
+              .map(findStatusKeyForStatusLabel)
+              .includes(status)
+        )
+        .map((status, statusIndex) => (
+          <Chip
+            data-cy={`tag-status-${status}`}
+            key={`caseStatus-${statusIndex}`}
+            onClick={() => handleRemoveStatus(status)}
+          >
+            {ErrandStatus[status]}
+          </Chip>
+        ))}
       {priorities.map((priority, prioIndex) => (
         <Chip data-cy="tag-prio" key={`casePrio-${prioIndex}`} onClick={() => handleRemovePriority(priority)}>
           {Priority[priority]} prioritet

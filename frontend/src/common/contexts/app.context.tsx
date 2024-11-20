@@ -20,6 +20,9 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { createContext, useContext, useState } from 'react';
 
 export interface AppContextInterface {
+  isLoading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
+
   subPage: string;
   setSubPage: (subPage: string) => void;
 
@@ -126,6 +129,7 @@ export interface AppContextInterface {
 const AppContext = createContext<AppContextInterface>(null);
 
 export function AppWrapper({ children }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [subPage, setSubPage] = useState('');
   const [user, setUser] = useState<User>(emptyUser);
@@ -165,6 +169,9 @@ export function AppWrapper({ children }) {
   return (
     <AppContext.Provider
       value={{
+        isLoading,
+        setIsLoading: (isLoading: boolean) => setIsLoading(isLoading),
+
         subPage,
         setSubPage: (subPage: string) => setSubPage(subPage),
 

@@ -1,10 +1,16 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { closedStatuses, newStatuses, ongoingStatuses } from '@casedata/services/casedata-errand-service';
+import {
+  assignedStatuses,
+  closedStatuses,
+  getStatusLabel,
+  newStatuses,
+  ongoingStatuses,
+} from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isSuspendEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button } from '@sk-web-gui/react';
+import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -15,6 +21,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const [query, setQuery] = useState<string>('');
 
   const {
+    isLoading,
     setSelectedErrandStatuses,
     selectedErrandStatuses,
     setSidebarLabel,
@@ -46,15 +53,15 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   const casedataSidebarButtons: SidebarButton[] = useMemo(
     () => [
       {
-        label: 'Nya ärenden',
+        label: getStatusLabel(newStatuses),
         key: newStatuses[0],
         statuses: newStatuses,
         icon: 'inbox',
         totalStatusErrands: newErrands.totalElements,
       },
       {
-        label: 'Öppnade ärenden',
-        key: ErrandStatus.UnderGranskning,
+        label: getStatusLabel(ongoingStatuses),
+        key: ongoingStatuses[0],
         statuses: ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingErrands.totalElements,
@@ -72,14 +79,14 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
         : []),
 
       {
-        label: 'Tilldelade ärenden',
-        key: ErrandStatus.Tilldelat,
-        statuses: [ErrandStatus.Tilldelat],
+        label: getStatusLabel(assignedStatuses),
+        key: assignedStatuses[0],
+        statuses: assignedStatuses,
         icon: 'file-plus',
         totalStatusErrands: assignedErrands.totalElements,
       },
       {
-        label: 'Avslutade ärenden',
+        label: getStatusLabel(closedStatuses),
         key: closedStatuses[0],
         statuses: closedStatuses,
         icon: 'circle-check-big',
@@ -92,6 +99,9 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   return (
     <>
       {casedataSidebarButtons?.map((button) => {
+        const buttonIsactive = button.statuses.some((s) => {
+          return selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(s);
+        });
         return (
           <Button
             onClick={() => {
@@ -99,10 +109,8 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
               setSidebarLabel(button.label);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(button.key) ? 'primary' : 'ghost'}
-            className={`justify-start ${
-              !selectedErrandStatuses.includes(button.key as ErrandStatus) && 'hover:bg-dark-ghost'
-            }`}
+            variant={buttonIsactive ? 'primary' : 'ghost'}
+            className={`justify-start ${!buttonIsactive && 'hover:bg-dark-ghost'}`}
             leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
           >
@@ -112,7 +120,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
                 className="min-w-fit px-4"
                 inverted={!selectedErrandStatuses.includes(button.key as ErrandStatus)}
                 color={selectedErrandStatuses.includes(button.key as ErrandStatus) ? 'tertiary' : 'vattjom'}
-                counter={button.totalStatusErrands || '0'}
+                counter={isLoading ? '-' : button.totalStatusErrands || '0'}
               />
             </span>
           </Button>

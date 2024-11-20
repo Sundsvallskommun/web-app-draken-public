@@ -3,7 +3,6 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
 
 export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
-  console.log('status:', status);
   let color,
     inverted = false,
     icon = null;

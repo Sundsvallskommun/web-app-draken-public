@@ -1,4 +1,4 @@
-import { useErrands } from '@casedata/services/casedata-errand-service';
+import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
@@ -11,6 +11,7 @@ import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-f
 import { ErrandsTable } from './components/errands-table.component';
 import { Button, Link } from '@sk-web-gui/react';
 import { CasedataFilterQuery } from '../casedata-filtering/components/casedata-filter-query.component';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -36,6 +37,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
     administrators,
     selectedErrandStatuses,
     setSelectedErrandStatuses,
+    setSidebarLabel,
   }: AppContextInterface = useAppContext();
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -85,6 +87,10 @@ export const OngoingCaseDataErrands: React.FC = () => {
             filter?.stakeholders !== user.username ? filter?.stakeholders?.split(',') || CaseDataValues.admins : [],
           phase: filter?.phase !== '' ? filter?.phase?.split(',') || CaseDataValues.phase : CaseDataValues.phase,
         };
+        const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
+        setSelectedErrandStatuses(filterStatuses);
+        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => ErrandStatus[s]));
+        setSidebarLabel(selectedStatusLabel);
       } catch (error) {
         store.set('filter', JSON.stringify({}));
         storedFilters = {
