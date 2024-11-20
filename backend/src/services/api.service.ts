@@ -28,7 +28,7 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
-        logger.info('x-request-id:', defaultHeaders['X-Request-Id']);
+        logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
         request.headers = { ...defaultHeaders, ...request.headers } as any;
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
         return Promise.resolve(request);
@@ -84,35 +84,35 @@ class ApiService {
         throw new HttpException(404, 'Not found');
       } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
-        logger.error('Error details:', error.response.data);
-        logger.error('Error url:', error.response.config.url);
-        logger.error('Error data:', error.response.config.data?.slice(0, 1500));
-        logger.error('Error method:', error.response.config.method);
-        logger.error('Error headers:', error.response.config.headers);
+        logger.error(`Error details: ${JSON.stringify(error.response.data)}`);
+        logger.error(`Error url: ${error.response.config.url}`);
+        logger.error(`Error data: ${error.response.config.data?.slice(0, 1500)}`);
+        logger.error(`Error method: ${error.response.config.method}`);
+        logger.error(`Error headers: ${error.response.config.headers}`);
       } else {
-        logger.error('Unknown error:', error);
+        logger.error(`Unknown error: ${error}`);
       }
       throw new HttpException(500, 'Internal server error');
     }
   }
 
   public async get<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
-    logger.info('MAKING GET REQUEST TO URL', config.url);
+    logger.info(`MAKING GET REQUEST TO URL: ${config.url}`);
     return this.request<T>({ ...config, method: 'GET' }, user);
   }
 
   public async post<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info('MAKING POST REQUEST TO URL', config.url);
+    logger.info(`MAKING POST REQUEST TO URL: ${config.url}`);
     return this.request<T>({ ...config, method: 'POST' }, user);
   }
 
   public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info('MAKING PATCH REQUEST TO URL', config.url);
+    logger.info(`MAKING PATCH REQUEST TO URL: ${config.url}`);
     return this.request<T>({ ...config, method: 'PATCH' }, user);
   }
 
   public async put<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info('MAKING PUT REQUEST TO URL', config.url);
+    logger.info(`MAKING PUT REQUEST TO URL: ${config.url}`);
     return this.request<T>({ ...config, method: 'PUT' }, user);
   }
 
