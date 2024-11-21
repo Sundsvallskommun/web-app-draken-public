@@ -396,7 +396,7 @@ export const emptyContact: SupportStakeholderFormModel = {
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
-  externalIdType: isLOP() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
   firstName: '',
   lastName: '',
   address: '',

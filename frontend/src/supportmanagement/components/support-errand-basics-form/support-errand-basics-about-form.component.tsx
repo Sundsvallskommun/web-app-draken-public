@@ -151,7 +151,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {!isLOP() && !isIK() && (
+      {isKC() && (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
             <Checkbox
