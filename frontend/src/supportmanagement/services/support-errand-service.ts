@@ -8,7 +8,7 @@ import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './sup
 
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isIS, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -34,6 +34,11 @@ export enum ExternalIdType {
 export enum SupportStakeholderRole {
   PRIMARY = 'PRIMARY',
   CONTACT = 'CONTACT',
+  APPROVER = 'APPROVER',
+  EMPLOYEE = 'EMPLOYEE',
+  MANAGER = 'MANAGER',
+  SUBSTITUTE = 'SUBSTITUTE',
+  USER = 'USER',
 }
 
 export enum ContactChannelType {
@@ -44,7 +49,12 @@ export enum ContactChannelType {
 export enum Relation {
   PERSON = 'PERSON',
   PRIMARY = 'Ärendeägare',
-  CONTACT = 'Ärendeintressent',
+  CONTACT = 'Övrig part',
+  APPROVER = 'Godkännande chef',
+  EMPLOYEE = 'Anställd',
+  MANAGER = 'Chef',
+  SUBSTITUTE = 'Ersättare',
+  USER = 'Användare',
 }
 
 export enum PrettyRelation {
@@ -268,7 +278,11 @@ export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): L
 
 export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label => {
   const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  const allSubTypesFlattened = allTypesFlattened?.map((l) => l.labels).flat();
+  const allSubTypesFlattened =
+    allTypesFlattened
+      ?.filter((l) => l.labels?.length > 0)
+      ?.map((l) => l.labels)
+      ?.flat() || [];
   return allSubTypesFlattened?.find((t) => t.name === name);
 };
 
@@ -310,13 +324,13 @@ export const ongoingSupportErrandLabelsKC = [
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: Status.SUSPENDED },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED],
   },
+  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: Status.SUSPENDED },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   // { label: 'Kontaktperson', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -335,7 +349,7 @@ export const ongoingSupportErrandLabelsLoP = [
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED],
   },
   {
     label: 'Påminnelse',
@@ -353,7 +367,7 @@ export const ongoingSupportErrandLabelsLoP = [
 ];
 
 export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
-  const ongoingSupportErrandLabels = isKC() || isIS() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
+  const ongoingSupportErrandLabels = isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
   return ongoingSupportErrandLabels.filter(
     (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
   );
@@ -664,7 +678,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           })) || [],
       contacts:
         e.stakeholders
-          ?.filter((s) => s.role === SupportStakeholderRole.CONTACT)
+          ?.filter((s) => s.role !== SupportStakeholderRole.PRIMARY)
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
@@ -719,7 +733,7 @@ export const getSupportErrands: (
         size: res.data.pageable.pageSize,
         totalPages: res.data.totalPages,
         totalElements: res.data.totalElements,
-        labels: isKC() || isIS() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
+        labels: isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
       } as SupportErrandsData;
       return response;
     })

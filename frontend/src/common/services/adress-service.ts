@@ -152,6 +152,7 @@ export const isValidADUsername: (username: string) => boolean = (username) => us
 export const setAdministrationCode: (orgTree: string) => string | {} = (orgTree) => {
   return {
     administrationCodes: orgTree.split('¤')[0].split('|')[1].toString(),
+    administrationName: orgTree.split('¤')[0].split('|')[2].toString(),
   };
 };
 

@@ -1,5 +1,5 @@
 import { AttachmentLabels, MAX_FILE_SIZE_MB, PTAttachmentLabels } from '@casedata/services/casedata-attachment-service';
-import { isIS, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
+import { isIK, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister } from 'react-hook-form';
@@ -306,11 +306,11 @@ const FileUpload: React.FC<{
               return (
                 <li
                   className={`${
-                    isIS() || isLOP() ? 'border-1 rounded-16 p-16 border-divider' : ''
+                    isIK() || isLOP() ? 'border-1 rounded-16 p-16 border-divider' : ''
                   } flex flex-col gap-16`}
                   key={field.id}
                 >
-                  <div className={`${!isKC() || isLOP() ? 'border rounded p-16 my-sm' : 'my-sm'} w-full`}>
+                  <div className={`${!isKC() || isIK() || isLOP() ? 'border rounded p-16 my-sm' : 'my-sm'} w-full`}>
                     {!editing && (
                       <div className="flex justify-between">
                         <div className="flex w-5/6 gap-10">

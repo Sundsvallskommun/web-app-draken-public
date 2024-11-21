@@ -5,7 +5,7 @@ import { User } from '@common/interfaces/user';
 import {
   getApplicationEnvironment,
   getApplicationName,
-  isIS,
+  isIK,
   isKC,
   isLOP,
   isMEX,
@@ -35,8 +35,11 @@ export default function Layout({ title, children }) {
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
-  const errandNumber =
-    isMEX() || isPT() ? errand?.errandNumber : isKC() || isIS() || isLOP() ? supportErrand?.errandNumber : undefined;
+  const errandNumber = isMEX()
+    ? errand?.errandNumber
+    : isKC() || isIK() || isLOP()
+    ? supportErrand?.errandNumber
+    : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
@@ -116,7 +119,7 @@ export default function Layout({ title, children }) {
         <Logo variant="symbol" className="h-40" />
       </a>
       <span className="text-large">
-        {isKC() || isIS() || isLOP() ? (
+        {isKC() || isIK() || isLOP() ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">
@@ -190,7 +193,7 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIS() || isLOP() || isMEX() ? (
+                    {isKC() || isIK() || isLOP() || isMEX() ? (
                       <PopupMenu.Item>
                         <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
                           <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt

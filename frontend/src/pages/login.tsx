@@ -1,4 +1,4 @@
-import { getApplicationName, isKC, isPT, isMEX, isLOP, isIS } from '@common/services/application-service';
+import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK } from '@common/services/application-service';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
@@ -41,7 +41,7 @@ export default function Start() {
                 Logga in till <br aria-hidden />
                 {isPT()
                   ? 'Mina externa ärenden'
-                  : isKC() || isIS() || isLOP() || isMEX()
+                  : isKC() || isIK() || isLOP() || isMEX()
                   ? getApplicationName()
                   : 'appen'}
               </h3>
