@@ -119,7 +119,7 @@ Vi önskar en fortsatt fin dag.
 Med vänliga hälsningar
 <br>
 <b>${department}</b>
-${isLOP() ? 'Handläggare' : 'Kommunvägledare'} ${user}
+${isLOP() ? 'Handläggare' : isKC() ? 'Kommunvägledare' : isIK() ? 'Kundtjänstmedarbetare' : ''} ${user}
 Telefon: +46 60 19 10 00
 `;
 };

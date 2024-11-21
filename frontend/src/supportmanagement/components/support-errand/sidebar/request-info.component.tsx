@@ -1,6 +1,6 @@
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
@@ -177,10 +177,12 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
       setValue('contactMeans', 'email');
       setContactMeans('email');
       setTimeout(() => {
-        const emailBody = `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>${
+        const emailBody = `${
           isLOP()
-            ? `Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
-            : 'Begäran om komplettering'
+            ? `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
+            : isIK()
+            ? `Hej,<br><br>Tack för att du kontaktar Intern Kundtjänst!<br><br>Här kommer informationen enligt överenskommelse:<br><br><br><br>Ha en fortsatt bra dag!<br><br>Med vänlig hälsning<br><strong>${user.firstName} ${user.lastName}</strong><br>Intern Kundtjänst`
+            : `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Begäran om komplettering`
         }.`;
         setRichText(emailBody);
       }, 0);
@@ -253,7 +255,7 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
 
           <Modal show={showModal} label="Begär komplettering" className="w-[52rem]" onClose={() => setShowModal(false)}>
             <Modal.Content>
-              {!isLOP() && (
+              {(isKC() || isIK()) && (
                 <>
                   <p className="text-content font-semibold">Kontaktsätt</p>
                   <FormControl id="resolution" className="w-full" required>

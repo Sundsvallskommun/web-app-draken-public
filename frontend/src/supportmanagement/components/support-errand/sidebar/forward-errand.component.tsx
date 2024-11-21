@@ -1,6 +1,6 @@
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
-import { isIK, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -105,7 +105,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   });
 
   useEffect(() => {
-    if (isLOP()) {
+    if (isLOP() || isIK()) {
       setValue('recipient', 'EMAIL');
     }
   }, []);
@@ -208,7 +208,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       </Button>
       <Modal show={showModal} label="Vidarebefordra ärende" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
-          {!isLOP() && (
+          {isKC() && (
             <>
               <p className="text-content font-semibold">Mottagare</p>
               <FormControl id="resolution" className="w-full" required>
