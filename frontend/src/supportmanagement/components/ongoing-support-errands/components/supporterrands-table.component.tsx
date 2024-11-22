@@ -243,7 +243,7 @@ export const SupportErrandsTable: React.FC = () => {
             </div>
           </Table.Column>
         )}
-        {(isLOP() || isIK()) && <Table.Column>{Channels[errand?.channel]}</Table.Column>}
+        <Table.Column>{Channels[errand?.channel]}</Table.Column>
         <Table.Column>
           <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
         </Table.Column>
@@ -251,12 +251,11 @@ export const SupportErrandsTable: React.FC = () => {
           <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
         </Table.Column>
         <Table.Column>{Priority[errand.priority]}</Table.Column>
-        {errand.status === Status.SUSPENDED || errand.status === Status.ASSIGNED ? (
+        {errand.status === Status.SUSPENDED ? (
           <Table.Column>
             <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
           </Table.Column>
         ) : null}
-        {(isKC() || isIK()) && <Table.Column>{Channels[errand.channel]}</Table.Column>}
         <Table.Column>
           {getAdminName(
             supportAdmins?.find((a: SupportAdmin) =>

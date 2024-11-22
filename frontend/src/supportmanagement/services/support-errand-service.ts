@@ -322,19 +322,17 @@ export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
   },
-  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: Status.SUSPENDED },
-  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: [Status.SUSPENDED] },
   { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  // { label: 'Kontaktperson', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendeknapp', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
 ];
 
 export const ongoingSupportErrandLabelsLoP = [
@@ -349,7 +347,7 @@ export const ongoingSupportErrandLabelsLoP = [
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
   },
   {
     label: 'Påminnelse',
@@ -363,7 +361,6 @@ export const ongoingSupportErrandLabelsLoP = [
     sortable: true,
     shownForStatus: All.ALL,
   },
-  { label: 'Ärendeknapp', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
 ];
 
 export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
