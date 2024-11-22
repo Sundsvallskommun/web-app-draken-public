@@ -61,7 +61,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Passagerare', value: 'PASSENGER' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'application.reason',
@@ -70,7 +70,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
     formField: {
       type: 'textarea',
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.aid',
@@ -90,7 +90,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Inget', value: 'Inget', name: 'NONE' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.walkingAbility',
@@ -106,7 +106,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Den sökande kan gå själv kortare sträckor', value: 'true' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.walkingDistance.beforeRest',
@@ -115,7 +115,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
     formField: {
       type: 'text',
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.walkingDistance.max',
@@ -124,7 +124,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
     formField: {
       type: 'text',
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.duration',
@@ -142,7 +142,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { value: 'P0Y', label: 'Bestående' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.canBeAloneWhileParking',
@@ -159,7 +159,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Nej', value: 'false' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'disability.canBeAloneWhileParking.note',
@@ -172,7 +172,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
     formField: {
       type: 'textarea',
     },
-    section: 'Övergripande',
+    section: 'Uppgifter kring rörelsehinder',
   },
   {
     field: 'consent.contact.doctor',
@@ -188,7 +188,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Nej', value: 'false' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Behörighet och sekretess',
   },
   {
     field: 'consent.view.transportationServiceDetails',
@@ -204,7 +204,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Nej', value: 'false' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Behörighet och sekretess',
   },
   {
     field: 'application.applicant.signingAbility',
@@ -220,7 +220,7 @@ const baseParkingPermitDetails: UppgiftField[] = [
         { label: 'Nej', value: 'false' },
       ],
     },
-    section: 'Övergripande',
+    section: 'Behörighet och sekretess',
   },
 ];
 
@@ -924,7 +924,7 @@ const template: ExtraParametersObject = {
       formField: {
         type: 'text',
       },
-      section: 'Övergripande',
+      section: 'Uppgifter kring rörelsehinder',
     },
   ],
   PARKING_PERMIT_RENEWAL: [

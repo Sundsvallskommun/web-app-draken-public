@@ -1,9 +1,9 @@
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
+  EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
   extraParametersToUppgiftMapper,
   saveExtraParameters,
-  EXTRAPARAMETER_SEPARATOR,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
@@ -11,9 +11,11 @@ import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { isMEX } from '@common/services/application-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
+  Disclosure,
   FormControl,
   FormLabel,
   Input,
@@ -323,7 +325,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   const renderSection = (fields: UppgiftField[], label: string) => {
     return (
-      <div className="my-lg">
+      <div>
         {fields?.map(renderFormControl)}
         <Button
           key={`section-${label}`}
@@ -385,29 +387,53 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             {[
               {
                 label: 'Övergripande',
-                icon: 'text',
+                icon: 'info',
+                initialOpen: true,
               },
               {
                 label: 'Datum',
                 icon: 'calendar',
+                initialOpen: false,
               },
               {
                 label: 'Uppsägning',
-                icon: 'file-signature',
+                icon: 'file-pen',
+                initialOpen: false,
               },
               {
                 label: 'Köpa & sälja',
                 icon: 'wallet',
+                initialOpen: false,
               },
               {
                 label: 'Vägbidrag',
-                icon: 'helping-hand',
+                icon: 'handshake',
+                initialOpen: false,
               },
-            ].map(({ label }, idx) => {
+              {
+                label: 'Uppgifter kring rörelsehinder',
+                icon: 'clipboard-pen-line',
+                initialOpen: true,
+              },
+              {
+                label: 'Behörighet och sekretess',
+                icon: 'info',
+                initialOpen: false,
+              },
+            ].map(({ label, icon, initialOpen }, idx) => {
               const filtered = fields?.filter((f) => f.section === label);
               const fieldCount = filtered?.length || 0;
-
-              return fieldCount > 0 ? <div key={`section-${idx}`}>{renderSection(filtered, label)}</div> : null;
+              return fieldCount > 0 ? (
+                <Disclosure
+                  data-cy="parties-disclosure"
+                  header={<h2 className="text-h4-sm md:text-h4-md">{label}</h2>}
+                  initalOpen={initialOpen}
+                  variant="alt"
+                  icon={<LucideIcon name={icon as any} />}
+                >
+                  <div key={`section-${idx}`}>{renderSection(filtered, label)}</div>
+                </Disclosure>
+              ) : null;
             })}
             <div className="flex my-24 gap-xl">
               <FormControl id="description" className="w-full">
