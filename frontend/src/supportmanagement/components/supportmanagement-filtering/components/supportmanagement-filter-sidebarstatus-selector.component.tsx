@@ -3,7 +3,16 @@ import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { LucideIcon } from '@sk-web-gui/lucide-icon';
 import { Badge, Button } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
-import { Status } from '@supportmanagement/services/support-errand-service';
+import {
+  assignedStatuses,
+  closedStatuses,
+  getStatusLabel,
+  newStatuses,
+  ongoingStatuses,
+  Status,
+  suspendedStatuses,
+} from '@supportmanagement/services/support-errand-service';
+import { get } from 'cypress/types/lodash';
 import { useMemo } from 'react';
 
 export interface SupportManagementStatusFilter {
@@ -47,37 +56,37 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   const supportSidebarButtons: SidebarButton[] = useMemo(
     () => [
       {
-        label: 'Nya ärenden',
-        key: Status.NEW,
-        statuses: [Status.NEW],
+        label: getStatusLabel(newStatuses),
+        key: newStatuses[0],
+        statuses: newStatuses,
         icon: 'inbox',
         totalStatusErrands: newSupportErrands.totalElements,
       },
       {
-        label: 'Öppnade ärenden',
-        key: Status.ONGOING,
-        statuses: [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE],
+        label: getStatusLabel(ongoingStatuses),
+        key: ongoingStatuses[0],
+        statuses: ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands.totalElements,
       },
       {
-        label: 'Parkerade ärenden',
-        key: Status.SUSPENDED,
-        statuses: [Status.SUSPENDED],
+        label: getStatusLabel(suspendedStatuses),
+        key: suspendedStatuses[0],
+        statuses: suspendedStatuses,
         icon: 'circle-pause',
         totalStatusErrands: suspendedSupportErrands.totalElements,
       },
       {
-        label: 'Tilldelade ärenden',
-        key: Status.ASSIGNED,
-        statuses: [Status.ASSIGNED],
+        label: getStatusLabel(assignedStatuses),
+        key: assignedStatuses[0],
+        statuses: assignedStatuses,
         icon: 'file-plus',
         totalStatusErrands: assignedSupportErrands.totalElements,
       },
       {
-        label: 'Avslutade ärenden',
-        key: Status.SOLVED,
-        statuses: [Status.SOLVED],
+        label: getStatusLabel(closedStatuses),
+        key: closedStatuses[0],
+        statuses: closedStatuses,
         icon: 'circle-check-big',
         totalStatusErrands: solvedSupportErrands.totalElements,
       },

@@ -9,8 +9,8 @@ import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   getLabelSubTypeFromName,
-  getLabelTypeFromDisplayName,
   getLabelTypeFromName,
+  getStatusLabel,
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
@@ -64,6 +64,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     municipalityId,
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
+    setSidebarLabel,
   } = useAppContext();
 
   const startdate = watchFilter('startdate');
@@ -140,6 +141,10 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
               ? filter?.stakeholders?.split(',') || SupportManagementValues.admins
               : [],
         };
+        const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
+        setSelectedSupportErrandStatuses(filterStatuses);
+        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => Status[s]));
+        setSidebarLabel(selectedStatusLabel);
       } catch (error) {
         store.set('filter', JSON.stringify({}));
         storedFilters = {

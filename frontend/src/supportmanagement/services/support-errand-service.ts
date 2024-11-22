@@ -226,6 +226,33 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
+export const newStatuses = [Status.NEW];
+
+export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
+
+export const suspendedStatuses = [Status.SUSPENDED];
+export const assignedStatuses = [Status.ASSIGNED];
+
+export const closedStatuses = [Status.SOLVED];
+
+export const getStatusLabel = (statuses: Status[]) => {
+  if (statuses.length > 0) {
+    if (statuses.some((s) => newStatuses.includes(s))) {
+      return 'Nya ärenden';
+    } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
+      return 'Öppnade ärenden';
+    } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
+      return 'Parkerade ärenden';
+    } else if (statuses.some((s) => assignedStatuses.includes(s))) {
+      return 'Tilldelade ärenden';
+    } else if (statuses.some((s) => closedStatuses.includes(s))) {
+      return 'Avslutade ärenden';
+    } else {
+      return 'Ärenden';
+    }
+  }
+};
+
 export const findStatusKeyForStatusLabel = (statusKey: string) =>
   Object.entries(StatusLabel).find((e: [string, string]) => e[1] === statusKey)?.[0];
 
@@ -288,8 +315,8 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
 
 // This might be instance specific in the future, meaning
 // it will need to be configurable
-export const ongoingStatuses = 'Inkommet,Pågående,Parkerat';
-export const ongoingStatusKeys = ongoingStatuses.split(',').map(findStatusKeyForStatusLabel).join(',');
+export const ongoingStatusesLabels = 'Inkommet,Pågående,Parkerat';
+export const ongoingStatusKeys = ongoingStatusesLabels.split(',').map(findStatusKeyForStatusLabel).join(',');
 
 export enum Resolution {
   SOLVED = 'SOLVED',
