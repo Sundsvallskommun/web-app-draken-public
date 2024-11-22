@@ -408,14 +408,16 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   const onSubmit = () => {
-    saveConfirm.showConfirmation('Spara beslut', 'Vill du spara detta beslut?').then((confirmed) => {
-      if (confirmed) {
-        const data = getValues();
-        data.outcome = DecisionOutcomeKey[data.outcome];
-        save(data);
-        return Promise.resolve(true);
-      }
-    });
+    saveConfirm
+      .showConfirmation('Spara beslut', 'Vill du spara detta beslut?', 'Ja', 'Nej', 'info', 'info')
+      .then((confirmed) => {
+        if (confirmed) {
+          const data = getValues();
+          data.outcome = DecisionOutcomeKey[data.outcome];
+          save(data);
+          return Promise.resolve(true);
+        }
+      });
   };
 
   const onError = (e) => {
@@ -770,7 +772,14 @@ export const CasedataDecisionTab: React.FC<{
                       setControlContractIsOpen(true);
                     } else {
                       saveConfirm
-                        .showConfirmation('Spara och skicka', 'Vill du spara och skicka beslutet?')
+                        .showConfirmation(
+                          'Spara och skicka',
+                          'Vill du spara och skicka beslutet?',
+                          'Ja',
+                          'Nej',
+                          'info',
+                          'info'
+                        )
                         .then((confirmed) => {
                           if (confirmed) {
                             saveAndSend(getValues());
@@ -780,7 +789,14 @@ export const CasedataDecisionTab: React.FC<{
                     }
                   } else {
                     saveConfirm
-                      .showConfirmation('Spara och skicka', 'Vill du spara och skicka beslutet?')
+                      .showConfirmation(
+                        'Spara och skicka',
+                        'Vill du spara och skicka beslutet?',
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      )
                       .then((confirmed) => {
                         if (confirmed) {
                           saveAndSend(getValues());
