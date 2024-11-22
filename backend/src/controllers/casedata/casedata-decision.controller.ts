@@ -40,6 +40,7 @@ export class CaseDataDecisionsController {
       throw new HttpException(403, 'Forbidden');
     }
     const patchData: Decision = {
+      attachments: decisionData.attachments,
       decisionType: decisionData.decisionType as unknown as DecisionDecisionTypeEnum,
       decisionOutcome: decisionData.decisionOutcome as unknown as DecisionDecisionOutcomeEnum,
       description: decisionData.description,
