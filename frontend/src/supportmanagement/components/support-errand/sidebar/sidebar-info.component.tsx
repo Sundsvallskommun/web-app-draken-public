@@ -1,5 +1,6 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -33,7 +34,6 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { isKC, isLOP } from '@common/services/application-service';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -604,7 +604,7 @@ export const SidebarInfo: React.FC<{
                 />
                 <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <Divider className="mt-8 mb-16" />
-                {(isKC() || isLOP()) && (
+                {(isKC() || isLOP() || isIK()) && (
                   <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 )}
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
