@@ -2,6 +2,7 @@ import NextLink from 'next/link';
 import {
   getApplicationEnvironment,
   getApplicationName,
+  isIK,
   isKC,
   isLOP,
   isMEX,
@@ -79,7 +80,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
-          {isLOP() || isKC() ? (
+          {isLOP() || isKC() || isIK() ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
