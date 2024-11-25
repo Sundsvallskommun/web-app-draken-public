@@ -643,7 +643,7 @@ export const SimplifiedContactForm: React.FC<{
                   addingStakeholder={true}
                   errand={errand}
                   disabled={props.disabled}
-                  required
+                  required={!isPT()}
                   error={!!formState.errors.emails}
                   key={`nested-email-array`}
                   {...{ control, register, errors, watch, setValue, trigger }}
@@ -652,7 +652,7 @@ export const SimplifiedContactForm: React.FC<{
               <div className="my-md">
                 <CommonNestedPhoneArrayV2
                   disabled={props.disabled}
-                  required
+                  required={!isPT()}
                   error={!!formState.errors.phoneNumbers}
                   key={`nested-phone-array`}
                   {...{ control, register, errors, watch, setValue, trigger }}
@@ -989,14 +989,14 @@ export const SimplifiedContactForm: React.FC<{
             addingStakeholder={true}
             errand={errand}
             disabled={props.disabled}
-            required
+            required={!isPT()}
             error={!!formState.errors.emails}
             key={`nested-email-array`}
             {...{ control, register, errors, watch, setValue, trigger }}
           />
           <CommonNestedPhoneArrayV2
             disabled={props.disabled}
-            required
+            required={!isPT()}
             error={!!formState.errors.phoneNumbers}
             key={`nested-phone-array`}
             {...{ control, register, errors, watch, setValue, trigger }}
