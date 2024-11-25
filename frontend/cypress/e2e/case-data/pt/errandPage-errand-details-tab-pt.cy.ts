@@ -14,7 +14,7 @@ import { modifyField } from '../fixtures/mockMexErrand';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
-  describe('Errand information tab', () => {
+  describe('Errand details tab', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
@@ -30,7 +30,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('PATCH', '**/errands/*', mockPTErrand_base).as('patchErrand');
-      cy.intercept('POST', '**/errande/*/facilities', mockPTErrand_base);
+      cy.intercept('POST', '**/errands/*/facilities', mockPTErrand_base);
     });
 
     const goToErrandInformationTab = () => {
@@ -49,12 +49,12 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       ).as('getErrand');
       goToErrandInformationTab();
 
-      cy.get('input[name="application2applicant2capacity"][value="DRIVER"]').should('exist').should('be.checked');
-      cy.get('input[name="application2applicant2capacity"][value="PASSENGER"]')
+      cy.get('input[name="application@applicant@capacity"][value="DRIVER"]').should('exist').should('be.checked');
+      cy.get('input[name="application@applicant@capacity"][value="PASSENGER"]')
         .should('exist')
         .should('not.be.checked');
 
-      cy.get('[data-cy="application2reason-textarea"]').should('exist').and('have.value', 'Kan inte gå');
+      cy.get('[data-cy="application.reason-textarea"]').should('exist').and('have.value', 'Kan inte gå');
 
       cy.get('input[name="CRUTCH"]').should('exist').should('not.be.checked');
       cy.get('input[name="CRUTCH"]').should('exist').should('not.be.checked');
@@ -63,27 +63,27 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('input[name="EWHEELCHAIR"]').should('exist').should('be.checked');
       cy.get('input[name="NONE"]').should('exist').should('not.be.checked');
 
-      cy.get('input[name="disability2walkingAbility"][value="true"]').should('exist').should('not.be.checked');
-      cy.get('input[name="disability2walkingAbility"][value="false"]').should('exist').should('be.checked');
+      cy.get('input[name="disability@walkingAbility"][value="true"]').should('exist').should('not.be.checked');
+      cy.get('input[name="disability@walkingAbility"][value="false"]').should('exist').should('be.checked');
 
-      cy.get('input[name="disability2walkingDistance2beforeRest"]').should('exist').and('have.value', '85');
+      cy.get('input[name="disability@walkingDistance@beforeRest"]').should('exist').and('have.value', '85');
 
-      cy.get('input[name="disability2walkingDistance2max"]').should('exist').and('have.value', '150');
+      cy.get('input[name="disability@walkingDistance@max"]').should('exist').and('have.value', '150');
 
-      cy.get('[data-cy="disability2duration-select"]').should('exist').and('have.value', 'P0Y');
+      cy.get('[data-cy="disability.duration-select"]').should('exist').and('have.value', 'P0Y');
 
-      cy.get('input[name="consent2contact2doctor"][value="true"]').should('exist').should('not.be.checked');
-      cy.get('input[name="consent2contact2doctor"][value="false"]').should('exist').should('be.checked');
+      cy.get('input[name="consent@contact@doctor"][value="true"]').should('exist').should('not.be.checked');
+      cy.get('input[name="consent@contact@doctor"][value="false"]').should('exist').should('be.checked');
 
-      cy.get('input[name="consent2view2transportationServiceDetails"][value="true"]')
+      cy.get('input[name="consent@view@transportationServiceDetails"][value="true"]')
         .should('exist')
         .should('not.be.checked');
-      cy.get('input[name="consent2view2transportationServiceDetails"][value="false"]')
+      cy.get('input[name="consent@view@transportationServiceDetails"][value="false"]')
         .should('exist')
         .should('be.checked');
 
-      cy.get('input[name="application2applicant2signingAbility"][value="true"]').should('exist').should('be.checked');
-      cy.get('input[name="application2applicant2signingAbility"][value="false"]')
+      cy.get('input[name="application@applicant@signingAbility"][value="true"]').should('exist').should('be.checked');
+      cy.get('input[name="application@applicant@signingAbility"][value="false"]')
         .should('exist')
         .should('not.be.checked');
     });
@@ -99,17 +99,17 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       ).as('getErrand');
       goToErrandInformationTab();
 
-      cy.get('input[name="application2renewal2changedCircumstances"][value="Y"]').should('exist').should('be.checked');
-      cy.get('input[name="application2renewal2changedCircumstances"][value="N"]')
+      cy.get('input[name="application@renewal@changedCircumstances"][value="Y"]').should('exist').should('be.checked');
+      cy.get('input[name="application@renewal@changedCircumstances"][value="N"]')
         .should('exist')
         .should('not.be.checked');
 
-      cy.get('input[name="application2renewal2expirationDate"]').should('exist').and('have.value', '2023-12-14');
+      cy.get('input[name="application@renewal@expirationDate"]').should('exist').and('have.value', '2023-12-14');
 
-      cy.get('input[name="application2renewal2medicalConfirmationRequired"][value="yes"]')
+      cy.get('input[name="application@renewal@medicalConfirmationRequired"][value="yes"]')
         .should('exist')
         .should('be.checked');
-      cy.get('input[name="application2renewal2medicalConfirmationRequired"][value="no"]')
+      cy.get('input[name="application@renewal@medicalConfirmationRequired"][value="no"]')
         .should('exist')
         .should('not.be.checked');
     });
@@ -125,7 +125,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       ).as('getErrand');
       goToErrandInformationTab();
 
-      cy.get('input[name="application2lostPermit2policeReportNumber"]').should('exist').and('have.value', '123456');
+      cy.get('input[name="application@lostPermit@policeReportNumber"]').should('exist').and('have.value', '123456');
     });
   });
 });

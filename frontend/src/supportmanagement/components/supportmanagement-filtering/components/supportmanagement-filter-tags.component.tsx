@@ -33,8 +33,10 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
   const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
   const [allLabelTypes, setAllLabelTypes] = useState<string[]>();
   const [allLabelSubTypes, setAllLabelSubTypes] = useState<string[]>();
-  const { supportMetadata, selectedErrandStatuses }: { supportMetadata: SupportMetadata; selectedErrandStatuses } =
-    useAppContext();
+  const {
+    supportMetadata,
+    selectedSupportErrandStatuses,
+  }: { supportMetadata: SupportMetadata; selectedSupportErrandStatuses } = useAppContext();
 
   useEffect(() => {
     setAllCategories(supportMetadata?.categories);
@@ -144,7 +146,7 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
 
   const handleReset = () => {
     reset(SupportManagementValues);
-    setValue('status', [selectedErrandStatuses]);
+    setValue('status', [selectedSupportErrandStatuses]);
   };
 
   return (

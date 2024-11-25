@@ -3,7 +3,7 @@ import { CasedataOverviewTab } from '@casedata/components/errand/tabs/overview/c
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
-import { countUnreadMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
+import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
@@ -18,11 +18,11 @@ import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { getAssets } from '@casedata/services/asset-service';
-import { CasedataAppealTab } from './tabs/appeal/casedata-appeal-tab';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Role } from '@casedata/interfaces/role';
 
 export const CasedataTabsWrapper: React.FC = () => {
-  const { municipalityId, errand, setErrand, messages, setMessages, setAssets, assets, uiPhase } = useAppContext();
+  const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
+    useAppContext();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);
@@ -35,7 +35,7 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   useEffect(() => {
     if (errand && errand.errandNumber) {
-      fetchMessagesTree(municipalityId, errand)
+      fetchMessages(municipalityId, errand)
         .then(setMessages)
         .catch((e) => {
           toastMessage({
@@ -45,9 +45,19 @@ export const CasedataTabsWrapper: React.FC = () => {
             status: 'error',
           });
         });
+      fetchMessagesTree(municipalityId, errand)
+        .then(setMessageTree)
+        .catch((e) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när meddelanden hämtades',
+            status: 'error',
+          });
+        });
       isPT() &&
-        errand.stakeholders.find((p) => p.roles.includes('APPLICANT'))?.personId &&
-        getAssets(errand.stakeholders.find((p) => p.roles.includes('APPLICANT')).personId, 'PARKINGPERMIT')
+        errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
+        getAssets(errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT)).personId, 'PARKINGPERMIT')
           .then((res) => setAssets(res.data))
           .catch((e) => {
             toastMessage({
@@ -235,12 +245,11 @@ export const CasedataTabsWrapper: React.FC = () => {
     },
     {
       label: `Utredning`,
-      content: errand?.id && <CasedataInvestigationTab errand={errand} setUnsaved={() => {}} />,
+      content: errand?.id && <CasedataInvestigationTab errand={errand} setUnsaved={setUnsavedUtredning} />,
       disabled: !errand?.id,
       visibleFor:
         isPT() && errand?.id
           ? [
-              ErrandPhase.aktualisering,
               ErrandPhase.utredning,
               ErrandPhase.beslut,
               ErrandPhase.hantera,
@@ -280,24 +289,6 @@ export const CasedataTabsWrapper: React.FC = () => {
             ErrandPhase.overklagad,
           ]
         : [],
-    },
-    {
-      label: `Överklagan (${(errand?.appeals && errand?.appeals.length) || 0})`,
-      content: errand && <CasedataAppealTab />,
-      disabled: !errand?.id,
-      visibleFor:
-        isPT() && errand?.id
-          ? errand.status === ErrandStatus.ArendeAvslutat
-            ? [ErrandPhase.aktualisering]
-            : [
-                ErrandPhase.beslut,
-                ErrandPhase.hantera,
-                ErrandPhase.verkstalla,
-                ErrandPhase.uppfoljning,
-                ErrandPhase.canceled,
-                ErrandPhase.overklagad,
-              ]
-          : [],
     },
   ];
 

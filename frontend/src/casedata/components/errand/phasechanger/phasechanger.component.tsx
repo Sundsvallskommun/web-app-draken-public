@@ -2,6 +2,7 @@ import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   getErrand,
   isErrandLocked,
@@ -9,12 +10,24 @@ import {
   triggerErrandPhaseChange,
   validateAction,
   validateErrandForDecision,
+  validateStakeholdersForDecision,
+  validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, FormControl, FormLabel, Modal, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import {
+  Button,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Modal,
+  Select,
+  Spinner,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 
@@ -56,6 +69,8 @@ export const PhaseChanger = () => {
     button: string;
     title: string;
     message: string | JSX.Element;
+    disabled?: boolean;
+    disabledMessage?: string;
   }>({
     button: 'Inled fasbyte',
     title: 'Vill du byta fas?',
@@ -87,6 +102,14 @@ export const PhaseChanger = () => {
             <p className="my-md">Är du säker på att du vill fortsätta?</p>
           </>
         ),
+        disabled: !validateErrandForDecision(errand),
+        disabledMessage: !validateAttachmentsForDecision(errand).valid
+          ? `Ärendet har felaktiga bilagor: ${validateAttachmentsForDecision(errand).reason}`
+          : !validateStatusForDecision(errand).valid
+          ? 'Ärendet har fel status för att beslut ska kunna fattas.'
+          : !validateStakeholdersForDecision(errand).valid
+          ? 'Ärendet saknar ärendeägare.'
+          : null,
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ button: 'N/A', title: 'N/A?', message: '' });
@@ -143,7 +166,7 @@ export const PhaseChanger = () => {
       .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+          return triggerErrandPhaseChange(municipalityId, errand)
             .then(() => getErrand(municipalityId, errand.id.toString()))
             .then((res) => setErrand(res.errand))
             .then(() => {
@@ -245,19 +268,26 @@ export const PhaseChanger = () => {
         </Modal.Footer>
       </Modal>
     </>
-  ) : uiPhase === UiPhase.beslut || errand.status === ErrandStatus.ArendeAvslutat ? null : (
-    <Button
-      variant="primary"
-      disabled={
-        isErrandLocked(errand) || !allowed || (uiPhase === UiPhase.utredning && !validateErrandForDecision(errand))
-      }
-      color="vattjom"
-      loadingText="Sparar"
-      loading={isLoading}
-      onClick={triggerPhaseChange}
-      rightIcon={<LucideIcon name="arrow-right" size={18} />}
-    >
-      {phaseChangeText?.button}
-    </Button>
+  ) : uiPhase === UiPhase.beslut ||
+    errand.phase === ErrandPhase.verkstalla ||
+    errand.status === ErrandStatus.ArendeAvslutat ? null : (
+    <>
+      <Button
+        variant="primary"
+        disabled={isErrandLocked(errand) || !allowed || phaseChangeText.disabled}
+        color="vattjom"
+        loadingText="Sparar"
+        loading={isLoading}
+        onClick={triggerPhaseChange}
+        rightIcon={<LucideIcon name="arrow-right" size={18} />}
+      >
+        {phaseChangeText?.button}
+      </Button>
+      {phaseChangeText.disabledMessage ? (
+        <FormErrorMessage data-cy="status-error-message" className="mt-md left-2 right-2 leading-16 text-error">
+          {phaseChangeText.disabledMessage}
+        </FormErrorMessage>
+      ) : null}
+    </>
   );
 };

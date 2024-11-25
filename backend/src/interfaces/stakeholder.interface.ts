@@ -2,13 +2,13 @@ import { Type } from 'class-transformer';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Role } from './role';
 import {
-  AddressDtoAddressCategoryEnum,
-  ContactInformationDtoContactTypeEnum,
-  CoordinatesDTO,
-  AddressDTO as IAddressDTO,
-  ContactInformationDTO as IContactInformationDTO,
-  StakeholderDTO,
-  StakeholderDtoTypeEnum,
+  AddressAddressCategoryEnum,
+  ContactInformationContactTypeEnum,
+  Coordinates as CoordinatesDTO,
+  Address as IAddressDTO,
+  ContactInformation as IContactInformationDTO,
+  Stakeholder as StakeholderDTO,
+  StakeholderTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
 
 export class Link {
@@ -34,7 +34,7 @@ export class CAddressDTO {
   @IsString()
   apartmentNumber?: string;
   @IsOptional()
-  addressCategory?: AddressDtoAddressCategoryEnum;
+  addressCategory?: AddressAddressCategoryEnum;
   @IsOptional()
   street?: string;
   @IsOptional()
@@ -61,7 +61,7 @@ export class CAddressDTO {
 
 export class ContactInformationDTO implements IContactInformationDTO {
   @IsOptional()
-  contactType?: ContactInformationDtoContactTypeEnum;
+  contactType?: ContactInformationContactTypeEnum;
   @IsOptional()
   value?: string;
 }
@@ -70,7 +70,7 @@ export class CreateStakeholderDto implements StakeholderDTO {
   @IsOptional()
   id?: number;
   @IsString()
-  type: StakeholderDtoTypeEnum;
+  type: StakeholderTypeEnum;
   @IsArray()
   roles: Role[];
   @IsString()

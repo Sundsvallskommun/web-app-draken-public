@@ -9,7 +9,6 @@ import { User } from '@common/interfaces/user';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import AddIcon from '@mui/icons-material/Add';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -320,7 +319,7 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'email') {
-      setValue('newEmail', props.prefillEmail);
+      setValue('emails', [{ value: props.prefillEmail }]);
       setRichText(emailBody);
     } else if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
@@ -366,7 +365,37 @@ export const SupportMessageForm: React.FC<{
     <div className="px-40 py-8 gap-24">
       <input type="hidden" {...register('id')} />
 
-      <div className="flex mt-16">
+      <div className="w-full pt-16">
+        <strong className="text-md">Kontaktväg</strong>
+        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group mt-8">
+          <RadioButton
+            disabled={props.locked}
+            data-cy="useEmail-radiobutton-true"
+            className="mr-sm mt-4"
+            name="useEmail"
+            id="useEmail"
+            value={'email'}
+            defaultChecked={true}
+            {...register('contactMeans')}
+          >
+            Epost
+          </RadioButton>
+          <RadioButton
+            disabled={props.locked}
+            data-cy="useSms-radiobutton-true"
+            className="mr-sm mt-4"
+            name="useSms"
+            id="useSms"
+            value={'sms'}
+            defaultChecked={false}
+            {...register('contactMeans')}
+          >
+            SMS
+          </RadioButton>
+        </RadioButton.Group>
+      </div>
+
+      <div className="flex mt-24">
         <div className="w-full">
           <strong>Ditt meddelande</strong>
           <Input type="hidden" {...register('headerReplyTo')} />
@@ -400,55 +429,30 @@ export const SupportMessageForm: React.FC<{
         </div>
       </div>
 
-      <div className="w-full pb-8">
-        <strong className="text-md">Kontaktväg</strong>
-        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group">
-          <RadioButton
-            disabled={props.locked}
-            data-cy="useEmail-radiobutton-true"
-            className="mr-sm"
-            name="useEmail"
-            id="useEmail"
-            value={'email'}
-            defaultChecked={true}
-            {...register('contactMeans')}
-          >
-            Epost
-          </RadioButton>
-          <RadioButton
-            disabled={props.locked}
-            data-cy="useSms-radiobutton-true"
-            className="mr-sm"
-            name="useSms"
-            id="useSms"
-            value={'sms'}
-            defaultChecked={false}
-            {...register('contactMeans')}
-          >
-            SMS
-          </RadioButton>
-        </RadioButton.Group>
-      </div>
-
       {contactMeans === 'email' ? (
-        <div className="w-full mt-md gap-xl mb-lg">
+        <div className="w-full gap-xl mb-lg">
           <CommonNestedEmailArrayV2
             disabled={isSupportErrandLocked(supportErrand)}
             data-cy="email-input"
-            required
-            error={!!formState.errors.emails}
             key={`nested-email-array`}
-            {...{ control, register, errors, watch, setValue, trigger }}
+            {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+            errand={supportErrand}
           />
+
+          {errors?.emails ? (
+            <div className="text-error">
+              <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
+            </div>
+          ) : null}
 
           <FormControl id="addExisting" className="w-full mt-md">
             <FormLabel>Bilagor från ärendet</FormLabel>
-            <div className="flex items-center justify-between mb-md">
+            <div className="flex items-center justify-between">
               {/*<Input type="hidden" {...register('addExisting')} />*/}
               <Select
                 {...register('addExisting')}
                 className="w-full"
-                size="sm"
+                size="md"
                 placeholder="Välj bilaga"
                 onChange={(r) => {
                   setValue('addExisting', r.currentTarget.value);
@@ -468,8 +472,7 @@ export const SupportMessageForm: React.FC<{
               <Button
                 type="button"
                 variant="primary"
-                size="sm"
-                leftIcon={<AddIcon fontSize="large" className="mr-sm" />}
+                size="md"
                 disabled={!addExisting}
                 color="primary"
                 onClick={(e) => {
@@ -480,7 +483,7 @@ export const SupportMessageForm: React.FC<{
                     setValue(`addExisting`, undefined);
                   }
                 }}
-                className="rounded-lg ml-lg"
+                className="rounded-button ml-16"
                 data-cy="add-selected-attachment"
               >
                 Lägg till
@@ -493,7 +496,7 @@ export const SupportMessageForm: React.FC<{
             )}
           </FormControl>
           {existingAttachmentFields.length > 0 ? (
-            <div className="flex items-center w-full flex-wrap justify-start gap-md">
+            <div className="flex items-center w-full flex-wrap justify-start gap-md mt-16">
               {existingAttachmentFields.map((field, k) => {
                 const att = field as SingleSupportAttachment;
                 return (
@@ -514,7 +517,7 @@ export const SupportMessageForm: React.FC<{
           ) : null}
         </div>
       ) : contactMeans === 'sms' ? (
-        <div className="w-full mt-md gap-xl mb-lg">
+        <div className="w-full gap-xl mb-lg">
           <CommonNestedPhoneArrayV2
             disabled={isSupportErrandLocked(supportErrand)}
             data-cy="newPhoneNumber"
@@ -523,6 +526,12 @@ export const SupportMessageForm: React.FC<{
             key={`nested-phone-array`}
             {...{ control, register, errors, watch, setValue, trigger }}
           />
+
+          {errors?.newPhoneNumber && (
+            <div className="my-sm text-error">
+              <FormErrorMessage>{errors?.newPhoneNumber?.message}</FormErrorMessage>
+            </div>
+          )}
         </div>
       ) : null}
 

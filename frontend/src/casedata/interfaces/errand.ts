@@ -1,5 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
-import { Appeal, Decision } from '@casedata/interfaces/decision';
+import { Decision } from '@casedata/interfaces/decision';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { All, Priority } from '@casedata/interfaces/priority';
 import { FacilityDTO } from '@common/interfaces/facilities';
@@ -7,8 +7,8 @@ import { Data } from '@common/services/api-service';
 import { Attachment } from './attachment';
 import { ApiErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
-import { ApiExtraParameters, ExtraParameters } from './extra-parameters';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 export interface ApiErrand {
   id: number;
@@ -26,9 +26,8 @@ export interface ApiErrand {
   diaryNumber: string;
   municipalityId: string;
   applicationReceived: string;
-  extraParameters: ApiExtraParameters;
+  extraParameters: ExtraParameter[];
   decisions: Decision[];
-  appeals: Appeal[];
   created: string;
   updated: string;
   stakeholders: Stakeholder[];
@@ -90,10 +89,9 @@ export interface IErrand {
   updated: string;
   notes: ErrandNote[];
   decisions: Decision[];
-  appeals: Appeal[];
   attachments: Attachment[];
   messageIds: { messageId: string; adAccount: string }[];
-  extraParameters: ExtraParameters;
+  extraParameters: ExtraParameter[];
 }
 
 export interface ErrandsData extends Data {
@@ -132,5 +130,5 @@ export interface RegisterErrandData {
   attachments: string[] | FileList[];
   applicationReceived: string;
   decision: string;
-  extraParameters: ApiExtraParameters;
+  extraParameters: ExtraParameter[];
 }

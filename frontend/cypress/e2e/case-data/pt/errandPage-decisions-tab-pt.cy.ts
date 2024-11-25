@@ -11,6 +11,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
+import dayjs from 'dayjs';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Decisions tab', () => {
@@ -46,7 +47,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
     });
 
-    it('can edit decision fields', () => {
+    it('can edit decision fields for rejection', () => {
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
       cy.intercept(
         'PUT',
@@ -54,7 +55,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         mockPTErrand_base
       ).as('updateDecision');
 
-      cy.get('[data-cy="decision-outcome-select"]').should('exist').select(2);
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.get('[data-cy="law-select"]').should('exist');
       cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-07-11');
       cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
@@ -63,8 +64,82 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('button').should('exist').contains('Ja').click();
 
       cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.id).to.equal(1);
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('FINAL');
+        expect(request.body.decisionOutcome).to.equal('REJECTION');
+        expect(request.body.decidedBy).to.deep.equal({
+          id: '223',
+          created: '2023-12-14T13:50:46.417444+01:00',
+          updated: '2023-12-14T13:50:46.417449+01:00',
+          type: 'PERSON',
+          firstName: 'My',
+          lastName: 'Testsson',
+          adAccount: 'kctest',
+          personId: 'aaaabbbb-aaaa-bbbb-aaaa-da8ca388888c',
+          personalNumber: '199001162396',
+          roles: ['ADMINISTRATOR'],
+          addresses: [],
+          contactInformation: [],
+          extraParameters: {},
+        });
+        expect(request.body.law).to.deep.equal([
+          {
+            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+            sfs: 'Trafikförordningen (1998:1276)',
+            chapter: '13',
+            article: '8',
+          },
+        ]);
+      });
+    });
+
+    it('can edit decision fields for approval', () => {
+      cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
+      cy.intercept(
+        'PUT',
+        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL').id}`,
+        mockPTErrand_base
+      ).as('updateDecision');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      cy.get('[data-cy="law-select"]').should('exist');
+      cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-07-11');
+      cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.get('button').should('exist').contains('Ja').click();
+
+      cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.id).to.equal(1);
+        expect(request.body.description).to.contain('Mock text');
+        expect(request.body.decisionType).to.equal('FINAL');
+        expect(request.body.decisionOutcome).to.equal('APPROVAL');
+        expect(request.body.decidedBy).to.deep.equal({
+          id: '223',
+          created: '2023-12-14T13:50:46.417444+01:00',
+          updated: '2023-12-14T13:50:46.417449+01:00',
+          type: 'PERSON',
+          firstName: 'My',
+          lastName: 'Testsson',
+          adAccount: 'kctest',
+          personId: 'aaaabbbb-aaaa-bbbb-aaaa-da8ca388888c',
+          personalNumber: '199001162396',
+          roles: ['ADMINISTRATOR'],
+          addresses: [],
+          contactInformation: [],
+          extraParameters: {},
+        });
+        expect(request.body.validFrom).to.equal(dayjs('2024-07-11').startOf('day').toISOString());
+        expect(request.body.validTo).to.equal(dayjs('2024-08-11').endOf('day').toISOString());
+        expect(request.body.law).to.deep.equal([
+          {
+            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+            sfs: 'Trafikförordningen (1998:1276)',
+            chapter: '13',
+            article: '8',
+          },
+        ]);
       });
     });
 

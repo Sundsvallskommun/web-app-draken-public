@@ -1,6 +1,11 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { Priority } from '@casedata/interfaces/priority';
-import { getCaseLabels, isErrandClosed } from '@casedata/services/casedata-errand-service';
+import {
+  findStatusKeyForStatusLabel,
+  findStatusLabelForStatusKey,
+  getCaseLabels,
+  isErrandClosed,
+} from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
@@ -12,6 +17,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
+import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -43,9 +49,9 @@ export const ErrandsTable: React.FC = () => {
   const serverSideSortableColsPT: { [key: number]: string } = {
     0: 'statuses.statusType',
     1: 'caseType',
-    2: 'errandId',
+    2: 'errandNumber',
     3: 'priority',
-    4: 'stakeholder',
+    4: 'stakeholders.lastName',
     5: 'created',
     6: 'updated',
     7: 'administrator',
@@ -104,25 +110,7 @@ export const ErrandsTable: React.FC = () => {
           className={cx('w-[200px] whitespace-nowrap text-ellipsis table-caption', !isPT() && ' overflow-hidden')}
         >
           {isPT() ? (
-            <Label
-              rounded
-              className="max-h-full h-auto"
-              color={
-                errand.status === 'Ärende inkommit'
-                  ? 'vattjom'
-                  : errand.status === 'Under utredning'
-                  ? 'gronsta'
-                  : errand.status === 'Under beslut'
-                  ? 'gronsta'
-                  : errand.status === 'Väntar på komplettering'
-                  ? 'gronsta'
-                  : errand.status === 'Komplettering inkommen'
-                  ? 'gronsta'
-                  : ''
-              }
-            >
-              {errand.status}
-            </Label>
+            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status)} />
           ) : (
             getErrandPropertyDesignations(errand).join(', ')
           )}
@@ -199,9 +187,7 @@ export const ErrandsTable: React.FC = () => {
         </Table.Column>
         {!isPT() && (
           <Table.Column>
-            <Label rounded inverted className="max-h-full h-auto">
-              {errand.status}
-            </Label>
+            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status)} />
           </Table.Column>
         )}
         <Table.Column sticky>

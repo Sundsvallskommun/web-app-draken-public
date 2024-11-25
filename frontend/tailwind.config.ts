@@ -14,13 +14,13 @@ export default {
     './src/common/**/*.{js,ts,jsx,tsx}',
     './src/supportmanagement/components/**/*.{js,ts,jsx,tsx}',
   ],
-  safelist: ['text-error-surface-primary', 'text-vattjom-surface-primary', 'text-warning-surface-primary', ],
+  safelist: ['text-error-surface-primary', 'text-vattjom-surface-primary', 'text-warning-surface-primary'],
   darkMode: 'class', // or 'media' or 'class'
   theme: {
     extend: {
       maxWidth: {
         content: 'var(--sk-spacing-max-content)',
-        errande: '1080px',
+        errand: '1080px',
       },
     },
   },

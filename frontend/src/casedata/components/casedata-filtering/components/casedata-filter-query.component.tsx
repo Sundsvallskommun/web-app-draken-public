@@ -40,6 +40,7 @@ export const CasedataFilterQuery: React.FC = () => {
         setQuery(e.target.value);
       }}
       showSearchButton={value !== query}
+      className="flex-grow"
       onSearch={() => setValue('query', query)}
       onReset={() => {
         setQuery('');

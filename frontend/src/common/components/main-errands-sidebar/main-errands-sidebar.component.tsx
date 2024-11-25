@@ -1,24 +1,37 @@
-import { getApplicationEnvironment, getApplicationName, isLOP } from '@common/services/application-service';
-import { useAppContext } from '@contexts/app.context';
+import NextLink from 'next/link';
+import {
+  getApplicationEnvironment,
+  getApplicationName,
+  isIK,
+  isKC,
+  isLOP,
+  isMEX,
+  isPT,
+} from '@common/services/application-service';
+import { FormProvider, useForm } from 'react-hook-form';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
-import { SupportNotificationsBell } from '@supportmanagement/components/support-notifications/support-notifications-bell';
-import { SupportNotificationsWrapper } from '@supportmanagement/components/support-notifications/support-notifications-wrapper';
-import { SupportManagementFilterStatus } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-status.component';
+import { NotificationsBell } from '@common/components/notifications/notifications-bell';
+import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
+import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import NextLink from 'next/link';
 import { useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
+import { isNotificicationEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
-  const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
-  const { user } = useAppContext();
+  const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
+  const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
+  const { user }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const applicationName = getApplicationName();
@@ -61,16 +74,24 @@ export const MainErrandsSidebar: React.FC<{
               {user.firstName} {user.lastName}
             </span>
           </div>
-          <SupportNotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          {isNotificicationEnabled() && (
+            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          )}
         </div>
         <Divider />
         <div className="flex flex-col gap-8 py-24">
-          <FormProvider {...filterForm}>
-            <SupportManagementFilterStatus
-              showAttestationTable={showAttestationTable}
-              setShowAttestationTable={setShowAttestationTable}
-            />
-          </FormProvider>
+          {isLOP() || isKC() || isIK() ? (
+            <FormProvider {...suppportManagementFilterForm}>
+              <SupportManagementFilterSidebarStatusSelector
+                showAttestationTable={showAttestationTable}
+                setShowAttestationTable={setShowAttestationTable}
+              />
+            </FormProvider>
+          ) : (
+            <FormProvider {...casedataFilterForm}>
+              <CasedataFilterSidebarStatusSelector />
+            </FormProvider>
+          )}
         </div>
         {isLOP() && user.permissions?.canViewAttestations && getApplicationEnvironment() === 'TEST' && (
           <>
@@ -95,7 +116,7 @@ export const MainErrandsSidebar: React.FC<{
           </>
         )}
       </div>
-      <SupportNotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
     </aside>
   );
 };
