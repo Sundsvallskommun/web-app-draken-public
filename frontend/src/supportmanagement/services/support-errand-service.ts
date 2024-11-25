@@ -797,7 +797,7 @@ export const updateSupportErrand: (
     ...(formdata.channel && { channel: formdata.channel }),
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
-    ...(stakeholders.length > 0 && { stakeholders: stakeholders }),
+    ...{ stakeholders: stakeholders },
     externalTags: [],
   };
   if (formdata.caseId) {
