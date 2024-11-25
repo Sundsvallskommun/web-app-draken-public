@@ -23,7 +23,7 @@ import {
 } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { isLOP } from '@common/services/application-service';
+import { isIK, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -36,7 +36,7 @@ import {
   Modal,
   RadioButton,
   SearchField,
-  Select
+  Select,
 } from '@sk-web-gui/react';
 import {
   emptyContact,
@@ -357,7 +357,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       <legend className="text-md my-sm contents"></legend>
       <Input type="hidden" {...register(`stakeholderType`)} />
 
-      {isLOP() ? (
+      {isLOP() || isIK() ? (
         <RadioButton
           data-cy={`search-employee-${inName}-${contact.role}`}
           size="lg"

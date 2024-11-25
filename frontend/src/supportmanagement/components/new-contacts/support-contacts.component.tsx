@@ -1,6 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -101,7 +101,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     update: updateContactItem,
   } = contactsFieldArray;
 
-  const allowsOrganization = !isLOP();
+  const allowsOrganization = !isLOP() && !isIK();
 
   const onRemove = async (c: SupportStakeholderFormModel) => {
     const customer = stakeholderCustomers.filter((cus) => JSON.stringify(cus) !== JSON.stringify(c));
