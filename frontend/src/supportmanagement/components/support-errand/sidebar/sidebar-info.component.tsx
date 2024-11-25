@@ -33,6 +33,7 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
+import { isKC, isLOP } from '@common/services/application-service';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -603,7 +604,9 @@ export const SidebarInfo: React.FC<{
                 />
                 <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <Divider className="mt-8 mb-16" />
-                <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                {(isKC() || isLOP()) && (
+                  <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                )}
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
               </div>
             )}
