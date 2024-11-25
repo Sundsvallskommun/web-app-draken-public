@@ -1,11 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { Priority } from '@casedata/interfaces/priority';
-import {
-  findStatusKeyForStatusLabel,
-  findStatusLabelForStatusKey,
-  getCaseLabels,
-  isErrandClosed,
-} from '@casedata/services/casedata-errand-service';
+import { findStatusLabelForStatusKey, getCaseLabels, isErrandClosed } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
@@ -115,7 +110,7 @@ export const ErrandsTable: React.FC = () => {
             getErrandPropertyDesignations(errand).join(', ')
           )}
         </Table.HeaderColumn>
-        <Table.Column scope="row" className={isPT() && 'font-bold max-w-[170px] whitespace-nowrap overflow-x-hidden'}>
+        <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
           {isPT() ? (
             <>
               {Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
