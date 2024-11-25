@@ -42,7 +42,7 @@ const yupForwardForm = yup.object().shape(
       then: yup.string().trim().email('E-postadress har fel format').required('E-postadress måste anges'),
     }),
     department: yup.string().required('Verksamhet är obligatoriskt'),
-    message: yup.string().max(8192, 'Meddelande är för långt').required('Meddelande är obligatoriskt'),
+    message: yup.string().max(15000, 'Meddelande är för långt').required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
   },
   [['email', 'recipient']]
