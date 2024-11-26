@@ -112,7 +112,7 @@ const parseGenericStringDiff: (
     d.op === 'add'
       ? `<p>${keyMapper ? keyMapper[strVal] : strVal}</p>`
       : d.op === 'replace'
-      ? `<div><p>Före: ${keyMapper ? keyMapper[fromValue] : fromValue}</p><p>Efter: ${
+      ? `<div><p>Före: ${keyMapper ? keyMapper[fromValue] || '(tomt)' : fromValue}</p><p>Efter: ${
           keyMapper ? keyMapper[strVal] : value
         }</p></div>`
       : `<p>${value}</p>`;
@@ -203,10 +203,18 @@ export const parseDiff: (
     ? parseGenericStringDiff(d, 'Text')
     : d.path.includes('assignedUserId') || d.path.includes('reporterUserId')
     ? parseAdministratorDiff(d, 'Handläggare', admins)
-    : d.path.includes('created') ||
+    : d.path.includes('businessRelated')
+    ? parseGenericStringDiff(d, 'Företagsärende', keyMapper)
+    : d.path.includes('channel')
+    ? parseGenericStringDiff(d, 'Kanal', keyMapper)
+    : d.path.includes('labels') ||
+      d.path.includes('created') ||
       d.path.includes('modified') ||
       d.path.includes('touched') ||
-      d.path.includes('subject')
+      d.path.includes('subject') ||
+      d.path.includes('previousStatus') ||
+      d.path.includes('tempPreviousStatus') ||
+      d.path.includes('timeMeasure')
     ? { title: '', description: '' }
     : { title: 'Ej implementerad', description: '' };
   return {

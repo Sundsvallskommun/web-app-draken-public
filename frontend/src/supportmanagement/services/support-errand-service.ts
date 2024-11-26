@@ -328,6 +328,10 @@ export enum Resolution {
   CLOSED = 'CLOSED',
   BACK_TO_MANAGER = 'BACK_TO_MANAGER',
   BACK_TO_HR = 'BACK_TO_HR',
+  REFER_TO_CONTACTSUNDSVALL = 'REFER_TO_CONTACTSUNDSVALL',
+  REFER_TO_PHONE = 'REFER_TO_PHONE',
+  REGISTERED = 'REGISTERED',
+  SENT_MESSAGE = 'SENT_MESSAGE',
 }
 
 export enum ResolutionLabelLOP {
@@ -336,7 +340,17 @@ export enum ResolutionLabelLOP {
   BACK_TO_HR = 'Åter till HR',
 }
 
-export enum ResolutionLabel {
+export enum ResolutionLabelIK {
+  REFER_TO_CONTACTSUNDSVALL = 'Hänvisat till Kontakt Sundsvall',
+  SELF_SERVICE = 'Hänvisat till självservice',
+  SOLVED = 'Informerat /intern har löst hela ärendet',
+  REFER_TO_PHONE = 'Behöver återkomma/hänvisat till telefontid',
+  REGISTERED = 'Tagit emot/registrerat/paketerat ärende',
+  CONNECTED = 'Kopplat samtal',
+  SENT_MESSAGE = 'Skickat ett meddelande',
+}
+
+export enum ResolutionLabelKS {
   SOLVED = 'Löst av Kontakt Sundsvall',
   REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
   CONNECTED = 'Kopplat samtal',

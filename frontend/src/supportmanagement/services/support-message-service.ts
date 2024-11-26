@@ -2,15 +2,8 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { SingleSupportAttachment, SupportAttachment } from './support-attachment-service';
-import {
-  ContactChannelType,
-  Resolution,
-  ResolutionLabel,
-  ResolutionLabelLOP,
-  SupportErrand,
-} from './support-errand-service';
+import { ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
-import { isLOP } from '@common/services/application-service';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface MessageRequest {
