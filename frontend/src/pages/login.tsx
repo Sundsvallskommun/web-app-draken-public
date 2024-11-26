@@ -39,11 +39,7 @@ export default function Start() {
             <div className="text-center">
               <h3 className="mb-20">
                 Logga in till <br aria-hidden />
-                {isPT()
-                  ? 'Mina externa ärenden'
-                  : isKC() || isIK() || isLOP() || isMEX()
-                  ? getApplicationName()
-                  : 'appen'}
+                {isKC() || isIK() || isLOP() || isMEX() || isPT() ? getApplicationName() : 'appen'}
               </h3>
               {message && (
                 <FormErrorMessage>
