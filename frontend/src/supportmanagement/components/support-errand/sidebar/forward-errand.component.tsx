@@ -23,7 +23,7 @@ import { SupportAttachment } from '@supportmanagement/services/support-attachmen
 import {
   forwardSupportErrand,
   getSupportErrandById,
-  ResolutionLabel,
+  ResolutionLabelKS,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
@@ -132,7 +132,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           return sendClosingMessage(
             adminName,
             supportErrand,
-            ResolutionLabel.REGISTERED_EXTERNAL_SYSTEM,
+            ResolutionLabelKS.REGISTERED_EXTERNAL_SYSTEM,
             municipalityId
           );
         }
