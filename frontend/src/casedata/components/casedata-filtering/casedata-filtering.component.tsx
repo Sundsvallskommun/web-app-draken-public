@@ -37,6 +37,8 @@ import {
   CasedataFilterStatus,
 } from './components/casedata-filter-status.component';
 import { CasedataFilterTags } from './components/casedata-filter-tags.component';
+import { useAppContext } from '@contexts/app.context';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -63,15 +65,16 @@ const CaseDataFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(false);
+  const { selectedErrandStatuses, sidebarLabel } = useAppContext();
   return (
     <>
       <div className="flex flex-col w-full gap-24">
         <div className="w-full flex items-start md:items-center justify-between flex-col md:flex-row gap-12">
-          <h1 className="p-0 m-0">Ärenden</h1>
+          <h1 className="p-0 m-0">{sidebarLabel || 'Ärenden'}</h1>
 
-          <div className="w-full md:max-w-[48rem]">
+          {/* <div className="w-full md:max-w-[48rem]">
             <CasedataFilterQuery />
-          </div>
+          </div> */}
           <Button
             className="w-full md:w-auto"
             onClick={() => setShow(!show)}
@@ -91,11 +94,11 @@ const CaseDataFiltering: React.FC<{
               <div className="relative max-md:w-full">
                 <CasedataFilterPropertyDesignation />
               </div>
-            ) : (
+            ) : ['ArendeAvslutat', 'ArendeInkommit', 'Tilldelat'].every((s) => !selectedErrandStatuses.includes(s)) ? (
               <div className="relative max-md:w-full">
                 <CasedataFilterStatus />
               </div>
-            )}
+            ) : null}
             <div className="relative max-md:w-full">
               <CasedataFilterCaseType />
             </div>
@@ -108,7 +111,8 @@ const CaseDataFiltering: React.FC<{
             <div className="relative max-md:w-full">
               <CasedataFilterAdmins administrators={administrators} />
             </div>
-            {!isPT() ? (
+            {!isPT() &&
+            ['ArendeAvslutat', 'ArendeInkommit', 'Tilldelat'].every((s) => !selectedErrandStatuses.includes(s)) ? (
               <div className="relative max-md:w-full">
                 <CasedataFilterStatus />
               </div>

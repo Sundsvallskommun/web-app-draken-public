@@ -1,4 +1,4 @@
-import { FacilityDTO } from '@/data-contracts/case-data/data-contracts';
+import { Facility as FacilityDTO } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -16,22 +16,22 @@ interface ResponseData {
 @Controller()
 export class caseDataFacilitiesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
-  @Post('/casedata/:municipalityId/errande/:errandeId/facilities')
-  @OpenAPI({ summary: 'Save facilities by errande' })
+  @Post('/casedata/:municipalityId/errands/:errandId/facilities')
+  @OpenAPI({ summary: 'Save facilities by errand' })
   @UseBefore(authMiddleware)
   async saveFacility(
     @Req() req: RequestWithUser,
-    @Param('errandeId') errandeId: string,
+    @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
     @Body() facilities: FacilityDTO[],
   ) {
-    if (errandeId === undefined) {
+    if (errandId === undefined) {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `${municipalityId}/errands/${errandeId}/facilities`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/facilities`;
     const baseURL = apiURL(this.SERVICE);
     const data = JSON.stringify(facilities);
 

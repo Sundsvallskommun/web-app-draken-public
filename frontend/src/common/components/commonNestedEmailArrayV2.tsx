@@ -1,78 +1,145 @@
-import AddIcon from '@mui/icons-material/Add';
-import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
+import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
+import { PrettyRole } from '@casedata/interfaces/role';
+import { isMEX, isPT } from '@common/services/application-service';
+import { Relation } from '@supportmanagement/services/support-errand-service';
 
 const CommonNestedEmailArrayV2 = ({
-  control,
+  errand,
   register,
   errors,
   watch,
   setValue,
+  disabled,
   trigger,
-  disabled = false,
+  control,
   required = false,
   error = false,
+  addingStakeholder = false,
 }) => {
+  const { emails, existingEmail, newEmail } = watch();
+
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `emails`,
+    name: 'emails',
   });
 
-  const newEmail = watch(`newEmail`);
+  const [listedEmails, setListedEmails] = useState<{ email: string; role: string[] }[]>([]);
+
+  useEffect(() => {
+    const stakeholders: { email: string; role: string[] }[] = [];
+
+    if (isMEX() || isPT()) {
+      errand?.stakeholders?.map((stakeholder) => {
+        if (stakeholder?.emails?.length) {
+          stakeholder?.emails?.map((email) => {
+            stakeholders.push({
+              email: email.value ?? [],
+              role: PrettyRole[stakeholder?.roles[0]] ?? [],
+            });
+          });
+        }
+      });
+    } else {
+      errand?.stakeholders?.map((stakeholder) => {
+        if (stakeholder?.contactChannels?.length) {
+          stakeholder?.contactChannels?.map((channel) => {
+            if (channel.type === 'Email') {
+              stakeholders.push({
+                email: channel?.value ?? [],
+                role: Relation[stakeholder.role],
+              });
+            }
+          });
+        }
+      });
+    }
+
+    setListedEmails(stakeholders);
+  }, [errand?.stakeholders]);
 
   return (
-    <FormControl id={`emails`} className="w-full">
-      <FormLabel>E-postadress {required ? <span aria-hidden="true">*</span> : null}</FormLabel>
-      <div className="flex items-center w-full justify-between">
+    <FormControl id={'emails'} className="w-full mb-16">
+      {!addingStakeholder ? (
+        <>
+          <FormLabel>Lägg till befintlig e-postadress</FormLabel>
+          <div className="flex gap-16 mb-16">
+            <Select className="w-full" {...register('existingEmail')} placeholder="Välj mottagare">
+              <Select.Option value="">Välj mottagare</Select.Option>
+              {listedEmails.map((email, index) => {
+                return (
+                  <Select.Option value={email.email} key={index}>
+                    {`${email.email} (${email.role})`}
+                  </Select.Option>
+                );
+              })}
+            </Select>
+            <Button
+              type="button"
+              data-cy={`add-email-button`}
+              variant="tertiary"
+              size="md"
+              onClick={() => {
+                append({ value: existingEmail });
+                trigger();
+              }}
+              className="rounded-button"
+              disabled={disabled || !existingEmail}
+            >
+              Lägg till
+            </Button>
+          </div>
+        </>
+      ) : null}
+
+      <FormLabel>Lägg till ny e-postadress{required ? <span aria-hidden="true">*</span> : null}</FormLabel>
+      <div className="w-full flex gap-16 mb-8">
         <Input
-          disabled={disabled}
-          size="sm"
-          className={cx(error ? 'border-error' : null, `mr-md w-5/6`)}
-          placeholder="@"
-          {...register(`newEmail`)}
-          data-cy={`email-input`}
+          placeholder="Ange e-postadress"
+          {...register('newEmail')}
+          className={cx(error ? 'border-error' : null, `w-full`)}
         />
         <Button
           type="button"
           data-cy={`add-email-button`}
-          variant="primary"
-          size="sm"
-          leftIcon={<AddIcon fontSize="large" className="mr-sm" />}
+          variant="tertiary"
+          size="md"
           onClick={() => {
             append({ value: newEmail });
-            setValue(`newEmail`, '');
+            setValue('newEmail', '');
+            trigger();
           }}
-          disabled={newEmail === '' || newEmail === undefined || (errors && !!errors.newEmail)}
-          className="rounded-lg ml-sm"
+          className="rounded-button"
+          disabled={disabled || errors?.newEmail || !newEmail}
         >
           Lägg till
         </Button>
       </div>
-      {errors?.newEmail && (
-        <div className="my-sm text-error">
-          <FormErrorMessage>{errors?.newEmail?.message}</FormErrorMessage>
-        </div>
-      )}
-      {fields.length > 0 ? (
-        <div className="flex items-center w-full flex-wrap justify-start gap-md py-sm">
-          {fields.map((field: { id: string; value: string }, k) => {
-            return (
-              <div key={`-${field.id}`}>
-                <span className="sr-only">Tillagd epostadress</span>
-                <Chip
-                  data-cy={`email-tag-${k}`}
-                  aria-label={`Tillagd epostadress ${field.value}. Klicka för att ta bort.`}
-                  key={`-${field.id}-tag`}
-                  onClick={() => {
-                    remove(k);
-                  }}
-                >
-                  {field.value}
-                </Chip>
-              </div>
-            );
-          })}
-        </div>
+
+      {fields?.length > 0 ? (
+        <>
+          {!addingStakeholder && <strong className="mt-16">Ditt meddelande har {emails?.length} mottagare</strong>}
+          <div className="flex items-center w-full flex-wrap justify-start gap-md">
+            {fields?.map((field: { id: string; value: string }, index: number) => {
+              return (
+                <div key={`chip-${index}`}>
+                  <span className="sr-only">Tillagd epostadress</span>
+                  <Chip
+                    data-cy={`email-tag-${index}`}
+                    aria-label={`Tillagd epostadress ${field}. Klicka för att ta bort.`}
+                    key={`-${field}-tag`}
+                    onClick={() => {
+                      remove(index);
+                    }}
+                  >
+                    {field.value}
+                  </Chip>
+                </div>
+              );
+            })}
+          </div>
+        </>
       ) : null}
     </FormControl>
   );

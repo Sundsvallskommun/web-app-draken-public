@@ -1,10 +1,9 @@
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button } from '@sk-web-gui/react';
-import { SupportNotification } from '@supportmanagement/services/support-notification-service';
 
-export const SupportNotificationsBell = (props: { toggleShow: () => void }) => {
-  const { supportNotifications }: { supportNotifications: SupportNotification[] } = useAppContext();
+export const NotificationsBell = (props: { toggleShow: () => void }) => {
+  const { notifications }: AppContextInterface = useAppContext();
 
   return (
     <Button
@@ -23,12 +22,12 @@ export const SupportNotificationsBell = (props: { toggleShow: () => void }) => {
         </>
       }
     >
-      {supportNotifications.filter((n) => !n.acknowledged).length ? (
+      {notifications.filter((n) => !n.acknowledged).length ? (
         <Badge
           className="absolute -top-10 -right-10 text-white"
           rounded
           color="vattjom"
-          counter={supportNotifications.filter((n) => !n.acknowledged).length}
+          counter={notifications.filter((n) => !n.acknowledged).length}
         />
       ) : null}
     </Button>

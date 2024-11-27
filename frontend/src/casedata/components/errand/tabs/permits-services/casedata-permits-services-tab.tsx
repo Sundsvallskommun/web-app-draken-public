@@ -1,9 +1,9 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { AutoTable, AutoTableHeader, Spinner } from '@sk-web-gui/react';
+import { AutoTable, AutoTableHeader } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 
-import { validateAction } from '@casedata/services/casedata-errand-service';
 import { assetStatusLabels, assetTypeLabels } from '@casedata/interfaces/asset';
+import { validateAction } from '@casedata/services/casedata-errand-service';
 
 export const CasedataPermitServicesTab: React.FC<{}> = () => {
   const { errand, assets, user } = useAppContext();
@@ -77,7 +77,7 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
       label: 'Giltighetstid',
       isColumnSortable: false,
       renderColumn: (value, item) => {
-        return <span data-cy="table-column-validTo">{`${item.issued}-${new Date(value).toLocaleDateString()}`}</span>;
+        return <span data-cy="table-column-validTo">{`${item.issued} - ${new Date(value).toLocaleDateString()}`}</span>;
       },
     },
   ];

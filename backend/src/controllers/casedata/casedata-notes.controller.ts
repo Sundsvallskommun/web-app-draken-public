@@ -9,7 +9,7 @@ import { logger } from '@/utils/logger';
 import { noteIsTjansteanteckning } from '@/services/errand-note.service';
 import { apiURL } from '@/utils/util';
 import { validateAction } from '@services/errand.service';
-import { ErrandDTO, NoteDTO } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data/data-contracts';
 import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
 
 export interface ResponseData {
@@ -20,7 +20,7 @@ export interface ResponseData {
 @Controller()
 export class CasedataNotesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/8.0`;
+  SERVICE = `case-data/9.0`;
 
   @Patch('/casedata/:municipalityId/errands/:id/notes')
   @HttpCode(201)
@@ -37,7 +37,7 @@ export class CasedataNotesController {
       // Public notes ("tjänsteanteckningar") are not allowed to be created by the user other than the errands administrator
       throw new HttpException(403, 'Not allowed');
     }
-    const url = `${municipalityId}/errands/${errandId}/notes`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<ErrandDTO, CreateErrandNoteDto>({ url, baseURL, data: noteData }, req.user).catch(e => {
       logger.error('Something went wrong when patching note');
@@ -63,7 +63,7 @@ export class CasedataNotesController {
     if (noteIsTjansteanteckning(noteData.noteType)) {
       throw new HttpException(403, 'Not allowed');
     }
-    const url = `${municipalityId}/notes/${noteId}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.patch<any, CreateErrandNoteDto>({ url, baseURL, data: noteData }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;
@@ -83,28 +83,29 @@ export class CasedataNotesController {
       throw 'Id not found. Cannot delete note without id.';
     }
     const baseURL = apiURL(this.SERVICE);
-    const noteUrl = `${municipalityId}/notes/${noteId}`;
+    const noteUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
     const note = await this.apiService.get<NoteDTO>({ url: noteUrl, baseURL }, req.user);
     if (noteIsTjansteanteckning(note.data.noteType)) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${municipalityId}/errands/${errandId}/notes/${noteId}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
     const response = await this.apiService.delete<boolean>({ url, baseURL }, req.user).catch(e => {
       throw e;
     });
     return { data: response.data, message: `Note ${noteId} removed` };
   }
 
-  @Get('/casedata/:municipalityId/notes/:id')
+  @Get('/casedata/:municipalityId/errands/:errandId/notes/:id')
   @OpenAPI({ summary: 'Return a note by id' })
   @UseBefore(authMiddleware)
   async permits(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
+    @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `${municipalityId}/notes/${id}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<NoteDTO>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;

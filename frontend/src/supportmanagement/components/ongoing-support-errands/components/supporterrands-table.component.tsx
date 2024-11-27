@@ -2,7 +2,7 @@ import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
@@ -25,14 +25,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-
-export interface SidebarButton {
-  label: string;
-  key: Status;
-  statuses: Status[];
-  icon: string;
-  totalStatusErrands: number;
-}
+import { SidebarButton } from '@common/interfaces/sidebar-button';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -41,25 +34,8 @@ export const SupportErrandsTable: React.FC = () => {
     supportMetadata,
     supportAdmins,
     municipalityId,
-    selectedErrandStatuses,
-    setSidebarButtons,
-    newSupportErrands,
-    ongoingSupportErrands,
-    suspendedSupportErrands,
-    solvedSupportErrands,
-  }: {
-    supportErrands: SupportErrandsData;
-    supportMetadata;
-    supportAdmins;
-    setSupportAdmins;
-    municipalityId;
-    selectedErrandStatuses;
-    setSidebarButtons;
-    newSupportErrands;
-    ongoingSupportErrands;
-    suspendedSupportErrands;
-    solvedSupportErrands;
-  } = useAppContext();
+    selectedSupportErrandStatuses,
+  }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -72,45 +48,10 @@ export const SupportErrandsTable: React.FC = () => {
   const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
   const currentStatusHaserrands =
     data.errands.filter((e) => {
-      return selectedErrandStatuses.includes(e.status) || e.status === Status.PENDING;
+      return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;
     }).length !== 0
       ? true
       : false;
-
-  const supportSidebarButtons: SidebarButton[] = [
-    {
-      label: 'Nya ärenden',
-      key: Status.NEW,
-      statuses: [Status.NEW],
-      icon: 'inbox',
-      totalStatusErrands: newSupportErrands.totalElements,
-    },
-    {
-      label: 'Öppnade ärenden',
-      key: Status.ONGOING,
-      statuses: [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE],
-      icon: 'clipboard-pen',
-      totalStatusErrands: ongoingSupportErrands.totalElements,
-    },
-    {
-      label: 'Parkerade ärenden',
-      key: Status.SUSPENDED,
-      statuses: [Status.SUSPENDED, Status.ASSIGNED],
-      icon: 'circle-pause',
-      totalStatusErrands: suspendedSupportErrands.totalElements,
-    },
-    {
-      label: 'Avslutade ärenden',
-      key: Status.SOLVED,
-      statuses: [Status.SOLVED],
-      icon: 'circle-check-big',
-      totalStatusErrands: solvedSupportErrands.totalElements,
-    },
-  ];
-
-  useEffect(() => {
-    setSidebarButtons(supportSidebarButtons);
-  }, [data, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]);
 
   useEffect(() => {
     setCategories(supportMetadata?.categories);
@@ -177,7 +118,7 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errandId}`, '_blank');
   };
 
-  const headers = getOngoingSupportErrandLabels(selectedErrandStatuses).map((header, index) => (
+  const headers = getOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>
@@ -302,7 +243,7 @@ export const SupportErrandsTable: React.FC = () => {
             </div>
           </Table.Column>
         )}
-        {(isLOP() || isIK()) && <Table.Column>{Channels[errand?.channel]}</Table.Column>}
+        <Table.Column>{Channels[errand?.channel]}</Table.Column>
         <Table.Column>
           <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
         </Table.Column>
@@ -310,12 +251,11 @@ export const SupportErrandsTable: React.FC = () => {
           <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
         </Table.Column>
         <Table.Column>{Priority[errand.priority]}</Table.Column>
-        {errand.status === Status.SUSPENDED || errand.status === Status.ASSIGNED ? (
+        {errand.status === Status.SUSPENDED ? (
           <Table.Column>
             <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
           </Table.Column>
         ) : null}
-        {(isKC() || isIK()) && <Table.Column>{Channels[errand.channel]}</Table.Column>}
         <Table.Column>
           {getAdminName(
             supportAdmins?.find((a: SupportAdmin) =>

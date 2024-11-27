@@ -304,7 +304,7 @@ export const CasedataAttachments: React.FC = () => {
                       editing={selectedAttachment ? true : false}
                       accept={ACCEPTED_UPLOAD_FILETYPES}
                       helperText="Maximal filstorlek: 10 MB"
-                      allowMultiple={isMEX() ? true : false}
+                      allowMultiple={true}
                     />
                   </FormControl>
 
@@ -357,7 +357,7 @@ export const CasedataAttachments: React.FC = () => {
                             vals.attachmentName,
                             vals.attachmentType
                           )
-                        : sendAttachments(municipalityId, errand.errandNumber, attachmentsData);
+                        : sendAttachments(municipalityId, errand?.id, errand.errandNumber, attachmentsData);
                       apiCall
                         .then(() =>
                           getErrand(municipalityId, errand.id.toString())
@@ -421,7 +421,7 @@ export const CasedataAttachments: React.FC = () => {
               inverted
               size="sm"
               onClick={() => {
-                setDragDrop(isMEX() ? true : false);
+                setDragDrop(true);
                 setSizeError(false);
                 setAttachmentTypeExists(false);
                 reset();
@@ -493,7 +493,7 @@ export const CasedataAttachments: React.FC = () => {
                                   downloadDocument(attachment);
                                 } else if (imageMimeTypes.includes(attachment.mimeType)) {
                                   setModalFetching(true);
-                                  fetchAttachment(municipalityId, attachment.id)
+                                  fetchAttachment(municipalityId, errand.id, attachment.id)
                                     .then((res) => setModalAttachment(res.data))
                                     .then(() => {
                                       setModalFetching(false);

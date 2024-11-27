@@ -3,49 +3,14 @@ import { GenericExtraParameters } from './extra-parameters.interface';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-  AppealDTO,
-  DecisionDTO,
-  DecisionDtoDecisionOutcomeEnum,
-  DecisionDtoDecisionTypeEnum,
-  LawDTO,
-  StakeholderDTO,
+  Decision,
+  DecisionDecisionOutcomeEnum,
+  DecisionDecisionTypeEnum,
+  Law,
+  Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
 
-export class Appeal implements AppealDTO {
-  /////********NOTE: DATA IS NOT ALIGNED WITH DESIGN, NEEDS CORRECTION WHEN BOTH ARE UP TO DATE*/
-  @IsString()
-  @IsOptional()
-  id?: number;
-  @IsString()
-  @IsOptional()
-  version?: number;
-  @IsString()
-  @IsOptional()
-  created?: string;
-  @IsString()
-  @IsOptional()
-  updated?: string;
-  @IsString()
-  @IsOptional()
-  description?: string;
-  @IsString()
-  @IsOptional()
-  registeredAt?: string;
-  @IsString()
-  @IsOptional()
-  appealConcernCommunicatedAt: string;
-  @IsString()
-  @IsOptional()
-  status: string;
-  @IsString()
-  @IsOptional()
-  timelinessReview: string;
-  @IsNumber()
-  @IsOptional()
-  decisionId?: number;
-}
-
-export class Law implements LawDTO {
+export class LawDTO implements Law {
   @IsString()
   heading: string;
   @IsString()
@@ -58,20 +23,20 @@ export class Law implements LawDTO {
 
 // export type DecisionOutcome = 'APPROVAL' | 'REJECTION' | 'UNKNOWN';
 
-export class Decision implements DecisionDTO {
+export class DecisionDTO implements Decision {
   @IsNumber()
   @IsOptional()
   id: number;
   @IsString()
-  decisionType: DecisionDtoDecisionTypeEnum;
+  decisionType: DecisionDecisionTypeEnum;
   @IsString()
-  decisionOutcome: DecisionDtoDecisionOutcomeEnum;
+  decisionOutcome: DecisionDecisionOutcomeEnum;
   @IsString()
   @IsOptional()
   description?: string;
   @ValidateNested({ each: true })
-  @Type(() => Law)
-  law: LawDTO[];
+  @Type(() => LawDTO)
+  law: Law[];
   @IsOptional()
   decidedBy?: StakeholderDTO;
   @IsString()
@@ -88,10 +53,6 @@ export class Decision implements DecisionDTO {
   @ValidateNested({ each: true })
   @Type(() => Attachment)
   attachments: Attachment[];
-  @ValidateNested({ each: true })
-  @Type(() => Appeal)
-  @IsOptional()
-  appeal?: Appeal;
   @IsObject()
   @IsOptional()
   extraParameters: GenericExtraParameters;

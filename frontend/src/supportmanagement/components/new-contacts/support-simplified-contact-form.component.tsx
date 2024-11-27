@@ -49,6 +49,7 @@ import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
+import { useAppContext } from '@contexts/app.context';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -155,6 +156,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
+  const { supportErrand } = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -784,6 +786,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             <>
               <div className="my-md">
                 <CommonNestedEmailArrayV2
+                  required={false}
+                  errand={supportErrand}
+                  addingStakeholder={true}
                   disabled={props.disabled}
                   error={!!formState.errors.emails}
                   key={`nested-email-array`}
@@ -1047,6 +1052,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             </div>
           </>
           <CommonNestedEmailArrayV2
+            required={false}
+            errand={supportErrand}
+            addingStakeholder={true}
             disabled={props.disabled}
             error={!!formState.errors.emails}
             key={`nested-email-array`}

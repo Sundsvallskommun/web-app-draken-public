@@ -5,7 +5,7 @@ import {
   Stakeholder as ContractStakeholder,
   TermGroup,
 } from '@casedata/interfaces/contracts';
-import { IErrand } from '@casedata/interfaces/errand';
+import { IErrand, RegisterErrandData } from '@casedata/interfaces/errand';
 import { KopeAvtalsData, KopeavtalStakeholder, KopeavtalsTemplate } from '@casedata/interfaces/kopeavtals-data';
 import {
   LagenhetsArendeTemplate,
@@ -18,7 +18,8 @@ import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { AxiosResponse } from 'axios';
-import { saveExtraParameters } from './casedata-extra-parameters-service';
+import { replaceExtraParameter, saveExtraParameters } from './casedata-extra-parameters-service';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 export enum ContractType {
   LAND_LEASE = 'LAND_LEASE',
@@ -385,7 +386,12 @@ export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
 };
 
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
-  const data = { contractId: contractId };
+  const data: ExtraParameter[] = [
+    {
+      key: 'contractId',
+      values: [contractId],
+    },
+  ];
   return saveExtraParameters(municipalityId, data, errand);
 };
 
@@ -393,7 +399,7 @@ export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | La
   if (!errand) {
     return Promise.reject('No errand found, cannot fetch contract. Returning.');
   }
-  const contractId = errand.extraParameters['contractId'];
+  const contractId = errand.extraParameters.find((p) => p.key === 'contractId')?.values[0];
   if (!contractId) {
     return Promise.reject('No contract id found on errand, cannot fetch contract. Returning.');
   }
@@ -1006,3 +1012,29 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
       throw e;
     });
 };
+
+export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, inKey: string, element: string[]) => {
+  if (!municipalityId) {
+    console.error('No municipalityId found. Cannot update set marks of contract.');
+    return;
+  }
+  if (!errand.id) {
+    console.error('No id found. Cannot update set marks of contract.');
+    return;
+  }
+
+  const newParameter: ExtraParameter = {
+    key: inKey,
+    values: element,
+  };
+  const e: Partial<RegisterErrandData> = {
+    id: errand.id.toString(),
+    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
+  };
+  return apiService
+    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
+    .catch((e) => {
+      console.error('Something went wrong when triggering errand phase change', e);
+      throw e;
+    });
+}

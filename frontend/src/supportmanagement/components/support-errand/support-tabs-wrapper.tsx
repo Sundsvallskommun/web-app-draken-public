@@ -7,7 +7,11 @@ import {
   SupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { countUnreadMessages, fetchSupportMessagesTree } from '@supportmanagement/services/support-message-service';
+import {
+  buildTree,
+  countUnreadMessages,
+  fetchSupportMessages,
+} from '@supportmanagement/services/support-message-service';
 import { getSupportNotes, SupportNoteData } from '@supportmanagement/services/support-note-service';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -22,6 +26,7 @@ export const SupportTabsWrapper: React.FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
+  const [messageTree, setMessageTree] = useState([]);
   const [supportNotes, setSupportNotes] = useState<SupportNoteData>();
   const {
     municipalityId,
@@ -58,8 +63,11 @@ export const SupportTabsWrapper: React.FC<{
       getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
       getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
       getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-      // getSupportMessages(supportErrand.id, municipalityId).then(setMessages);
-      fetchSupportMessagesTree(supportErrand.id, municipalityId).then(setMessages);
+      fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+        const tree = buildTree(res);
+        setMessageTree(tree);
+        setMessages(res);
+      });
     }
   };
 
@@ -67,8 +75,11 @@ export const SupportTabsWrapper: React.FC<{
     if (supportErrand.id) {
       getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
       getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-      // getSupportMessages(supportErrand.id, municipalityId).then(setMessages);
-      fetchSupportMessagesTree(supportErrand.id, municipalityId).then(setMessages);
+      fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+        const tree = buildTree(res);
+        setMessageTree(tree);
+        setMessages(res);
+      });
     }
   }, [supportErrand]);
 
@@ -102,6 +113,7 @@ export const SupportTabsWrapper: React.FC<{
       content: supportErrand && (
         <SupportMessagesTab
           messages={messages}
+          messageTree={messageTree}
           setUnsaved={setUnsavedChanges}
           update={update}
           municipalityId={municipalityId}

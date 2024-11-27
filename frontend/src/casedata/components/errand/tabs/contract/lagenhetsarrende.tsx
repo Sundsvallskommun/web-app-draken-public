@@ -10,8 +10,8 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 
 import { TermGroup } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { Relation } from '@casedata/interfaces/role';
-import { getContractStakeholderName } from '@casedata/services/contract-service';
+import { MEXRelation } from '@casedata/interfaces/role';
+import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -133,6 +133,9 @@ export const Lagenhetsarrende: React.FC<{
   const [loading, setIsLoading] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [signatures, setSignatures] = useState<String[]>([]);
+
+  const [doneMark, setDoneMark] = useState<string[]>([]);
+  const [unsaved, setUnsaved] = useState<boolean>(false);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -266,24 +269,59 @@ export const Lagenhetsarrende: React.FC<{
     setSignature(watch().signature);
   }, [watch().signature]);
 
-  const saveButton = () => {
+  useEffect(() => {
+    const doneMarkedElements =
+      errand.extraParameters.find((parameters) => parameters.key === 'lagenhetsarrende')?.values || [];
+    setDoneMark(doneMarkedElements);
+  }, []);
+
+  useEffect(() => {
+    if (unsaved) {
+      saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
+      setUnsaved(false);
+    }
+  }, [doneMark]);
+
+  const markSectionAsDone = (inSection: string) => {
+    if (doneMark.findIndex((temp) => temp === inSection) === -1) {
+      setDoneMark((prevArray) => [...prevArray, inSection]);
+    } else {
+      setDoneMark((prevArray) => prevArray.filter((item) => item !== inSection));
+    }
+    setUnsaved(true);
+  };
+
+  const saveButton = (inSection) => {
     return (
       <div className="my-md">
         {loading ? (
           <Button disabled={true}>Sparar</Button>
         ) : (
-          <Button
-            disabled={!allowed}
-            onClick={() => {
-              setIsLoading(true);
-              onSave(getValues()).then(() => {
-                setIsLoading(undefined);
-                setTextIsDirty(false);
-              });
-            }}
-          >
-            Spara
-          </Button>
+          <div>
+            <Button
+              disabled={!allowed}
+              onClick={() => {
+                setIsLoading(true);
+                onSave(getValues()).then(() => {
+                  setIsLoading(undefined);
+                  setTextIsDirty(false);
+                });
+              }}
+            >
+              Spara
+            </Button>
+
+            <div className="mt-24">
+              <Checkbox
+                onClick={() => {
+                  markSectionAsDone(inSection);
+                }}
+                checked={doneMark.findIndex((temp) => temp === inSection) !== -1 ? true : false}
+              >
+                Markera avsnittet som komplett
+              </Checkbox>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -295,7 +333,6 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="parties-disclosure"
         icon={<Icon icon={<LucideIcon name="users" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Parter</h2>}
-        // label={watch().omrade?.length ? 'Sparad' : ''}
         initalOpen={true}
         color="gronsta"
         variant="alt"
@@ -414,7 +451,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="map-pin" />} />}
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
-        //label={existingContract.omrade?.length > 8 ? 'Färdigställt' : ''}
+        label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Komplett' : ''}
         color="gronsta"
         variant="alt"
         onClick={() => {
@@ -566,14 +603,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('omrade')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="info" />} />}
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
-        // label={watch().andamal?.length ? 'Sparad' : ''}
+        label={doneMark.findIndex((temp) => temp === 'andamal') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().andamal?.length > 0}
         color="gronsta"
         variant="alt"
@@ -855,15 +892,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('andamal')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="calendar" />} />}
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
-        // label={watch().arrendetid?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
-        labelColor={watch().arrendetid?.length > 0 ? 'success' : `warning`}
+        label={doneMark.findIndex((temp) => temp === 'arrendetid') !== -1 ? 'Komplett' : ''}
         initalOpen={watch().arrendetid?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1050,14 +1086,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('arrendetid')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
-        // label={watch().arrendeavgift?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().arrendeavgift?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().arrendeavgift?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendeavgift?.length > 0}
         color="gronsta"
@@ -1366,14 +1402,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('arrendeavgift')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="shovel" />} />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
-        // label={watch().bygglov?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().bygglov?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().bygglov?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().bygglov?.length > 0}
         color="gronsta"
@@ -1475,14 +1511,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('bygglov')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="repeat" />} />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
-        // label={watch().overlatelse?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().overlatelse?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().overlatelse?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().overlatelse?.length > 0}
         color="gronsta"
@@ -1572,14 +1608,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('overlatelse')}
         </div>
       </Disclosure>
       <Disclosure
         data-cy="enrollment-disclosure"
         icon={<Icon icon={<LucideIcon name="square-pen" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
-        // label={watch().inskrivning?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().inskrivning?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().inskrivning?.length > 0}
         color="gronsta"
@@ -1614,14 +1650,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('inskrivning')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="person-standing" />} />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
-        // label={watch().skick?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().skick?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().skick?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skick?.length > 0}
         color="gronsta"
@@ -1722,14 +1758,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('skick')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="slash" />} />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
-        // label={watch().ledningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().ledningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().ledningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().ledningar?.length > 0}
         color="gronsta"
@@ -1819,14 +1855,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('ledningar')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="calculator" />} />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
-        // label={watch().kostnader?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().kostnader?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().kostnader?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().kostnader?.length > 0}
         color="gronsta"
@@ -1916,14 +1952,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('kostnader')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="mountain-snow" />} />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
@@ -2069,14 +2105,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('markfororeningar')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="undo" />} />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
-        // label={watch().upphorande?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().upphorande?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().upphorande?.length > 0}
         color="gronsta"
@@ -2237,14 +2273,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('upphorande')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="clipboard-list" />} />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
-        // label={watch().skadaansvar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().skadaansvar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skadaansvar?.length > 0}
         color="gronsta"
@@ -2375,7 +2411,7 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('skadaansvar')}
         </div>
       </Disclosure>
 
@@ -2389,7 +2425,7 @@ export const Lagenhetsarrende: React.FC<{
               : 'Övriga villkor'}{' '}
           </h2>
         }
-        // label={watch().skadaansvar?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().additionalTerms?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().additionalTerms?.length > 0}
         color="gronsta"
@@ -2425,7 +2461,7 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('additionalTerms')}
         </div>
       </Disclosure>
 
@@ -2433,7 +2469,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
-        // label={watch().sarskilda?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().sarskilda?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().sarskilda?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().sarskilda?.length > 0}
         color="gronsta"
@@ -2520,14 +2556,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('sarskilda')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
-        // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().jordabalken?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().jordabalken?.length > 0}
         color="gronsta"
@@ -2628,14 +2664,14 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('jordabalken')}
         </div>
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="pen" />} />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <LucideIcon size={18} name="check" /> : ''}
+        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
         labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
@@ -2708,7 +2744,7 @@ export const Lagenhetsarrende: React.FC<{
                             }}
                           />
                           {b.firstName ? `${b.firstName} ${b.lastName} ` : `${b.organizationName}`}{' '}
-                          {getStakeholderRelation(b) ? `(${Relation[getStakeholderRelation(b)]})` : ''}
+                          {getStakeholderRelation(b) ? `(${MEXRelation[getStakeholderRelation(b)]})` : ''}
                         </Table.Column>
                       </Table.Row>
                     ))}
@@ -2747,7 +2783,7 @@ export const Lagenhetsarrende: React.FC<{
                     let stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
                     content += `
                         <p><b>${
-                          getStakeholderRelation(stakeholder) ? Relation[getStakeholderRelation(stakeholder)] : ''
+                          getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : ''
                         }</b></p>
                         <p>${
                           stakeholder.firstName
@@ -2800,7 +2836,7 @@ export const Lagenhetsarrende: React.FC<{
               />
             </div>
           </FormControl>
-          {saveButton()}
+          {saveButton('signature')}
         </div>
       </Disclosure>
     </>

@@ -41,9 +41,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockMexErrand_base.data.extraParameters.contractId).as(
-        'getContract'
-      );
+      cy.intercept(
+        'GET',
+        '**/contract/2024-01026',
+        mockMexErrand_base.data.extraParameters.find((param) => param.key === 'contractId')?.values[0]
+      ).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
 

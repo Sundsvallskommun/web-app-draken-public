@@ -52,10 +52,10 @@ class ApiService {
         if (response.headers.location && !response.config.url.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers: defaultHeaders }).catch(e => {
-            logger.error('Error in location header request:', e.details);
-            logger.error('Base URL was:', e.config?.baseURL);
-            logger.error('URL was:', e.config?.url);
-            logger.error('Method was:', e.config?.method);
+            logger.error(`Error in location header request: ${e.details}`);
+            logger.error(`Base URL was: ${e.config?.baseURL}`);
+            logger.error(`URL was: ${e.config?.url}`);
+            logger.error(`Method was: ${e.config?.method}`);
             return Promise.resolve(response);
           });
         }
@@ -97,22 +97,22 @@ class ApiService {
   }
 
   public async get<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING GET REQUEST TO URL: ${config.url}`);
+    logger.info(`MAKING GET REQUEST TO URL, ${config.url}`);
     return this.request<T>({ ...config, method: 'GET' }, user);
   }
 
   public async post<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING POST REQUEST TO URL: ${config.url}`);
+    logger.info(`MAKING POST REQUEST TO URL, ${config.url}`);
     return this.request<T>({ ...config, method: 'POST' }, user);
   }
 
   public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PATCH REQUEST TO URL: ${config.url}`);
+    logger.info(`MAKING PATCH REQUEST TO URL, ${config.url}`);
     return this.request<T>({ ...config, method: 'PATCH' }, user);
   }
 
   public async put<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PUT REQUEST TO URL: ${config.url}`);
+    logger.info(`MAKING PUT REQUEST TO URL, ${config.url}`);
     return this.request<T>({ ...config, method: 'PUT' }, user);
   }
 

@@ -1,6 +1,4 @@
-import AddIcon from '@mui/icons-material/Add';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Chip } from '@sk-web-gui/react';
-import { useEffect, useRef } from 'react';
 import { useFieldArray } from 'react-hook-form';
 
 const PREFILL_VALUE = '+46';
@@ -20,43 +18,41 @@ const CommonNestedPhoneArrayV2 = ({
     name: `phoneNumbers`,
   });
 
-  const newNumber = watch(`newPhoneNumber`);
+  const { newPhoneNumber } = watch();
 
   return (
     <FormControl id={`phoneNumbers`} className="w-full">
-      <FormLabel>Telefonnummer (t ex +46701740635) {required ? <span aria-hidden="true">*</span> : null}</FormLabel>
+      <FormLabel>
+        Lägg till telefonnummer (t ex +46701740635){required ? <span aria-hidden="true">*</span> : null}
+      </FormLabel>
       <div className="flex items-center w-full justify-between">
         <Input
           disabled={disabled}
-          size="sm"
+          size="md"
           data-cy={`newPhoneNumber`}
-          className={cx(error ? 'border-error' : null, `mr-md w-5/6`)}
+          className={cx(error ? 'border-error' : null, 'w-full mr-16')}
           placeholder="+4670-..."
           defaultValue={'+46'}
           {...register(`newPhoneNumber`)}
         />
         <Button
           type="button"
-          variant="primary"
+          variant="tertiary"
           data-cy={`newPhoneNumber-button`}
-          size="sm"
-          leftIcon={<AddIcon fontSize="large" className="mr-sm" />}
+          size="md"
           color="primary"
           onClick={() => {
-            append({ value: newNumber });
+            append({ value: newPhoneNumber });
             setValue(`newPhoneNumber`, PREFILL_VALUE);
+            trigger();
           }}
-          disabled={newNumber === '' || newNumber === PREFILL_VALUE || (errors && !!errors.newPhoneNumber)}
-          className="rounded-lg ml-sm"
+          disabled={newPhoneNumber === '' || newPhoneNumber === PREFILL_VALUE || (errors && !!errors.newPhoneNumber)}
+          className="rounded-button"
         >
           Lägg till
         </Button>
       </div>
-      {errors?.newPhoneNumber && (
-        <div className="my-sm text-error">
-          <FormErrorMessage>{errors?.newPhoneNumber?.message}</FormErrorMessage>
-        </div>
-      )}
+
       {fields.length > 0 ? (
         <div className="flex items-center w-full flex-wrap justify-start gap-md py-sm">
           {fields.map((field: { id: string; value: string }, k) => {

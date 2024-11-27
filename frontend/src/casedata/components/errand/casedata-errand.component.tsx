@@ -119,7 +119,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
       <div className="grow shrink overflow-y-hidden">
         <div className="flex justify-end w-full h-full">
           <div className="flex justify-center overflow-y-auto w-full grow max-lg:mr-[5.6rem]">
-            <main className="flex-grow flex justify-center px-24 max-w-errande h-fit w-full pb-40">
+            <main className="flex-grow flex justify-center px-24 max-w-errand h-fit w-full pb-40">
               {isLoading ? (
                 <div className="h-full w-full flex flex-col items-center justify-start p-28">
                   <Spinner size={4} />

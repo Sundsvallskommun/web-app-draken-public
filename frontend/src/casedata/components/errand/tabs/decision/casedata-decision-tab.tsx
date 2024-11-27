@@ -4,6 +4,7 @@ import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
+  lawMapping,
   renderBeslutPdf,
   renderHtml,
   saveDecision,
@@ -15,14 +16,13 @@ import {
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { KopeAvtalsData } from '@casedata/interfaces/kopeavtals-data';
@@ -39,8 +39,8 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
-import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -69,7 +69,7 @@ export interface DecisionFormModel {
   errandNumber?: string;
   description: string;
   descriptionPlaintext: string;
-  law: {};
+  law: Law[];
   decisionTemplate: string;
   outcome: string;
   validFrom: string;
@@ -84,7 +84,7 @@ let formSchema = yup
     description: yup.string(),
     descriptionPlaintext: yup.string(),
     errandId: yup.number(),
-    law: yup.mixed(),
+    law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup
       .string()
       .required('Förslag till beslut måste anges')
@@ -124,12 +124,7 @@ export const CasedataDecisionTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-  }: { municipalityId: string; user: User; errand: IErrand; setErrand: (e: IErrand) => void } = useAppContext();
+  const { municipalityId, user, errand, setErrand, administrators }: AppContextInterface = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -146,16 +141,6 @@ export const CasedataDecisionTab: React.FC<{
   const [lawHeading, setLawHeading] = useState<string>('');
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-
-  const lawMapping = [
-    {
-      id: 1,
-      heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
-      sfs: 'Trafikförordningen (1998:1276)',
-      chapter: '13',
-      article: '8',
-    },
-  ];
 
   useEffect(() => {
     if (lawHeading) {
@@ -222,7 +207,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {
-    return triggerErrandPhaseChange(municipalityId, errand.id.toString())
+    return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
       .then((res) => setErrand(res.errand))
       .then(() => {
@@ -295,10 +280,7 @@ export const CasedataDecisionTab: React.FC<{
       const saved = await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
-      const recipient = owner?.emails?.[0]?.value;
-      if (!recipient) {
-        throw new Error('Ingen mottagare hittades');
-      }
+      const recipientEmail = owner?.emails?.[0]?.value;
       const contactMeans: ContactMeans = errand.externalCaseId
         ? 'webmessage'
         : validateOwnerForSendingDecisionByEmail(errand)
@@ -306,6 +288,9 @@ export const CasedataDecisionTab: React.FC<{
         : validateOwnerForSendingDecisionByLetter(errand)
         ? 'digitalmail'
         : false;
+      if (contactMeans === 'email' && !recipientEmail) {
+        throw new Error('Ingen e-postadress för mottagare hittades');
+      }
       if (!contactMeans) {
         toastMessage({
           position: 'bottom',
@@ -315,11 +300,14 @@ export const CasedataDecisionTab: React.FC<{
         });
         return;
       }
-      const messageBody: CasedataMessageTabFormModel = {
+      const messageData: CasedataMessageTabFormModel = {
         contactMeans,
         messageClassification: MessageClassification.Informationsmeddelande,
-        messageEmail: recipient,
-        messagePhone: '',
+        emails: [{ value: recipientEmail }],
+        newEmail: '',
+        phoneNumbers: [],
+        newPhoneNumber: '',
+        messageAttachments: [],
         messageBody: base64Decode(renderedHtml.htmlBase64),
         messageBodyPlaintext: data.descriptionPlaintext,
         attachUtredning: false,
@@ -331,7 +319,7 @@ export const CasedataDecisionTab: React.FC<{
         headerReferences: '',
       };
       const sentMessage = isMEX()
-        ? await sendMessage(municipalityId, errand, messageBody)
+        ? await sendMessage(municipalityId, errand, messageData)
         : isPT()
         ? await sendDecisionMessage(municipalityId, errand)
         : () => {
@@ -420,14 +408,16 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   const onSubmit = () => {
-    saveConfirm.showConfirmation('Spara beslut', 'Vill du spara detta beslut?').then((confirmed) => {
-      if (confirmed) {
-        const data = getValues();
-        data.outcome = DecisionOutcomeKey[data.outcome];
-        save(data);
-        return Promise.resolve(true);
-      }
-    });
+    saveConfirm
+      .showConfirmation('Spara beslut', 'Vill du spara detta beslut?', 'Ja', 'Nej', 'info', 'info')
+      .then((confirmed) => {
+        if (confirmed) {
+          const data = getValues();
+          data.outcome = DecisionOutcomeKey[data.outcome];
+          save(data);
+          return Promise.resolve(true);
+        }
+      });
   };
 
   const onError = (e) => {
@@ -443,10 +433,6 @@ export const CasedataDecisionTab: React.FC<{
     trigger('description');
   };
 
-  const decisionsAppeal = (d) => {
-    return errand.appeals.find((x) => x.decisionId === d);
-  };
-
   const sortedDec = errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
   useEffect(() => {
@@ -455,17 +441,13 @@ export const CasedataDecisionTab: React.FC<{
     setValue('errandId', errand.id);
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
-      if (!decisionsAppeal(existingDecision.id)) {
-        setValue('id', existingDecision.id);
-        setValue('description', existingDecision.description);
-        setRichText(existingDecision.description);
-        setLawHeading(existingDecision.law[0].heading);
-        setValue('outcome', DecisionOutcomeLabel[existingDecision.decisionOutcome]);
-        setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
-        setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
-      } else {
-        setValue('id', undefined);
-      }
+      setValue('id', existingDecision.id);
+      setValue('description', existingDecision.description);
+      setRichText(existingDecision.description);
+      setLawHeading(existingDecision.law[0].heading);
+      setValue('outcome', DecisionOutcomeLabel[existingDecision.decisionOutcome]);
+      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
+      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
     } else {
       setValue('id', undefined);
     }
@@ -512,18 +494,6 @@ export const CasedataDecisionTab: React.FC<{
     );
   };
 
-  const appealed = (decision) => {
-    return (
-      (errand.status === ErrandStatus.Beslutad ||
-        errand.status === ErrandStatus.BeslutVerkstallt ||
-        errand.status === ErrandStatus.BeslutOverklagat ||
-        errand.status === ErrandStatus.ArendeAvslutat) &&
-      (decisionsAppeal(decision?.id)?.status === 'COMPLETED' ||
-        (decisionsAppeal(decision?.id)?.status === 'NEW' &&
-          decisionsAppeal(decision?.id)?.timelinessReview === 'REJECTED'))
-    );
-  };
-
   return (
     <>
       {(errand.phase === ErrandPhase.verkstalla && errand.status !== ErrandStatus.UnderBeslut) ||
@@ -559,12 +529,7 @@ export const CasedataDecisionTab: React.FC<{
                               {Object.entries(DecisionOutcomeLabel).find((x) => x[0] === decision.decisionOutcome)[1]}
                             </p>
 
-                            {appealed(decision) ? (
-                              <div className="flex items-center">
-                                <LucideIcon name="undo-2" size={16} className="ml-12 mr-4" />
-                                <p className="text-small">Beslut överklagat</p>
-                              </div>
-                            ) : sent(decision) ? (
+                            {sent(decision) ? (
                               <div className="flex items-center">
                                 <LucideIcon name="mail-check" size={16} className="ml-12 mr-4" />
                                 <p className="text-small">Beslut skickat</p>
@@ -605,6 +570,7 @@ export const CasedataDecisionTab: React.FC<{
           </div>
           <div className="mt-24">
             <Input type="hidden" {...register('id')} />
+            <Input type="hidden" {...register('decidedBy')} value={user.username} />
             <div className="w-full mt-md flex justify-start gap-md mb-24">
               <FormControl data-cy="decision-outcome-dropdown" className="w-full">
                 <FormLabel>Beslut</FormLabel>
@@ -645,24 +611,27 @@ export const CasedataDecisionTab: React.FC<{
                 <>
                   <FormControl className="w-full">
                     <FormLabel>Lagrum</FormLabel>
-                    <Input
-                      type="hidden"
-                      {...register('law')}
-                      value={lawMapping.find((l) => l.id === selectedLaw).heading}
-                    />
+                    <Input type="hidden" {...register('law')} />
                     <Select
-                      className="w-full"
+                      className={cx(`w-full`, errors.law ? 'border-error' : '')}
                       data-cy="law-select"
                       name="law"
                       size="sm"
                       onChange={(e) => {
-                        setLawHeading(e.target.value);
+                        setValue(
+                          'law',
+                          lawMapping.filter((law) => {
+                            return law.heading === e.target.value;
+                          }),
+                          { shouldDirty: true }
+                        );
+                        props.setUnsaved(true);
                         trigger();
                       }}
                       placeholder="Välj lagrum"
-                      value={lawHeading}
+                      value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                     >
-                      <Select.Option>Välj lagrum</Select.Option>
+                      <Select.Option value={''}>Välj lagrum</Select.Option>
                       {lawMapping.map((law, index) => {
                         return (
                           <Select.Option key={index} value={law.heading}>
@@ -671,6 +640,11 @@ export const CasedataDecisionTab: React.FC<{
                         );
                       })}
                     </Select>
+                    <div className="my-sm text-error">
+                      {errors.law && formState.dirtyFields.law && (
+                        <FormErrorMessage>{errors.law.message}</FormErrorMessage>
+                      )}
+                    </div>
                   </FormControl>
 
                   <FormControl className="w-full">
@@ -697,7 +671,7 @@ export const CasedataDecisionTab: React.FC<{
                 </>
               )}
 
-              {isMEX() || isPT() ? (
+              {isMEX() ? (
                 <FormControl className="w-full">
                   <FormLabel>Välj beslutsmall</FormLabel>
                   <Input
@@ -798,7 +772,14 @@ export const CasedataDecisionTab: React.FC<{
                       setControlContractIsOpen(true);
                     } else {
                       saveConfirm
-                        .showConfirmation('Spara och skicka', 'Vill du spara och skicka beslutet?')
+                        .showConfirmation(
+                          'Spara och skicka',
+                          'Vill du spara och skicka beslutet?',
+                          'Ja',
+                          'Nej',
+                          'info',
+                          'info'
+                        )
                         .then((confirmed) => {
                           if (confirmed) {
                             saveAndSend(getValues());
@@ -808,7 +789,14 @@ export const CasedataDecisionTab: React.FC<{
                     }
                   } else {
                     saveConfirm
-                      .showConfirmation('Spara och skicka', 'Vill du spara och skicka beslutet?')
+                      .showConfirmation(
+                        'Spara och skicka',
+                        'Vill du spara och skicka beslutet?',
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      )
                       .then((confirmed) => {
                         if (confirmed) {
                           saveAndSend(getValues());

@@ -23,7 +23,7 @@ import { SupportAttachment } from '@supportmanagement/services/support-attachmen
 import {
   forwardSupportErrand,
   getSupportErrandById,
-  ResolutionLabel,
+  ResolutionLabelKS,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
@@ -42,7 +42,7 @@ const yupForwardForm = yup.object().shape(
       then: yup.string().trim().email('E-postadress har fel format').required('E-postadress måste anges'),
     }),
     department: yup.string().required('Verksamhet är obligatoriskt'),
-    message: yup.string().max(8192, 'Meddelande är för långt').required('Meddelande är obligatoriskt'),
+    message: yup.string().max(15000, 'Meddelande är för långt').required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
   },
   [['email', 'recipient']]
@@ -132,7 +132,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           return sendClosingMessage(
             adminName,
             supportErrand,
-            ResolutionLabel.REGISTERED_EXTERNAL_SYSTEM,
+            ResolutionLabelKS.REGISTERED_EXTERNAL_SYSTEM,
             municipalityId
           );
         }

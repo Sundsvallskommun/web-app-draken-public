@@ -3,7 +3,7 @@ import { isIK, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, cx, Divider } from '@sk-web-gui/react';
+import { Avatar, Button, cx, Divider, RadioButton } from '@sk-web-gui/react';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
@@ -13,6 +13,7 @@ import MessageTreeComponent from './support-messages-tree.component';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
+  messageTree: Message[];
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   municipalityId: string;
@@ -24,6 +25,8 @@ export const SupportMessagesTab: React.FC<{
   const [showSelectedMessage, setShowSelectedMessage] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [richText, setRichText] = useState<string>('');
+  const [sortMessages, setSortMessages] = useState<number>(0);
+  const [sortedMessages, setSortedMessages] = useState(props.messages);
 
   const emailBody = `${
     isLOP()
@@ -60,6 +63,20 @@ export const SupportMessagesTab: React.FC<{
     setShowSelectedMessage(true);
   };
 
+  useEffect(() => {
+    if (props.messages && props.messageTree) {
+      if (sortMessages === 1) {
+        let filteredMessages = props.messages.filter((message: Message) => message.direction === 'INBOUND');
+        setSortedMessages(filteredMessages);
+      } else if (sortMessages === 2) {
+        let filteredMessages = props.messages.filter((message: Message) => message.direction === 'OUTBOUND');
+        setSortedMessages(filteredMessages);
+      } else {
+        setSortedMessages(props.messageTree);
+      }
+    }
+  }, [props.messages, props.messageTree, sortMessages]);
+
   return (
     <>
       <div className="w-full py-40 px-48 gap-32">
@@ -94,10 +111,22 @@ export const SupportMessagesTab: React.FC<{
           </p>
         </div>
 
-        {props.messages?.length ? (
+        <RadioButton.Group inline className="mt-16">
+          <RadioButton value={0} defaultChecked={true} onChange={() => setSortMessages(0)}>
+            Alla
+          </RadioButton>
+          <RadioButton value={1} onChange={() => setSortMessages(1)}>
+            Mottagna
+          </RadioButton>
+          <RadioButton value={2} onChange={() => setSortMessages(2)}>
+            Skickade
+          </RadioButton>
+        </RadioButton.Group>
+
+        {sortedMessages?.length ? (
           <div data-cy="message-container">
             <MessageTreeComponent
-              nodes={props.messages}
+              nodes={sortedMessages}
               selected={selectedMessage?.communicationID}
               onSelect={(msg: Message) => {
                 onSelect(msg);

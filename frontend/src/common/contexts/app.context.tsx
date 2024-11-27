@@ -5,7 +5,6 @@ import { emptyErrandList } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { User } from '@common/interfaces/user';
 import { Admin, emptyUser } from '@common/services/user-service';
-import { SidebarButton } from '@supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
@@ -16,10 +15,14 @@ import {
   emptySupportErrandList,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { SupportNotification } from '@supportmanagement/services/support-notification-service';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { createContext, useContext, useState } from 'react';
 
 export interface AppContextInterface {
+  isLoading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
+
   subPage: string;
   setSubPage: (subPage: string) => void;
 
@@ -32,11 +35,14 @@ export interface AppContextInterface {
   avatar: string;
   setAvatar: (avatar: string) => void;
 
-  errand;
+  errand: IErrand;
   setErrand: (errand: IErrand) => void;
 
   messages;
   setMessages: (messages: MessageNode[]) => void;
+
+  messageTree;
+  setMessageTree: (messages: MessageNode[]) => void;
 
   assets;
   setAssets: (assets: Asset[]) => void;
@@ -53,8 +59,11 @@ export interface AppContextInterface {
   supportAttachments;
   setSupportAttachments: (supportAttachments: SupportAttachment[]) => void;
 
-  selectedErrandStatuses;
-  setSelectedErrandStatuses: (selectedErrandStatuses: Status[]) => void;
+  selectedErrandStatuses: string[];
+  setSelectedErrandStatuses: (selectedErrandStatuses: string[]) => void;
+
+  selectedSupportErrandStatuses;
+  setSelectedSupportErrandStatuses: (selectedSupportErrandStatuses: Status[]) => void;
 
   supportAdmins;
   setSupportAdmins: (admins: SupportAdmin[]) => void;
@@ -65,11 +74,26 @@ export interface AppContextInterface {
   stakeholderCustomers;
   setStakeholderCustomers: (stakeholderCustomers: SupportStakeholderFormModel[]) => void;
 
-  supportNotifications;
-  setSupportNotifications: (notifications: SupportNotification[]) => void;
+  notifications: (SupportNotification | CaseDataNotification)[];
+  setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
 
   errands;
   setErrands: (errands: ErrandsData) => void;
+
+  newErrands;
+  setNewErrands: (errands: ErrandsData) => void;
+
+  ongoingErrands;
+  setOngoingErrands: (errands: ErrandsData) => void;
+
+  suspendedErrands;
+  setSuspendedErrands: (errands: ErrandsData) => void;
+
+  assignedErrands;
+  setAssignedErrands: (errands: ErrandsData) => void;
+
+  closedErrands;
+  setClosedErrands: (errands: ErrandsData) => void;
 
   supportErrands;
   setSupportErrands: (supportErrands: SupportErrandsData) => void;
@@ -83,18 +107,14 @@ export interface AppContextInterface {
   suspendedSupportErrands;
   setSuspendedSupportErrands: (supportErrands: SupportErrandsData) => void;
 
+  assignedSupportErrands;
+  setAssignedSupportErrands: (SupportErrand: SupportErrandsData) => void;
+
   solvedSupportErrands;
   setSolvedSupportErrands: (supportErrands: SupportErrandsData) => void;
 
-  sidebarButtons;
-  setSidebarButtons: (
-    sidebarButtons: {
-      label: string;
-      key: Status;
-      icon: string;
-      totalStatusErrands: number;
-    }[]
-  ) => void;
+  sidebarLabel;
+  setSidebarLabel: (sidebarLabel: string) => void;
 
   administrators;
   setAdministrators: (admins: Admin[]) => void;
@@ -109,44 +129,49 @@ export interface AppContextInterface {
 const AppContext = createContext<AppContextInterface>(null);
 
 export function AppWrapper({ children }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [subPage, setSubPage] = useState('');
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
   const [errands, setErrands] = useState<ErrandsData>(emptyErrandList);
+  const [newErrands, setNewErrands] = useState<ErrandsData>(emptyErrandList);
+  const [ongoingErrands, setOngoingErrands] = useState<ErrandsData>(emptyErrandList);
+  const [suspendedErrands, setSuspendedErrands] = useState<ErrandsData>(emptyErrandList);
+  const [assignedErrands, setAssignedErrands] = useState<ErrandsData>(emptyErrandList);
+  const [closedErrands, setClosedErrands] = useState<ErrandsData>(emptyErrandList);
   const [supportErrands, setSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [newSupportErrands, setNewSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [ongoingSupportErrands, setOngoingSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [suspendedSupportErrands, setSuspendedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
+  const [assignedSupportErrands, setAssignedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [solvedSupportErrands, setSolvedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [errand, setErrand] = useState<IErrand>();
   const [messages, setMessages] = useState<MessageNode[]>();
+  const [messageTree, setMessageTree] = useState<MessageNode[]>();
   const [assets, setAssets] = useState<Asset[]>();
   const [supportErrand, setSupportErrand] = useState<SupportErrand>();
   const [supportMetadata, setSupportMetadata] = useState<SupportMetadata>();
   const [supportAttachments, setSupportAttachments] = useState<SupportAttachment[]>();
-  const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<Status[]>([Status.NEW]);
+  const [selectedSupportErrandStatuses, setSelectedSupportErrandStatuses] = useState<Status[]>([Status.NEW]);
+  const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<string[]>(['ArendeInkommit']);
   const [supportAdmins, setSupportAdmins] = useState<SupportAdmin[]>([]);
   const [stakeholderContacts, setStakeholderContacts] = useState<SupportStakeholderFormModel[]>([]);
   const [stakeholderCustomers, setStakeholderCustomers] = useState<SupportStakeholderFormModel[]>([]);
 
   const [municipalityId, setMunicipalityId] = useState<string>();
-  const [sidebarButtons, setSidebarButtons] = useState<
-    {
-      label: string;
-      key: Status;
-      icon: string;
-      totalStatusErrands: number;
-    }[]
-  >();
+  const [sidebarLabel, setSidebarLabel] = useState<string>();
   const [administrators, setAdministrators] = useState<Admin[]>([]);
   const [isCookieConsentOpen, setIsCookieConsentOpen] = useState(true);
-  const [supportNotifications, setSupportNotifications] = useState<SupportNotification[]>([]);
+  const [notifications, setNotifications] = useState<(SupportNotification | CaseDataNotification)[]>([]);
   const [uiPhase, setUiPhase] = useState<UiPhase>();
 
   return (
     <AppContext.Provider
       value={{
+        isLoading,
+        setIsLoading: (isLoading: boolean) => setIsLoading(isLoading),
+
         subPage,
         setSubPage: (subPage: string) => setSubPage(subPage),
 
@@ -165,6 +190,9 @@ export function AppWrapper({ children }) {
         messages,
         setMessages: (messages: MessageNode[]) => setMessages(messages),
 
+        messageTree,
+        setMessageTree: (messages: MessageNode[]) => setMessageTree(messages),
+
         assets,
         setAssets: (assets: Asset[]) => setAssets(assets),
 
@@ -177,8 +205,12 @@ export function AppWrapper({ children }) {
         supportAttachments,
         setSupportAttachments: (supportAttachments: SupportAttachment[]) => setSupportAttachments(supportAttachments),
 
+        selectedSupportErrandStatuses,
+        setSelectedSupportErrandStatuses: (selectedSupportErrandStatuses: Status[]) =>
+          setSelectedSupportErrandStatuses(selectedSupportErrandStatuses),
+
         selectedErrandStatuses,
-        setSelectedErrandStatuses: (selectedErrandStatuses: Status[]) =>
+        setSelectedErrandStatuses: (selectedErrandStatuses: string[]) =>
           setSelectedErrandStatuses(selectedErrandStatuses),
 
         supportAdmins,
@@ -198,6 +230,21 @@ export function AppWrapper({ children }) {
         errands,
         setErrands: (errands: ErrandsData) => setErrands(errands),
 
+        newErrands,
+        setNewErrands: (errands: ErrandsData) => setNewErrands(errands),
+
+        ongoingErrands,
+        setOngoingErrands: (errands: ErrandsData) => setOngoingErrands(errands),
+
+        suspendedErrands,
+        setSuspendedErrands: (errands: ErrandsData) => setSuspendedErrands(errands),
+
+        assignedErrands,
+        setAssignedErrands: (errands: ErrandsData) => setAssignedErrands(errands),
+
+        closedErrands,
+        setClosedErrands: (errands: ErrandsData) => setClosedErrands(errands),
+
         supportErrands,
         setSupportErrands: (errands: SupportErrandsData) => setSupportErrands(errands),
 
@@ -210,14 +257,17 @@ export function AppWrapper({ children }) {
         suspendedSupportErrands,
         setSuspendedSupportErrands: (supportErrands: SupportErrandsData) => setSuspendedSupportErrands(supportErrands),
 
+        assignedSupportErrands,
+        setAssignedSupportErrands: (supportErrand: SupportErrandsData) => setAssignedSupportErrands(supportErrand),
+
         solvedSupportErrands,
         setSolvedSupportErrands: (supportErrands: SupportErrandsData) => setSolvedSupportErrands(supportErrands),
 
-        sidebarButtons,
-        setSidebarButtons: (sidebarButtons: SidebarButton[]) => setSidebarButtons(sidebarButtons),
+        sidebarLabel,
+        setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),
 
-        supportNotifications,
-        setSupportNotifications: (notifications: SupportNotification[]) => setSupportNotifications(notifications),
+        notifications,
+        setNotifications: (notifications: []) => setNotifications(notifications),
 
         administrators,
         setAdministrators: (admins: Admin[]) => {
