@@ -28,7 +28,7 @@ import {
   SupportManagementQueryValues,
 } from './components/supportmanagement-filter-query.component';
 
-import { isLOP } from '@common/services/application-service';
+import { isIK, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   ChannelFilter,
@@ -53,7 +53,7 @@ import {
 import {
   SupportManagementStatusFilter,
   SupportManagementStatusValues,
-} from './components/supportmanagement-filter-status.component';
+} from './components/supportmanagement-filter-sidebarstatus-selector.component';
 import { SupportManagementFilterTags } from './components/supportmanagement-filter-tags.component';
 import {
   SupportManagementFilterType,
@@ -92,17 +92,13 @@ const SupportManagementFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(false);
-  const { selectedErrandStatuses, sidebarButtons } = useAppContext();
+  const { selectedSupportErrandStatuses: selectedSupportErrandStatuses, sidebarLabel } = useAppContext();
 
   return (
     <>
       <div className="flex flex-col w-full gap-24">
         <div className="w-full flex items-start md:items-center justify-between flex-col md:flex-row gap-12">
-          <h1 className="p-0 m-0">
-            {sidebarButtons && selectedErrandStatuses
-              ? sidebarButtons?.find((s) => selectedErrandStatuses.includes(s.key))?.label
-              : 'Ärenden'}
-          </h1>
+          <h1 className="p-0 m-0">{sidebarLabel || 'Ärenden'}</h1>
 
           <div className="w-full md:max-w-[48rem]">
             {/*
@@ -125,7 +121,7 @@ const SupportManagementFiltering: React.FC<{
 
         <div className={cx(show ? 'visible' : 'hidden')}>
           <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
-            {isLOP() ? (
+            {isLOP() || isIK() ? (
               <>
                 <div className="relative max-md:w-full">
                   <SupportManagementFilterLabelCategory />

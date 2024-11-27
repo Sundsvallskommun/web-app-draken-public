@@ -1,6 +1,6 @@
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -23,7 +23,7 @@ import { SupportAttachment } from '@supportmanagement/services/support-attachmen
 import {
   forwardSupportErrand,
   getSupportErrandById,
-  ResolutionLabel,
+  ResolutionLabelKS,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
@@ -42,7 +42,7 @@ const yupForwardForm = yup.object().shape(
       then: yup.string().trim().email('E-postadress har fel format').required('E-postadress måste anges'),
     }),
     department: yup.string().required('Verksamhet är obligatoriskt'),
-    message: yup.string().max(8192, 'Meddelande är för långt').required('Meddelande är obligatoriskt'),
+    message: yup.string().max(15000, 'Meddelande är för långt').required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
   },
   [['email', 'recipient']]
@@ -105,7 +105,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   });
 
   useEffect(() => {
-    if (isLOP()) {
+    if (isLOP() || isIK()) {
       setValue('recipient', 'EMAIL');
     }
   }, []);
@@ -132,7 +132,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           return sendClosingMessage(
             adminName,
             supportErrand,
-            ResolutionLabel.REGISTERED_EXTERNAL_SYSTEM,
+            ResolutionLabelKS.REGISTERED_EXTERNAL_SYSTEM,
             municipalityId
           );
         }
@@ -208,7 +208,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       </Button>
       <Modal show={showModal} label="Vidarebefordra ärende" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
-          {!isLOP() && (
+          {isKC() && (
             <>
               <p className="text-content font-semibold">Mottagare</p>
               <FormControl id="resolution" className="w-full" required>

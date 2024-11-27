@@ -6,8 +6,9 @@ import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './s
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isIS, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -17,8 +18,6 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
-import { IErrand } from '@casedata/interfaces/errand';
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export interface Customer {
   id: string;
@@ -227,6 +226,33 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
+export const newStatuses = [Status.NEW];
+
+export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
+
+export const suspendedStatuses = [Status.SUSPENDED];
+export const assignedStatuses = [Status.ASSIGNED];
+
+export const closedStatuses = [Status.SOLVED];
+
+export const getStatusLabel = (statuses: Status[]) => {
+  if (statuses.length > 0) {
+    if (statuses.some((s) => newStatuses.includes(s))) {
+      return 'Nya ärenden';
+    } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
+      return 'Öppnade ärenden';
+    } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
+      return 'Parkerade ärenden';
+    } else if (statuses.some((s) => assignedStatuses.includes(s))) {
+      return 'Tilldelade ärenden';
+    } else if (statuses.some((s) => closedStatuses.includes(s))) {
+      return 'Avslutade ärenden';
+    } else {
+      return 'Ärenden';
+    }
+  }
+};
+
 export const findStatusKeyForStatusLabel = (statusKey: string) =>
   Object.entries(StatusLabel).find((e: [string, string]) => e[1] === statusKey)?.[0];
 
@@ -289,8 +315,8 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
 
 // This might be instance specific in the future, meaning
 // it will need to be configurable
-export const ongoingStatuses = 'Inkommet,Pågående,Parkerat';
-export const ongoingStatusKeys = ongoingStatuses.split(',').map(findStatusKeyForStatusLabel).join(',');
+export const ongoingStatusesLabels = 'Inkommet,Pågående,Parkerat';
+export const ongoingStatusKeys = ongoingStatusesLabels.split(',').map(findStatusKeyForStatusLabel).join(',');
 
 export enum Resolution {
   SOLVED = 'SOLVED',
@@ -302,6 +328,10 @@ export enum Resolution {
   CLOSED = 'CLOSED',
   BACK_TO_MANAGER = 'BACK_TO_MANAGER',
   BACK_TO_HR = 'BACK_TO_HR',
+  REFER_TO_CONTACTSUNDSVALL = 'REFER_TO_CONTACTSUNDSVALL',
+  REFER_TO_PHONE = 'REFER_TO_PHONE',
+  REGISTERED = 'REGISTERED',
+  SENT_MESSAGE = 'SENT_MESSAGE',
 }
 
 export enum ResolutionLabelLOP {
@@ -310,7 +340,17 @@ export enum ResolutionLabelLOP {
   BACK_TO_HR = 'Åter till HR',
 }
 
-export enum ResolutionLabel {
+export enum ResolutionLabelIK {
+  REFER_TO_CONTACTSUNDSVALL = 'Hänvisat till Kontakt Sundsvall',
+  SELF_SERVICE = 'Hänvisat till självservice',
+  SOLVED = 'Informerat /intern har löst hela ärendet',
+  REFER_TO_PHONE = 'Behöver återkomma/hänvisat till telefontid',
+  REGISTERED = 'Tagit emot/registrerat/paketerat ärende',
+  CONNECTED = 'Kopplat samtal',
+  SENT_MESSAGE = 'Skickat ett meddelande',
+}
+
+export enum ResolutionLabelKS {
   SOLVED = 'Löst av Kontakt Sundsvall',
   REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
   CONNECTED = 'Kopplat samtal',
@@ -323,19 +363,17 @@ export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: Status.SUSPENDED },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
   },
-  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: [Status.SUSPENDED] },
   { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  // { label: 'Kontaktperson', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendeknapp', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
 ];
 
 export const ongoingSupportErrandLabelsLoP = [
@@ -350,7 +388,7 @@ export const ongoingSupportErrandLabelsLoP = [
     label: 'Prioritet',
     screenReaderOnly: false,
     sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED],
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
   },
   {
     label: 'Påminnelse',
@@ -364,11 +402,10 @@ export const ongoingSupportErrandLabelsLoP = [
     sortable: true,
     shownForStatus: All.ALL,
   },
-  { label: 'Ärendeknapp', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
 ];
 
 export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
-  const ongoingSupportErrandLabels = isKC() || isIS() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
+  const ongoingSupportErrandLabels = isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
   return ongoingSupportErrandLabels.filter(
     (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
   );
@@ -397,7 +434,7 @@ export const emptyContact: SupportStakeholderFormModel = {
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
-  externalIdType: isLOP() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
   firstName: '',
   lastName: '',
   address: '',
@@ -462,6 +499,7 @@ export const useSupportErrands = (
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
   const {
+    setIsLoading,
     setSupportErrands,
     supportErrands,
     setNewSupportErrands,
@@ -470,11 +508,14 @@ export const useSupportErrands = (
     ongoingSupportErrands,
     setSuspendedSupportErrands,
     suspendedSupportErrands,
+    setAssignedSupportErrands,
+    assignedSupportErrands,
     setSolvedSupportErrands,
     solvedSupportErrands,
   } = useAppContext();
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      setIsLoading(true);
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
@@ -488,83 +529,104 @@ export const useSupportErrands = (
           });
         });
 
-      getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
-        .then((res) => {
-          setNewSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Nya ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+      const fetchPromises = [
+        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
+          .then((res) => {
+            setNewSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Nya ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(
-        municipalityId,
-        page,
-        size,
-        { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
-        sort
-      )
-        .then((res) => {
-          setOngoingSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Pågående ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(
+          municipalityId,
+          page,
+          size,
+          { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
+          sort
+        )
+          .then((res) => {
+            setOngoingSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Pågående ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(
-        municipalityId,
-        page,
-        size,
-        { ...filter, status: `${Status.SUSPENDED},${Status.ASSIGNED}` },
-        sort
-      )
-        .then((res) => {
-          if (res.error) {
-            throw new Error('Error occurred when fetching errands');
-          }
-          setSuspendedSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Parkerade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(
+          municipalityId,
+          page,
+          size,
+          { ...filter, status: `${Status.SUSPENDED},${Status.ASSIGNED}` },
+          sort
+        )
+          .then((res) => {
+            if (res.error) {
+              throw new Error('Error occurred when fetching errands');
+            }
+            setSuspendedSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Parkerade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
 
-      getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
-        .then((res) => {
-          setSolvedSupportErrands(res);
-        })
-        .catch((err) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Avslutade ärenden kunde inte hämtas',
-            status: 'error',
-          });
-        });
+        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+          .then((res) => {
+            if (res.error) {
+              throw new Error('Error occurred when fetching errands');
+            }
+            setAssignedSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Tilldelade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+
+        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
+          .then((res) => {
+            setSolvedSupportErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Avslutade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+      ];
+      return Promise.allSettled(fetchPromises);
     },
     [
       setSupportErrands,
       setNewSupportErrands,
       setOngoingSupportErrands,
       setSuspendedSupportErrands,
+      setAssignedSupportErrands,
       setSolvedSupportErrands,
       supportErrands,
       newSupportErrands,
       ongoingSupportErrands,
       suspendedSupportErrands,
+      assignedSupportErrands,
       solvedSupportErrands,
       size,
       filter,
@@ -575,12 +637,14 @@ export const useSupportErrands = (
 
   useEffect(() => {
     if (size && size > 0) {
-      fetchErrands();
+      fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== supportErrands.page) fetchErrands(page);
+    if (page !== supportErrands.page) {
+      fetchErrands(page).then(() => setIsLoading(false));
+    }
     //eslint-disable-next-line
   }, [page]);
 
@@ -707,7 +771,7 @@ export const getSupportErrands: (
         size: res.data.pageable.pageSize,
         totalPages: res.data.totalPages,
         totalElements: res.data.totalElements,
-        labels: isKC() || isIS() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
+        labels: isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
       } as SupportErrandsData;
       return response;
     })
@@ -798,7 +862,7 @@ export const updateSupportErrand: (
     ...(formdata.channel && { channel: formdata.channel }),
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
-    ...(stakeholders.length > 0 && { stakeholders: stakeholders }),
+    ...{ stakeholders: stakeholders },
     externalTags: [],
   };
   if (formdata.caseId) {

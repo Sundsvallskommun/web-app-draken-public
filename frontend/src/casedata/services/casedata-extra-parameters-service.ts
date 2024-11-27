@@ -1,8 +1,10 @@
 import { MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
-import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+// import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { apiService } from '@common/services/api-service';
 
+export const EXTRAPARAMETER_SEPARATOR = '@';
 export interface UppgiftField {
   field: string;
   value: string;
@@ -43,6 +45,184 @@ export interface ExtraParametersObject {
   LOST_PARKING_PERMIT?: UppgiftField[];
   PARKING_PERMIT_RENEWAL?: UppgiftField[];
 }
+
+const baseParkingPermitDetails: UppgiftField[] = [
+  {
+    field: 'application.applicant.capacity',
+    value: '',
+    label: 'Ansökan avser parkeringstillstånd som',
+    formField: {
+      type: 'radio',
+      options: [
+        {
+          label: 'Förare',
+          value: 'DRIVER',
+        },
+        { label: 'Passagerare', value: 'PASSENGER' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'application.reason',
+    value: '',
+    label: 'Ansöker om parkeringstillstånd av följande skäl',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.aid',
+    value: '',
+    label: 'Gånghjälpmedel',
+    formField: {
+      type: 'checkbox',
+      options: [
+        {
+          label: 'Krycka/kryckor/käpp',
+          value: 'Krycka/kryckor/käpp',
+          name: 'CRUTCH',
+        },
+        { label: 'Rullator', value: 'Rullator', name: 'ROLLER' },
+        { label: 'Rullstol (manuell)', value: 'Rullstol (manuell)', name: 'WHEELCHAIR' },
+        { label: 'Elrullstol', value: 'Elrullstol', name: 'EWHEELCHAIR' },
+        { label: 'Inget', value: 'Inget', name: 'NONE' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.walkingAbility',
+    value: '',
+    label: 'Är den sökande helt rullstolsburen eller kan hen gå kortare sträckor?',
+    formField: {
+      type: 'radio',
+      options: [
+        {
+          label: 'Den sökande är helt rullstolsburen',
+          value: 'false',
+        },
+        { label: 'Den sökande kan gå själv kortare sträckor', value: 'true' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.walkingDistance.beforeRest',
+    value: '',
+    label: 'Möjlig gångsträcka innan behov att stanna och vila, med eventuellt gånghjälpmedel',
+    formField: {
+      type: 'text',
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.walkingDistance.max',
+    value: '',
+    label: 'Maximal gångsträcka, med eventuellt gånghjälpmedel. Inklusive uppehåll för vila',
+    formField: {
+      type: 'text',
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.duration',
+    value: '',
+    label: 'Funktionsnedsättningens varaktighet',
+    formField: {
+      type: 'select',
+      options: [
+        { value: 'P6M', label: 'Mindre än 6 månader' },
+        { value: 'P1Y', label: '6 månader till 1 år' },
+        { value: 'P2Y', label: '1-2 år' },
+        { value: 'P3Y', label: '2-3 år' },
+        { value: 'P4Y', label: '3-4 år' },
+        { value: 'P5Y', label: 'Mer än 4 år' },
+        { value: 'P0Y', label: 'Bestående' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.canBeAloneWhileParking',
+    dependsOn: [{ field: 'application.applicant.capacity', value: 'PASSENGER' }],
+    value: '',
+    label: 'Kan den sökande lämnas ensam en kort stund medan föraren parkerar fordonet?',
+    formField: {
+      type: 'radio',
+      options: [
+        {
+          label: 'Ja',
+          value: 'true',
+        },
+        { label: 'Nej', value: 'false' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'disability.canBeAloneWhileParking.note',
+    dependsOn: [
+      { field: 'disability.canBeAloneWhileParking', value: 'false' },
+      { field: 'application.applicant.capacity', value: 'PASSENGER' },
+    ],
+    value: '',
+    label: 'Beskriv behovet av...',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'consent.contact.doctor',
+    value: '',
+    label: 'Får utredare kontakta intygsskrivande läkare?',
+    formField: {
+      type: 'radio',
+      options: [
+        {
+          label: 'Ja',
+          value: 'true',
+        },
+        { label: 'Nej', value: 'false' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'consent.view.transportationServiceDetails',
+    value: '',
+    label: 'Får utredare ta del av information runt färdtjänst?',
+    formField: {
+      type: 'radio',
+      options: [
+        {
+          label: 'Ja',
+          value: 'true',
+        },
+        { label: 'Nej', value: 'false' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+  {
+    field: 'application.applicant.signingAbility',
+    value: '',
+    label: 'Kan den sökande signera med sin namnteckning?',
+    formField: {
+      type: 'radio',
+      options: [
+        {
+          label: 'Ja',
+          value: 'true',
+        },
+        { label: 'Nej', value: 'false' },
+      ],
+    },
+    section: 'Övergripande',
+  },
+];
 
 const template: ExtraParametersObject = {
   MEX_OTHER: [
@@ -734,184 +914,9 @@ const template: ExtraParametersObject = {
     },
   ],
 
-  PARKING_PERMIT: [
-    {
-      field: 'application.applicant.capacity',
-      value: '',
-      label: 'Ansökan avser parkeringstillstånd som',
-      formField: {
-        type: 'radio',
-        options: [
-          {
-            label: 'Förare',
-            value: 'DRIVER',
-          },
-          { label: 'Passagerare', value: 'PASSENGER' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'application.reason',
-      value: '',
-      label: 'Ansöker om parkeringstillstånd av följande skäl',
-      formField: {
-        type: 'textarea',
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.aid',
-      value: '',
-      label: 'Gånghjälpmedel',
-      formField: {
-        type: 'checkbox',
-        options: [
-          {
-            label: 'Krycka/kryckor/käpp',
-            value: 'Krycka/kryckor/käpp',
-            name: 'CRUTCH',
-          },
-          { label: 'Rullator', value: 'Rullator', name: 'ROLLER' },
-          { label: 'Rullstol (manuell)', value: 'Rullstol (manuell)', name: 'WHEELCHAIR' },
-          { label: 'Elrullstol', value: 'Elrullstol', name: 'EWHEELCHAIR' },
-          { label: 'Inget', value: 'Inget', name: 'NONE' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.walkingAbility',
-      value: '',
-      label: 'Är den sökande helt rullstolsburen eller kan hen gå kortare sträckor?',
-      formField: {
-        type: 'radio',
-        options: [
-          {
-            label: 'Den sökande är helt rullstolsburen',
-            value: 'false',
-          },
-          { label: 'Den sökande kan gå själv kortare sträckor', value: 'true' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.walkingDistance.beforeRest',
-      value: '',
-      label: 'Möjlig gångsträcka innan behov att stanna och vila, med eventuellt gånghjälpmedel',
-      formField: {
-        type: 'text',
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.walkingDistance.max',
-      value: '',
-      label: 'Maximal gångsträcka, med eventuellt gånghjälpmedel. Inklusive uppehåll för vila',
-      formField: {
-        type: 'text',
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.duration',
-      value: '',
-      label: 'Funktionsnedsättningens varaktighet',
-      formField: {
-        type: 'select',
-        options: [
-          { value: 'P6M', label: 'Mindre än 6 månader' },
-          { value: 'P1Y', label: '6 månader till 1 år' },
-          { value: 'P2Y', label: '1-2 år' },
-          { value: 'P3Y', label: '2-3 år' },
-          { value: 'P4Y', label: '3-4 år' },
-          { value: 'P5Y', label: 'Mer än 4 år' },
-          { value: 'P0Y', label: 'Bestående' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.canBeAloneWhileParking',
-      dependsOn: [{ field: 'application.capacity', value: 'PASSENGER' }],
-      value: '',
-      label: 'Kan den sökande lämnas ensam en kort stund medan föraren parkerar fordonet?',
-      formField: {
-        type: 'radio',
-        options: [
-          {
-            label: 'Ja',
-            value: 'true',
-          },
-          { label: 'Nej', value: 'false' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'disability.canBeAloneWhileParking.note',
-      dependsOn: [
-        { field: 'disability.canBeAloneWhileParking', value: 'false' },
-        { field: 'application.capacity', value: 'PASSENGER' },
-      ],
-      value: '',
-      label: 'Beskriv behovet av...',
-      formField: {
-        type: 'textarea',
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'consent.contact.doctor',
-      value: '',
-      label: 'Får utredare kontakta intygsskrivande läkare?',
-      formField: {
-        type: 'radio',
-        options: [
-          {
-            label: 'Ja',
-            value: 'true',
-          },
-          { label: 'Nej', value: 'false' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'consent.view.transportationServiceDetails',
-      value: '',
-      label: 'Får utredare ta del av information runt färdtjänst?',
-      formField: {
-        type: 'radio',
-        options: [
-          {
-            label: 'Ja',
-            value: 'true',
-          },
-          { label: 'Nej', value: 'false' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'application.applicant.signingAbility',
-      value: '',
-      label: 'Kan den sökande signera med sin namnteckning?',
-      formField: {
-        type: 'radio',
-        options: [
-          {
-            label: 'Ja',
-            value: 'true',
-          },
-          { label: 'Nej', value: 'false' },
-        ],
-      },
-      section: 'Övergripande',
-    },
-  ],
+  PARKING_PERMIT: baseParkingPermitDetails,
   LOST_PARKING_PERMIT: [
+    ...baseParkingPermitDetails,
     {
       field: 'application.lostPermit.policeReportNumber',
       value: '',
@@ -923,6 +928,7 @@ const template: ExtraParametersObject = {
     },
   ],
   PARKING_PERMIT_RENEWAL: [
+    ...baseParkingPermitDetails,
     {
       field: 'application.renewal.changedCircumstances',
       value: '',
@@ -969,21 +975,24 @@ const template: ExtraParametersObject = {
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
   const obj: Partial<ExtraParametersObject> = { ...template };
-  for (let param in errand.extraParameters) {
-    const [caseType, field, ...rest] = param.split('.');
-    const value = errand.extraParameters[param] || '';
+  errand.extraParameters.forEach((param) => {
+    const caseType = errand.caseType;
+    const field = param['key'];
+
+    const value = param?.values[0] || '';
 
     if (caseType in MEXCaseType || caseType in PTCaseType) {
       const templateField = (template[caseType] as UppgiftField[])?.find((f) => f.field === field);
       if (caseType && field && templateField) {
-        const { label, formField, section } = templateField;
+        const { label, formField, section, dependsOn } = templateField;
         obj[caseType] = obj[caseType] || [];
-        const data = {
+        const data: UppgiftField = {
           field,
           value,
           label,
           formField,
           section,
+          dependsOn,
         };
         const a: UppgiftField[] = obj[caseType];
         const i = a.findIndex((f) => {
@@ -996,37 +1005,30 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
         }
       }
     }
-  }
+  });
   return obj;
 };
 
-export const uppgifterToExtraParametersMapper: (
-  data: { [key: string]: { [key: string]: string } },
-  errand: IErrand
-) => GenericExtraParameters = (data, errand) => {
-  const obj = {};
-  for (const ct in data) {
-    for (const field in data[ct]) {
-      const key = `${ct}.${field}`;
-      const val = data[ct][field];
-      obj[key] = val;
-    }
-  }
-  return obj;
-};
-
-export const saveExtraParameters = (municipalityId: string, data: GenericExtraParameters, errand: IErrand) => {
-  const nullFilteredData = Object.keys(data).reduce((acc, key) => {
-    if (data[key] !== null) {
-      acc[key] = data[key];
-    }
-    return acc;
-  }, {});
-  return apiService.patch<any, { id: string; extraParameters: GenericExtraParameters }>(
+export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
+  const nullFilteredData: ExtraParameter[] = data.filter(
+    (d) => d.values[0] !== null && typeof d.values[0] !== 'undefined'
+  );
+  let newExtraParameters = [...errand.extraParameters];
+  nullFilteredData.forEach((p) => {
+    newExtraParameters = replaceExtraParameter(newExtraParameters, p);
+  });
+  return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(
     `casedata/${municipalityId}/errands/${errand.id}`,
     {
       id: errand.id.toString(),
-      extraParameters: nullFilteredData,
+      extraParameters: newExtraParameters,
     }
   );
+};
+
+// If parameter exists, replace the existing one, otherwise append to list
+export const replaceExtraParameter = (extraParameters: ExtraParameter[], newParameter: ExtraParameter) => {
+  return extraParameters.some((p) => p.key === newParameter.key)
+    ? extraParameters.map((p) => (p.key === newParameter.key ? newParameter : p))
+    : [...extraParameters, newParameter];
 };

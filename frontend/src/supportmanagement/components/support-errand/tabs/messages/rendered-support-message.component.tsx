@@ -1,6 +1,6 @@
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, cx } from '@sk-web-gui/react';
+import { Avatar, cx, Icon } from '@sk-web-gui/react';
 import { Message } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -66,7 +66,7 @@ export const RenderedSupportMessage: React.FC<{
             {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
           </span>
           <span className="text-xs mx-sm">|</span>
-          {message.communicationAttachments?.length > -1 ? (
+          {message.communicationAttachments?.length > 0 ? (
             <>
               <div className="mx-sm inline-flex items-center gap-xs">
                 <LucideIcon name="paperclip" size="1.5rem" />
@@ -76,13 +76,19 @@ export const RenderedSupportMessage: React.FC<{
             </>
           ) : null}
           <span className="text-xs whitespace-nowrap">
-            {message.communicationType === 'SMS'
-              ? 'Via SMS'
-              : message.communicationType === 'EMAIL'
-              ? 'Via e-post'
-              : // : message.communicationType === 'WEBMESSAGE' || message.externalCaseID
-                // ? 'Via e-tjänst'
-                ''}
+            {message.communicationType === 'SMS' ? (
+              <>
+                <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+              </>
+            ) : message.communicationType === 'EMAIL' ? (
+              <>
+                <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
+              </>
+            ) : (
+              // : message.communicationType === 'WEBMESSAGE' || message.externalCaseID
+              // ? 'Via e-tjänst'
+              ''
+            )}
           </span>
         </div>
         <div>

@@ -4,7 +4,7 @@ import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/component
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { ApiSupportErrand, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { Dispatch, SetStateAction } from 'react';
 
 export interface EscalationFormModel {
@@ -55,7 +55,7 @@ export const SupportErrandBasicsTab: React.FC<{
       {/* <SupportErrandBasicsOwnerDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
       {/* <SupportErrandBasicsStakeholdersDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
 
-      {!isLOP() && (
+      {isKC() && (
         <SupportErrandBasicsRealEstateDisclosure
           setUnsavedFacility={props.setUnsavedFacility}
           supportErrand={supportErrand}

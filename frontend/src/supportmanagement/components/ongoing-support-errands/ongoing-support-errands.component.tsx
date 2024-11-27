@@ -9,8 +9,8 @@ import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   getLabelSubTypeFromName,
-  getLabelTypeFromDisplayName,
   getLabelTypeFromName,
+  getStatusLabel,
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
@@ -62,8 +62,9 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     setAvatar,
     supportAdmins,
     municipalityId,
-    selectedErrandStatuses,
-    setSelectedErrandStatuses,
+    selectedSupportErrandStatuses,
+    setSelectedSupportErrandStatuses,
+    setSidebarLabel,
   } = useAppContext();
 
   const startdate = watchFilter('startdate');
@@ -88,8 +89,8 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const initialFocus = useRef(null);
 
   useEffect(() => {
-    setValue('status', selectedErrandStatuses);
-  }, [selectedErrandStatuses]);
+    setValue('status', selectedSupportErrandStatuses);
+  }, [selectedSupportErrandStatuses]);
 
   const setInitialFocus = () => {
     setTimeout(() => {
@@ -140,6 +141,10 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
               ? filter?.stakeholders?.split(',') || SupportManagementValues.admins
               : [],
         };
+        const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
+        setSelectedSupportErrandStatuses(filterStatuses);
+        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => Status[s]));
+        setSidebarLabel(selectedStatusLabel);
       } catch (error) {
         store.set('filter', JSON.stringify({}));
         storedFilters = {
@@ -160,7 +165,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         setOwnerFilter(true);
       }
       if (storedFilters.status) {
-        setSelectedErrandStatuses(storedFilters.status || [Status.ONGOING]);
+        setSelectedSupportErrandStatuses(storedFilters.status || [Status.ONGOING]);
       }
       resetFilter(storedFilters);
       triggerFilter();

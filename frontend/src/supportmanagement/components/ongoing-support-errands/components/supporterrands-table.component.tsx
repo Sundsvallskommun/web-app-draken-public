@@ -1,8 +1,8 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIS, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
@@ -25,14 +25,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-
-export interface SidebarButton {
-  label: string;
-  key: Status;
-  statuses: Status[];
-  icon: string;
-  totalStatusErrands: number;
-}
+import { SidebarButton } from '@common/interfaces/sidebar-button';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -41,25 +34,8 @@ export const SupportErrandsTable: React.FC = () => {
     supportMetadata,
     supportAdmins,
     municipalityId,
-    selectedErrandStatuses,
-    setSidebarButtons,
-    newSupportErrands,
-    ongoingSupportErrands,
-    suspendedSupportErrands,
-    solvedSupportErrands,
-  }: {
-    supportErrands: SupportErrandsData;
-    supportMetadata;
-    supportAdmins;
-    setSupportAdmins;
-    municipalityId;
-    selectedErrandStatuses;
-    setSidebarButtons;
-    newSupportErrands;
-    ongoingSupportErrands;
-    suspendedSupportErrands;
-    solvedSupportErrands;
-  } = useAppContext();
+    selectedSupportErrandStatuses,
+  }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -72,45 +48,10 @@ export const SupportErrandsTable: React.FC = () => {
   const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
   const currentStatusHaserrands =
     data.errands.filter((e) => {
-      return selectedErrandStatuses.includes(e.status) || e.status === Status.PENDING;
+      return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;
     }).length !== 0
       ? true
       : false;
-
-  const supportSidebarButtons: SidebarButton[] = [
-    {
-      label: 'Nya ärenden',
-      key: Status.NEW,
-      statuses: [Status.NEW],
-      icon: 'inbox',
-      totalStatusErrands: newSupportErrands.totalElements,
-    },
-    {
-      label: 'Öppnade ärenden',
-      key: Status.ONGOING,
-      statuses: [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE],
-      icon: 'clipboard-pen',
-      totalStatusErrands: ongoingSupportErrands.totalElements,
-    },
-    {
-      label: 'Parkerade ärenden',
-      key: Status.SUSPENDED,
-      statuses: [Status.SUSPENDED, Status.ASSIGNED],
-      icon: 'circle-pause',
-      totalStatusErrands: suspendedSupportErrands.totalElements,
-    },
-    {
-      label: 'Avslutade ärenden',
-      key: Status.SOLVED,
-      statuses: [Status.SOLVED],
-      icon: 'circle-check-big',
-      totalStatusErrands: solvedSupportErrands.totalElements,
-    },
-  ];
-
-  useEffect(() => {
-    setSidebarButtons(supportSidebarButtons);
-  }, [data, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, solvedSupportErrands]);
 
   useEffect(() => {
     setCategories(supportMetadata?.categories);
@@ -158,7 +99,7 @@ export const SupportErrandsTable: React.FC = () => {
         };
 
   const handleSort = (index: number) => {
-    if (isKC() || isIS()) {
+    if (isKC()) {
       if (sortColumn === serverSideSortableColsKC[index]) {
         setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
       } else {
@@ -177,16 +118,14 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errandId}`, '_blank');
   };
 
-  const headers = getOngoingSupportErrandLabels(selectedErrandStatuses).map((header, index) => (
+  const headers = getOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>
       ) : header.sortable ? (
         <Table.SortButton
           isActive={
-            isKC() || isIS()
-              ? sortColumn === serverSideSortableColsKC[index]
-              : sortColumn === serverSideSortableColsLOP[index]
+            isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
           }
           sortOrder={sortOrders[sortOrder] as SortMode}
           onClick={() => handleSort(index)}
@@ -277,48 +216,46 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {isKC() || isIS() || errand.labels.length < 1 ? (
+          {isKC() || errand.labels.length < 1 ? (
             <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() ? (
+          ) : isLOP() || isIK() ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {isKC() || isIS() || errand.labels.length < 2 ? (
+            {isKC() || errand.labels.length < 2 ? (
               <p className="m-0">
                 {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
                   ?.displayName || errand.type}
               </p>
-            ) : isLOP() ? (
+            ) : isLOP() || isIK() ? (
               <p className="m-0">{getLabelType(errand, supportMetadata)?.displayName || ''}</p>
             ) : null}
             <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
           </div>
         </Table.Column>
-        {isLOP() && (
+        {(isLOP() || isIK()) && (
           <Table.Column>
             <div className="max-w-[280px]">
               <p className="m-0">{getLabelSubType(errand, supportMetadata)?.displayName || ''}</p>
             </div>
           </Table.Column>
         )}
-        {isLOP() && <Table.Column>{Channels[errand?.channel]}</Table.Column>}
+        <Table.Column>{Channels[errand?.channel]}</Table.Column>
         <Table.Column>
           <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
         </Table.Column>
         <Table.Column>
           <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
         </Table.Column>
-        <Table.Column>
-          {errand.status === Status.SUSPENDED ? (
+        <Table.Column>{Priority[errand.priority]}</Table.Column>
+        {errand.status === Status.SUSPENDED ? (
+          <Table.Column>
             <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
-          ) : (
-            Priority[errand.priority]
-          )}
-        </Table.Column>
-        {(isKC() || isIS()) && <Table.Column>{Channels[errand.channel]}</Table.Column>}
+          </Table.Column>
+        ) : null}
         <Table.Column>
           {getAdminName(
             supportAdmins?.find((a: SupportAdmin) =>

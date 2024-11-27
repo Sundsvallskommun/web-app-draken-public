@@ -6,7 +6,14 @@ import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { ResolutionLabel, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  Channels,
+  ResolutionLabelIK,
+  ResolutionLabelKS,
+  ResolutionLabelLOP,
+  StatusLabel,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
@@ -55,12 +62,21 @@ export const SidebarHistory: React.FC<{}> = () => {
     Object.entries(StatusLabel).forEach((e) => {
       _km[e[0]] = e[1];
     });
-    Object.entries(ResolutionLabel).forEach((e) => {
+    [
+      ...Object.entries(ResolutionLabelKS),
+      ...Object.entries(ResolutionLabelLOP),
+      ...Object.entries(ResolutionLabelIK),
+    ].forEach((e) => {
       _km[e[0]] = e[1];
     });
     Object.entries(Priority).forEach((e) => {
       _km[e[0]] = e[1];
     });
+    Object.entries(Channels).forEach((e) => {
+      _km[e[0]] = e[1];
+    });
+    _km['true'] = 'Ja';
+    _km['false'] = 'Nej';
     supportMetadata?.categories.forEach((c) => {
       _km[c.name] = c.displayName;
       c.types.forEach((t) => {

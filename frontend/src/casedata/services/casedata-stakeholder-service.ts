@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { Relation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import {
   CasedataOwnerOrContact,
   ContactInfoType,
@@ -19,11 +19,15 @@ export const getLastUpdatedAdministrator = (stakeholders: Stakeholder[]) => {
   );
 };
 
-export const fetchStakeholder: (stakeholderId: string) => Promise<ApiResponse<Stakeholder>> = (stakeholderId) => {
+export const fetchStakeholder: (
+  municipalityId: string,
+  errandId: number,
+  stakeholderId: string
+) => Promise<ApiResponse<Stakeholder>> = (municipalityId, errandId, stakeholderId) => {
   if (!stakeholderId) {
     console.error('No stakeholder id found, cannot fetch. Returning.');
   }
-  const url = `stakeholders/${stakeholderId}`;
+  const url = `/casedata/${municipalityId}/errands/${errandId}/stakeholders/${stakeholderId}`;
   return apiService
     .get<ApiResponse<Stakeholder>>(url)
     .then((res) => res.data)
@@ -249,7 +253,7 @@ export const getStakeholdersByRelation: (e: IErrand, relation: Role) => Casedata
   e.stakeholders?.filter((s) => s.roles.includes(relation));
 
 export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) => Role = (s) => {
-  const relations = Object.entries(Relation).map(([key, value]) => key);
+  const relations = [...Object.entries(MEXRelation), ...Object.entries(PTRelation)].map(([key, value]) => key);
   return s.roles.find((r) => relations.includes(r)) || undefined;
 };
 

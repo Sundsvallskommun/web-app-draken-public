@@ -23,7 +23,7 @@ import {
 } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { isLOP } from '@common/services/application-service';
+import { isIK, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -36,7 +36,7 @@ import {
   Modal,
   RadioButton,
   SearchField,
-  Select
+  Select,
 } from '@sk-web-gui/react';
 import {
   emptyContact,
@@ -49,6 +49,7 @@ import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
+import { useAppContext } from '@contexts/app.context';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -74,28 +75,29 @@ export const SupportSimplifiedContactForm: React.FC<{
   const yupContact = yup.object().shape(
     {
       id: yup.string(),
-      personNumber: isLOP()
-        ? yup.string().when('stakeholderType', {
-            is: (type: string) =>
-              type === 'PERSON' &&
-              searchMode === 'employee' &&
-              !personNumber?.startsWith('1') &&
-              !personNumber?.startsWith('2'),
-            then: (schema) => schema.matches(usernamePattern, invalidUsernameMessage),
-            otherwise: (schema) =>
-              schema
+      personNumber:
+        isLOP() || isIK()
+          ? yup.string().when('stakeholderType', {
+              is: (type: string) =>
+                type === 'PERSON' &&
+                searchMode === 'employee' &&
+                !personNumber?.startsWith('1') &&
+                !personNumber?.startsWith('2'),
+              then: (schema) => schema.matches(usernamePattern, invalidUsernameMessage),
+              otherwise: (schema) =>
+                schema
+                  .trim()
+                  .matches(ssnPattern, invalidSsnMessage)
+                  .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+            })
+          : yup.string().when('stakeholderType', {
+              is: (type: string) => type === 'PERSON',
+              then: yup
+                .string()
                 .trim()
                 .matches(ssnPattern, invalidSsnMessage)
                 .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
-          })
-        : yup.string().when('stakeholderType', {
-            is: (type: string) => type === 'PERSON',
-            then: yup
-              .string()
-              .trim()
-              .matches(ssnPattern, invalidSsnMessage)
-              .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
-          }),
+            }),
       personId: yup.string(),
       stakeholderType: yup.string(),
       organizationName: yup.string().when(['stakeholderType', 'lastName'], {
@@ -154,6 +156,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
+  const { supportErrand } = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -228,7 +231,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [manual]);
 
   useEffect(() => {
-    if (isLOP()) {
+    if (isLOP() || isIK()) {
       setSearchMode('employee');
     } else {
       setSearchMode(contact.stakeholderType === SupportStakeholderTypeEnum.PERSON ? 'person' : 'enterprise');
@@ -267,7 +270,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     setModalOpen(false);
     setManual(false);
     setSearchResult(false);
-    if (isLOP()) {
+    if (isLOP() || isIK()) {
       setSearchMode('employee');
     } else {
       setSearchMode('person');
@@ -355,7 +358,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       <legend className="text-md my-sm contents"></legend>
       <Input type="hidden" {...register(`stakeholderType`)} />
 
-      {isLOP() ? (
+      {isLOP() || isIK() ? (
         <RadioButton
           data-cy={`search-employee-${inName}-${contact.role}`}
           size="lg"
@@ -543,7 +546,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       {!restrictedEditing ? (
         <div className="flex gap-lg">
           <FormControl className="w-full">
-            {isLOP() ? (
+            {isLOP() || isIK() ? (
               <FormLabel>
                 Sök på {searchMode === 'person' ? 'personnummer' : 'personnummer eller användarnamn'}
               </FormLabel>
@@ -783,6 +786,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             <>
               <div className="my-md">
                 <CommonNestedEmailArrayV2
+                  required={false}
+                  errand={supportErrand}
+                  addingStakeholder={true}
                   disabled={props.disabled}
                   error={!!formState.errors.emails}
                   key={`nested-email-array`}
@@ -1046,6 +1052,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             </div>
           </>
           <CommonNestedEmailArrayV2
+            required={false}
+            errand={supportErrand}
+            addingStakeholder={true}
             disabled={props.disabled}
             error={!!formState.errors.emails}
             key={`nested-email-array`}

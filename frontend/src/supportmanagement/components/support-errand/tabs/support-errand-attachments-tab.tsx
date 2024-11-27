@@ -1,7 +1,7 @@
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isIS, isKC } from '@common/services/application-service';
+import { isKC } from '@common/services/application-service';
 import { Dialog, Transition } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -303,7 +303,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       accept={ACCEPTED_UPLOAD_FILETYPES}
                       helperText="Maximal filstorlek: 10 MB"
                       dragDrop={dragDrop}
-                      allowMultiple={isKC() || isIS() ? true : false}
+                      allowMultiple={isKC() ? true : false}
                     />
                   </FormControl>
 
@@ -429,55 +429,55 @@ export const SupportErrandAttachmentsTab: React.FC<{
 
                   <div className="self-center relative">
                     {/* Popup menu  */}
-                    {!isSupportErrandLocked(supportErrand) && (
-                      <PopupMenu>
-                        <PopupMenu.Button
-                          size="sm"
-                          variant="primary"
-                          aria-label="Alternativ"
-                          color="primary"
-                          iconButton
-                          inverted
-                          onClick={() => setSelectedAttachment(attachment)}
-                        >
-                          <LucideIcon name="ellipsis" />
-                        </PopupMenu.Button>
-                        <PopupMenu.Panel>
-                          <PopupMenu.Items>
-                            <PopupMenu.Group>
-                              <PopupMenu.Item>
-                                <Button
-                                  data-cy={`open-attachment-${attachment.id}`}
-                                  leftIcon={<LucideIcon name="eye" />}
-                                  onClick={() => {
-                                    if (documentMimeTypes.includes(attachment.mimeType)) {
-                                      downloadDocument(attachment);
-                                    } else if (imageMimeTypes.includes(attachment.mimeType)) {
-                                      setModalFetching(true);
-                                      getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
-                                        .then((res) => setModalAttachment(res))
-                                        .then(() => {
-                                          setModalFetching(false);
-                                        })
-                                        .then((res) => openModal());
-                                    }
-                                    // exclusive exception for .msg
-                                    else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
-                                      downloadDocument(attachment);
-                                    } else {
-                                      toastMessage({
-                                        position: 'bottom',
-                                        closeable: false,
-                                        message: 'Fel: okänd filtyp',
-                                        status: 'error',
-                                      });
-                                    }
-                                  }}
-                                >
-                                  Öppna
-                                </Button>
-                              </PopupMenu.Item>
-                            </PopupMenu.Group>
+                    <PopupMenu>
+                      <PopupMenu.Button
+                        size="sm"
+                        variant="primary"
+                        aria-label="Alternativ"
+                        color="primary"
+                        iconButton
+                        inverted
+                        onClick={() => setSelectedAttachment(attachment)}
+                      >
+                        <LucideIcon name="ellipsis" />
+                      </PopupMenu.Button>
+                      <PopupMenu.Panel>
+                        <PopupMenu.Items>
+                          <PopupMenu.Group>
+                            <PopupMenu.Item>
+                              <Button
+                                data-cy={`open-attachment-${attachment.id}`}
+                                leftIcon={<LucideIcon name="eye" />}
+                                onClick={() => {
+                                  if (documentMimeTypes.includes(attachment.mimeType)) {
+                                    downloadDocument(attachment);
+                                  } else if (imageMimeTypes.includes(attachment.mimeType)) {
+                                    setModalFetching(true);
+                                    getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
+                                      .then((res) => setModalAttachment(res))
+                                      .then(() => {
+                                        setModalFetching(false);
+                                      })
+                                      .then((res) => openModal());
+                                  }
+                                  // exclusive exception for .msg
+                                  else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
+                                    downloadDocument(attachment);
+                                  } else {
+                                    toastMessage({
+                                      position: 'bottom',
+                                      closeable: false,
+                                      message: 'Fel: okänd filtyp',
+                                      status: 'error',
+                                    });
+                                  }
+                                }}
+                              >
+                                Öppna
+                              </Button>
+                            </PopupMenu.Item>
+                          </PopupMenu.Group>
+                          {!isSupportErrandLocked(supportErrand) && (
                             <PopupMenu.Group>
                               <PopupMenu.Item>
                                 <Button
@@ -489,10 +489,10 @@ export const SupportErrandAttachmentsTab: React.FC<{
                                 </Button>
                               </PopupMenu.Item>
                             </PopupMenu.Group>
-                          </PopupMenu.Items>
-                        </PopupMenu.Panel>
-                      </PopupMenu>
-                    )}
+                          )}
+                        </PopupMenu.Items>
+                      </PopupMenu.Panel>
+                    </PopupMenu>
                   </div>
                 </div>
               </Fragment>

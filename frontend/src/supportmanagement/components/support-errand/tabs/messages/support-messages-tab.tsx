@@ -1,9 +1,9 @@
 import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, cx, Divider } from '@sk-web-gui/react';
+import { Avatar, Button, cx, Divider, RadioButton } from '@sk-web-gui/react';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
@@ -13,6 +13,7 @@ import MessageTreeComponent from './support-messages-tree.component';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
+  messageTree: Message[];
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   municipalityId: string;
@@ -24,18 +25,26 @@ export const SupportMessagesTab: React.FC<{
   const [showSelectedMessage, setShowSelectedMessage] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [richText, setRichText] = useState<string>('');
+  const [sortMessages, setSortMessages] = useState<number>(0);
+  const [sortedMessages, setSortedMessages] = useState(props.messages);
 
-  const emailBody = `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>${
+  const emailBody = `${
     isLOP()
-      ? `Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
-      : 'Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Kontakt Sundsvall</strong><br><br><strong>Sundsvalls kommun</strong><br>Kommunstyrelsekontoret<br>851 85 Sundsvall<br>E-post <a href="mailto:kontakt@sundsvall.se">kontakt@sundsvall.se</a><br>Telefon +46 60 19 10 00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>'
+      ? `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br>Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
+      : isKC()
+      ? 'Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Kontakt Sundsvall</strong><br><br><strong>Sundsvalls kommun</strong><br>Kommunstyrelsekontoret<br>851 85 Sundsvall<br>E-post <a href="mailto:kontakt@sundsvall.se">kontakt@sundsvall.se</a><br>Telefon +46 60 19 10 00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>'
+      : isIK()
+      ? 'Hej,<br><br>Tack för att du kontaktar Intern Kundtjänst! Här kommer informationen enligt överenskommelse:<br><br><br><br><br>Ha en fortsatt bra dag!<br><br>Med vänlig hälsning<br><strong>Intern Kundtjänst</strong>'
+      : ''
   }.`;
-  const smsBody = `Hej!<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>${
-    isLOP() ? 'Lön och pension' : 'Kontakt Sundsvall'
-  }</strong>`;
+  const smsBody = isIK()
+    ? `Hej,<br><br>Här kommer informationen vi pratade om:<br><br><br>Med vänliga hälsningar ${user.firstName}<br><strong>Intern Kundtjänst</strong>`
+    : `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>${
+        isLOP() ? 'Lön och pension' : isKC() ? 'Kontakt Sundsvall' : isIK() ? 'Intern kundtjänst' : ''
+      }</strong>`;
 
   useEffect(() => {
-    setRichText(emailBody);
+    setRichText(smsBody);
   }, []);
   useEffect(() => {
     const _a = validateAction(supportErrand, user);
@@ -53,6 +62,20 @@ export const SupportMessagesTab: React.FC<{
     setSelectedMessage(message);
     setShowSelectedMessage(true);
   };
+
+  useEffect(() => {
+    if (props.messages && props.messageTree) {
+      if (sortMessages === 1) {
+        let filteredMessages = props.messages.filter((message: Message) => message.direction === 'INBOUND');
+        setSortedMessages(filteredMessages);
+      } else if (sortMessages === 2) {
+        let filteredMessages = props.messages.filter((message: Message) => message.direction === 'OUTBOUND');
+        setSortedMessages(filteredMessages);
+      } else {
+        setSortedMessages(props.messageTree);
+      }
+    }
+  }, [props.messages, props.messageTree, sortMessages]);
 
   return (
     <>
@@ -88,10 +111,22 @@ export const SupportMessagesTab: React.FC<{
           </p>
         </div>
 
-        {props.messages?.length ? (
+        <RadioButton.Group inline className="mt-16">
+          <RadioButton value={0} defaultChecked={true} onChange={() => setSortMessages(0)}>
+            Alla
+          </RadioButton>
+          <RadioButton value={1} onChange={() => setSortMessages(1)}>
+            Mottagna
+          </RadioButton>
+          <RadioButton value={2} onChange={() => setSortMessages(2)}>
+            Skickade
+          </RadioButton>
+        </RadioButton.Group>
+
+        {sortedMessages?.length ? (
           <div data-cy="message-container">
             <MessageTreeComponent
-              nodes={props.messages}
+              nodes={sortedMessages}
               selected={selectedMessage?.communicationID}
               onSelect={(msg: Message) => {
                 onSelect(msg);

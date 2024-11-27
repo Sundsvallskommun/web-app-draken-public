@@ -1,4 +1,4 @@
-export const isIS = () => process.env.APPLICATION === 'IS';
+export const isIK = () => process.env.APPLICATION === 'IK';
 
 export const isLOP = () => process.env.APPLICATION === 'LOP';
 

@@ -1,6 +1,6 @@
 export const isKC = () => process.env.NEXT_PUBLIC_APPLICATION === 'KC';
 
-export const isIS = () => process.env.NEXT_PUBLIC_APPLICATION === 'IS';
+export const isIK = () => process.env.NEXT_PUBLIC_APPLICATION === 'IK';
 
 export const isLOP = () => process.env.NEXT_PUBLIC_APPLICATION === 'LOP';
 
@@ -13,8 +13,8 @@ export const getApplicationName = () =>
     ? 'Parkeringstillstånd'
     : isKC()
     ? 'Kontakt Sundsvall'
-    : isIS()
-    ? 'Intern service'
+    : isIK()
+    ? 'Intern kundtjanst'
     : isLOP()
     ? 'Lön och Pension'
     : isMEX()
@@ -22,4 +22,4 @@ export const getApplicationName = () =>
     : 'appen';
 
 export const getApplicationEnvironment = () =>
-  (isPT() || isKC() || isIS() || isLOP() || isMEX()) && process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST' ? 'TEST' : null;
+  (isPT() || isKC() || isIK() || isLOP() || isMEX()) && process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST' ? 'TEST' : null;

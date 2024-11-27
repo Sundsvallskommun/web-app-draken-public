@@ -52,14 +52,15 @@ export const signErrandNote: (
   });
 };
 
-export const fetchNote: (municipalityId: string, noteId: string) => Promise<ApiResponse<ErrandNote>> = (
-  municipalityId,
-  noteId
-) => {
+export const fetchNote: (
+  municipalityId: string,
+  errandId: number,
+  noteId: string
+) => Promise<ApiResponse<ErrandNote>> = (municipalityId, errandId, noteId) => {
   if (!noteId) {
     console.error('No note id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/notes/${noteId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/notes/${noteId}`;
   return apiService
     .get<ApiResponse<ErrandNote>>(url)
     .then((res) => res.data)

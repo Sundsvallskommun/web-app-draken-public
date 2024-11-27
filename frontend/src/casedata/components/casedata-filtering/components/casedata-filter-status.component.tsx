@@ -39,6 +39,13 @@ export const CasedataFilterStatus: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {Object.entries(ErrandStatus)
+            .filter((s) => {
+              return (
+                s[1] !== ErrandStatus.ArendeAvslutat &&
+                s[1] !== ErrandStatus.ArendeInkommit &&
+                s[1] !== ErrandStatus.Tilldelat
+              );
+            })
             .filter(
               (s: [string, string]) =>
                 s[0].toLowerCase().includes(query.toLowerCase()) || s[1].toLowerCase().includes(query.toLowerCase())

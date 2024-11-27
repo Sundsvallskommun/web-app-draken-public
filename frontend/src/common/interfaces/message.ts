@@ -60,29 +60,3 @@ export interface MessageDto {
   errandId: string;
   attachments?: Attachment[];
 }
-
-export interface ErrandMessageResponse {
-  messageID: string;
-  messageType: string;
-  errandNumber: string;
-  direction: string;
-  familyID: string;
-  externalCaseID: string;
-  message: string;
-  sent: string;
-  subject: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  userID: string;
-  viewed: boolean;
-  attachments: {
-    attachmentID: string;
-    name: string;
-  }[];
-  emailHeaders: {
-    header: string;
-    values: string[];
-  }[];
-}

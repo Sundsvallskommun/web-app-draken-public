@@ -22,7 +22,7 @@ export class SupportFacilitiesController {
   SERVICE = `supportmanagement/8.1`;
 
   @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
-  @OpenAPI({ summary: 'Save facilities by errande' })
+  @OpenAPI({ summary: 'Save facilities by errand' })
   @UseBefore(authMiddleware)
   async saveFacility(
     @Req() req: RequestWithUser,

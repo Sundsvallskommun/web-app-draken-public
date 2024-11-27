@@ -5,20 +5,22 @@ import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
   getProposedOrRecommendedDecision,
   getUtredningPhrases,
+  lawMapping,
   renderUtredningPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { EditorModal } from '@common/components/rich-text-editor/editor-modal.component';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
-import { VerificationModal } from '@common/components/verification-modal/verification-modal.component';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import CheckIcon from '@mui/icons-material/Check';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -36,22 +38,22 @@ export interface UtredningFormModel {
   id?: number;
   errandNumber?: string;
   description: string;
-  descriptionPlaintext?: string;
-  law: string;
-  decisionTemplate?: string;
+  descriptionPlaintext: string;
+  law: Law[];
+  decisionTemplate: string;
   outcome: string;
-  validFrom?: string;
-  validTo?: string;
-  decidedBy?: CreateStakeholderDto;
+  validFrom: string;
+  validTo: string;
+  decidedBy: CreateStakeholderDto;
   extraParameters: GenericExtraParameters;
 }
 
 let formSchema = yup
   .object({
-    id: yup.number(),
+    id: yup.string(),
     errandNumber: yup.string(),
     description: yup.string().required('Text måste anges'),
-    law: yup.string().required('Lagrum måste anges'),
+    law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup.string().required('Förslag till beslut måste anges'),
   })
   .required();
@@ -62,20 +64,14 @@ export const CasedataInvestigationTab: React.FC<{
 }> = (props) => {
   const toastMessage = useSnackbar();
   const saveConfirm = useConfirm();
-  const formControls: UseFormReturn<IErrand, any, undefined> = useFormContext();
-  const { municipalityId, errand, user } = useAppContext();
+  const { municipalityId, errand, user, administrators }: AppContextInterface = useAppContext();
   const { setErrand } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSigningLoading, setIsSigningLoading] = useState(false);
   const [error, setError] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [richText, setRichText] = useState<string>('');
   const [isSigned, setIsSigned] = useState<boolean>();
-  const [selectedLagrum, setSelectedLagrum] = useState<number>(1);
   const [modalAction, setModalAction] = useState<() => Promise<any>>();
-  const [modalHeader, setModalHeader] = useState<string>();
-  const [modalBody, setModalBody] = useState<string>();
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [firstDescriptionChange, setFirstDescriptionChange] = useState(true);
@@ -112,38 +108,31 @@ export const CasedataInvestigationTab: React.FC<{
   const outcome = watch().outcome;
 
   const save = async (data: UtredningFormModel) => {
-    setIsLoading(true);
-    return renderUtredningPdf(props.errand, data)
-      .then((d) => {
-        return saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
-      })
-      .then(() => {
-        toastMessage({
-          status: 'success',
-          position: 'bottom',
-          closeable: false,
-          message: 'Utredningen sparades',
-        });
-        setIsLoading(false);
-        props.setUnsaved(false);
-        setTextIsDirty(false);
-        reset();
-        setError(false);
-        return true;
-      })
-      .catch((e) => {
-        toastMessage({
-          status: 'error',
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när utredningen skulle sparas',
-        });
-        console.error('Something went wrong when saving utredning');
-        setIsLoading(false);
-        setError(true);
-        props.setUnsaved(true);
-      })
-      .finally(() => setIsVerificationModalOpen(false));
+    try {
+      setIsLoading(true);
+      const rendered = await renderUtredningPdf(errand, data);
+      const saved = await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
+      setIsLoading(false);
+      setError(undefined);
+      props.setUnsaved(false);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Utredningen sparades',
+        status: 'success',
+      });
+      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+    } catch (error) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när utredningen skulle sparas',
+        status: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+      setError(undefined);
+    }
   };
 
   const getPdfPreview = () => {
@@ -169,7 +158,6 @@ export const CasedataInvestigationTab: React.FC<{
   const outcomeModalCallback = async (outcome) => {
     const { phrases } = await getUtredningPhrases(props.errand, outcome as DecisionOutcome);
     setRichText(phrases);
-    setIsVerificationModalOpen(false);
     setTextIsDirty(true);
     props.setUnsaved(true);
   };
@@ -222,6 +210,7 @@ export const CasedataInvestigationTab: React.FC<{
       setFirstOutcomeChange(false);
     }
     if (decision) {
+      setValue('law', decision.law);
       if (decision?.decisionType === 'PROPOSED') {
         setValue('id', decision?.id);
       }
@@ -260,13 +249,6 @@ export const CasedataInvestigationTab: React.FC<{
     }
   }, [description]);
 
-  const lagrumsMapping = [
-    {
-      id: 1,
-      label: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
-    },
-  ];
-
   return (
     <>
       <div className="w-full py-24 px-32">
@@ -289,55 +271,72 @@ export const CasedataInvestigationTab: React.FC<{
           </Button>
         </div>
         <div className="mt-lg">
-          {errand?.decisions && errand?.decisions[0]?.decisionType === 'RECOMMENDED' && (
+          {errand?.decisions && errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED') && (
             <div className="bg-background-200 rounded-groups gap-12 flex py-10 px-16 mb-lg">
               <div>
                 <LucideIcon name="info" color="vattjom" />
               </div>
               <div>
                 <p className="m-0 pr-24" data-cy="recommended-decision">
-                  {errand?.decisions[0].description}
+                  {errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED').description}
                 </p>
               </div>
             </div>
           )}
 
           <form onSubmit={handleSubmit(save)} data-cy="utredning-form">
+            <Input type="hidden" {...register('decidedBy')} value={user.username} />
             <div className="flex gap-24">
               <FormControl className="w-full">
-                <FormLabel>Välj lagrum</FormLabel>
-                <Input
-                  type="hidden"
-                  {...register('law')}
-                  value={lagrumsMapping.find((l) => l.id === selectedLagrum).label}
-                />
+                <FormLabel>Lagrum</FormLabel>
+                <Input type="hidden" {...register('law')} />
                 <Select
-                  className="w-full"
-                  data-cy="lagrum-select"
-                  disabled={isErrandLocked(errand) || !allowed}
-                  name="lagrum"
-                  onChange={(e) => setValue('law', e.currentTarget.value)}
+                  className={cx(`w-full`, errors.law ? 'border-error' : '')}
+                  data-cy="investigation-law-select"
+                  name="law"
+                  size="sm"
+                  onChange={(e) => {
+                    setValue(
+                      'law',
+                      lawMapping.filter((law) => {
+                        return law.heading === e.target.value;
+                      }),
+                      { shouldDirty: true }
+                    );
+                    props.setUnsaved(true);
+                    trigger();
+                  }}
                   placeholder="Välj lagrum"
-                  value={getValues('law')}
+                  value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                 >
-                  {lagrumsMapping.map((lagrum, index) => (
-                    <Select.Option key={index} value={lagrum.label}>
-                      {lagrum.label}
-                    </Select.Option>
-                  ))}
+                  <Select.Option value={''}>Välj lagrum</Select.Option>
+                  {lawMapping.map((law, index) => {
+                    return (
+                      <Select.Option key={index} value={law.heading}>
+                        {law.heading}
+                      </Select.Option>
+                    );
+                  })}
                 </Select>
+                <div className="my-sm text-error">
+                  {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
+                </div>
               </FormControl>
               <FormControl className="w-full" data-cy="decision-outcome-dropdown">
                 <FormLabel>Förslag till beslut</FormLabel>
                 <Input data-cy="utredning-outcome-input" type="hidden" {...register('outcome')} />
                 <Select
-                  className="w-full"
+                  className={cx(`w-full`, errors.outcome ? 'border-error' : '')}
                   data-cy="outcome-select"
+                  size="sm"
                   disabled={isErrandLocked(errand) || !allowed}
                   onChange={(e) => handleOutcomeChange(e.currentTarget.value)}
                   placeholder="Välj beslut"
-                  value={getValues('outcome') ? getValues('outcome') : errand.decisionOutcome}
+                  value={getValues('outcome') ? getValues('outcome') : ''}
                 >
+                  <Select.Option data-cy="outcome-input-item" value={''}>
+                    Välj utfall
+                  </Select.Option>
                   <Select.Option data-cy="outcome-input-item" value={'APPROVAL'}>
                     Bifall
                   </Select.Option>
@@ -348,7 +347,7 @@ export const CasedataInvestigationTab: React.FC<{
                     Ärendet avskrivs
                   </Select.Option>
                 </Select>
-                <div className="my-sm">
+                <div className="my-sm text-error">
                   {errors.outcome && formState.dirtyFields.outcome && (
                     <FormErrorMessage>{errors.outcome.message}</FormErrorMessage>
                   )}
@@ -397,7 +396,8 @@ export const CasedataInvestigationTab: React.FC<{
                       return confirmed ? () => true : () => {};
                     });
                 })}
-                disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !textIsDirty}
+                // disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !textIsDirty}
+                disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
                 leftIcon={
                   isLoading ? (
                     <Spinner color="tertiary" size={2} className="mr-sm" />
@@ -431,20 +431,6 @@ export const CasedataInvestigationTab: React.FC<{
             }}
             onCancel={() => {
               setIsEditorModalOpen(false);
-            }}
-            onContinue={modalAction}
-          />
-        )}
-        {isVerificationModalOpen && (
-          <VerificationModal
-            isOpen={isVerificationModalOpen}
-            modalHeader="Är du säker?"
-            modalBody={modalBody}
-            onClose={() => {
-              setIsVerificationModalOpen(false);
-            }}
-            onCancel={() => {
-              setIsVerificationModalOpen(false);
             }}
             onContinue={modalAction}
           />

@@ -1,4 +1,12 @@
-import { ErrandDTO, StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
+import {
+  Classification,
+  EmailHeader,
+  Errand as ErrandDTO,
+  Header,
+  MessageRequest,
+  MessageRequestDirectionEnum,
+  Stakeholder as StakeholderDTO,
+} from '@/data-contracts/case-data/data-contracts';
 import {
   EmailAttachment,
   EmailRequest,
@@ -16,34 +24,7 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
-
-export interface SaveMessage {
-  messageID: string;
-  messageType: string;
-  classification: MessageClassification;
-  errandNumber: string;
-  direction: string;
-  familyID: string;
-  externalCaseID: string;
-  message: string;
-  sent: string;
-  subject: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  mobileNumber?: string;
-  email: string;
-  userID: string;
-  attachmentRequests: {
-    content: string;
-    name: string;
-    contentType: string;
-  }[];
-  emailHeaders: {
-    header: string;
-    values: string[];
-  }[];
-}
+import { CASEDATA_NAMESPACE } from '@/config';
 
 interface SmsMessage {
   party?: {
@@ -62,6 +43,7 @@ interface SmsMessage {
 }
 
 const NOTIFY_CONTACTS = false;
+const SERVICE = `case-data/9.0`;
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
 
@@ -258,16 +240,16 @@ export const saveMessageOnErrand: (
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
-  const emailHeaders = Object.entries(headers).map(h => ({ header: h[0], values: h[1] }));
+  const emailHeaders: EmailHeader[] = Object.entries(headers).map(h => ({ header: h[0] as Header, values: h[1] }));
   const attachments = (messagingInfo.content.attachments || []) as ((WebMessageAttachment & EmailAttachment) | any)[];
-  const saveMessage: SaveMessage = {
-    messageID: message.id,
+  const saveMessage: MessageRequest = {
+    messageId: message.id,
     messageType: message.messageType || '',
-    classification: message.messageClassification,
+    classification: message.messageClassification as unknown as Classification,
     errandNumber: errand.errandNumber,
-    direction: 'OUTBOUND',
-    familyID: '',
-    externalCaseID: errand.externalCaseId || '',
+    direction: MessageRequestDirectionEnum.OUTBOUND,
+    familyId: '',
+    externalCaseId: errand.externalCaseId || '',
     message: message.message,
     sent: dayjs(messagingInfo.timestamp).format('YYYY-MM-DD HH:mm:ss'),
     subject: messagingInfo.content.subject || '',
@@ -276,7 +258,7 @@ export const saveMessageOnErrand: (
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
     email: process.env.CASEDATA_SENDER_EMAIL || '',
-    userID: '',
+    userId: '',
     attachmentRequests: attachments.map(a => ({
       content: a.content || a.base64Data,
       name: a.name || a.filename || a.fileName,
@@ -285,9 +267,9 @@ export const saveMessageOnErrand: (
     emailHeaders: emailHeaders,
   };
 
-  const url = `case-data/8.0/${municipalityId}/messages`;
+  const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/messages`;
   const saveIdResponse = await apiService
-    .post<any, SaveMessage>({ url, data: saveMessage }, user)
+    .post<any, MessageRequest>({ url, data: saveMessage }, user)
     .then(res => {
       return res;
     })
@@ -296,6 +278,13 @@ export const saveMessageOnErrand: (
       logger.error(e);
       throw e;
     });
+
+  if (saveMessage.direction === MessageRequestDirectionEnum.OUTBOUND) {
+    await setMessageViewed(municipalityId, errand.id, message.id, user).catch(e => {
+      logger.error('Error when saving viewed status:', e);
+    });
+  }
+
   return saveIdResponse;
 };
 
@@ -352,4 +341,10 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
     logger.info(`Sent ${succeeded} notifications to contact persons in errand ${errand.errandNumber}`);
     return true;
   });
+};
+
+export const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
+  const apiService = new ApiService();
+  const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
+  return apiService.put<any, any>({ url }, user);
 };

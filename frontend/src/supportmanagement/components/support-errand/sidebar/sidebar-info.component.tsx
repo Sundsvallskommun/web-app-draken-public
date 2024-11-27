@@ -1,5 +1,6 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -7,6 +8,7 @@ import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, use
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
+  Resolution,
   Status,
   StatusLabel,
   SupportErrand,
@@ -374,32 +376,44 @@ export const SidebarInfo: React.FC<{
 
   const renderLabelSwitch = (resolution: string) => {
     switch (resolution) {
-      case 'SOLVED': {
+      case Resolution.SOLVED: {
         return solutionComponent('Löst', 'avslutade ärendet.', 'check');
       }
-      case 'CLOSED': {
-        return solutionComponent('Avslutat', 'avslutade ärendet.', 'check');
-      }
-      case 'BACK_TO_MANAGER': {
-        return solutionComponent('Åter till chef', 'avslutade ärendet.', 'redo');
-      }
-      case 'BACK_TO_HR': {
-        return solutionComponent('Åter till HR', 'avslutade ärendet.', 'redo');
-      }
-      case 'REFERRED_VIA_EXCHANGE': {
+      case Resolution.REFERRED_VIA_EXCHANGE: {
         return solutionComponent('Löst', 'löste ärendet via växelsystemet.', 'split');
       }
-      case 'CONNECTED': {
+      case Resolution.CONNECTED: {
         return solutionComponent('Löst', 'avslutade ärendet genom att koppla.', 'check');
       }
-      case 'REGISTERED_EXTERNAL_SYSTEM': {
+      case Resolution.REGISTERED_EXTERNAL_SYSTEM: {
         return solutionComponent('Eskalerat', 'eskalerade ärendet.', 'split');
       }
-      case 'SELF_SERVICE': {
+      case Resolution.SELF_SERVICE: {
         return solutionComponent('Löst', 'hänvisade till självservice.', 'check');
       }
-      case 'INTERNAL_SERVICE': {
+      case Resolution.INTERNAL_SERVICE: {
         return solutionComponent('Löst', 'hänvisade till intern service.', 'check');
+      }
+      case Resolution.CLOSED: {
+        return solutionComponent('Avslutat', 'avslutade ärendet.', 'check');
+      }
+      case Resolution.BACK_TO_MANAGER: {
+        return solutionComponent('Åter till chef', 'avslutade ärendet.', 'redo');
+      }
+      case Resolution.BACK_TO_HR: {
+        return solutionComponent('Åter till HR', 'avslutade ärendet.', 'redo');
+      }
+      case Resolution.REFER_TO_CONTACTSUNDSVALL: {
+        return solutionComponent('Hänvisat', 'hänvisade till Kontakt Sundsvall.', 'check');
+      }
+      case Resolution.REFER_TO_PHONE: {
+        return solutionComponent('Hänvisat', 'hänvisade till telefontid.', 'check');
+      }
+      case Resolution.REGISTERED: {
+        return solutionComponent('Registrerat', 'registrerade ärendet.', 'check');
+      }
+      case Resolution.SENT_MESSAGE: {
+        return solutionComponent('Meddelande', 'skickade ett meddelande.', 'check');
       }
     }
   };
@@ -603,7 +617,9 @@ export const SidebarInfo: React.FC<{
                 />
                 <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <Divider className="mt-8 mb-16" />
-                <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                {(isKC() || isLOP() || isIK()) && (
+                  <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                )}
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
               </div>
             )}

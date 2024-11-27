@@ -1,4 +1,5 @@
 import { Attachment } from '@casedata/interfaces/attachment';
+import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -181,7 +182,7 @@ export const getImageAspect: (attachment: Attachment) => number = (attachment) =
     : undefined;
 
 const uniqueAttachments: AttachmentCategory[] = [];
-const uniquePTAttachments: PTAttachmentCategory[] = [];
+const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
 export const onlyOneAllowed: (cat: AttachmentCategory | PTAttachmentCategory) => boolean = (
   cat: AttachmentCategory & PTAttachmentCategory
@@ -201,23 +202,33 @@ export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (er
 export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boolean; reason: string } = (errand) => {
   if (isPT()) {
     const uniqueAttachmentsOnlyOnce = validateAttachmentsForUtredning(errand);
-    const passportPhotoExists =
-      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length == 1;
+    const passportPhotoMissing =
+      errand.caseType === PTCaseType.PARKING_PERMIT &&
+      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length === 0;
+    const tooManypassportPhotos =
+      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length > 1;
     const medicalConfirmationValid =
-      errand.extraParameters['application.renewal.medicalConfirmationRequired'] === 'no' ||
-      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0;
+      errand.extraParameters.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values[0] ===
+        'no' ||
+      errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0 ||
+      errand.caseType !== PTCaseType.PARKING_PERMIT;
     const signatureValid =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'SIGNATURE').length ==
-      (errand.extraParameters['application.applicant.signingAbility'] === 'true' ? 1 : 0);
+      (errand.extraParameters.find((p) => p.key === 'application.applicant.signingAbility')?.values[0] === 'true'
+        ? 1
+        : 0);
     const rsn = [];
-    if (!passportPhotoExists) {
-      rsn.push('ett passfoto');
+    if (passportPhotoMissing) {
+      rsn.push('passfoto saknas');
+    }
+    if (tooManypassportPhotos) {
+      rsn.push('endast ett passfoto får bifogas');
     }
     if (!medicalConfirmationValid) {
-      rsn.push('läkarintyg');
+      rsn.push('läkarintyg saknas');
     }
     if (!signatureValid) {
-      rsn.push('en underskrift om den sökande kan signera');
+      rsn.push('signaturfoto måste bifogas om den sökande kan signera');
     }
 
     const reason = rsn.map((r, i) => {
@@ -228,7 +239,12 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
     });
 
     return {
-      valid: uniqueAttachmentsOnlyOnce && passportPhotoExists && medicalConfirmationValid && signatureValid,
+      valid:
+        uniqueAttachmentsOnlyOnce &&
+        !passportPhotoMissing &&
+        !tooManypassportPhotos &&
+        medicalConfirmationValid &&
+        signatureValid,
       reason: reason.join(', '),
     };
   }
@@ -277,6 +293,7 @@ export const editAttachment = (
 
 export const sendAttachments = (
   municipalityId: string,
+  errandId: number,
   errandNumber: string,
   attachmentData: { type: string; file: FileList; attachmentName: string }[]
 ) => {
@@ -312,7 +329,7 @@ export const sendAttachments = (
 
     const postAttachment = () =>
       apiService
-        .post<boolean, FormData>(`casedata/${municipalityId}/attachments`, formData, {
+        .post<boolean, FormData>(`casedata/${municipalityId}/errands/${errandId}/attachments`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((res) => {
@@ -349,14 +366,15 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
     });
 };
 
-export const fetchAttachment: (municipalityId: string, attachmentId: string) => Promise<ApiResponse<Attachment>> = (
-  municipalityId,
-  attachmentId
-) => {
+export const fetchAttachment: (
+  municipalityId: string,
+  errandId: number,
+  attachmentId: string
+) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/attachments/${attachmentId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
     .then((res) => res.data)
@@ -366,10 +384,10 @@ export const fetchAttachment: (municipalityId: string, attachmentId: string) => 
     });
 };
 
-export const fetchErrandAttachments: (
-  municipalityId: string,
-  errandNumber: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandNumber) => {
+export const fetchErrandAttachments: (municipalityId: string, errandNumber: string) => Promise<ApiResponse<Attachment[]>> = (
+  municipalityId,
+  errandNumber
+) => {
   if (!errandNumber) {
     console.error('No errand id found, cannot fetch. Returning.');
   }

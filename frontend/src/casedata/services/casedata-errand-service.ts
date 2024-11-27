@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
-import { CaseLabels, PTCaseLabel, MEXCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, PTCaseType, MEXCaseType } from '@casedata/interfaces/case-type';
+import { CaseLabels, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
+import { CaseTypes, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -13,21 +13,27 @@ import {
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
-import { MAX_FILE_SIZE_MB, fetchErrandAttachments } from '@casedata/services/casedata-attachment-service';
+import {
+  MAX_FILE_SIZE_MB,
+  fetchErrandAttachments,
+  validateAttachmentsForDecision,
+} from '@casedata/services/casedata-attachment-service';
 import {
   getLastUpdatedAdministrator,
   makeStakeholdersList,
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
 
+import { Role } from '@casedata/interfaces/role';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isPT, isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
-import { Role } from '@casedata/interfaces/role';
+import { replaceExtraParameter } from './casedata-extra-parameters-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -57,14 +63,51 @@ export const ongoingCaseDataErrandLabels = [
 
 export const ongoingCaseDataPTErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Prioritet', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendenummer', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Prioritet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendeägare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Registrerat', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Uppdaterad', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
+
+export const newStatuses = [ErrandStatus.ArendeInkommit];
+
+export const ongoingStatuses = [
+  ErrandStatus.UnderGranskning,
+  ErrandStatus.VantarPaKomplettering,
+  ErrandStatus.KompletteringInkommen,
+  ErrandStatus.InterntKomplettering,
+  ErrandStatus.InterntAterkoppling,
+  ErrandStatus.UnderRemiss,
+  ErrandStatus.AterkopplingRemiss,
+  ErrandStatus.UnderUtredning,
+  ErrandStatus.UnderBeslut,
+  ErrandStatus.Beslutad,
+  ErrandStatus.BeslutVerkstallt,
+  ErrandStatus.BeslutOverklagat,
+];
+
+export const assignedStatuses = [ErrandStatus.Tilldelat];
+
+export const closedStatuses = [ErrandStatus.ArendeAvslutat];
+
+export const getStatusLabel = (statuses: ErrandStatus[]) => {
+  if (statuses.length > 0) {
+    if (statuses.some((s) => newStatuses.includes(s))) {
+      return 'Nya ärenden';
+    } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
+      return 'Öppnade ärenden';
+    } else if (statuses.some((s) => assignedStatuses.includes(s))) {
+      return 'Tilldelade ärenden';
+    } else if (statuses.some((s) => closedStatuses.includes(s))) {
+      return 'Avslutade ärenden';
+    } else {
+      return 'Ärenden';
+    }
+  }
+};
 
 export const findPriorityKeyForPriorityLabel = (key: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
@@ -74,14 +117,6 @@ export const findStatusKeyForStatusLabel = (statusKey: string) =>
 
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1];
-
-// This might be instance specific in the future, meaning
-// it will need to be configurable
-export const ongoingStatuses =
-  'Ärende inkommit,Väntar på komplettering,Under utredning,Under beslut,Handläggare tilldelad,Komplettering inkommen';
-export const ongoingStatusKeys = ongoingStatuses.split(',').map(findStatusKeyForStatusLabel).join(',');
-
-export const errandIsOngoing = (e: IErrand) => e.status && ongoingStatuses.includes(e.status);
 
 export const getCaseTypes = () => (isPT() ? PTCaseType : isMEX() ? MEXCaseType : CaseTypes.ALL);
 export const getCaseLabels = () => (isPT() ? PTCaseLabel : isMEX() ? MEXCaseLabel : CaseLabels.ALL);
@@ -155,12 +190,9 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
         dayjs(a.updated).isAfter(dayjs(b.updated)) ? -1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? 1 : 0
       ),
       decisions: e.decisions,
-      appeals: e.appeals,
       attachments: [],
       messageIds: [],
-      extraParameters: {
-        ...e.extraParameters,
-      },
+      extraParameters: e.extraParameters,
     };
     return ierrand;
   } catch (e) {
@@ -291,12 +323,27 @@ export const useErrands = (
   extraParameters?: { [key: string]: string }
 ): ErrandsData => {
   const toastMessage = useSnackbar();
-  const { setErrands, errands } = useAppContext();
+  const {
+    setIsLoading,
+    setErrands,
+    setNewErrands,
+    setOngoingErrands,
+    setSuspendedErrands,
+    setAssignedErrands,
+    setClosedErrands,
+    errands,
+    newErrands,
+    ongoingErrands,
+    closedErrands,
+  } = useAppContext();
 
   const fetchErrands = useCallback(
-    (page: number = 0) => {
-      setErrands({ ...errands, isLoading: true, page: page });
-      getErrands(municipalityId, page, size, filter, sort, extraParameters)
+    async (page: number = 0) => {
+      setIsLoading(true);
+      if (!filter) {
+        return;
+      }
+      await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
           setErrands({ ...res, isLoading: false });
           if (res.error && res.error !== '404') {
@@ -312,22 +359,123 @@ export const useErrands = (
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Ärenden kunde inte hämtas',
+            message: 'Nya ärenden kunde inte hämtas',
             status: 'error',
           });
         });
+
+      const fetchPromises = [
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') },
+          sort
+        )
+          .then((res) => {
+            setNewErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Nya ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
+            status: ongoingStatuses.map(findStatusKeyForStatusLabel).join(','),
+          },
+          sort
+        )
+          .then((res) => {
+            setOngoingErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Pågående ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
+            status: `Tilldelat`,
+          },
+          sort
+        )
+          .then((res) => {
+            setAssignedErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Tilldelade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
+            status: closedStatuses.map(findStatusKeyForStatusLabel).join(','),
+          },
+          sort
+        )
+          .then((res) => {
+            setClosedErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Avslutade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+      ];
+      return Promise.allSettled(fetchPromises);
     },
-    [setErrands, errands, size, filter, sort, toastMessage]
+    [
+      setErrands,
+      setNewErrands,
+      setOngoingErrands,
+      setClosedErrands,
+      errands,
+      newErrands,
+      ongoingErrands,
+      closedErrands,
+      size,
+      filter,
+      sort,
+      toastMessage,
+    ]
   );
 
   useEffect(() => {
     if (size && size > 0) {
-      fetchErrands();
+      fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== errands.page) fetchErrands(page);
+    if (page !== errands.page) fetchErrands(page).then(() => setIsLoading(false));
     //eslint-disable-next-line
   }, [page]);
 
@@ -355,7 +503,6 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
     ...(data.status && { status: data.status }),
     ...(data.phase && { phase: data.phase }),
     stakeholders: stakeholders,
-    extraParameters: {},
   };
   return e;
 };
@@ -477,86 +624,102 @@ export const validateStatusForDecision: (e: IErrand) => { valid: boolean; reason
   return { valid: true, reason: e.status };
 };
 
-export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
-  if (isPT() && !e.stakeholders.map((s) => s.newRole).includes(Role.APPLICANT)) {
-    return false;
+export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
+  if (isPT() && !e.stakeholders.some((s) => s.roles.includes(Role.APPLICANT))) {
+    return { valid: false, reason: 'Ärendeägare saknas' };
   }
+  return { valid: true, reason: '' };
+};
 
-  return validateStatusForDecision(e).valid; // && validateAttachmentsForDecision(e).valid;
+export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
+  return (
+    validateStakeholdersForDecision(e).valid &&
+    validateStatusForDecision(e).valid &&
+    validateAttachmentsForDecision(e).valid
+  );
 };
 
 export const phaseChangeInProgress = (errand: IErrand) => {
   if (!errand?.id) {
     return false;
   }
-  if (errand.extraParameters?.['process.phaseAction'] === 'CANCEL') {
-    return errand.extraParameters?.['process.phaseStatus'] !== 'CANCELED';
+  if (errand.extraParameters.find((p) => p.key === 'process.phaseAction')?.values[0] === 'CANCEL') {
+    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'CANCELED';
   }
 
   if (errand.status === ErrandStatus.ArendeAvslutat) {
     return false;
   }
-  if (typeof errand.extraParameters?.['process.phaseStatus'] === 'undefined') {
+  if (typeof errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === 'undefined') {
     return true;
   }
-  if (errand.extraParameters?.['process.displayPhase'] === UiPhase.registrerad && !!errand.administrator) {
+  if (
+    errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad &&
+    !!errand.administrator
+  ) {
     return true;
   }
   if (
     errand.phase === ErrandPhase.aktualisering ||
     errand.phase === ErrandPhase.utredning ||
     errand.phase === ErrandPhase.beslut ||
+    errand.phase === ErrandPhase.verkstalla ||
     errand.phase === ErrandPhase.uppfoljning
   ) {
-    return errand.extraParameters?.['process.phaseAction'] === 'COMPLETE';
+    return errand.extraParameters?.find((p) => p.key === 'process.phaseAction')?.values[0] === 'COMPLETE';
   } else {
-    return errand.extraParameters?.['process.phaseStatus'] !== 'WAITING';
+    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'WAITING';
   }
 };
 
-export const cancelErrandPhaseChange = async (municipalityId: string, errandId: string) => {
-  if (!errandId) {
+export const cancelErrandPhaseChange = async (municipalityId: string, errand: IErrand) => {
+  if (!errand.id) {
     console.error('No id found. Cannot update errand wihout id. Returning.');
     return;
   }
+  const newParameter: ExtraParameter = {
+    key: 'process.phaseAction',
+    values: ['CANCEL'],
+  };
   const e: Partial<RegisterErrandData> = {
-    id: errandId,
-    extraParameters: {
-      'process.phaseAction': 'CANCEL',
-    },
+    id: errand.id.toString(),
+    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
   };
   return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errandId}`, e)
+    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
     .catch((e) => {
       console.error('Something went wrong when cancelling errand phase change', e);
       throw e;
     });
 };
 
-export const triggerErrandPhaseChange = async (municipalityId: string, errandId: string) => {
-  if (!errandId) {
+export const triggerErrandPhaseChange = async (municipalityId: string, errand: IErrand) => {
+  if (!errand?.id) {
     console.error('No id found. Cannot update errand wihout id. Returning.');
     return;
   }
+  const newParameter: ExtraParameter = {
+    key: 'process.phaseAction',
+    values: ['COMPLETE'],
+  };
   const e: Partial<RegisterErrandData> = {
-    id: errandId,
-    extraParameters: {
-      'process.phaseAction': 'COMPLETE',
-    },
+    id: errand.id.toString(),
+    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
   };
   return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errandId}`, e)
+    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
     .catch((e) => {
       console.error('Something went wrong when triggering errand phase change', e);
       throw e;
     });
 };
 
-export const getUiPhase: (errand: IErrand) => UiPhase = (errand) => errand.extraParameters?.['process.displayPhase'];
+export const getUiPhase: (errand: IErrand) => UiPhase = (errand) =>
+  errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] as UiPhase;
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;
-  if (errand?.extraParameters?.['process.displayPhase'] === UiPhase.registrerad) {
+  if (errand?.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {
     allowed = true;
   }
   if (user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase()) {

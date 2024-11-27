@@ -1,4 +1,4 @@
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Table, useGui } from '@sk-web-gui/react';
@@ -79,16 +79,7 @@ export const AttestationsTable: React.FC<{
   setShowSelectedInvoice;
 }> = ({ setSelectedInvoice, setShowSelectedInvoice }) => {
   const { watch, setValue, register } = useFormContext<AttestationTableForm>();
-  const {
-    supportErrands: data,
-    municipalityId,
-  }: {
-    supportErrands: SupportErrandsData;
-    supportAdmins;
-    setSupportAdmins;
-    municipalityId;
-    setSidebarButtons;
-  } = useAppContext();
+  const { municipalityId }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');

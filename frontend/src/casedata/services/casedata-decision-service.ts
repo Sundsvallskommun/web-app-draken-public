@@ -3,12 +3,23 @@ import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/cas
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
+import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
+
+export const lawMapping: Law[] = [
+  {
+    heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+    sfs: 'Trafikförordningen (1998:1276)',
+    chapter: '13',
+    article: '8',
+  },
+];
 
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
@@ -47,6 +58,19 @@ export const saveDecision: (
     };
     atts.push(att);
   }
+  const { adAccount, addresses, contactInformation, extraParameters, firstName, lastName, roles, type } =
+    errand.administrator;
+  const decidedBy: CreateStakeholderDto = {
+    adAccount,
+    addresses,
+    contactInformation,
+    extraParameters,
+    firstName,
+    lastName,
+    roles,
+    type,
+  };
+
   const obj: Decision = {
     ...(formData.id && { id: formData.id }),
     decisionType,
@@ -67,14 +91,14 @@ export const saveDecision: (
             article: '',
           },
     ],
-    validFrom: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).toISOString() : undefined,
-    validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).toISOString() : undefined,
+    validFrom:
+      isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : undefined,
+    validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : undefined,
     decidedAt: dayjs().toISOString(),
-    decidedBy: formData.decidedBy,
+    decidedBy: decidedBy,
     attachments: atts,
     ...(formData.extraParameters && { extraParameters: formData.extraParameters }),
   };
-
   const apiCall = obj.id
     ? apiService.put<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions/${obj.id}`, obj)
     : apiService.patch<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions`, obj);
@@ -140,14 +164,20 @@ export const getPhrases: (
   outcome: DecisionOutcome,
   templateType: 'investigation' | 'decision'
 ) => Promise<{ phrases: string }> = (errand, outcome, templateType) => {
+  const extraParametersCapacity = errand.extraParameters.find(
+    (parameter) => parameter.key === 'application.applicant.capacity'
+  )?.values[0];
   const capacity =
     outcome === 'CANCELLATION'
       ? 'all'
-      : errand.extraParameters['application.applicant.capacity'] === 'DRIVER'
+      : extraParametersCapacity === 'DRIVER'
       ? 'driver'
-      : errand.extraParameters['application.applicant.capacity'] === 'PASSENGER'
+      : extraParametersCapacity === 'PASSENGER'
       ? 'passenger'
-      : '';
+      : undefined;
+  if (!capacity) {
+    return Promise.resolve({ phrases: '' });
+  }
   const identifier = `sbk.rph.${templateType}.phrases.${capacity}.${outcome.toLowerCase()}`;
   const selector: TemplateSelector = {
     identifier: identifier,
@@ -201,19 +231,28 @@ export const renderPdf: (
       : formData.outcome === 'CANCELLATION'
       ? 'cancellation'
       : '';
-  const capacity =
-    outcome === 'cancellation'
-      ? 'all'
-      : errand.extraParameters['application.applicant.capacity'] === 'DRIVER'
-      ? 'driver'
-      : errand.extraParameters['application.applicant.capacity'] === 'PASSENGER'
-      ? 'passenger'
-      : '';
-  const identifier = isMEX()
-    ? `mex.decision`
-    : isPT()
-    ? `sbk.rph.${outcome === 'cancellation' ? 'decision' : templateType}.${capacity}.${outcome}`
-    : `mex.decision`;
+
+  let identifier = `mex.decision`;
+  let capacity = '';
+
+  if (isMEX()) {
+    identifier = `mex.decision`;
+  } else if (isPT()) {
+    const extraParametersCapacity = errand.extraParameters.find(
+      (parameter) => parameter.key === 'application.applicant.capacity'
+    )?.values[0];
+    capacity =
+      outcome === 'cancellation'
+        ? 'all'
+        : extraParametersCapacity === 'DRIVER'
+        ? 'driver'
+        : extraParametersCapacity === 'PASSENGER'
+        ? 'passenger'
+        : // TODO Default to driver if capacity is missing?
+          'driver';
+    identifier = `sbk.rph.${outcome === 'cancellation' ? 'decision' : templateType}.${capacity}.${outcome}`;
+  }
+
   const owner = getOwnerStakeholder(errand);
   const renderBody: TemplateSelector = {
     identifier: identifier,
