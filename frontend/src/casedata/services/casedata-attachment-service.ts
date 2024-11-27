@@ -82,6 +82,8 @@ export enum AttachmentLabels {
   'OEP_APPLICATION' = 'Ansökan',
   'RECEIVED_CONTRACT' = 'Avtal inkommit',
   'CONTRACT_DRAFT' = 'Avtalsutkast',
+  'LETTER' = 'Brev',
+  'EMAIL' = 'E-post',
   'CORPORATE_TAX_CARD' = 'F-skattesedel',
   'LEASE_REQUEST' = 'Förfrågan arrende',
   'REQUEST_TO_BUY_SMALL_HOUSE_PLOT' = 'Förfrågan köpa småhustomt',
@@ -90,6 +92,7 @@ export enum AttachmentLabels {
   'ROAD_ALLOWANCE_APPROVAL' = 'Godkännande för vägbidrag',
   'RECEIVED_MAP' = 'Karta inkommen',
   'PROTOCOL' = 'Protokoll',
+  'PLAN' = 'Situationsplan',
   'PREVIOUS_AGREEMENT' = 'Tidigare avtal',
   'TERMINATION_OF_HUNTING_RIGHTS' = 'Uppsägning jakträtt',
   'OTHER' = 'Övrigt',
@@ -384,10 +387,10 @@ export const fetchAttachment: (
     });
 };
 
-export const fetchErrandAttachments: (municipalityId: string, errandNumber: string) => Promise<ApiResponse<Attachment[]>> = (
-  municipalityId,
-  errandNumber
-) => {
+export const fetchErrandAttachments: (
+  municipalityId: string,
+  errandNumber: string
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandNumber) => {
   if (!errandNumber) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
