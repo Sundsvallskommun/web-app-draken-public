@@ -92,30 +92,22 @@ let formSchema = yup
         return outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup
-          .date()
-          .when('outcome', {
-            is: (outcome: string) => outcome === 'Bifall',
-            then: yup.date().typeError('Giltig från måste anges').required('Giltig från måste anges'),
-          })
-          .default(() => new Date())
+      ? yup.string().when('outcome', {
+          is: (outcome: string) => outcome === 'Bifall',
+          then: yup.string().required('Giltig från måste anges'),
+          otherwise: yup.string().notRequired(),
+        })
       : yup.string(),
+
     validTo: isPT()
-      ? yup
-          .date()
-          .when('outcome', {
-            is: (outcome: string) => {
-              return outcome === 'Bifall';
-            },
-            then: yup.date().required('Giltig till måste anges'),
-          })
-          .when('validFrom', {
-            is: (validFrom: string) => !!validFrom,
-            then: yup
-              .date()
-              .typeError('Giltig till måste anges')
-              .min(yup.ref('validFrom'), 'Slutdatum måste vara efter startdatum'),
-          })
+      ? yup.string().test({
+          name: 'Test av datum',
+          message: 'Slutdatum måste vara efter startdatum',
+          test: (value, context) =>
+            context.parent.outcome !== 'Bifall' ||
+            Date.parse(context.parent.validFrom) < Date.parse(value.toString()) &&
+            value.length !== 0,
+        })
       : yup.string(),
   })
   .required();
