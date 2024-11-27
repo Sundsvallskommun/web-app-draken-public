@@ -132,25 +132,44 @@ export const SimplifiedContactForm: React.FC<{
         .trim()
         .transform((val) => val && val.replace('-', ''))
         .matches(newNumberPhonePattern, invalidPhoneMessage),
-      phoneNumbers: yup.array().of(
-        yup.object().shape({
-          value: yup
-            .string()
-            .trim()
-            .transform((val) => val.replace('-', ''))
-            .matches(phonePattern, invalidPhoneMessage),
-        })
-      ),
-      // .min(1, 'Ange minst en e-postadress och ett telefonnummer')
-      // .required('Ange minst en e-postadress och ett telefonnummer'),
+      phoneNumbers: isPT()
+        ? yup.array().of(
+            yup.object().shape({
+              value: yup
+                .string()
+                .trim()
+                .transform((val) => val.replace('-', ''))
+                .matches(phonePattern, invalidPhoneMessage),
+            })
+          )
+        : yup
+            .array()
+            .of(
+              yup.object().shape({
+                value: yup
+                  .string()
+                  .trim()
+                  .transform((val) => val.replace('-', ''))
+                  .matches(phonePattern, invalidPhoneMessage),
+              })
+            )
+            .min(1, 'Ange minst en e-postadress och ett telefonnummer'),
+
       newEmail: yup.string().trim().email('E-postadress har fel format'),
-      emails: yup.array().of(
-        yup.object().shape({
-          value: yup.string().trim().email('E-postadress har fel format'),
-        })
-      ),
-      // .min(1, 'Ange minst en e-postadress och ett telefonnummer')
-      // .required('Ange minst en e-postadress och ett telefonnummer'),
+      emails: isPT()
+        ? yup.array().of(
+            yup.object().shape({
+              value: yup.string().trim().email('E-postadress har fel format'),
+            })
+          )
+        : yup
+            .array()
+            .of(
+              yup.object().shape({
+                value: yup.string().trim().email('E-postadress har fel format'),
+              })
+            )
+            .min(1, 'Ange minst en e-postadress och ett telefonnummer'),
       primaryContact: yup.boolean(),
       messageAllowed: yup.boolean(),
       roles: yup.array().of(yup.string()),
