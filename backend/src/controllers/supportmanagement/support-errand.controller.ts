@@ -174,7 +174,7 @@ export enum SupportStakeholderRole {
 export class SupportErrandController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/8.1`;
+  SERVICE = `supportmanagement/9.0`;
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
@@ -231,7 +231,7 @@ export class SupportErrandController {
       logger.error('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
     const errandResponse = await this.apiService.get<SupportErrand>({ url }, req.user);
     const errandData = errandResponse.data;
 
@@ -351,7 +351,7 @@ export class SupportErrandController {
     filterList.push(`not(type:'NONE')`);
 
     const filter = filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
-    let url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
+    let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
     url += filter;
     if (sort) {
       url += `&sort=${sort}`;

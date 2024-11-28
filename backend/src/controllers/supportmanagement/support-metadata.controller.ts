@@ -51,6 +51,7 @@ interface SupportMetadata {
 export class SupportMetadataController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private SERVICE = `supportmanagement/9.0`;
 
   @Get('/supportmetadata/:municipalityId')
   @OpenAPI({ summary: 'Get support metadata' })
@@ -60,7 +61,7 @@ export class SupportMetadataController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<SupportMetadata> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/metadata`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
     const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
     return response.status(200).send(res.data);
   }

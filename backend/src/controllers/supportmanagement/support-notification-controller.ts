@@ -54,7 +54,7 @@ export class SupportNotificationDto {
 export class SupportNotificationController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/8.1`;
+  SERVICE = `supportmanagement/9.0`;
 
   @Get('/supportnotifications/:municipalityId')
   @OpenAPI({ summary: 'Get support notifications' })
@@ -71,20 +71,7 @@ export class SupportNotificationController {
     const url = `${municipalityId}/${this.namespace}/notifications?${queryString}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<SupportNotification[]>({ url, baseURL }, req.user);
-    return response.status(200).send(res.data);
-  }
-
-  @Get('/supportnotifications/:municipalityId')
-  @OpenAPI({ summary: 'Get support notifications' })
-  @UseBefore(authMiddleware)
-  async getSupportNotificationById(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<SupportNotification[]> {
-    const url = `${municipalityId}/${this.namespace}/notifications`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<SupportNotification[]>({ url, baseURL }, req.user);
+    console.log('Returning support notifications: ', res.data);
     return response.status(200).send(res.data);
   }
 
