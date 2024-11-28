@@ -1,7 +1,13 @@
 import { useFormContext } from 'react-hook-form';
 import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
 import { Chip } from '@sk-web-gui/react';
-import { findCaseLabelForCaseType, findStatusKeyForStatusLabel } from '@casedata/services/casedata-errand-service';
+import {
+  assignedStatuses,
+  closedStatuses,
+  findCaseLabelForCaseType,
+  findStatusKeyForStatusLabel,
+  newStatuses,
+} from '@casedata/services/casedata-errand-service';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Priority } from '@casedata/interfaces/priority';
 import dayjs from 'dayjs';
@@ -9,6 +15,7 @@ import { SupportAdmin } from '@supportmanagement/services/support-admin-service'
 import { Admin } from '@common/services/user-service';
 import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@contexts/app.context';
+import { assign } from 'cypress/types/lodash';
 
 interface CasedataFilterTagsProps {
   administrators: (SupportAdmin | Admin)[];
@@ -90,9 +97,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
       {statuses
         .filter(
           (status) =>
-            ![ErrandStatus.ArendeInkommit, ErrandStatus.ArendeAvslutat, ErrandStatus.Tilldelat]
-              .map(findStatusKeyForStatusLabel)
-              .includes(status)
+            ![...newStatuses, ...closedStatuses, ...assignedStatuses].map(findStatusKeyForStatusLabel).includes(status)
         )
         .map((status, statusIndex) => (
           <Chip
