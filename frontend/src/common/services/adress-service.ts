@@ -34,8 +34,8 @@ export interface AddressResult {
   error?: string;
   loginName: string;
   company: string;
-  orgTree?: string;
-  metadata?: { key: string; value: string };
+  administrationCode: string;
+  administrationName: string;
 }
 
 const emptyaddress: AddressResult = {
@@ -49,6 +49,8 @@ const emptyaddress: AddressResult = {
   city: '',
   loginName: '',
   company: '',
+  administrationCode: '',
+  administrationName: '',
 };
 
 interface OrgInfo extends Data {
@@ -149,9 +151,12 @@ export const searchPerson: (ssn: string) => Promise<AddressResult> = (ssn: strin
 
 export const isValidADUsername: (username: string) => boolean = (username) => username?.length === 8;
 
-export const setAdministrationCode: (orgTree: string) => string | {} = (orgTree) => {
+export const parseAdministrationInfo: (orgTree: string) => {
+  administrationCode: string;
+  administrationName: string;
+} = (orgTree) => {
   return {
-    administrationCodes: orgTree.split('¤')[0].split('|')[1].toString(),
+    administrationCode: orgTree.split('¤')[0].split('|')[1].toString(),
     administrationName: orgTree.split('¤')[0].split('|')[2].toString(),
   };
 };
@@ -181,8 +186,9 @@ export const searchADUser: (username: string, domain?: string) => Promise<Addres
         careof: res.data.data.careof,
         loginName: username,
         company: res.data.data.company,
-        orgTree: res.data.data.orgTree,
-        metadata: setAdministrationCode(res.data.data.orgTree),
+        administrationCode: parseAdministrationInfo(res.data.data.orgTree).administrationCode,
+        administrationName: parseAdministrationInfo(res.data.data.orgTree).administrationName,
+        // metadata: parseAdministrationInfo(res.data.data.orgTree),
       } as AddressResult;
     })
     .catch((e) => {

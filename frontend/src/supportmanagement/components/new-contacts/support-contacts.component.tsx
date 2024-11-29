@@ -132,11 +132,13 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
 
   const renderContact = (contact: SupportStakeholderFormModel, index, header) => {
     console.log('Rendering contact', contact, index, header);
-    let administrationName = '';
-    contact.metadata && contact.metadata.hasOwnProperty('administrationName')
-      ? (administrationName = contact.metadata['administrationName'])
-      : null;
-    const username = contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+    const administrationName =
+      contact.administrationName ||
+      contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
+      null;
+    const username =
+      contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+    console.log('RENDER CONTACT', contact);
 
     return (
       <div
@@ -286,14 +288,9 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
-                    {username || contact.loginName ? (
-                      <p
-                        className={`my-xs mt-0 flex flex-col text-small ${
-                          contact.personNumber ? null : 'text-dark-disabled'
-                        }`}
-                        data-cy={`stakeholder-username`}
-                      >
-                        {username || contact.loginName}
+                    {username ? (
+                      <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-username`}>
+                        {username}
                       </p>
                     ) : null}
                     <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
