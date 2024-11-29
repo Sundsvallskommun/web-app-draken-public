@@ -163,4 +163,37 @@ export class CaseDataAttachmentController {
     });
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
   }
+
+  @Get('/casedata/:municipalityId/attachments/:attachmentId/errand/:errandId')
+  @OpenAPI({ summary: 'Return attachment for a message by errand id' })
+  @UseBefore(authMiddleware)
+  async messageAttachments(
+    @Req() req: RequestWithUser,
+    @Param('errandId') errandId: number,
+    @Param('attachmentId') attachmentId: string,
+    @Param('municipalityId') municipalityId: string,
+    @Res() response: any,
+  ): Promise<ResponseData> {
+    if (!errandId) {
+      throw 'ErrandId not found.';
+    }
+    if (!attachmentId) {
+      throw 'AttachmentId not found.';
+    }
+
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messageattachments/${attachmentId}/streamed`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.get<[]>({ url, baseURL }, req.user).catch(e => {
+      if (e.status === 404) {
+        logger.error('Attachments not found (404) so returning empty list instead');
+        return { data: [] };
+      } else {
+        logger.error('Error response when fetching attachments: ', e);
+        throw e;
+      }
+    });
+
+    console.log('res: ', res);
+    return { data: res.data, message: 'success' } as ResponseData;
+  }
 }
