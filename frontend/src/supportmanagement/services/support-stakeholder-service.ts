@@ -48,7 +48,6 @@ export const applicantContactChannel = (errand: SupportErrand) => {
   };
 };
 
-
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
   c.externalIdType === 'COMPANY' ? SupportStakeholderTypeEnum.ORGANIZATION : SupportStakeholderTypeEnum.PERSON;
 
