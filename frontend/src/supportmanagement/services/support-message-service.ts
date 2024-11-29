@@ -2,7 +2,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { SingleSupportAttachment, SupportAttachment } from './support-attachment-service';
-import { ContactChannelType, SupportErrand } from './support-errand-service';
+import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -55,7 +55,14 @@ export const sendClosingMessage = (
   return sendMessage({
     municipalityId: municipalityId,
     errandId: supportErrand.id,
-    contactMeans: contactChannels.contactMeans === ContactChannelType.EMAIL ? 'email' : 'sms',
+    // TODO FIX WEBMESSAGE
+    contactMeans:
+      Channels[supportErrand.channel] === Channels.ESERVICE ||
+      Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+        ? 'webmessage'
+        : contactChannels.contactMeans === ContactChannelType.EMAIL
+        ? 'email'
+        : 'sms',
     emails:
       contactChannels.contactMeans === ContactChannelType.EMAIL
         ? contactChannels.values.map((v) => ({ value: v.value }))
@@ -78,7 +85,8 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
   if (!data.errandId) {
     return Promise.reject('No errand id found, cannot send message');
   }
-  const msgPromises = [...data.emails, ...data.phoneNumbers].map(async (target) => {
+  const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails, ...data.phoneNumbers];
+  const msgPromises = targets.map(async (target) => {
     const attachmentPromises: Promise<{ name: string; blob: Blob }>[] = (data.attachments || []).map(async (f) => {
       const fileItem = f.file[0];
       try {

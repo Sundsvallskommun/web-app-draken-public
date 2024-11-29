@@ -29,7 +29,7 @@ import {
   SupportAttachment,
   getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
-import { SupportErrand, isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import { Channels, SupportErrand, isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -267,8 +267,8 @@ export const SupportMessageForm: React.FC<{
       subject: `Ärende #${supportErrand.errandNumber}`,
       headerReplyTo: data.headerReplyTo,
       headerReferences: data.headerReferences,
-      ...(contactMeans === 'email' && { attachments: messageAttachments }),
-      ...(contactMeans === 'email' && { existingAttachments: existingAttachments }),
+      ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
+      ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
     };
     sendMessage(messageData)
       .then((success) => {
@@ -324,6 +324,8 @@ export const SupportMessageForm: React.FC<{
     } else if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
       setRichText(smsBody);
+    } else if (contactMeans === 'webmessage') {
+      setRichText(emailBody);
     }
     setTimeout(() => {
       props.setUnsaved(false);
@@ -392,6 +394,21 @@ export const SupportMessageForm: React.FC<{
           >
             SMS
           </RadioButton>
+          {Channels[supportErrand.channel] === Channels.ESERVICE ||
+          Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
+            <RadioButton
+              disabled={props.locked}
+              data-cy="useWebmessage-radiobutton-true"
+              className="mr-sm mt-4"
+              name="useWebmessage"
+              id="useWebmessage"
+              value={'webmessage'}
+              defaultChecked={false}
+              {...register('contactMeans')}
+            >
+              OpenE
+            </RadioButton>
+          ) : null}
         </RadioButton.Group>
       </div>
 
@@ -429,17 +446,19 @@ export const SupportMessageForm: React.FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' ? (
+      {contactMeans === 'email' || contactMeans === 'webmessage' ? (
         <div className="w-full gap-xl mb-lg">
-          <CommonNestedEmailArrayV2
-            disabled={isSupportErrandLocked(supportErrand)}
-            data-cy="email-input"
-            key={`nested-email-array`}
-            {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
-            errand={supportErrand}
-          />
+          {contactMeans === 'email' && (
+            <CommonNestedEmailArrayV2
+              disabled={isSupportErrandLocked(supportErrand)}
+              data-cy="email-input"
+              key={`nested-email-array`}
+              {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+              errand={supportErrand}
+            />
+          )}
 
-          {errors?.emails ? (
+          {contactMeans === 'email' && errors?.emails ? (
             <div className="text-error">
               <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
             </div>
@@ -535,7 +554,7 @@ export const SupportMessageForm: React.FC<{
         </div>
       ) : null}
 
-      {!props.locked && contactMeans === 'email' ? (
+      {(!props.locked && contactMeans === 'email') || contactMeans === 'webmessage' ? (
         <div className="flex mb-24">
           <Button
             variant="tertiary"

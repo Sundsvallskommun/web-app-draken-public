@@ -1,4 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { Communication, EmailRequest, SmsRequest, WebMessageRequest } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -12,25 +13,6 @@ import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFi
 import { OpenAPI } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
 
-interface SmsRequest {
-  sender: string;
-  recipient: string;
-  message: string;
-}
-
-interface EmailRequest {
-  sender: string;
-  recipient: string;
-  message: string;
-  htmlMessage: string;
-  senderName: string;
-  subject: string;
-  attachments: {
-    name: string;
-    base64EncodedString: string;
-  }[];
-  attachmentIds: string[];
-}
 export interface SupportAttachment {
   id: string;
   fileName: string;
@@ -44,23 +26,6 @@ export interface SingleSupportAttachment {
     mimeType: string;
   };
   base64EncodedString: string;
-}
-export interface Message {
-  communicationAttachments: SupportAttachment[] | SingleSupportAttachment[];
-  communicationId: string;
-  communicationType: string;
-  direction: string;
-  errandNumber: string;
-  messageBody: string;
-  sent: string;
-  subject: string;
-  target: string;
-  viewed: boolean;
-  emailHeaders: {
-    header: string;
-    values: string[];
-  }[];
-  attachmentIds: string[];
 }
 
 class SupportMessageDto {
@@ -126,7 +91,7 @@ export class SupportMessageController {
     }
     await validateRequestBody(SupportMessageDto, messageDto);
     let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication`;
-    let body;
+    let body: SmsRequest | EmailRequest | WebMessageRequest;
     const MESSAGE_ID = generateMessageId();
     const emailHeaders = {
       MESSAGE_ID: [MESSAGE_ID],
@@ -147,8 +112,7 @@ export class SupportMessageController {
           base64EncodedString: file.buffer.toString('base64'),
         })),
         emailHeaders,
-        attachmentIds: messageDto.attachmentIds,
-        // attachmentIds: messageDto.attachmentIds ? messageDto.attachmentIds.split(',') : [],
+        attachmentIds: messageDto.attachmentIds || [],
       } as EmailRequest;
     } else if (messageDto.contactMeans === 'sms') {
       url += '/sms';
@@ -157,12 +121,25 @@ export class SupportMessageController {
         recipient: messageDto.recipientPhone,
         message: messageDto.plaintextMessage,
       } as SmsRequest;
+    } else if (messageDto.contactMeans === 'webmessage') {
+      url += '/webmessage';
+      const requestBody: WebMessageRequest = {
+        message: messageDto.plaintextMessage,
+        attachments: files.map(file => ({
+          name: file.originalname,
+          base64EncodedString: file.buffer.toString('base64'),
+        })),
+        attachmentIds: messageDto.attachmentIds || [],
+      } as WebMessageRequest;
+      body = requestBody;
     } else {
       logger.error('Trying to send message without means of contact specified');
       throw new Error('Means of contact missing, but be email or sms');
     }
+    console.log('Sending message: ', body);
+    console.log('Sending message to: ', url);
     const res = await this.apiService
-      .post<any, Partial<SupportMessageDto>>({ url, data: body }, req.user)
+      .post<any, Partial<SmsRequest | EmailRequest | WebMessageRequest>>({ url, data: body }, req.user)
       .then(async res => {
         return res.data;
       })
@@ -182,9 +159,9 @@ export class SupportMessageController {
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<Message[]> {
+  ): Promise<Communication[]> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication`;
-    const res = await this.apiService.get<Message[]>({ url }, req.user);
+    const res = await this.apiService.get<Communication[]>({ url }, req.user);
     return response.status(200).send(res.data);
   }
 
@@ -197,8 +174,8 @@ export class SupportMessageController {
     @Param('municipalityId') municipalityId: string,
     @Param('communicationID') communicationID: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: Message[],
-  ): Promise<{ data: Message[]; message: string }> {
+    @Res() response: Communication[],
+  ): Promise<{ data: Communication[]; message: string }> {
     const allowed = await validateSupportAction(municipalityId, id.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');

@@ -131,14 +131,12 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   };
 
   const renderContact = (contact: SupportStakeholderFormModel, index, header) => {
-    console.log('Rendering contact', contact, index, header);
     const administrationName =
       contact.administrationName ||
       contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
       null;
     const username =
       contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-    console.log('RENDER CONTACT', contact);
 
     return (
       <div
