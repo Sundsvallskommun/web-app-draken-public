@@ -393,7 +393,6 @@ export class SupportErrandController {
       status: Status.NEW,
       resolution: Resolution.INFORMED,
       title: 'Empty errand',
-      externalTags: [{ key: 'caseId', value: `${dayjs().format('YYYYMMDD')}-${Math.floor(Math.random() * 10000)}` }],
     };
     const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');

@@ -49,7 +49,7 @@ import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -78,11 +78,14 @@ export const SupportSimplifiedContactForm: React.FC<{
       personNumber:
         isLOP() || isIK()
           ? yup.string().when('stakeholderType', {
-              is: (type: string) =>
-                type === 'PERSON' &&
-                searchMode === 'employee' &&
-                !personNumber?.startsWith('1') &&
-                !personNumber?.startsWith('2'),
+              is: (type: string) => {
+                return (
+                  type === 'PERSON' &&
+                  searchMode === 'employee' &&
+                  !personNumber?.toString().startsWith('1') &&
+                  !personNumber?.toString().startsWith('2')
+                );
+              },
               then: (schema) => schema.matches(usernamePattern, invalidUsernameMessage),
               otherwise: (schema) =>
                 schema
@@ -125,6 +128,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       careOf: yup.string(),
       zipCode: yup.string(),
       city: yup.string(),
+      loginName: yup.string(),
       newPhoneNumber: yup
         .string()
         .trim()
@@ -156,7 +160,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { supportErrand } = useAppContext();
+  const { supportErrand, supportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -195,6 +199,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   const externalId = watch(`externalId`);
   const externalIdType = watch(`externalIdType`);
   const metadata = watch('metadata');
+  const loginName = watch('loginName');
   const firstName = watch(`firstName`);
   const lastName = watch(`lastName`);
   const address = watch(`address`);
@@ -262,6 +267,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [organizationNumber, personNumber]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
+    console.log('submitting', e);
     if (!editing) {
       e.internalId = uuidv4();
     }
@@ -324,6 +330,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             }
             if (res.email) {
               appendEmail({ value: res.email });
+            }
+            if (res.loginName) {
+              setValue('loginName', res.loginName);
             }
 
             if (searchMode === 'enterprise') {
@@ -498,6 +507,7 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const onSelectUserHandler = (e) => {
     const user = searchResultArray?.find((data) => `${data.firstName} ${data.lastName}` === e.target.value);
+    console.log('setting selected user', user);
     setSelectedUser(user);
     setSearchResultArray([]);
     setQuery('');
@@ -524,6 +534,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       }
       if (selectedUser.email) {
         appendEmail({ value: selectedUser.email });
+      }
+      if (selectedUser.loginName) {
+        setValue('loginName', selectedUser.loginName);
       }
 
       setSearchResult(true);
@@ -760,6 +773,11 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
                   {personNumber || '(personnummer saknas)'}
                 </p>
+                {loginName ? (
+                  <p className="my-xs mt-0" data-cy={`stakeholder-username`}>
+                    {loginName}
+                  </p>
+                ) : null}
                 {metadata?.hasOwnProperty('administrationName') ? (
                   <p className="my-xs mt-0">{metadata['administrationName']}</p>
                 ) : null}

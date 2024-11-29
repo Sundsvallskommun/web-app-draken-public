@@ -69,23 +69,23 @@ export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormMod
       c.phoneNumbers.length > 0
     ) {
       const customer: SupportStakeholder = {
-        stakeholderType: mapExternalIdTypeToStakeholderType(data.customer[0]),
-        externalId: data.customer[0].externalId || data.customer[0].organizationNumber,
-        externalIdType: data.customer[0].externalIdType,
+        stakeholderType: mapExternalIdTypeToStakeholderType(c),
+        externalId: c.externalId || c.organizationNumber,
+        externalIdType: c.externalIdType,
         role: SupportStakeholderRole.PRIMARY,
         organizationName: c.organizationName,
-        // TODO map organization name to its own field when this has been added in the API
-        firstName: data.customer[0].firstName || data.customer[0].organizationName,
-        lastName: data.customer[0].lastName,
-        address: data.customer[0].address,
-        zipCode: data.customer[0].zipCode,
-        city: data.customer[0].city,
-        careOf: data.customer[0].careOf,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        address: c.address,
+        zipCode: c.zipCode,
+        city: c.city,
+        careOf: c.careOf,
         country: 'SVERIGE',
         contactChannels: [
-          ...data.customer[0].emails.map((e) => ({ type: 'Email', value: e.value })),
-          ...data.customer[0].phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
+          ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
+          ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
         ],
+        ...(c.loginName && { parameters: [{ key: 'username', values: [c.loginName], displayName: 'Användarnamn' }] }),
         metadata: data.customer[0].metadata,
       };
       stakeholders.push(customer);
@@ -122,6 +122,7 @@ export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormMod
           ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
           ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
         ],
+        ...(c.loginName && { parameters: [{ key: 'username', values: [c.loginName], displayName: 'Användarnamn' }] }),
         metadata: c.metadata,
       });
     }

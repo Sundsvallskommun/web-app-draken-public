@@ -50,7 +50,7 @@ export interface AppContextInterface {
   municipalityId;
   setMunicipalityId: (municipalityId: string) => void;
 
-  supportMetadata;
+  supportMetadata: SupportMetadata;
   setSupportMetadata: (supportMetadata: SupportMetadata) => void;
 
   supportErrand;

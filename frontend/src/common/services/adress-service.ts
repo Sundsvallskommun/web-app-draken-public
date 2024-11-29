@@ -179,7 +179,7 @@ export const searchADUser: (username: string, domain?: string) => Promise<Addres
         city: res.data.data.city,
         zip: res.data.data.postalCode,
         careof: res.data.data.careof,
-        loginName: res.data.data.loginName,
+        loginName: username,
         company: res.data.data.company,
         orgTree: res.data.data.orgTree,
         metadata: setAdministrationCode(res.data.data.orgTree),
