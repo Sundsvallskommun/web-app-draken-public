@@ -1,11 +1,8 @@
-import { apiService } from '@common/services/api-service';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { SupportAdmin } from './support-admin-service';
 import {
-  ApiSupportErrand,
   ContactChannelType,
   SupportErrand,
-  SupportErrandDto,
   SupportStakeholder,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
@@ -48,83 +45,69 @@ export const applicantContactChannel = (errand: SupportErrand) => {
   };
 };
 
-
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
   c.externalIdType === 'COMPANY' ? SupportStakeholderTypeEnum.ORGANIZATION : SupportStakeholderTypeEnum.PERSON;
+
+const buildStakeholder = (c: SupportStakeholderFormModel, role: SupportStakeholderRole) => {
+  if (
+    c.externalId ||
+    c.organizationName ||
+    c.firstName ||
+    c.lastName ||
+    c.address ||
+    c.careOf ||
+    c.zipCode ||
+    c.city ||
+    c.emails.length > 0 ||
+    c.phoneNumbers.length > 0
+  ) {
+    const parameters: { key: string; values: string[]; displayName?: string }[] = [];
+    if (c.username) {
+      parameters.push({ key: 'username', values: [c.username], displayName: 'Användarnamn' });
+    }
+    if (c.administrationCode) {
+      parameters.push({ key: 'administrationCode', values: [c.administrationCode], displayName: 'Förvaltningskod' });
+    }
+    if (c.administrationName) {
+      parameters.push({ key: 'administrationName', values: [c.administrationName], displayName: 'Förvaltningsnamn' });
+    }
+    const stakeholder: SupportStakeholder = {
+      stakeholderType: mapExternalIdTypeToStakeholderType(c),
+      externalId: c.externalId || c.organizationNumber,
+      externalIdType: c.externalIdType,
+      role,
+      organizationName: c.organizationName,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      address: c.address,
+      zipCode: c.zipCode,
+      city: c.city,
+      careOf: c.careOf,
+      country: 'SVERIGE',
+      contactChannels: [
+        ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
+        ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
+      ],
+      parameters,
+    };
+    return stakeholder;
+  }
+  return undefined;
+};
 
 export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormModel>) => {
   const stakeholders: SupportStakeholder[] = [];
   if (data.customer && data.customer?.length > 0) {
     const c = data.customer[0];
-    if (
-      c.externalId ||
-      c.organizationName ||
-      c.firstName ||
-      c.lastName ||
-      c.address ||
-      c.careOf ||
-      c.zipCode ||
-      c.city ||
-      c.emails.length > 0 ||
-      c.phoneNumbers.length > 0
-    ) {
-      const customer: SupportStakeholder = {
-        stakeholderType: mapExternalIdTypeToStakeholderType(c),
-        externalId: c.externalId || c.organizationNumber,
-        externalIdType: c.externalIdType,
-        role: SupportStakeholderRole.PRIMARY,
-        organizationName: c.organizationName,
-        firstName: c.firstName,
-        lastName: c.lastName,
-        address: c.address,
-        zipCode: c.zipCode,
-        city: c.city,
-        careOf: c.careOf,
-        country: 'SVERIGE',
-        contactChannels: [
-          ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
-          ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
-        ],
-        ...(c.loginName && { parameters: [{ key: 'username', values: [c.loginName], displayName: 'Användarnamn' }] }),
-        metadata: data.customer[0].metadata,
-      };
+    const customer = buildStakeholder(c, SupportStakeholderRole.PRIMARY);
+    if (customer) {
       stakeholders.push(customer);
     }
   }
   data.contacts?.forEach((c) => {
-    if (
-      c.externalId ||
-      c.organizationName ||
-      c.firstName ||
-      c.lastName ||
-      c.address ||
-      c.careOf ||
-      c.zipCode ||
-      c.city ||
-      c.emails.length > 0 ||
-      c.phoneNumbers.length > 0
-    ) {
-      stakeholders.push({
-        stakeholderType: mapExternalIdTypeToStakeholderType(c),
-        externalId: c.externalId || c.organizationNumber,
-        externalIdType: c.externalIdType,
-        role: SupportStakeholderRole.CONTACT,
-        organizationName: c.organizationName,
-        // TODO map organization name to its own field when this has been added in the API
-        firstName: c.firstName || c.organizationName,
-        lastName: c.lastName,
-        address: c.address,
-        careOf: c.careOf,
-        zipCode: c.zipCode,
-        city: c.city,
-        country: 'Sweden',
-        contactChannels: [
-          ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
-          ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
-        ],
-        ...(c.loginName && { parameters: [{ key: 'username', values: [c.loginName], displayName: 'Användarnamn' }] }),
-        metadata: c.metadata,
-      });
+    const stakeholder = buildStakeholder(c, SupportStakeholderRole.CONTACT);
+    if (stakeholder) {
+      stakeholders.push(stakeholder);
     }
   });
   return stakeholders;
