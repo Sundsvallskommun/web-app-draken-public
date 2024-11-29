@@ -11,6 +11,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 export class SupportHistoryController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private SERVICE = `supportmanagement/9.0`;
 
   @Get('/supporthistory/:municipalityId/:id')
   @OpenAPI({ summary: 'Get events for errand' })
@@ -21,7 +22,7 @@ export class SupportHistoryController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: Response<PageEvent, any>,
   ): Promise<Response<PageEvent, any>> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/events?page=0&size=100&sort=created%2Cdesc`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/events?page=0&size=100&sort=created%2Cdesc`;
     const res = await this.apiService.get<PageEvent>({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -37,7 +38,7 @@ export class SupportHistoryController {
     @QueryParam('target') target: number,
     @Res() response: Response<DifferenceResponse, any>,
   ): Promise<Response<DifferenceResponse, any>> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/revisions/difference?source=${source}&target=${target}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/revisions/difference?source=${source}&target=${target}`;
     const res = await this.apiService.get<DifferenceResponse>({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -54,7 +55,7 @@ export class SupportHistoryController {
     @QueryParam('target') target: number,
     @Res() response: Response<DifferenceResponse, any>,
   ): Promise<Response<DifferenceResponse, any>> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/notes/${noteId}/revisions/difference?source=${source}&target=${target}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/notes/${noteId}/revisions/difference?source=${source}&target=${target}`;
     const res = await this.apiService.get<DifferenceResponse>({ url }, req.user);
     return response.status(200).send(res.data);
   }

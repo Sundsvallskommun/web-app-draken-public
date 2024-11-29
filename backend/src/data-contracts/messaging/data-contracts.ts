@@ -268,6 +268,55 @@ export interface Sms {
   name: string;
 }
 
+/** Addresses that gets a letter copy */
+export interface Address {
+  /**
+   * The first name of the recipient
+   * @example "John"
+   */
+  firstName?: string;
+  /**
+   * The last name of the recipient
+   * @example "Doe"
+   */
+  lastName?: string;
+  /**
+   * The city
+   * @example "Main Street"
+   */
+  city?: string;
+  /**
+   * The apartment number
+   * @example "1101"
+   */
+  apartmentNumber?: string;
+  /**
+   * The organization number of the recipient
+   * @example "123456-7890"
+   */
+  organizationNumber?: string;
+  /**
+   * The address
+   * @example "Main Street 1"
+   */
+  address?: string;
+  /**
+   * The care of
+   * @example "c/o John Doe"
+   */
+  careOf?: string;
+  /**
+   * The zip code
+   * @example "12345"
+   */
+  zipCode?: string;
+  /**
+   * The country
+   * @example "Sweden"
+   */
+  country?: string;
+}
+
 /** Attachment */
 export interface LetterAttachment {
   /**
@@ -287,6 +336,7 @@ export interface LetterAttachment {
 export interface LetterParty {
   /** @minItems 1 */
   partyIds: string[];
+  addresses?: Address[];
   /** External references */
   externalReferences?: ExternalReference[];
 }
@@ -731,6 +781,11 @@ export interface UserMessage {
    * @format date-time
    */
   sent?: string;
+  /**
+   * The message subject
+   * @example "Important message"
+   */
+  subject?: string;
   recipients?: Recipient[];
   attachments?: MessageAttachment[];
 }

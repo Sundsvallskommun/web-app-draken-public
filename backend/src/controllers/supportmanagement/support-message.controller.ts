@@ -100,6 +100,7 @@ export const generateMessageId = () => `<${uuidv4()}@CONTACTCENTER>`;
 export class SupportMessageController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private SERVICE = `supportmanagement/9.0`;
 
   @Post('/supportmessage/:municipalityId/:id')
   @HttpCode(201)
@@ -124,7 +125,7 @@ export class SupportMessageController {
       return response.status(400).send('Municipality id missing');
     }
     await validateRequestBody(SupportMessageDto, messageDto);
-    let url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/communication`;
+    let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication`;
     let body;
     const MESSAGE_ID = generateMessageId();
     const emailHeaders = {
@@ -182,7 +183,7 @@ export class SupportMessageController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<Message[]> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/communication`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication`;
     const res = await this.apiService.get<Message[]>({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -202,7 +203,7 @@ export class SupportMessageController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/communication/${communicationID}/viewed/${isViewed}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication/${communicationID}/viewed/${isViewed}`;
     const res = await this.apiService.put<any, any>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }

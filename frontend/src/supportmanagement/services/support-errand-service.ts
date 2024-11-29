@@ -94,6 +94,7 @@ export interface SupportStakeholder {
     type: string;
     value: string;
   }[];
+  parameters?: { key: string; values: string[]; displayName?: string }[];
   metadata?: { key: string; value: string };
 }
 
@@ -427,6 +428,7 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
   newRole: SupportStakeholderRole;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
+  loginName?: string;
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
@@ -435,6 +437,7 @@ export const emptyContact: SupportStakeholderFormModel = {
   internalId: '',
   externalId: '',
   externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  loginName: '',
   firstName: '',
   lastName: '',
   address: '',
