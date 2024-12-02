@@ -21,6 +21,7 @@
     "start:lop": "dotenv -e .env.lop -- dotenv next start",
     "start:mex": "dotenv -e .env.mex -- dotenv next start",
     "start:pt": "dotenv -e .env.pt -- dotenv next start",
+    "generate:contracts:lop": "dotenv -e .env.lop npx tsx ./src/swagger-typescript-api.ts",
     "lint": "next lint --no-cache",
     "type-check": "tsc --pretty --noEmit",
     "analyze": "cross-env ANALYZE=true next build",
