@@ -96,6 +96,7 @@ const CommonNestedEmailArrayV2 = ({
       <FormLabel>Lägg till ny e-postadress{required ? <span aria-hidden="true">*</span> : null}</FormLabel>
       <div className="w-full flex gap-16 mb-8">
         <Input
+          data-cy={`new-email-input`}
           placeholder="Ange e-postadress"
           {...register('newEmail')}
           className={cx(error ? 'border-error' : null, `w-full`)}

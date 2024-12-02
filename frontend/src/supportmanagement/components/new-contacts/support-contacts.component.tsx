@@ -104,8 +104,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   const allowsOrganization = !isLOP() && !isIK();
 
   const onRemove = async (c: SupportStakeholderFormModel) => {
-    const customer = stakeholderCustomers.filter((cus) => JSON.stringify(cus) !== JSON.stringify(c));
-    const contacts = stakeholderContacts.filter((con) => JSON.stringify(con) !== JSON.stringify(c));
+    const customer = stakeholderCustomers.filter((cus) => cus.internalId !== c.internalId);
+    const contacts = stakeholderContacts.filter((con) => con.internalId !== c.internalId);
 
     const data = { customer, contacts };
     const stakeholders = buildStakeholdersList(data);
@@ -144,7 +144,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         data-cy={`rendered-${contact.role}`}
         className="w-full bg-background-content border rounded-button"
       >
-        {/* {JSON.stringify(selectedContact) === JSON.stringify(contact) ? ( */}
         {selectedContact && selectedContact.internalId === contact.internalId ? (
           <SupportSimplifiedContactForm
             disabled={isSupportErrandLocked(supportErrand)}
@@ -153,24 +152,28 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             editing={true}
             label={header}
             onSave={(e) => {
-              if (e.role === SupportStakeholderRole.PRIMARY) {
-                let stakeholderIndex = stakeholderCustomers.findIndex((custom) => custom.internalId === e.internalId);
-
-                if (JSON.stringify(stakeholderCustomers[stakeholderIndex]) !== JSON.stringify(e)) {
-                  stakeholderCustomers[stakeholderIndex] = e;
-                  setValue('customer', stakeholderCustomers, { shouldDirty: true });
-                }
-              } else if (e.role === SupportStakeholderRole.CONTACT) {
-                let stakeholderIndex = stakeholderContacts.findIndex((contact) => contact.internalId === e.internalId);
-
-                if (JSON.stringify(stakeholderContacts[stakeholderIndex]) !== JSON.stringify(e)) {
-                  stakeholderContacts[stakeholderIndex] = e;
-                  setValue('contacts', stakeholderContacts, { shouldDirty: true });
-                }
+              const existingStakeholders = [...stakeholderCustomers, ...stakeholderContacts];
+              const matchingIndex = existingStakeholders.findIndex(
+                (stakeholder) => stakeholder.internalId === e.internalId
+              );
+              if (matchingIndex !== -1) {
+                existingStakeholders[matchingIndex] = e;
+                const newContacts = existingStakeholders.filter(
+                  (stakeholder) => stakeholder.role !== SupportStakeholderRole.PRIMARY
+                );
+                const newCustomers = existingStakeholders.filter(
+                  (stakeholder) => stakeholder.role === SupportStakeholderRole.PRIMARY
+                );
+                setValue('stakeholders', existingStakeholders, { shouldDirty: true });
+                setStakeholderContacts(newContacts);
+                setStakeholderCustomers(newCustomers);
+                setValue('contacts', newContacts, { shouldDirty: true });
+                setValue('customer', newCustomers, { shouldDirty: true });
               }
             }}
             onClose={() => setSelectedContact(undefined)}
             allowOrganization={allowsOrganization}
+            allowRelation={isLOP()}
             id="edit"
           />
         ) : null}
@@ -182,7 +185,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             <div className="flex flex-wrap gap-16 text-small">
               <Button
                 disabled={isSupportErrandLocked(supportErrand)}
-                data-cy="edit-stakeholder-button"
+                data-cy={`edit-stakeholder-button-${contact.role}-${index}`}
                 variant="link"
                 className="text-body"
                 onClick={() => {
@@ -352,7 +355,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     if (stakeholder.role === SupportStakeholderRole.PRIMARY) {
       stakeholderCustomers.push(stakeholder);
       setValue('customer', stakeholderCustomers, { shouldDirty: true });
-    } else if (stakeholder.role === SupportStakeholderRole.CONTACT) {
+    } else {
       stakeholderContacts.push(stakeholder);
       setValue('contacts', stakeholderContacts, { shouldDirty: true });
     }
@@ -370,6 +373,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               {stakeholderCustomers.length === 0 ? (
                 <SupportSimplifiedContactForm
                   disabled={isSupportErrandLocked(supportErrand)}
+                  allowRelation={isLOP()}
                   allowOrganization={allowsOrganization}
                   setUnsaved={props.setUnsaved}
                   onSave={(contact) => addStakeholder(contact)}
@@ -389,6 +393,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             <div className="w-full mt-md">
               <SupportSimplifiedContactForm
                 disabled={isSupportErrandLocked(supportErrand)}
+                allowRelation={isLOP()}
                 allowOrganization={allowsOrganization}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, role: SupportStakeholderRole.CONTACT }}
