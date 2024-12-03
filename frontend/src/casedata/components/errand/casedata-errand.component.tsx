@@ -116,6 +116,9 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   }, [errand]);
 
   function estateToText(propertyDesignation: string) {
+    if (!propertyDesignation) {
+      return '(Saknas)';
+    }
     const MunicipalityName = propertyDesignation.toLowerCase().split(' ')[0];
     const propertyName = propertyDesignation
       .toLowerCase()
@@ -216,8 +219,8 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                       {errand.facilities.map((estate, index) => (
                                         <>
                                           {index === 0
-                                            ? estateToText(estate.address.propertyDesignation)
-                                            : ', ' + estateToText(estate.address.propertyDesignation)}
+                                            ? estateToText(estate?.address?.propertyDesignation)
+                                            : ', ' + estateToText(estate?.address?.propertyDesignation)}
                                         </>
                                       ))}
                                       {errand.facilities.length === 0 ? '(Saknas)' : null}
