@@ -5,6 +5,26 @@ import { Message } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React from 'react';
 
+export const getSender = (msg: Message) => {
+  if (!msg) {
+    return '';
+  }
+  if (msg.communicationType === 'WEB_MESSAGE') {
+    return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'OpenE';
+  }
+  return msg?.sender || '(okänd avsändare)';
+};
+
+export const getReciever = (msg: Message) => {
+  if (!msg) {
+    return '';
+  }
+  if (msg.communicationType === 'WEB_MESSAGE') {
+    return msg.direction === 'INBOUND' ? 'Draken' : 'OpenE';
+  }
+  return msg?.target || '(okänd mottagare)';
+};
+
 export const RenderedSupportMessage: React.FC<{
   message: Message;
   selected: string;
@@ -15,9 +35,6 @@ export const RenderedSupportMessage: React.FC<{
   const messageAvatar = (message: Message) => (
     <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
   );
-
-  const getSender = (msg: Message) => msg?.sender || '(okänd avsändare)';
-  const getReciever = (msg: Message) => msg?.target || '(okänd mottagare)';
 
   return (
     <>
@@ -48,8 +65,7 @@ export const RenderedSupportMessage: React.FC<{
                 <p
                   className={cx(`mr-md break-all font-bold`)}
                   dangerouslySetInnerHTML={{
-                    __html:
-                      message.communicationType === 'WEB_MESSAGE' ? '' : `Till: ${sanitized(getReciever(message))}`,
+                    __html: `Till: ${sanitized(getReciever(message))}`,
                   }}
                 ></p>
               </div>
