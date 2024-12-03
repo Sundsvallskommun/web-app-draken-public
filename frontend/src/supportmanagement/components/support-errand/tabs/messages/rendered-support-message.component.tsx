@@ -48,7 +48,8 @@ export const RenderedSupportMessage: React.FC<{
                 <p
                   className={cx(`mr-md break-all font-bold`)}
                   dangerouslySetInnerHTML={{
-                    __html: `Till: ${sanitized(getReciever(message))}`,
+                    __html:
+                      message.communicationType === 'WEB_MESSAGE' ? '' : `Till: ${sanitized(getReciever(message))}`,
                   }}
                 ></p>
               </div>
@@ -84,9 +85,9 @@ export const RenderedSupportMessage: React.FC<{
               <>
                 <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
               </>
+            ) : message.communicationType === 'WEB_MESSAGE' ? (
+              'Via e-tjänst'
             ) : (
-              // : message.communicationType === 'WEBMESSAGE' || message.externalCaseID
-              // ? 'Via e-tjänst'
               ''
             )}
           </span>
