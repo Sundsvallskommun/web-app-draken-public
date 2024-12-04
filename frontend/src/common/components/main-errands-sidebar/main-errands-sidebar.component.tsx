@@ -31,7 +31,7 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user }: AppContextInterface = useAppContext();
+  const { user, billingRecords }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const applicationName = getApplicationName();
@@ -100,15 +100,17 @@ export const MainErrandsSidebar: React.FC<{
               <Button
                 onClick={() => setShowAttestationTable(true)}
                 leftIcon={<LucideIcon name="square-pen" />}
-                className="w-full text-right justify-between"
+                // className="w-full text-right justify-between"
+                className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
               >
                 <span className="w-full flex justify-between">
                   Attestering
                   <Badge
-                  /* TODO inverted={button.key !== selectedErrandStatus}
-                color={button.key === selectedErrandStatus ? 'tertiary' : 'vattjom'}
-                counter={button.totalStatusErrands || '0'}*/
+                    className="min-w-fit px-4"
+                    inverted={!showAttestationTable}
+                    color={showAttestationTable ? 'tertiary' : 'vattjom'}
+                    counter={billingRecords.totalElements || '0'}
                   />
                 </span>
               </Button>

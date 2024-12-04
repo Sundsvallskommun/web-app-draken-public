@@ -15,11 +15,11 @@ interface AttestationFilterTagsProps {
 export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps> = () => {
   const { watch, setValue, reset } = useFormContext<AttestationFilter>();
   const statuses = watch('status');
-  const types = watch('type');
+  const invoiceTypes = watch('invoiceType');
   const startdate = watch('startdate');
   const enddate = watch('enddate');
 
-  const hasTags = types.length > 0 || statuses.length > 0 || startdate || enddate;
+  const hasTags = invoiceTypes?.length > 0 || statuses.length > 0 || startdate || enddate;
 
   const handleRemoveStatus = (status: string) => {
     const newStatuses = statuses.filter((_c) => _c !== status);
@@ -27,8 +27,8 @@ export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps
   };
 
   const handleRemoveType = (type: string) => {
-    const newTypes = types.filter((_t) => _t !== type);
-    setValue('type', newTypes);
+    const newTypes = invoiceTypes.filter((_t) => _t !== type);
+    setValue('invoiceType', newTypes);
   };
 
   const handleRemoveDates = () => {
@@ -47,9 +47,9 @@ export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps
           {status}
         </Chip>
       ))}
-      {types.map((type, typeIndex) => (
-        <Chip key={`type-${typeIndex}`} aria-label="Rensa typ" onClick={() => handleRemoveType(type)}>
-          {type}
+      {invoiceTypes.map((invoiceType, typeIndex) => (
+        <Chip key={`type-${typeIndex}`} aria-label="Rensa typ" onClick={() => handleRemoveType(invoiceType)}>
+          {invoiceType}
         </Chip>
       ))}
 

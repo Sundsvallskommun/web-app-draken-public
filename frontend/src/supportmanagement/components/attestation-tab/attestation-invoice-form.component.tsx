@@ -1,5 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
+import { prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -14,50 +15,59 @@ import {
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { AttestationInvoiceRequest } from '@supportmanagement/services/support-invoice-service';
+import {
+  customerIdentities,
+  invoiceActivities,
+  InvoiceFormModel,
+  invoiceTypes,
+  recordToFormModel,
+} from '@supportmanagement/services/support-billing-service';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
 
-export interface AttestationInvoiceFormModel {
-  id: string;
-  errandId: string;
-  supervisor: string;
-  referenceNumber: string;
-  client: string;
-  activity: string;
-  type: string;
-  quantity: string;
-  amount: string;
-  totalAmount: string;
-  registeredAt: string;
-  registeredBy: string;
-  updatedAt: string;
-  attested: string;
-  status: string;
-  approvedBy?: string;
-  approved?: string;
-}
+// export interface AttestationInvoiceFormModel {
+//   id: string;
+//   errandId: string;
+//   manager: string;
+//   referenceNumber: string;
+//   customerId: string;
+//   activity: string;
+//   type: string;
+//   quantity: string;
+//   costPerUnit: string;
+//   totalAmount: string;
+//   registeredAt: string;
+//   registeredBy: string;
+//   modified: string;
+//   attested: string;
+//   status: string;
+//   approvedBy?: string;
+//   approved?: string;
+// }
 
-let formSchema = yup
-  .object({
-    id: yup.string(),
-    supervisor: yup.string(),
-    referenceNumber: yup.string(),
-    client: yup.string(),
-    activity: yup.string(),
-    type: yup.string(),
-    quantity: yup.string(),
-    totalAmount: yup.string(),
-    amount: yup.string(),
-  })
-  .required();
+let formSchema = yup.object({
+  id: yup.string(),
+  costPerUnit: yup.number().typeError('Ange ett giltigt värde'),
+  manager: yup.string().required('Fyll i chef'),
+  referenceNumber: yup.string().required('Fyll i referensnummer'),
+  errandId: yup.string().required('Fyll i ärende-id'),
+  customerId: yup.string().required('Fyll i kundidentitet'),
+  activity: yup.string().required('Fyll i aktivitet'),
+  type: yup.string().required('Fyll i faktureringstyp'),
+  quantity: yup.number().typeError('Ange ett giltigt värde').required('Fyll i antal timmar'),
+  totalAmount: yup.number().typeError('Ange ett giltigt värde'),
+  registeredBy: yup.string(),
+  approvedBy: yup.string(),
+  status: yup.string(),
+});
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
   update?: () => void;
-  selectedInvoice: AttestationInvoiceFormModel;
+  selectedrecord: CBillingRecord;
 }> = (props) => {
   const {
     municipalityId,
@@ -67,30 +77,15 @@ export const AttestationInvoiceForm: React.FC<{
     user: User;
   } = useAppContext();
 
-  const { selectedInvoice } = props;
+  const { selectedrecord } = props;
+  const recordFormModel = recordToFormModel(selectedrecord);
 
   const toastMessage = useSnackbar();
   const [showChangeDecisionComponent, setShowDecisionComponent] = useState(false);
   const [invoiceError, setInvoiceError] = useState(false);
 
-  const formControls = useForm<AttestationInvoiceFormModel>({
-    defaultValues: {
-      id: selectedInvoice.id,
-      errandId: selectedInvoice.errandId,
-      supervisor: selectedInvoice.supervisor,
-      referenceNumber: selectedInvoice.referenceNumber,
-      client: selectedInvoice.client,
-      activity: selectedInvoice.activity,
-      type: selectedInvoice.type,
-      quantity: selectedInvoice.quantity,
-      amount: selectedInvoice.amount,
-      totalAmount: selectedInvoice.totalAmount,
-      registeredAt: selectedInvoice.registeredAt,
-      registeredBy: selectedInvoice.registeredBy,
-      updatedAt: selectedInvoice.updatedAt,
-      attested: selectedInvoice.attested,
-      status: selectedInvoice.status,
-    },
+  const formControls = useForm<InvoiceFormModel>({
+    defaultValues: recordFormModel,
     resolver: yupResolver(formSchema),
     mode: 'onChange',
   });
@@ -112,24 +107,9 @@ export const AttestationInvoiceForm: React.FC<{
   const send: () => void = async () => {
     setInvoiceError(false);
     const data = getValues();
-    const invoiceData: AttestationInvoiceRequest = {
-      supervisor: data.supervisor,
-      referenceNumber: data.referenceNumber,
-      client: data.client,
-      activity: data.activity,
-      type: data.type,
-      quantity: data.quantity,
-      amount: data.amount,
-      totalAmount: data.totalAmount,
-      registeredAt: data.registeredAt,
-      registeredBy: data.registeredBy,
-      updatedAt: data.updatedAt,
-      attested: data.attested,
-      status: data.status,
-    };
 
     /* TODO Endpoint?
-    updateSupportInvoice(selectedInvoice.errandId, municipalityId, invoiceData)
+    updateSupportInvoice(recordFormModel.errandId, municipalityId, invoiceData)
       .then((success) => {
         if (!success) {
           throw new Error('');
@@ -160,26 +140,28 @@ export const AttestationInvoiceForm: React.FC<{
       });*/
   };
 
-  const ChangeAttestationDecisionComponent = () => {
+  const ChangeAttestationDecisionComponent = (props: { status: CBillingRecordStatusEnum }) => {
     return (
       <div className="flex gap-md my-md">
         <Select
           className="w-full"
-          value={getValues().status}
+          disabled={props.status === CBillingRecordStatusEnum.INVOICED}
+          value={props.status}
           onChange={(e) => {
             setValue('status', e.target.value, { shouldDirty: true });
             trigger('status');
           }}
         >
-          <Select.Option value="NONE">Inget beslut</Select.Option>
-          <Select.Option value="DENIED">Avböj</Select.Option>
-          <Select.Option value="APPROVED">Godkänn</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.NEW}>Inget beslut</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.APPROVED}>Godkänn</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avböj</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.INVOICED}>Fakturerad</Select.Option>
         </Select>
         <Button
           variant="secondary"
           onClick={() => {
             setShowDecisionComponent(false);
-            setValue('status', selectedInvoice.status);
+            setValue('status', recordFormModel.status);
           }}
         >
           Avbryt
@@ -203,39 +185,35 @@ export const AttestationInvoiceForm: React.FC<{
         <Table.Body>
           <Table.Row>
             <Table.Column>
-              <NextLink
-                href={`/arende/${municipalityId}/${selectedInvoice.errandId}`}
-                target="_blank"
-                className="underline"
-              >
-                {selectedInvoice?.errandId}
+              <NextLink href={`/arende/${municipalityId}/${'MISSING'}`} target="_blank" className="underline">
+                recordFormModel?.errandId
               </NextLink>
             </Table.Column>
-            <Table.Column>{selectedInvoice.registeredAt}</Table.Column>
-            <Table.Column>{selectedInvoice.registeredBy}</Table.Column>
-            <Table.Column>{selectedInvoice.updatedAt}</Table.Column>
+            <Table.Column>{prettyTime(selectedrecord.created)}</Table.Column>
+            <Table.Column>{recordFormModel.registeredBy}</Table.Column>
+            <Table.Column>{prettyTime(selectedrecord.modified)}</Table.Column>
           </Table.Row>
         </Table.Body>
       </Table>
 
       <div className="flex gap-md mt-16">
         <div className="my-sm w-1/2">
-          <FormControl id="supervisor" className="w-full">
+          <FormControl id="manager" className="w-full">
             <FormLabel>Chef</FormLabel>
             <Input
-              {...register('supervisor')}
-              data-cy="supervisor-input"
+              {...register('manager')}
+              data-cy="manager-input"
               className="w-full text-dark-primary"
               size="md"
-              value={getValues().supervisor}
+              value={getValues().manager}
               onChange={(e) => {
-                setValue('supervisor', e.target.value);
-                trigger('supervisor');
+                setValue('manager', e.target.value);
+                trigger('manager');
               }}
             />
-            {errors.supervisor && (
+            {errors.manager && (
               <div className="text-error">
-                <FormErrorMessage>{errors.supervisor?.message}</FormErrorMessage>
+                <FormErrorMessage>{errors.manager?.message}</FormErrorMessage>
               </div>
             )}
           </FormControl>
@@ -269,24 +247,27 @@ export const AttestationInvoiceForm: React.FC<{
         <div className="w-1/2">
           <FormControl id="category" className="w-full">
             <FormLabel>Kundidentitet</FormLabel>
-            {/* TODO Missing select options */}
             <Select
-              {...register('client')}
-              data-cy="client-input"
+              {...register('customerId')}
+              data-cy="customerId-input"
               className="w-full text-dark-primary"
               size="md"
-              value={getValues('client')}
+              value={getValues('customerId')}
               placeholder={'0'}
               onChange={(e) => {
-                setValue('client', e.target.value);
-                trigger('client');
+                setValue('customerId', e.target.value);
+                trigger('customerId');
               }}
             >
-              {' '}
+              {customerIdentities.map((identity) => (
+                <Select.Option key={identity.customerId} value={identity.customerId}>
+                  {identity.customerName}
+                </Select.Option>
+              ))}
             </Select>
-            {errors.client && (
+            {errors.customerId && (
               <div className="text-error">
-                <FormErrorMessage>{errors.client?.message}</FormErrorMessage>
+                <FormErrorMessage>{errors.customerId?.message}</FormErrorMessage>
               </div>
             )}
           </FormControl>
@@ -295,7 +276,6 @@ export const AttestationInvoiceForm: React.FC<{
         <div className="w-1/2">
           <FormControl id="category" className="w-full">
             <FormLabel>Aktivitet</FormLabel>
-            {/* TODO Missing select options */}
             <Select
               {...register('activity')}
               data-cy="activity-input"
@@ -308,7 +288,11 @@ export const AttestationInvoiceForm: React.FC<{
                 trigger('activity');
               }}
             >
-              {' '}
+              {invoiceActivities.map((activity) => (
+                <Select.Option key={activity.id} value={activity.value}>
+                  {activity.displayName}
+                </Select.Option>
+              ))}
             </Select>
             {errors.activity && (
               <div className="text-error">
@@ -326,58 +310,22 @@ export const AttestationInvoiceForm: React.FC<{
           <FormLabel>Faktureringstyp</FormLabel>
 
           <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
-            <div className="flex justify-between w-full">
-              <div>
-                <RadioButton
-                  data-cy="invoice-type-extra-payment-direct-deposit"
-                  className="mr-lg mb-sm"
-                  name="direct-deposit"
-                  id="direct-deposit"
-                  value={'Extra utbetalning - Direktinsättning'}
-                  {...register('type')}
-                  checked={getValues().type === 'Extra utbetalning - Direktinsättning'}
-                >
-                  Extra utbetalning - Direktinsättning
-                </RadioButton>
-
-                <RadioButton
-                  data-cy="invoice-type-extra-payment-system-deposit"
-                  className="mr-sm mb-sm"
-                  name="system-deposit"
-                  id="system-deposit"
-                  value={'Extra utbetalning - Systemet'}
-                  {...register('type')}
-                  checked={getValues().type === 'Extra utbetalning - Systemet'}
-                >
-                  Extra utbetalning - Systemet
-                </RadioButton>
-              </div>
-
-              <div>
-                <RadioButton
-                  data-cy="invoice-type-manual-handling-salary-base"
-                  className="mr-lg mb-sm"
-                  name="salary-base"
-                  id="salary-base"
-                  value={'Manuell hantering - Löneunderlag'}
-                  {...register('type')}
-                  checked={getValues().type === 'Manuell hantering - Löneunderlag'}
-                >
-                  Manuell hantering - Löneunderlag
-                </RadioButton>
-
-                <RadioButton
-                  data-cy="invoice-type-extra-order"
-                  className="mr-sm"
-                  name="extra-order"
-                  id="extra-order"
-                  value={'Extra beställning'}
-                  {...register('type')}
-                  checked={getValues().type === 'Extra beställning'}
-                >
-                  Extra beställning
-                </RadioButton>
-              </div>
+            <div className="flex justify-between flex-wrap w-full">
+              {invoiceTypes.map((invoiceType) => (
+                <div className="w-1/2" key={invoiceType.key}>
+                  <RadioButton
+                    data-cy={`invoice-type-${invoiceType}`}
+                    className="mr-lg mb-sm whitespace-nowrap"
+                    name={invoiceType.key}
+                    id={invoiceType.key}
+                    value={invoiceType.displayName}
+                    {...register('type')}
+                    checked={getValues().type === invoiceType.displayName}
+                  >
+                    {invoiceType.displayName}
+                  </RadioButton>
+                </div>
+              ))}
             </div>
           </RadioButton.Group>
         </FormControl>
@@ -391,6 +339,8 @@ export const AttestationInvoiceForm: React.FC<{
               {...register('quantity')}
               data-cy="quantity-input"
               className="w-full text-dark-primary"
+              type="number"
+              step={0.01}
               size="md"
               value={getValues().quantity}
               onChange={(e) => {
@@ -407,24 +357,24 @@ export const AttestationInvoiceForm: React.FC<{
         </div>
 
         <div className="my-sm gap-xl w-1/2">
-          <FormControl id="amount" className="w-full">
+          <FormControl id="costPerUnit" className="w-full">
             <FormLabel>Timpris</FormLabel>
             <Input
-              {...register('amount')}
-              data-cy="amount-input"
+              {...register('costPerUnit')}
+              data-cy="costPerUnit-input"
               className="w-full text-dark-primary"
               size="md"
-              value={getValues().amount}
+              value={getValues().costPerUnit}
               placeholder={'0'}
               onChange={(e) => {
-                setValue('amount', e.target.value);
-                trigger('amount');
+                setValue('costPerUnit', e.target.value);
+                trigger('costPerUnit');
               }}
               disabled
             />
-            {errors.amount && (
+            {errors.costPerUnit && (
               <div className="text-error">
-                <FormErrorMessage>{errors.amount?.message}</FormErrorMessage>
+                <FormErrorMessage>{errors.costPerUnit?.message}</FormErrorMessage>
               </div>
             )}
           </FormControl>
@@ -440,13 +390,13 @@ export const AttestationInvoiceForm: React.FC<{
               data-cy="totalAmount-input"
               className="w-full text-dark-primary"
               size="md"
-              value={getValues().totalAmount}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('totalAmount', e.target.value);
-                trigger('totalAmount');
-              }}
-              disabled
+              // value={getValues().totalAmount.toString()}
+              // placeholder={'0'}
+              // onChange={(e) => {
+              //   setValue('totalAmount', parseFloat(e.target.value));
+              //   trigger('totalAmount');
+              // }}
+              // disabled
             />
             {errors.totalAmount && (
               <div className="text-error">
@@ -483,7 +433,7 @@ export const AttestationInvoiceForm: React.FC<{
 
       <Divider />
 
-      {selectedInvoice.status === 'NONE' ? (
+      {recordFormModel.status === 'NONE' ? (
         <div className="flex justify-between gap-16 w-full my-lg">
           <div>
             <Button variant="secondary" onClick={send}>
@@ -499,9 +449,9 @@ export const AttestationInvoiceForm: React.FC<{
             </Button>
           </div>
         </div>
-      ) : selectedInvoice.status === 'APPROVED' ? (
+      ) : recordFormModel.status === 'APPROVED' ? (
         showChangeDecisionComponent ? (
-          <ChangeAttestationDecisionComponent />
+          <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
         ) : (
           <div>
             <div className="pt-16 gap-md flex justify-end">
@@ -514,13 +464,13 @@ export const AttestationInvoiceForm: React.FC<{
             </div>
             <span className="flex justify-end my-md">
               <span className="text-small">
-                <b>Attesterad av:</b> {selectedInvoice.approvedBy}, {selectedInvoice.approved}
+                <b>Attesterad av:</b> {selectedrecord.approvedBy}, {prettyTime(selectedrecord.approved)}
               </span>
             </span>
           </div>
         )
       ) : showChangeDecisionComponent ? (
-        <ChangeAttestationDecisionComponent />
+        <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
       ) : (
         <div>
           <div className="pt-16 gap-md flex justify-end">
@@ -533,7 +483,7 @@ export const AttestationInvoiceForm: React.FC<{
           </div>
           <span className="flex justify-end my-md">
             <span className="text-small">
-              <b>Attesterad av:</b> {selectedInvoice.approvedBy}, {selectedInvoice.approved}
+              <b>Attesterad av:</b> {selectedrecord.approvedBy}, {prettyTime(selectedrecord.approved)}
             </span>
           </span>
         </div>

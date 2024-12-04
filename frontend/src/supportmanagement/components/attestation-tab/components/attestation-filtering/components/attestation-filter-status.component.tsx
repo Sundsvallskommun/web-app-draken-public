@@ -1,7 +1,9 @@
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import React from 'react';
+import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
+import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
 export interface AttestationStatusFilter {
   status: string[];
@@ -11,23 +13,16 @@ export const AttestationStatusValues = {
   status: [],
 };
 
-const attestationStatus = [
-  {
-    id: 1,
-    status: 'APPROVED',
-  },
-  {
-    id: 1,
-    status: 'DENIED',
-  },
-  {
-    id: 1,
-    status: 'NONE',
-  },
-];
-
 export const AttestationFilterStatusComponent: React.FC = () => {
   const { register } = useFormContext();
+  const ss = useMemo(() => {
+    return (
+      Object.values(CBillingRecordStatusEnum).map((s) => ({
+        label: billingrecordStatusToLabel(s),
+        status: s,
+      })) || []
+    );
+  }, [billingrecordStatusToLabel]);
 
   return (
     <PopupMenu>
@@ -43,7 +38,7 @@ export const AttestationFilterStatusComponent: React.FC = () => {
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <PopupMenu.Items autoFocus={false}>
-          {attestationStatus.map((status, index) => {
+          {ss.map((status, index) => {
             return (
               <PopupMenu.Item key={`${status.status}-${index}`}>
                 <Checkbox
@@ -52,7 +47,7 @@ export const AttestationFilterStatusComponent: React.FC = () => {
                   {...register('status')}
                   data-cy={`attestation-status-filter-${status.status}`}
                 >
-                  {status.status}
+                  {status.label}
                 </Checkbox>
               </PopupMenu.Item>
             );

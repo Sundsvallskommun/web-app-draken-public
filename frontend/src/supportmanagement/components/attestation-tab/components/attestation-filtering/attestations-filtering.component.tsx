@@ -15,16 +15,16 @@ import {
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { AttestationFilterTagsComponent } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-tags.component';
 import {
-  AttestationFilterTypeComponent,
-  AttestationTypeFilter,
-  AttestationTypeValues,
-} from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-type.component';
+  AttestationFilterInvoiceTypeComponent,
+  AttestationInvoiceTypeFilter,
+  AttestationInvoiceTypeValues,
+} from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-invoice-type.component';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 
-export type AttestationFilter = AttestationTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
+export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
 export const AttestationValues = {
-  ...AttestationTypeValues,
+  ...AttestationInvoiceTypeValues,
   ...AttestationStatusValues,
   ...AttestationDatesValues,
 };
@@ -64,7 +64,7 @@ export const AttestationsFilteringComponent: React.FC<{
         <div className={cx(show ? 'visible' : 'hidden')}>
           <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
             <div className="relative max-md:w-full">
-              <AttestationFilterTypeComponent />
+              <AttestationFilterInvoiceTypeComponent />
             </div>
 
             <div className="relative max-md:w-full">

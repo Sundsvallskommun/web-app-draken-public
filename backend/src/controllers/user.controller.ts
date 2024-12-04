@@ -1,3 +1,4 @@
+import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { Permissions } from '@/interfaces/users.interface';
@@ -147,7 +148,7 @@ export class UserController {
     }
 
     const url = `employee/1.0/portalpersondata/PERSONAL/${adaccount}`;
-    const res = await this.apiService.get<any>(
+    const res = await this.apiService.get<PortalPersonData>(
       {
         url,
       },
