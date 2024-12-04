@@ -269,7 +269,6 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [organizationNumber, personNumber]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
-    console.log('submitting', e);
     if (!editing) {
       e.internalId = uuidv4();
     }
@@ -510,7 +509,6 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const onSelectUserHandler = (e) => {
     const user = searchResultArray?.find((data) => `${data.firstName} ${data.lastName}` === e.target.value);
-    console.log('setting selected user', user);
     setSelectedUser(user);
     setSearchResultArray([]);
     setQuery('');

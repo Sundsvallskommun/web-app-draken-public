@@ -5,7 +5,6 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { validateSupportAction } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
@@ -71,7 +70,6 @@ export class SupportNotificationController {
     const url = `${municipalityId}/${this.namespace}/notifications?${queryString}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<SupportNotification[]>({ url, baseURL }, req.user);
-    console.log('Returning support notifications: ', res.data);
     return response.status(200).send(res.data);
   }
 

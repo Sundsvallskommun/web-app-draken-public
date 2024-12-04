@@ -136,8 +136,7 @@ export class SupportMessageController {
       logger.error('Trying to send message without means of contact specified');
       throw new Error('Means of contact missing, but be email or sms');
     }
-    console.log('Sending message: ', body);
-    console.log('Sending message to: ', url);
+
     const res = await this.apiService
       .post<any, Partial<SmsRequest | EmailRequest | WebMessageRequest>>({ url, data: body }, req.user)
       .then(async res => {
