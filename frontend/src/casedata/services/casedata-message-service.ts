@@ -42,7 +42,7 @@ export const sendMessage: (
   const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails];
   const msgPromises = targets.map(async (target) => {
     const messageFormData = new FormData();
-    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] = data.newAttachments?.map(
+    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] = data.messageAttachments?.map(
       async (f) => {
         const fileItem = f.file[0];
         const fileData = await toBase64(fileItem);

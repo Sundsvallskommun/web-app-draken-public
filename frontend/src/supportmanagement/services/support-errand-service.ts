@@ -94,7 +94,7 @@ export interface SupportStakeholder {
     type: string;
     value: string;
   }[];
-  metadata?: { key: string; value: string };
+  parameters?: { key: string; values: string[]; displayName?: string }[];
 }
 
 export type ExternalTags = Array<{ key: string; value: string }>;
@@ -427,6 +427,9 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
   newRole: SupportStakeholderRole;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
+  username?: string;
+  administrationCode?: string;
+  administrationName?: string;
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
@@ -435,6 +438,7 @@ export const emptyContact: SupportStakeholderFormModel = {
   internalId: '',
   externalId: '',
   externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  username: '',
   firstName: '',
   lastName: '',
   address: '',
@@ -705,6 +709,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
             organizationName: s.organizationName || s.firstName,
             stakeholderType: mapExternalIdTypeToStakeholderType(s),
+            username: s.parameters?.find((p) => p.key === 'username')?.values[0],
+            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
+            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
             newRole: SupportStakeholderRole.PRIMARY,
             internalId: uuidv4(),
             emails: s.contactChannels
@@ -722,7 +729,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
             organizationName: s.organizationName || s.firstName,
             stakeholderType: mapExternalIdTypeToStakeholderType(s),
-            newRole: SupportStakeholderRole.CONTACT,
+            username: s.parameters?.find((p) => p.key === 'username')?.values[0],
+            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
+            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            newRole: s.role as SupportStakeholderRole,
             internalId: uuidv4(),
             emails: s.contactChannels
               .filter((c) => c.type === ContactChannelType.EMAIL)

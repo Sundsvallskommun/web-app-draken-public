@@ -457,7 +457,12 @@ export const SidebarInfo: React.FC<{}> = () => {
             setCauseIsEmpty(false);
           }}
           disabled={
-            !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
+            !(
+              uiPhase === UiPhase.granskning ||
+              uiPhase === UiPhase.utredning ||
+              uiPhase === UiPhase.beslut ||
+              uiPhase === UiPhase.uppfoljning
+            ) ||
             !isErrandAdmin(errand, user) ||
             isErrandLocked(errand)
           }

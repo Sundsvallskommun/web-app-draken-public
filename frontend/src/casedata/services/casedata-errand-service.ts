@@ -91,7 +91,11 @@ export const ongoingStatuses = [
 
 export const assignedStatuses = [ErrandStatus.Tilldelat];
 
-export const closedStatuses = [ErrandStatus.ArendeAvslutat];
+export const closedStatuses = [
+  ErrandStatus.ArendeAvslutat,
+  ErrandStatus.ArendetAvvisas,
+  ErrandStatus.HanterasIAnnatSystem,
+];
 
 export const getStatusLabel = (statuses: ErrandStatus[]) => {
   if (statuses.length > 0) {

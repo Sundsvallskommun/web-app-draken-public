@@ -49,7 +49,7 @@ import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
-import { useAppContext } from '@contexts/app.context';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -78,11 +78,14 @@ export const SupportSimplifiedContactForm: React.FC<{
       personNumber:
         isLOP() || isIK()
           ? yup.string().when('stakeholderType', {
-              is: (type: string) =>
-                type === 'PERSON' &&
-                searchMode === 'employee' &&
-                !personNumber?.startsWith('1') &&
-                !personNumber?.startsWith('2'),
+              is: (type: string) => {
+                return (
+                  type === 'PERSON' &&
+                  searchMode === 'employee' &&
+                  !personNumber?.toString().startsWith('1') &&
+                  !personNumber?.toString().startsWith('2')
+                );
+              },
               then: (schema) => schema.matches(usernamePattern, invalidUsernameMessage),
               otherwise: (schema) =>
                 schema
@@ -125,6 +128,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       careOf: yup.string(),
       zipCode: yup.string(),
       city: yup.string(),
+      username: yup.string(),
+      administrationCode: yup.string(),
+      administrationName: yup.string(),
       newPhoneNumber: yup
         .string()
         .trim()
@@ -156,7 +162,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { supportErrand } = useAppContext();
+  const { supportErrand, supportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -194,7 +200,8 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const externalId = watch(`externalId`);
   const externalIdType = watch(`externalIdType`);
-  const metadata = watch('metadata');
+  const username = watch('username');
+  const administrationName = watch('administrationName');
   const firstName = watch(`firstName`);
   const lastName = watch(`lastName`);
   const address = watch(`address`);
@@ -305,7 +312,6 @@ export const SupportSimplifiedContactForm: React.FC<{
       search(val)
         .then((res) => {
           if (!isArray(res)) {
-            setValue('metadata', res.metadata);
             setValue(`externalId`, res.personId, { shouldDirty: true });
             setValue(`firstName`, res.firstName, { shouldDirty: true });
             setValue(`lastName`, res.lastName, { shouldDirty: true });
@@ -325,6 +331,11 @@ export const SupportSimplifiedContactForm: React.FC<{
             if (res.email) {
               appendEmail({ value: res.email });
             }
+            if (res.loginName) {
+              setValue('username', res.loginName);
+            }
+            setValue('administrationCode', res.administrationCode);
+            setValue('administrationName', res.administrationName);
 
             if (searchMode === 'enterprise') {
               setValue(`organizationName`, res.organizationName);
@@ -515,7 +526,8 @@ export const SupportSimplifiedContactForm: React.FC<{
       setValue(`careOf`, selectedUser.careof, { shouldDirty: true });
       setValue(`zipCode`, selectedUser.zip, { shouldDirty: true });
       setValue(`city`, selectedUser.city, { shouldDirty: true });
-      setValue(`metadata`, selectedUser.metadata, { shouldDirty: true });
+      setValue(`administrationCode`, selectedUser.administrationCode, { shouldDirty: true });
+      setValue(`administrationName`, selectedUser.administrationName, { shouldDirty: true });
       if (selectedUser.phone) {
         appendPhonenumber({ value: selectedUser.phone });
       }
@@ -524,6 +536,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       }
       if (selectedUser.email) {
         appendEmail({ value: selectedUser.email });
+      }
+      if (selectedUser.loginName) {
+        setValue('username', selectedUser.loginName);
       }
 
       setSearchResult(true);
@@ -760,8 +775,15 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
                   {personNumber || '(personnummer saknas)'}
                 </p>
-                {metadata?.hasOwnProperty('administrationName') ? (
-                  <p className="my-xs mt-0">{metadata['administrationName']}</p>
+                {administrationName ? (
+                  <p className="my-xs mt-0" data-cy={`stakeholder-administrationName`}>
+                    {administrationName}
+                  </p>
+                ) : null}
+                {username ? (
+                  <p className="my-xs mt-0" data-cy={`stakeholder-username`}>
+                    {username}
+                  </p>
                 ) : null}
 
                 <p className="my-xs mt-0" data-cy={`stakeholder-adress`}>

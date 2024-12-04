@@ -131,17 +131,21 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   };
 
   const renderContact = (contact: SupportStakeholderFormModel, index, header) => {
-    let administrationName = '';
-    contact.metadata && contact.metadata.hasOwnProperty('administrationName')
-      ? (administrationName = contact.metadata['administrationName'])
-      : null;
+    const administrationName =
+      contact.administrationName ||
+      contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
+      null;
+    const username =
+      contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
         data-cy={`rendered-${contact.role}`}
         className="w-full bg-background-content border rounded-button"
       >
-        {JSON.stringify(selectedContact) === JSON.stringify(contact) ? (
+        {/* {JSON.stringify(selectedContact) === JSON.stringify(contact) ? ( */}
+        {selectedContact && selectedContact.internalId === contact.internalId ? (
           <SupportSimplifiedContactForm
             disabled={isSupportErrandLocked(supportErrand)}
             setUnsaved={props.setUnsaved}
@@ -197,7 +201,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                   return deleteConfirm
                     .showConfirmation(
                       'Ta bort?',
-                      `Vill du ta bort denna ${header.toLowerCase()}?`,
+                      `Vill du ta bort denna ${header?.toLowerCase() || 'intressent'}?`,
                       'Ja',
                       'Nej',
                       'info',
@@ -282,6 +286,11 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
+                    {username ? (
+                      <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-username`}>
+                        {username}
+                      </p>
+                    ) : null}
                     <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
                   </>
                 )}

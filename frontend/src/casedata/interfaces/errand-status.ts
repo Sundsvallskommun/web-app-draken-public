@@ -14,6 +14,8 @@ export enum ErrandStatus {
   BeslutOverklagat = 'Beslut överklagat',
   ArendeAvslutat = 'Ärende avslutat',
   Tilldelat = 'Tilldelat',
+  HanterasIAnnatSystem = 'Hanteras i annat system',
+  ArendetAvvisas = 'Ärendet avvisas',
 }
 
 export interface ApiErrandStatus {

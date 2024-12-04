@@ -247,82 +247,6 @@ export interface EmailIntegration {
   modified?: string;
 }
 
-export interface Notification {
-  /**
-   * Unique identifier for the notification
-   * @example "123e4567-e89b-12d3-a456-426614174000"
-   */
-  id?: string;
-  /**
-   * Timestamp when the notification was created
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  created?: string;
-  /**
-   * Timestamp when the notification was last modified
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  modified?: string;
-  /**
-   * Name of the owner of the notification
-   * @example "Test Testorsson"
-   */
-  ownerFullName: string;
-  /**
-   * Owner id of the notification
-   * @example "AD01"
-   */
-  ownerId: string;
-  /**
-   * User who created the notification
-   * @example "TestUser"
-   */
-  createdBy?: string;
-  /**
-   * Full name of the user who created the notification
-   * @example "Test Testorsson"
-   */
-  createdByFullName?: string;
-  /**
-   * Type of the notification
-   * @example "CREATE"
-   */
-  type: string;
-  /**
-   * Description of the notification
-   * @example "Some description of the notification"
-   */
-  description: string;
-  /**
-   * Content of the notification
-   * @example "Some content of the notification"
-   */
-  content?: string;
-  /**
-   * Timestamp when the notification expires
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  expires?: string;
-  /**
-   * Acknowledged status of the notification
-   * @example true
-   */
-  acknowledged?: boolean;
-  /**
-   * Errand id of the notification
-   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
-   */
-  errandId?: string;
-  /**
-   * Errand number of the notification
-   * @example "PRH-2022-000001"
-   */
-  errandNumber?: string;
-}
-
 /** Status model */
 export interface Status {
   /**
@@ -347,10 +271,15 @@ export interface Status {
 /** Role model */
 export interface Role {
   /**
-   * Name for the role
+   * Name for the role. Used as key
    * @example "roleName"
    */
   name: string;
+  /**
+   * Display name for the role
+   * @example "Role name"
+   */
+  displayName?: string | null;
   /**
    * Timestamp when the role was created
    * @format date-time
@@ -388,6 +317,12 @@ export interface ExternalIdType {
 
 /** Contact reason model */
 export interface ContactReason {
+  /**
+   * ID
+   * @format int64
+   * @example 123
+   */
+  id?: number;
   /**
    * Reason for contact
    * @example "Segt internet"
@@ -570,7 +505,7 @@ export interface Errand {
   /**
    * Contact reason description for the errand
    * @minLength 0
-   * @maxLength 255
+   * @maxLength 4096
    * @example "The printer is not working since the power cord is missing"
    */
   contactReasonDescription?: string;
@@ -695,11 +630,8 @@ export interface Stakeholder {
    */
   country?: string;
   contactChannels?: ContactChannel[];
-  /**
-   * Metadata
-   * @example {"key":"value"}
-   */
-  metadata?: Record<string, string>;
+  /** Parameters for the stakeholder */
+  parameters?: Parameter[];
 }
 
 /** Suspension information */
@@ -716,6 +648,82 @@ export interface Suspension {
    * @example "2000-10-31T01:30:00+02:00"
    */
   suspendedFrom?: string;
+}
+
+export interface Notification {
+  /**
+   * Unique identifier for the notification
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  id?: string;
+  /**
+   * Timestamp when the notification was created
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  created?: string;
+  /**
+   * Timestamp when the notification was last modified
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  modified?: string;
+  /**
+   * Name of the owner of the notification
+   * @example "Test Testorsson"
+   */
+  ownerFullName: string;
+  /**
+   * Owner id of the notification
+   * @example "AD01"
+   */
+  ownerId: string;
+  /**
+   * User who created the notification
+   * @example "TestUser"
+   */
+  createdBy?: string;
+  /**
+   * Full name of the user who created the notification
+   * @example "Test Testorsson"
+   */
+  createdByFullName?: string;
+  /**
+   * Type of the notification
+   * @example "CREATE"
+   */
+  type: string;
+  /**
+   * Description of the notification
+   * @example "Some description of the notification"
+   */
+  description: string;
+  /**
+   * Content of the notification
+   * @example "Some content of the notification"
+   */
+  content?: string;
+  /**
+   * Timestamp when the notification expires
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  expires?: string;
+  /**
+   * Acknowledged status of the notification
+   * @example true
+   */
+  acknowledged?: boolean;
+  /**
+   * Errand id of the notification
+   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
+   */
+  errandId?: string;
+  /**
+   * Errand number of the notification
+   * @example "PRH-2022-000001"
+   */
+  errandNumber?: string;
 }
 
 /** CreateErrandNoteRequest model */
@@ -760,6 +768,32 @@ export interface CreateErrandNoteRequest {
    * @example "John Doe"
    */
   createdBy: string;
+}
+
+/** WebMessageAttachment model */
+export interface WebMessageAttachment {
+  /**
+   * The attachment filename
+   * @example "test.txt"
+   */
+  name: string;
+  /**
+   * The attachment (file) content as a BASE64-encoded string, max size 10 MB
+   * @format base64
+   * @example "aGVsbG8gd29ybGQK"
+   */
+  base64EncodedString: string;
+}
+
+/** WebMessageRequest model */
+export interface WebMessageRequest {
+  /**
+   * Message in plain text
+   * @example "Message in plain text"
+   */
+  message: string;
+  attachments?: WebMessageAttachment[];
+  attachmentIds?: string[];
 }
 
 /** SmsRequest model */
@@ -954,10 +988,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1185,10 +1219,10 @@ export enum EventType {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1201,22 +1235,6 @@ export interface PageEvent {
   first?: boolean;
   last?: boolean;
   empty?: boolean;
-}
-
-/** ErrandAttachmentHeader model */
-export interface ErrandAttachmentHeader {
-  /**
-   * Unique identifier for the attachment
-   * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"
-   */
-  id?: string;
-  /**
-   * Name of the file
-   * @example "my-file.txt"
-   */
-  fileName: string;
-  /** Mime type of the file */
-  mimeType?: string;
 }
 
 export interface Communication {
@@ -1298,6 +1316,22 @@ export interface CommunicationAttachment {
   contentType?: string;
 }
 
+/** ErrandAttachmentHeader model */
+export interface ErrandAttachmentHeader {
+  /**
+   * Unique identifier for the attachment
+   * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"
+   */
+  id?: string;
+  /**
+   * Name of the file
+   * @example "my-file.txt"
+   */
+  fileName: string;
+  /** Mime type of the file */
+  mimeType?: string;
+}
+
 /**
  * If the communication is inbound or outbound from the perspective of case-data/e-service.
  * @example "INBOUND"
@@ -1314,4 +1348,5 @@ export enum CommunicationDirectionEnum {
 export enum CommunicationCommunicationTypeEnum {
   SMS = 'SMS',
   EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }
