@@ -75,6 +75,7 @@ export interface SupportNoteData {
 export class SupportNoteController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private SERVICE = `supportmanagement/9.0`;
 
   @Get('/supportnotes/:municipalityId/:id')
   @OpenAPI({ summary: 'Get notes for errand' })
@@ -92,7 +93,7 @@ export class SupportNoteController {
       limit: '100',
     };
     const queryString = new URLSearchParams(queryObject).toString();
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/notes?${queryString}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/notes?${queryString}`;
     const res = await this.apiService.get<SupportNoteData>({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -112,7 +113,7 @@ export class SupportNoteController {
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
     }
-    let url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/notes`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/notes`;
     let data: SupportNote;
     if (noteDto.body) {
       data = {
@@ -151,7 +152,7 @@ export class SupportNoteController {
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
     }
-    let url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
     let data: SupportNoteUpdateDto;
     if (noteDto.body) {
       data = {
@@ -185,7 +186,7 @@ export class SupportNoteController {
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
     const res = await this.apiService.delete<SupportNoteData>({ url }, req.user);
     return response.status(204).send(res.data);
   }

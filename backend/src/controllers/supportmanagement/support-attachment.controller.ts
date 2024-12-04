@@ -35,6 +35,7 @@ class SupportAttachmentDto {
 export class SupportAttachmentController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private SERVICE = `supportmanagement/9.0`;
 
   @Get('/supportattachments/:municipalityId/errands/:id/attachments/:attachmentId')
   @OpenAPI({ summary: 'Get an attachment' })
@@ -46,7 +47,7 @@ export class SupportAttachmentController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<SingleSupportAttachment> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`;
     const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer' }, req.user);
     const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
     const b64 = Buffer.from(binaryString, 'binary').toString('base64');
@@ -62,7 +63,7 @@ export class SupportAttachmentController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<SupportAttachment[]> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/attachments`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments`;
     const res = await this.apiService.get<SupportAttachment[]>({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -77,7 +78,7 @@ export class SupportAttachmentController {
     @Param('attachmentId') attachmentId: string,
     @Res() response: any,
   ): Promise<SupportAttachment[]> {
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments/${attachmentId}`;
     const res = await this.apiService.delete({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -95,7 +96,7 @@ export class SupportAttachmentController {
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     await validateRequestBody(SupportAttachmentDto, attachmentDto);
-    const url = `supportmanagement/8.1/${municipalityId}/${this.namespace}/errands/${id}/attachments`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/attachments`;
 
     const data = new FormData();
     if (files && files.length > 0) {
