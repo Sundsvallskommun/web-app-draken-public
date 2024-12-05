@@ -137,7 +137,7 @@ export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = 
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return errand?.status === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
+  return errand?.status === ErrandStatus.ArendeAvslutat || errand?.status === ErrandStatus.Tilldelat || phaseChangeInProgress(errand as IErrand);
 };
 
 export const getPriorityColor = (priority: Priority) => {
