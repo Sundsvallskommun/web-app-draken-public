@@ -491,7 +491,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
-  return errand?.status === Status.SOLVED;
+  return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
 };
 
 export const useSupportErrands = (
