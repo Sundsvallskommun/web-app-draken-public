@@ -357,6 +357,7 @@ export enum ResolutionLabelKS {
   REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
   SELF_SERVICE = 'Hänvisat till självservice',
   INTERNAL_SERVICE = 'Hänvisat till intern service',
+  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
 }
 
 export const ongoingSupportErrandLabelsKC = [
