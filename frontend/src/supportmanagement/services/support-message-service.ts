@@ -65,10 +65,16 @@ export const sendClosingMessage = (
     <a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a><br>
     060-191565<br>`;
 
-  const plaintextMessageBody = messageBody.replace(
+  let plaintextMessageBody = messageBody.replace(
     '<a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a>',
     'lonochpension@sundsvall.se'
   );
+
+  plaintextMessageBody = messageBody.replace(
+    '<a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a>',
+    'internkundtjanst@sundsvall.se'
+  );
+
   return sendMessage({
     municipalityId: municipalityId,
     errandId: supportErrand.id,
