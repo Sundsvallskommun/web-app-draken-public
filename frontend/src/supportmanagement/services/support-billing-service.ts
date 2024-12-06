@@ -3,7 +3,12 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect } from 'react';
-import { CBillingRecord, CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
+import {
+  CBillingRecord,
+  CBillingRecordStatusEnum,
+  CBillingRecordTypeEnum,
+  CPageBillingRecord,
+} from 'src/data-contracts/backend/data-contracts';
 
 export interface InvoiceFormModel {
   id: string;
@@ -72,22 +77,44 @@ export const billingrecordStatusToLabel = (status: string) => {
   }
 };
 
+export const emptyBillingRecord: CBillingRecord = {
+  category: 'SALARY_AND_PENSION',
+  type: CBillingRecordTypeEnum.INTERNAL,
+  status: CBillingRecordStatusEnum.NEW,
+  invoice: {
+    customerId: '',
+    description: invoiceTypes[0].displayName,
+    invoiceRows: [
+      {
+        descriptions: ['Fakturarad'],
+        detailedDescriptions: ['foo', 'bar', 'baz'],
+        quantity: 1,
+        costPerUnit: 300,
+        totalAmount: 300,
+      },
+    ],
+    totalAmount: 0,
+  },
+};
+
 // TODO Endpoint
-// export const updateSupportInvoice: (errandId: string, municipalityId: string, data: Invoice) => Promise<boolean> = (
-//   errandId,
-//   municipalityId,
-//   data
-// ) => {
-//   return apiService
-//     .patch<boolean, Partial<Invoice>>('', data)
-//     .then((res) => {
-//       return true;
-//     })
-//     .catch((e) => {
-//       console.error('Something went wrong when updating invoice');
-//       throw e;
-//     });
-// };
+export const saveInvoice: (errandId: string, municipalityId: string, data: CBillingRecord) => Promise<boolean> = (
+  errandId,
+  municipalityId,
+  data
+) => {
+  console.log('saveInvoice', data);
+  return Promise.resolve(true);
+  // return apiService
+  //   .patch<boolean, Partial<Invoice>>('', data)
+  //   .then((res) => {
+  //     return true;
+  //   })
+  //   .catch((e) => {
+  //     console.error('Something went wrong when updating invoice');
+  //     throw e;
+  //   });
+};
 
 export const recordToFormModel: (record?: CBillingRecord) => InvoiceFormModel = (record) => {
   if (!record) {

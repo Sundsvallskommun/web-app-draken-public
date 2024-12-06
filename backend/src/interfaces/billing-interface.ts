@@ -90,8 +90,8 @@ export class CInvoice implements Invoice {
   @IsOptional()
   @IsNumber()
   totalAmount?: number;
-  @ValidateNested()
   @IsArray()
+  @ValidateNested({ each: true })
   @TypeTransformer(() => CInvoiceRow)
   invoiceRows: InvoiceRow[];
 }
@@ -159,11 +159,7 @@ export class CBillingRecord implements BillingRecord {
   status: Status;
   @ValidateNested()
   @TypeTransformer(() => CInvoice)
-  invoice: {
-    customerId: string;
-    description: string;
-    invoiceRows: any[];
-  };
+  invoice: CInvoice;
 }
 export class CSortObject implements SortObject {
   @IsOptional()

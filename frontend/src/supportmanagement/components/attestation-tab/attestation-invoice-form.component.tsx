@@ -24,9 +24,10 @@ import {
 } from '@supportmanagement/services/support-billing-service';
 import NextLink from 'next/link';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
+import { BillingForm } from '../billing/billing-form.component';
 
 // export interface AttestationInvoiceFormModel {
 //   id: string;
@@ -84,8 +85,10 @@ export const AttestationInvoiceForm: React.FC<{
   const [showChangeDecisionComponent, setShowDecisionComponent] = useState(false);
   const [invoiceError, setInvoiceError] = useState(false);
 
-  const formControls = useForm<InvoiceFormModel>({
-    defaultValues: recordFormModel,
+  // const formControls = useForm<InvoiceFormModel>({
+  const formControls = useForm<CBillingRecord>({
+    // defaultValues: recordFormModel,
+    defaultValues: selectedrecord,
     resolver: yupResolver(formSchema),
     mode: 'onChange',
   });
@@ -103,6 +106,11 @@ export const AttestationInvoiceForm: React.FC<{
     clearErrors,
     formState: { errors, isDirty },
   } = formControls;
+
+  const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
+    control, // control props comes from useForm (optional: if you are using FormProvider)
+    name: 'invoice.invoiceRows', // unique name for your Field Array
+  });
 
   const send: () => void = async () => {
     setInvoiceError(false);
@@ -196,7 +204,42 @@ export const AttestationInvoiceForm: React.FC<{
         </Table.Body>
       </Table>
 
+      <FormProvider {...formControls}>
+        <BillingForm recipientName={'recipientName'} />
+      </FormProvider>
+
+      {/* {fields.map((field, index) => (
+        <div key={field.id}>
+          Amount
+          <input {...register(`invoice.invoiceRows.${index}.totalAmount`)} type="text" />
+        </div>
+      ))}
+
       <div className="flex gap-md mt-16">
+        <div className="my-sm w-1/2">
+          <FormControl id="manager" className="w-full">
+            <FormLabel>Chef</FormLabel>
+            <Input
+              {...register('invoice.invoiceRows.0.quantity')}
+              data-cy="manager-input"
+              className="w-full text-dark-primary"
+              size="md"
+              value={getValues().invoice?.invoiceRows[0].quantity}
+              onChange={(e) => {
+                setValue('invoice.invoiceRows.0.quantity', e.target.value);
+                trigger('invoice.invoiceRows.0.quantity');
+              }}
+            />
+            {errors.invoice?.invoiceRows && (
+              <div className="text-error">
+                <FormErrorMessage>{errors.invoice?.invoiceRows?.message}</FormErrorMessage>
+              </div>
+            )}
+          </FormControl>
+        </div>
+      </div> */}
+
+      {/* <div className="flex gap-md mt-16">
         <div className="my-sm w-1/2">
           <FormControl id="manager" className="w-full">
             <FormLabel>Chef</FormLabel>
@@ -429,7 +472,7 @@ export const AttestationInvoiceForm: React.FC<{
             )}
           </FormControl>
         </div>
-      </div>
+      </div> */}
 
       <Divider />
 

@@ -149,7 +149,7 @@ export const SupportTabsWrapper: React.FC<{
     });
   };
 
-  const [current, setCurrent] = useState<number | undefined>(0);
+  const [current, setCurrent] = useState<number | undefined>(4);
 
   return (
     <>

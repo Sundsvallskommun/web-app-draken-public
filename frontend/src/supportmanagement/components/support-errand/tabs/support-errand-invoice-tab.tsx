@@ -4,6 +4,7 @@ import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
+  Checkbox,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -12,8 +13,10 @@ import {
   Select,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { BillingForm } from '@supportmanagement/components/billing/billing-form.component';
 import {
   customerIdentities,
+  emptyBillingRecord,
   getBillingRecord,
   getEmployeeCustomerIdentity,
   getEmployeeData,
@@ -22,35 +25,52 @@ import {
   InvoiceFormModel,
   invoiceTypes,
   recordToFormModel,
+  saveInvoice,
 } from '@supportmanagement/services/support-billing-service';
 import {
   ApiSupportErrand,
+  getSupportErrandById,
   isSupportErrandLocked,
   SupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
-import { useCallback, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { CBillingRecord, CRecipient } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
 
 let formSchema = yup.object({
   id: yup.string(),
-  costPerUnit: yup.number().typeError('Ange ett giltigt värde'),
-  manager: yup.string().required('Fyll i chef'),
-  referenceNumber: yup.string().required('Fyll i referensnummer'),
-  errandId: yup.string().required('Fyll i ärende-id'),
-  customerId: yup.string().required('Fyll i kundidentitet'),
-  activity: yup.string().required('Fyll i aktivitet'),
+  // costPerUnit: yup.number().typeError('Ange ett giltigt värde'),
+  // recipient: yup.object().required('Fyll i chef'),
+  // errandId: yup.string().required('Fyll i ärende-id'),
   type: yup.string().required('Fyll i faktureringstyp'),
-  quantity: yup
-    .string()
-    // .matches(/\d/, 'Ange ett giltigt värde')
-    // .required('Fyll i antal timmar')
-    .test('isnumber', 'Ange i format 1.23', (q) => {
-      console.log('q', q);
-      return /^\d*\.?\d{0,2}$/g.test(q);
-    })
-    .test('positivt', 'Måste vara 0 eller större', (q) => parseFloat(q) > 0),
+  invoice: yup.object({
+    customerId: yup.string().required('Fyll i kundidentitet'),
+    customerReference: yup.string().required('Fyll i referensnummer'),
+    invoiceRows: yup.array().of(
+      yup.object({
+        quantity: yup
+          .string()
+          .test('isnumber', 'Ange i format 1.23', (q) => {
+            return /^\d*\.?\d{0,2}$/g.test(q);
+          })
+          .test('positivt', 'Måste vara 0 eller större', (q) => parseFloat(q) > 0)
+          .required('Fyll i antal timmar'),
+        costPerUnit: yup.string().required('Fyll i timpris'),
+        totalAmount: yup.number().typeError('Måste vara ett tal över noll'),
+        accountInformation: yup.object({
+          activity: yup
+            .mixed<string>()
+            .required('Välj aktivitet')
+            .oneOf(
+              invoiceActivities.map((a) => a.value),
+              'Välj aktivitet'
+            ),
+        }),
+      })
+    ),
+  }),
   totalAmount: yup.number().typeError('Måste vara ett tal över noll'),
   registeredBy: yup.string(),
   approvedBy: yup.string(),
@@ -74,46 +94,80 @@ export const SupportErrandInvoiceTab: React.FC<{
     user: User;
   } = useAppContext();
 
+  const [record, setRecord] = useState<CBillingRecord | undefined>(emptyBillingRecord);
   const [recordFormModel, setRecordFormModel] = useState<InvoiceFormModel | undefined>(recordToFormModel());
+  const [recipientName, setRecipientname] = useState<string>('');
+  // const [development, setDevelopment] = useState<boolean>(false);
+  // const [developmentCost, setDevelopmentCost] = useState<number>(0);
 
   useEffect(() => {
-    setValue('errandId', supportErrand.id);
+    // setValue('errandId', supportErrand.id);
     console.log('running callback for errand: ', supportErrand);
     const manager = supportErrand.stakeholders.find((s) => s.role === 'MANAGER');
     console.log('FOund manager', manager);
-    setValue('manager', `${manager?.firstName} ${manager?.lastName}` || '');
-    const managerUserName = manager.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-    getEmployeeData(managerUserName).then((res) => {
-      setValue('referenceNumber', res.referenceNumber);
-    });
-    getEmployeeCustomerIdentity(managerUserName).then((res) => {
-      console.log(res);
-      setValue('customerId', res.customerId);
-    });
+    // setValue('recipient', `${manager?.firstName} ${manager?.lastName}` || '');
+    const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+    if (managerUserName) {
+      getEmployeeData(managerUserName).then((res) => {
+        setValue('invoice.customerReference', res.referenceNumber);
+      });
+      getEmployeeCustomerIdentity(managerUserName).then((res) => {
+        console.log(res);
+        setValue('invoice.customerId', res.customerId);
+      });
+      // const recipient: CRecipient = {
+      //   partyId: manager?.externalId || '',
+      //   firstName: manager?.firstName || '',
+      //   lastName: manager?.lastName || '',
+      //   userId: managerUserName || '',
+      //   addressDetails: {},
+      // };
+      // setValue('recipient', recipient);
+      setRecipientname(`${manager?.firstName} ${manager?.lastName}` || '');
+    }
     if (supportErrand && supportErrand.externalTags?.['billingRecordId']) {
       const recordId = supportErrand.externalTags['billingRecordId'];
-      getBillingRecord(recordId, municipalityId).then(recordToFormModel).then(setRecordFormModel);
-      setRecordFormModel(recordFormModel);
+      getBillingRecord(recordId, municipalityId).then(setRecord);
+      // getBillingRecord(recordId, municipalityId).then(recordToFormModel).then(setRecordFormModel);
+      // setRecordFormModel(recordFormModel);
     } else {
-      setRecordFormModel(recordToFormModel());
+      setRecord(emptyBillingRecord);
+      // setRecordFormModel(recordToFormModel());
     }
   }, [supportErrand]);
 
-  const formControls = useForm<InvoiceFormModel>({
-    defaultValues: recordFormModel,
+  // const formControls = useForm<InvoiceFormModel>({
+  const formControls = useForm<CBillingRecord>({
+    defaultValues: record,
     resolver: yupResolver(formSchema),
     mode: 'onChange',
   });
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
     trigger,
     getValues,
     setValue,
+    watch,
     formState: { errors },
   } = formControls;
+
+  // const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
+  //   control,
+  //   name: 'invoice.invoiceRows',
+  // });
+
+  // useEffect(() => {
+  //   const newTotal = getValues(`invoice.invoiceRows.${0}.quantity`) * getValues(`invoice.invoiceRows.${0}.costPerUnit`);
+  //   setValue(`invoice.invoiceRows.${0}.totalAmount`, newTotal);
+  //   setDevelopmentCost(newTotal * 0.02);
+  //   if (fields.length > 1) {
+  //     setValue(`invoice.invoiceRows.${1}.totalAmount`, newTotal * 0.02);
+  //   }
+  // }, [getValues().invoice.invoiceRows[0].quantity]);
 
   const toastMessage = useSnackbar();
 
@@ -129,237 +183,52 @@ export const SupportErrandInvoiceTab: React.FC<{
   };
 
   const onSubmit = () => {
-    const formData = getValues();
-    console.log('formData', formData);
-
-    // const apiCall = updateSupportInvoice(supportErrand.id, municipalityId, formData);
-
-    // return apiCall
-    //   .then(() => {
-    //     toastMessage({
-    //       position: 'bottom',
-    //       closeable: false,
-    //       message: 'Fakturan sparades',
-    //       status: 'success',
-    //     });
-    //     getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-    //   })
-    //   .catch(() => {
-    //     toastMessage({
-    //       position: 'bottom',
-    //       closeable: false,
-    //       message: 'Något gick fel när fakturan sparades',
-    //       status: 'error',
-    //     });
-    //   });
+    return saveInvoice(supportErrand.id, municipalityId, getValues())
+      .then(() => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Fakturan sparades',
+          status: 'success',
+        });
+        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+      })
+      .catch(() => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när fakturan sparades',
+          status: 'error',
+        });
+      });
   };
 
+  // const handleDevelopmentCost = (checked) => {
+  //   console.log('checked', checked);
+  //   if (checked) {
+  //     append({
+  //       descriptions: ['Utvecklingskostnad'],
+  //       quantity: 1,
+  //       costPerUnit: developmentCost,
+  //       totalAmount: developmentCost,
+  //       accountInformation: {
+  //         project: '11041',
+  //       },
+  //     });
+  //   } else {
+  //     remove(fields.length - 1);
+  //   }
+  //   setDevelopment(checked);
+  // };
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col">
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Fakturering</h2>
         <span>Fyll i följande faktureringsunderlag.</span>
-        <div>{JSON.stringify(recordFormModel)}</div>
-
-        <div className="my-lg gap-xl">
-          <FormControl>
-            <FormLabel>Faktureringstyp</FormLabel>
-
-            <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
-              <div className="flex justify-between flex-wrap w-full">
-                {invoiceTypes.map((invoiceType) => (
-                  <div className="w-1/2" key={invoiceType.key}>
-                    <RadioButton
-                      data-cy={`invoice-type-${invoiceType}`}
-                      className="mr-lg mb-sm whitespace-nowrap"
-                      name={invoiceType.key}
-                      id={invoiceType.key}
-                      value={invoiceType.displayName}
-                      {...register('type')}
-                      defaultChecked={getValues().type === invoiceType.displayName}
-                    >
-                      {invoiceType.displayName}
-                    </RadioButton>
-                  </div>
-                ))}
-                {errors.type && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.type?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </div>
-            </RadioButton.Group>
-          </FormControl>
-        </div>
-
-        <div className="flex gap-md mt-16">
-          <div className="my-sm w-1/2">
-            <FormControl id="quantity" className="w-full">
-              <div>GV: {getValues().quantity}</div>
-              <div>PF: {parseFloat(getValues().quantity)}</div>
-              <FormLabel>Antal timmar</FormLabel>
-              <Input
-                {...register('quantity')}
-                data-cy="quantity-input"
-                className="w-full text-dark-primary"
-                type="text"
-                // inputMode="numeric"
-                // pattern="\d*[,.]?\d{0,2}"
-                // type="number"
-                // step={0.01}
-                // min={0}
-                size="md"
-                value={getValues().quantity}
-                onChange={(e) => {
-                  setValue('quantity', e.target.value);
-                  trigger('quantity');
-                }}
-              />
-              {errors.quantity && (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.quantity?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
-
-          <div className="my-sm gap-xl w-1/2">
-            <FormControl id="costPerUnit" className="w-full">
-              <FormLabel>Timpris</FormLabel>
-              <Input
-                {...register('costPerUnit')}
-                data-cy="costPerUnit-input"
-                className="w-full text-dark-primary"
-                size="md"
-                value={getValues().costPerUnit}
-                placeholder={'0'}
-                onChange={(e) => {
-                  setValue('costPerUnit', e.target.value);
-                  trigger('costPerUnit');
-                }}
-                disabled
-              />
-              {errors.costPerUnit && (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.costPerUnit?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
-        </div>
-
-        <div className="flex mb-md gap-24">
-          <div className="flex w-1/2">
-            <FormControl id="supervisor" className="w-full">
-              <FormLabel>Chef</FormLabel>
-              <Input
-                {...register('manager')}
-                disabled={isSupportErrandLocked(supportErrand) || !allowed}
-                data-cy="manager-input"
-                className="w-full text-dark-primary"
-                size="md"
-                // value={getValues('manager')}
-                // onChange={(e) => {
-                //   setValue('manager', e.target.value);
-                //   trigger('manager');
-                // }}
-              />
-              {errors.manager ? (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.manager?.message}</FormErrorMessage>
-                </div>
-              ) : (
-                <span className="text-small">Namn på den som ska faktureras</span>
-              )}
-            </FormControl>
-          </div>
-          <div className="flex w-1/2">
-            <FormControl id="referenceNumber" className="w-full">
-              <FormLabel>Referensnummer</FormLabel>
-              <Input
-                {...register('referenceNumber')}
-                disabled={isSupportErrandLocked(supportErrand) || !allowed}
-                data-cy="referenceNumber-input"
-                className="w-full text-dark-primary"
-                size="md"
-                // value={getValues().referenceNumber}
-                // onChange={(e) => {
-                //   setValue('referenceNumber', e.target.value);
-                //   trigger('referenceNumber');
-                // }}
-              />
-              {errors.referenceNumber ? (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.referenceNumber?.message}</FormErrorMessage>
-                </div>
-              ) : (
-                <span className="text-small">Referensnummer för den som får fakturan</span>
-              )}
-            </FormControl>
-          </div>
-        </div>
-
-        <div className="flex gap-md mt-8 mb-lg">
-          <div className="w-1/2">
-            <FormControl id="category" className="w-full">
-              <FormLabel>Kundidentitet</FormLabel>
-              <Select
-                {...register('customerId')}
-                data-cy="customerId-input"
-                className="w-full text-dark-primary"
-                size="md"
-                value={getValues('customerId')}
-                placeholder={'0'}
-                onChange={(e) => {
-                  setValue('customerId', e.target.value);
-                  trigger('customerId');
-                }}
-              >
-                {customerIdentities.map((identity) => (
-                  <Select.Option key={identity.customerId} value={identity.customerId}>
-                    {identity.customerName}
-                  </Select.Option>
-                ))}
-              </Select>
-              {errors.customerId && (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.customerId?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
-
-          <div className="w-1/2">
-            <FormControl id="category" className="w-full">
-              <FormLabel>Aktivitet</FormLabel>
-              <Select
-                {...register('activity')}
-                data-cy="activity-input"
-                className="w-full text-dark-primary"
-                size="md"
-                value={getValues('activity')}
-                placeholder={'0'}
-                onChange={(e) => {
-                  setValue('activity', e.target.value);
-                  trigger('activity');
-                }}
-              >
-                <Select.Option value={undefined}>Välj aktivitet</Select.Option>
-                {invoiceActivities.map((activity) => (
-                  <Select.Option key={activity.id} value={activity.value}>
-                    {activity.displayName}
-                  </Select.Option>
-                ))}
-              </Select>
-              {errors.activity && (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.activity?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
-        </div>
-
+        <div>{JSON.stringify(getValues())}</div>
+        <FormProvider {...formControls}>
+          <BillingForm recipientName={recipientName} />
+        </FormProvider>
         <div>
           <Button
             className="mr-12"

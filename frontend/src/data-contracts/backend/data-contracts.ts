@@ -47,7 +47,7 @@ export interface CInvoice {
   date?: string;
   dueDate?: string;
   totalAmount?: number;
-  invoiceRows: any[];
+  invoiceRows: CInvoiceRow[];
 }
 
 export interface CAddressDetails {
