@@ -13,7 +13,7 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 @Controller()
 export class BillingController {
   private apiService = new ApiService();
-  private SERVICE = `billingpreprocessor/2.0`;
+  private SERVICE = `billingpreprocessor/2.1`;
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })
