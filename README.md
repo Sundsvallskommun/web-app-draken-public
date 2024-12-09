@@ -16,6 +16,7 @@ För MEX (Mark och exploatering):
 | Contract            |     2.1 |
 | Employee            |     1.0 |
 | BusinessEngagements |     2.0 |
+| Party               |     2.0 |
 | SimulatorServer     |     2.0 |
 
 För KS (Kontakt Sundsvall):
@@ -29,6 +30,7 @@ För KS (Kontakt Sundsvall):
 | Templating          |     2.0 |
 | Estateinfo          |     1.0 |
 | BusinessEngagements |     2.0 |
+| Party               |     2.0 |
 | SimulatorServer     |     2.0 |
 
 För PT (Parkeringstillstånd):

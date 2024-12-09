@@ -329,6 +329,7 @@ export enum ResolutionLabelKS {
   REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
   SELF_SERVICE = 'Hänvisat till självservice',
   INTERNAL_SERVICE = 'Hänvisat till intern service',
+  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
 }
 
 export const ongoingSupportErrandLabelsKC = [
@@ -465,7 +466,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
-  return errand?.status === Status.SOLVED;
+  return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
 };
 
 export const useSupportErrands = (

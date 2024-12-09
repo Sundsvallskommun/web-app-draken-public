@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
+import { getSender } from './rendered-support-message.component';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -161,7 +162,7 @@ export const SupportMessagesTab: React.FC<{
                         <strong
                           className="mr-md"
                           dangerouslySetInnerHTML={{
-                            __html: sanitized(selectedMessage?.sender || '(okänd avsändare)'),
+                            __html: sanitized(getSender(selectedMessage)),
                           }}
                         ></strong>
                       </p>
