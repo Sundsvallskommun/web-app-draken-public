@@ -1,12 +1,13 @@
+import { twoDecimals } from '@common/services/helper-service';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Input, RadioButton, Select } from '@sk-web-gui/react';
 import {
   customerIdentities,
   invoiceActivities,
   invoiceTypes,
 } from '@supportmanagement/services/support-billing-service';
-import { ApiSupportErrand, isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 export const BillingForm = ({ recipientName }) => {
@@ -20,6 +21,8 @@ export const BillingForm = ({ recipientName }) => {
     formState: { errors },
   } = useFormContext<CBillingRecord>();
 
+  const { user }: AppContextInterface = useAppContext();
+
   const [development, setDevelopment] = useState<boolean>(false);
   const [developmentCost, setDevelopmentCost] = useState<number>(0);
 
@@ -29,13 +32,12 @@ export const BillingForm = ({ recipientName }) => {
   });
 
   const handleDevelopmentCost = (checked) => {
-    console.log('checked', checked);
     if (checked) {
       append({
-        descriptions: ['Utvecklingskostnad'],
+        descriptions: ['Utvecklingskostnad 2%'],
         quantity: 1,
-        costPerUnit: developmentCost,
-        totalAmount: developmentCost,
+        costPerUnit: twoDecimals(getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02),
+        totalAmount: twoDecimals(getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02),
         accountInformation: {
           activity: getValues().invoice.invoiceRows[0].accountInformation.activity,
           project: '11041',
@@ -47,18 +49,32 @@ export const BillingForm = ({ recipientName }) => {
     setDevelopment(checked);
   };
 
+  const quantity = watch('invoice.invoiceRows.0.quantity');
+  const activity = watch('invoice.invoiceRows.0.accountInformation.activity');
+
   useEffect(() => {
     const newTotal = getValues(`invoice.invoiceRows.${0}.quantity`) * getValues(`invoice.invoiceRows.${0}.costPerUnit`);
-    setValue(`invoice.invoiceRows.${0}.totalAmount`, newTotal);
-    setDevelopmentCost(newTotal * 0.02);
+    setValue(`invoice.invoiceRows.${0}.totalAmount`, twoDecimals(newTotal));
+    setDevelopmentCost(twoDecimals(newTotal * 0.02));
     if (fields.length > 1) {
-      setValue(`invoice.invoiceRows.${1}.totalAmount`, newTotal * 0.02);
+      setValue(
+        `invoice.invoiceRows.${1}.costPerUnit`,
+        twoDecimals(getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02)
+      );
+      setValue(`invoice.invoiceRows.${1}.totalAmount`, getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02);
       setValue(
         `invoice.invoiceRows.${1}.accountInformation.activity`,
         getValues().invoice.invoiceRows[0].accountInformation.activity
       );
     }
-  }, [getValues().invoice.invoiceRows[0].quantity, getValues().invoice.invoiceRows[0].accountInformation.activity]);
+  }, [quantity, activity]);
+
+  useEffect(() => {
+    setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
+    if (fields.length === 2) {
+      setDevelopment(true);
+    }
+  }, [fields]);
 
   return (
     <>
@@ -100,7 +116,7 @@ export const BillingForm = ({ recipientName }) => {
         }}
         indeterminate={false}
       >
-        Utvecklingskostnad
+        Utvecklingskostnad?
       </Checkbox>
       {fields.map((field, index) => (
         <div key={field.id} className="bg-blue-50 my-8 px-12 py-12 rounded-24">
@@ -109,18 +125,18 @@ export const BillingForm = ({ recipientName }) => {
           </div>
           <div className="flex gap-md mt-8">
             <div className="my-sm w-1/3">
-              <FormControl id="quantity" className="w-full">
+              <FormControl id={`invoice.invoiceRows.${index}-quantity`} className="w-full">
                 <FormLabel>Antal timmar</FormLabel>
                 <Input
                   {...register(`invoice.invoiceRows.${index}.quantity`)}
                   data-cy="quantity-input"
+                  onChange={(e) => {
+                    setValue(`invoice.invoiceRows.${index}.quantity`, twoDecimals(parseFloat(e.target.value)));
+                  }}
                   className="w-full text-dark-primary"
-                  type="text"
-                  // inputMode="numeric"
-                  // pattern="\d*[,.]?\d{0,2}"
-                  // type="number"
-                  // step={0.01}
-                  // min={0}
+                  type="number"
+                  step={0.01}
+                  min={0}
                   size="md"
                   readOnly={index === 1 && development}
                 />
@@ -133,7 +149,7 @@ export const BillingForm = ({ recipientName }) => {
             </div>
 
             <div className="my-sm gap-xl w-1/3">
-              <FormControl id="costPerUnit" className="w-full">
+              <FormControl id={`invoice.invoiceRows.${index}-costPerUnit`} className="w-full">
                 <FormLabel>Timpris</FormLabel>
                 <Input
                   {...register(`invoice.invoiceRows.${index}.costPerUnit`)}
@@ -151,16 +167,13 @@ export const BillingForm = ({ recipientName }) => {
               </FormControl>
             </div>
             <div className="my-sm w-1/3">
-              <FormControl id="quantity" className="w-full">
+              <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
                 <FormLabel>Total kostnad</FormLabel>
                 <Input
                   {...register(`invoice.invoiceRows.${index}.totalAmount`)}
-                  data-cy="quantity-input"
+                  data-cy="totalAmount-input"
                   className="w-full text-dark-primary"
                   type="text"
-                  // value={(
-                  //   watch(`invoice.invoiceRows.${index}.quantity`) * watch(`invoice.invoiceRows.${index}.costPerUnit`)
-                  // ).toString()}
                   readOnly
                   size="md"
                 />
@@ -171,6 +184,39 @@ export const BillingForm = ({ recipientName }) => {
                 )}
               </FormControl>
             </div>
+          </div>
+          <div className="my-sm w-full">
+            <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
+              <FormLabel>Beskrivning</FormLabel>
+              <Input
+                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.0`)}
+                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.0-input`}
+                className="w-full text-dark-primary"
+                type="text"
+                size="md"
+              />
+              <Input
+                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.1`)}
+                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.1-input`}
+                className="w-full text-dark-primary"
+                type="text"
+                size="md"
+              />
+              <Input
+                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.2`)}
+                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.2-input`}
+                className="w-full text-dark-primary"
+                type="text"
+                size="md"
+              />
+              {errors.invoice?.invoiceRows?.[index]?.detailedDescriptions?.[0] && (
+                <div className="text-error">
+                  <FormErrorMessage>
+                    {errors.invoice?.invoiceRows[index]?.detailedDescriptions?.[0]?.message as string}
+                  </FormErrorMessage>
+                </div>
+              )}
+            </FormControl>
           </div>
         </div>
       ))}
@@ -203,11 +249,6 @@ export const BillingForm = ({ recipientName }) => {
               className="w-full text-dark-primary"
               size="md"
               readOnly
-              // value={getValues().referenceNumber}
-              // onChange={(e) => {
-              //   setValue('referenceNumber', e.target.value);
-              //   trigger('referenceNumber');
-              // }}
             />
             {errors.invoice?.customerReference ? (
               <div className="text-error">
@@ -228,12 +269,7 @@ export const BillingForm = ({ recipientName }) => {
               data-cy="customerId-input"
               className="w-full text-dark-primary"
               size="md"
-              // value={getValues('customerId')}
               placeholder={'0'}
-              // onChange={(e) => {
-              //   setValue('customerId', e.target.value);
-              //   trigger('customerId');
-              // }}
             >
               {customerIdentities.map((identity) => (
                 <Select.Option key={identity.customerId} value={identity.customerId}>
@@ -257,12 +293,7 @@ export const BillingForm = ({ recipientName }) => {
               data-cy="activity-input"
               className="w-full text-dark-primary"
               size="md"
-              // value={getValues('activity')}
               placeholder={'0'}
-              // onChange={(e) => {
-              //   setValue('activity', e.target.value);
-              //   trigger('activity');
-              // }}
             >
               <Select.Option value={''}>Välj aktivitet</Select.Option>
               {invoiceActivities.map((activity) => (

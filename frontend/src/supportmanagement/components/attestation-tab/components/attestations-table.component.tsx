@@ -4,10 +4,9 @@ import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
+import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import {
   SupportErrandsData,
-  attestationLabels,
   findAttestationStatusLabelForAttestationStatusKey,
 } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
@@ -47,14 +46,14 @@ export const AttestationsTable: React.FC<{
   };
 
   const serverSideSortableCols: { [key: number]: string } = {
-    0: 'type',
-    1: 'hours',
-    2: 'amount',
+    0: 'invoice.description',
+    1: 'invoice.invoiceRows.quantity',
+    2: 'invoice.totalAmount',
     3: 'supervisor',
-    4: 'registeredAt',
+    4: 'created',
     5: 'modified',
     6: 'errandId',
-    7: 'attested',
+    7: 'approved',
     8: 'status',
   };
 
@@ -145,18 +144,27 @@ export const AttestationsTable: React.FC<{
           scope="row"
           className="w-[275px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {maybe(record?.invoice?.invoiceRows[0]?.accountInformation.activity)}
+          {maybe(record?.invoice?.description)}
         </Table.HeaderColumn>
         <Table.Column>{maybe(record?.invoice.invoiceRows?.[0]?.quantity)}</Table.Column>
         <Table.Column>{formatCurrency(maybe(record.invoice?.totalAmount))}</Table.Column>
-        <Table.Column>{maybe(record?.invoice?.ourReference)}</Table.Column>
+        <Table.Column>{maybe(record.extraParameters?.['referenceName'])}</Table.Column>
         <Table.Column>{prettyTime(record.created)}</Table.Column>
         <Table.Column>{prettyTime(record.modified)}</Table.Column>
         <Table.Column>
-          <NextLink href={`/arende/${municipalityId}/${'MISSING'}`} target="_blank" className="underline">
-            (SAKNAS)
-          </NextLink>
+          {record.extraParameters?.['errandId'] ? (
+            <NextLink
+              href={`/arende/${municipalityId}/${record.extraParameters?.['errandId']}`}
+              target="_blank"
+              className="underline"
+            >
+              {maybe(record.extraParameters?.['errandNumber'])}
+            </NextLink>
+          ) : (
+            maybe(record.extraParameters?.['errandNumber'])
+          )}
         </Table.Column>
+        <Table.Column>{prettyTime(record.approved)}</Table.Column>
         <Table.Column>{billingrecordStatusToLabel(record.status)}</Table.Column>
         <Table.Column sticky>{StatusButtonComponent(record)}</Table.Column>
       </Table.Row>

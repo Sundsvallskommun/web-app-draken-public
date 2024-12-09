@@ -5,7 +5,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
-import { luhnCheck, toOffsetDateTime } from '@/utils/util';
+import { apiURL, luhnCheck, toOffsetDateTime } from '@/utils/util';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
@@ -69,7 +69,7 @@ export class BillingController {
     }
 
     // TODO CHANGE WHEN API IS FIXED
-    const defaultFilter = "&filter=type:'EXTERNAL' and category:'ISYCASE'";
+    const defaultFilter = "&filter=type:'INTERNAL' and category:'ISYCASE'";
 
     const filter = filterList.length > 0 ? `${defaultFilter} and ${filterList.join(' and ')}` : defaultFilter;
     let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 8}`;
@@ -84,15 +84,16 @@ export class BillingController {
 
   @Post('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Create billing record' })
-  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'data'))
+  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'))
   async createBillingRecord(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: CBillingRecord,
+    @Body() data: BillingRecord,
     @Res() response: any,
-  ): Promise<any> {
-    const url = `${this.SERVICE}/${municipalityId}/billingrecords`;
-    const res = await this.apiService.post<any, BillingRecord>({ url, data }, req.user);
+  ): Promise<BillingRecord> {
+    const url = `${municipalityId}/billingrecords`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.post<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);
     return response.status(200).send(res.data);
   }
 
@@ -114,7 +115,7 @@ export class BillingController {
   @Put('/billing/:municipalityId/billingrecords/:id')
   @OpenAPI({ summary: 'Update billing record by id' })
   @ResponseSchema(CBillingRecord)
-  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'data'))
+  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'))
   async updateBillingRecord(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
@@ -122,8 +123,9 @@ export class BillingController {
     @Body() data: CBillingRecord,
     @Res() response: any,
   ): Promise<BillingRecord> {
-    const url = `${this.SERVICE}/${municipalityId}/billingrecords/${id}`;
-    const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, data }, req.user);
+    const url = `${municipalityId}/billingrecords/${id}`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);
     return response.status(200).send(res.data);
   }
 }

@@ -15,13 +15,14 @@ import {
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   PageErrand,
+  ExternalTag,
+  Parameter,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
-// import { Errand as CaseDataErrand, ErrandApiData } from '@/interfaces/errand.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
@@ -33,10 +34,11 @@ import ApiService from '@/services/api.service';
 import { checkIfSupportAdministrator } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck, toOffsetDateTime, withRetries } from '@/utils/util';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+import { Type as TypeTransformer } from 'class-transformer';
 
 export enum CustomerType {
   PRIVATE,
@@ -77,7 +79,20 @@ export interface SupportErrandParameters {
   value: string;
 }
 
-export type ExternalTags = Array<{ key: string; value: string }>;
+export class CExternalTag implements ExternalTag {
+  @IsString()
+  key: string;
+  @IsString()
+  value: string;
+}
+
+export class CParameter implements Parameter {
+  @IsString()
+  key: string;
+  @IsArray()
+  @IsOptional()
+  values: string[];
+}
 
 export class SupportErrandDto implements SupportErrand {
   @IsString()
@@ -143,12 +158,14 @@ export class SupportErrandDto implements SupportErrand {
   stakeholders: SupportStakeholder[];
   @IsArray()
   @IsOptional()
-  externalTags: ExternalTags;
-  parameters: {
-    key: string;
-    displayName: string;
-    values: string[];
-  }[];
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CExternalTag)
+  externalTags: ExternalTag[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CParameter)
+  parameters: Parameter[];
 }
 
 class ForwardFormDto {

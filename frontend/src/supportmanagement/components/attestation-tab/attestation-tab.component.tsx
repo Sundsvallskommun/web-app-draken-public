@@ -21,7 +21,11 @@ import { getSupportAdmins } from '@supportmanagement/services/support-admin-serv
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
-import { getBillingRecords, useBillingRecords } from '@supportmanagement/services/support-billing-service';
+import {
+  getBillingRecord,
+  getBillingRecords,
+  useBillingRecords,
+} from '@supportmanagement/services/support-billing-service';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });
@@ -228,7 +232,12 @@ export const AttestationTab = () => {
             setShowSelectedRecord(false);
           }}
         >
-          <AttestationInvoiceForm selectedrecord={selectedRecord} />
+          <AttestationInvoiceForm
+            selectedrecord={selectedRecord}
+            update={(recordId: string) => {
+              getBillingRecord(recordId, municipalityId).then(setSelectedRecord);
+            }}
+          />
         </AttestationInvoiceWrapperComponent>
       )}
     </div>

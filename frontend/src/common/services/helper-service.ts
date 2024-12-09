@@ -146,3 +146,7 @@ export function prettyTime(time) {
 export function formatCurrency(value) {
   return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(value);
 }
+
+export function twoDecimals(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}

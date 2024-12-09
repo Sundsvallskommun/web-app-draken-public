@@ -78,6 +78,7 @@ export interface CBillingRecord {
   type: CBillingRecordTypeEnum;
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
+  extraParameters?: object;
 }
 
 export interface CSortObject {
@@ -334,6 +335,16 @@ export interface SupportAttachmentDto {
   files?: any;
 }
 
+export interface CExternalTag {
+  key: string;
+  value: string;
+}
+
+export interface CParameter {
+  key: string;
+  values?: any[];
+}
+
 export interface SupportErrandDto {
   assignedUserId?: string;
   reporterUserId?: string;
@@ -352,7 +363,8 @@ export interface SupportErrandDto {
   title?: string;
   description?: string;
   stakeholders?: any[];
-  externalTags?: any[];
+  externalTags?: CExternalTag[];
+  parameters?: CParameter[];
 }
 
 export interface ForwardFormDto {

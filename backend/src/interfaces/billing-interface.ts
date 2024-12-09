@@ -12,7 +12,7 @@ import {
   Type,
 } from '@/data-contracts/billingpreprocessor/data-contracts';
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import e from 'express';
 
 export class CAccountInformation implements AccountInformation {
@@ -160,6 +160,9 @@ export class CBillingRecord implements BillingRecord {
   @ValidateNested()
   @TypeTransformer(() => CInvoice)
   invoice: CInvoice;
+  @IsOptional()
+  @IsObject()
+  extraParameters?: Record<string, string>;
 }
 export class CSortObject implements SortObject {
   @IsOptional()

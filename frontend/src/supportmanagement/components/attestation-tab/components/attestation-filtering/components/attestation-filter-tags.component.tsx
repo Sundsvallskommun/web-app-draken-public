@@ -7,6 +7,7 @@ import {
   AttestationFilter,
   AttestationValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/attestations-filtering.component';
+import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 
 interface AttestationFilterTagsProps {
   administrators: (SupportAdmin | Admin)[];
@@ -44,7 +45,7 @@ export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps
     <div className="flex gap-8 flex-wrap justify-start">
       {statuses.map((status, index) => (
         <Chip key={`status-${index}`} aria-label="Rensa status" onClick={() => handleRemoveStatus(status)}>
-          {status}
+          {billingrecordStatusToLabel(status)}
         </Chip>
       ))}
       {invoiceTypes.map((invoiceType, typeIndex) => (

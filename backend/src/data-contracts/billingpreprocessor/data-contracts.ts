@@ -120,6 +120,11 @@ export interface BillingRecord {
    * @example "2022-11-14T08:57:42.358+02:00"
    */
   modified?: string;
+  /**
+   * A map of extra parameters for custom values on the billing record
+   * @example {"caseId":"abc123","uuid":"82a400cf-eb02-4a18-962d-fde55440868f"}
+   */
+  extraParameters?: Record<string, string>;
 }
 
 /** Invoice model */
@@ -256,14 +261,14 @@ export enum Type {
 }
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -291,10 +296,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -327,14 +332,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;

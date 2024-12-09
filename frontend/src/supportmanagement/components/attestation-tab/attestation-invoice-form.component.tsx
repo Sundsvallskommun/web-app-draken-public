@@ -3,71 +3,24 @@ import { User } from '@common/interfaces/user';
 import { prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
 import {
-  Button,
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  RadioButton,
-  Select,
-  Table,
-  useSnackbar,
-} from '@sk-web-gui/react';
-import {
-  customerIdentities,
-  invoiceActivities,
-  InvoiceFormModel,
-  invoiceTypes,
-  recordToFormModel,
+  approveBillingRecord,
+  billingFormSchema,
+  rejectBillingRecord,
+  saveBillingRecord,
+  setBillingRecordStatus,
 } from '@supportmanagement/services/support-billing-service';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
-import * as yup from 'yup';
 import { BillingForm } from '../billing/billing-form.component';
-
-// export interface AttestationInvoiceFormModel {
-//   id: string;
-//   errandId: string;
-//   manager: string;
-//   referenceNumber: string;
-//   customerId: string;
-//   activity: string;
-//   type: string;
-//   quantity: string;
-//   costPerUnit: string;
-//   totalAmount: string;
-//   registeredAt: string;
-//   registeredBy: string;
-//   modified: string;
-//   attested: string;
-//   status: string;
-//   approvedBy?: string;
-//   approved?: string;
-// }
-
-let formSchema = yup.object({
-  id: yup.string(),
-  costPerUnit: yup.number().typeError('Ange ett giltigt värde'),
-  manager: yup.string().required('Fyll i chef'),
-  referenceNumber: yup.string().required('Fyll i referensnummer'),
-  errandId: yup.string().required('Fyll i ärende-id'),
-  customerId: yup.string().required('Fyll i kundidentitet'),
-  activity: yup.string().required('Fyll i aktivitet'),
-  type: yup.string().required('Fyll i faktureringstyp'),
-  quantity: yup.number().typeError('Ange ett giltigt värde').required('Fyll i antal timmar'),
-  totalAmount: yup.number().typeError('Ange ett giltigt värde'),
-  registeredBy: yup.string(),
-  approvedBy: yup.string(),
-  status: yup.string(),
-});
+import { validateAction } from '@casedata/services/casedata-errand-service';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
-  update?: () => void;
+  update: (recordId: string) => void;
   selectedrecord: CBillingRecord;
 }> = (props) => {
   const {
@@ -78,19 +31,24 @@ export const AttestationInvoiceForm: React.FC<{
     user: User;
   } = useAppContext();
 
-  const { selectedrecord } = props;
-  const recordFormModel = recordToFormModel(selectedrecord);
+  const { selectedrecord: selectedRecord } = props;
 
   const toastMessage = useSnackbar();
   const [showChangeDecisionComponent, setShowDecisionComponent] = useState(false);
   const [invoiceError, setInvoiceError] = useState(false);
 
-  // const formControls = useForm<InvoiceFormModel>({
+  const [allowed, setAllowed] = useState(false);
+  // TODO Enable this when errand id is stored on billing record
+  // and the rules have been decided
+  // useEffect(() => {
+  //   const _a = validateAction(supportErrand, user);
+  //   setAllowed(_a);
+  // }, [user, supportErrand]);
+
   const formControls = useForm<CBillingRecord>({
-    // defaultValues: recordFormModel,
-    defaultValues: selectedrecord,
-    resolver: yupResolver(formSchema),
-    mode: 'onChange',
+    defaultValues: selectedRecord,
+    resolver: yupResolver(billingFormSchema),
+    mode: 'onSubmit',
   });
 
   const {
@@ -112,24 +70,14 @@ export const AttestationInvoiceForm: React.FC<{
     name: 'invoice.invoiceRows', // unique name for your Field Array
   });
 
-  const send: () => void = async () => {
-    setInvoiceError(false);
-    const data = getValues();
+  const onError = () => {
+    console.log('getValues()', getValues());
+    console.log('errors', errors);
+  };
 
-    /* TODO Endpoint?
-    updateSupportInvoice(recordFormModel.errandId, municipalityId, invoiceData)
-      .then((success) => {
-        if (!success) {
-          throw new Error('');
-        }
-
-        setTimeout(() => {
-          props.setUnsaved(false);
-          clearErrors();
-        }, 0);
-        setTimeout(() => {
-          props.update();
-        }, 500);
+  const onSubmit = () => {
+    return saveBillingRecord(undefined, municipalityId, getValues())
+      .then(() => {
         toastMessage({
           position: 'bottom',
           closeable: false,
@@ -137,47 +85,59 @@ export const AttestationInvoiceForm: React.FC<{
           status: 'success',
         });
       })
-      .catch((e) => {
-        console.error(e);
+      .catch(() => {
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när fakturan skulle sparas',
+          message: 'Något gick fel när fakturan sparades',
           status: 'error',
         });
-      });*/
+      });
   };
 
-  const ChangeAttestationDecisionComponent = (props: { status: CBillingRecordStatusEnum }) => {
+  const ChangeAttestationDecisionComponent = (p: { status: CBillingRecordStatusEnum }) => {
     return (
       <div className="flex gap-md my-md">
         <Select
           className="w-full"
-          disabled={props.status === CBillingRecordStatusEnum.INVOICED}
-          value={props.status}
+          // disabled={p.status === CBillingRecordStatusEnum.INVOICED}
+          value={p.status}
           onChange={(e) => {
-            setValue('status', e.target.value, { shouldDirty: true });
+            setValue('status', e.target.value as CBillingRecordStatusEnum, { shouldDirty: true });
             trigger('status');
           }}
         >
           <Select.Option value={CBillingRecordStatusEnum.NEW}>Inget beslut</Select.Option>
           <Select.Option value={CBillingRecordStatusEnum.APPROVED}>Godkänn</Select.Option>
-          <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avböj</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avslå</Select.Option>
           <Select.Option value={CBillingRecordStatusEnum.INVOICED}>Fakturerad</Select.Option>
         </Select>
         <Button
           variant="secondary"
           onClick={() => {
             setShowDecisionComponent(false);
-            setValue('status', recordFormModel.status);
+            setValue('status', selectedRecord.status);
           }}
         >
           Avbryt
         </Button>
-        <Button disabled={!isDirty}>Spara beslut</Button>
+        <Button
+          disabled={!isDirty}
+          onClick={() => {
+            setValue('status', getValues().status);
+            setBillingRecordStatus(municipalityId, getValues(), getValues().status, user).then(() => {
+              props.update(selectedRecord.id);
+              setShowDecisionComponent(false);
+            });
+          }}
+        >
+          Spara beslut
+        </Button>
       </div>
     );
   };
+
+  const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 
   return (
     <div className="px-40 my-lg gap-24">
@@ -193,306 +153,61 @@ export const AttestationInvoiceForm: React.FC<{
         <Table.Body>
           <Table.Row>
             <Table.Column>
-              <NextLink href={`/arende/${municipalityId}/${'MISSING'}`} target="_blank" className="underline">
-                recordFormModel?.errandId
-              </NextLink>
+              {selectedRecord.extraParameters?.['errandId'] ? (
+                <NextLink
+                  href={`/arende/${municipalityId}/${selectedRecord.extraParameters?.['errandId']}`}
+                  target="_blank"
+                  className="underline"
+                >
+                  {maybe(selectedRecord.extraParameters?.['errandNumber'])}
+                </NextLink>
+              ) : (
+                maybe(selectedRecord.extraParameters?.['errandNumber'])
+              )}
             </Table.Column>
-            <Table.Column>{prettyTime(selectedrecord.created)}</Table.Column>
-            <Table.Column>{recordFormModel.registeredBy}</Table.Column>
-            <Table.Column>{prettyTime(selectedrecord.modified)}</Table.Column>
+            <Table.Column>{prettyTime(selectedRecord.created)}</Table.Column>
+            <Table.Column>{maybe(selectedRecord.extraParameters?.['referenceName'])}</Table.Column>
+            <Table.Column>{prettyTime(selectedRecord.modified)}</Table.Column>
           </Table.Row>
         </Table.Body>
       </Table>
 
       <FormProvider {...formControls}>
-        <BillingForm recipientName={'recipientName'} />
+        <BillingForm recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])} />
       </FormProvider>
 
-      {/* {fields.map((field, index) => (
-        <div key={field.id}>
-          Amount
-          <input {...register(`invoice.invoiceRows.${index}.totalAmount`)} type="text" />
-        </div>
-      ))}
-
-      <div className="flex gap-md mt-16">
-        <div className="my-sm w-1/2">
-          <FormControl id="manager" className="w-full">
-            <FormLabel>Chef</FormLabel>
-            <Input
-              {...register('invoice.invoiceRows.0.quantity')}
-              data-cy="manager-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().invoice?.invoiceRows[0].quantity}
-              onChange={(e) => {
-                setValue('invoice.invoiceRows.0.quantity', e.target.value);
-                trigger('invoice.invoiceRows.0.quantity');
-              }}
-            />
-            {errors.invoice?.invoiceRows && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.invoice?.invoiceRows?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div> */}
-
-      {/* <div className="flex gap-md mt-16">
-        <div className="my-sm w-1/2">
-          <FormControl id="manager" className="w-full">
-            <FormLabel>Chef</FormLabel>
-            <Input
-              {...register('manager')}
-              data-cy="manager-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().manager}
-              onChange={(e) => {
-                setValue('manager', e.target.value);
-                trigger('manager');
-              }}
-            />
-            {errors.manager && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.manager?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="my-sm gap-xl w-1/2">
-          <FormControl id="category" className="w-full">
-            <FormLabel>Referensnummer</FormLabel>
-            <Input
-              {...register('referenceNumber')}
-              data-cy="referenceNumber-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().referenceNumber}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('referenceNumber', e.target.value);
-                trigger('referenceNumber');
-              }}
-            />
-            {errors.referenceNumber && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.referenceNumber?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
-
-      <div className="flex gap-md mt-8 mb-lg">
-        <div className="w-1/2">
-          <FormControl id="category" className="w-full">
-            <FormLabel>Kundidentitet</FormLabel>
-            <Select
-              {...register('customerId')}
-              data-cy="customerId-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues('customerId')}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('customerId', e.target.value);
-                trigger('customerId');
-              }}
-            >
-              {customerIdentities.map((identity) => (
-                <Select.Option key={identity.customerId} value={identity.customerId}>
-                  {identity.customerName}
-                </Select.Option>
-              ))}
-            </Select>
-            {errors.customerId && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.customerId?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="w-1/2">
-          <FormControl id="category" className="w-full">
-            <FormLabel>Aktivitet</FormLabel>
-            <Select
-              {...register('activity')}
-              data-cy="activity-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues('activity')}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('activity', e.target.value);
-                trigger('activity');
-              }}
-            >
-              {invoiceActivities.map((activity) => (
-                <Select.Option key={activity.id} value={activity.value}>
-                  {activity.displayName}
-                </Select.Option>
-              ))}
-            </Select>
-            {errors.activity && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.activity?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
-
       <Divider />
 
-      <div className="my-lg gap-xl">
-        <FormControl>
-          <FormLabel>Faktureringstyp</FormLabel>
-
-          <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
-            <div className="flex justify-between flex-wrap w-full">
-              {invoiceTypes.map((invoiceType) => (
-                <div className="w-1/2" key={invoiceType.key}>
-                  <RadioButton
-                    data-cy={`invoice-type-${invoiceType}`}
-                    className="mr-lg mb-sm whitespace-nowrap"
-                    name={invoiceType.key}
-                    id={invoiceType.key}
-                    value={invoiceType.displayName}
-                    {...register('type')}
-                    checked={getValues().type === invoiceType.displayName}
-                  >
-                    {invoiceType.displayName}
-                  </RadioButton>
-                </div>
-              ))}
-            </div>
-          </RadioButton.Group>
-        </FormControl>
-      </div>
-
-      <div className="flex gap-md mt-16">
-        <div className="my-sm w-1/2">
-          <FormControl id="quantity" className="w-full">
-            <FormLabel>Antal timmar</FormLabel>
-            <Input
-              {...register('quantity')}
-              data-cy="quantity-input"
-              className="w-full text-dark-primary"
-              type="number"
-              step={0.01}
-              size="md"
-              value={getValues().quantity}
-              onChange={(e) => {
-                setValue('quantity', e.target.value);
-                trigger('quantity');
-              }}
-            />
-            {errors.quantity && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.quantity?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="my-sm gap-xl w-1/2">
-          <FormControl id="costPerUnit" className="w-full">
-            <FormLabel>Timpris</FormLabel>
-            <Input
-              {...register('costPerUnit')}
-              data-cy="costPerUnit-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().costPerUnit}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('costPerUnit', e.target.value);
-                trigger('costPerUnit');
-              }}
-              disabled
-            />
-            {errors.costPerUnit && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.costPerUnit?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
-
-      <div className="flex gap-md mt-16 mb-lg">
-        <div className="my-sm w-1/2">
-          <FormControl id="totalAmount" className="w-full">
-            <FormLabel>Kostnad totalt</FormLabel>
-            <Input
-              {...register('totalAmount')}
-              data-cy="totalAmount-input"
-              className="w-full text-dark-primary"
-              size="md"
-              // value={getValues().totalAmount.toString()}
-              // placeholder={'0'}
-              // onChange={(e) => {
-              //   setValue('totalAmount', parseFloat(e.target.value));
-              //   trigger('totalAmount');
-              // }}
-              // disabled
-            />
-            {errors.totalAmount && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.totalAmount?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="my-sm gap-xl w-1/2">
-          <FormControl id="quantity" className="w-full">
-            <FormLabel>Utvecklingskostnad</FormLabel>
-            <Input
-              {...register('quantity')}
-              data-cy="quantity-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues('quantity')}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('quantity', e.target.value);
-                trigger('quantity');
-              }}
-              disabled
-            />
-            {errors.quantity && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.quantity?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div> */}
-
-      <Divider />
-
-      {recordFormModel.status === 'NONE' ? (
+      {selectedRecord.status === CBillingRecordStatusEnum.NEW ? (
         <div className="flex justify-between gap-16 w-full my-lg">
           <div>
-            <Button variant="secondary" onClick={send}>
+            <Button variant="secondary" onClick={handleSubmit(onSubmit, onError)}>
               Spara
             </Button>
           </div>
           <div className="justify-end">
-            <Button variant="primary" color="error" className="mr-16">
+            <Button
+              variant="primary"
+              color="error"
+              className="mr-16"
+              onClick={() =>
+                rejectBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
+              }
+            >
               Avslå
             </Button>
-            <Button variant="primary" color="gronsta">
+            <Button
+              variant="primary"
+              color="gronsta"
+              onClick={() =>
+                approveBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
+              }
+            >
               Godkänn
             </Button>
           </div>
         </div>
-      ) : recordFormModel.status === 'APPROVED' ? (
+      ) : selectedRecord.status === CBillingRecordStatusEnum.APPROVED ? (
         showChangeDecisionComponent ? (
           <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
         ) : (
@@ -507,7 +222,27 @@ export const AttestationInvoiceForm: React.FC<{
             </div>
             <span className="flex justify-end my-md">
               <span className="text-small">
-                <b>Attesterad av:</b> {selectedrecord.approvedBy}, {prettyTime(selectedrecord.approved)}
+                <b>Attesterad av:</b> {selectedRecord.approvedBy}, {prettyTime(selectedRecord.approved)}
+              </span>
+            </span>
+          </div>
+        )
+      ) : selectedRecord.status === CBillingRecordStatusEnum.REJECTED ? (
+        showChangeDecisionComponent ? (
+          <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
+        ) : (
+          <div>
+            <div className="pt-16 gap-md flex justify-end">
+              <Button inverted variant="primary" color="error">
+                <LucideIcon name="thumbs-down" /> Avslag
+              </Button>
+              <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
+                Ändra beslut
+              </Button>
+            </div>
+            <span className="flex justify-end my-md">
+              <span className="text-small">
+                <b>Attesterad av:</b> {selectedRecord.approvedBy}, {prettyTime(selectedRecord.approved)}
               </span>
             </span>
           </div>
@@ -517,8 +252,8 @@ export const AttestationInvoiceForm: React.FC<{
       ) : (
         <div>
           <div className="pt-16 gap-md flex justify-end">
-            <Button inverted variant="primary" color="error">
-              <LucideIcon name="thumbs-down" /> Avslag
+            <Button inverted variant="primary" color="vattjom">
+              <LucideIcon name="check" /> Fakturerad
             </Button>
             <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
               Ändra beslut
@@ -526,7 +261,7 @@ export const AttestationInvoiceForm: React.FC<{
           </div>
           <span className="flex justify-end my-md">
             <span className="text-small">
-              <b>Attesterad av:</b> {selectedrecord.approvedBy}, {prettyTime(selectedrecord.approved)}
+              <b>Attesterad av:</b> {selectedRecord.approvedBy}, {prettyTime(selectedRecord.approved)}
             </span>
           </span>
         </div>

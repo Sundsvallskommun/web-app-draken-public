@@ -7,28 +7,29 @@ import {
   CBillingRecord,
   CBillingRecordStatusEnum,
   CBillingRecordTypeEnum,
+  CExternalTag,
   CPageBillingRecord,
+  SupportErrandDto,
 } from 'src/data-contracts/backend/data-contracts';
+import { SupportErrand } from './support-errand-service';
+import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+import { twoDecimals } from '@common/services/helper-service';
+import * as yup from 'yup';
+import { User } from '@common/interfaces/user';
+import { All } from '@casedata/interfaces/priority';
 
-export interface InvoiceFormModel {
-  id: string;
-  errandId: string;
-  manager: string;
-  referenceNumber: string;
-  customerId: string;
-  activity: string;
-  type: string;
-  quantity: string;
-  costPerUnit: string;
-  totalAmount: string;
-  // registeredAt: string;
-  registeredBy: string;
-  // modified: string;
-  // approved: string;
-  approvedBy: string;
-  status: string;
-}
-
+export const attestationLabels = [
+  { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Timmar', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Belopp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Chef', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärende', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Attesterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+];
 export interface CustomerIdentity {
   orgId: string;
   treeLevel: number;
@@ -77,17 +78,60 @@ export const billingrecordStatusToLabel = (status: string) => {
   }
 };
 
+export const billingFormSchema = yup.object({
+  id: yup.string(),
+  type: yup.string().required('Fyll i faktureringstyp'),
+  invoice: yup.object({
+    customerId: yup.string().required('Fyll i kundidentitet'),
+    customerReference: yup.string().required('Fyll i referensnummer'),
+    invoiceRows: yup.array().of(
+      yup.object({
+        quantity: yup
+          .number()
+          .test('isnumber', 'Ange i format 1.23', (q) => {
+            return /^\d*\.?\d{0,2}$/g.test(q.toString());
+          })
+          .test('positivt', 'Måste vara 0 eller större', (q) => q > 0)
+          .required('Fyll i antal timmar'),
+        costPerUnit: yup.string().required('Fyll i timpris'),
+        totalAmount: yup.string().nullable(),
+        accountInformation: yup.object({
+          activity: yup
+            .mixed<string>()
+            .required('Välj aktivitet')
+            .oneOf(
+              invoiceActivities.map((a) => a.value),
+              'Välj aktivitet'
+            ),
+        }),
+      })
+    ),
+  }),
+  totalAmount: yup.string().nullable(),
+  registeredBy: yup.string(),
+  approvedBy: yup.string(),
+  status: yup.string(),
+});
+
 export const emptyBillingRecord: CBillingRecord = {
   category: 'SALARY_AND_PENSION',
   type: CBillingRecordTypeEnum.INTERNAL,
   status: CBillingRecordStatusEnum.NEW,
   invoice: {
+    referenceId: '',
     customerId: '',
     description: invoiceTypes[0].displayName,
     invoiceRows: [
       {
-        descriptions: ['Fakturarad'],
-        detailedDescriptions: ['foo', 'bar', 'baz'],
+        accountInformation: {
+          activity: '',
+          costCenter: '',
+          subaccount: '',
+          department: '',
+          counterpart: '',
+        },
+        descriptions: [''],
+        detailedDescriptions: [''],
         quantity: 1,
         costPerUnit: 300,
         totalAmount: 300,
@@ -97,64 +141,103 @@ export const emptyBillingRecord: CBillingRecord = {
   },
 };
 
-// TODO Endpoint
-export const saveInvoice: (errandId: string, municipalityId: string, data: CBillingRecord) => Promise<boolean> = (
-  errandId,
-  municipalityId,
-  data
-) => {
-  console.log('saveInvoice', data);
-  return Promise.resolve(true);
-  // return apiService
-  //   .patch<boolean, Partial<Invoice>>('', data)
-  //   .then((res) => {
-  //     return true;
-  //   })
-  //   .catch((e) => {
-  //     console.error('Something went wrong when updating invoice');
-  //     throw e;
-  //   });
+const satisfyApi = (data: CBillingRecord) => {
+  delete data.id;
+  delete data.created;
+  delete data.modified;
+  delete data.approved;
+  data.invoice.totalAmount = null;
+  data.invoice.invoiceRows.forEach((row) => {
+    row.totalAmount = null;
+    row.accountInformation = data.invoice.invoiceRows?.[0]?.accountInformation;
+    row.detailedDescriptions = row.detailedDescriptions.filter((d) => d !== '');
+    // Convert strings to numbers
+    row.quantity = twoDecimals(parseFloat(row.quantity.toString()));
+    row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit.toString()));
+  });
+  // TODO Satisfy API during development..
+  data.category = 'ISYCASE';
+  return data;
 };
 
-export const recordToFormModel: (record?: CBillingRecord) => InvoiceFormModel = (record) => {
-  if (!record) {
-    return {
-      id: '',
-      errandId: '',
-      manager: '',
-      referenceNumber: '',
-      customerId: '',
-      activity: '',
-      type: '',
-      quantity: '0',
-      costPerUnit: '0',
-      totalAmount: '0',
-      // registeredAt: '',
-      registeredBy: '',
-      // modified: '',
-      // approved: '',
-      approvedBy: '',
-      status: '',
-    };
-  }
-  return {
-    id: record.id || '',
-    errandId: '<ERRAND_ID_OR_REFERENCE>',
-    manager: '<ERRAND_MANAGER>',
-    referenceNumber: record?.invoice?.customerReference || '',
-    customerId: '<CUSTOMER_ID>',
-    activity: record?.invoice?.invoiceRows[0]?.accountInformation.activity,
-    type: record?.invoice?.description,
-    quantity: record?.invoice?.invoiceRows[0]?.quantity.toString() || '0',
-    costPerUnit: record?.invoice?.invoiceRows[0]?.costPerUnit.toString() || '0',
-    totalAmount: record?.invoice?.totalAmount.toString() || '0',
-    // registeredAt: record.created || '',
-    registeredBy: 'data.registeredBy',
-    // modified: record.modified || '',
-    // approved: record.approved || '',
-    approvedBy: record.approvedBy || '',
-    status: record.status,
+export const approveBillingRecord: (municipalityId: string, record: CBillingRecord, user: User) => Promise<boolean> = (
+  municipalityId,
+  record,
+  user
+) => setBillingRecordStatus(municipalityId, record, CBillingRecordStatusEnum.APPROVED, user);
+
+export const rejectBillingRecord: (municipalityId: string, record: CBillingRecord, user: User) => Promise<boolean> = (
+  municipalityId,
+  record,
+  user
+) => setBillingRecordStatus(municipalityId, record, CBillingRecordStatusEnum.REJECTED, user);
+
+export const setBillingRecordStatus: (
+  municipalityId: string,
+  record: CBillingRecord,
+  status: CBillingRecordStatusEnum,
+  user: User
+) => Promise<boolean> = (municipalityId, record, status, user) => {
+  const url = `billing/${municipalityId}/billingrecords/${record.id}`;
+  let data: CBillingRecord = {
+    ...record,
+    ...(status === CBillingRecordStatusEnum.APPROVED && { approvedBy: `${user.firstName} ${user.lastName}` }),
+    status,
   };
+  data = satisfyApi(data);
+  return apiService
+    .put<CBillingRecord, CBillingRecord>(url, data)
+    .then((res) => {
+      return true;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when updating invoice');
+      throw e;
+    });
+};
+
+export const saveBillingRecord: (
+  errand: SupportErrand,
+  municipalityId: string,
+  record: CBillingRecord
+) => Promise<boolean> = (errand, municipalityId, record) => {
+  const url = `billing/${municipalityId}/billingrecords${record.id ? `/${record.id}` : ''}`;
+  const action = record.id ? apiService.put : apiService.post;
+  let data = satisfyApi(record);
+  console.log('Saving data:', data);
+  return action<CBillingRecord, CBillingRecord>(url, data)
+    .then((res) => {
+      return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when updating invoice');
+      throw e;
+    });
+};
+
+const saveBillingRecordReferenceToErrand: (
+  errand: SupportErrand,
+  municipalityId: string,
+  billingRecordId: string
+) => Promise<boolean> = (errand, municipalityId, billingRecordId) => {
+  const url = `supporterrands/${municipalityId}/${errand.id}`;
+  const tags: CExternalTag[] = errand.externalTags || [];
+  const existingTag = tags.find((t) => t.key === 'billingRecordId');
+  if (existingTag) {
+    existingTag.value = billingRecordId;
+  } else {
+    tags.push({ key: 'billingRecordId', value: billingRecordId });
+  }
+
+  return apiService
+    .patch<boolean, Partial<SupportErrandDto>>(url, { externalTags: tags })
+    .then((res) => {
+      return true;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when updating errand with billing record id');
+      throw e;
+    });
 };
 
 const parseInvoiceAdministrationInfo: (orgTree: string) => {
