@@ -1,7 +1,8 @@
-import { BillingRecord, PageBillingRecord } from '@/data-contracts/billingpreprocessor/data-contracts';
+import { BillingRecord, PageBillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { CBillingRecord, CPageBillingRecord } from '@/interfaces/billing-interface';
 import authMiddleware from '@/middlewares/auth.middleware';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
@@ -11,6 +12,7 @@ import { Body, Controller, Get, Param, Post, Put, QueryParam, Req, Res, UseBefor
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 @Controller()
+@UseBefore(hasPermissions(['canEditSupportManagement']))
 export class BillingController {
   private apiService = new ApiService();
   private SERVICE = `billingpreprocessor/2.1`;
@@ -68,7 +70,8 @@ export class BillingController {
       filterList.push(`created<'${e}'`);
     }
 
-    // TODO CHANGE WHEN API IS FIXED
+    // TODO CHANGE WHEN API IS FIXED, SHOULD BE:
+    // const defaultFilter = "&filter=type:'INTERNAL' and category:'SALARY_AND_PENSION'";
     const defaultFilter = "&filter=type:'INTERNAL' and category:'ISYCASE'";
 
     const filter = filterList.length > 0 ? `${defaultFilter} and ${filterList.join(' and ')}` : defaultFilter;
@@ -77,7 +80,6 @@ export class BillingController {
     if (sort) {
       url += `&sort=${sort}`;
     }
-    console.log('URL2:', url);
     const res = await this.apiService.get<CPageBillingRecord>({ url }, req.user);
     return response.status(200).send(res.data);
   }
@@ -117,6 +119,26 @@ export class BillingController {
   @ResponseSchema(CBillingRecord)
   @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'))
   async updateBillingRecord(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+    @Body() data: CBillingRecord,
+    @Res() response: any,
+  ): Promise<BillingRecord> {
+    if (data.status !== Status.NEW) {
+      return response.status(403).send('Error: user is not allowed to change status of billing record');
+    }
+    const url = `${municipalityId}/billingrecords/${id}`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);
+    return response.status(200).send(res.data);
+  }
+
+  @Put('/billing/:municipalityId/billingrecords/:id/status')
+  @OpenAPI({ summary: 'Set billing record status' })
+  @ResponseSchema(CBillingRecord)
+  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'), hasPermissions(['canEditAttestations']))
+  async setBillingRecordStatus(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Param('id') id: string,
