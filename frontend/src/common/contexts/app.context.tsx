@@ -68,10 +68,10 @@ export interface AppContextInterface {
   supportAdmins;
   setSupportAdmins: (admins: SupportAdmin[]) => void;
 
-  stakeholderContacts;
+  stakeholderContacts: SupportStakeholderFormModel[];
   setStakeholderContacts: (stakeholderContacts: SupportStakeholderFormModel[]) => void;
 
-  stakeholderCustomers;
+  stakeholderCustomers: SupportStakeholderFormModel[];
   setStakeholderCustomers: (stakeholderCustomers: SupportStakeholderFormModel[]) => void;
 
   notifications: (SupportNotification | CaseDataNotification)[];

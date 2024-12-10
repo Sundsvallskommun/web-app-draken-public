@@ -35,6 +35,7 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
+import { get } from 'cypress/types/lodash';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -109,6 +110,7 @@ export const SidebarInfo: React.FC<{
   const onSubmit = () => {
     setError(false);
     setIsLoading(true);
+    console.log('formdata', getValues());
 
     const municipalityId = defaultSupportErrandInformation.municipalityId;
 
