@@ -88,7 +88,8 @@ export const billingFormSchema = yup.object({
       yup.object({
         quantity: yup
           .number()
-          .test('isnumber', 'Ange i format 1.23', (q) => {
+          .typeError('Ange i format 1,23')
+          .test('isnumber', 'Ange i format 1,23', (q) => {
             return /^\d*\.?\d{0,2}$/g.test(q.toString());
           })
           .test('positivt', 'Måste vara 0 eller större', (q) => q > 0)

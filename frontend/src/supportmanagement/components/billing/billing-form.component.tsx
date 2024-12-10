@@ -36,8 +36,8 @@ export const BillingForm = ({ recipientName }) => {
       append({
         descriptions: ['Utvecklingskostnad 2%'],
         quantity: 1,
-        costPerUnit: twoDecimals(getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02),
-        totalAmount: twoDecimals(getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02),
+        costPerUnit: twoDecimals(getValues(`invoice.invoiceRows.${0}.totalAmount`) * 0.02),
+        totalAmount: twoDecimals(getValues(`invoice.invoiceRows.${0}.totalAmount`) * 0.02),
         accountInformation: {
           activity: getValues().invoice.invoiceRows[0].accountInformation.activity,
           project: '11041',
@@ -57,11 +57,8 @@ export const BillingForm = ({ recipientName }) => {
     setValue(`invoice.invoiceRows.${0}.totalAmount`, twoDecimals(newTotal));
     setDevelopmentCost(twoDecimals(newTotal * 0.02));
     if (fields.length > 1) {
-      setValue(
-        `invoice.invoiceRows.${1}.costPerUnit`,
-        twoDecimals(getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02)
-      );
-      setValue(`invoice.invoiceRows.${1}.totalAmount`, getValues(`invoice.invoiceRows.${0}.costPerUnit`) * 0.02);
+      setValue(`invoice.invoiceRows.${1}.costPerUnit`, twoDecimals(newTotal * 0.02));
+      setValue(`invoice.invoiceRows.${1}.totalAmount`, twoDecimals(newTotal * 0.02));
       setValue(
         `invoice.invoiceRows.${1}.accountInformation.activity`,
         getValues().invoice.invoiceRows[0].accountInformation.activity
