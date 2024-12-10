@@ -30,14 +30,18 @@ export const BillingForm = ({ recipientName }) => {
     control,
     name: 'invoice.invoiceRows',
   });
+  
+  const quantity = watch('invoice.invoiceRows.0.quantity');
+  const activity = watch('invoice.invoiceRows.0.accountInformation.activity');
+  const totalAmount = watch('invoice.invoiceRows.0.totalAmount');
 
   const handleDevelopmentCost = (checked) => {
     if (checked) {
       append({
         descriptions: ['Utvecklingskostnad 2%'],
         quantity: 1,
-        costPerUnit: twoDecimals(getValues(`invoice.invoiceRows.${0}.totalAmount`) * 0.02),
-        totalAmount: twoDecimals(getValues(`invoice.invoiceRows.${0}.totalAmount`) * 0.02),
+        costPerUnit: twoDecimals(totalAmount * 0.02),
+        totalAmount: twoDecimals(totalAmount * 0.02),
         accountInformation: {
           activity: getValues().invoice.invoiceRows[0].accountInformation.activity,
           project: '11041',
@@ -48,9 +52,6 @@ export const BillingForm = ({ recipientName }) => {
     }
     setDevelopment(checked);
   };
-
-  const quantity = watch('invoice.invoiceRows.0.quantity');
-  const activity = watch('invoice.invoiceRows.0.accountInformation.activity');
 
   useEffect(() => {
     const newTotal = getValues(`invoice.invoiceRows.${0}.quantity`) * getValues(`invoice.invoiceRows.${0}.costPerUnit`);
