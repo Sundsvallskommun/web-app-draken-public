@@ -115,21 +115,23 @@ export const billingFormSchema = yup.object({
 });
 
 export const emptyBillingRecord: CBillingRecord = {
-  category: 'SALARY_AND_PENSION',
+  // TODO Change when API is fixed to accept SALARY_AND_PENSION
+  // category: 'SALARY_AND_PENSION',
+  category: 'ISYCASE',
   type: CBillingRecordTypeEnum.INTERNAL,
   status: CBillingRecordStatusEnum.NEW,
   invoice: {
-    referenceId: '',
+    referenceId: 'foobar',
     customerId: '',
     description: invoiceTypes[0].displayName,
     invoiceRows: [
       {
         accountInformation: {
           activity: '',
-          costCenter: '',
-          subaccount: '',
-          department: '',
-          counterpart: '',
+          costCenter: 'foobar',
+          subaccount: 'foobar',
+          department: 'foobar',
+          counterpart: 'foobar',
         },
         descriptions: [''],
         detailedDescriptions: [''],
@@ -179,7 +181,7 @@ export const setBillingRecordStatus: (
   status: CBillingRecordStatusEnum,
   user: User
 ) => Promise<boolean> = (municipalityId, record, status, user) => {
-  const url = `billing/${municipalityId}/billingrecords/${record.id}`;
+  const url = `billing/${municipalityId}/billingrecords/${record.id}/status`;
   let data: CBillingRecord = {
     ...record,
     ...(status === CBillingRecordStatusEnum.APPROVED && { approvedBy: `${user.firstName} ${user.lastName}` }),
@@ -192,7 +194,7 @@ export const setBillingRecordStatus: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when updating invoice');
+      console.error('Something went wrong when updating billing record status');
       throw e;
     });
 };

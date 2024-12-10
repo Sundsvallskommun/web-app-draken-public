@@ -75,16 +75,16 @@ export const SupportErrandInvoiceTab: React.FC<{
       getBillingRecord(existingRecordId, municipalityId).then((rec) => {
         setRecord(rec);
         reset(rec);
-        setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: LoP-${supportErrand.errandNumber}`);
-        setValue(`extraParameters`, {
-          errandNumber: supportErrand.errandNumber,
-          errandId: supportErrand.id,
-          referenceName: `${manager?.firstName} ${manager?.lastName}`,
-        });
       });
     } else {
       setRecord(emptyBillingRecord);
     }
+    setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: LoP-${supportErrand.errandNumber}`);
+    setValue(`extraParameters`, {
+      errandNumber: supportErrand.errandNumber,
+      errandId: supportErrand.id,
+      referenceName: `${manager?.firstName} ${manager?.lastName}`,
+    });
   }, [supportErrand]);
 
   const formControls = useForm<CBillingRecord>({
