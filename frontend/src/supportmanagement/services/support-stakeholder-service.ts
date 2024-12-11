@@ -32,8 +32,8 @@ export const applicantContactChannel = (errand: SupportErrand) => {
   }
 
   const contactChannel =
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL) ||
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE);
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL || c.type ===  ContactChannelType.Email) ||
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone);
 
   if (!contactChannel) {
     return { contactMeans: ContactChannelType.EMAIL, values: [] };
@@ -85,8 +85,8 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: SupportStakehold
       careOf: c.careOf,
       country: 'SVERIGE',
       contactChannels: [
-        ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
-        ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
+        ...c.emails.map((e) => ({ type: ContactChannelType.EMAIL, value: e.value })),
+        ...c.phoneNumbers.map((e) => ({ type: ContactChannelType.PHONE, value: trimPhoneNumber(e.value) })),
       ],
       parameters,
     };

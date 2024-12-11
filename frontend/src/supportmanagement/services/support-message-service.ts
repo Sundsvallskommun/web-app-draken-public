@@ -60,16 +60,16 @@ export const sendClosingMessage = (
       Channels[supportErrand.channel] === Channels.ESERVICE ||
       Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
         ? 'webmessage'
-        : contactChannels.contactMeans === ContactChannelType.EMAIL
+        : contactChannels.contactMeans === ContactChannelType.EMAIL || contactChannels.contactMeans === ContactChannelType.Email
         ? 'email'
         : 'sms',
     emails:
-      contactChannels.contactMeans === ContactChannelType.EMAIL
+      contactChannels.contactMeans === ContactChannelType.EMAIL || contactChannels.contactMeans === ContactChannelType.Email
         ? contactChannels.values.map((v) => ({ value: v.value }))
         : [],
     recipientEmail: '',
     phoneNumbers:
-      contactChannels.contactMeans === ContactChannelType.PHONE
+      contactChannels.contactMeans === ContactChannelType.PHONE || contactChannels.contactMeans === ContactChannelType.Phone
         ? contactChannels.values.map((v) => ({ value: v.value }))
         : [],
     plaintextMessage: plaintextMessageBody,

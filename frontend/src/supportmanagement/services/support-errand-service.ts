@@ -41,9 +41,13 @@ export enum SupportStakeholderRole {
   USER = 'USER',
 }
 
+// Keeping both enums for now, as the backend uses the uppercase version
+// but existing stakeholders use the lowercase version
 export enum ContactChannelType {
-  EMAIL = 'Email',
-  PHONE = 'Phone',
+  Email = 'Email',
+  EMAIL = 'EMAIL',
+  Phone = 'Phone',
+  PHONE = 'PHONE',
 }
 
 export enum Relation {
@@ -474,7 +478,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedUserId: undefined,
   assignedGroupId: undefined,
   resolution: 'INFORMED',
-  channel: 'PHONE',
+  channel: ContactChannelType.PHONE,
   municipalityId: '2281',
   description: '',
   messageContact: 'false',
@@ -716,10 +720,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             newRole: SupportStakeholderRole.PRIMARY,
             internalId: uuidv4(),
             emails: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.EMAIL)
+              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
               .map((c) => ({ value: c.value })),
             phoneNumbers: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.PHONE)
+              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
               .map((c) => ({ value: c.value })),
           })) || [],
       contacts:
@@ -736,10 +740,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             newRole: s.role as SupportStakeholderRole,
             internalId: uuidv4(),
             emails: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.EMAIL)
+              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
               .map((c) => ({ value: c.value })),
             phoneNumbers: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.PHONE)
+              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
               .map((c) => ({ value: c.value })),
           })) || [],
     };
@@ -1102,10 +1106,10 @@ export const forwardSupportErrand: (
         throw new Error('MISSING_NAME');
       }
       // TODO Check for email and phone?
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE)) {
+      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)) {
       //   throw new Error('MISSING_PHONE');
       // }
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL)) {
+      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)) {
       //   throw new Error('MISSING_EMAIL');
       // }
     });
