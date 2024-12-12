@@ -5,8 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
@@ -18,6 +16,7 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
+import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export interface Customer {
   id: string;
@@ -51,7 +50,7 @@ export enum ContactChannelType {
 }
 
 export enum Relation {
-  PERSON = 'PERSON',
+  // PERSON = 'Person',
   PRIMARY = 'Ärendeägare',
   CONTACT = 'Övrig part',
   APPROVER = 'Godkännande chef',
@@ -73,33 +72,6 @@ export enum SupportStakeholderTypeEnum {
 
 // Define a type based on the enum values
 export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
-
-export interface SupportStakeholder {
-  stakeholderType: SupportStakeholderType;
-  organizationNumber?: string;
-  organizationName?: string;
-  personId?: string;
-  relation?: string;
-  // Lines above are placeholders so that the form component works
-  // and is future proofed.
-  personNumber?: string;
-  internalId?: string;
-  externalId?: string;
-  externalIdType?: string;
-  role?: string;
-  firstName?: string;
-  lastName?: string;
-  address?: string;
-  city?: string;
-  careOf?: string;
-  zipCode?: string;
-  country?: string;
-  contactChannels?: {
-    type: string;
-    value: string;
-  }[];
-  parameters?: { key: string; values: string[]; displayName?: string }[];
-}
 
 export type ExternalTags = Array<{ key: string; value: string }>;
 export interface SupportErrandDto {
@@ -429,7 +401,11 @@ export const attestationLabels = [
 ];
 
 export interface SupportStakeholderFormModel extends SupportStakeholder {
-  newRole: SupportStakeholderRole;
+  stakeholderType: SupportStakeholderType;
+  internalId: string;
+  organizationNumber?: string;
+  personId?: string;
+  personNumber?: string;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
   username?: string;
@@ -438,7 +414,6 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
-  newRole: SupportStakeholderRole.CONTACT,
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',

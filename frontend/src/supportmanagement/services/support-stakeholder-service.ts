@@ -3,11 +3,11 @@ import { SupportAdmin } from './support-admin-service';
 import {
   ContactChannelType,
   SupportErrand,
-  SupportStakeholder,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
+import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export const getAdminName = (a: SupportAdmin, r: SupportErrand) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;
@@ -72,7 +72,6 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: SupportStakehold
       parameters.push({ key: 'administrationName', values: [c.administrationName], displayName: 'Förvaltningsnamn' });
     }
     const stakeholder: SupportStakeholder = {
-      stakeholderType: mapExternalIdTypeToStakeholderType(c),
       externalId: c.externalId || c.organizationNumber,
       externalIdType: c.externalIdType,
       role,
@@ -105,7 +104,7 @@ export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormMod
     }
   }
   data.contacts?.forEach((c) => {
-    const stakeholder = buildStakeholder(c, SupportStakeholderRole.CONTACT);
+    const stakeholder = buildStakeholder(c, c.role as SupportStakeholderRole);
     if (stakeholder) {
       stakeholders.push(stakeholder);
     }

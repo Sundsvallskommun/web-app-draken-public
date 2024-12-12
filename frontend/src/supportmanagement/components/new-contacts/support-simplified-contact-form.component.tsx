@@ -41,6 +41,7 @@ import {
 import {
   emptyContact,
   ExternalIdType,
+  Relation,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   SupportStakeholderTypeEnum,
@@ -53,6 +54,7 @@ import { AppContextInterface, useAppContext } from '@contexts/app.context';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
+  allowRelation?: boolean;
   contact: SupportStakeholderFormModel;
   editing: boolean;
   setUnsaved: (unsaved: boolean) => void;
@@ -64,6 +66,7 @@ export const SupportSimplifiedContactForm: React.FC<{
 }> = (props) => {
   const {
     allowOrganization = false,
+    allowRelation = false,
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
@@ -246,7 +249,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     if (!contact.internalId) {
       setValue(`stakeholderType`, contact.stakeholderType);
     }
-    setValue(`newRole`, contact.role as SupportStakeholderRole);
   }, []);
 
   const validEmailOrPhonenumberExists = () =>
@@ -905,6 +907,45 @@ export const SupportSimplifiedContactForm: React.FC<{
                       </div>
                     )}
                   </FormControl>
+                  {allowRelation ? (
+                    <FormControl id={`contact-relation`} size="sm" className="w-1/2">
+                      <FormLabel>Roll</FormLabel>
+                      <Select
+                        data-cy={`role-select`}
+                        disabled={props.disabled}
+                        {...register(`role`)}
+                        className={cx(formState.errors.role ? 'border-2 border-error' : null, 'w-full')}
+                      >
+                        <Select.Option key="" value="">
+                          Välj roll
+                        </Select.Option>
+                        {Object.entries(Relation)
+                          .filter(
+                            ([key]) =>
+                              !(
+                                contact.role === SupportStakeholderRole.CONTACT &&
+                                [Relation.PRIMARY].includes(Relation[key])
+                              )
+                          )
+                          .sort((a, b) => (a[1] > b[1] ? 1 : -1))
+                          .map(([key, relation]) => {
+                            return (
+                              <Select.Option key={key} value={key}>
+                                {relation}
+                              </Select.Option>
+                            );
+                          })}
+                      </Select>
+
+                      {errors && formState.errors.role && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>{formState.errors.role?.message}</FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  ) : (
+                    <div className="w-1/2"></div>
+                  )}
                 </div>
                 <div className="flex gap-lg">
                   <FormControl id={`firstName`} className="w-1/2">
