@@ -1,10 +1,11 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { isLOP } from '@common/services/application-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
+import { v4 as uuidv4 } from 'uuid';
 import { SingleSupportAttachment, SupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -46,12 +47,34 @@ export const sendClosingMessage = (
   municipalityId: string
 ) => {
   const contactChannels = applicantContactChannel(supportErrand);
-  const messageBody = `
-  Hej,<br><br>Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>Servicecenter Lön och pension<br>Sundsvalls kommun<br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9:00-12:00<br>`;
-  const plaintextMessageBody = messageBody.replace(
+  const messageBody = isLOP()
+    ? `Hej,<br><br>
+    
+    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
+    
+    Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>
+    Servicecenter Lön och pension<br>
+    Sundsvalls kommun<br>
+    <a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>
+    060-19 26 00, telefontid 9:00-12:00<br>`
+    : `Hej,<br><br>
+    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
+
+    Med vänliga hälsningar<br>
+    Intern Kundtjänst<br>
+    <a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a><br>
+    060-191565<br>`;
+
+  let plaintextMessageBody = messageBody.replace(
     '<a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a>',
     'lonochpension@sundsvall.se'
   );
+
+  plaintextMessageBody = messageBody.replace(
+    '<a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a>',
+    'internkundtjanst@sundsvall.se'
+  );
+
   return sendMessage({
     municipalityId: municipalityId,
     errandId: supportErrand.id,
