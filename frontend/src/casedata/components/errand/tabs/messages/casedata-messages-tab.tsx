@@ -1,16 +1,16 @@
+import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
+import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, Icon, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Divider, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
-import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -241,21 +241,23 @@ export const CasedataMessagesTab: React.FC<{
                       <Button
                         key={`${a.name}-${idx}`}
                         onClick={() => {
-                          console.log('Fetch: ', a);
                           messageAttachment(municipalityId, errand.id, a.attachmentId)
                             .then((res) => {
-                              console.log('res: ', res.data.toString());
-                              // const uri = `data:${a.contentType};base64,${test}`;
-                              // const link = document.createElement('a');
-                              // const filename = a.name;
-                              // link.href = uri;
-                              // link.setAttribute('download', filename);
-                              // document.body.appendChild(link);
-                              // link.click();
+                              const uri = `data:${a.contentType};base64,${res.data}`;
+                              const link = document.createElement('a');
+                              const filename = a.name;
+                              link.href = uri;
+                              link.setAttribute('download', filename);
+                              document.body.appendChild(link);
+                              link.click();
                             })
                             .catch((error) => {
-                              console.log('ERROR');
-                              console.log(error);
+                              toastMessage({
+                                position: 'bottom',
+                                closeable: false,
+                                message: 'Något gick fel när bilagan skulle hämtas',
+                                status: 'error',
+                              });
                             });
                         }}
                         role="listitem"

@@ -164,8 +164,8 @@ export class CaseDataAttachmentController {
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
   }
 
-  @Get('/casedata/:municipalityId/attachments/:attachmentId/errand/:errandId')
-  @OpenAPI({ summary: 'Return attachment for a message by errand id' })
+  @Get('/casedata/:municipalityId/attachments/:attachmentId/errand/:errandId/streamed')
+  @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
   @UseBefore(authMiddleware)
   async messageAttachments(
     @Req() req: RequestWithUser,
@@ -183,17 +183,15 @@ export class CaseDataAttachmentController {
 
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messageattachments/${attachmentId}/streamed`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<[]>({ url, baseURL }, req.user).catch(e => {
-      if (e.status === 404) {
-        logger.error('Attachments not found (404) so returning empty list instead');
-        return { data: [] };
-      } else {
-        logger.error('Error response when fetching attachments: ', e);
-        throw e;
-      }
+    const res = await this.apiService.get<ArrayBuffer>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
+      logger.error('Something went wrong when deleting attachment');
+      logger.error(e);
+      throw e;
     });
 
-    console.log('res: ', res);
-    return { data: res.data, message: 'success' } as ResponseData;
+    const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
+    const b64 = Buffer.from(binaryString, 'binary').toString('base64');
+
+    return { data: b64, message: 'good' };
   }
 }
