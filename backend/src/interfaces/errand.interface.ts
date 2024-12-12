@@ -75,6 +75,12 @@ export class CreateErrandDto implements ErrandDTO {
   @IsArray()
   @IsOptional()
   extraParameters?: ExtraParameter[];
+  @IsOptional()
+  @IsObject()
+  suspension?: {
+    suspendedFrom?: string;
+    suspendedTo?: string;
+  };
 }
 
 export class CPatchErrandDto implements IPatchErrandDTO {
@@ -125,4 +131,10 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   @IsArray()
   @IsOptional()
   extraParameters?: ExtraParameter[];
+  @IsOptional()
+  @IsObject()
+  suspension?: {
+    suspendedFrom?: string;
+    suspendedTo?: string;
+  };
 }

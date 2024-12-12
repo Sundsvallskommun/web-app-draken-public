@@ -35,6 +35,14 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
     ...(errandData.endDate && { endDate: errandData.endDate }),
     ...(errandData.diaryNumber && { diaryNumber: errandData.diaryNumber }),
     ...(errandData.phase && { phase: errandData.phase }),
+    ...(errandData.suspension && errandData.suspension.suspendedFrom && errandData.suspension.suspendedTo
+      ? {
+          suspension: {
+            suspendedFrom: errandData.suspension.suspendedFrom,
+            suspendedTo: errandData.suspension.suspendedTo,
+          },
+        }
+      : {}),
     ...(errandData.status && {
       statuses: errandData.status && [
         {

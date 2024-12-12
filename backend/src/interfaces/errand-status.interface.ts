@@ -19,6 +19,7 @@ export enum ErrandStatus {
   Tilldelat = 'Tilldelat',
   HanterasIAnnatSystem = 'Hanteras i annat system',
   ArendetAvvisas = 'Ärendet avvisas',
+  Parkerad = 'Parkerad',
 }
 
 export class StatusDTO implements IStatusDTO {
