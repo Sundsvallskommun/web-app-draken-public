@@ -115,9 +115,7 @@ export const billingFormSchema = yup.object({
 });
 
 export const emptyBillingRecord: CBillingRecord = {
-  // TODO Change when API is fixed to accept SALARY_AND_PENSION
-  // category: 'SALARY_AND_PENSION',
-  category: 'ISYCASE',
+  category: 'SALARY_AND_PENSION',
   type: CBillingRecordTypeEnum.INTERNAL,
   status: CBillingRecordStatusEnum.NEW,
   invoice: {
@@ -158,8 +156,7 @@ const satisfyApi = (data: CBillingRecord) => {
     row.quantity = twoDecimals(parseFloat(row.quantity.toString()));
     row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit.toString()));
   });
-  // TODO Satisfy API during development..
-  data.category = 'ISYCASE';
+  data.category = 'SALARY_AND_PENSION';
   return data;
 };
 

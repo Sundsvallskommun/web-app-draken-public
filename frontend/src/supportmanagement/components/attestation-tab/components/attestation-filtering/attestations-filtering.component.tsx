@@ -77,7 +77,7 @@ export const AttestationsFilteringComponent: React.FC<{
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between gap-16">
+        {/* <div className="flex flex-col md:flex-row justify-between gap-16">
           <div className="flex gap-16">
             <Checkbox checked={ownerFilter} onChange={() => ownerFilterHandler(!ownerFilter)}>
               Mina ärenden
@@ -96,10 +96,10 @@ export const AttestationsFilteringComponent: React.FC<{
             label={'Skapa fakturaunderlag'}
             closeHandler={closeCreateInvoice}
           >
-            {/* TODO There is no design for this */}
+
             <></>
           </AttestationInvoiceWrapperComponent>
-        </div>
+        </div> */}
       </div>
     </>
   );

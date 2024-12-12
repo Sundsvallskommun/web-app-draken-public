@@ -70,10 +70,7 @@ export class BillingController {
       filterList.push(`created<'${e}'`);
     }
 
-    // TODO CHANGE WHEN API IS FIXED, SHOULD BE:
-    // const defaultFilter = "&filter=type:'INTERNAL' and category:'SALARY_AND_PENSION'";
-    const defaultFilter = "&filter=type:'INTERNAL' and category:'ISYCASE'";
-
+    const defaultFilter = "&filter=type:'INTERNAL' and category:'SALARY_AND_PENSION'";
     const filter = filterList.length > 0 ? `${defaultFilter} and ${filterList.join(' and ')}` : defaultFilter;
     let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 8}`;
     url += filter;

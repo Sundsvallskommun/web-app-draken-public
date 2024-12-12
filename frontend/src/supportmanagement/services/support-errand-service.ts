@@ -839,7 +839,7 @@ export const updateSupportErrand: (
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
-    externalTags: [],
+    externalTags: formdata.externalTags || [],
   };
   if (formdata.caseId) {
     data.externalTags.push({

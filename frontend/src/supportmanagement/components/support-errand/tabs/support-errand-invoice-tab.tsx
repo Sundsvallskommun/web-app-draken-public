@@ -10,7 +10,6 @@ import {
   getBillingRecord,
   getEmployeeCustomerIdentity,
   getEmployeeData,
-  invoiceActivities,
   saveBillingRecord,
 } from '@supportmanagement/services/support-billing-service';
 import {
@@ -45,46 +44,34 @@ export const SupportErrandInvoiceTab: React.FC<{
   const [recipientName, setRecipientname] = useState<string>('');
 
   useEffect(() => {
-    // setValue('errandId', supportErrand.id);
-    console.log('running callback for errand: ', supportErrand);
-    setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: LoP-${supportErrand.errandNumber}`);
-    const manager = supportErrand.stakeholders.find((s) => s.role === 'MANAGER');
-    console.log('Found manager', manager);
-    console.log('extraparams:', getValues('extraParameters'));
-    const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-    if (managerUserName) {
-      getEmployeeData(managerUserName).then((res) => {
-        setValue('invoice.customerReference', res.referenceNumber);
-      });
-      getEmployeeCustomerIdentity(managerUserName).then((res) => {
-        setValue('invoice.customerId', res.customerId);
-      });
-      // const recipient: CRecipient = {
-      //   partyId: manager?.externalId || '',
-      //   firstName: manager?.firstName || '',
-      //   lastName: manager?.lastName || '',
-      //   userId: managerUserName || '',
-      //   addressDetails: {},
-      // };
-      // setValue('recipient', recipient);
-      setRecipientname(`${manager?.firstName} ${manager?.lastName}` || '');
-    }
     const existingRecordId =
       supportErrand && supportErrand.externalTags?.find((t) => t.key === 'billingRecordId')?.value;
     if (existingRecordId) {
       getBillingRecord(existingRecordId, municipalityId).then((rec) => {
         setRecord(rec);
+        setRecipientname(rec.extraParameters['referenceName'] || '');
         reset(rec);
       });
     } else {
       setRecord(emptyBillingRecord);
+      setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: LoP-${supportErrand.errandNumber}`);
+      const manager = supportErrand.stakeholders.find((s) => s.role === 'MANAGER');
+      const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+      if (managerUserName) {
+        getEmployeeData(managerUserName).then((res) => {
+          setValue('invoice.customerReference', res.referenceNumber);
+        });
+        getEmployeeCustomerIdentity(managerUserName).then((res) => {
+          setValue('invoice.customerId', res.customerId);
+        });
+        setRecipientname(`${manager?.firstName} ${manager?.lastName}` || '');
+        setValue(`extraParameters`, {
+          errandNumber: supportErrand.errandNumber,
+          errandId: supportErrand.id,
+          referenceName: `${manager?.firstName} ${manager?.lastName}`,
+        });
+      }
     }
-    setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: LoP-${supportErrand.errandNumber}`);
-    setValue(`extraParameters`, {
-      errandNumber: supportErrand.errandNumber,
-      errandId: supportErrand.id,
-      referenceName: `${manager?.firstName} ${manager?.lastName}`,
-    });
   }, [supportErrand]);
 
   const formControls = useForm<CBillingRecord>({
@@ -113,10 +100,7 @@ export const SupportErrandInvoiceTab: React.FC<{
     setAllowed(_a);
   }, [user, supportErrand]);
 
-  const onError = () => {
-    console.log('getValues()', getValues());
-    console.log('errors', errors);
-  };
+  const onError = () => {};
 
   const onSubmit = () => {
     return saveBillingRecord(supportErrand, municipalityId, getValues())
