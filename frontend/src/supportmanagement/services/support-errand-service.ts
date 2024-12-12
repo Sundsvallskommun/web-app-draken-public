@@ -40,9 +40,13 @@ export enum SupportStakeholderRole {
   USER = 'USER',
 }
 
+// Keeping both enums for now, as the backend uses the uppercase version
+// but existing stakeholders use the lowercase version
 export enum ContactChannelType {
-  EMAIL = 'Email',
-  PHONE = 'Phone',
+  Email = 'Email',
+  EMAIL = 'EMAIL',
+  Phone = 'Phone',
+  PHONE = 'PHONE',
 }
 
 export enum Relation {
@@ -449,7 +453,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedUserId: undefined,
   assignedGroupId: undefined,
   resolution: 'INFORMED',
-  channel: 'PHONE',
+  channel: ContactChannelType.PHONE,
   municipalityId: '2281',
   description: '',
   messageContact: 'false',
@@ -680,45 +684,43 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       customer:
         e.stakeholders
           ?.filter((s) => s.role === SupportStakeholderRole.PRIMARY)
-          ?.map((s) => {
-            const stakeholder: SupportStakeholderFormModel = {
-              ...s,
-              organizationName: s.organizationName || s.firstName,
-              stakeholderType: mapExternalIdTypeToStakeholderType(s),
-              username: s.parameters?.find((p) => p.key === 'username')?.values[0],
-              administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
-              administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-              internalId: uuidv4(),
-              emails: s.contactChannels
-                .filter((c) => c.type === ContactChannelType.EMAIL)
-                .map((c) => ({ value: c.value })),
-              phoneNumbers: s.contactChannels
-                .filter((c) => c.type === ContactChannelType.PHONE)
-                .map((c) => ({ value: c.value })),
-            };
-            return stakeholder;
-          }) || [],
+          ?.map((s) => ({
+            ...s,
+            // TODO Remove s.firstName when the API is updated with dedicated field for organization name
+            organizationName: s.organizationName || s.firstName,
+            stakeholderType: mapExternalIdTypeToStakeholderType(s),
+            username: s.parameters?.find((p) => p.key === 'username')?.values[0],
+            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
+            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            newRole: SupportStakeholderRole.PRIMARY,
+            internalId: uuidv4(),
+            emails: s.contactChannels
+              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
+              .map((c) => ({ value: c.value })),
+            phoneNumbers: s.contactChannels
+              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
+              .map((c) => ({ value: c.value })),
+          })) || [],
       contacts:
         e.stakeholders
           ?.filter((s) => s.role !== SupportStakeholderRole.PRIMARY)
-          ?.map((s) => {
-            const stakeholder: SupportStakeholderFormModel = {
-              ...s,
-              organizationName: s.organizationName || s.firstName,
-              stakeholderType: mapExternalIdTypeToStakeholderType(s),
-              username: s.parameters?.find((p) => p.key === 'username')?.values[0],
-              administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
-              administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-              internalId: uuidv4(),
-              emails: s.contactChannels
-                .filter((c) => c.type === ContactChannelType.EMAIL)
-                .map((c) => ({ value: c.value })),
-              phoneNumbers: s.contactChannels
-                .filter((c) => c.type === ContactChannelType.PHONE)
-                .map((c) => ({ value: c.value })),
-            };
-            return stakeholder;
-          }) || [],
+          ?.map((s) => ({
+            ...s,
+            // TODO Remove s.firstName when the API is updated with dedicated field for organization name
+            organizationName: s.organizationName || s.firstName,
+            stakeholderType: mapExternalIdTypeToStakeholderType(s),
+            username: s.parameters?.find((p) => p.key === 'username')?.values[0],
+            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
+            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            newRole: s.role as SupportStakeholderRole,
+            internalId: uuidv4(),
+            emails: s.contactChannels
+              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
+              .map((c) => ({ value: c.value })),
+            phoneNumbers: s.contactChannels
+              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
+              .map((c) => ({ value: c.value })),
+          })) || [],
     };
     return ierrand;
   } catch (e) {
@@ -1079,10 +1081,10 @@ export const forwardSupportErrand: (
         throw new Error('MISSING_NAME');
       }
       // TODO Check for email and phone?
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE)) {
+      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)) {
       //   throw new Error('MISSING_PHONE');
       // }
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL)) {
+      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)) {
       //   throw new Error('MISSING_EMAIL');
       // }
     });
