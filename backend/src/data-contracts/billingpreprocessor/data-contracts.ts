@@ -363,6 +363,7 @@ export interface PageBillingRecord {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
@@ -371,21 +372,20 @@ export interface PageBillingRecord {
   sort?: SortObject[];
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject[];
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject[];
   unpaged?: boolean;
 }
 

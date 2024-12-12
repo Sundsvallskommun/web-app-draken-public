@@ -68,9 +68,9 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           message: 'Ärendet avslutades',
           status: 'success',
         });
-        // setTimeout(() => {
-        //   window.close();
-        // }, 2000);
+        setTimeout(() => {
+          window.close();
+        }, 2000);
         setIsLoading(false);
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
       })

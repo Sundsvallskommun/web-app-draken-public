@@ -48,20 +48,20 @@ export interface TemplateRequest {
 }
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
 }
 
 export interface StatusType {
-  reasonPhrase?: string;
   /** @format int32 */
   statusCode?: number;
+  reasonPhrase?: string;
 }
 
 /** Template */

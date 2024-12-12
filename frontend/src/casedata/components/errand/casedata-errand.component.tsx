@@ -6,6 +6,7 @@ import { Priority } from '@casedata/interfaces/priority';
 import { emptyErrand, getErrandByErrandNumber, getUiPhase } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
+import { isMEX } from '@common/services/application-service';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -114,6 +115,24 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     }
   }, [errand]);
 
+  function estateToText(propertyDesignation: string) {
+    if (!propertyDesignation) {
+      return '(Saknas)';
+    }
+    const MunicipalityName = propertyDesignation.toLowerCase().split(' ')[0];
+    const propertyName = propertyDesignation
+      .toLowerCase()
+      .substring(propertyDesignation.toLowerCase().indexOf(' ') + 1);
+
+    return (
+      MunicipalityName.charAt(0).toUpperCase() +
+      String(MunicipalityName).slice(1) +
+      ' ' +
+      propertyName.charAt(0).toUpperCase() +
+      String(propertyName).slice(1)
+    );
+  }
+
   return (
     <FormProvider {...methods}>
       <div className="grow shrink overflow-y-hidden">
@@ -138,7 +157,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                               </h1>
                             </div>
                             <div className="rounded-cards">
-                              <div className="flex flex-wrap gap-x-32 gap-y-8 bg-background-color-mixin-1 rounded-button p-md border">
+                              <div className="flex gap-x-32 gap-y-8 bg-background-color-mixin-1 rounded-button p-md border">
                                 <div className="pr-sm">
                                   <div data-cy="errandStatusLabel" className="font-bold">
                                     Ärendestatus
@@ -192,29 +211,48 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                       : '(saknas)'}
                                   </div>
                                 </div>
-                                <div className="pr-sm">
-                                  {getOwnerStakeholder(errand)?.stakeholderType === 'PERSON' ? (
+
+                                {isMEX() ? (
+                                  <div className="pr-sm w-[40%]">
+                                    <div className="font-bold">Fastighetsbeteckning</div>
+                                    <div>
+                                      {errand.facilities.map((estate, index) => (
+                                        <>
+                                          {index === 0
+                                            ? estateToText(estate?.address?.propertyDesignation)
+                                            : ', ' + estateToText(estate?.address?.propertyDesignation)}
+                                        </>
+                                      ))}
+                                      {errand.facilities.length === 0 ? '(Saknas)' : null}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="pr-sm w-[40%]">
                                     <>
-                                      <div className="font-bold" data-cy="errandPersonalNumberLabel">
-                                        Personnummer
-                                      </div>
-                                      <div data-cy="errandPersonalNumber">
-                                        {errand && getOwnerStakeholder(errand)?.personalNumber
-                                          ? getOwnerStakeholder(errand)?.personalNumber
-                                          : '(saknas)'}
-                                      </div>
+                                      {getOwnerStakeholder(errand)?.stakeholderType === 'PERSON' ? (
+                                        <>
+                                          <div className="font-bold" data-cy="errandPersonalNumberLabel">
+                                            Personnummer
+                                          </div>
+                                          <div data-cy="errandPersonalNumber">
+                                            {errand && getOwnerStakeholder(errand)?.personalNumber
+                                              ? getOwnerStakeholder(errand)?.personalNumber
+                                              : '(saknas)'}
+                                          </div>
+                                        </>
+                                      ) : getOwnerStakeholder(errand)?.stakeholderType === 'ORGANIZATION' ? (
+                                        <>
+                                          <div className="font-bold">Organisationsnummer</div>
+                                          <div>
+                                            {errand && getOwnerStakeholder(errand)?.organizationNumber
+                                              ? getOwnerStakeholder(errand)?.organizationNumber
+                                              : '(saknas)'}
+                                          </div>
+                                        </>
+                                      ) : null}
                                     </>
-                                  ) : getOwnerStakeholder(errand)?.stakeholderType === 'ORGANIZATION' ? (
-                                    <>
-                                      <div className="font-bold">Organisationsnummer</div>
-                                      <div>
-                                        {errand && getOwnerStakeholder(errand)?.organizationNumber
-                                          ? getOwnerStakeholder(errand)?.organizationNumber
-                                          : '(saknas)'}
-                                      </div>
-                                    </>
-                                  ) : null}
-                                </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </>

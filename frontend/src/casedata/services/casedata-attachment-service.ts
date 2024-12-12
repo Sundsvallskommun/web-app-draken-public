@@ -5,7 +5,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { toBase64 } from '@common/utils/toBase64';
 
-export const MAX_FILE_SIZE_MB = 10;
+export const MAX_FILE_SIZE_MB = 50;
 
 export const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
 

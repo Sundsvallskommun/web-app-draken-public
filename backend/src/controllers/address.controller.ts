@@ -193,7 +193,7 @@ export class AddressController {
   @UseBefore(authMiddleware, validationMiddleware(OrgNrPayload, 'body'))
   async organization(@Req() req: RequestWithUser, @Res() response: any, @Body() orgNrPayload: OrgNrPayload): Promise<ResponseData> {
     const formattedOrgNr = formatOrgNr(orgNrPayload.orgNr, OrgNumberFormat.NODASH);
-    const guidUrl = `party/1.0/ENTERPRISE/${formattedOrgNr}/partyId`;
+    const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
     const url = `businessengagements/2.0/${MUNICIPALITY_ID}/information/${guidRes.data}`;

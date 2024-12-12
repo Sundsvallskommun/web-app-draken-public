@@ -826,8 +826,6 @@ export interface Errand {
   priority?: ErrandPriorityEnum;
   /**
    * Description of the errand
-   * @minLength 0
-   * @maxLength 8192
    * @example "Some description of the case."
    */
   description?: string;
@@ -1212,8 +1210,6 @@ export interface PatchErrand {
   priority?: PatchErrandPriorityEnum;
   /**
    * Description of the case
-   * @minLength 0
-   * @maxLength 255
    * @example "Some description of the case."
    */
   description?: string;
@@ -1474,7 +1470,6 @@ export interface PageErrand {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1483,21 +1478,22 @@ export interface PageErrand {
   sort?: SortObject[];
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   empty?: boolean;
 }
 
 export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject[];
+  unpaged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
   paged?: boolean;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject[];
-  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1506,6 +1502,55 @@ export interface SortObject {
   ascending?: boolean;
   property?: string;
   ignoreCase?: boolean;
+}
+
+export interface CommitMetadata {
+  author?: string;
+  commitDateInstant?: string;
+  /** @format double */
+  id?: number;
+  properties?: object[];
+  commitDate?: string;
+}
+
+export interface ElementChangesItem {
+  elementChangeType?: string;
+  /** @format int32 */
+  index?: number;
+  value?: object;
+}
+
+export interface EntryChangesItem {
+  entryChangeType?: string;
+  value?: string;
+  key?: string;
+}
+
+export interface GlobalId {
+  /** @format int32 */
+  cdoId?: number;
+  entity?: string;
+  valueObject?: string;
+  fragment?: string;
+  ownerId?: OwnerId;
+}
+
+export interface History {
+  changeType?: string;
+  commitMetadata?: CommitMetadata;
+  globalId?: GlobalId;
+  property?: string;
+  propertyChangeType?: string;
+  entryChanges?: EntryChangesItem[];
+  left?: object;
+  right?: object;
+  elementChanges?: ElementChangesItem[];
+}
+
+export interface OwnerId {
+  /** @format int32 */
+  cdoId?: number;
+  entity?: string;
 }
 
 /**
