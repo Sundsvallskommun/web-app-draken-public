@@ -3,14 +3,18 @@ import { isIK, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, cx, Divider, RadioButton } from '@sk-web-gui/react';
+import { Avatar, Button, cx, Divider, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
-import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
+import {
+  getMessageAttachment,
+  Message,
+  setMessageViewStatus,
+} from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
-import MessageTreeComponent from './support-messages-tree.component';
 import { getSender } from './rendered-support-message.component';
+import MessageTreeComponent from './support-messages-tree.component';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -28,6 +32,7 @@ export const SupportMessagesTab: React.FC<{
   const [richText, setRichText] = useState<string>('');
   const [sortMessages, setSortMessages] = useState<number>(0);
   const [sortedMessages, setSortedMessages] = useState(props.messages);
+  const toastMessage = useSnackbar();
 
   const emailBody = `${
     isLOP()
@@ -199,7 +204,40 @@ export const SupportMessagesTab: React.FC<{
                     {selectedMessage?.communicationAttachments?.map((a, idx) => (
                       <Button
                         key={`${a.name}-${idx}`}
-                        onClick={() => {}}
+                        onClick={() => {
+                          getMessageAttachment(
+                            municipalityId,
+                            supportErrand.id,
+                            selectedMessage.communicationID,
+                            a.attachmentID
+                          )
+                            .then((res) => {
+                              if (res.data.length !== 0) {
+                                const uri = `data:${a.contentType};base64,${res.data}`;
+                                const link = document.createElement('a');
+                                const filename = a.name;
+                                link.href = uri;
+                                link.setAttribute('download', filename);
+                                document.body.appendChild(link);
+                                link.click();
+                              } else {
+                                toastMessage({
+                                  position: 'bottom',
+                                  closeable: false,
+                                  message: 'Filen kan inte hittas eller är skadad.',
+                                  status: 'error',
+                                });
+                              }
+                            })
+                            .catch((error) => {
+                              toastMessage({
+                                position: 'bottom',
+                                closeable: false,
+                                message: 'Något gick fel när bilagan skulle hämtas',
+                                status: 'error',
+                              });
+                            });
+                        }}
                         role="listitem"
                         leftIcon={
                           a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />

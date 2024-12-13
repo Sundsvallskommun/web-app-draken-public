@@ -19,6 +19,11 @@ export interface SupportAttachment {
   mimeType: string;
 }
 
+interface ResponseData {
+  data: any;
+  message: string;
+}
+
 export interface SingleSupportAttachment {
   errandAttachmentHeader: {
     id: string;
@@ -182,5 +187,39 @@ export class SupportMessageController {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication/${communicationID}/viewed/${isViewed}`;
     const res = await this.apiService.put<any, any>({ url }, req.user);
     return { data: res.data, message: 'success' };
+  }
+
+  @Get('/supportmessage/:municipalityId/errand/:errandId/communication/:communicationID/attachments/:attachmentId/streamed')
+  @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
+  @UseBefore(authMiddleware)
+  async fetchMessageAttachments(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Param('communicationID') communicationID: string,
+    @Param('attachmentId') attachmentId: string,
+    @Res() response: any,
+  ): Promise<ResponseData> {
+    if (!errandId) {
+      throw 'ErrandId not found.';
+    }
+    if (!communicationID) {
+      throw 'communicationID not found.';
+    }
+    if (!attachmentId) {
+      throw 'AttachmentId not found.';
+    }
+
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}/streamed`;
+
+    const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer' }, req.user).catch(e => {
+      logger.error('Something went wrong when fetching attachment for message');
+      logger.error(e);
+      throw e;
+    });
+
+    const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
+    const b64 = Buffer.from(binaryString, 'binary').toString('base64');
+    return { data: b64, message: 'good' };
   }
 }

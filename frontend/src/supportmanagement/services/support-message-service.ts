@@ -230,6 +230,32 @@ export const setMessageViewStatus: (
     });
 };
 
+export const getMessageAttachment: (
+  municipalityId: string,
+  errandId: string,
+  communicationID: string,
+  attachmentId: string
+) => Promise<ApiResponse<SupportAttachment[]>> = (municipalityId, errandId, communicationID, attachmentId) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot fetch.');
+  }
+  if (!communicationID) {
+    console.error('No communication id found, cannot fetch.');
+  }
+  if (!attachmentId) {
+    console.error('No attachment id found, cannot fetch.');
+  }
+
+  const url = `supportmessage/${municipalityId}/errand/${errandId}/communication/${communicationID}/attachments/${attachmentId}/streamed`;
+  return apiService
+    .get<any>(url)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching attachment');
+      return { data: [], message: 'error' };
+    });
+};
+
 export interface MessageNode extends Message {
   children?: MessageNode[];
 }
