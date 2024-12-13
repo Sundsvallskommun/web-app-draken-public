@@ -243,13 +243,22 @@ export const CasedataMessagesTab: React.FC<{
                         onClick={() => {
                           messageAttachment(municipalityId, errand.id, a.attachmentId)
                             .then((res) => {
-                              const uri = `data:${a.contentType};base64,${res.data}`;
-                              const link = document.createElement('a');
-                              const filename = a.name;
-                              link.href = uri;
-                              link.setAttribute('download', filename);
-                              document.body.appendChild(link);
-                              link.click();
+                              if (res.data.length !== 0) {
+                                const uri = `data:${a.contentType};base64,${res.data}`;
+                                const link = document.createElement('a');
+                                const filename = a.name;
+                                link.href = uri;
+                                link.setAttribute('download', filename);
+                                document.body.appendChild(link);
+                                link.click();
+                              } else {
+                                toastMessage({
+                                  position: 'bottom',
+                                  closeable: false,
+                                  message: 'Filen kan inte hittas eller är skadad.',
+                                  status: 'error',
+                                });
+                              }
                             })
                             .catch((error) => {
                               toastMessage({
