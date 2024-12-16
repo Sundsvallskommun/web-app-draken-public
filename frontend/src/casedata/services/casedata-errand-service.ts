@@ -25,7 +25,7 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 
 import { Role } from '@casedata/interfaces/role';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { Errand, ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
@@ -34,6 +34,8 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useState } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { replaceExtraParameter } from './casedata-extra-parameters-service';
+import { saveErrandNote } from './casedata-errand-notes-service';
+import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -89,6 +91,7 @@ export const ongoingStatuses = [
   ErrandStatus.BeslutOverklagat,
 ];
 
+export const suspendedStatuses = [ErrandStatus.Parkerad];
 export const assignedStatuses = [ErrandStatus.Tilldelat];
 
 export const closedStatuses = [
@@ -103,6 +106,8 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
       return 'Nya ärenden';
     } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
       return 'Öppnade ärenden';
+    } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
+      return 'Parkerade ärenden';
     } else if (statuses.some((s) => assignedStatuses.includes(s))) {
       return 'Tilldelade ärenden';
     } else if (statuses.some((s) => closedStatuses.includes(s))) {
@@ -137,7 +142,11 @@ export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = 
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return errand?.status === ErrandStatus.ArendeAvslutat || errand?.status === ErrandStatus.Tilldelat || phaseChangeInProgress(errand as IErrand);
+  return (
+    errand?.status === ErrandStatus.ArendeAvslutat ||
+    errand?.status === ErrandStatus.Tilldelat ||
+    phaseChangeInProgress(errand as IErrand)
+  );
 };
 
 export const getPriorityColor = (priority: Priority) => {
@@ -197,6 +206,10 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       attachments: [],
       messageIds: [],
       extraParameters: e.extraParameters,
+      suspension: {
+        suspendedFrom: e.suspension?.suspendedFrom,
+        suspendedTo: e.suspension?.suspendedTo,
+      },
     };
     return ierrand;
   } catch (e) {
@@ -339,6 +352,7 @@ export const useErrands = (
     newErrands,
     ongoingErrands,
     closedErrands,
+    suspendedErrands,
   } = useAppContext();
 
   const fetchErrands = useCallback(
@@ -416,6 +430,28 @@ export const useErrands = (
           1,
           {
             ...filter,
+            status: suspendedStatuses.map(findStatusKeyForStatusLabel).join(','),
+          },
+          sort
+        )
+          .then((res) => {
+            setSuspendedErrands(res);
+          })
+          .catch((err) => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Parkerade ärenden kunde inte hämtas',
+              status: 'error',
+            });
+          }),
+
+        getErrands(
+          municipalityId,
+          page,
+          1,
+          {
+            ...filter,
             status: `Tilldelat`,
           },
           sort
@@ -465,6 +501,7 @@ export const useErrands = (
       newErrands,
       ongoingErrands,
       closedErrands,
+      suspendedErrands,
       size,
       filter,
       sort,
@@ -738,4 +775,45 @@ export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, 
 
 export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
+};
+
+export const setSuspendedErrands = async (
+  errandId: number,
+  municipalityId: string,
+  status: ErrandStatus,
+  date: string,
+  comment: string
+): Promise<Boolean> => {
+  if (status === ErrandStatus.Parkerad && (date === '' || dayjs().isAfter(dayjs(date)))) {
+    return Promise.reject('Invalid date');
+  }
+
+  const url = `casedata/${municipalityId}/errands/${errandId}`;
+  const data: Partial<RegisterErrandData> = {
+    id: errandId.toString(),
+    status: status,
+    suspension: {
+      suspendedFrom: status === ErrandStatus.Parkerad ? dayjs().toISOString() : undefined,
+      suspendedTo: status === ErrandStatus.Parkerad ? dayjs(date).set('hour', 7).toISOString() : undefined,
+    },
+  };
+
+  return apiService
+    .patch<Boolean, Partial<RegisterErrandData>>(url, data)
+    .then(async (res) => {
+      if (status === ErrandStatus.Parkerad && comment) {
+        const newNote: CreateErrandNoteDto = {
+          title: '',
+          text: comment,
+          noteType: 'INTERNAL',
+          extraParameters: {},
+        };
+        await saveErrandNote(municipalityId, errandId.toString(), newNote);
+      }
+      return res.data;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when suspending the errand', e);
+      throw new Error('Något gick fel när ärendet skulle parkeras.');
+    });
 };

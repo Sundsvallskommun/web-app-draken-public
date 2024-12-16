@@ -5,6 +5,8 @@ import {
   getStatusLabel,
   newStatuses,
   ongoingStatuses,
+  setSuspendedErrands,
+  suspendedStatuses,
 } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isSuspendEnabled } from '@common/services/feature-flag-service';
@@ -28,6 +30,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
     newErrands,
     ongoingErrands,
     assignedErrands,
+    suspendedErrands,
     closedErrands,
   }: AppContextInterface = useAppContext();
 
@@ -66,18 +69,13 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingErrands.totalElements,
       },
-      ...(isSuspendEnabled()
-        ? [
-            {
-              label: 'Parkerade ärenden',
-              key: ErrandStatus.UnderRemiss,
-              statuses: [ErrandStatus.UnderRemiss],
-              icon: 'circle-pause',
-              totalStatusErrands: 0,
-            },
-          ]
-        : []),
-
+      {
+        label: getStatusLabel(suspendedStatuses),
+        key: suspendedStatuses[0],
+        statuses: suspendedStatuses,
+        icon: 'circle-pause',
+        totalStatusErrands: suspendedErrands.totalElements,
+      },
       {
         label: getStatusLabel(assignedStatuses),
         key: assignedStatuses[0],
@@ -93,7 +91,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
         totalStatusErrands: closedErrands.totalElements,
       },
     ],
-    [newErrands, ongoingErrands, assignedErrands, closedErrands]
+    [newErrands, ongoingErrands, suspendedErrands, assignedErrands, closedErrands]
   );
 
   return (
