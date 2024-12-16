@@ -449,7 +449,31 @@ export const CasedataAttachments: React.FC = () => {
                 data-cy={`attachment-${attachment.id}`}
                 className="attachment-item flex justify-between gap-12 rounded-sm p-12 text-md border-t"
               >
-                <div className="flex gap-12">
+                <div
+                  className="flex gap-12 cursor-pointer"
+                  onClick={() => {
+                    if (documentMimeTypes.includes(attachment.mimeType)) {
+                      downloadDocument(attachment);
+                    } else if (imageMimeTypes.includes(attachment.mimeType)) {
+                      setModalFetching(true);
+                      fetchAttachment(municipalityId, errand.id, attachment.id)
+                        .then((res) => setModalAttachment(res.data))
+                        .then(() => {
+                          setModalFetching(false);
+                        })
+                        .then(() => openModal());
+                    } else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
+                      downloadDocument(attachment);
+                    } else {
+                      toastMessage({
+                        position: 'bottom',
+                        closeable: false,
+                        message: 'Fel: okänd filtyp',
+                        status: 'error',
+                      });
+                    }
+                  }}
+                >
                   <div className="self-center bg-vattjom-surface-accent p-12 rounded">
                     <LucideIcon name="clipboard-check" className="block" size={24} />
                   </div>
