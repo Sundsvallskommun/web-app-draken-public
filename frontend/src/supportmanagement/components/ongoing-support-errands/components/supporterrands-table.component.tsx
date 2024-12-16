@@ -26,6 +26,9 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { getSupportNotifications } from '@supportmanagement/services/support-notification-service';
+import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
+import { use } from 'chai';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -56,6 +59,8 @@ export const SupportErrandsTable: React.FC = () => {
   useEffect(() => {
     setCategories(supportMetadata?.categories);
   }, [supportMetadata]);
+
+
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',
@@ -113,6 +118,30 @@ export const SupportErrandsTable: React.FC = () => {
       }
     }
   };
+
+  const getNewestNotification = async (errand: SupportErrand): Promise<String> => {
+    const newNotification = await getSupportNotifications(municipalityId);
+    return newNotification
+      .filter((notification) => notification.errandId === errand.id && !notification.acknowledged)
+      .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())[0]?.description || '';
+  };
+
+  const [notification, setNotification] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const fetchNotification = async () => {
+      const notificationData = await Promise.all(
+        data.errands.map(async (errand) => {
+          const notification = await getNewestNotification(errand);
+          return { [errand.id]: notification };
+        })
+      );
+      setNotification(Object.assign({}, ...notificationData));
+    };
+
+    fetchNotification();
+  }, [data.errands]);
+
 
   const openErrandeInNewWindow = (errandId: string) => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errandId}`, '_blank');
@@ -200,7 +229,9 @@ export const SupportErrandsTable: React.FC = () => {
     );
   };
 
+          
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
+
     return (
       <Table.Row
         tabIndex={0}
@@ -212,6 +243,19 @@ export const SupportErrandsTable: React.FC = () => {
         className="cursor-pointer"
       >
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
+        
+        <Table.HeaderColumn
+                  scope="row"
+          className="w-[220px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
+        >
+            {notification[errand.id] && (
+            <>
+              <div><time dateTime={errand.touched}>{prettyTime(errand.touched)}</time></div>
+              <div className="font-normal">{notification[errand.id]}</div>
+            </>
+            )}
+
+        </Table.HeaderColumn>
         <Table.HeaderColumn
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
@@ -247,9 +291,7 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
         </Table.Column>
-        <Table.Column>
-          <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
-        </Table.Column>
+
         <Table.Column>{Priority[errand.priority]}</Table.Column>
         {errand.status === Status.SUSPENDED ? (
           <Table.Column>
