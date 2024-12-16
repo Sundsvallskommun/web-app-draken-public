@@ -78,6 +78,7 @@ export const NotificationItem: React.FC<{ notification: SupportNotification | Ca
         <div>Från {notification.createdByFullName || notification.createdBy || '(okänt)'}</div>
       </div>
       <span className="whitespace-nowrap">{prettyTime(notification.created)}</span>
+      {!notification.acknowledged ? (
       <div>
         <span
           className={cx(
@@ -86,6 +87,7 @@ export const NotificationItem: React.FC<{ notification: SupportNotification | Ca
           )}
         ></span>
       </div>
+      ) : null}
     </div>
   );
 };
