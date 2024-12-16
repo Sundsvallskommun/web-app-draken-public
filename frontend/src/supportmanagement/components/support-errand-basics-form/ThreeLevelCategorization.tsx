@@ -54,7 +54,9 @@ export const ThreeLevelCategorization: React.FC<{
       setOldCategoriesList(supportMetadata?.categories);
     } else {
       getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
-        setCategoriesList(data.metadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName)));
+        setCategoriesList(
+          data.metadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
+        );
         setOldCategoriesList(data.metadata?.categories);
       });
     }
