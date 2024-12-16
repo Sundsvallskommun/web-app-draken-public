@@ -115,12 +115,12 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
             <span className="w-full flex justify-between">
               {button.label}
               {button.key !== closedStatuses[0] && (
-              <Badge
-                className="min-w-fit px-4"
-                inverted={!selectedErrandStatuses.includes(button.key as ErrandStatus)}
-                color={selectedErrandStatuses.includes(button.key as ErrandStatus) ? 'tertiary' : 'vattjom'}
-                counter={isLoading ? '-' : button.totalStatusErrands || '0'}
-              />
+                <Badge
+                  className="min-w-fit px-4"
+                  inverted={!selectedErrandStatuses.includes(button.key as ErrandStatus)}
+                  color={selectedErrandStatuses.includes(button.key as ErrandStatus) ? 'tertiary' : 'vattjom'}
+                  counter={isLoading ? '-' : button.totalStatusErrands || '0'}
+                />
               )}
             </span>
           </Button>
