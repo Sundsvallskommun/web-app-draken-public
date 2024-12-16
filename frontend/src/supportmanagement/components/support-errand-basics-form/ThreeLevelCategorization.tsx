@@ -175,7 +175,7 @@ export const ThreeLevelCategorization: React.FC<{
             onChange={(e) => {}}
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />
-            <Combobox.List data-cy="labelType-list">
+            <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">
               {typesList?.map((typeLabel: Label, index) => {
                 if (typeLabel.labels?.length > 0) {
                   return (
