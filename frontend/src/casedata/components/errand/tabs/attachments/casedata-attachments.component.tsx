@@ -191,6 +191,31 @@ export const CasedataAttachments: React.FC = () => {
     setAddAttachmentWindowIsOpen(false);
   };
 
+  const clickHandler = (Attachment) => {
+    if (documentMimeTypes.includes(Attachment.mimeType)) {
+      downloadDocument(Attachment);
+    } else if (imageMimeTypes.includes(Attachment.mimeType)) {
+      setModalFetching(true);
+      fetchAttachment(municipalityId, errand.id, Attachment.id)
+        .then((res) => setModalAttachment(res.data))
+        .then(() => {
+          setModalFetching(false);
+        })
+        .then((res) => openModal());
+    }
+    // exclusive exception for .msg
+    else if (Attachment.mimeType === '' && Attachment.name.endsWith(`.msg`)) {
+      downloadDocument(Attachment);
+    } else {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Fel: okänd filtyp',
+        status: 'error',
+      });
+    }
+  };
+
   const editAttachmentModal = (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="fixed inset-0 z-20 overflow-y-auto bg-opacity-50 bg-gray-500" onClose={closeModal}>
@@ -452,26 +477,7 @@ export const CasedataAttachments: React.FC = () => {
                 <div
                   className="flex gap-12 cursor-pointer"
                   onClick={() => {
-                    if (documentMimeTypes.includes(attachment.mimeType)) {
-                      downloadDocument(attachment);
-                    } else if (imageMimeTypes.includes(attachment.mimeType)) {
-                      setModalFetching(true);
-                      fetchAttachment(municipalityId, errand.id, attachment.id)
-                        .then((res) => setModalAttachment(res.data))
-                        .then(() => {
-                          setModalFetching(false);
-                        })
-                        .then(() => openModal());
-                    } else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
-                      downloadDocument(attachment);
-                    } else {
-                      toastMessage({
-                        position: 'bottom',
-                        closeable: false,
-                        message: 'Fel: okänd filtyp',
-                        status: 'error',
-                      });
-                    }
+                    clickHandler(attachment);
                   }}
                 >
                   <div className="self-center bg-vattjom-surface-accent p-12 rounded">
@@ -513,28 +519,7 @@ export const CasedataAttachments: React.FC = () => {
                               leftIcon={<LucideIcon name="eye" />}
                               data-cy={`open-attachment-${attachment.id}`}
                               onClick={() => {
-                                if (documentMimeTypes.includes(attachment.mimeType)) {
-                                  downloadDocument(attachment);
-                                } else if (imageMimeTypes.includes(attachment.mimeType)) {
-                                  setModalFetching(true);
-                                  fetchAttachment(municipalityId, errand.id, attachment.id)
-                                    .then((res) => setModalAttachment(res.data))
-                                    .then(() => {
-                                      setModalFetching(false);
-                                    })
-                                    .then((res) => openModal());
-                                }
-                                // exclusive exception for .msg
-                                else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
-                                  downloadDocument(attachment);
-                                } else {
-                                  toastMessage({
-                                    position: 'bottom',
-                                    closeable: false,
-                                    message: 'Fel: okänd filtyp',
-                                    status: 'error',
-                                  });
-                                }
+                                clickHandler(attachment);
                               }}
                             >
                               Öppna

@@ -173,6 +173,31 @@ export const SupportErrandAttachmentsTab: React.FC<{
     setAddAttachmentWindowIsOpen(false);
   };
 
+  const clickHandler = (Attachment) => {
+    if (documentMimeTypes.includes(Attachment.mimeType)) {
+      downloadDocument(Attachment);
+    } else if (imageMimeTypes.includes(Attachment.mimeType)) {
+      setModalFetching(true);
+      getSupportAttachment(supportErrand.id.toString(), municipalityId, Attachment)
+        .then((res) => setModalAttachment(res))
+        .then(() => {
+          setModalFetching(false);
+        })
+        .then((res) => openModal());
+    }
+    // exclusive exception for .msg
+    else if (Attachment.mimeType === '' && Attachment.name.endsWith(`.msg`)) {
+      downloadDocument(Attachment);
+    } else {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Fel: okänd filtyp',
+        status: 'error',
+      });
+    }
+  };
+
   const onDelete = () => {
     removeConfirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
       if (confirmed) {
@@ -416,28 +441,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                   <div
                     className="flex gap-12 cursor-pointer"
                     onClick={() => {
-                      if (documentMimeTypes.includes(attachment.mimeType)) {
-                        downloadDocument(attachment);
-                      } else if (imageMimeTypes.includes(attachment.mimeType)) {
-                        setModalFetching(true);
-                        getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
-                          .then((res) => setModalAttachment(res))
-                          .then(() => {
-                            setModalFetching(false);
-                          })
-                          .then((res) => openModal());
-                      }
-                      // exclusive exception for .msg
-                      else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
-                        downloadDocument(attachment);
-                      } else {
-                        toastMessage({
-                          position: 'bottom',
-                          closeable: false,
-                          message: 'Fel: okänd filtyp',
-                          status: 'error',
-                        });
-                      }
+                      clickHandler(attachment);
                     }}
                   >
                     <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
@@ -477,28 +481,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                                 data-cy={`open-attachment-${attachment.id}`}
                                 leftIcon={<LucideIcon name="eye" />}
                                 onClick={() => {
-                                  if (documentMimeTypes.includes(attachment.mimeType)) {
-                                    downloadDocument(attachment);
-                                  } else if (imageMimeTypes.includes(attachment.mimeType)) {
-                                    setModalFetching(true);
-                                    getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
-                                      .then((res) => setModalAttachment(res))
-                                      .then(() => {
-                                        setModalFetching(false);
-                                      })
-                                      .then((res) => openModal());
-                                  }
-                                  // exclusive exception for .msg
-                                  else if (attachment.mimeType === '' && attachment.name.endsWith(`.msg`)) {
-                                    downloadDocument(attachment);
-                                  } else {
-                                    toastMessage({
-                                      position: 'bottom',
-                                      closeable: false,
-                                      message: 'Fel: okänd filtyp',
-                                      status: 'error',
-                                    });
-                                  }
+                                  clickHandler(attachment);
                                 }}
                               >
                                 Öppna
