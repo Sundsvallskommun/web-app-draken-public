@@ -29,7 +29,13 @@ import {
   SupportAttachment,
   getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
-import { Channels, SupportErrand, isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import {
+  Channels,
+  Status,
+  SupportErrand,
+  isSupportErrandLocked,
+  setSupportErrandStatus,
+} from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -151,6 +157,7 @@ export const SupportMessageForm: React.FC<{
   const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
+  const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
 
   const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
@@ -295,6 +302,13 @@ export const SupportMessageForm: React.FC<{
         setTimeout(() => {
           props.update();
         }, 500);
+
+        if (typeOfMessage === 'infoCompletion') {
+          setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
+        } else if (typeOfMessage === 'internalCompletion') {
+          setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+        }
+
         toastMessage({
           position: 'bottom',
           closeable: false,
@@ -409,6 +423,42 @@ export const SupportMessageForm: React.FC<{
               OpenE
             </RadioButton>
           ) : null}
+        </RadioButton.Group>
+      </div>
+
+      <div className="w-full pt-16">
+        <strong className="text-md">Typ av meddelande</strong>
+        <RadioButton.Group data-cy="message-channel-radio-button-group" className="mt-sm !gap-4">
+          <RadioButton
+            disabled={props.locked}
+            name="typeOfMessage"
+            id="newMessage"
+            value={'email'}
+            defaultChecked={true}
+            onClick={() => setTypeOfMessage('newMessage')}
+          >
+            Nytt meddelande
+          </RadioButton>
+          <RadioButton
+            disabled={props.locked}
+            name="typeOfMessage"
+            id="infoCompletion"
+            value={'infoCompletion'}
+            defaultChecked={false}
+            onClick={() => setTypeOfMessage('infoCompletion')}
+          >
+            Begär komplettering
+          </RadioButton>
+          <RadioButton
+            disabled={props.locked}
+            name="typeOfMessage"
+            id="internalCompletion"
+            value={'internalCompletion'}
+            defaultChecked={false}
+            onClick={() => setTypeOfMessage('internalCompletion')}
+          >
+            Begär intern återkoppling
+          </RadioButton>
         </RadioButton.Group>
       </div>
 
