@@ -1,5 +1,5 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
-import { noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
+import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
@@ -264,6 +264,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="edit-note-button"
+                                  disabled={noteIsComment(noteType) && supportErrand.status === 'SOLVED'}
                                   leftIcon={<LucideIcon name="pencil" />}
                                   onClick={() => {
                                     updateNote(note);
@@ -328,7 +329,12 @@ export const SidebarGenericNotes: React.FC<{
           </FormControl>
           <Button
             color="primary"
-            disabled={!supportErrand?.id || text === '' || (noteIsTjansteanteckning(noteType) && !allowed)}
+            disabled={
+              !supportErrand?.id ||
+              text === '' ||
+              (noteIsTjansteanteckning(noteType) && !allowed) ||
+              (noteIsComment(noteType) && supportErrand.status === 'SOLVED')
+            }
             loadingText="Sparar"
             loading={isLoading}
             data-cy="save-newcomment"
