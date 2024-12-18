@@ -565,10 +565,15 @@ export const SupportSimplifiedContactForm: React.FC<{
           <FormControl className="w-full">
             {isLOP() || isIK() ? (
               <FormLabel>
-                Sök på {searchMode === 'person' ? 'personnummer' : 'personnummer eller användarnamn'}
+                Sök på{' '}
+                {searchMode === 'person'
+                  ? 'personnummer (ååååmmddxxxx)'
+                  : 'personnummer (ååååmmddxxxx) eller användarnamn'}
               </FormLabel>
             ) : (
-              <FormLabel>Sök på {searchMode === 'person' ? 'personnummer' : 'organisationsnummer'}</FormLabel>
+              <FormLabel>
+                Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
+              </FormLabel>
             )}
 
             <div>
@@ -583,7 +588,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <>
                   <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
                     <Input
-                      placeholder={'ÅÅÅÅMMDDXXXX'}
+                      placeholder={''}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}
@@ -661,7 +666,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                       setSearchResult(false);
                       setValue('stakeholderType', 'PERSON');
                     }}
-                    placeholder={'ÅÅÅÅMMDDXXXX'}
+                    placeholder={''}
                     searchLabel={searching ? 'Söker' : 'Sök'}
                   />
 
@@ -688,7 +693,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <>
                   <Input.Group size="md" disabled={props.disabled || manual}>
                     <Input
-                      placeholder={'KKLLMM-NNNN'}
+                      placeholder={''}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}

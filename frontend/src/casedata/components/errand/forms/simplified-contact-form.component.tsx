@@ -475,7 +475,9 @@ export const SimplifiedContactForm: React.FC<{
         <div className="flex gap-lg">
           {!editing ? (
             <FormControl className="w-full">
-              <FormLabel>Sök på {searchMode === 'person' ? 'personnummer' : 'organisationsnummer'}</FormLabel>
+              <FormLabel>
+                Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
+              </FormLabel>
               <div>
                 <Input
                   data-cy={`contact-personId`}
@@ -488,7 +490,7 @@ export const SimplifiedContactForm: React.FC<{
                   <>
                     <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
                       <Input
-                        placeholder="Personnummer"
+                        placeholder=""
                         disabled={props.disabled}
                         aria-disabled={props.disabled}
                         readOnly={manual}
