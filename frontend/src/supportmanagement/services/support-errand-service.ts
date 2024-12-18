@@ -538,7 +538,7 @@ export const useSupportErrands = (
           municipalityId,
           page,
           size,
-          { ...filter, status: `${Status.SUSPENDED},${Status.ASSIGNED}` },
+          { ...filter, status: `${Status.SUSPENDED}` },
           sort
         )
           .then((res) => {
