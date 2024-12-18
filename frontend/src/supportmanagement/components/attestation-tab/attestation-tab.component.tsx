@@ -64,19 +64,6 @@ export const AttestationTab = () => {
   const router = useRouter();
   const { user, setUser } = useAppContext();
 
-  // useAttestationFilter(
-  //   user,
-  //   ownerFilter,
-  //   setOwnerFilter,
-  //   resetFilter,
-  //   triggerFilter,
-  //   statusFilter,
-  //   invoiceTypeFilter,
-  //   startdate,
-  //   enddate,
-  //   setAttestationFilterObject
-  // );
-
   useEffect(() => {
     const filterdata = store.get('attestationFilter');
 
@@ -130,8 +117,6 @@ export const AttestationTab = () => {
   useEffect(() => {
     if (billingRecords) {
       setSupportErrand(undefined);
-      // setTableValue('page', billingRecords.page);
-      // setTableValue('page', 0);
       setTableValue('size', billingRecords.size);
       setTableValue('totalPages', billingRecords.totalPages);
       setTableValue('totalElements', billingRecords.totalElements);
@@ -146,7 +131,6 @@ export const AttestationTab = () => {
   useDebounceEffect(
     () => {
       const fObj = {};
-      // const extraFilterObj = {};
       if (statusFilter && statusFilter.length > 0) {
         fObj['status'] = statusFilter.join(',');
       }
@@ -165,7 +149,6 @@ export const AttestationTab = () => {
         fObj['end'] = date;
       }
       setAttestationFilterObject(fObj);
-      // setExtraFilter(extraFilterObj);
       store.set('attestationFilter', JSON.stringify(fObj));
     },
     200,

@@ -100,7 +100,6 @@ export const MainErrandsSidebar: React.FC<{
               <Button
                 onClick={() => setShowAttestationTable(true)}
                 leftIcon={<LucideIcon name="square-pen" />}
-                // className="w-full text-right justify-between"
                 className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
               >

@@ -76,30 +76,6 @@ export const AttestationsFilteringComponent: React.FC<{
             </div>
           </div>
         </div>
-
-        {/* <div className="flex flex-col md:flex-row justify-between gap-16">
-          <div className="flex gap-16">
-            <Checkbox checked={ownerFilter} onChange={() => ownerFilterHandler(!ownerFilter)}>
-              Mina ärenden
-            </Checkbox>
-            <AttestationFilterTagsComponent administrators={administrators} />
-          </div>
-
-          {user.permissions.canEditAttestations && (
-            <Button className="justify-end" size="sm" onClick={() => setShowCreateInvoice(true)}>
-              Skapa fakturaunderlag
-            </Button>
-          )}
-
-          <AttestationInvoiceWrapperComponent
-            show={showCreateInvoice}
-            label={'Skapa fakturaunderlag'}
-            closeHandler={closeCreateInvoice}
-          >
-
-            <></>
-          </AttestationInvoiceWrapperComponent>
-        </div> */}
       </div>
     </>
   );
