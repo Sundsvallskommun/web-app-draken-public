@@ -16,10 +16,6 @@ export const AttestationInvoiceTypeValues = {
 export const AttestationFilterInvoiceTypeComponent: React.FC = () => {
   const { register, getValues } = useFormContext<AttestationInvoiceTypeFilter>();
 
-  useEffect(() => {
-    console.log('getValues', getValues());
-  }, [invoiceTypes]);
-
   return (
     <PopupMenu>
       <PopupMenu.Button
