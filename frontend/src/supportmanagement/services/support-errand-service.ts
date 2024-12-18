@@ -1,22 +1,22 @@
-import { apiService, Data } from '@common/services/api-service';
-import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { All, Priority } from '@supportmanagement/interfaces/priority';
-import { v4 as uuidv4 } from 'uuid';
-import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
-import { saveSupportNote } from './support-note-service';
-import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
+import { apiService, Data } from '@common/services/api-service';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { RequestInfoFormProps } from '@supportmanagement/components/support-errand/sidebar/request-info.component';
+import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { saveSupportNote } from './support-note-service';
+import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
 export interface Customer {
   id: string;
@@ -319,7 +319,7 @@ export enum ResolutionLabelLOP {
 export enum ResolutionLabelIK {
   REFER_TO_CONTACTSUNDSVALL = 'Hänvisat till Kontakt Sundsvall',
   SELF_SERVICE = 'Hänvisat till självservice',
-  SOLVED = 'Informerat /intern har löst hela ärendet',
+  SOLVED = 'Informerat / Intern Kundtjänst har löst ärendet',
   REFER_TO_PHONE = 'Behöver återkomma/hänvisat till telefontid',
   REGISTERED = 'Tagit emot/registrerat/paketerat ärende',
   CONNECTED = 'Kopplat samtal',
