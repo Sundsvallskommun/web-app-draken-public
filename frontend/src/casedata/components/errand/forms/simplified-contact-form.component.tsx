@@ -489,6 +489,9 @@ export const SimplifiedContactForm: React.FC<{
                 {searchMode === 'person' ? (
                   <>
                     <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
+                      <Input.LeftAddin icon>
+                        <LucideIcon name="search" />
+                      </Input.LeftAddin>
                       <Input
                         placeholder=""
                         disabled={props.disabled}
@@ -547,6 +550,9 @@ export const SimplifiedContactForm: React.FC<{
                 ) : (
                   <>
                     <Input.Group size="md" disabled={props.disabled || manual}>
+                      <Input.LeftAddin icon>
+                        <LucideIcon name="search" />
+                      </Input.LeftAddin>
                       <Input
                         disabled={props.disabled}
                         aria-disabled={props.disabled}

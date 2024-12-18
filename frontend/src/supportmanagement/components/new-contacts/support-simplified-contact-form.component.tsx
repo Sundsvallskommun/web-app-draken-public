@@ -587,6 +587,9 @@ export const SupportSimplifiedContactForm: React.FC<{
               {searchMode === 'person' ? (
                 <>
                   <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
+                    <Input.LeftAddin icon>
+                      <LucideIcon name="search" />
+                    </Input.LeftAddin>
                     <Input
                       placeholder={''}
                       disabled={props.disabled}
