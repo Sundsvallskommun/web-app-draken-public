@@ -1,63 +1,27 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
+import { prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
 import {
-  Button,
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  RadioButton,
-  Select,
-  Table,
-  useSnackbar,
-} from '@sk-web-gui/react';
-import { AttestationInvoiceRequest } from '@supportmanagement/services/support-invoice-service';
+  approveBillingRecord,
+  billingFormSchema,
+  rejectBillingRecord,
+  saveBillingRecord,
+  setBillingRecordStatus,
+} from '@supportmanagement/services/support-billing-service';
 import NextLink from 'next/link';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as yup from 'yup';
-
-export interface AttestationInvoiceFormModel {
-  id: string;
-  errandId: string;
-  supervisor: string;
-  referenceNumber: string;
-  client: string;
-  activity: string;
-  type: string;
-  quantity: string;
-  amount: string;
-  totalAmount: string;
-  registeredAt: string;
-  registeredBy: string;
-  updatedAt: string;
-  attested: string;
-  status: string;
-  approvedBy?: string;
-  approved?: string;
-}
-
-let formSchema = yup
-  .object({
-    id: yup.string(),
-    supervisor: yup.string(),
-    referenceNumber: yup.string(),
-    client: yup.string(),
-    activity: yup.string(),
-    type: yup.string(),
-    quantity: yup.string(),
-    totalAmount: yup.string(),
-    amount: yup.string(),
-  })
-  .required();
+import { useEffect, useState } from 'react';
+import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import { BillingForm } from '../billing/billing-form.component';
+import { validateAction } from '@casedata/services/casedata-errand-service';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
-  update?: () => void;
-  selectedInvoice: AttestationInvoiceFormModel;
+  update: (recordId: string) => void;
+  selectedrecord: CBillingRecord;
 }> = (props) => {
   const {
     municipalityId,
@@ -67,32 +31,24 @@ export const AttestationInvoiceForm: React.FC<{
     user: User;
   } = useAppContext();
 
-  const { selectedInvoice } = props;
+  const { selectedrecord: selectedRecord } = props;
 
   const toastMessage = useSnackbar();
   const [showChangeDecisionComponent, setShowDecisionComponent] = useState(false);
   const [invoiceError, setInvoiceError] = useState(false);
 
-  const formControls = useForm<AttestationInvoiceFormModel>({
-    defaultValues: {
-      id: selectedInvoice.id,
-      errandId: selectedInvoice.errandId,
-      supervisor: selectedInvoice.supervisor,
-      referenceNumber: selectedInvoice.referenceNumber,
-      client: selectedInvoice.client,
-      activity: selectedInvoice.activity,
-      type: selectedInvoice.type,
-      quantity: selectedInvoice.quantity,
-      amount: selectedInvoice.amount,
-      totalAmount: selectedInvoice.totalAmount,
-      registeredAt: selectedInvoice.registeredAt,
-      registeredBy: selectedInvoice.registeredBy,
-      updatedAt: selectedInvoice.updatedAt,
-      attested: selectedInvoice.attested,
-      status: selectedInvoice.status,
-    },
-    resolver: yupResolver(formSchema),
-    mode: 'onChange',
+  const [allowed, setAllowed] = useState(false);
+  // TODO Enable this when errand id is stored on billing record
+  // and the rules have been decided
+  // useEffect(() => {
+  //   const _a = validateAction(supportErrand, user);
+  //   setAllowed(_a);
+  // }, [user, supportErrand]);
+
+  const formControls = useForm<CBillingRecord>({
+    defaultValues: selectedRecord,
+    resolver: yupResolver(billingFormSchema),
+    mode: 'onSubmit',
   });
 
   const {
@@ -109,39 +65,19 @@ export const AttestationInvoiceForm: React.FC<{
     formState: { errors, isDirty },
   } = formControls;
 
-  const send: () => void = async () => {
-    setInvoiceError(false);
-    const data = getValues();
-    const invoiceData: AttestationInvoiceRequest = {
-      supervisor: data.supervisor,
-      referenceNumber: data.referenceNumber,
-      client: data.client,
-      activity: data.activity,
-      type: data.type,
-      quantity: data.quantity,
-      amount: data.amount,
-      totalAmount: data.totalAmount,
-      registeredAt: data.registeredAt,
-      registeredBy: data.registeredBy,
-      updatedAt: data.updatedAt,
-      attested: data.attested,
-      status: data.status,
-    };
+  const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
+    control, // control props comes from useForm (optional: if you are using FormProvider)
+    name: 'invoice.invoiceRows', // unique name for your Field Array
+  });
 
-    /* TODO Endpoint?
-    updateSupportInvoice(selectedInvoice.errandId, municipalityId, invoiceData)
-      .then((success) => {
-        if (!success) {
-          throw new Error('');
-        }
+  const onError = () => {
+    console.log('getValues()', getValues());
+    console.log('errors', errors);
+  };
 
-        setTimeout(() => {
-          props.setUnsaved(false);
-          clearErrors();
-        }, 0);
-        setTimeout(() => {
-          props.update();
-        }, 500);
+  const onSubmit = () => {
+    return saveBillingRecord(undefined, municipalityId, getValues())
+      .then(() => {
         toastMessage({
           position: 'bottom',
           closeable: false,
@@ -149,45 +85,59 @@ export const AttestationInvoiceForm: React.FC<{
           status: 'success',
         });
       })
-      .catch((e) => {
-        console.error(e);
+      .catch(() => {
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när fakturan skulle sparas',
+          message: 'Något gick fel när fakturan sparades',
           status: 'error',
         });
-      });*/
+      });
   };
 
-  const ChangeAttestationDecisionComponent = () => {
+  const ChangeAttestationDecisionComponent = (p: { status: CBillingRecordStatusEnum }) => {
     return (
       <div className="flex gap-md my-md">
         <Select
           className="w-full"
-          value={getValues().status}
+          // disabled={p.status === CBillingRecordStatusEnum.INVOICED}
+          value={p.status}
           onChange={(e) => {
-            setValue('status', e.target.value, { shouldDirty: true });
+            setValue('status', e.target.value as CBillingRecordStatusEnum, { shouldDirty: true });
             trigger('status');
           }}
         >
-          <Select.Option value="NONE">Inget beslut</Select.Option>
-          <Select.Option value="DENIED">Avböj</Select.Option>
-          <Select.Option value="APPROVED">Godkänn</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.NEW}>Inget beslut</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.APPROVED}>Godkänn</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avslå</Select.Option>
+          <Select.Option value={CBillingRecordStatusEnum.INVOICED}>Fakturerad</Select.Option>
         </Select>
         <Button
           variant="secondary"
           onClick={() => {
             setShowDecisionComponent(false);
-            setValue('status', selectedInvoice.status);
+            setValue('status', selectedRecord.status);
           }}
         >
           Avbryt
         </Button>
-        <Button disabled={!isDirty}>Spara beslut</Button>
+        <Button
+          disabled={!isDirty}
+          onClick={() => {
+            setValue('status', getValues().status);
+            setBillingRecordStatus(municipalityId, getValues(), getValues().status, user).then(() => {
+              props.update(selectedRecord.id);
+              setShowDecisionComponent(false);
+            });
+          }}
+        >
+          Spara beslut
+        </Button>
       </div>
     );
   };
+
+  const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 
   return (
     <div className="px-40 my-lg gap-24">
@@ -203,305 +153,63 @@ export const AttestationInvoiceForm: React.FC<{
         <Table.Body>
           <Table.Row>
             <Table.Column>
-              <NextLink
-                href={`/arende/${municipalityId}/${selectedInvoice.errandId}`}
-                target="_blank"
-                className="underline"
-              >
-                {selectedInvoice?.errandId}
-              </NextLink>
+              {selectedRecord.extraParameters?.['errandId'] ? (
+                <NextLink
+                  href={`/arende/${municipalityId}/${selectedRecord.extraParameters?.['errandId']}`}
+                  target="_blank"
+                  className="underline"
+                >
+                  {maybe(selectedRecord.extraParameters?.['errandNumber'])}
+                </NextLink>
+              ) : (
+                maybe(selectedRecord.extraParameters?.['errandNumber'])
+              )}
             </Table.Column>
-            <Table.Column>{selectedInvoice.registeredAt}</Table.Column>
-            <Table.Column>{selectedInvoice.registeredBy}</Table.Column>
-            <Table.Column>{selectedInvoice.updatedAt}</Table.Column>
+            <Table.Column>{prettyTime(selectedRecord.created)}</Table.Column>
+            <Table.Column>{maybe(selectedRecord.extraParameters?.['referenceName'])}</Table.Column>
+            <Table.Column>{prettyTime(selectedRecord.modified)}</Table.Column>
           </Table.Row>
         </Table.Body>
       </Table>
 
-      <div className="flex gap-md mt-16">
-        <div className="my-sm w-1/2">
-          <FormControl id="supervisor" className="w-full">
-            <FormLabel>Chef</FormLabel>
-            <Input
-              {...register('supervisor')}
-              data-cy="supervisor-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().supervisor}
-              onChange={(e) => {
-                setValue('supervisor', e.target.value);
-                trigger('supervisor');
-              }}
-            />
-            {errors.supervisor && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.supervisor?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="my-sm gap-xl w-1/2">
-          <FormControl id="category" className="w-full">
-            <FormLabel>Referensnummer</FormLabel>
-            <Input
-              {...register('referenceNumber')}
-              data-cy="referenceNumber-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().referenceNumber}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('referenceNumber', e.target.value);
-                trigger('referenceNumber');
-              }}
-            />
-            {errors.referenceNumber && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.referenceNumber?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
-
-      <div className="flex gap-md mt-8 mb-lg">
-        <div className="w-1/2">
-          <FormControl id="category" className="w-full">
-            <FormLabel>Kundidentitet</FormLabel>
-            {/* TODO Missing select options */}
-            <Select
-              {...register('client')}
-              data-cy="client-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues('client')}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('client', e.target.value);
-                trigger('client');
-              }}
-            >
-              {' '}
-            </Select>
-            {errors.client && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.client?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="w-1/2">
-          <FormControl id="category" className="w-full">
-            <FormLabel>Aktivitet</FormLabel>
-            {/* TODO Missing select options */}
-            <Select
-              {...register('activity')}
-              data-cy="activity-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues('activity')}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('activity', e.target.value);
-                trigger('activity');
-              }}
-            >
-              {' '}
-            </Select>
-            {errors.activity && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.activity?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
+      <FormProvider {...formControls}>
+        <BillingForm recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])} />
+      </FormProvider>
 
       <Divider />
 
-      <div className="my-lg gap-xl">
-        <FormControl>
-          <FormLabel>Faktureringstyp</FormLabel>
-
-          <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
-            <div className="flex justify-between w-full">
-              <div>
-                <RadioButton
-                  data-cy="invoice-type-extra-payment-direct-deposit"
-                  className="mr-lg mb-sm"
-                  name="direct-deposit"
-                  id="direct-deposit"
-                  value={'Extra utbetalning - Direktinsättning'}
-                  {...register('type')}
-                  checked={getValues().type === 'Extra utbetalning - Direktinsättning'}
-                >
-                  Extra utbetalning - Direktinsättning
-                </RadioButton>
-
-                <RadioButton
-                  data-cy="invoice-type-extra-payment-system-deposit"
-                  className="mr-sm mb-sm"
-                  name="system-deposit"
-                  id="system-deposit"
-                  value={'Extra utbetalning - Systemet'}
-                  {...register('type')}
-                  checked={getValues().type === 'Extra utbetalning - Systemet'}
-                >
-                  Extra utbetalning - Systemet
-                </RadioButton>
-              </div>
-
-              <div>
-                <RadioButton
-                  data-cy="invoice-type-manual-handling-salary-base"
-                  className="mr-lg mb-sm"
-                  name="salary-base"
-                  id="salary-base"
-                  value={'Manuell hantering - Löneunderlag'}
-                  {...register('type')}
-                  checked={getValues().type === 'Manuell hantering - Löneunderlag'}
-                >
-                  Manuell hantering - Löneunderlag
-                </RadioButton>
-
-                <RadioButton
-                  data-cy="invoice-type-extra-order"
-                  className="mr-sm"
-                  name="extra-order"
-                  id="extra-order"
-                  value={'Extra beställning'}
-                  {...register('type')}
-                  checked={getValues().type === 'Extra beställning'}
-                >
-                  Extra beställning
-                </RadioButton>
-              </div>
-            </div>
-          </RadioButton.Group>
-        </FormControl>
-      </div>
-
-      <div className="flex gap-md mt-16">
-        <div className="my-sm w-1/2">
-          <FormControl id="quantity" className="w-full">
-            <FormLabel>Antal timmar</FormLabel>
-            <Input
-              {...register('quantity')}
-              data-cy="quantity-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().quantity}
-              onChange={(e) => {
-                setValue('quantity', e.target.value);
-                trigger('quantity');
-              }}
-            />
-            {errors.quantity && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.quantity?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="my-sm gap-xl w-1/2">
-          <FormControl id="amount" className="w-full">
-            <FormLabel>Timpris</FormLabel>
-            <Input
-              {...register('amount')}
-              data-cy="amount-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().amount}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('amount', e.target.value);
-                trigger('amount');
-              }}
-              disabled
-            />
-            {errors.amount && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.amount?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
-
-      <div className="flex gap-md mt-16 mb-lg">
-        <div className="my-sm w-1/2">
-          <FormControl id="totalAmount" className="w-full">
-            <FormLabel>Kostnad totalt</FormLabel>
-            <Input
-              {...register('totalAmount')}
-              data-cy="totalAmount-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues().totalAmount}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('totalAmount', e.target.value);
-                trigger('totalAmount');
-              }}
-              disabled
-            />
-            {errors.totalAmount && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.totalAmount?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-
-        <div className="my-sm gap-xl w-1/2">
-          <FormControl id="quantity" className="w-full">
-            <FormLabel>Utvecklingskostnad</FormLabel>
-            <Input
-              {...register('quantity')}
-              data-cy="quantity-input"
-              className="w-full text-dark-primary"
-              size="md"
-              value={getValues('quantity')}
-              placeholder={'0'}
-              onChange={(e) => {
-                setValue('quantity', e.target.value);
-                trigger('quantity');
-              }}
-              disabled
-            />
-            {errors.quantity && (
-              <div className="text-error">
-                <FormErrorMessage>{errors.quantity?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </div>
-      </div>
-
-      <Divider />
-
-      {selectedInvoice.status === 'NONE' ? (
+      {selectedRecord.status === CBillingRecordStatusEnum.NEW ? (
         <div className="flex justify-between gap-16 w-full my-lg">
           <div>
-            <Button variant="secondary" onClick={send}>
+            <Button variant="secondary" onClick={handleSubmit(onSubmit, onError)}>
               Spara
             </Button>
           </div>
           <div className="justify-end">
-            <Button variant="primary" color="error" className="mr-16">
+            <Button
+              variant="primary"
+              color="error"
+              className="mr-16"
+              onClick={() =>
+                rejectBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
+              }
+            >
               Avslå
             </Button>
-            <Button variant="primary" color="gronsta">
+            <Button
+              variant="primary"
+              color="gronsta"
+              onClick={() =>
+                approveBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
+              }
+            >
               Godkänn
             </Button>
           </div>
         </div>
-      ) : selectedInvoice.status === 'APPROVED' ? (
+      ) : selectedRecord.status === CBillingRecordStatusEnum.APPROVED ? (
         showChangeDecisionComponent ? (
-          <ChangeAttestationDecisionComponent />
+          <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
         ) : (
           <div>
             <div className="pt-16 gap-md flex justify-end">
@@ -514,18 +222,38 @@ export const AttestationInvoiceForm: React.FC<{
             </div>
             <span className="flex justify-end my-md">
               <span className="text-small">
-                <b>Attesterad av:</b> {selectedInvoice.approvedBy}, {selectedInvoice.approved}
+                <b>Attesterad av:</b> {selectedRecord.approvedBy}, {prettyTime(selectedRecord.approved)}
+              </span>
+            </span>
+          </div>
+        )
+      ) : selectedRecord.status === CBillingRecordStatusEnum.REJECTED ? (
+        showChangeDecisionComponent ? (
+          <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
+        ) : (
+          <div>
+            <div className="pt-16 gap-md flex justify-end">
+              <Button inverted variant="primary" color="error">
+                <LucideIcon name="thumbs-down" /> Avslag
+              </Button>
+              <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
+                Ändra beslut
+              </Button>
+            </div>
+            <span className="flex justify-end my-md">
+              <span className="text-small">
+                <b>Attesterad av:</b> {selectedRecord.approvedBy}, {prettyTime(selectedRecord.approved)}
               </span>
             </span>
           </div>
         )
       ) : showChangeDecisionComponent ? (
-        <ChangeAttestationDecisionComponent />
+        <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
       ) : (
         <div>
           <div className="pt-16 gap-md flex justify-end">
-            <Button inverted variant="primary" color="error">
-              <LucideIcon name="thumbs-down" /> Avslag
+            <Button inverted variant="primary" color="vattjom">
+              <LucideIcon name="check" /> Fakturerad
             </Button>
             <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
               Ändra beslut
@@ -533,7 +261,7 @@ export const AttestationInvoiceForm: React.FC<{
           </div>
           <span className="flex justify-end my-md">
             <span className="text-small">
-              <b>Attesterad av:</b> {selectedInvoice.approvedBy}, {selectedInvoice.approved}
+              <b>Attesterad av:</b> {selectedRecord.approvedBy}, {prettyTime(selectedRecord.approved)}
             </span>
           </span>
         </div>

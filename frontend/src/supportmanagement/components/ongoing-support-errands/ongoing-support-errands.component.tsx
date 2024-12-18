@@ -23,6 +23,7 @@ import SupportManagementFiltering, {
   SupportManagementValues,
 } from '../supportmanagement-filtering/supportmanagement-filtering.component';
 import { SupportErrandsTable } from './components/supporterrands-table.component';
+import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -65,6 +66,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
+    setBillingRecords,
   } = useAppContext();
 
   const startdate = watchFilter('startdate');
@@ -174,6 +176,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   useEffect(() => {
     const sortData = store.get('sort');
+    getBillingRecords(municipalityId, 0, pageSize, {}, { modified: 'desc' }).then(setBillingRecords);
 
     if (sortData) {
       try {

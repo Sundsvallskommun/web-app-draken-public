@@ -12,7 +12,7 @@ interface ResponseData {
 }
 
 @Controller()
-export class estateInfoController {
+export class EstateInfoController {
   private apiService = new ApiService();
 
   @Get('/estateByPropertyDesignation/:query')
@@ -51,7 +51,7 @@ export class estateInfoController {
         throw new HttpException(400, 'Could not find estate for designation: ' + designation);
       });
 
-      const indexOfEstate = res.data.findIndex((estate) => estate.designation === designation);
+      const indexOfEstate = res.data.findIndex(estate => estate.designation === designation);
 
       if (res.data.length !== 0 && indexOfEstate !== -1) {
         const url = `/estateinfo/1.0/estate-data`;

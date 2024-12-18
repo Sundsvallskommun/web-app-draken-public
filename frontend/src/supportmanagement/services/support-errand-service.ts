@@ -388,18 +388,6 @@ export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
   );
 };
 
-export const attestationLabels = [
-  { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Timmar', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Belopp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Chef', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärende', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Attesterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-];
-
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
   internalId: string;
@@ -853,7 +841,7 @@ export const updateSupportErrand: (
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
-    externalTags: [],
+    externalTags: formdata.externalTags || [],
   };
   if (formdata.caseId) {
     data.externalTags.push({

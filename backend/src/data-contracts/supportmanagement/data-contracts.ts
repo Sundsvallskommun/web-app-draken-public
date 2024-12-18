@@ -749,7 +749,6 @@ export interface CreateErrandNoteRequest {
   partyId?: string;
   /**
    * The note subject
-   * @max 255
    * @minLength 1
    * @maxLength 255
    * @example "This is a subject"
@@ -757,7 +756,6 @@ export interface CreateErrandNoteRequest {
   subject: string;
   /**
    * The note body
-   * @max 2048
    * @minLength 1
    * @maxLength 2048
    * @example "This is a note"
@@ -881,8 +879,7 @@ export interface UpdateErrandNoteRequest {
    */
   subject: string;
   /**
-   * The note nody
-   * @max 2048
+   * The note body
    * @minLength 1
    * @maxLength 2048
    * @example "This is a note"
@@ -988,10 +985,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1089,21 +1086,6 @@ export interface Operation {
 /** FindErrandNotesRequest model */
 export interface FindErrandNotesRequest {
   /**
-   * Context for note
-   * @example "SUPPORT"
-   */
-  context?: string;
-  /**
-   * Role of note creator
-   * @example "FIRST_LINE_SUPPORT"
-   */
-  role?: string;
-  /**
-   * Party id (e.g. a personId or an organizationId)
-   * @example "81471222-5798-11e9-ae24-57fa13b361e1"
-   */
-  partyId?: string;
-  /**
    * Page number
    * @format int32
    * @min 1
@@ -1120,6 +1102,21 @@ export interface FindErrandNotesRequest {
    * @example 100
    */
   limit?: number;
+  /**
+   * Context for note
+   * @example "SUPPORT"
+   */
+  context?: string;
+  /**
+   * Role of note creator
+   * @example "FIRST_LINE_SUPPORT"
+   */
+  role?: string;
+  /**
+   * Party id (e.g. a personId or an organizationId)
+   * @example "81471222-5798-11e9-ae24-57fa13b361e1"
+   */
+  partyId?: string;
 }
 
 /** FindErrandNotesResponse model */
@@ -1219,10 +1216,10 @@ export enum EventType {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;

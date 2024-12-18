@@ -39,7 +39,7 @@ export interface WebMessageParty {
    * The message party id
    * @format uuid
    */
-  partyId: string;
+  partyId?: string;
   /** External references */
   externalReferences?: ExternalReference[];
 }

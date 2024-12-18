@@ -21,12 +21,17 @@ import { getSupportAdmins } from '@supportmanagement/services/support-admin-serv
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
+import {
+  getBillingRecord,
+  getBillingRecords,
+  useBillingRecords,
+} from '@supportmanagement/services/support-billing-service';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });
   const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
   const tableForm = useForm<AttestationTableForm>({
-    defaultValues: { sortColumn: 'touched', sortOrder: 'desc', pageSize: 12 },
+    defaultValues: { sortColumn: 'modified', sortOrder: 'desc', pageSize: 12 },
   });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const sortOrder = watchTable('sortOrder');
@@ -34,8 +39,8 @@ export const AttestationTab = () => {
   const pageSize = watchTable('pageSize');
   const page = watchTable('page');
 
-  const [showSelectedInvoice, setShowSelectedInvoice] = useState<boolean>(false);
-  const [selectedInvoice, setSelectedInvoice] = useState(undefined);
+  const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
+  const [selectedRecord, setSelectedRecord] = useState(undefined);
 
   const { setSupportErrand, setSupportAdmins, supportAdmins, municipalityId } = useAppContext();
 
@@ -43,12 +48,12 @@ export const AttestationTab = () => {
   const enddate = watchFilter('enddate');
   const [ownerFilter, setOwnerFilter] = useState(false);
   const statusFilter = watchFilter('status');
-  const typeFilter = watchFilter('type');
+  const invoiceTypeFilter = watchFilter('invoiceType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
-  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
+  const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
 
-  const errands = useSupportErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
+  const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
 
   const setInitialFocus = () => {
@@ -68,7 +73,7 @@ export const AttestationTab = () => {
       try {
         filter = JSON.parse(filterdata);
         storedFilters = {
-          type: filter?.type?.split(',') || AttestationValues.type,
+          invoiceType: filter?.invoiceType?.split(',') || AttestationValues.invoiceType,
           status: filter?.status !== '' ? filter?.status?.split(',') || AttestationValues.status : [],
           startdate: filter?.start || AttestationValues.startdate,
           enddate: filter?.end || AttestationValues.enddate,
@@ -76,7 +81,7 @@ export const AttestationTab = () => {
       } catch (error) {
         store.set('attestationFilter', JSON.stringify({}));
         storedFilters = {
-          type: AttestationValues.type,
+          invoiceType: AttestationValues.invoiceType,
           status: AttestationValues.status,
           startdate: AttestationValues.startdate,
           enddate: AttestationValues.enddate,
@@ -94,7 +99,7 @@ export const AttestationTab = () => {
   useEffect(() => {
     setTableValue('page', 0);
     //eslint-disable-next-line
-  }, [filterObject, sortColumn, sortOrder, pageSize]);
+  }, [attestationFilterObject, sortColumn, sortOrder, pageSize]);
 
   useEffect(() => {
     // NOTE: If we set focus on the next button
@@ -105,37 +110,32 @@ export const AttestationTab = () => {
       setUser(user);
     });
     setSupportErrand(undefined);
+    getBillingRecords(municipalityId);
     //eslint-disable-next-line
   }, [router]);
 
   useEffect(() => {
-    if (errands) {
+    if (billingRecords) {
       setSupportErrand(undefined);
-      setTableValue('page', errands.page);
-      setTableValue('size', errands.size);
-      setTableValue('totalPages', errands.totalPages);
-      setTableValue('totalElements', errands.totalElements);
+      setTableValue('size', billingRecords.size);
+      setTableValue('totalPages', billingRecords.totalPages);
+      setTableValue('totalElements', billingRecords.totalElements);
     }
     //eslint-disable-next-line
-  }, [errands]);
+  }, [billingRecords]);
 
   useEffect(() => {
-    // getAdminUsers().then((data) => {
-    //   setAdministrators(data);
-    // });
     getSupportAdmins().then(setSupportAdmins);
-    //eslint-disable-next-line
   }, []);
 
   useDebounceEffect(
     () => {
       const fObj = {};
-      const extraFilterObj = {};
       if (statusFilter && statusFilter.length > 0) {
         fObj['status'] = statusFilter.join(',');
       }
-      if (typeFilter && typeFilter.length > 0) {
-        fObj['type'] = typeFilter.join(',');
+      if (invoiceTypeFilter && invoiceTypeFilter.length > 0) {
+        fObj['invoiceType'] = invoiceTypeFilter.join(',');
       }
       if (ownerFilter) {
         fObj['stakeholders'] = user.username;
@@ -148,12 +148,11 @@ export const AttestationTab = () => {
         const date = enddate.trim();
         fObj['end'] = date;
       }
-      setFilterObject(fObj);
-      setExtraFilter(extraFilterObj);
+      setAttestationFilterObject(fObj);
       store.set('attestationFilter', JSON.stringify(fObj));
     },
     200,
-    [ownerFilter, statusFilter, typeFilter, startdate, enddate]
+    [ownerFilter, statusFilter, invoiceTypeFilter, startdate, enddate]
   );
 
   const ownerFilteringHandler = async (e) => {
@@ -198,8 +197,8 @@ export const AttestationTab = () => {
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>
                 <AttestationsTable
-                  setSelectedInvoice={setSelectedInvoice}
-                  setShowSelectedInvoice={setShowSelectedInvoice}
+                  setSelectedRecord={setSelectedRecord}
+                  setShowSelectedRecord={setShowSelectedRecord}
                 />
               </FormProvider>
             </Disclosure.Panel>
@@ -207,16 +206,21 @@ export const AttestationTab = () => {
         </div>
       </main>
 
-      {selectedInvoice && (
+      {selectedRecord && (
         <AttestationInvoiceWrapperComponent
-          show={showSelectedInvoice}
+          show={showSelectedRecord}
           label={'Attestering av fakturapost'}
           closeHandler={() => {
-            setSelectedInvoice(undefined);
-            setShowSelectedInvoice(false);
+            setSelectedRecord(undefined);
+            setShowSelectedRecord(false);
           }}
         >
-          <AttestationInvoiceForm selectedInvoice={selectedInvoice} />
+          <AttestationInvoiceForm
+            selectedrecord={selectedRecord}
+            update={(recordId: string) => {
+              getBillingRecord(recordId, municipalityId).then(setSelectedRecord);
+            }}
+          />
         </AttestationInvoiceWrapperComponent>
       )}
     </div>
