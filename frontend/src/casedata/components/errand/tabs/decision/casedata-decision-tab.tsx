@@ -23,7 +23,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { KopeAvtalsData } from '@casedata/interfaces/kopeavtals-data';
 import { LagenhetsArrendeData } from '@casedata/interfaces/lagenhetsarrende-data';
@@ -48,7 +47,6 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Dialog,
-  Divider,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -105,8 +103,7 @@ let formSchema = yup
           message: 'Slutdatum måste vara efter startdatum',
           test: (value, context) =>
             context.parent.outcome !== 'Bifall' ||
-            Date.parse(context.parent.validFrom) < Date.parse(value.toString()) &&
-            value.length !== 0,
+            (Date.parse(context.parent.validFrom) < Date.parse(value.toString()) && value.length !== 0),
         })
       : yup.string(),
   })
@@ -487,358 +484,296 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   return (
-    <>
-      {(errand.phase === ErrandPhase.verkstalla && errand.status !== ErrandStatus.UnderBeslut) ||
-      errand.phase === ErrandPhase.uppfoljning ||
-      errand.phase === ErrandPhase.canceled ||
-      [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
-        errand.status as ErrandStatus
-      ) ? (
-        <div className="w-full py-24 px-32">
-          <div className="w-full flex justify-between items-center flex-wrap">
-            <h2 className="text-h4-sm md:text-h4-md">Beslut</h2>
-          </div>
-
-          <div className="py-8 w-full gap-24">
-            <p className="w-4/5 pr-16">Här listas de beslut som har fattats kring ärendet</p>
-          </div>
-          <Divider className="pt-16" />
-
-          <div className="mt-24">
-            {errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()) &&
-              errand.decisions.map((decision, id) => {
-                if (decision.decisionType === 'FINAL') {
-                  return (
-                    <div className="flex m-16 items-start" key={`list-decision-${id}`}>
-                      <div className="rounded-8 bg-vattjom-surface-accent mr-18">
-                        <LucideIcon name="gavel" className="m-12 w-24 h-24" />
-                      </div>
-                      <div className="w-full">
-                        <div className="flex justify-between">
-                          <div className="flex">
-                            <p className="font-bold my-0">
-                              Beslut -{' '}
-                              {Object.entries(DecisionOutcomeLabel).find((x) => x[0] === decision.decisionOutcome)[1]}
-                            </p>
-
-                            {sent(decision) ? (
-                              <div className="flex items-center">
-                                <LucideIcon name="mail-check" size={16} className="ml-12 mr-4" />
-                                <p className="text-small">Beslut skickat</p>
-                              </div>
-                            ) : (
-                              <div className="flex items-center">
-                                <LucideIcon name="pen" size={16} className="ml-12 mr-4" />
-                                <p className="text-small">Beslut ej skickat</p>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="">{dayjs(decision.decidedAt).format('D MMM, HH:mm')}</div>
-                        </div>
-                        <div>{removeHTMLTags(decision.description)}</div>
-                      </div>
-                    </div>
-                  );
-                }
-              })}
-          </div>
-        </div>
-      ) : (
-        <div className="w-full py-24 px-32">
-          <div className="w-full flex justify-between items-center flex-wrap">
-            <h2 className="text-h4-sm md:text-h4-md">Beslutstext</h2>
-            <Button
-              data-cy="decision-pdf-preview-button"
-              color="vattjom"
-              inverted={formState.isValid && allowed}
+    <div className="w-full py-24 px-32">
+      <div className="w-full flex justify-between items-center flex-wrap">
+        <h2 className="text-h4-sm md:text-h4-md">Beslutstext</h2>
+        <Button
+          data-cy="decision-pdf-preview-button"
+          color="vattjom"
+          inverted={formState.isValid && allowed}
+          size="sm"
+          disabled={!formState.isValid || !allowed}
+          onClick={getPdfPreview}
+          rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+        >
+          {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
+        </Button>
+      </div>
+      <div className="mt-24">
+        <Input type="hidden" {...register('id')} />
+        <Input type="hidden" {...register('decidedBy')} value={user.username} />
+        <div className="w-full mt-md flex justify-start gap-md mb-24">
+          <FormControl data-cy="decision-outcome-dropdown" className="w-full">
+            <FormLabel>Beslut</FormLabel>
+            <Input data-cy="decision-outcome-input" type="hidden" {...register('outcome')} />
+            <Select
+              className="w-full"
+              data-cy="decision-outcome-select"
               size="sm"
-              disabled={!formState.isValid || !allowed}
-              onClick={getPdfPreview}
-              rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+              onChange={(e) => {
+                setValue('outcome', e.currentTarget.value, { shouldDirty: true });
+                trigger();
+              }}
+              placeholder="Välj beslut"
+              disabled={isErrandLocked(errand)}
+              value={getValues('outcome')}
             >
-              {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
-            </Button>
-          </div>
-          <div className="mt-24">
-            <Input type="hidden" {...register('id')} />
-            <Input type="hidden" {...register('decidedBy')} value={user.username} />
-            <div className="w-full mt-md flex justify-start gap-md mb-24">
-              <FormControl data-cy="decision-outcome-dropdown" className="w-full">
-                <FormLabel>Beslut</FormLabel>
-                <Input data-cy="decision-outcome-input" type="hidden" {...register('outcome')} />
+              <Select.Option data-cy="outcome-input-item" value={'Välj beslut'}>
+                Välj beslut
+              </Select.Option>
+              <Select.Option data-cy="outcome-input-item" value={'Bifall'}>
+                Bifall
+              </Select.Option>
+              <Select.Option data-cy="outcome-input-item" value={'Avslag'}>
+                Avslag
+              </Select.Option>
+              <Select.Option data-cy="outcome-input-item" value={'Ärendet avskrivs'}>
+                Ärendet avskrivs
+              </Select.Option>
+            </Select>
+            {errors.outcome && (
+              <div className="my-sm text-error">
+                <FormErrorMessage>{errors.outcome.message}</FormErrorMessage>
+              </div>
+            )}
+          </FormControl>
+
+          {isPT() && (
+            <>
+              <FormControl className="w-full">
+                <FormLabel>Lagrum</FormLabel>
+                <Input type="hidden" {...register('law')} />
                 <Select
-                  className="w-full"
-                  data-cy="decision-outcome-select"
+                  className={cx(`w-full`, errors.law ? 'border-error' : '')}
+                  data-cy="law-select"
+                  name="law"
                   size="sm"
                   onChange={(e) => {
-                    setValue('outcome', e.currentTarget.value, { shouldDirty: true });
+                    setValue(
+                      'law',
+                      lawMapping.filter((law) => {
+                        return law.heading === e.target.value;
+                      }),
+                      { shouldDirty: true }
+                    );
+                    props.setUnsaved(true);
                     trigger();
                   }}
-                  placeholder="Välj beslut"
-                  disabled={isErrandLocked(errand)}
-                  value={getValues('outcome')}
+                  placeholder="Välj lagrum"
+                  value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                 >
-                  <Select.Option data-cy="outcome-input-item" value={'Välj beslut'}>
-                    Välj beslut
-                  </Select.Option>
-                  <Select.Option data-cy="outcome-input-item" value={'Bifall'}>
-                    Bifall
-                  </Select.Option>
-                  <Select.Option data-cy="outcome-input-item" value={'Avslag'}>
-                    Avslag
-                  </Select.Option>
-                  <Select.Option data-cy="outcome-input-item" value={'Ärendet avskrivs'}>
-                    Ärendet avskrivs
-                  </Select.Option>
+                  <Select.Option value={''}>Välj lagrum</Select.Option>
+                  {lawMapping.map((law, index) => {
+                    return (
+                      <Select.Option key={index} value={law.heading}>
+                        {law.heading}
+                      </Select.Option>
+                    );
+                  })}
                 </Select>
-                {errors.outcome && (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>{errors.outcome.message}</FormErrorMessage>
-                  </div>
-                )}
+                <div className="my-sm text-error">
+                  {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
+                </div>
               </FormControl>
 
-              {isPT() && (
-                <>
-                  <FormControl className="w-full">
-                    <FormLabel>Lagrum</FormLabel>
-                    <Input type="hidden" {...register('law')} />
-                    <Select
-                      className={cx(`w-full`, errors.law ? 'border-error' : '')}
-                      data-cy="law-select"
-                      name="law"
-                      size="sm"
-                      onChange={(e) => {
-                        setValue(
-                          'law',
-                          lawMapping.filter((law) => {
-                            return law.heading === e.target.value;
-                          }),
-                          { shouldDirty: true }
-                        );
-                        props.setUnsaved(true);
-                        trigger();
-                      }}
-                      placeholder="Välj lagrum"
-                      value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
-                    >
-                      <Select.Option value={''}>Välj lagrum</Select.Option>
-                      {lawMapping.map((law, index) => {
-                        return (
-                          <Select.Option key={index} value={law.heading}>
-                            {law.heading}
-                          </Select.Option>
-                        );
-                      })}
-                    </Select>
-                    <div className="my-sm text-error">
-                      {errors.law && formState.dirtyFields.law && (
-                        <FormErrorMessage>{errors.law.message}</FormErrorMessage>
-                      )}
-                    </div>
-                  </FormControl>
+              <FormControl className="w-full">
+                <FormLabel>Beslut giltigt från</FormLabel>
+                <Input
+                  type="date"
+                  {...register('validFrom')}
+                  size="sm"
+                  placeholder="Välj datum"
+                  data-cy="validFrom-input"
+                />
+              </FormControl>
 
-                  <FormControl className="w-full">
-                    <FormLabel>Beslut giltigt från</FormLabel>
-                    <Input
-                      type="date"
-                      {...register('validFrom')}
-                      size="sm"
-                      placeholder="Välj datum"
-                      data-cy="validFrom-input"
-                    />
-                  </FormControl>
+              <FormControl className="w-full">
+                <FormLabel>Beslut giltigt till</FormLabel>
+                <Input
+                  type="date"
+                  {...register('validTo')}
+                  size="sm"
+                  placeholder="Välj datum"
+                  data-cy="validTo-input"
+                />
+              </FormControl>
+            </>
+          )}
 
-                  <FormControl className="w-full">
-                    <FormLabel>Beslut giltigt till</FormLabel>
-                    <Input
-                      type="date"
-                      {...register('validTo')}
-                      size="sm"
-                      placeholder="Välj datum"
-                      data-cy="validTo-input"
-                    />
-                  </FormControl>
-                </>
-              )}
-
-              {isMEX() ? (
-                <FormControl className="w-full">
-                  <FormLabel>Välj beslutsmall</FormLabel>
-                  <Input
-                    type="hidden"
-                    {...register('decisionTemplate')}
-                    value={beslutsmallMapping.find((l) => l.id === selectedBeslut).label}
-                  />
-                  <Select
-                    className="w-full"
-                    data-cy="decisionTemplate-select"
-                    name="decisionTemplate"
-                    size="sm"
-                    onChange={(e) => {
-                      setValue('decisionTemplate', e.currentTarget.value, { shouldDirty: true });
-                      changeTemplate(e.currentTarget.value);
-                    }}
-                    placeholder="Välj beslutsmall"
-                    value={getValues('decisionTemplate')}
-                  >
-                    <Select.Option value="">Välj beslutsmall</Select.Option>
-                    {beslutsmallMapping.map((decisionTemplate, index) => (
-                      <Select.Option key={index} value={decisionTemplate.label}>
-                        {decisionTemplate.label}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </FormControl>
-              ) : null}
-            </div>
-
-            <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
-            <Input type="hidden" {...register('errandId')} />
-            <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
-              <RichTextEditor
-                ref={quillRef}
-                containerLabel="decision"
-                value={richText}
-                isMaximizable={true}
-                readOnly={isErrandLocked(errand)}
-                toggleModal={() => {
-                  setIsEditorModalOpen(!isEditorModalOpen);
-                }}
-                onChange={(value, delta, source, editor) => {
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(value);
-                }}
+          {isMEX() ? (
+            <FormControl className="w-full">
+              <FormLabel>Välj beslutsmall</FormLabel>
+              <Input
+                type="hidden"
+                {...register('decisionTemplate')}
+                value={beslutsmallMapping.find((l) => l.id === selectedBeslut).label}
               />
-            </div>
-            <div className="my-sm text-error">
-              {errors.description && formState.isDirty && (
-                <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
-              )}
-            </div>
-
-            <div className="flex justify-start gap-md">
-              <Button
-                data-cy="save-decision-button"
-                variant="secondary"
-                color="primary"
-                size="md"
-                onClick={handleSubmit(onSubmit, onError)}
-                disabled={isLoading || !formState.isValid || isErrandLocked(errand) || !allowed}
-              >
-                {isLoading ? 'Sparar' : 'Spara beslutstext'}
-              </Button>
-              <Button
-                data-cy="decision-pdf-preview-button"
-                color="vattjom"
-                inverted={formState.isValid && allowed}
-                size="md"
-                disabled={!formState.isValid || !allowed}
-                onClick={getPdfPreview}
-                rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
-              >
-                {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
-              </Button>
-              <Button
-                data-cy="save-and-send-decision-button"
-                variant="primary"
-                color="vattjom"
-                size="md"
-                disabled={
-                  isSaveAndSendLoading ||
-                  !formState.isValid ||
-                  [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
-                    errand.status as ErrandStatus
-                  ) ||
-                  !validateErrandForDecision(errand) ||
-                  !validateOwnerForSendingDecision(errand) ||
-                  !validateAttachmentsForDecision(errand).valid ||
-                  !allowed
-                }
-                onClick={() => {
-                  if (existingContract) {
-                    if (existingContract.status === 'DRAFT') {
-                      setControlContractIsOpen(true);
-                    } else {
-                      saveConfirm
-                        .showConfirmation(
-                          'Spara och skicka',
-                          'Vill du spara och skicka beslutet?',
-                          'Ja',
-                          'Nej',
-                          'info',
-                          'info'
-                        )
-                        .then((confirmed) => {
-                          if (confirmed) {
-                            saveAndSend(getValues());
-                            return Promise.resolve(true);
-                          }
-                        });
-                    }
-                  } else {
-                    saveConfirm
-                      .showConfirmation(
-                        'Spara och skicka',
-                        'Vill du spara och skicka beslutet?',
-                        'Ja',
-                        'Nej',
-                        'info',
-                        'info'
-                      )
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          saveAndSend(getValues());
-                          return Promise.resolve(true);
-                        }
-                      });
-                  }
+              <Select
+                className="w-full"
+                data-cy="decisionTemplate-select"
+                name="decisionTemplate"
+                size="sm"
+                onChange={(e) => {
+                  setValue('decisionTemplate', e.currentTarget.value, { shouldDirty: true });
+                  changeTemplate(e.currentTarget.value);
                 }}
-                rightIcon={
-                  isSaveAndSendLoading ? <Spinner size={2} className="mr-sm" /> : <LucideIcon name="send-horizontal" />
-                }
+                placeholder="Välj beslutsmall"
+                value={getValues('decisionTemplate')}
               >
-                {isSaveAndSendLoading ? 'Skickar' : 'Skicka beslut'}
-              </Button>
-            </div>
-            {!validateOwnerForSendingDecision(errand) ? (
-              <FormErrorMessage data-cy="attachment-error-message" className="mt-md text-error">
-                För att skicka beslut måste ärendeägaren ha en giltig e-postadress eller ha registrerats med sitt
-                personnummer.
-              </FormErrorMessage>
-            ) : null}
-            {!validateAttachmentsForDecision(errand).valid && (
-              <FormErrorMessage data-cy="attachment-error-message" className="mt-md text-error">
-                Ärendet saknar följande bilagor: {validateAttachmentsForDecision(errand).reason}.
-              </FormErrorMessage>
-            )}
-            {!validateStatusForDecision(errand).valid && (
-              <FormErrorMessage data-cy="status-error-message" className="mt-md text-error">
-                Ärendet har fel status för att beslut ska kunna fattas.
-              </FormErrorMessage>
-            )}
-            <div className="mt-lg">{error && <FormErrorMessage>{error}</FormErrorMessage>}</div>
-          </div>
-
-          <Dialog show={controlContractIsOpen}>
-            <Dialog.Content>
-              <h1 className="text-h4">Avtal måste vara färdigt</h1>
-              <p>
-                För att skicka beslut behöver avtalet vara färdigt och följaktligen avmarkeras i &quot;markera som
-                utkast&quot; under avtalsfliken
-              </p>
-            </Dialog.Content>
-            <Dialog.Buttons>
-              <Button variant="primary" onClick={() => setControlContractIsOpen(false)}>
-                Ok
-              </Button>
-            </Dialog.Buttons>
-          </Dialog>
+                <Select.Option value="">Välj beslutsmall</Select.Option>
+                {beslutsmallMapping.map((decisionTemplate, index) => (
+                  <Select.Option key={index} value={decisionTemplate.label}>
+                    {decisionTemplate.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          ) : null}
         </div>
-      )}
-    </>
+
+        <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
+        <Input type="hidden" {...register('errandId')} />
+        <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
+          <RichTextEditor
+            ref={quillRef}
+            containerLabel="decision"
+            value={richText}
+            isMaximizable={true}
+            readOnly={isErrandLocked(errand)}
+            toggleModal={() => {
+              setIsEditorModalOpen(!isEditorModalOpen);
+            }}
+            onChange={(value, delta, source, editor) => {
+              if (source === 'user') {
+                setTextIsDirty(true);
+              }
+              return onRichTextChange(value);
+            }}
+          />
+        </div>
+        <div className="my-sm text-error">
+          {errors.description && formState.isDirty && (
+            <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
+          )}
+        </div>
+
+        <div className="flex justify-start gap-md">
+          <Button
+            data-cy="save-decision-button"
+            variant="secondary"
+            color="primary"
+            size="md"
+            onClick={handleSubmit(onSubmit, onError)}
+            disabled={isLoading || !formState.isValid || isErrandLocked(errand) || !allowed}
+          >
+            {isLoading ? 'Sparar' : 'Spara beslutstext'}
+          </Button>
+          <Button
+            data-cy="decision-pdf-preview-button"
+            color="vattjom"
+            inverted={formState.isValid && allowed}
+            size="md"
+            disabled={!formState.isValid || !allowed}
+            onClick={getPdfPreview}
+            rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+          >
+            {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
+          </Button>
+          <Button
+            data-cy="save-and-send-decision-button"
+            variant="primary"
+            color="vattjom"
+            size="md"
+            disabled={
+              isSaveAndSendLoading ||
+              !formState.isValid ||
+              [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
+                errand.status as ErrandStatus
+              ) ||
+              !validateErrandForDecision(errand) ||
+              !validateOwnerForSendingDecision(errand) ||
+              !validateAttachmentsForDecision(errand).valid ||
+              !allowed
+            }
+            onClick={() => {
+              if (existingContract) {
+                if (existingContract.status === 'DRAFT') {
+                  setControlContractIsOpen(true);
+                } else {
+                  saveConfirm
+                    .showConfirmation(
+                      'Spara och skicka',
+                      'Vill du spara och skicka beslutet?',
+                      'Ja',
+                      'Nej',
+                      'info',
+                      'info'
+                    )
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        saveAndSend(getValues());
+                        return Promise.resolve(true);
+                      }
+                    });
+                }
+              } else {
+                saveConfirm
+                  .showConfirmation(
+                    'Spara och skicka',
+                    'Vill du spara och skicka beslutet?',
+                    'Ja',
+                    'Nej',
+                    'info',
+                    'info'
+                  )
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      saveAndSend(getValues());
+                      return Promise.resolve(true);
+                    }
+                  });
+              }
+            }}
+            rightIcon={
+              isSaveAndSendLoading ? <Spinner size={2} className="mr-sm" /> : <LucideIcon name="send-horizontal" />
+            }
+          >
+            {isSaveAndSendLoading ? 'Skickar' : 'Skicka beslut'}
+          </Button>
+        </div>
+        {!validateOwnerForSendingDecision(errand) ? (
+          <FormErrorMessage data-cy="attachment-error-message" className="mt-md text-error">
+            För att skicka beslut måste ärendeägaren ha en giltig e-postadress eller ha registrerats med sitt
+            personnummer.
+          </FormErrorMessage>
+        ) : null}
+        {!validateAttachmentsForDecision(errand).valid && (
+          <FormErrorMessage data-cy="attachment-error-message" className="mt-md text-error">
+            Ärendet saknar följande bilagor: {validateAttachmentsForDecision(errand).reason}.
+          </FormErrorMessage>
+        )}
+        {!validateStatusForDecision(errand).valid && (
+          <FormErrorMessage data-cy="status-error-message" className="mt-md text-error">
+            Ärendet har fel status för att beslut ska kunna fattas.
+          </FormErrorMessage>
+        )}
+        <div className="mt-lg">{error && <FormErrorMessage>{error}</FormErrorMessage>}</div>
+      </div>
+
+      <Dialog show={controlContractIsOpen}>
+        <Dialog.Content>
+          <h1 className="text-h4">Avtal måste vara färdigt</h1>
+          <p>
+            För att skicka beslut behöver avtalet vara färdigt och följaktligen avmarkeras i &quot;markera som
+            utkast&quot; under avtalsfliken
+          </p>
+        </Dialog.Content>
+        <Dialog.Buttons>
+          <Button variant="primary" onClick={() => setControlContractIsOpen(false)}>
+            Ok
+          </Button>
+        </Dialog.Buttons>
+      </Dialog>
+    </div>
   );
 };
