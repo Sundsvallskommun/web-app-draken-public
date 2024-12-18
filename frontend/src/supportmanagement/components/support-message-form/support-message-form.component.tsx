@@ -278,7 +278,7 @@ export const SupportMessageForm: React.FC<{
       ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
     };
     sendMessage(messageData)
-      .then((success) => {
+      .then(async (success) => {
         if (!success) {
           throw new Error('');
         }
@@ -304,9 +304,9 @@ export const SupportMessageForm: React.FC<{
         }, 500);
 
         if (typeOfMessage === 'infoCompletion') {
-          setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
+          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
         } else if (typeOfMessage === 'internalCompletion') {
-          setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
         }
 
         toastMessage({
