@@ -373,7 +373,7 @@ export const SimplifiedContactForm: React.FC<{
         name={`stakeholderType-${id}`}
         id={`searchPerson-${id}-${inName}`}
         value={'PERSON'}
-        checked={true}
+        checked={searchMode === 'person'}
         onChange={() => {}}
         onClick={(e) => {
           setSearchMode('person');
