@@ -135,14 +135,6 @@ export const SupportErrandInvoiceTab: React.FC<{
           {record.status === CBillingRecordStatusEnum.NEW ? (
             <div>
               <Button
-                className="mr-12"
-                variant="secondary"
-                disabled={isSupportErrandLocked(supportErrand) || !allowed}
-                onClick={() => reset()}
-              >
-                Rensa formulär
-              </Button>
-              <Button
                 disabled={isSupportErrandLocked(supportErrand) || !allowed}
                 onClick={handleSubmit(onSubmit, onError)}
               >
