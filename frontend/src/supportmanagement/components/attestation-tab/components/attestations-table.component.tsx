@@ -125,7 +125,6 @@ export const AttestationsTable: React.FC<{
         className="w-full"
         onClick={() => {
           setSelectedRecord(record);
-          console.log('Selected record', record);
           setShowSelectedRecord(true);
         }}
       >
@@ -251,7 +250,6 @@ export const AttestationsTable: React.FC<{
                 pages={totalPages}
                 activePage={page + 1}
                 changePage={(page) => {
-                  console.log('Setting page to', page);
                   setValue('page', page - 1);
                 }}
               />
