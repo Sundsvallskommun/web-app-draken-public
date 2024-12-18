@@ -15,7 +15,7 @@ export const AttestationStatusValues = {
 
 export const AttestationFilterStatusComponent: React.FC = () => {
   const { register } = useFormContext();
-  const ss = useMemo(() => {
+  const statuses = useMemo(() => {
     return (
       Object.values(CBillingRecordStatusEnum).map((s) => ({
         label: billingrecordStatusToLabel(s),
@@ -38,7 +38,7 @@ export const AttestationFilterStatusComponent: React.FC = () => {
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <PopupMenu.Items autoFocus={false}>
-          {ss.map((status, index) => {
+          {statuses.map((status, index) => {
             return (
               <PopupMenu.Item key={`${status.status}-${index}`}>
                 <Checkbox

@@ -54,12 +54,12 @@ export class BillingController {
     //   filterList.push(queryFilter);
     // }
     if (invoiceType) {
-      const ss = invoiceType.split(',').map(s => `invoice.description:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
+      const types = invoiceType.split(',').map(s => `invoice.description:'${s}'`);
+      filterList.push(`(${types.join(' or ')})`);
     }
     if (status) {
-      const ss = status.split(',').map(s => `status:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
+      const statuses = status.split(',').map(s => `status:'${s}'`);
+      filterList.push(`(${statuses.join(' or ')})`);
     }
     if (start) {
       const s = toOffsetDateTime(dayjs(start).startOf('day'));
