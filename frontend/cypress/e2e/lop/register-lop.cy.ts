@@ -15,7 +15,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-////////NOT YET IMPLEMENTED IN FE. COPIED FROM KC, NEEDS SOME FIXES
+
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('register page', () => {
     beforeEach(() => {
@@ -63,7 +63,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       const labelCat = mockMetaData.labels.labelStructure[0];
       const labelType = labelCat.labels[0];
       cy.get('[data-cy="labelCategory-input"]').select(labelCat.displayName);
-      cy.get('[data-cy="labelType-input"]').select(labelType.displayName);
+      cy.get('[data-cy="labelType-input"]').click();
+      cy.get('[data-cy="labelType-list"]').children().contains(labelType.displayName).click();
       cy.get('[data-cy="description-input"]').type('Mock description');
       cy.contains('Spara ärende').click();
       cy.wait(`@updateErrand`).should(({ request, response }) => {

@@ -52,7 +52,7 @@ export const SupportManagementFilterType: React.FC = () => {
     <PopupMenu>
       <PopupMenu.Button
         rightIcon={<LucideIcon name="chevron-down" />}
-        data-cy="Ärendetyp-filter"
+        data-cy="Ärendekategori-filter"
         variant="tertiary"
         showBackground={false}
         size="sm"
@@ -78,7 +78,7 @@ export const SupportManagementFilterType: React.FC = () => {
                   labelPosition="left"
                   value={s.name}
                   {...register('type')}
-                  data-cy={`Ärendetyp-filter-${s.name}`}
+                  data-cy={`Ärendekategori-filter-${s.name}`}
                 >
                   {s.displayName}
                 </Checkbox>
