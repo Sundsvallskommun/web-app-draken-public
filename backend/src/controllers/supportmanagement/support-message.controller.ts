@@ -201,13 +201,13 @@ export class SupportMessageController {
     @Res() response: any,
   ): Promise<ResponseData> {
     if (!errandId) {
-      throw 'ErrandId not found.';
+      throw Error('ErrandId not found');
     }
     if (!communicationID) {
-      throw 'communicationID not found.';
+      throw Error('communicationID not found');
     }
     if (!attachmentId) {
-      throw 'AttachmentId not found.';
+      throw Error('AttachmentId not found');
     }
 
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}/streamed`;

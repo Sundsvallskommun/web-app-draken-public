@@ -175,10 +175,10 @@ export class CaseDataAttachmentController {
     @Res() response: any,
   ): Promise<ResponseData> {
     if (!errandId) {
-      throw 'ErrandId not found.';
+      throw Error('ErrandId not found');
     }
     if (!attachmentId) {
-      throw 'AttachmentId not found.';
+      throw Error('AttachmentId not found');
     }
 
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messageattachments/${attachmentId}/streamed`;
