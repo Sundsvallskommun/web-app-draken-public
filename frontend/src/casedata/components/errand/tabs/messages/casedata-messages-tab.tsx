@@ -1,15 +1,16 @@
+import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
+import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, Icon, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Divider, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -239,7 +240,35 @@ export const CasedataMessagesTab: React.FC<{
                     {selectedMessage?.attachments?.map((a, idx) => (
                       <Button
                         key={`${a.name}-${idx}`}
-                        onClick={() => {}}
+                        onClick={() => {
+                          messageAttachment(municipalityId, errand.id, a.attachmentId)
+                            .then((res) => {
+                              if (res.data.length !== 0) {
+                                const uri = `data:${a.contentType};base64,${res.data}`;
+                                const link = document.createElement('a');
+                                const filename = a.name;
+                                link.href = uri;
+                                link.setAttribute('download', filename);
+                                document.body.appendChild(link);
+                                link.click();
+                              } else {
+                                toastMessage({
+                                  position: 'bottom',
+                                  closeable: false,
+                                  message: 'Filen kan inte hittas eller är skadad.',
+                                  status: 'error',
+                                });
+                              }
+                            })
+                            .catch((error) => {
+                              toastMessage({
+                                position: 'bottom',
+                                closeable: false,
+                                message: 'Något gick fel när bilagan skulle hämtas',
+                                status: 'error',
+                              });
+                            });
+                        }}
                         role="listitem"
                         leftIcon={
                           a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />

@@ -374,6 +374,7 @@ export const fetchAttachment: (
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
+
   const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
@@ -384,10 +385,10 @@ export const fetchAttachment: (
     });
 };
 
-export const fetchErrandAttachments: (municipalityId: string, errandNumber: string) => Promise<ApiResponse<Attachment[]>> = (
-  municipalityId,
-  errandNumber
-) => {
+export const fetchErrandAttachments: (
+  municipalityId: string,
+  errandNumber: string
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandNumber) => {
   if (!errandNumber) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
@@ -397,6 +398,28 @@ export const fetchErrandAttachments: (municipalityId: string, errandNumber: stri
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachments for errand: ', errandNumber);
+      return { data: [], message: 'error' };
+    });
+};
+
+export const messageAttachment: (
+  municipalityId: string,
+  errandId: number,
+  attachmentId: string
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, attachmentId) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot fetch. Returning.');
+  }
+  if (!attachmentId) {
+    console.error('No attachment id found, cannot fetch. Returning.');
+  }
+
+  const url = `casedata/${municipalityId}/attachments/${attachmentId}/errand/${errandId}/streamed`;
+  return apiService
+    .get<any>(url)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching attachment');
       return { data: [], message: 'error' };
     });
 };

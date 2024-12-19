@@ -163,4 +163,35 @@ export class CaseDataAttachmentController {
     });
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
   }
+
+  @Get('/casedata/:municipalityId/attachments/:attachmentId/errand/:errandId/streamed')
+  @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
+  @UseBefore(authMiddleware)
+  async messageAttachments(
+    @Req() req: RequestWithUser,
+    @Param('errandId') errandId: number,
+    @Param('attachmentId') attachmentId: string,
+    @Param('municipalityId') municipalityId: string,
+    @Res() response: any,
+  ): Promise<ResponseData> {
+    if (!errandId) {
+      throw Error('ErrandId not found');
+    }
+    if (!attachmentId) {
+      throw Error('AttachmentId not found');
+    }
+
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messageattachments/${attachmentId}/streamed`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.get<ArrayBuffer>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
+      logger.error('Something went wrong when deleting attachment');
+      logger.error(e);
+      throw e;
+    });
+
+    const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
+    const b64 = Buffer.from(binaryString, 'binary').toString('base64');
+
+    return { data: b64, message: 'good' };
+  }
 }
