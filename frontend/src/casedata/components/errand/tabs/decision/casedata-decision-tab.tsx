@@ -113,7 +113,7 @@ export const CasedataDecisionTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, user, errand, setErrand, administrators }: AppContextInterface = useAppContext();
+  const { municipalityId, user, errand, setErrand }: AppContextInterface = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -122,7 +122,6 @@ export const CasedataDecisionTab: React.FC<{
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [richText, setRichText] = useState<string>('');
   const [error, setError] = useState<string>();
-  const [selectedLaw, setSelectedLaw] = useState<number>(1);
   const quillRef = useRef(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -363,7 +362,7 @@ export const CasedataDecisionTab: React.FC<{
         pdfBase64: string;
         error?: string;
       };
-      if (isErrandLocked(errand)) {
+      if (isErrandLocked(errand) || isSent()) {
         const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         const decision = getFinalDecisonWithHighestId(errand.decisions);
         if (!decision) {
@@ -467,19 +466,11 @@ export const CasedataDecisionTab: React.FC<{
     onRichTextChange(content);
   };
 
-  const removeHTMLTags = (inputHTML) => {
-    const regex = /(<([^>]+)>)/gi;
-    const rawText = inputHTML.replace(regex, '');
-
-    return rawText;
-  };
-
-  const sent = (decision) => {
+  const isSent = () => {
     return (
-      (errand.status === ErrandStatus.Beslutad ||
-        errand.status === ErrandStatus.BeslutVerkstallt ||
-        errand.status === ErrandStatus.ArendeAvslutat) &&
-      sortedDec[0].id === decision.id
+      errand.status === ErrandStatus.Beslutad ||
+      errand.status === ErrandStatus.BeslutVerkstallt ||
+      errand.status === ErrandStatus.ArendeAvslutat
     );
   };
 
@@ -496,7 +487,7 @@ export const CasedataDecisionTab: React.FC<{
           onClick={getPdfPreview}
           rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
         >
-          {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
+          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
         </Button>
       </div>
       <div className="mt-24">
@@ -515,7 +506,7 @@ export const CasedataDecisionTab: React.FC<{
                 trigger();
               }}
               placeholder="Välj beslut"
-              disabled={isErrandLocked(errand)}
+              disabled={isErrandLocked(errand) || isSent()}
               value={getValues('outcome')}
             >
               <Select.Option data-cy="outcome-input-item" value={'Välj beslut'}>
@@ -548,6 +539,7 @@ export const CasedataDecisionTab: React.FC<{
                   data-cy="law-select"
                   name="law"
                   size="sm"
+                  disabled={isSent()}
                   onChange={(e) => {
                     setValue(
                       'law',
@@ -582,6 +574,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validFrom')}
                   size="sm"
+                  disabled={isSent()}
                   placeholder="Välj datum"
                   data-cy="validFrom-input"
                 />
@@ -593,6 +586,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validTo')}
                   size="sm"
+                  disabled={isSent()}
                   placeholder="Välj datum"
                   data-cy="validTo-input"
                 />
@@ -639,7 +633,7 @@ export const CasedataDecisionTab: React.FC<{
             containerLabel="decision"
             value={richText}
             isMaximizable={true}
-            readOnly={isErrandLocked(errand)}
+            readOnly={isErrandLocked(errand) || isSent()}
             toggleModal={() => {
               setIsEditorModalOpen(!isEditorModalOpen);
             }}
@@ -664,7 +658,7 @@ export const CasedataDecisionTab: React.FC<{
             color="primary"
             size="md"
             onClick={handleSubmit(onSubmit, onError)}
-            disabled={isLoading || !formState.isValid || isErrandLocked(errand) || !allowed}
+            disabled={isLoading || !formState.isValid || isErrandLocked(errand) || !allowed || isSent()}
           >
             {isLoading ? 'Sparar' : 'Spara beslutstext'}
           </Button>
@@ -677,7 +671,7 @@ export const CasedataDecisionTab: React.FC<{
             onClick={getPdfPreview}
             rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
           >
-            {isErrandLocked(errand) ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
+            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
           </Button>
           <Button
             data-cy="save-and-send-decision-button"
