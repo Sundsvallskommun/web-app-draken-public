@@ -1,6 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { getErrand, setSuspendedErrands } from '@casedata/services/casedata-errand-service';
+import { getErrand, phaseChangeInProgress, setSuspendedErrands } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -87,7 +87,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             data-cy="suspend-button"
             leftIcon={<LucideIcon name="circle-pause" />}
             variant="secondary"
-            disabled={disabled}
+            disabled={disabled || phaseChangeInProgress(errand) || errand?.status === ErrandStatus.ArendeAvslutat}
             onClick={() => setShowModal(true)}
           >
             Parkera ärende
