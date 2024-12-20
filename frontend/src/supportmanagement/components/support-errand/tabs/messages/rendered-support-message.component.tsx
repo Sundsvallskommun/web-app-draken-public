@@ -1,6 +1,9 @@
+import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, cx, Icon } from '@sk-web-gui/react';
+import { SupportErrand, SupportStakeholderRole } from '@supportmanagement/services/support-errand-service';
 import { Message } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -32,9 +35,26 @@ export const RenderedSupportMessage: React.FC<{
   root?: boolean;
   children: any;
 }> = ({ message, selected, onSelect, root = false, children }) => {
+  const { supportErrand }: AppContextInterface = useAppContext();
   const messageAvatar = (message: Message) => (
     <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
   );
+
+  const getMessageOwner = (msg: Message) => {
+    if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
+      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) =>
+        stakeholder.role.includes(SupportStakeholderRole.PRIMARY)
+      );
+      const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
+      const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
+        stakeholder.contactChannels.some((value) => value.value === msg.sender)
+      );
+
+      if (isWebMessageOpenE || isOwnerStakeholderEmail) {
+        return <span className="text-xs whitespace-nowrap">Ärendeägare</span>;
+      }
+    }
+  };
 
   return (
     <>
@@ -78,35 +98,40 @@ export const RenderedSupportMessage: React.FC<{
             ></p>
           </div>
         </div>
-        <div className="inline-flex items-start flex-nowrap">
-          <span className="text-xs whitespace-nowrap">
-            {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
-          </span>
-          <span className="text-xs mx-sm">|</span>
-          {message.communicationAttachments?.length > 0 ? (
-            <>
-              <div className="mx-sm inline-flex items-center gap-xs">
-                <LucideIcon name="paperclip" size="1.5rem" />
-                <span className="text-xs">{message.communicationAttachments?.length}</span>
-              </div>
-              <span className="text-xs mx-sm">|</span>
-            </>
-          ) : null}
-          <span className="text-xs whitespace-nowrap">
-            {message.communicationType === 'SMS' ? (
+        <div className="flex flex-col align-end items-end justify-between">
+          <div className="inline-flex items-start flex-nowrap">
+            <span className="text-xs whitespace-nowrap">
+              {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
+            </span>
+            <span className="text-xs mx-sm">|</span>
+            {message.communicationAttachments?.length > 0 ? (
               <>
-                <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                <div className="mx-sm inline-flex items-center gap-xs">
+                  <LucideIcon name="paperclip" size="1.5rem" />
+                  <span className="text-xs">{message.communicationAttachments?.length}</span>
+                </div>
+                <span className="text-xs mx-sm">|</span>
               </>
-            ) : message.communicationType === 'EMAIL' ? (
-              <>
-                <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
-              </>
-            ) : message.communicationType === 'WEB_MESSAGE' ? (
-              'Via e-tjänst'
-            ) : (
-              ''
-            )}
-          </span>
+            ) : null}
+            <span className="text-xs whitespace-nowrap">
+              {message.communicationType === 'SMS' ? (
+                <>
+                  <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                </>
+              ) : message.communicationType === 'EMAIL' ? (
+                <>
+                  <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                </>
+              ) : message.communicationType === 'WEB_MESSAGE' ? (
+                <>
+                  <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                </>
+              ) : (
+                ''
+              )}
+            </span>
+          </div>
+          {getMessageOwner(message)}
         </div>
         <div>
           <span

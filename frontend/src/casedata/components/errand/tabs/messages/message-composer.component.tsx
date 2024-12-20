@@ -35,6 +35,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
+import { Role } from '@casedata/interfaces/role';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -529,6 +530,15 @@ export const MessageComposer: React.FC<{
 
           {contactMeans === 'email' || contactMeans === 'webmessage' ? (
             <>
+              {contactMeans === 'webmessage'
+                ? errand.stakeholders
+                    .filter((o) => o.roles.indexOf(Role.APPLICANT) !== -1)
+                    .map((filteredOwner) => (
+                      <div>
+                        <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
+                      </div>
+                    ))
+                : null}
               <FormControl id="addExisting" className="w-full">
                 <FormLabel>Bilagor från ärendet</FormLabel>
                 <div className="flex gap-16">

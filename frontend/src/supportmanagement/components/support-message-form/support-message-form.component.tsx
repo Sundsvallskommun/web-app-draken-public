@@ -33,6 +33,7 @@ import {
   Channels,
   Status,
   SupportErrand,
+  SupportStakeholderRole,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -513,7 +514,15 @@ export const SupportMessageForm: React.FC<{
               <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
             </div>
           ) : null}
-
+          {contactMeans === 'webmessage'
+            ? supportErrand.stakeholders
+                .filter((o) => o.role.indexOf(SupportStakeholderRole.PRIMARY) !== -1)
+                .map((filteredOwner) => (
+                  <div>
+                    <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
+                  </div>
+                ))
+            : null}
           <FormControl id="addExisting" className="w-full mt-md">
             <FormLabel>Bilagor från ärendet</FormLabel>
             <div className="flex items-center justify-between">
