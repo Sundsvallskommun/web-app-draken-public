@@ -591,7 +591,6 @@ export const SupportSimplifiedContactForm: React.FC<{
                       <LucideIcon name="search" />
                     </Input.LeftAddin>
                     <Input
-                      placeholder={''}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}
@@ -669,7 +668,6 @@ export const SupportSimplifiedContactForm: React.FC<{
                       setSearchResult(false);
                       setValue('stakeholderType', 'PERSON');
                     }}
-                    placeholder={''}
                     searchLabel={searching ? 'Söker' : 'Sök'}
                   />
 
@@ -695,8 +693,10 @@ export const SupportSimplifiedContactForm: React.FC<{
               ) : (
                 <>
                   <Input.Group size="md" disabled={props.disabled || manual}>
+                    <Input.LeftAddin icon>
+                      <LucideIcon name="search" />
+                    </Input.LeftAddin>
                     <Input
-                      placeholder={''}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}

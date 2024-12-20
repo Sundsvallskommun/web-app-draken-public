@@ -493,7 +493,6 @@ export const SimplifiedContactForm: React.FC<{
                         <LucideIcon name="search" />
                       </Input.LeftAddin>
                       <Input
-                        placeholder=""
                         disabled={props.disabled}
                         aria-disabled={props.disabled}
                         readOnly={manual}
