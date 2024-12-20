@@ -197,7 +197,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       await saveContractToErrand(municipalityId, saved.contractId, errand);
     }
 
-    const pdf = await renderContractPdf(errand, saved, existingContract.status === 'DRAFT' ? true : false);
+    const pdf = await renderContractPdf(errand, saved, existingContract?.status === 'DRAFT' ? true : false);
 
     const createAndClickLink = (d: { pdfBase64: string; error?: string }) => {
       if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
