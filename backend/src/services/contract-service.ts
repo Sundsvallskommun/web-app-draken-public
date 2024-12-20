@@ -14,7 +14,7 @@ export const validateContractAction: (municipalityId: string, errandId: string, 
 ) => {
   let allowed = false;
   const apiService = new ApiService();
-  const url = `${municipalityId}/errands/${errandId}`;
+  const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
   if (existingErrand.data.extraParameters?.find(p => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {
