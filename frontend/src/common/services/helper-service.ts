@@ -14,11 +14,11 @@ export const invalidPhoneMessage = 'Ej giltigt telefonnummer';
 export const ssnPattern = /^$|^((19|20)[0-9]{6}-?[0-9]{4})$/gi;
 export const usernamePattern = /.*/;
 
-export const invalidSsnMessage = 'Ej giltigt personnummer (ange tolv siffror: ÅÅÅÅMMDD-XXXX)';
+export const invalidSsnMessage = 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)';
 export const invalidUsernameMessage = 'Ej giltigt användarnamn, mellanslag ej tillåtet.';
 
 export const orgNumberPattern = /^$|^([0-9]{6}-[0-9]{4})$/gi;
-export const invalidOrgNumberMessage = 'Ej giltigt organisationsnummer (ange tio siffror med streck: KKLLMM-NNNN)';
+export const invalidOrgNumberMessage = 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)';
 
 export function promiseTimeout<T>(time): (result: any) => Promise<T> {
   return (result) => new Promise((resolve) => setTimeout(resolve, time, result));
