@@ -724,7 +724,7 @@ export const MessageComposer: React.FC<{
               newAttachmentsFields.forEach((field) => {
                 appendMessageAttachment(field);
               });
-              setValue('newAttachments', []);
+
               closeAttachmentModal();
             }}
             data-cy="upload-button"

@@ -107,6 +107,7 @@ export const sendMessage: (
 
               sendAttachments(municipalityId, errand.id, errand.errandNumber, attachmentsToSave);
             }
+            data.newAttachments = [];
 
             return true;
           })
