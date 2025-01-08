@@ -534,13 +534,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(
-          municipalityId,
-          page,
-          size,
-          { ...filter, status: `${Status.SUSPENDED}` },
-          sort
-        )
+        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.SUSPENDED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
@@ -1065,7 +1059,7 @@ export const forwardSupportErrand: (
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
     errand.stakeholders.forEach((s) => {
-      if (!s.firstName) {
+      if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
       }
       // TODO Check for email and phone?
