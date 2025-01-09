@@ -2169,7 +2169,7 @@ export const Lagenhetsarrende: React.FC<{
                       key: 'upphorandeTerms.condition.noRefundLeaseFee',
                       header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
                       conditionText:
-                        'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kr',
+                        'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
                       /*extraField: {
                         key: 'upphorandeTerms.noRefundLeaseFeeAmount',
                         placeholder: 'SEK',
