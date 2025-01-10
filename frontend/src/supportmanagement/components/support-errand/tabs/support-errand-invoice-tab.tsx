@@ -55,7 +55,7 @@ export const SupportErrandInvoiceTab: React.FC<{
     } else {
       setRecord(emptyBillingRecord);
       setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: ${supportErrand.errandNumber}`);
-      const manager = supportErrand.stakeholders.find((s) => s.role === 'MANAGER');
+      const manager = supportErrand.stakeholders?.find((s) => s.role === 'MANAGER');
       const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
       if (managerUserName) {
         getEmployeeData(managerUserName).then((res) => {
