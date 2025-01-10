@@ -1037,4 +1037,4 @@ export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, 
       console.error('Something went wrong when triggering errand phase change', e);
       throw e;
     });
-}
+};
