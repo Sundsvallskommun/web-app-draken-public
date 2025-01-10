@@ -373,7 +373,7 @@ export const SimplifiedContactForm: React.FC<{
         name={`stakeholderType-${id}`}
         id={`searchPerson-${id}-${inName}`}
         value={'PERSON'}
-        checked={true}
+        checked={searchMode === 'person'}
         onChange={() => {}}
         onClick={(e) => {
           setSearchMode('person');
@@ -475,7 +475,9 @@ export const SimplifiedContactForm: React.FC<{
         <div className="flex gap-lg">
           {!editing ? (
             <FormControl className="w-full">
-              <FormLabel>Sök på {searchMode === 'person' ? 'personnummer' : 'organisationsnummer'}</FormLabel>
+              <FormLabel>
+                Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
+              </FormLabel>
               <div>
                 <Input
                   data-cy={`contact-personId`}
@@ -487,8 +489,10 @@ export const SimplifiedContactForm: React.FC<{
                 {searchMode === 'person' ? (
                   <>
                     <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
+                      <Input.LeftAddin icon>
+                        <LucideIcon name="search" />
+                      </Input.LeftAddin>
                       <Input
-                        placeholder="Personnummer"
                         disabled={props.disabled}
                         aria-disabled={props.disabled}
                         readOnly={manual}
@@ -545,6 +549,9 @@ export const SimplifiedContactForm: React.FC<{
                 ) : (
                   <>
                     <Input.Group size="md" disabled={props.disabled || manual}>
+                      <Input.LeftAddin icon>
+                        <LucideIcon name="search" />
+                      </Input.LeftAddin>
                       <Input
                         disabled={props.disabled}
                         aria-disabled={props.disabled}
