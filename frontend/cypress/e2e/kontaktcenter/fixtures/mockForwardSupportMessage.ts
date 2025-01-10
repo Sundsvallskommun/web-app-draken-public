@@ -8,3 +8,29 @@ export const mockForwardSupportMessage = {
   senderName: 'Anne Bergqvist',
   subject: 'Vidarebefordran av ärende',
 };
+
+export const mockForwardSupportErrandToMEX = {
+  caseType: 'MEX_FORWARDED_FROM_CONTACTSUNDSVALL',
+  priority: 'MEDIUM',
+  channel: 'EMAIL',
+  description: 'TEST',
+  stakeholders: [
+    {
+      type: 'PERSON',
+      roles: [],
+      addresses: [],
+      contactInformation: [],
+      firstName: 'Kalle',
+      lastName: 'Anka',
+    },
+  ],
+  facilities: [],
+  statuses: [
+    {
+      statusType: 'Ärende inkommit',
+      description: 'Ärende inkommit',
+      dateTime: '2025-01-08T13:03:09.832Z',
+    },
+  ],
+  extraParameters: [{ key: 'supportManagementErrandNumber', values: [] }],
+};

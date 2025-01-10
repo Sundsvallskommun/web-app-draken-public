@@ -302,7 +302,9 @@ export class SupportErrandController {
       queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and (stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}' or stakeholders.contactChannels.type~'${ContactChannelType.Email}'))`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and (stakeholders.contactChannels.type~'${ContactChannelType.PHONE}' or stakeholders.contactChannels.type~'${ContactChannelType.Phone}'))`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and (stakeholders.contactChannels.type~'${
+        ContactChannelType.PHONE
+      }' or stakeholders.contactChannels.type~'${ContactChannelType.Phone}'))`;
       queryFilter += ` or exists(stakeholders.organizationName ~ '*${query}*')`;
       queryFilter += ` or exists(stakeholders.externalId ~ '*${query}*')`;
       queryFilter += ` or exists(parameters.values~'*${query}*')`;
@@ -520,7 +522,7 @@ export class SupportErrandController {
 
     const stakeholders: CasedataStakeholderDTO[] = [];
     existingSupportErrand.data.stakeholders.forEach((s: SupportStakeholder) => {
-      if (!s.firstName) {
+      if (!s.firstName && !s.organizationName) {
         console.error('Missing required fields for stakeholder');
         logger.error('Missing required fields for stakeholder');
         return response.status(400).send('Missing required fields for stakeholder');
@@ -568,7 +570,7 @@ export class SupportErrandController {
               : [],
           firstName: '',
           lastName: '',
-          organizationName: s.firstName,
+          organizationName: s.organizationName,
           organizationNumber: s.externalId,
         });
       } else {
