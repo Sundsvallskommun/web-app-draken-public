@@ -452,6 +452,8 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
         label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Komplett' : ''}
+        labelColor={watch().omrade?.length > 0 ? 'success' : `warning`}
+        initalOpen={watch().omrade?.length > 0}
         color="gronsta"
         variant="alt"
         onClick={() => {
@@ -611,6 +613,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
         label={doneMark.findIndex((temp) => temp === 'andamal') !== -1 ? 'Komplett' : ''}
+        labelColor={watch().andamal?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().andamal?.length > 0}
         color="gronsta"
         variant="alt"
@@ -900,6 +903,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
         label={doneMark.findIndex((temp) => temp === 'arrendetid') !== -1 ? 'Komplett' : ''}
+        labelColor={watch().arrendetid?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendetid?.length > 0}
         color="gronsta"
         variant="alt"
@@ -1093,7 +1097,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
-        // label={watch().arrendeavgift?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'arrendeavgift') !== -1 ? 'Komplett' : ''}
         labelColor={watch().arrendeavgift?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendeavgift?.length > 0}
         color="gronsta"
@@ -1409,7 +1413,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="shovel" />} />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
-        // label={watch().bygglov?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'bygglov') !== -1 ? 'Komplett' : ''}
         labelColor={watch().bygglov?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().bygglov?.length > 0}
         color="gronsta"
@@ -1518,7 +1522,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="repeat" />} />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
-        // label={watch().overlatelse?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'overlatelse') !== -1 ? 'Komplett' : ''}
         labelColor={watch().overlatelse?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().overlatelse?.length > 0}
         color="gronsta"
@@ -1615,7 +1619,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="enrollment-disclosure"
         icon={<Icon icon={<LucideIcon name="square-pen" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
-        // label={watch().inskrivning?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'inskrivning') !== -1 ? 'Komplett' : ''}
         labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().inskrivning?.length > 0}
         color="gronsta"
@@ -1657,7 +1661,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="person-standing" />} />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
-        // label={watch().skick?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'skick') !== -1 ? 'Komplett' : ''}
         labelColor={watch().skick?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skick?.length > 0}
         color="gronsta"
@@ -1765,7 +1769,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="slash" />} />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
-        // label={watch().ledningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'ledningar') !== -1 ? 'Komplett' : ''}
         labelColor={watch().ledningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().ledningar?.length > 0}
         color="gronsta"
@@ -1862,7 +1866,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="calculator" />} />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
-        // label={watch().kostnader?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'kostnader') !== -1 ? 'Komplett' : ''}
         labelColor={watch().kostnader?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().kostnader?.length > 0}
         color="gronsta"
@@ -1959,7 +1963,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="mountain-snow" />} />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Komplett' : ''}
         labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
@@ -2112,7 +2116,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="undo" />} />}
         data-cy="termination-reinstatement-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
-        // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'upphorande') !== -1 ? 'Komplett' : ''}
         labelColor={watch().upphorande?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().upphorande?.length > 0}
         color="gronsta"
@@ -2280,7 +2284,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="clipboard-list" />} />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'skadaansvar') !== -1 ? 'Komplett' : ''}
         labelColor={watch().skadaansvar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skadaansvar?.length > 0}
         color="gronsta"
@@ -2425,7 +2429,7 @@ export const Lagenhetsarrende: React.FC<{
               : 'Övriga villkor'}{' '}
           </h2>
         }
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'additionalTerms') !== -1 ? 'Komplett' : ''}
         labelColor={watch().additionalTerms?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().additionalTerms?.length > 0}
         color="gronsta"
@@ -2469,7 +2473,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
-        // label={watch().sarskilda?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'sarskilda') !== -1 ? 'Komplett' : ''}
         labelColor={watch().sarskilda?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().sarskilda?.length > 0}
         color="gronsta"
@@ -2563,7 +2567,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'jordabalken') !== -1 ? 'Komplett' : ''}
         labelColor={watch().jordabalken?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().jordabalken?.length > 0}
         color="gronsta"
@@ -2671,7 +2675,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="pen" />} />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Komplett' : ''}
         labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
