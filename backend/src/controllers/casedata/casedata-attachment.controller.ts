@@ -119,16 +119,16 @@ export class CaseDataAttachmentController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Get('/casedata/:municipalityId/attachments/errand/:errandNumber')
-  @OpenAPI({ summary: 'Return attachments for an errand by errand number (not id)' })
+  @Get('/casedata/:municipalityId/errand/:errandId/attachments')
+  @OpenAPI({ summary: 'Return attachments for an errand by errand id' })
   @UseBefore(authMiddleware)
   async errandAttachments(
     @Req() req: RequestWithUser,
-    @Param('errandNumber') errandNumber: string,
+    @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/attachments/errand/${errandNumber}`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Attachment[]>({ url, baseURL }, req.user).catch(e => {
       if (e.status === 404) {
