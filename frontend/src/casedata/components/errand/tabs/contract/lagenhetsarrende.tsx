@@ -1154,7 +1154,7 @@ export const Lagenhetsarrende: React.FC<{
                         </Checkbox>
                       </FormControl>
                       <FormControl id="annualFee" className="flex-grow">
-                        <FormLabel>Ange avgift per år</FormLabel>
+                        <FormLabel>Ange avgift per år i kronor</FormLabel>
                         <Input
                           type="text"
                           disabled={getValues('arrendeavgiftTerms.yearly') !== 'true'}
@@ -1184,7 +1184,7 @@ export const Lagenhetsarrende: React.FC<{
                       </FormControl>
                       <div className="flex w-full justify-between">
                         <FormControl id="feeByYear" className="flex-grow max-w-[45%]">
-                          <FormLabel>Ange avgift för årtal</FormLabel>
+                          <FormLabel>Ange avgift för årtal i kronor</FormLabel>
                           <Input
                             type="text"
                             disabled={getValues('arrendeavgiftTerms.byYear') !== 'true'}
@@ -1222,7 +1222,7 @@ export const Lagenhetsarrende: React.FC<{
                         </Checkbox>
                       </FormControl>
                       <FormControl id="feeByLease" className="flex-grow">
-                        <FormLabel>Ange avgift för upplåtelsetid</FormLabel>
+                        <FormLabel>Ange avgift för upplåtelsetid i kronor</FormLabel>
                         <Input
                           type="text"
                           disabled={getValues('arrendeavgiftTerms.byLease') !== 'true'}
@@ -1283,11 +1283,20 @@ export const Lagenhetsarrende: React.FC<{
                             <Select.Option key="" value="">
                               Välj årtal
                             </Select.Option>
-                            <Select.Option value={2020}>2020</Select.Option>
-                            <Select.Option value={2021}>2021</Select.Option>
-                            <Select.Option value={2022}>2022</Select.Option>
-                            <Select.Option value={2023}>2023</Select.Option>
-                            <Select.Option value={2024}>2024</Select.Option>
+                            <Select.Option value={2020}>2012</Select.Option>
+                            <Select.Option value={2021}>2013</Select.Option>
+                            <Select.Option value={2022}>2014</Select.Option>
+                            <Select.Option value={2023}>2015</Select.Option>
+                            <Select.Option value={2024}>2016</Select.Option>
+                            <Select.Option value={2020}>2017</Select.Option>
+                            <Select.Option value={2021}>2018</Select.Option>
+                            <Select.Option value={2022}>2019</Select.Option>
+                            <Select.Option value={2023}>2020</Select.Option>
+                            <Select.Option value={2024}>2021</Select.Option>
+                            <Select.Option value={2021}>2022</Select.Option>
+                            <Select.Option value={2022}>2023</Select.Option>
+                            <Select.Option value={2023}>2024</Select.Option>
+                            <Select.Option value={2024}>2025</Select.Option>
                           </Select>
                         </FormControl>
                         <FormControl
@@ -1357,21 +1366,23 @@ export const Lagenhetsarrende: React.FC<{
                   let content = ``;
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')}</p><br />`);
+                    (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
                     (content += `<p>Avgift för årtal ${getValues(
                       'arrendeavgiftTerms.associatedFeeYear'
-                    )} är ${getValues('arrendeavgiftTerms.feeByYear')}</p><br />`);
+                    )} är ${getValues('arrendeavgiftTerms.feeByYear')} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
-                    (content += `<p>Avgift för upplåtelsetid: ${getValues('arrendeavgiftTerms.feeByLease')}</p><br />`);
+                    (content += `<p>Avgift för upplåtelsetid: ${getValues(
+                      'arrendeavgiftTerms.feeByLease'
+                    )} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
                     (content += `<p>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</p><br />`);
 
                   getValues('arrendeavgiftTerms.indexAdjustedFee') === 'true' &&
-                    (content += `<p>Indexreglerad avgift: Ja</p><br />Avgiften ska i sin helhet indexregleras med hänsyn till konsumentprisindex (totalindex) enligt 1980 års indexserie. Basmånad för indexuppräkningen är oktober månad ${getValues(
+                    (content += `<p>Avgiften ska i sin helhet indexregleras med hänsyn till konsumentprisindex (totalindex) enligt 1980 års indexserie. Basmånad för indexuppräkningen är oktober månad ${getValues(
                       'arrendeavgiftTerms.indexYear'
                     )} (indextal ${getValues(
                       'arrendeavgiftTerms.indexFee'
@@ -1379,7 +1390,7 @@ export const Lagenhetsarrende: React.FC<{
 
                   content += `<p>Avgiften ska erläggas ${
                     getValues('arrendeavgiftTerms.yearOrQuarter') === 'year' ? 'årsvis' : 'kvartalsvis'
-                  } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}</p>`;
+                  } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}.</p>`;
 
                   setArrendeavgift(content);
                   setShowArrendeavgift(false);
