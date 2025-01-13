@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Table, Checkbox, FormControl, FormLabel, Input, DatePicker } from '@sk-web-gui/react';
 
 function renderContractTermCheckboxList({ getValues, setValue, register }) {
