@@ -533,8 +533,8 @@ export const MessageComposer: React.FC<{
               {contactMeans === 'webmessage'
                 ? errand.stakeholders
                     .filter((o) => o.roles.indexOf(Role.APPLICANT) !== -1)
-                    .map((filteredOwner) => (
-                      <div>
+                    .map((filteredOwner, idx) => (
+                      <div key={`owner-${idx}`}>
                         <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
                       </div>
                     ))

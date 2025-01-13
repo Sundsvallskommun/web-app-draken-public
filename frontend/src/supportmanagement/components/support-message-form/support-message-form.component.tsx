@@ -517,8 +517,8 @@ export const SupportMessageForm: React.FC<{
           {contactMeans === 'webmessage'
             ? supportErrand.stakeholders
                 .filter((o) => o.role.indexOf(SupportStakeholderRole.PRIMARY) !== -1)
-                .map((filteredOwner) => (
-                  <div>
+                .map((filteredOwner, idx) => (
+                  <div key={`owner-${idx}`}>
                     <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
                   </div>
                 ))
