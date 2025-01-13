@@ -2065,8 +2065,9 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'markfororeningarTerms.condition.testDone',
                       header: 'Miljöprovtagning och rapport',
-                      conditionText:
-                        'Miljöprovtagning av området är utförd [[2024-XX-XX]]. Arrendatorn har tagit del av provtagningsrapporten.',
+                      conditionText: `Miljöprovtagning av området är utförd ${
+                        getValues().markfororeningarTerms.condition.testDone?.date ?? 'åååå-mm-dd'
+                      }. Arrendatorn har tagit del av provtagningsrapporten.`,
                     },
                     {
                       key: 'markfororeningarTerms.condition.testingAtEnd',
@@ -2091,43 +2092,31 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().markfororeningarTerms.condition.pollutionAvoidance
-                      ? `<p><strong>${
-                          getValues().markfororeningarTerms.condition.pollutionAvoidance.header
-                        }</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.pollutionAvoidance.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.pollutionAvoidance.conditionText}</p><br />`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.verificationResponsibility
-                      ? `<p><strong>${
-                          getValues().markfororeningarTerms.condition.verificationResponsibility.header
-                        }</strong></p><p>${
+                      ? `<p>${
                           getValues().markfororeningarTerms.condition.verificationResponsibility.conditionText
                         }</p><br />`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testDone
-                      ? `<p><strong>${getValues().markfororeningarTerms.condition.testDone.header}</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.testDone.conditionText
-                        }</p><br />`
+                      ? `<p>Miljöprovtagning av området är utförd ${
+                          getValues().markfororeningarTerms.condition.testDone?.date ?? 'åååå-mm-dd'
+                        }. Arrendatorn har tagit del av provtagningsrapporten.</p><br />`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testingAtEnd
-                      ? `<p><strong>${getValues().markfororeningarTerms.condition.testingAtEnd.header}</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.testingAtEnd.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtEnd.conditionText}</p><br />`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testingAtTransfer
-                      ? `<p><strong>${
-                          getValues().markfororeningarTerms.condition.testingAtTransfer.header
-                        }</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.testingAtTransfer.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtTransfer.conditionText}</p><br />`
                       : ''
                   }
                   `;

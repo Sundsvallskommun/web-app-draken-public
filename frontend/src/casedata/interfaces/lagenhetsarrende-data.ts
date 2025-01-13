@@ -145,6 +145,7 @@ export interface LagenhetsArendeTemplate {
         | {
             header: string;
             conditionText?: string;
+            date?: string;
           }
         | undefined;
     };
