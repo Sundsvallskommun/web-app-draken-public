@@ -1026,8 +1026,8 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = `<strong>Arrendetid och uppsägning</strong>
-                  <p>Området upplåts ${getValues().arrendetidTerms?.startDate} till och med ${
+                  let content = `
+                  <p>Området upplåts fr.o.m ${getValues().arrendetidTerms?.startDate} t.o.m ${
                     getValues().arrendetidTerms?.endDate
                   }</p><br /> 
                   <p>Uppsägningstid: ${getValues().arrendetidTerms?.monthsNotice} ${
