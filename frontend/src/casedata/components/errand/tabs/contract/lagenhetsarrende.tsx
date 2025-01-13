@@ -2322,24 +2322,6 @@ export const Lagenhetsarrende: React.FC<{
                 <Table.Body>
                   {[
                     {
-                      key: 'skadaansvarTerms.condition.skadeaterstallning',
-                      header: 'Skadeåterställning och kostnadsansvar för arrendatorn',
-                      conditionText:
-                        'Arrendatorn ska för det fall det uppstår skador till följd av arrendatorns nyttjande av området ombesörja och bekosta återställande av skador. Fastighetsägaren äger annars rätt att vidta nödvändiga åtgärder på arrendatorns bekostnad.',
-                    },
-                    {
-                      key: 'skadaansvarTerms.condition.skadestandsskyldighet',
-                      header: 'Skadeståndsskyldighet och skydd mot tredjepartsanspråk för arrendatorn',
-                      conditionText:
-                        'Arrendatorn ska hålla fastighetsägaren fullt ut skadeslös för eventuella krav eller anspråk från myndighet eller tredje man till följd av den verksamhet arrendatorn bedriver på området, inklusive ansvar avseende miljöskada.',
-                    },
-                    {
-                      key: 'skadaansvarTerms.condition.befrielse',
-                      header: 'Befrielse från ansvar för fastighetsägaren vid myndighetsåtgärder',
-                      conditionText:
-                        'Fastighetsägaren svarar inte för olägenhet eller kostnader som orsakas arrendatorn till följd av myndighetsåtgärder eller liknande.',
-                    },
-                    {
                       key: 'skadaansvarTerms.condition.begransning',
                       header: 'Begränsning av fastighetsägarens ansvar för skador och krav mot arrendatorn',
                       conditionText:
