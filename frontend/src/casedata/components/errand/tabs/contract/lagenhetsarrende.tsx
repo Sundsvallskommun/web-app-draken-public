@@ -2720,7 +2720,7 @@ export const Lagenhetsarrende: React.FC<{
                       key: 'signatureTerms.condition.example',
                       header: 'Avtalsexemplar',
                       conditionText:
-                        'Detta avtal har upprättats i två likalydande exemplar varav säljare och köpare tagit varsitt. ',
+                        'Detta avtal har upprättats i två likalydande exemplar varav parterna tagit var sitt. ',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
