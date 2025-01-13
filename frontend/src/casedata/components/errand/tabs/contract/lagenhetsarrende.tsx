@@ -1472,8 +1472,7 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'bygglovTerms.condition.buildingOwnership',
                       header: 'Arrendator äger byggnader som står inom området',
-                      conditionText:
-                        'Arrendatorn äger byggnader som står inom området, bygglov beviljat enligt [[BYGG 20XX – XXXX]].',
+                      conditionText: 'Arrendatorn äger byggnader som står inom området.',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
