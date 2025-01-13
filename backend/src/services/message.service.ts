@@ -44,11 +44,12 @@ interface SmsMessage {
 
 const NOTIFY_CONTACTS = false;
 const SERVICE = `case-data/9.0`;
+const MESSAGING_SERVICE = `messaging/6.0`;
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
 
 export const sendSms = (municipalityId: string, message: SmsRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
-  const url = `messaging/5.0/${municipalityId}/sms`;
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/sms`;
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, SmsRequest>({ url, data: message }, req.user)
@@ -86,7 +87,7 @@ export const sendSms = (municipalityId: string, message: SmsRequest, req: Reques
 };
 
 export const sendWebMessage = (municipalityId: string, message: WebMessageRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
-  const url = `messaging/5.0/${municipalityId}/webmessage`;
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/webmessage`;
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, req.user)
@@ -131,7 +132,7 @@ export const sendEmail = (
   errandData: ApiResponse<ErrandDTO>,
   classification: MessageClassification,
 ) => {
-  const url = `messaging/5.0/${municipalityId}/email`;
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/email`;
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, EmailRequest>({ url, data: message }, req.user)
@@ -176,7 +177,7 @@ export const sendEmail = (
 };
 
 export const sendDigitalMail = (municipalityId, message, req, errandData, classification) => {
-  const url = `messaging/5.0/${municipalityId}/letter?async=false`;
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
   const apiService = new ApiService();
   return apiService
     .post<LetterResponse, LetterRequest>({ url, data: message }, req.user)
@@ -236,7 +237,7 @@ export const saveMessageOnErrand: (
   const apiService = new ApiService();
 
   // Fetch message info from Messaging and construct SaveMessage object
-  const messagingUrl = `messaging/5.0/${municipalityId}/message/${message.id}`;
+  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/message/${message.id}`;
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
@@ -331,10 +332,10 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
     .filter(c => c.contactInformation.some(c => c.contactType === 'EMAIL'))
     .map(c => buildEmail(applicant, c, standardMessage));
   const smsPromises = smss.map(async sms => {
-    return apiService.post<AgnosticMessageResponse, SmsMessage>({ url: `messaging/5.0/${municipalityId}/sms`, data: sms }, user);
+    return apiService.post<AgnosticMessageResponse, SmsMessage>({ url: `${MESSAGING_SERVICE}/${municipalityId}/sms`, data: sms }, user);
   });
   const emailPromises = emails.map(async email => {
-    return apiService.post<AgnosticMessageResponse, EmailRequest>({ url: `messaging/5.0/${municipalityId}/email`, data: email }, user);
+    return apiService.post<AgnosticMessageResponse, EmailRequest>({ url: `${MESSAGING_SERVICE}/${municipalityId}/email`, data: email }, user);
   });
   return Promise.allSettled([...smsPromises, ...emailPromises]).then(res => {
     const succeeded = res.filter(r => r.status === 'fulfilled').length;
