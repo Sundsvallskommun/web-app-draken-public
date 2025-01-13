@@ -2337,31 +2337,6 @@ export const Lagenhetsarrende: React.FC<{
                   e.stopPropagation();
                   const content = `
                   ${
-                    getValues().skadaansvarTerms.condition.skadeaterstallning
-                      ? `<p><strong>${
-                          getValues().skadaansvarTerms.condition.skadeaterstallning.header
-                        }</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.skadeaterstallning.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
-                    getValues().skadaansvarTerms.condition.skadestandsskyldighet
-                      ? `<p><strong>${
-                          getValues().skadaansvarTerms.condition.skadestandsskyldighet.header
-                        }</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.skadestandsskyldighet.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
-                    getValues().skadaansvarTerms.condition.befrielse
-                      ? `<p><strong>${getValues().skadaansvarTerms.condition.befrielse.header}</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.befrielse.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
                     getValues().skadaansvarTerms.condition.begransning
                       ? `<p><strong>${getValues().skadaansvarTerms.condition.begransning.header}</strong></p><p>${
                           getValues().skadaansvarTerms.condition.begransning.conditionText
