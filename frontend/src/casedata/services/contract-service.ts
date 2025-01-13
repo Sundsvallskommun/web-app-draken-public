@@ -436,10 +436,6 @@ export const renderContractPdf: (
       ? `mex.contract.landlease`
       : 'mex.contract.purchaseagreement';
 
-  if (contract.additionalTerms?.[0].terms) {
-    contract.indexTerms.push(contract.additionalTerms[0]);
-  }
-
   const renderBody: TemplateSelector = {
     identifier: templateIdentifier,
     parameters: {
@@ -863,6 +859,19 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
           },
         ],
       },
+      ...(lagenhetsarrende.additionalTerms?.[0]?.header && lagenhetsarrende.additionalTerms?.[0]?.terms?.[0]?.term
+        ? [
+            {
+              header: lagenhetsarrende.additionalTerms?.[0]?.header.toString(),
+              terms: [
+                {
+                  description: 'content',
+                  term: lagenhetsarrende.additionalTerms?.[0]?.terms[0]?.term.toString(),
+                },
+              ],
+            },
+          ]
+        : []),
       {
         header: 'Särskilda bestämmelser',
         terms: [
@@ -1037,4 +1046,4 @@ export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, 
       console.error('Something went wrong when triggering errand phase change', e);
       throw e;
     });
-}
+};
