@@ -112,6 +112,7 @@ const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkerings
 export class MessageController {
   private apiService = new ApiService();
   SERVICE = `case-data/9.0`;
+  MESSAGING_SERVICE = `messaging/6.0`;
 
   @Post('/casedata/:municipalityId/message/decision')
   @HttpCode(201)
@@ -288,7 +289,7 @@ export class MessageController {
     let message: WebMessageRequest;
     const MESSAGE_ID = generateMessageId();
     if (errandData.data.externalCaseId) {
-      url = `messaging/5.0/${municipalityId}/webmessage`;
+      url = `${this.MESSAGING_SERVICE}/${municipalityId}/webmessage`;
       const attachments = files.map(file => {
         return {
           base64Data: file.buffer.toString('base64'),
