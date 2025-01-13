@@ -111,7 +111,7 @@ const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkerings
 @Controller()
 export class MessageController {
   private apiService = new ApiService();
-  SERVICE = `case-data/9.0`;
+  SERVICE = `case-data/10.0`;
 
   @Post('/casedata/:municipalityId/message/decision')
   @HttpCode(201)

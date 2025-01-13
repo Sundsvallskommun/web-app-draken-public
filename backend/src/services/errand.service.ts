@@ -9,7 +9,7 @@ import { getLastUpdatedAdministrator } from './stakeholder.service';
 import { Errand as ErrandDTO, PatchErrandCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
 import { CASEDATA_NAMESPACE } from '@/config';
 
-const SERVICE = `case-data/9.0`;
+const SERVICE = `case-data/10.0`;
 
 export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) => Promise<boolean> = async (errand, user) => {
   const apiService = new ApiService();

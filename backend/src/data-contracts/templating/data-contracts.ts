@@ -134,6 +134,9 @@ export interface DirectRenderResponse {
   output?: string;
 }
 
+/** @example [{"op":"add|remove|replace","path":"/some/attribute/path","value":"..."}] */
+export type JsonPatch = object;
+
 /** Detailed template */
 export interface DetailedTemplateResponse {
   /** Identifier */
