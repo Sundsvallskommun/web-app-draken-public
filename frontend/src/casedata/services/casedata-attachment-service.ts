@@ -405,8 +405,9 @@ export const fetchErrandAttachments: (
 export const messageAttachment: (
   municipalityId: string,
   errandId: number,
+  messageId: string,
   attachmentId: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, attachmentId) => {
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, messageId, attachmentId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
@@ -414,7 +415,7 @@ export const messageAttachment: (
     console.error('No attachment id found, cannot fetch. Returning.');
   }
 
-  const url = `casedata/${municipalityId}/attachments/${attachmentId}/errand/${errandId}/streamed`;
+  const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
   return apiService
     .get<any>(url)
     .then((res) => res.data)

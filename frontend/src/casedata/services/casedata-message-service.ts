@@ -234,7 +234,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
     .then((res) => {
       return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
     })
@@ -243,7 +243,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
       return tree;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);
+      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
       throw e;
     });
 };
@@ -256,7 +256,7 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
     .then((res) => {
       const list: MessageResponse[] = res.data.data.sort((a, b) =>
         dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0

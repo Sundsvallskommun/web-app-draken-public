@@ -315,19 +315,19 @@ export class MessageController {
     return sendWebMessage(municipalityId, message, req, errandData);
   }
 
-  @Get('/casedata/:municipalityId/messages/:errandNumber')
+  @Get('/casedata/:municipalityId/errand/:errandId/messages')
   @OpenAPI({ summary: 'Return all messages by errand id' })
   @UseBefore(authMiddleware)
   async errandMessages(
     @Req() req: RequestWithUser,
-    @Param('errandNumber') errandNumber: string,
+    @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: MessageResponse[],
   ): Promise<{ data: MessageResponse[]; message: string }> {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/messages/${errandNumber}`;
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<MessageResponse[]>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching messages for errand: ', errandNumber);
+      logger.error('Error when fetching messages for errand: ', errandId);
       throw e;
     });
     return { data: res.data, message: 'success' };

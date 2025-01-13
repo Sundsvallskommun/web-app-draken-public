@@ -164,12 +164,13 @@ export class CaseDataAttachmentController {
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
   }
 
-  @Get('/casedata/:municipalityId/attachments/:attachmentId/errand/:errandId/streamed')
+  @Get('/casedata/:municipalityId/errand/:errandId/messages/:messageId/attachments/:attachmentId')
   @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
   @UseBefore(authMiddleware)
   async messageAttachments(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: number,
+    @Param('messageId') messageId: string,
     @Param('attachmentId') attachmentId: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
@@ -181,10 +182,10 @@ export class CaseDataAttachmentController {
       throw Error('AttachmentId not found');
     }
 
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messageattachments/${attachmentId}/streamed`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<ArrayBuffer>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
-      logger.error('Something went wrong when deleting attachment');
+      logger.error('Something went wrong when fetching attachment');
       logger.error(e);
       throw e;
     });
