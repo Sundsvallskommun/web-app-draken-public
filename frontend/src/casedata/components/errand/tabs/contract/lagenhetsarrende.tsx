@@ -514,9 +514,7 @@ export const Lagenhetsarrende: React.FC<{
                 </FormControl>
               </FormControl> */}
               <FormControl>
-                <FormLabel>
-                  Ange vilka arrendeområdet ligger inom [[[fastighet/erna:]]] (hämtad från uppgifter)
-                </FormLabel>
+                <FormLabel>Ange vilka fastighet/er som avtalet omfattar</FormLabel>
                 {errand.facilities?.length > 0 ? (
                   getErrandPropertyDesignations(errand).map((p, idx) => (
                     <Checkbox
@@ -1475,19 +1473,14 @@ export const Lagenhetsarrende: React.FC<{
                   e.preventDefault();
                   e.stopPropagation();
                   const content = `
-                  <strong>Bygglov och tillstånd</strong><br /><br />
                   ${
                     getValues('bygglovTerms.condition.permitFees')
-                      ? `<p><strong>${getValues('bygglovTerms.condition.permitFees').header}</strong></p><p>${
-                          getValues('bygglovTerms.condition.permitFees').conditionText
-                        }</p>`
+                      ? `<p>${getValues('bygglovTerms.condition.permitFees').conditionText}</p>`
                       : ''
-                  }<br />
+                  }
                   ${
                     getValues('bygglovTerms.condition.buildingOwnership')
-                      ? `<p><strong>${getValues('bygglovTerms.condition.buildingOwnership').header}</strong></p><p>${
-                          getValues('bygglovTerms.condition.buildingOwnership').conditionText
-                        }</p>`
+                      ? `<p>${getValues('bygglovTerms.condition.buildingOwnership').conditionText}</p>`
                       : ''
                   }<br />
                   `;
@@ -1581,9 +1574,7 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().overlatelseTerms.condition.subletting
-                      ? `<p>${getValues().overlatelseTerms.condition.subletting.header}</p><p>${
-                          getValues().overlatelseTerms.condition.subletting.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().overlatelseTerms.condition.subletting.conditionText}</p><br />`
                       : ''
                   }
                   
@@ -1725,16 +1716,12 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().skickTerms.condition.nuisance
-                      ? `<p><strong>${getValues().skickTerms.condition.nuisance.header}</strong></p><p>${
-                          getValues().skickTerms.condition.nuisance.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().skickTerms.condition.nuisance.conditionText}</p><br />`
                       : ''
                   }
                   ${
                     getValues().skickTerms.condition.accessibility
-                      ? `<p><strong>${getValues().skickTerms.condition.accessibility.header}</strong></p><p>${
-                          getValues().skickTerms.condition.accessibility.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().skickTerms.condition.accessibility.conditionText}</p><br />`
                       : ''
                   }
               `;
@@ -1828,9 +1815,7 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().ledningarTerms.condition.ledningar
-                      ? `<p><strong>${getValues().ledningarTerms.condition.ledningar.header}</strong></p><p>${
-                          getValues().ledningarTerms.condition.ledningar.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().ledningarTerms.condition.ledningar.conditionText}</p><br />`
                       : ''
                   }
 
