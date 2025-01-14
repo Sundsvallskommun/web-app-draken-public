@@ -216,10 +216,7 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   },
   inskrivningTerms: {
     condition: {
-      inskrivning: {
-        header: 'Inskrivning',
-        conditionText: '',
-      },
+      inskrivning: undefined,
     },
   },
   skickTerms: {
