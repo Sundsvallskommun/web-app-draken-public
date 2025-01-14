@@ -582,8 +582,8 @@ export const Lagenhetsarrende: React.FC<{
                         : '<li>(saknas)</li>'
                     }
                     </ul><br />
-                    <p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm</p>
-                    <p>Området är märkt ${getValues().omradeTerms?.mapAttachments} enligt kart bilaga ${
+                    <p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm.</p>
+                    <p>Området är märkt ${getValues().omradeTerms?.mapAttachments} enligt kartbilaga ${
                     getValues().omradeTerms?.mapAttachmentReference
                   }.</p><br />`;
                   // <p>Referens till kartbilaga: ${getValues().omradeTerms?.mapAttachmentReference}</p><br />`;
