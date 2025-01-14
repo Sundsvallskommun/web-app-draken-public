@@ -550,7 +550,7 @@ export const Lagenhetsarrende: React.FC<{
                 />
               </FormControl>
               <FormControl id="mapAttachments" className="w-full">
-                <FormLabel>Ange kartbilaga/or där områdets läge är skrafferat och märkt</FormLabel>
+                <FormLabel>Området är märkt med bokstav</FormLabel>
                 <Input
                   value={getValues().omradeTerms?.mapAttachments}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -558,15 +558,15 @@ export const Lagenhetsarrende: React.FC<{
                   }}
                 />
               </FormControl>
-              {/* <FormControl id="mapAttachmentReference" className="w-full">
-                <FormLabel>Ange referenser till hur området skrafferat och märkt i bilagan/or</FormLabel>
+              <FormControl id="mapAttachmentReference" className="w-full">
+                <FormLabel>Nummer på kartbilaga</FormLabel>
                 <Input
                   value={getValues().omradeTerms?.mapAttachmentReference}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setValue('omradeTerms.mapAttachmentReference', e.target.value);
                   }}
                 />
-              </FormControl> */}
+              </FormControl>
               <Button
                 size="md"
                 onClick={(e) => {
@@ -574,11 +574,18 @@ export const Lagenhetsarrende: React.FC<{
                   e.stopPropagation();
                   // const content = `<strong>Område</strong>
                   // <p>Typ av område: ${getValues().omradeTerms?.areaType}</p><br />
-                  const content = `<p>Fastigheter: ${
-                    selectedProperties?.length > 0 ? selectedProperties.join(', ') : '(saknas)'
-                  }</p><br />
-                  <p>Areal: ${getValues().omradeTerms?.areaSize}</p><br />
-                  <p>Kartbilaga: ${getValues().omradeTerms?.mapAttachments}</p><br />`;
+                  const content = `<p>Arrendeområdet ligger inom fastigheten: </p>
+                    <ul>
+                    ${
+                      selectedProperties?.length > 0
+                        ? selectedProperties.map((property) => `<li>${property}</li>`).join('')
+                        : '<li>(saknas)</li>'
+                    }
+                    </ul><br />
+                    <p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm.</p>
+                    <p>Området är märkt ${getValues().omradeTerms?.mapAttachments} enligt kartbilaga ${
+                    getValues().omradeTerms?.mapAttachmentReference
+                  }.</p><br />`;
                   // <p>Referens till kartbilaga: ${getValues().omradeTerms?.mapAttachmentReference}</p><br />`;
                   setOmrade(content);
                   setShowOmrade(false);
