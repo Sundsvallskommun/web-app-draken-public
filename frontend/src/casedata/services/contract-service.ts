@@ -108,7 +108,8 @@ const defaultKopeavtalTemplate: KopeavtalsTemplate = {
   },
   signatureTerms: {
     condition: {
-      emptyRow: undefined,
+      emptyRowSeller: undefined,
+      emptyRowBuyer: undefined,
       example: undefined,
     },
   },
@@ -279,7 +280,8 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   },
   signatureTerms: {
     condition: {
-      emptyRow: undefined,
+      emptyRowPropertyowner: undefined,
+      emptyRowLeaseholder: undefined,
       example: undefined,
     },
   },
