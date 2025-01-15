@@ -2118,7 +2118,7 @@ export const Lagenhetsarrende: React.FC<{
       <Disclosure
         icon={<Icon icon={<LucideIcon name="undo" />} />}
         data-cy="termination-reinstatement-disclosure"
-        header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
+        header={<h2 className="text-h4-sm md:text-h4-md">Arrendets upphörande och återställning av området</h2>}
         label={doneMark.findIndex((temp) => temp === 'upphorande') !== -1 ? 'Komplett' : ''}
         labelColor={watch().upphorande?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().upphorande?.length > 0}

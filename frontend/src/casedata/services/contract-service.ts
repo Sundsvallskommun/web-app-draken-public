@@ -842,7 +842,7 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
         ],
       },
       {
-        header: 'Upphörande och återställning',
+        header: 'Arrendets upphörande och återställning av området',
         terms: [
           {
             description: 'content',
@@ -928,7 +928,8 @@ export const contractToLagenhetsArrende = (contract: Contract): LagenhetsArrende
     ledningar: contract.indexTerms.find((t) => t.header === 'Ledningar')?.terms[0].term,
     kostnader: contract.indexTerms.find((t) => t.header === 'Kostnader')?.terms[0].term,
     markfororeningar: contract.indexTerms.find((t) => t.header === 'Markföroreningar')?.terms[0].term,
-    upphorande: contract.indexTerms.find((t) => t.header === 'Upphörande och återställning')?.terms[0].term,
+    upphorande: contract.indexTerms.find((t) => t.header === 'Arrendets upphörande och återställning av området')
+      ?.terms[0].term,
     skadaansvar: contract.indexTerms.find((t) => t.header === 'Skada och ansvar')?.terms[0].term,
     sarskilda: contract.indexTerms.find((t) => t.header === 'Särskilda bestämmelser')?.terms[0].term,
     jordabalken: contract.indexTerms.find((t) => t.header === 'Hänvisning till jordabalken')?.terms[0].term,

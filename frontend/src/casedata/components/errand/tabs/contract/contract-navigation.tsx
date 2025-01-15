@@ -30,7 +30,7 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
           { key: 'ledningar', label: 'Ledningar' },
           { key: 'expenses', label: 'Kostnader' },
           { key: 'pollution', label: 'Markföroreningar' },
-          { key: 'upphorande', label: 'Upphörande och återställning' },
+          { key: 'upphorande', label: 'Arrendets upphörande och återställning av området' },
           { key: 'damages', label: 'Skada och ansvar' },
           { key: 'special', label: 'Särskilda bestämmelser' },
           { key: 'jordabalk', label: 'Hänvisning till Jordabalken' },
