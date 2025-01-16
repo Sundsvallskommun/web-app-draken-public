@@ -1372,7 +1372,7 @@ export const Lagenhetsarrende: React.FC<{
                     (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
-                    (content += `<p>Avgift för årtal ${getValues(
+                    (content += `<p>Avgiften för årtal ${getValues(
                       'arrendeavgiftTerms.associatedFeeYear'
                     )} är ${getValues('arrendeavgiftTerms.feeByYear')} kronor</p><br />`);
 
