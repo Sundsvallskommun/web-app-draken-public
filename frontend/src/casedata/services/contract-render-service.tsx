@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Table, Checkbox, FormControl, FormLabel, Input } from '@sk-web-gui/react';
 
 function renderContractTermCheckboxList({ getValues, setValue, register }) {
-  const renderRow = ({ key, header, conditionText, extraField }) => {
+  const RenderRow = ({ key, header, conditionText, extraField }) => {
     const isChecked = !!getValues(key);
 
     useEffect(() => {
@@ -46,7 +46,7 @@ function renderContractTermCheckboxList({ getValues, setValue, register }) {
       </Table.Row>
     );
   };
-  return renderRow;
+  return RenderRow;
 }
 
 export default renderContractTermCheckboxList;
