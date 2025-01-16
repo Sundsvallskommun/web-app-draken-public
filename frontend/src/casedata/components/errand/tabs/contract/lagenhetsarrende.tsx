@@ -1054,17 +1054,13 @@ export const Lagenhetsarrende: React.FC<{
                           getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
                         } innan den nya arrendetidens utgång.</p>`
                       : ''
-                  } 
-
-                  <br /> 
-                  ${
+                  }${
                     getValues('arrendetidTerms.condition.end')
-                      ? `<p>${getValues('arrendetidTerms.condition.end').conditionText} </p><br />`
+                      ? `${getValues('arrendetidTerms.condition.end').conditionText} `
                       : ''
-                  }
-                  ${
+                  }${
                     getValues('arrendetidTerms.condition.termination')
-                      ? `<p>${getValues('arrendetidTerms.condition.termination').conditionText} </p><br />`
+                      ? `${getValues('arrendetidTerms.condition.termination').conditionText}`
                       : ''
                   }
                    `;
