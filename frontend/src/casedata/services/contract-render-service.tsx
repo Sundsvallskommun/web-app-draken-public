@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { Table, Checkbox, FormControl, FormLabel, Input } from '@sk-web-gui/react';
+import { Table, Checkbox, FormControl, FormLabel, Input, DatePicker } from '@sk-web-gui/react';
 
 function renderContractTermCheckboxList({ getValues, setValue, register }) {
-  const RenderRow = ({ key, header, conditionText, extraField }) => {
+  const RenderRow = ({ key, header, conditionText, date, extraField }) => {
     const isChecked = !!getValues(key);
 
     useEffect(() => {
@@ -34,6 +34,15 @@ function renderContractTermCheckboxList({ getValues, setValue, register }) {
             >
               {conditionText ? <strong>{header}</strong> : header}
             </Checkbox>
+            {key === 'markfororeningarTerms.condition.testDone' && getValues(key) ? (
+              <>
+                <strong>Ange Datum för provtagning</strong>
+                <DatePicker
+                  onChange={(date) => setValue('markfororeningarTerms.condition.testDone.date', date)}
+                  {...register('markfororeningarTerms.condition.testDone.date')}
+                ></DatePicker>
+              </>
+            ) : null}
             <span>{conditionText}</span>
           </FormControl>
           {extraField ? (
