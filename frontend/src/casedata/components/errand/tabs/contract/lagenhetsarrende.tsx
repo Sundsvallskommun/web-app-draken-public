@@ -1630,6 +1630,14 @@ export const Lagenhetsarrende: React.FC<{
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowInskrivning(true)}
+            >
+              Fyll i villkor
+            </Button>
             <Checkbox
               data-cy="manual-text-checkbox-enrollment"
               onChange={() => {
@@ -1639,6 +1647,50 @@ export const Lagenhetsarrende: React.FC<{
               Redigera text manuellt
             </Checkbox>
           </div>
+          <Modal
+            show={showInskrivning}
+            onClose={() => setShowInskrivning(false)}
+            className="w-[56rem]"
+            label={'Villkor för inskrivning'}
+          >
+            <Modal.Content>
+              <Table dense background data-cy="inskrivning-table">
+                <Table.Header>
+                  <Table.HeaderColumn>Välj villkor för inskrivning</Table.HeaderColumn>
+                </Table.Header>
+                <Table.Body>
+                  {[
+                    {
+                      key: 'inskrivningTerms.condition.inskrivning',
+
+                      header: 'Avtal får inte inskrivas',
+                      conditionText: 'Detta avtal får inte inskrivas.',
+                    },
+                  ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
+                </Table.Body>
+              </Table>
+              <Button
+                size="md"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const content = `
+                  ${
+                    getValues().inskrivningTerms.condition.inskrivning
+                      ? `<p>${getValues().inskrivningTerms.condition.inskrivning.conditionText}</p><br />`
+                      : ''
+                  }
+                  
+              `;
+
+                  setInskrivning(content);
+                  setShowInskrivning(false);
+                }}
+              >
+                Importera
+              </Button>
+            </Modal.Content>
+          </Modal>
           <FormControl id="inskrivning" className="w-full">
             <Input type="hidden" {...register('inskrivning')} />
             <div className="h-[42rem] -mb-48" data-cy="enrollment-richtext-wrapper">
