@@ -991,13 +991,13 @@ export const Lagenhetsarrende: React.FC<{
                   <FormLabel>Ange tid för automatisk förlängning</FormLabel>
                   <Select className="w-full" onChange={(e) => setValue('arrendetidTerms.autoRenewal', e.target.value)}>
                     <Select.Option key="" value="">
-                      Välj antal månader
+                      Välj antal år
                     </Select.Option>
                     <Select.Option value={1}>1</Select.Option>
                     <Select.Option value={2}>2</Select.Option>
                     <Select.Option value={3}>3</Select.Option>
-                    <Select.Option value={6}>6</Select.Option>
-                    <Select.Option value={12}>12</Select.Option>
+                    <Select.Option value={5}>5</Select.Option>
+                    <Select.Option value={10}>10</Select.Option>
                   </Select>
                 </FormControl>
               </div>
@@ -1037,22 +1037,18 @@ export const Lagenhetsarrende: React.FC<{
                   <p>Området upplåts fr.o.m ${getValues().arrendetidTerms?.startDate} t.o.m ${
                     getValues().arrendetidTerms?.endDate
                   }</p><br /> 
-                  <p>Uppsägningstid: ${getValues().arrendetidTerms?.monthsNotice} ${
-                    getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
-                  }</p>
                   <p>Uppsägningstiden är ömsesidig och avtalet ska sägas upp senast ${
                     getValues().arrendetidTerms?.monthsNotice
                   } ${
                     getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
                   } före avtalstidens utgång.</p><br />
-                  <p>Arrendetid vid förlängning: ${getValues().arrendetidTerms?.autoRenewal} månader</p><br />
 
                   <br />
                   ${
                     getValues('arrendetidTerms.condition.extension')
-                      ? `<p>Om avtalet inte sägs upp förlängs arrendetiden automatiskt med ${
+                      ? `<p>Om avtalet inte sägs upp förlängs arrendetiden med ${
                           getValues().arrendetidTerms?.autoRenewal
-                        } månader i sänder med oförändrad uppsägningstid. Det betyder att om avtalet förlängs med ny arrendetid så ska avtalet sägas upp senast ${
+                        } år i sänder med oförändrad uppsägningstid. Det betyder att om avtalet förlängs med ny arrendetid så ska avtalet sägas upp senast ${
                           getValues().arrendetidTerms?.monthsNotice
                         } ${
                           getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
