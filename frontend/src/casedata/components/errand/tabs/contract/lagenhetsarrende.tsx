@@ -18,6 +18,7 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
+  DatePicker,
   Disclosure,
   FormControl,
   FormLabel,
@@ -31,6 +32,7 @@ import {
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
+import dayjs from 'dayjs';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -1254,9 +1256,35 @@ export const Lagenhetsarrende: React.FC<{
                             );
                           }}
                         >
-                          <strong>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</strong>
+                          <strong>För perioden XX – XX är avgiften betald av tidigare arrendator.</strong>
                         </Checkbox>
                       </FormControl>
+                      <div className="flex justify-between gap-32 w-full">
+                        <FormControl className="flex-grow max-w-[45%]">
+                          <FormLabel>Välj fr.o.m datum</FormLabel>
+                          <DatePicker
+                            value={getValues('arrendeavgiftTerms.prepaidFromDate')}
+                            disabled={getValues('arrendeavgiftTerms.prepaid') !== 'true'}
+                            onChange={(e) => setValue('arrendeavgiftTerms.prepaidFromDate', e.target.value)}
+                            data-cy="previouslyPaid-from-input"
+                            max={dayjs(getValues('arrendeavgiftTerms.prepaidToDate')).format('YYYY-MM-DD')}
+                          />
+                        </FormControl>
+                        <FormControl className="flex-grow max-w-[45%]">
+                          <FormLabel>Välj fr.o.m datum</FormLabel>
+                          <DatePicker
+                            value={getValues('arrendeavgiftTerms.prepaidToDate')}
+                            disabled={getValues('arrendeavgiftTerms.prepaid') !== 'true'}
+                            onChange={(e) => setValue('arrendeavgiftTerms.prepaidToDate', e.target.value)}
+                            data-cy="previouslyPaid-to-input"
+                            min={
+                              getValues('arrendeavgiftTerms.prepaidFromDate')
+                                ? dayjs(getValues('arrendeavgiftTerms.prepaidFromDate')).format('YYYY-MM-DD')
+                                : null
+                            }
+                          />
+                        </FormControl>
+                      </div>
                     </Table.Column>
                   </Table.Row>
                   <Table.Row data-cy="indexAdjustedFee-row">
@@ -1282,37 +1310,37 @@ export const Lagenhetsarrende: React.FC<{
                           id={`noticePeriod`}
                           className="flex-grow max-w-[45%]"
                           disabled={getValues('arrendeavgiftTerms.indexAdjustedFee') !== 'true'}
-                          onChange={(e) => setValue('arrendeavgiftTerms.indexYear', e.target.value)}
-                          // {...register('arrendeavgiftTerms.indexYear')}
                         >
                           <FormLabel>Välj årtal för beräkning</FormLabel>
-                          <Select className="w-full">
+                          <Select
+                            className="w-full"
+                            onChange={(e) => {
+                              setValue(
+                                'arrendeavgiftTerms.indexYear',
+                                Number(e.target.options[e.target.selectedIndex].text)
+                              );
+                              setValue('arrendeavgiftTerms.indexFee', Number(e.target.value));
+                            }}
+                          >
                             <Select.Option key="" value="">
                               Välj årtal
                             </Select.Option>
-                            <Select.Option value={2020}>2012</Select.Option>
-                            <Select.Option value={2021}>2013</Select.Option>
-                            <Select.Option value={2022}>2014</Select.Option>
-                            <Select.Option value={2023}>2015</Select.Option>
-                            <Select.Option value={2024}>2016</Select.Option>
-                            <Select.Option value={2020}>2017</Select.Option>
-                            <Select.Option value={2021}>2018</Select.Option>
-                            <Select.Option value={2022}>2019</Select.Option>
-                            <Select.Option value={2023}>2020</Select.Option>
-                            <Select.Option value={2024}>2021</Select.Option>
-                            <Select.Option value={2021}>2022</Select.Option>
-                            <Select.Option value={2022}>2023</Select.Option>
-                            <Select.Option value={2023}>2024</Select.Option>
-                            <Select.Option value={2024}>2025</Select.Option>
+                            <Select.Option value={314.59}>2012</Select.Option>
+                            <Select.Option value={314.4}>2013</Select.Option>
+                            <Select.Option value={314.02}>2014</Select.Option>
+                            <Select.Option value={314.29}>2015</Select.Option>
+                            <Select.Option value={318}>2016</Select.Option>
+                            <Select.Option value={323.38}>2017</Select.Option>
+                            <Select.Option value={330.72}>2018</Select.Option>
+                            <Select.Option value={336.04}>2019</Select.Option>
+                            <Select.Option value={336.97}>2020</Select.Option>
+                            <Select.Option value={346.44}>2021</Select.Option>
+                            <Select.Option value={384.04}>2022</Select.Option>
+                            <Select.Option value={409.07}>2023</Select.Option>
+                            <Select.Option value={415.51}>2024</Select.Option>
+                            <Select.Option value={0}>2025</Select.Option>
+                            {/* Need correct value for 2025, fix when available */}
                           </Select>
-                        </FormControl>
-                        <FormControl
-                          id={`yearlyIndexAdjustedFee`}
-                          className="flex-grow max-w-[45%]"
-                          disabled={getValues('arrendeavgiftTerms.indexAdjustedFee') !== 'true'}
-                        >
-                          <FormLabel>Ange indexuppräkningstal</FormLabel>
-                          <Input type="text" placeholder="SEK" {...register('arrendeavgiftTerms.indexFee')} />
                         </FormControl>
                       </div>
                     </Table.Column>
@@ -1373,20 +1401,22 @@ export const Lagenhetsarrende: React.FC<{
                   let content = ``;
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p><br />`);
+                    (content += `<p>Avgift per år är: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
-                    (content += `<p>Avgift för årtal ${getValues(
-                      'arrendeavgiftTerms.associatedFeeYear'
-                    )} är ${getValues('arrendeavgiftTerms.feeByYear')} kronor</p><br />`);
+                    (content += `<p>Avgift för år ${getValues('arrendeavgiftTerms.associatedFeeYear')} är ${getValues(
+                      'arrendeavgiftTerms.feeByYear'
+                    )} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
-                    (content += `<p>Avgift för upplåtelsetid: ${getValues(
+                    (content += `<p>Avgiften för upplåtelsetiden är ${getValues(
                       'arrendeavgiftTerms.feeByLease'
                     )} kronor</p><br />`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
-                    (content += `<p>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</p><br />`);
+                    (content += `<p>För perioden ${getValues('arrendeavgiftTerms.prepaidFromDate')} – ${getValues(
+                      'arrendeavgiftTerms.prepaidToDate'
+                    )} är avgiften erlagd av tidigare arrendator.</p><br />`);
 
                   getValues('arrendeavgiftTerms.indexAdjustedFee') === 'true' &&
                     (content += `<p>Avgiften ska i sin helhet indexregleras med hänsyn till konsumentprisindex (totalindex) enligt 1980 års indexserie. Basmånad för indexuppräkningen är oktober månad ${getValues(
