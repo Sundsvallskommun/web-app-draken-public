@@ -232,7 +232,7 @@ export const getErrand: (municipalityId: string, id: string) => Promise<{ errand
     .then(async (res: any) => {
       const errand = mapErrandToIErrand(res.data.data, municipalityId);
       let error;
-      const errandAttachments = await fetchErrandAttachments(municipalityId, errand.errandNumber);
+      const errandAttachments = await fetchErrandAttachments(municipalityId, errand.id);
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
       }
@@ -255,7 +255,7 @@ export const getErrandByErrandNumber: (
     .then(async (res: any) => {
       const errand = mapErrandToIErrand(res.data.data, municipalityId);
       let error: string;
-      const errandAttachments = await fetchErrandAttachments(municipalityId, errandNumber);
+      const errandAttachments = await fetchErrandAttachments(municipalityId, errand.id);
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
       }

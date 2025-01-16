@@ -19,7 +19,7 @@ interface ResponseData {
 @Controller()
 export class CaseDataAttachmentController {
   private apiService = new ApiService();
-  SERVICE = `case-data/9.0`;
+  SERVICE = `case-data/10.0`;
 
   @Post('/casedata/:municipalityId/errands/:errandId/attachments')
   @HttpCode(201)
@@ -119,16 +119,16 @@ export class CaseDataAttachmentController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Get('/casedata/:municipalityId/attachments/errand/:errandNumber')
-  @OpenAPI({ summary: 'Return attachments for an errand by errand number (not id)' })
+  @Get('/casedata/:municipalityId/errand/:errandId/attachments')
+  @OpenAPI({ summary: 'Return attachments for an errand by errand id' })
   @UseBefore(authMiddleware)
   async errandAttachments(
     @Req() req: RequestWithUser,
-    @Param('errandNumber') errandNumber: string,
+    @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/attachments/errand/${errandNumber}`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Attachment[]>({ url, baseURL }, req.user).catch(e => {
       if (e.status === 404) {
@@ -164,12 +164,13 @@ export class CaseDataAttachmentController {
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
   }
 
-  @Get('/casedata/:municipalityId/attachments/:attachmentId/errand/:errandId/streamed')
+  @Get('/casedata/:municipalityId/errand/:errandId/messages/:messageId/attachments/:attachmentId')
   @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
   @UseBefore(authMiddleware)
   async messageAttachments(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: number,
+    @Param('messageId') messageId: string,
     @Param('attachmentId') attachmentId: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
@@ -181,10 +182,10 @@ export class CaseDataAttachmentController {
       throw Error('AttachmentId not found');
     }
 
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messageattachments/${attachmentId}/streamed`;
+    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<ArrayBuffer>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
-      logger.error('Something went wrong when deleting attachment');
+      logger.error('Something went wrong when fetching attachment');
       logger.error(e);
       throw e;
     });

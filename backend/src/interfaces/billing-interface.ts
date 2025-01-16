@@ -166,20 +166,14 @@ export class CBillingRecord implements BillingRecord {
 }
 export class CSortObject implements SortObject {
   @IsOptional()
-  @IsString()
-  direction?: string;
-  @IsOptional()
-  @IsString()
-  nullHandling?: string;
+  @IsBoolean()
+  unsorted?: boolean;
   @IsOptional()
   @IsBoolean()
-  ascending?: boolean;
-  @IsOptional()
-  @IsString()
-  property?: string;
+  empty?: boolean;
   @IsOptional()
   @IsBoolean()
-  ignoreCase?: boolean;
+  sorted?: boolean;
 }
 
 export class CPageableObject implements PageableObject {
@@ -198,7 +192,7 @@ export class CPageableObject implements PageableObject {
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CSortObject)
-  sort?: SortObject[];
+  sort?: SortObject;
   @IsOptional()
   @IsBoolean()
   unpaged?: boolean;
@@ -228,7 +222,7 @@ export class CPageBillingRecord implements PageBillingRecord {
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CSortObject)
-  sort?: SortObject[];
+  sort?: SortObject;
   @IsOptional()
   @IsNumber()
   numberOfElements?: number;

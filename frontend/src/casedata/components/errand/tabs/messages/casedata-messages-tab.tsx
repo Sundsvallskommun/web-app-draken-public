@@ -241,7 +241,7 @@ export const CasedataMessagesTab: React.FC<{
                       <Button
                         key={`${a.name}-${idx}`}
                         onClick={() => {
-                          messageAttachment(municipalityId, errand.id, a.attachmentId)
+                          messageAttachment(municipalityId, errand.id, selectedMessage.messageId, a.attachmentId)
                             .then((res) => {
                               if (res.data.length !== 0) {
                                 const uri = `data:${a.contentType};base64,${res.data}`;

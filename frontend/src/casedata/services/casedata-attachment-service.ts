@@ -387,17 +387,17 @@ export const fetchAttachment: (
 
 export const fetchErrandAttachments: (
   municipalityId: string,
-  errandNumber: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandNumber) => {
-  if (!errandNumber) {
+  errandId: number
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId) => {
+  if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/attachments/errand/${errandNumber}`;
+  const url = `casedata/${municipalityId}/errand/${errandId}/attachments`;
   return apiService
     .get<ApiResponse<Attachment[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching attachments for errand: ', errandNumber);
+      console.error('Something went wrong when fetching attachments for errand: ', errandId);
       return { data: [], message: 'error' };
     });
 };
@@ -405,8 +405,9 @@ export const fetchErrandAttachments: (
 export const messageAttachment: (
   municipalityId: string,
   errandId: number,
+  messageId: string,
   attachmentId: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, attachmentId) => {
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, messageId, attachmentId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
@@ -414,7 +415,7 @@ export const messageAttachment: (
     console.error('No attachment id found, cannot fetch. Returning.');
   }
 
-  const url = `casedata/${municipalityId}/attachments/${attachmentId}/errand/${errandId}/streamed`;
+  const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
   return apiService
     .get<any>(url)
     .then((res) => res.data)

@@ -43,7 +43,7 @@ interface SmsMessage {
 }
 
 const NOTIFY_CONTACTS = false;
-const SERVICE = `case-data/9.0`;
+const SERVICE = `case-data/10.0`;
 const MESSAGING_SERVICE = `messaging/6.0`;
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
@@ -247,7 +247,6 @@ export const saveMessageOnErrand: (
     messageId: message.id,
     messageType: message.messageType || '',
     classification: message.messageClassification as unknown as Classification,
-    errandNumber: errand.errandNumber,
     direction: MessageRequestDirectionEnum.OUTBOUND,
     familyId: '',
     externalCaseId: errand.externalCaseId || '',
@@ -260,7 +259,7 @@ export const saveMessageOnErrand: (
     mobileNumber: message.mobileNumber || '',
     email: process.env.CASEDATA_SENDER_EMAIL || '',
     userId: '',
-    attachmentRequests: attachments.map(a => ({
+    attachments: attachments.map(a => ({
       content: a.content || a.base64Data,
       name: a.name || a.filename || a.fileName,
       contentType: a.contentType || a.mimeType,

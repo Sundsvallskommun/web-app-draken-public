@@ -445,6 +445,12 @@ export interface Attachment {
    */
   municipalityId?: string;
   /**
+   * Errand id associated with the attachment
+   * @format int64
+   * @example 123456
+   */
+  errandId?: number;
+  /**
    * Namespace
    * @example "my.namespace"
    */
@@ -491,11 +497,6 @@ export interface Attachment {
    * @example "dGVzdCBjb250ZW50"
    */
   file?: string;
-  /**
-   * Errand number associated with the attachment
-   * @example "ERR123456"
-   */
-  errandNumber?: string;
   /**
    * Additional parameters for the attachment
    * @example {"key1":"value1","key2":"value2"}
@@ -617,162 +618,6 @@ export interface Law {
   article?: string;
 }
 
-export interface Appeal {
-  /**
-   * The id of the appeal
-   * @format int64
-   * @example 1
-   */
-  id?: number;
-  /**
-   * The version of the appeal.
-   * @format int32
-   * @example 1
-   */
-  version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
-  municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
-  namespace?: string;
-  /**
-   * Description of the appeal
-   * @minLength 0
-   * @maxLength 100000
-   * @example "Some description of the appeal."
-   */
-  description?: string;
-  /**
-   * The date when this appeal was first registered (timestamp from e-service, mail or letter)
-   * @format date-time
-   */
-  registeredAt?: string;
-  /**
-   * The date when the decision or corresponding that this appeal concerns was sent out
-   * @format date-time
-   */
-  appealConcernCommunicatedAt?: string;
-  /**
-   * Current status for this appeal. Values [NEW, REJECTED, SENT_TO_COURT, COMPLETED]
-   * @default "NEW"
-   */
-  status?: string;
-  /**
-   * Status of whether measures have been taken within statutory time limits. Values: [NOT_CONDUCTED, NOT_RELEVANT, APPROVED, REJECTED]
-   * @default "NOT_CONDUCTED"
-   */
-  timelinessReview?: string;
-  /**
-   * Id for decision that is appealed
-   * @format int64
-   */
-  decisionId?: number | null;
-  /**
-   * The date when this appeal was created
-   * @format date-time
-   * @example "2023-10-01T12:00:00Z"
-   */
-  created?: string;
-  /**
-   * The date when this appeal was last updated
-   * @format date-time
-   * @example "2023-10-02T12:00:00Z"
-   */
-  updated?: string;
-}
-
-export interface Notification {
-  /**
-   * Unique identifier for the notification
-   * @example "123e4567-e89b-12d3-a456-426614174000"
-   */
-  id?: string;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
-  municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
-  namespace?: string;
-  /**
-   * Timestamp when the notification was created
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  created?: string;
-  /**
-   * Timestamp when the notification was last modified
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  modified?: string;
-  /**
-   * Name of the owner of the notification
-   * @example "Test Testorsson"
-   */
-  ownerFullName?: string;
-  /**
-   * Owner id of the notification
-   * @example "AD01"
-   */
-  ownerId: string;
-  /**
-   * User who created the notification
-   * @example "TestUser"
-   */
-  createdBy?: string;
-  /**
-   * Full name of the user who created the notification
-   * @example "Test Testorsson"
-   */
-  createdByFullName?: string;
-  /**
-   * Type of the notification
-   * @example "CREATE"
-   */
-  type: string;
-  /**
-   * Description of the notification
-   * @example "Some description of the notification"
-   */
-  description: string;
-  /**
-   * Content of the notification
-   * @example "Some content of the notification"
-   */
-  content?: string;
-  /**
-   * Timestamp when the notification expires
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  expires?: string;
-  /**
-   * Acknowledged status of the notification
-   * @example true
-   */
-  acknowledged?: boolean;
-  /**
-   * Errand id of the notification
-   * @format int64
-   * @example 1234
-   */
-  errandId: number;
-  /**
-   * Errand number of the notification
-   * @example "PRH-2022-000001"
-   */
-  errandNumber?: string;
-}
-
 export interface Errand {
   /**
    * The id of the errand
@@ -881,12 +726,17 @@ export interface Errand {
   facilities?: Facility[];
   /** The decisions connected to the errand */
   decisions?: Decision[];
-  /** The appeals connected to the errand */
-  appeals?: Appeal[];
   /** The notes connected to the errand */
   notes?: Note[];
   /** Messages connected to this errand. Get message information from Message-API */
   messageIds?: string[];
+  /**
+   * List of labels for the errand
+   * @example ["label1","label2"]
+   */
+  labels?: string[];
+  /** Other errands related to the errand */
+  relatesTo?: RelatedErrand[];
   /** The client who created the errand. WSO2-username */
   createdByClient?: string;
   /** The most recent client who updated the errand. WSO2-username */
@@ -1002,6 +852,26 @@ export enum NoteType {
   PUBLIC = 'PUBLIC',
 }
 
+/** Related errand for errand */
+export interface RelatedErrand {
+  /**
+   * Errand id
+   * @format int64
+   * @example 123
+   */
+  errandId?: number;
+  /**
+   * Errand number
+   * @example "PRH-2022-000001"
+   */
+  errandNumber: string;
+  /**
+   * Relation reason
+   * @example "Related because of appealed decision on errand"
+   */
+  relationReason?: string;
+}
+
 /** Suspension information */
 export interface Suspension {
   /**
@@ -1016,6 +886,93 @@ export interface Suspension {
    * @example "2000-10-31T01:30:00+02:00"
    */
   suspendedFrom?: string;
+}
+
+export interface Notification {
+  /**
+   * Unique identifier for the notification
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  id?: string;
+  /**
+   * The municipality ID
+   * @example "2281"
+   */
+  municipalityId?: string;
+  /**
+   * Namespace
+   * @example "my.namespace"
+   */
+  namespace?: string;
+  /**
+   * Timestamp when the notification was created
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  created?: string;
+  /**
+   * Timestamp when the notification was last modified
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  modified?: string;
+  /**
+   * Name of the owner of the notification
+   * @example "Test Testorsson"
+   */
+  ownerFullName?: string;
+  /**
+   * Owner id of the notification
+   * @example "AD01"
+   */
+  ownerId: string;
+  /**
+   * User who created the notification
+   * @example "TestUser"
+   */
+  createdBy?: string;
+  /**
+   * Full name of the user who created the notification
+   * @example "Test Testorsson"
+   */
+  createdByFullName?: string;
+  /**
+   * Type of the notification
+   * @example "CREATE"
+   */
+  type: string;
+  /**
+   * Description of the notification
+   * @example "Some description of the notification"
+   */
+  description: string;
+  /**
+   * Content of the notification
+   * @example "Some content of the notification"
+   */
+  content?: string;
+  /**
+   * Timestamp when the notification expires
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  expires?: string;
+  /**
+   * Acknowledged status of the notification
+   * @example true
+   */
+  acknowledged?: boolean;
+  /**
+   * Errand id of the notification
+   * @format int64
+   * @example 1234
+   */
+  errandId: number;
+  /**
+   * Errand number of the notification
+   * @example "PRH-2022-000001"
+   */
+  errandNumber?: string;
 }
 
 /** Message classification */
@@ -1033,7 +990,7 @@ export interface EmailHeader {
   header?: Header;
   /**
    * The value of the email header
-   * @example "[<this-is-a-test@domain.com>]"
+   * @example ["<this-is-a-test@domain.com>"]
    */
   values?: string[];
 }
@@ -1073,11 +1030,6 @@ export interface MessageRequest {
    * @example "12"
    */
   messageId?: string;
-  /**
-   * The errand number
-   * @example "PRH-2022-000001"
-   */
-  errandNumber?: string;
   /**
    * If the message is inbound or outbound from the perspective of case-data/e-service.
    * @example "INBOUND"
@@ -1139,14 +1091,19 @@ export interface MessageRequest {
    */
   email?: string;
   /**
+   * List of email recipients
+   * @example ["kalle.anka@ankeborg.se"]
+   */
+  recipients?: string[];
+  /**
    * The user ID of the user that sent the message
    * @example "12"
    */
   userId?: string;
   /** Message classification */
   classification?: Classification;
-  /** List of attachmentRequests on the message */
-  attachmentRequests?: MessageAttachment[];
+  /** List of attachments on the message */
+  attachments?: MessageAttachment[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
 }
@@ -1157,6 +1114,12 @@ export interface PatchNotification {
    * @example "123e4567-e89b-12d3-a456-426614174000"
    */
   id?: string;
+  /**
+   * The Errand Id
+   * @format int64
+   * @example 123
+   */
+  errandId?: number;
   /**
    * Owner id of the notification
    * @example "AD01"
@@ -1258,6 +1221,13 @@ export interface PatchErrand {
   applicationReceived?: string;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
+  /** Other errands related to the errand */
+  relatesTo?: RelatedErrand[];
+  /**
+   * List of labels for the errand
+   * @example ["label1","label2"]
+   */
+  labels?: string[];
 }
 
 export interface PatchDecision {
@@ -1303,44 +1273,90 @@ export interface PatchDecision {
   extraParameters?: Record<string, string>;
 }
 
-export interface PatchAppeal {
-  /**
-   * Description of the appeal
-   * @minLength 0
-   * @maxLength 100000
-   * @example "The decision is not correct"
-   */
-  description?: string;
-  /**
-   * Current status for this appeal. Values [NEW, REJECTED, SENT_TO_COURT, COMPLETED]
-   * @default "NEW"
-   */
-  status?: string;
-  /**
-   * Status of whether measures have been taken within statutory time limits. Values: [NOT_CONDUCTED, NOT_RELEVANT, APPROVED, REJECTED]
-   * @default "NOT_CONDUCTED"
-   */
-  timelinessReview?: string;
+export interface PageErrand {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  size?: number;
+  content?: Errand[];
+  /** @format int32 */
+  number?: number;
+  sort?: SortObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  pageable?: PageableObject;
+  empty?: boolean;
 }
 
-export interface GetParkingPermit {
-  /**
-   * The permit number of the artefact
-   * @example "PARK123456"
-   */
-  artefactPermitNumber?: string;
-  /**
-   * The status of the artefact permit
-   * @example "ACTIVE"
-   */
-  artefactPermitStatus?: string;
-  /**
-   * The ID of the associated errand
-   * @format int64
-   * @example 1
-   */
-  errandId?: number;
-  errandDecision?: Decision;
+export interface PageableObject {
+  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  /** @format int32 */
+  pageNumber?: number;
+  /** @format int32 */
+  pageSize?: number;
+  unpaged?: boolean;
+}
+
+export interface SortObject {
+  empty?: boolean;
+  sorted?: boolean;
+  unsorted?: boolean;
+}
+
+export interface CommitMetadata {
+  author?: string;
+  commitDateInstant?: string;
+  /** @format double */
+  id?: number;
+  properties?: object[];
+  commitDate?: string;
+}
+
+export interface ElementChangesItem {
+  elementChangeType?: string;
+  /** @format int32 */
+  index?: number;
+  value?: object;
+}
+
+export interface EntryChangesItem {
+  entryChangeType?: string;
+  value?: string;
+  key?: string;
+}
+
+export interface GlobalId {
+  /** @format int32 */
+  cdoId?: number;
+  entity?: string;
+  valueObject?: string;
+  fragment?: string;
+  ownerId?: OwnerId;
+}
+
+export interface History {
+  changeType?: string;
+  commitMetadata?: CommitMetadata;
+  globalId?: GlobalId;
+  property?: string;
+  propertyChangeType?: string;
+  entryChanges?: EntryChangesItem[];
+  left?: object;
+  right?: object;
+  elementChanges?: ElementChangesItem[];
+}
+
+export interface OwnerId {
+  /** @format int32 */
+  cdoId?: number;
+  entity?: string;
 }
 
 /** List of attachments on the message */
@@ -1369,21 +1385,18 @@ export interface MessageResponse {
    */
   messageId?: string;
   /**
-   * The errand number
-   * @example "PRH-2022-000001"
+   * The errand ID
+   * @format int64
+   * @example 123
    */
-  errandNumber?: string;
+  errandId?: number;
   /**
    * The municipality ID
-   * @minLength 0
-   * @maxLength 255
    * @example "2281"
    */
   municipalityId?: string;
   /**
    * Namespace
-   * @minLength 0
-   * @maxLength 255
    * @example "my.namespace"
    */
   namespace?: string;
@@ -1443,6 +1456,11 @@ export interface MessageResponse {
    */
   mobileNumber?: string;
   /**
+   * The recipients of the message, if email
+   * @example ["kalle.anka@ankeborg.se"]
+   */
+  recipients?: string[];
+  /**
    * The email of the user that sent the message
    * @example "kalle.anka@ankeborg.se"
    */
@@ -1463,94 +1481,6 @@ export interface MessageResponse {
   attachments?: AttachmentResponse[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
-}
-
-export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
-  /** @format int64 */
-  totalElements?: number;
-  pageable?: PageableObject;
-  /** @format int32 */
-  size?: number;
-  content?: Errand[];
-  /** @format int32 */
-  number?: number;
-  sort?: SortObject[];
-  /** @format int32 */
-  numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
-  empty?: boolean;
-}
-
-export interface PageableObject {
-  paged?: boolean;
-  /** @format int32 */
-  pageNumber?: number;
-  /** @format int32 */
-  pageSize?: number;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject[];
-  unpaged?: boolean;
-}
-
-export interface SortObject {
-  direction?: string;
-  nullHandling?: string;
-  ascending?: boolean;
-  property?: string;
-  ignoreCase?: boolean;
-}
-
-export interface CommitMetadata {
-  author?: string;
-  commitDateInstant?: string;
-  /** @format double */
-  id?: number;
-  properties?: object[];
-  commitDate?: string;
-}
-
-export interface ElementChangesItem {
-  elementChangeType?: string;
-  /** @format int32 */
-  index?: number;
-  value?: object;
-}
-
-export interface EntryChangesItem {
-  entryChangeType?: string;
-  value?: string;
-  key?: string;
-}
-
-export interface GlobalId {
-  /** @format int32 */
-  cdoId?: number;
-  entity?: string;
-  valueObject?: string;
-  fragment?: string;
-  ownerId?: OwnerId;
-}
-
-export interface History {
-  changeType?: string;
-  commitMetadata?: CommitMetadata;
-  globalId?: GlobalId;
-  property?: string;
-  propertyChangeType?: string;
-  entryChanges?: EntryChangesItem[];
-  left?: object;
-  right?: object;
-  elementChanges?: ElementChangesItem[];
-}
-
-export interface OwnerId {
-  /** @format int32 */
-  cdoId?: number;
-  entity?: string;
 }
 
 /**
@@ -1640,23 +1570,13 @@ export enum MessageRequestDirectionEnum {
  * @example "PARKING_PERMIT"
  */
 export enum PatchErrandCaseTypeEnum {
-  NYBYGGNAD_ANSOKAN_OM_BYGGLOV = 'NYBYGGNAD_ANSOKAN_OM_BYGGLOV',
-  ANMALAN_ATTEFALL = 'ANMALAN_ATTEFALL',
-  REGISTRERING_AV_LIVSMEDEL = 'REGISTRERING_AV_LIVSMEDEL',
-  ANMALAN_INSTALLATION_VARMEPUMP = 'ANMALAN_INSTALLATION_VARMEPUMP',
-  ANSOKAN_TILLSTAND_VARMEPUMP = 'ANSOKAN_TILLSTAND_VARMEPUMP',
-  ANSOKAN_OM_TILLSTAND_ENSKILT_AVLOPP = 'ANSOKAN_OM_TILLSTAND_ENSKILT_AVLOPP',
-  ANMALAN_INSTALLATION_ENSKILT_AVLOPP_UTAN_WC = 'ANMALAN_INSTALLATION_ENSKILT_AVLOPP_UTAN_WC',
-  ANMALAN_ANDRING_AVLOPPSANLAGGNING = 'ANMALAN_ANDRING_AVLOPPSANLAGGNING',
-  ANMALAN_ANDRING_AVLOPPSANORDNING = 'ANMALAN_ANDRING_AVLOPPSANORDNING',
-  ANMALAN_HALSOSKYDDSVERKSAMHET = 'ANMALAN_HALSOSKYDDSVERKSAMHET',
   PARKING_PERMIT = 'PARKING_PERMIT',
   PARKING_PERMIT_RENEWAL = 'PARKING_PERMIT_RENEWAL',
   LOST_PARKING_PERMIT = 'LOST_PARKING_PERMIT',
   MEX_LEASE_REQUEST = 'MEX_LEASE_REQUEST',
   MEX_BUY_LAND_FROM_THE_MUNICIPALITY = 'MEX_BUY_LAND_FROM_THE_MUNICIPALITY',
   MEX_SELL_LAND_TO_THE_MUNICIPALITY = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY',
-  MEX_APPLICATION_SQUARE_PLACE = 'MEX_APPLICATION_SQUARE_PLACE',
+  MEX_SQUARE_PLACE = 'MEX_SQUARE_PLACE',
   MEX_BUY_SMALL_HOUSE_PLOT = 'MEX_BUY_SMALL_HOUSE_PLOT',
   MEX_APPLICATION_FOR_ROAD_ALLOWANCE = 'MEX_APPLICATION_FOR_ROAD_ALLOWANCE',
   MEX_UNAUTHORIZED_RESIDENCE = 'MEX_UNAUTHORIZED_RESIDENCE',
@@ -1666,12 +1586,25 @@ export enum PatchErrandCaseTypeEnum {
   MEX_LAND_INSTRUCTION = 'MEX_LAND_INSTRUCTION',
   MEX_OTHER = 'MEX_OTHER',
   MEX_LAND_SURVEYING_OFFICE = 'MEX_LAND_SURVEYING_OFFICE',
-  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOUGE_PLANNING_NOTICE = 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOUGE_PLANNING_NOTICE',
+  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE = 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
   MEX_INVOICE = 'MEX_INVOICE',
   MEX_REQUEST_FOR_PUBLIC_DOCUMENT = 'MEX_REQUEST_FOR_PUBLIC_DOCUMENT',
   MEX_TERMINATION_OF_LEASE = 'MEX_TERMINATION_OF_LEASE',
-  MEX_TERMINATION_OF_HUNTING_LEASE = 'MEX_TERMINATION_OF_HUNTING_LEASE',
+  MEX_HUNTING_LEASE = 'MEX_HUNTING_LEASE',
   MEX_FORWARDED_FROM_CONTACTSUNDSVALL = 'MEX_FORWARDED_FROM_CONTACTSUNDSVALL',
+  MEX_BUILDING_PERMIT = 'MEX_BUILDING_PERMIT',
+  MEX_STORMWATER = 'MEX_STORMWATER',
+  MEX_INVASIVE_SPECIES = 'MEX_INVASIVE_SPECIES',
+  MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL = 'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL',
+  MEX_LITTERING = 'MEX_LITTERING',
+  MEX_REFERRAL_CONSULTATION = 'MEX_REFERRAL_CONSULTATION',
+  MEX_PUBLIC_SPACE_LEASE = 'MEX_PUBLIC_SPACE_LEASE',
+  MEX_EASEMENT = 'MEX_EASEMENT',
+  MEX_TREES_FORESTS = 'MEX_TREES_FORESTS',
+  MEX_ROAD_ASSOCIATION = 'MEX_ROAD_ASSOCIATION',
+  MEX_RETURNED_TO_CONTACT_SUNDSVALL = 'MEX_RETURNED_TO_CONTACT_SUNDSVALL',
+  MEX_SMALL_BOAT_HARBOR_DOCK_PORT = 'MEX_SMALL_BOAT_HARBOR_DOCK_PORT',
+  APPEAL = 'APPEAL',
 }
 
 /**
