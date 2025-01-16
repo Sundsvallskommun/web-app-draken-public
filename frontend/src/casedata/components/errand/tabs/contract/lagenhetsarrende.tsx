@@ -2159,7 +2159,7 @@ export const Lagenhetsarrende: React.FC<{
                     },
                     {
                       key: 'upphorandeTerms.condition.restorationBuildingRemoval',
-                      header: 'Återställning och borttagning av byggnader',
+                      header: 'Återställning och städning inkl. byggnader',
                       conditionText:
                         'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Alla byggnader/anläggningar inom området ska tas bort. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har avflyttat från den i detta avtal angivna adressen',
                     },
@@ -2180,12 +2180,6 @@ export const Lagenhetsarrende: React.FC<{
                       conditionText:
                         'När avtalet upphör ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
                     },
-                    {
-                      key: 'upphorandeTerms.condition.inspectionLandWater',
-                      header: 'Besiktning och friskrivning för mark- och vattenområden',
-                      conditionText:
-                        'Vid avtalets upphörande ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat mark- och vattenområde, dels för kostnader som arrendatorn nedlagt inom området',
-                    },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
               </Table>
@@ -2197,27 +2191,17 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().upphorandeTerms.condition.restorationCleaning
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.restorationCleaning.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.restorationCleaning.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.restorationCleaning.conditionText}</p><br />`
                       : ''
                   }
                   ${
                     getValues().upphorandeTerms.condition.restorationBuildingRemoval
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.restorationBuildingRemoval.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.restorationBuildingRemoval.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.restorationBuildingRemoval.conditionText}</p><br />`
                       : ''
                   }
                   ${
                     getValues().upphorandeTerms.condition.noRefundLeaseFee
-                      ? `<p><strong>${getValues().upphorandeTerms.condition.noRefundLeaseFee.header}</strong></p><p>${
-                          getValues().upphorandeTerms.condition.noRefundLeaseFee.conditionText
-                        }</p><br />
+                      ? `<p>${getValues().upphorandeTerms.condition.noRefundLeaseFee.conditionText}</p><br />
                       ${
                         getValues().upphorandeTerms.noRefundLeaseFeeAmount
                           ? `<p><strong>Belopp för återbetalning:</strong> ${
@@ -2230,20 +2214,7 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   ${
                     getValues().upphorandeTerms.condition.inspectionRequirements
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.inspectionRequirements.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.inspectionRequirements.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
-                    getValues().upphorandeTerms.condition.inspectionLandWater
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.inspectionLandWater.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.inspectionLandWater.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.inspectionRequirements.conditionText}</p><br />`
                       : ''
                   }
                   `;
