@@ -167,18 +167,9 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
       atervinningsstation: undefined,
       clarification: undefined,
       bygglovExists: undefined,
-      other: {
-        header: '',
-        conditionText: '',
-      },
-      consent: {
-        header: '',
-        conditionText: '',
-      },
-      detailedplan: {
-        header: '',
-        conditionText: '',
-      },
+      other: undefined,
+      consent: undefined,
+      detailedplan: undefined,
     },
   },
   arrendetidTerms: {
