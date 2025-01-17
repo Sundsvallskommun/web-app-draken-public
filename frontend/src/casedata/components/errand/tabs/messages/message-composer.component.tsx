@@ -9,7 +9,6 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
@@ -36,6 +35,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
 import { Role } from '@casedata/interfaces/role';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
