@@ -833,7 +833,7 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'andamalTerms.condition.consent',
                       header: 'Fastighetsägarens medgivande',
-                      conditionText: 'Området får ej utan fastighetsägarens medgivande användas till annat ändamål',
+                      conditionText: 'Området får ej utan fastighetsägarens medgivande användas till annat ändamål.',
                     },
                     {
                       key: 'andamalTerms.condition.detailedplan',
@@ -849,24 +849,25 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = '<strong>Området får användas till följande ändamål</strong>';
-                  getValues('andamalTerms.condition.byggnad') ? (content += '<p>Byggnad</p>') : '';
-                  getValues('andamalTerms.condition.batplats') ? (content += '<p>Båtplats</p>') : '';
-                  getValues('andamalTerms.condition.idrattsandamal') ? (content += '<p>Idrottsändamål</p>') : '';
-                  getValues('andamalTerms.condition.led') ? (content += '<p>Led</p>') : '';
-                  getValues('andamalTerms.condition.parkering') ? (content += '<p>Parkering</p>') : '';
-                  getValues('andamalTerms.condition.skylt') ? (content += '<p>Skylt</p>') : '';
-                  getValues('andamalTerms.condition.snotipp') ? (content += '<p>Snötipp</p>') : '';
-                  getValues('andamalTerms.condition.tomtkomplement') ? (content += '<p>Tomtkomplement</p>') : '';
-                  getValues('andamalTerms.condition.upplag') ? (content += '<p>Upplag</p>') : '';
-                  getValues('andamalTerms.condition.uppstallning') ? (content += '<p>Uppställning</p>') : '';
-                  getValues('andamalTerms.condition.ytjordvarme') ? (content += '<p>Ytjordvärme</p>') : '';
-                  getValues('andamalTerms.condition.vag') ? (content += '<p>Väg</p>') : '';
+                  let content = `Området får användas till följande ändamål<ul>`;
+                  getValues('andamalTerms.condition.byggnad') ? (content += '<li>Byggnad</li>') : '';
+                  getValues('andamalTerms.condition.batplats') ? (content += '<li>Båtplats</li>') : '';
+                  getValues('andamalTerms.condition.idrattsandamal') ? (content += '<li>Idrottsändamål</li>') : '';
+                  getValues('andamalTerms.condition.led') ? (content += '<li>Led</li>') : '';
+                  getValues('andamalTerms.condition.parkering') ? (content += '<li>Parkering</li>') : '';
+                  getValues('andamalTerms.condition.skylt') ? (content += '<li>Skylt</li>') : '';
+                  getValues('andamalTerms.condition.snotipp') ? (content += '<li>Snötipp</li>') : '';
+                  getValues('andamalTerms.condition.tomtkomplement') ? (content += '<li>Tomtkomplement</li>') : '';
+                  getValues('andamalTerms.condition.upplag') ? (content += '<li>Upplag</li>') : '';
+                  getValues('andamalTerms.condition.uppstallning') ? (content += '<li>Uppställning</li>') : '';
+                  getValues('andamalTerms.condition.ytjordvarme') ? (content += '<li>Ytjordvärme</li>') : '';
+                  getValues('andamalTerms.condition.vag') ? (content += '<li>Väg</li>') : '';
                   getValues('andamalTerms.condition.atervinningsstation')
-                    ? (content += '<p>Återvinningsstation</p>')
+                    ? (content += '<li>Återvinningsstation</li>')
                     : '';
-                  getValues('andamalTerms.condition.other') ? (content += '<p>XXXX</p>') : '';
+                  getValues('andamalTerms.condition.other') ? (content += '<li>XXXX</li>') : '';
 
+                  content += `</ul>`;
                   // content += `<br />
                   // <strong>Förtydligande</strong><p>${getValues('andamalTerms.clarification')}</p><br />
                   // <p>Bygglov finns: ${getValues('andamalTerms.bygglovExists') ? 'Ja' : 'Nej'}</p>`;
