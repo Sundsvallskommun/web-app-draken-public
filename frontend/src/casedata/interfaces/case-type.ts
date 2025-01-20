@@ -2,6 +2,7 @@ export enum PTCaseType {
   PARKING_PERMIT = 'PARKING_PERMIT',
   PARKING_PERMIT_RENEWAL = 'PARKING_PERMIT_RENEWAL',
   LOST_PARKING_PERMIT = 'LOST_PARKING_PERMIT',
+  APPEAL = 'APPEAL',
 }
 
 export enum MEXCaseType {
@@ -26,7 +27,7 @@ export enum MEXCaseType {
   MEX_TERMINATION_OF_HUNTING_LEASE = 'MEX_TERMINATION_OF_HUNTING_LEASE',
 }
 
-export type CaseType = typeof PTCaseType | typeof MEXCaseType;
+export const CaseType = { ...PTCaseType, ...MEXCaseType };
 
 export const CaseTypes = {
   PT: PTCaseType,

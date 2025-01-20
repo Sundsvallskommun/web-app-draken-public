@@ -2,6 +2,7 @@ export enum PTCaseLabel {
   PARKING_PERMIT = 'Nytt parkeringstillstånd',
   PARKING_PERMIT_RENEWAL = 'Förnyat parkeringstillstånd',
   LOST_PARKING_PERMIT = 'Borttappat parkeringstillstånd',
+  APPEAL = 'Överklagan',
 }
 
 export enum MEXCaseLabel {
@@ -24,14 +25,6 @@ export enum MEXCaseLabel {
   MEX_APPLICATION_FOR_ROAD_ALLOWANCE = 'Vägbidrag',
   MEX_FORWARDED_FROM_CONTACTSUNDSVALL = 'Ärende från Kontakt Sundsvall',
   MEX_OTHER = 'Övrigt',
-}
-
-// export type CaseLabel = typeof CaseLabels.ALL;
-
-export enum CaseLabel {
-  PARKING_PERMIT = 'Nytt parkeringstillstånd',
-  PARKING_PERMIT_RENEWAL = 'Förnyat parkeringstillstånd',
-  LOST_PARKING_PERMIT = 'Borttappat parkeringstillstånd',
 }
 
 export const CaseLabels = {

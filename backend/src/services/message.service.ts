@@ -280,6 +280,7 @@ export const saveMessageOnErrand: (
     });
 
   if (saveMessage.direction === MessageRequestDirectionEnum.OUTBOUND) {
+    console.log('Setting message as viewed');
     await setMessageViewed(municipalityId, errand.id, message.id, user).catch(e => {
       logger.error('Error when saving viewed status:', e);
     });
