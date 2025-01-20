@@ -849,7 +849,7 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = '<strong>Området får användas till följande ändamål</strong>';
+                  let content = 'Området får användas till följande ändamål';
                   getValues('andamalTerms.condition.byggnad') ? (content += '<p>Byggnad</p>') : '';
                   getValues('andamalTerms.condition.batplats') ? (content += '<p>Båtplats</p>') : '';
                   getValues('andamalTerms.condition.idrattsandamal') ? (content += '<p>Idrottsändamål</p>') : '';
@@ -2348,9 +2348,7 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().skadaansvarTerms.condition.begransning
-                      ? `<p><strong>${getValues().skadaansvarTerms.condition.begransning.header}</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.begransning.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().skadaansvarTerms.condition.begransning.conditionText}</p><br />`
                       : ''
                   }
                   `;
