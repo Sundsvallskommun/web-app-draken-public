@@ -85,7 +85,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         { key: 'ledningar', label: 'Ledningar' },
         { key: 'expenses', label: 'Kostnader' },
         { key: 'pollution', label: 'Markföroreningar' },
-        { key: 'upphorande', label: 'Upphörande och återställning' },
+        { key: 'upphorande', label: 'Arrendets upphörande och återställning av området' },
         { key: 'damages', label: 'Skada och ansvar' },
         { key: 'special', label: 'Särskilda bestämmelser' },
         { key: 'jordabalk', label: 'Hänvisning till Jordabalken' },
@@ -111,7 +111,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="costs-disclosure"]').contains('Kostnader').should('exist');
       cy.get('[data-cy="soil-pollution-disclosure"]').contains('Markföroreningar').should('exist');
       cy.get('[data-cy="termination-reinstatement-disclosure"]')
-        .contains('Upphörande och återställning')
+        .contains('Arrendets upphörande och återställning av området')
         .should('exist');
       cy.get('[data-cy="damages-disclosure"]').contains('Skada och ansvar').should('exist');
       cy.get('[data-cy="special-provisions-disclosure"]').contains('Särskilda bestämmelser').should('exist');
