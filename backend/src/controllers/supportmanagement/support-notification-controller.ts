@@ -43,6 +43,9 @@ export class SupportNotificationDto {
   @IsBoolean()
   @IsOptional()
   acknowledged?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  globalAcknowledged?: boolean;
   @IsString()
   errandId?: string;
   @IsString()
