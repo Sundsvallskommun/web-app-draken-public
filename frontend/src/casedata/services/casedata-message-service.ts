@@ -2,7 +2,6 @@ import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/me
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { sendAttachments } from '@casedata/services/casedata-attachment-service';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -10,6 +9,7 @@ import { isMEX } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
   municipalityId,

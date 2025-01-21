@@ -148,6 +148,7 @@ export const sendEmail = (
           header_message_Id: message.headers['MESSAGE_ID']?.[0],
           header_reply_to: message.headers['IN_REPLY_TO']?.[0],
           header_references: message.headers['REFERENCES']?.join(','),
+          email: message.emailAddress,
         },
         req.user,
       )
@@ -231,6 +232,7 @@ export const saveMessageOnErrand: (
     header_reply_to: string;
     header_references: string;
     mobileNumber?: string;
+    email?: string;
   },
   user: User,
 ) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
@@ -257,6 +259,7 @@ export const saveMessageOnErrand: (
     firstName: user.firstName,
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
+    recipients: message.email ? [message.email] : [],
     email: process.env.CASEDATA_SENDER_EMAIL || '',
     userId: '',
     attachments: attachments.map(a => ({
