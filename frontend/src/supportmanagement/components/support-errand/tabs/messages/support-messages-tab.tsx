@@ -4,7 +4,7 @@ import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, cx, Divider, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
+import { isSupportErrandLocked, validateAction, Status } from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
@@ -95,7 +95,7 @@ export const SupportMessagesTab: React.FC<{
           <Button
             data-cy="new-message-button"
             type="button"
-            disabled={isSupportErrandLocked(supportErrand) || !allowed}
+            disabled={isSupportErrandLocked(supportErrand) || !allowed || supportErrand.status === Status.NEW}
             size="sm"
             variant="primary"
             color="vattjom"
