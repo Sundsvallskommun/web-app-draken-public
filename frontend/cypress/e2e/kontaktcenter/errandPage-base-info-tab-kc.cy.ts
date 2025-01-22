@@ -16,6 +16,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { mockMetaDataRoles } from '../lop/fixtures/mockMetadata';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Errand page', () => {
@@ -32,6 +33,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportMessages).as('getMessages');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
+      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
       cy.intercept('POST', `**/organization`, mockOrganizationResponse).as('getOrganization');
@@ -699,7 +701,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="stakeholder-phone"]').contains('+4670000000');
     });
 
-    it.only('make contact to errande owner', () => {
+    it('make contact to errande owner', () => {
       cy.intercept('PATCH', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin', {
         ...mockSupportErrand,
         id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',

@@ -17,6 +17,7 @@ import {
   mockSupportErrandsEmpty,
 } from './fixtures/mockSupportErrands';
 import { mockNotifications } from './fixtures/mockSupportNotifications';
+import { mockMetaDataRoles } from '../lop/fixtures/mockMetadata';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Overview support errand', () => {
@@ -26,6 +27,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
       cy.intercept('GET', '**/supporterrands/2281?page=1*', mockSupportErrandsEmpty).as('getErrandsEmpty');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
+      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('GET', '**/supportnotifications/2281', mockNotifications).as('getSupportNotifications');
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
       cy.visit('/oversikt/');

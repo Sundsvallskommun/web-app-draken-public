@@ -987,6 +987,20 @@ export interface MetadataResponse {
   contactReasons?: ContactReason[];
 }
 
+export interface MetadataRoles {
+  /**
+   * Name for the role. Used as key
+   * @example "ROLENAME"
+   */
+  name: string;
+  /**
+   * Display name for the role
+   * @example "Role name"
+   */
+  displayName?: string;
+  created?: string;
+}
+
 export interface PageErrand {
   /** @format int64 */
   totalElements?: number;

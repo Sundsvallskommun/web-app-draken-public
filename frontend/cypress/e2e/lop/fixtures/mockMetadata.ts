@@ -1,4 +1,4 @@
-import { MetadataResponse } from '@common/data-contracts/supportmanagement/data-contracts';
+import { MetadataResponse, MetadataRoles } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export const mockCategories = [
   {
@@ -913,3 +913,41 @@ export const mockMetaData: MetadataResponse = {
     },
   ],
 };
+
+export const mockMetaDataRoles: MetadataRoles[] = [
+  {
+    created: '2024-11-04T16:24:46.147+01:00',
+    displayName: 'Godkännande chef',
+    name: 'APPROVER',
+  },
+  {
+    created: '2024-11-04T16:21:54.435+01:00',
+    displayName: 'Kontaktperson',
+    name: 'CONTACT',
+  },
+  {
+    created: '2024-10-17T15:24:58.371+02:00',
+    displayName: 'Anställd',
+    name: 'EMPLOYEE',
+  },
+  {
+    created: '2024-10-17T15:25:27.503+02:00',
+    displayName: 'Chef',
+    name: 'MANAGER',
+  },
+  {
+    created: '2024-11-04T16:21:45.904+01:00',
+    displayName: 'Ärendeägare',
+    name: 'PRIMARY',
+  },
+  {
+    created: '2024-11-04T16:24:52.231+01:00',
+    displayName: 'Ersättare',
+    name: 'SUBSTITUTE',
+  },
+  {
+    created: '2024-10-17T15:26:01.175+02:00',
+    displayName: 'Användare',
+    name: 'USER',
+  },
+];

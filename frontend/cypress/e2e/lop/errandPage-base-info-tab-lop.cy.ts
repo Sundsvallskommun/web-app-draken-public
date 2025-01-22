@@ -4,7 +4,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
-import { mockMetaData } from './fixtures/mockMetadata';
+import { mockMetaData, mockMetaDataRoles } from './fixtures/mockMetadata';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockEmptySupportErrand,
@@ -36,6 +36,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportMessages).as('getMessages');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
+      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
       cy.intercept('GET', `**/portalpersondata/PERSONAL/mockusername`, mockEmployee).as('getEmployee');
@@ -123,7 +124,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="search-button-owner"').should('be.disabled');
       cy.get('[data-cy="personal-number-error-message"')
         .should('exist')
-        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ÅÅÅÅMMDD-XXXX)');
+        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
       cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="search-button-owner"').should('be.enabled');
       cy.get('[data-cy="personal-number-error-message"').should('not.exist');

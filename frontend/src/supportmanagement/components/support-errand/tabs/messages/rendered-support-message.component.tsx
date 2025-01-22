@@ -3,7 +3,7 @@ import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, cx, Icon } from '@sk-web-gui/react';
-import { SupportErrand, SupportStakeholderRole } from '@supportmanagement/services/support-errand-service';
+import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Message } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -42,9 +42,7 @@ export const RenderedSupportMessage: React.FC<{
 
   const getMessageOwner = (msg: Message) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
-      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) =>
-        stakeholder.role.includes(SupportStakeholderRole.PRIMARY)
-      );
+      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) => stakeholder.role.includes('PRIMARY'));
       const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.contactChannels.some((value) => value.value === msg.sender)

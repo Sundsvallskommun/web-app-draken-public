@@ -13,6 +13,7 @@ import { mockMetaData } from './fixtures/mockMetadata';
 import { onlyOn } from '@cypress/skip-test';
 import { interceptFormData } from 'cypress-intercept-formdata';
 import { CyHttpMessages } from 'cypress/types/net-stubbing';
+import { mockMetaDataRoles } from '../lop/fixtures/mockMetadata';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Message tab', () => {
@@ -24,6 +25,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         'getSupportErrand'
       );
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
+      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments);
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportErrandCommunication).as(
@@ -101,8 +103,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
           cy.get('[data-cy="useEmail-radiobutton-true"]').should('exist').check({ force: true });
         });
 
-      cy.get('[data-cy="email-input"]').should('exist').clear().type('test@example.com');
-      cy.get('[data-cy="add-email-button"]').should('exist').click({ force: true });
+      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
+      cy.get('[data-cy="add-email-button"]').should('exist').click({ force: true, multiple: true });
 
       cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
       cy.get('button').contains('Bläddra').should('exist').click();
