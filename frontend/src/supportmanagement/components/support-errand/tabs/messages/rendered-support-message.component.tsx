@@ -2,11 +2,15 @@ import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/d
 import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, cx, Icon } from '@sk-web-gui/react';
-import { SupportErrand, SupportStakeholderRole } from '@supportmanagement/services/support-errand-service';
-import { Message } from '@supportmanagement/services/support-message-service';
+import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
+import {
+  isSupportErrandLocked,
+  SupportErrand,
+  SupportStakeholderRole,
+} from '@supportmanagement/services/support-errand-service';
+import { getMessageAttachment, Message } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
-import React from 'react';
+import React, { useState } from 'react';
 
 export const getSender = (msg: Message) => {
   if (!msg) {
@@ -29,13 +33,35 @@ export const getReciever = (msg: Message) => {
 };
 
 export const RenderedSupportMessage: React.FC<{
+  setRichText: React.Dispatch<React.SetStateAction<string>>;
+  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  richText: string;
+  emailBody: string;
   message: Message;
   selected: string;
   onSelect: (msg: Message) => void;
   root?: boolean;
   children: any;
-}> = ({ message, selected, onSelect, root = false, children }) => {
-  const { supportErrand }: AppContextInterface = useAppContext();
+}> = ({
+  setRichText,
+  setShowMessageForm,
+  richText,
+  emailBody,
+  message,
+  selected,
+  onSelect,
+  root = false,
+  children,
+}) => {
+  const { supportErrand, municipalityId }: AppContextInterface = useAppContext();
+  const [allowed, setAllowed] = useState(false);
+  const [expanded, setExpanded] = useState(message.communicationType === 'WEB_MESSAGE' ? true : false);
+
+  const toastMessage = useSnackbar();
+  const AnswerMessage =
+    Array.isArray(message.emailHeaders.IN_REPLY_TO) &&
+    message.messageBody.split('Från')[0].split('<br><br><br>-----Ursprungligt')[0];
+
   const messageAvatar = (message: Message) => (
     <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
   );
@@ -56,6 +82,8 @@ export const RenderedSupportMessage: React.FC<{
     }
   };
 
+  console.log(AnswerMessage);
+
   return (
     <>
       <div
@@ -65,81 +93,180 @@ export const RenderedSupportMessage: React.FC<{
           onSelect(message);
         }}
         className={cx(
-          ` relative flex gap-md items-start justify-between rounded-4 m-0 py-sm px-sm text-md hover:bg-background-color-mixin-1 hover:cursor-pointer ${
-            selected === message.communicationID ? 'bg-background-color-mixin-1 rounded-xl' : null
+          `rounded-4 m-0 py-sm px-sm text-md hover:bg-background-color-mixin-1
           }`
         )}
       >
-        <div className="flex w-full">
-          {messageAvatar(message)}
-          <div className="w-5/6 ml-sm">
-            <div className="my-0 flex justify-between">
-              <div>
-                {!root ? <LucideIcon size={16} className="mr-sm" name="corner-down-right" /> : null}
-                <p
-                  className={cx(`mr-md break-all text-small font-bold`)}
-                  dangerouslySetInnerHTML={{
-                    __html: `Från: ${sanitized(getSender(message))}`,
-                  }}
-                ></p>
-                <p
-                  className={cx(`mr-md break-all font-bold`)}
-                  dangerouslySetInnerHTML={{
-                    __html: `Till: ${sanitized(getReciever(message))}`,
-                  }}
-                ></p>
+        <div className="relative flex gap-md items-start justify-between">
+          <div className="flex w-full">
+            {messageAvatar(message)}
+            <div className="w-5/6 ml-sm">
+              <div className="my-0 flex justify-between">
+                <div>
+                  {!root ? <LucideIcon size={16} className="mr-sm" name="corner-down-right" /> : null}
+                  <p
+                    className={cx(`mr-md break-all text-small font-bold`)}
+                    dangerouslySetInnerHTML={{
+                      __html: `Från: ${sanitized(getSender(message))}`,
+                    }}
+                  ></p>
+                  <p
+                    className={cx(`mr-md break-all font-bold`)}
+                    dangerouslySetInnerHTML={{
+                      __html: `Till: ${sanitized(getReciever(message))}`,
+                    }}
+                  ></p>
+                </div>
               </div>
             </div>
-            <p
-              className={cx(`my-0 text-primary`, message.viewed ? 'font-normal' : 'font-bold')}
-              dangerouslySetInnerHTML={{
-                __html: sanitized(message.subject || ''),
-              }}
-            ></p>
           </div>
-        </div>
-        <div className="flex flex-col align-end items-end justify-between">
-          <div className="inline-flex items-start flex-nowrap">
-            <span className="text-xs whitespace-nowrap">
-              {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
-            </span>
-            <span className="text-xs mx-sm">|</span>
-            {message.communicationAttachments?.length > 0 ? (
-              <>
-                <div className="mx-sm inline-flex items-center gap-xs">
-                  <LucideIcon name="paperclip" size="1.5rem" />
-                  <span className="text-xs">{message.communicationAttachments?.length}</span>
-                </div>
-                <span className="text-xs mx-sm">|</span>
-              </>
-            ) : null}
-            <span className="text-xs whitespace-nowrap">
-              {message.communicationType === 'SMS' ? (
+          <div className="flex flex-col align-end items-end justify-between">
+            <div className="inline-flex items-start flex-nowrap">
+              <span className="text-xs whitespace-nowrap">
+                {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
+              </span>
+              <span className="text-xs mx-sm">|</span>
+              {message.communicationAttachments?.length > 0 ? (
                 <>
-                  <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                  <div className="mx-sm inline-flex items-center gap-xs">
+                    <LucideIcon name="paperclip" size="1.5rem" />
+                    <span className="text-xs">{message.communicationAttachments?.length}</span>
+                  </div>
+                  <span className="text-xs mx-sm">|</span>
                 </>
-              ) : message.communicationType === 'EMAIL' ? (
-                <>
-                  <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
-                </>
-              ) : message.communicationType === 'WEB_MESSAGE' ? (
-                <>
-                  <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
-                </>
-              ) : (
-                ''
+              ) : null}
+              <span className="text-xs whitespace-nowrap">
+                {message.communicationType === 'SMS' ? (
+                  <>
+                    <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                  </>
+                ) : message.communicationType === 'EMAIL' ? (
+                  <>
+                    <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                  </>
+                ) : message.communicationType === 'WEB_MESSAGE' ? (
+                  <>
+                    <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                  </>
+                ) : (
+                  ''
+                )}
+              </span>
+            </div>
+            {getMessageOwner(message)}
+          </div>
+          <div className="flex gap-8">
+            <span
+              className={cx(
+                message.viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
+                `self-start w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
               )}
-            </span>
+            ></span>
+            <Button
+              variant="ghost"
+              iconButton
+              size="sm"
+              onClick={() => {
+                setExpanded(expanded ? false : true);
+              }}
+            >
+              <LucideIcon name={expanded ? 'square-minus' : 'square-plus'} />
+            </Button>
           </div>
-          {getMessageOwner(message)}
         </div>
-        <div>
-          <span
-            className={cx(
-              message.viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
-              `self-start w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
+        <div className="pl-xl flex justify-between items-end">
+          <p
+            className={cx(`my-0 text-primary`, message.viewed ? 'font-normal' : 'font-bold')}
+            dangerouslySetInnerHTML={{
+              __html: sanitized(message.subject || ''),
+            }}
+          ></p>
+          {message?.direction === 'INBOUND' && message.communicationType === 'EMAIL' ? (
+            <Button
+              type="button"
+              className="self-start mt-[-16px]"
+              color="vattjom"
+              disabled={isSupportErrandLocked(supportErrand) || !allowed}
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                setTimeout(() => {
+                  setRichText(emailBody + richText);
+                  setShowMessageForm(true);
+                }, 100);
+              }}
+            >
+              Svara
+            </Button>
+          ) : null}
+        </div>
+
+        <div
+          className={`px-xl ${
+            expanded ? 'max-h-[100vh]' : 'max-h-0 overflow-hidden'
+          } transition-[max-height] ease-in-out`}
+        >
+          {message?.communicationAttachments.length > 0 ? (
+            <ul className="flex flex-row gap-sm items-center my-12">
+              <LucideIcon name="paperclip" size="1.6rem" />
+              {message?.communicationAttachments?.map((a, idx) => (
+                <Button
+                  key={`${a.name}-${idx}`}
+                  onClick={() => {
+                    getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.attachmentID)
+                      .then((res) => {
+                        if (res.data.length !== 0) {
+                          const uri = `data:${a.contentType};base64,${res.data}`;
+                          const link = document.createElement('a');
+                          const filename = a.name;
+                          link.href = uri;
+                          link.setAttribute('download', filename);
+                          document.body.appendChild(link);
+                          link.click();
+                        } else {
+                          toastMessage({
+                            position: 'bottom',
+                            closeable: false,
+                            message: 'Filen kan inte hittas eller är skadad.',
+                            status: 'error',
+                          });
+                        }
+                      })
+                      .catch((error) => {
+                        toastMessage({
+                          position: 'bottom',
+                          closeable: false,
+                          message: 'Något gick fel när bilagan skulle hämtas',
+                          status: 'error',
+                        });
+                      });
+                  }}
+                  role="listitem"
+                  leftIcon={a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />}
+                  variant="tertiary"
+                >
+                  {a.name}
+                </Button>
+              ))}
+            </ul>
+          ) : null}
+          <div className="my-18">
+            {Array.isArray(message.emailHeaders.IN_REPLY_TO) ? (
+              <p
+                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
+                dangerouslySetInnerHTML={{
+                  __html: sanitized(AnswerMessage.toString() || ''),
+                }}
+              ></p>
+            ) : (
+              <p
+                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
+                dangerouslySetInnerHTML={{
+                  __html: sanitized(message?.messageBody || ''),
+                }}
+              ></p>
             )}
-          ></span>
+          </div>
         </div>
       </div>
       <div className="ml-lg">{children}</div>

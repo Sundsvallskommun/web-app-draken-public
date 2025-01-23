@@ -3,7 +3,17 @@ import { isIK, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, cx, Divider, RadioButton, useSnackbar } from '@sk-web-gui/react';
+import {
+  Avatar,
+  Button,
+  cx,
+  Divider,
+  FormControl,
+  FormLabel,
+  RadioButton,
+  Select,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { isSupportErrandLocked, validateAction, Status } from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
@@ -15,6 +25,7 @@ import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import { getSender } from './rendered-support-message.component';
 import MessageTreeComponent from './support-messages-tree.component';
+import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -30,7 +41,8 @@ export const SupportMessagesTab: React.FC<{
   const [showSelectedMessage, setShowSelectedMessage] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [richText, setRichText] = useState<string>('');
-  const [sortMessages, setSortMessages] = useState<number>(0);
+  const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<number>(0);
+  const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const [sortedMessages, setSortedMessages] = useState(props.messages);
   const toastMessage = useSnackbar();
 
@@ -73,17 +85,49 @@ export const SupportMessagesTab: React.FC<{
 
   useEffect(() => {
     if (props.messages && props.messageTree) {
-      if (sortMessages === 1) {
+      if (sortSendingTypeMessages === 1) {
         let filteredMessages = props.messages.filter((message: Message) => message.direction === 'INBOUND');
         setSortedMessages(filteredMessages);
-      } else if (sortMessages === 2) {
+      } else if (sortSendingTypeMessages === 2) {
         let filteredMessages = props.messages.filter((message: Message) => message.direction === 'OUTBOUND');
         setSortedMessages(filteredMessages);
       } else {
         setSortedMessages(props.messageTree);
       }
     }
-  }, [props.messages, props.messageTree, sortMessages]);
+  }, [props.messages, props.messageTree, sortSendingTypeMessages]);
+
+  useEffect(() => {
+    if (props.messages && props.messageTree) {
+      if (sortChannelMessages === CommunicationCommunicationTypeEnum.WEB_MESSAGE) {
+        let filteredMessages = props.messages.filter(
+          (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.WEB_MESSAGE
+        );
+        let filteredMessageTree = props.messageTree.filter((m) => {
+          return filteredMessages.find((x) => x.communicationType === m.communicationType);
+        });
+        setSortedMessages(filteredMessageTree);
+      } else if (sortChannelMessages === CommunicationCommunicationTypeEnum.EMAIL) {
+        let filteredMessages = props.messages.filter(
+          (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.EMAIL
+        );
+        let filteredMessageTree = props.messageTree.filter((m) => {
+          return filteredMessages.find((x) => x.communicationType === m.communicationType);
+        });
+        setSortedMessages(filteredMessageTree);
+      } else if (sortChannelMessages === CommunicationCommunicationTypeEnum.SMS) {
+        let filteredMessages = props.messages.filter(
+          (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.SMS
+        );
+        let filteredMessageTree = props.messageTree.filter((m) => {
+          return filteredMessages.find((x) => x.communicationType === m.communicationType);
+        });
+        setSortedMessages(filteredMessageTree);
+      } else {
+        setSortedMessages(props.messageTree);
+      }
+    }
+  }, [props.messages, props.messageTree, sortChannelMessages]);
 
   return (
     <>
@@ -118,22 +162,50 @@ export const SupportMessagesTab: React.FC<{
             ärendets olika intressenter.
           </p>
         </div>
-
+        <div className="flex gap-24">
+          <FormControl id={`show-sending-type-messages`} size="sm">
+            <FormLabel>Visa</FormLabel>
+            <Select onChange={(e) => setSortSendingTypeMessages(Number(e.currentTarget.value))}>
+              <Select.Option defaultChecked={true} value={0}>
+                Alla
+              </Select.Option>
+              <Select.Option value={1}>Mottagna</Select.Option>
+              <Select.Option value={2}>Skickade</Select.Option>
+            </Select>
+          </FormControl>
+          <FormControl id={`show-channel-messages`} size="sm">
+            <FormLabel>Inkom via</FormLabel>
+            <Select onChange={(e) => setSortChannelMessages(e.currentTarget.value)}>
+              <Select.Option defaultChecked={true} value={'allchannels'}>
+                Alla kanaler
+              </Select.Option>
+              <Select.Option value={CommunicationCommunicationTypeEnum.WEB_MESSAGE}>E-tjänst</Select.Option>
+              <Select.Option value={CommunicationCommunicationTypeEnum.EMAIL}>E-post</Select.Option>
+              <Select.Option value={CommunicationCommunicationTypeEnum.SMS}>SMS</Select.Option>
+            </Select>
+          </FormControl>
+        </div>
+        {/* 
         <RadioButton.Group inline className="mt-16">
-          <RadioButton value={0} defaultChecked={true} onChange={() => setSortMessages(0)}>
+          <RadioButton value={0} defaultChecked={true} onChange={() => setSortSendingTypeMessages(0)}>
             Alla
           </RadioButton>
-          <RadioButton value={1} onChange={() => setSortMessages(1)}>
+          <RadioButton value={1} onChange={() => setSortSendingTypeMessages(1)}>
             Mottagna
           </RadioButton>
-          <RadioButton value={2} onChange={() => setSortMessages(2)}>
+          <RadioButton value={2} onChange={() => setSortSendingTypeMessages(2)}>
             Skickade
           </RadioButton>
-        </RadioButton.Group>
+        </RadioButton.Group> */}
 
         {sortedMessages?.length ? (
           <div data-cy="message-container">
             <MessageTreeComponent
+              // setSelectedMessage={setSelectedMessage}
+              setRichText={setRichText}
+              setShowMessageForm={setShowMessageForm}
+              richText={richText}
+              emailBody={emailBody}
               nodes={sortedMessages}
               selected={selectedMessage?.communicationID}
               onSelect={(msg: Message) => {
@@ -148,7 +220,7 @@ export const SupportMessagesTab: React.FC<{
           </>
         )}
 
-        <MessageWrapper
+        {/* <MessageWrapper
           show={showSelectedMessage}
           label={'Meddelande'}
           closeHandler={() => {
@@ -268,7 +340,7 @@ export const SupportMessagesTab: React.FC<{
               </div>
             </div>
           </div>
-        </MessageWrapper>
+        </MessageWrapper> */}
 
         <MessageWrapper
           show={showMessageForm}
