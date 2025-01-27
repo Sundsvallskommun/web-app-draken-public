@@ -60,7 +60,7 @@ export type AttachmentCategory =
   | 'INQUIRY_LAND_SALE'
   | 'LAND_PURCHASE_REQUEST'
   | 'RECEIVED_MAP'
-  | 'PROTOCOL'
+  | 'MEX_PROTOCOL'
   | 'ROAD_ALLOWANCE_APPROVAL'
   | 'PREVIOUS_AGREEMENT'
   | 'TERMINATION_OF_HUNTING_RIGHTS'
@@ -89,7 +89,7 @@ export enum AttachmentLabels {
   'LAND_PURCHASE_REQUEST' = 'Förfrågan markköp',
   'ROAD_ALLOWANCE_APPROVAL' = 'Godkännande för vägbidrag',
   'RECEIVED_MAP' = 'Karta inkommen',
-  'PROTOCOL' = 'Protokoll',
+  'MEX_PROTOCOL' = 'Protokoll',
   'PREVIOUS_AGREEMENT' = 'Tidigare avtal',
   'TERMINATION_OF_HUNTING_RIGHTS' = 'Uppsägning jakträtt',
   'OTHER' = 'Övrigt',
