@@ -70,6 +70,8 @@ export interface LagenhetsArendeTemplate {
     indexAdjustedFee: 'true' | 'false';
     period: 'yearly' | 'byYear' | 'byLease' | 'indexAdjustedFee' | 'prepaid';
     prepaid: 'true' | 'false';
+    prepaidFromDate?: string;
+    prepaidToDate?: string;
     yearlyFee?: number;
     feeByYear?: number;
     associatedFeeYear?: number;
