@@ -23,6 +23,7 @@ import {
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
+import sanitized from '@common/services/sanitizer-service';
 
 export const KopeAvtal: React.FC<{
   changeBadgeColor;
@@ -233,7 +234,7 @@ export const KopeAvtal: React.FC<{
           return `<div style="display:inline-block;margin-right:20px;">
               <p><b>${relation}</b></p><br>
               <p>Ort och datum:</p><br>
-              <p>............................................................................</p>
+              <p>.........................................................</p>
               <p>${
                 stakeholder.firstName
                   ? `${stakeholder.firstName} ${stakeholder.lastName}`
@@ -252,7 +253,7 @@ export const KopeAvtal: React.FC<{
       emptyRows += `<div style="display:inline-block;margin-right:20px;">
               <p><b>${relation}</b></p><br>
               <p>Ort och datum:</p><br>
-              <p>............................................................................</p>
+              <p>.........................................................</p>
               <br style="margin-top:2.5px;"></p><br><br>
               </div>`;
     }
@@ -1785,7 +1786,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
           </Modal>
           <FormControl id="signature" className="w-full">
             <div className="h-[42rem] -mb-20 text-sm overflow-auto" data-cy="signature-richtext-wrapper">
-              <div dangerouslySetInnerHTML={{ __html: signature }} />
+              <div dangerouslySetInnerHTML={{ __html: sanitized(signature) }} />
             </div>
           </FormControl>
           {saveButton('signature')}

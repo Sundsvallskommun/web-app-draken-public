@@ -31,6 +31,7 @@ import {
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
+import sanitized from '@common/services/sanitizer-service';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -300,7 +301,7 @@ export const Lagenhetsarrende: React.FC<{
           return `<div style="display:inline-block;margin-right:20px;">
             <p><b>${relation}</b></p><br>
             <p>Ort och datum:</p><br>
-            <p>............................................................................</p>
+            <p>.........................................................</p>
             <p>${
               stakeholder.firstName
                 ? `${stakeholder.firstName} ${stakeholder.lastName}`
@@ -319,7 +320,7 @@ export const Lagenhetsarrende: React.FC<{
       emptyRows += `<div style="display:inline-block;margin-right:20px;">
             <p><b>${relation}</b></p><br>
             <p>Ort och datum:</p><br>
-            <p>............................................................................</p>
+            <p>.........................................................</p>
             <br style="margin-top:2.5px;"></p><br><br>
             </div>`;
     }
@@ -2856,7 +2857,7 @@ export const Lagenhetsarrende: React.FC<{
             </Modal.Content>
           </Modal>
           <div className="h-[42rem] -mb-20 text-sm overflow-auto" data-cy="signature-richtext-wrapper">
-            <div dangerouslySetInnerHTML={{ __html: signature }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitized(signature) }} />
           </div>
           {saveButton('signature')}
         </div>
