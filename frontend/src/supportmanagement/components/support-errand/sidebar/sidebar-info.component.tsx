@@ -475,7 +475,7 @@ export const SidebarInfo: React.FC<{
           </FormControl>
 
           <FormControl id="status" className="w-full" disabled={!allowed}>
-            <FormLabel className="text-small">Ärendestatussss</FormLabel>
+            <FormLabel className="text-small">Ärendestatus</FormLabel>
             <Select
               className="w-full"
               size="sm"
