@@ -10,6 +10,7 @@ import {
 } from '@supportmanagement/services/support-message-service';
 
 interface MessageTreeProps {
+  update: () => void;
   setRichText: React.Dispatch<React.SetStateAction<string>>;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
   richText: string;
@@ -24,6 +25,7 @@ const getId = (node: MessageNode): string => {
 };
 
 const MessageNodeComponent: React.FC<{
+  update: () => void;
   setRichText: React.Dispatch<React.SetStateAction<string>>;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
   richText: string;
@@ -32,13 +34,14 @@ const MessageNodeComponent: React.FC<{
   selected: string;
   onSelect: (node: MessageNode) => void;
   root?: boolean;
-}> = ({ setRichText, setShowMessageForm, richText, emailBody, node, selected, onSelect, root = false }) => {
+}> = ({ update, setRichText, setShowMessageForm, richText, emailBody, node, selected, onSelect, root = false }) => {
   const [showChildren, setShowChildren] = useState(true);
 
   return (
     <>
       <div className="m-md mr-0" id={`node-${getId(node)}`}>
         <RenderedSupportMessage
+          update={update}
           message={node}
           setShowMessageForm={setShowMessageForm}
           setRichText={setRichText}
@@ -70,6 +73,7 @@ const MessageNodeComponent: React.FC<{
           <div className={cx(root ? 'border-l' : 'border-l')}>
             {node.children.map((child, idx) => (
               <MessageNodeComponent
+                update={update}
                 setRichText={setRichText}
                 setShowMessageForm={setShowMessageForm}
                 richText={richText}
@@ -88,6 +92,7 @@ const MessageNodeComponent: React.FC<{
 };
 
 const MessageTreeComponent: React.FC<MessageTreeProps> = ({
+  update,
   setRichText,
   setShowMessageForm,
   richText,
@@ -102,6 +107,7 @@ const MessageTreeComponent: React.FC<MessageTreeProps> = ({
         <Fragment key={`${idx}-${getId(node)}`}>
           <Divider />
           <MessageNodeComponent
+            update={update}
             setRichText={setRichText}
             setShowMessageForm={setShowMessageForm}
             richText={richText}

@@ -7,10 +7,15 @@ import {
   isSupportErrandLocked,
   SupportErrand,
   SupportStakeholderRole,
+  validateAction,
 } from '@supportmanagement/services/support-errand-service';
-import { getMessageAttachment, Message } from '@supportmanagement/services/support-message-service';
+import {
+  getMessageAttachment,
+  Message,
+  setMessageViewStatus,
+} from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export const getSender = (msg: Message) => {
   if (!msg) {
@@ -33,6 +38,7 @@ export const getReciever = (msg: Message) => {
 };
 
 export const RenderedSupportMessage: React.FC<{
+  update: () => void;
   setRichText: React.Dispatch<React.SetStateAction<string>>;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
   richText: string;
@@ -43,6 +49,7 @@ export const RenderedSupportMessage: React.FC<{
   root?: boolean;
   children: any;
 }> = ({
+  update,
   setRichText,
   setShowMessageForm,
   richText,
@@ -53,9 +60,14 @@ export const RenderedSupportMessage: React.FC<{
   root = false,
   children,
 }) => {
-  const { supportErrand, municipalityId }: AppContextInterface = useAppContext();
+  const { supportErrand, municipalityId, user }: AppContextInterface = useAppContext();
   const [allowed, setAllowed] = useState(false);
   const [expanded, setExpanded] = useState(message.communicationType === 'WEB_MESSAGE' ? true : false);
+
+  useEffect(() => {
+    const _a = validateAction(supportErrand, user);
+    setAllowed(_a);
+  }, [user, supportErrand]);
 
   const toastMessage = useSnackbar();
   const AnswerMessage =
@@ -82,7 +94,25 @@ export const RenderedSupportMessage: React.FC<{
     }
   };
 
-  console.log(AnswerMessage);
+  function isInViewport(element) {
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+  }
+
+  useEffect(() => {
+    if (!message.viewed && supportErrand.assignedUserId === user.username) {
+      expanded &&
+        isInViewport(document.querySelector(`.message-${message.communicationID}`)) &&
+        setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
+          update();
+        });
+    }
+  }, [message, supportErrand]);
 
   return (
     <>
@@ -120,7 +150,7 @@ export const RenderedSupportMessage: React.FC<{
               </div>
             </div>
           </div>
-          <div className="flex flex-col align-end items-end justify-between">
+          <div className="flex flex-col align-end items-end justify-between mt-4">
             <div className="inline-flex items-start flex-nowrap">
               <span className="text-xs whitespace-nowrap">
                 {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
@@ -135,7 +165,7 @@ export const RenderedSupportMessage: React.FC<{
                   <span className="text-xs mx-sm">|</span>
                 </>
               ) : null}
-              <span className="text-xs whitespace-nowrap">
+              <span className="flex text-xs whitespace-nowrap items-center">
                 {message.communicationType === 'SMS' ? (
                   <>
                     <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
@@ -159,7 +189,7 @@ export const RenderedSupportMessage: React.FC<{
             <span
               className={cx(
                 message.viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
-                `self-start w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
+                `self-center w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
               )}
             ></span>
             <Button
@@ -184,7 +214,7 @@ export const RenderedSupportMessage: React.FC<{
           {message?.direction === 'INBOUND' && message.communicationType === 'EMAIL' ? (
             <Button
               type="button"
-              className="self-start mt-[-16px]"
+              className="self-start"
               color="vattjom"
               disabled={isSupportErrandLocked(supportErrand) || !allowed}
               size="sm"
@@ -202,12 +232,12 @@ export const RenderedSupportMessage: React.FC<{
         </div>
 
         <div
-          className={`px-xl ${
-            expanded ? 'max-h-[100vh]' : 'max-h-0 overflow-hidden'
+          className={`message-${message.communicationID} px-xl ${
+            expanded ? 'max-h-[400vh]' : 'max-h-0 overflow-hidden'
           } transition-[max-height] ease-in-out`}
         >
           {message?.communicationAttachments.length > 0 ? (
-            <ul className="flex flex-row gap-sm items-center my-12">
+            <ul className="flex flex-wrap gap-sm items-center my-12">
               <LucideIcon name="paperclip" size="1.6rem" />
               {message?.communicationAttachments?.map((a, idx) => (
                 <Button
