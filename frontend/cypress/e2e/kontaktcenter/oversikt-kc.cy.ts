@@ -46,17 +46,17 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       headerRow.get('th').eq(0).find('span').first().should('have.text', 'Status');
       headerRow.get('th').eq(1).find('span').first().should('have.text', 'Verksamhet');
       headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendetyp');
-      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Registrerad');
-      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Senaste aktivitet');
-      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Prioritet');
-      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Inkom via');
+      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Inkom via');
+      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Registrerades');
+      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Senaste aktivitet');
+      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Prioritet');
       headerRow.get('th').eq(7).find('span').first().should('have.text', 'Ansvarig');
     });
 
     it('displays the filters', () => {
       cy.get('[data-cy="show-filters-button"]').should('exist');
       cy.get('[data-cy="Verksamhet-filter"]').should('exist');
-      cy.get('[data-cy="Ärendetyp-filter"]').should('exist');
+      cy.get('[data-cy="Ärendekategori-filter"]').should('exist');
       cy.get('[data-cy="Prioritet-filter"]').should('exist');
       cy.get('[data-cy="Tidsperiod-filter"]').should('exist');
       cy.get('[data-cy="Handläggare-filter"]').should('exist');
@@ -88,8 +88,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
 
       //Ärendetyp
-      cy.get('[data-cy="Ärendetyp-filter"]').type('2');
-      cy.get(`[data-cy=Ärendetyp-filter-${mockCategories[0].types[0].name}]`).should('exist').click();
+      cy.get('[data-cy="Ärendekategori-filter"]').type('2');
+      cy.get(`[data-cy=Ärendekategori-filter-${mockCategories[0].types[0].name}]`).should('exist').click();
 
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockFilteredCategoryErrands).as('getFilterTypeErrands');
 
@@ -99,8 +99,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         mockFilteredCategoryErrands.content.length
       );
 
-      cy.get('[data-cy="Ärendetyp-filter"]').type('2');
-      cy.get('[data-cy="Ärendetyp-filter"]').siblings('div').get('[aria-label="Rensa ärendetyp"]').click();
+      cy.get('[data-cy="Ärendekategori-filter"]').type('2');
+      cy.get('[data-cy="Ärendekategori-filter"]').siblings('div').get('[aria-label="Rensa ärendetyp"]').click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSupportErrands).as('unFilterTypeErrands');
       cy.wait('@unFilterTypeErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);

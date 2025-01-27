@@ -384,7 +384,7 @@ export const SupportMessageForm: React.FC<{
 
       <div className="w-full pt-16">
         <strong className="text-md">Kontaktväg</strong>
-        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group mt-8">
+        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
           <RadioButton
             disabled={props.locked}
             data-cy="useEmail-radiobutton-true"
@@ -429,7 +429,7 @@ export const SupportMessageForm: React.FC<{
 
       <div className="w-full pt-16">
         <strong className="text-md">Typ av meddelande</strong>
-        <RadioButton.Group data-cy="message-channel-radio-button-group" className="mt-sm !gap-4">
+        <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
             name="typeOfMessage"
