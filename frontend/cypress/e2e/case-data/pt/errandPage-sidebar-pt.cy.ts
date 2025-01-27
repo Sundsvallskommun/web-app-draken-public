@@ -4,7 +4,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockPTErrand_base } from '../fixtures/mockPtErrand';
+import { mockPTErrand_base, mockPTErrand_base_afterStatusChange } from '../fixtures/mockPtErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockMe } from '../fixtures/mockMe';
@@ -12,6 +12,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockContract } from '../fixtures/mockContract';
+import { get } from 'cypress/types/lodash';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page', () => {
@@ -24,7 +25,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d*\/attachments/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('GET', '**/**/stakeholders/**', mockPTErrand_base.data.stakeholders);
@@ -64,22 +65,30 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('manages Information', () => {
+      const mockStatus = {
+        status: 'Internt komplettering',
+        description: 'Internt komplettering',
+        dateTime: '2024-12-14T13:51:14.635643+01:00',
+      };
       cy.intercept('PATCH', '**/errands/*/stakeholders/*', mockPTErrand_base.data.stakeholders).as('patchStakeholders');
-      cy.intercept('PATCH', '**/errands/*', mockPTErrand_base).as('patchErrand');
+      cy.intercept('PATCH', '**/errands/*', mockStatus).as('patchErrandStatus');
 
       cy.get(`[aria-label="${mockSidebarButtons[0].label}"]`).should('exist');
       cy.get('[data-cy="admin-input"]').should('exist').select(2);
+
       cy.get('[data-cy="assign-administrator-button"]').should('exist').contains('Tilldela').click();
 
       cy.wait('@patchStakeholders').should(({ request }) => {
+        console.log('request stakeholder: ', request);
         expect(request.body.adAccount).to.equal('TESTADMIN1');
       });
 
-      cy.get('[data-cy="status-input"]').should('exist').select(2);
+      cy.get('[data-cy="status-input"]').should('exist').select('Internt komplettering');
+      cy.intercept('GET', '**/errand/*', mockPTErrand_base_afterStatusChange).as('getErrandById_afterStatusChange');
       cy.get('[data-cy="save-status-button"]').should('exist').contains('Spara').click();
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.status).to.equal('Internt komplettering');
-      });
+
+      cy.wait('@getErrandById_afterStatusChange');
+      cy.get('[data-cy="status-input"]').should('exist').contains('Internt komplettering');
     });
 
     it('manages Notes', () => {

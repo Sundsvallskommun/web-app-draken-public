@@ -131,8 +131,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           cy.get('[data-cy="useEmail-radiobutton-true"]').should('exist').check({ force: true });
         });
 
-      cy.get('[data-cy="email-input"]').should('exist').clear().type('test@example.com');
-      cy.get('[data-cy="add-email-button"]').should('exist').click({ force: true });
+      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
+      cy.get('[data-cy="add-email-button"]').should('exist').click({ force: true, multiple: true });
 
       cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
       cy.get('button').contains('Bläddra').should('exist').click();

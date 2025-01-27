@@ -31,7 +31,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
@@ -209,7 +209,10 @@ export const SidebarInfo: React.FC<{}> = () => {
     console.error('Something went wrong when saving');
   };
 
-  const { admin, status } = watch();
+  const { admin } = watch();
+
+  const status = useMemo(() => getValues().status, [getValues]);
+
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
 
