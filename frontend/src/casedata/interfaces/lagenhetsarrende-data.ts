@@ -198,7 +198,7 @@ export interface LagenhetsArendeTemplate {
   };
   signatureTerms: {
     condition?: {
-      [key in 'emptyRow' | 'example']:
+      [key in 'emptyRowPropertyowner' | 'emptyRowLeaseholder' | 'example']:
         | {
             header: string;
             conditionText?: string;

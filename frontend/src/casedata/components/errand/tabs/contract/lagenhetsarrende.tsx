@@ -31,6 +31,7 @@ import {
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
+import sanitized from '@common/services/sanitizer-service';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -291,6 +292,41 @@ export const Lagenhetsarrende: React.FC<{
     setUnsaved(true);
   };
 
+  const renderSignatures = (relationType) => {
+    return signatures
+      .map((signature) => {
+        const stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
+        const relation = getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : '';
+        if (relation === relationType) {
+          return `<div style="display:inline-block;margin-right:20px;">
+            <p><b>${relation}</b></p><br>
+            <p>Ort och datum:</p><br>
+            <p>.........................................................</p>
+            <p>${
+              stakeholder.firstName
+                ? `${stakeholder.firstName} ${stakeholder.lastName}`
+                : `${stakeholder.organizationName}`
+            }</p><br><br>
+            </div>`;
+        }
+        return '';
+      })
+      .join('');
+  };
+
+  const renderEmptySignatures = (relation, rows) => {
+    let emptyRows = '';
+    for (let i = 0; i < rows; i++) {
+      emptyRows += `<div style="display:inline-block;margin-right:20px;">
+            <p><b>${relation}</b></p><br>
+            <p>Ort och datum:</p><br>
+            <p>.........................................................</p>
+            <br style="margin-top:2.5px;"></p><br><br>
+            </div>`;
+    }
+    return emptyRows;
+  };
+
   const saveButton = (inSection) => {
     return (
       <div className="my-md">
@@ -302,7 +338,7 @@ export const Lagenhetsarrende: React.FC<{
               disabled={!allowed}
               onClick={() => {
                 setIsLoading(true);
-                onSave(getValues()).then(() => {
+                onSave({ ...getValues(), signature }).then(() => {
                   setIsLoading(undefined);
                   setTextIsDirty(false);
                 });
@@ -2648,17 +2684,18 @@ export const Lagenhetsarrende: React.FC<{
               rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSignature(true)}
             >
-              Fyll i villkor
+              Välj villkor för underskrifter
             </Button>
-            <Checkbox
+            {/*             <Checkbox
               data-cy="manual-text-checkbox-signature"
               onChange={() => {
                 setEditSignature(!editSignature);
               }}
             >
               Redigera text manuellt
-            </Checkbox>
+            </Checkbox> */}
           </div>
+
           <Modal
             show={showSignature}
             onClose={() => setShowSignature(false)}
@@ -2713,12 +2750,20 @@ export const Lagenhetsarrende: React.FC<{
               </Table>
 
               <FormControl id="areaSize" className="w-full">
-                <FormLabel>Ange antal av extra underskriftsrader</FormLabel>
+                <FormLabel>Ange antal av extra underskriftsrader för fastighetsägare</FormLabel>
                 <Input
                   type="number"
-                  value={getValues().signatureTerms.condition.emptyRow?.conditionText}
+                  value={getValues().signatureTerms.condition.emptyRowPropertyowner?.conditionText}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    setValue('signatureTerms.condition.emptyRow.conditionText', e.target.value);
+                    setValue('signatureTerms.condition.emptyRowPropertyowner.conditionText', e.target.value);
+                  }}
+                />
+                <FormLabel>Ange antal av extra underskriftsrader för arrendator</FormLabel>
+                <Input
+                  type="number"
+                  value={getValues().signatureTerms.condition.emptyRowLeaseholder?.conditionText}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setValue('signatureTerms.condition.emptyRowLeaseholder.conditionText', e.target.value);
                   }}
                 />
               </FormControl>
@@ -2739,39 +2784,22 @@ export const Lagenhetsarrende: React.FC<{
 
                   content += `<br />`;
 
-                  signatures.forEach((signature, idx) => {
-                    let stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
-                    content += `
-                        <p><b>${
-                          getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : ''
-                        }</b></p>
-                        <p>${
-                          stakeholder.firstName
-                            ? `${stakeholder.firstName} ${stakeholder.lastName}`
-                            : `${stakeholder.organizationName}`
-                        }</p>
-                        <br>
-                        <br>
-                        <p>Ort och datum:</p>
-                        <br>
-                        <p>........................................................................................................</p>
-                        <br><br>
-                        `;
-                  });
-
-                  let emptySignatures = parseInt(getValues().signatureTerms.condition.emptyRow?.conditionText);
-                  for (let i = 0; i < emptySignatures; i++) {
-                    content += `
-                  <p><b></b></p>
-                  <p></p>
-                  <br>
-                  <br>
-                  <p>Ort och datum:</p>
-                  <br>
-                  <p>........................................................................................................</p>
-                  <br><br>
-                  `;
-                  }
+                  content +=
+                    `<div>` +
+                    renderSignatures(MEXRelation.PROPERTY_OWNER) +
+                    renderEmptySignatures(
+                      MEXRelation.PROPERTY_OWNER,
+                      parseInt(getValues().signatureTerms.condition.emptyRowPropertyowner?.conditionText)
+                    ) +
+                    `</div>`;
+                  content +=
+                    `<div>` +
+                    renderSignatures(MEXRelation.LEASEHOLDER) +
+                    renderEmptySignatures(
+                      MEXRelation.LEASEHOLDER,
+                      parseInt(getValues().signatureTerms.condition.emptyRowLeaseholder?.conditionText)
+                    ) +
+                    `</div>`;
 
                   setSignature(content);
                   setShowSignature(false);
@@ -2781,21 +2809,9 @@ export const Lagenhetsarrende: React.FC<{
               </Button>
             </Modal.Content>
           </Modal>
-          <FormControl id="signature" className="w-full">
-            <Input type="hidden" {...register('signature')} />
-            <div className="h-[42rem] -mb-48" data-cy="signature-richtext-wrapper">
-              <ContractTextEditorWrapper
-                val={signature}
-                label="signature"
-                setDirty={setTextIsDirty}
-                setValue={setValue}
-                trigger={trigger}
-                setState={setSignature}
-                readOnly={!editSignature}
-                editorRef={quillRefSignature}
-              />
-            </div>
-          </FormControl>
+          <div className="h-[42rem] -mb-20 text-sm overflow-auto" data-cy="signature-richtext-wrapper">
+            <div dangerouslySetInnerHTML={{ __html: sanitized(signature) }} />
+          </div>
           {saveButton('signature')}
         </div>
       </Disclosure>
