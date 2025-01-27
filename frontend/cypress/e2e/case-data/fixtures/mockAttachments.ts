@@ -5,7 +5,7 @@ export const mockAttachments = {
       version: 0,
       created: '2024-05-31T15:02:28.987021+02:00',
       updated: '2024-05-31T15:02:28.987059+02:00',
-      category: 'PROTOCOL',
+      category: 'MEX_PROTOCOL',
       name: 'image.24982.2505690.jpg',
       note: '',
       extension: 'jpg',

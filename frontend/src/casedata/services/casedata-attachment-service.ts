@@ -130,7 +130,7 @@ export const getAttachmentKey: (label: string) => AttachmentCategory = (label) =
     case 'Karta inkommen':
       return 'RECEIVED_MAP';
     case 'Protokoll':
-      return 'PROTOCOL';
+      return 'MEX_PROTOCOL';
     case 'Tidigare avtal':
       return 'PREVIOUS_AGREEMENT';
     case 'Uppsägning jakträtt':
