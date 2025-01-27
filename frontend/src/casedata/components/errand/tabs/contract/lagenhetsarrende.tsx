@@ -581,7 +581,7 @@ export const Lagenhetsarrende: React.FC<{
                         ? selectedProperties.map((property) => `<li>${property}</li>`).join('')
                         : '<li>(saknas)</li>'
                     }
-                    </ul><br />
+                    </ul>
                     <p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm.</p>
                     <p>Området är märkt ${getValues().omradeTerms?.mapAttachments} enligt kartbilaga ${
                     getValues().omradeTerms?.mapAttachmentReference
@@ -1036,14 +1036,12 @@ export const Lagenhetsarrende: React.FC<{
                   let content = `
                   <p>Området upplåts fr.o.m ${getValues().arrendetidTerms?.startDate} t.o.m ${
                     getValues().arrendetidTerms?.endDate
-                  }</p><br /> 
+                  }</p>
                   <p>Uppsägningstiden är ömsesidig och avtalet ska sägas upp senast ${
                     getValues().arrendetidTerms?.monthsNotice
                   } ${
                     getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
-                  } före avtalstidens utgång.</p><br />
-
-                  <br />
+                  } före avtalstidens utgång.</p>
                   ${
                     getValues('arrendetidTerms.condition.extension')
                       ? `<p>Om avtalet inte sägs upp förlängs arrendetiden med ${
@@ -1365,33 +1363,34 @@ export const Lagenhetsarrende: React.FC<{
                   let content = ``;
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p><br />`);
+                    (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
                     (content += `<p>Avgiften för årtal ${getValues(
                       'arrendeavgiftTerms.associatedFeeYear'
-                    )} är ${getValues('arrendeavgiftTerms.feeByYear')} kronor</p><br />`);
+                    )} är ${getValues('arrendeavgiftTerms.feeByYear')} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
                     (content += `<p>Avgift för upplåtelsetid: ${getValues(
                       'arrendeavgiftTerms.feeByLease'
-                    )} kronor</p><br />`);
+                    )} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
-                    (content += `<p>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</p><br />`);
+                    (content += `<p>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</p>`);
 
                   getValues('arrendeavgiftTerms.indexAdjustedFee') === 'true' &&
                     (content += `<p>Avgiften ska i sin helhet indexregleras med hänsyn till konsumentprisindex (totalindex) enligt 1980 års indexserie. Basmånad för indexuppräkningen är oktober månad ${getValues(
                       'arrendeavgiftTerms.indexYear'
                     )} (indextal ${getValues(
                       'arrendeavgiftTerms.indexFee'
-                    )}). Reglering av avgiften ska ske vid varje års början med hänsyn tagen till indextalet för oktober månad närmast årsskiftet. Avgiften ska dock aldrig sättas lägre än den i avtalet angivna grundavgiften.</p><br />`);
+                    )}). Reglering av avgiften ska ske vid varje års början med hänsyn tagen till indextalet för oktober månad närmast årsskiftet. Avgiften ska dock aldrig sättas lägre än den i avtalet angivna grundavgiften.</p>`);
 
                   content += `<p>Avgiften ska erläggas ${
                     getValues('arrendeavgiftTerms.yearOrQuarter') === 'year' ? 'årsvis' : 'kvartalsvis'
                   } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}.</p>`;
 
                   setArrendeavgift(content);
+                  setValue('arrendeavgift', content);
                   setShowArrendeavgift(false);
                 }}
               >
@@ -1777,12 +1776,12 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().skickTerms.condition.nuisance
-                      ? `<p>${getValues().skickTerms.condition.nuisance.conditionText}</p><br />`
+                      ? `<p>${getValues().skickTerms.condition.nuisance.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().skickTerms.condition.accessibility
-                      ? `<p>${getValues().skickTerms.condition.accessibility.conditionText}</p><br />`
+                      ? `<p>${getValues().skickTerms.condition.accessibility.conditionText}</p>`
                       : ''
                   }
               `;
@@ -2092,31 +2091,29 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().markfororeningarTerms.condition.pollutionAvoidance
-                      ? `<p>${getValues().markfororeningarTerms.condition.pollutionAvoidance.conditionText}</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.pollutionAvoidance.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.verificationResponsibility
-                      ? `<p>${
-                          getValues().markfororeningarTerms.condition.verificationResponsibility.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.verificationResponsibility.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testDone
                       ? `<p>Miljöprovtagning av området är utförd ${
                           getValues().markfororeningarTerms.condition.testDone?.date ?? 'åååå-mm-dd'
-                        }. Arrendatorn har tagit del av provtagningsrapporten.</p><br />`
+                        }. Arrendatorn har tagit del av provtagningsrapporten.</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testingAtEnd
-                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtEnd.conditionText}</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtEnd.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testingAtTransfer
-                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtTransfer.conditionText}</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtTransfer.conditionText}</p>`
                       : ''
                   }
                   `;
@@ -2232,30 +2229,28 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().upphorandeTerms.condition.restorationCleaning
-                      ? `<p>${getValues().upphorandeTerms.condition.restorationCleaning.conditionText}</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.restorationCleaning.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().upphorandeTerms.condition.restorationBuildingRemoval
-                      ? `<p>${getValues().upphorandeTerms.condition.restorationBuildingRemoval.conditionText}</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.restorationBuildingRemoval.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().upphorandeTerms.condition.noRefundLeaseFee
-                      ? `<p>${getValues().upphorandeTerms.condition.noRefundLeaseFee.conditionText}</p><br />
+                      ? `<p>${getValues().upphorandeTerms.condition.noRefundLeaseFee.conditionText}</p>
                       ${
                         getValues().upphorandeTerms.noRefundLeaseFeeAmount
                           ? `<p><strong>Belopp för återbetalning:</strong> ${
                               getValues().upphorandeTerms.noRefundLeaseFeeAmount
                             }</p><br />`
                           : ''
-                      }
-                        `
+                      }`
                       : ''
-                  }
-                  ${
+                  }${
                     getValues().upphorandeTerms.condition.inspectionRequirements
-                      ? `<p>${getValues().upphorandeTerms.condition.inspectionRequirements.conditionText}</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.inspectionRequirements.conditionText}</p>`
                       : ''
                   }
                   `;
@@ -2595,14 +2590,14 @@ export const Lagenhetsarrende: React.FC<{
                     getValues().jordabalkenTerms.condition.jordabalken
                       ? `<p>${getValues().jordabalkenTerms.condition.jordabalken.header}</p><p>${
                           getValues().jordabalkenTerms.condition.jordabalken.conditionText
-                        }</p><br />`
+                        }</p>`
                       : ''
                   }
                   ${
                     getValues().jordabalkenTerms.condition.replaces
                       ? `<p>${getValues().jordabalkenTerms.condition.replaces.header}</p><p>${
                           getValues().jordabalkenTerms.condition.replaces.conditionText
-                        }</p><br />`
+                        }</p>`
                       : ''
                   }
                   `;
