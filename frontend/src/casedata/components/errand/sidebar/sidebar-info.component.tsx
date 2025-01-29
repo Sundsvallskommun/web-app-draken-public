@@ -537,31 +537,33 @@ export const SidebarInfo: React.FC<{}> = () => {
         )
       )}
 
-      {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
-        <>
-          <Button
-            className="mt-16"
-            color="primary"
-            variant="secondary"
-            onClick={() => {
-              setModalIsOpen(true);
-              setCauseIsEmpty(false);
-            }}
-            disabled={
-              !(
-                uiPhase === UiPhase.granskning ||
-                uiPhase === UiPhase.utredning ||
-                uiPhase === UiPhase.beslut ||
-                uiPhase === UiPhase.uppfoljning
-              ) ||
-              !isErrandAdmin(errand, user) ||
-              isErrandLocked(errand)
-            }
-          >
-            Avsluta ärendet
-          </Button>
-        </>
-      )}
+      {uiPhase !== UiPhase.slutfor &&
+        errand.phase !== ErrandPhase.verkstalla &&
+        errand.phase !== ErrandPhase.uppfoljning && (
+          <>
+            <Button
+              className="mt-16"
+              color="primary"
+              variant="secondary"
+              onClick={() => {
+                setModalIsOpen(true);
+                setCauseIsEmpty(false);
+              }}
+              disabled={
+                !(
+                  uiPhase === UiPhase.granskning ||
+                  uiPhase === UiPhase.utredning ||
+                  uiPhase === UiPhase.beslut ||
+                  uiPhase === UiPhase.uppfoljning
+                ) ||
+                !isErrandAdmin(errand, user) ||
+                isErrandLocked(errand)
+              }
+            >
+              Avsluta ärendet
+            </Button>
+          </>
+        )}
 
       <Modal
         label="Avsluta ärendet"
