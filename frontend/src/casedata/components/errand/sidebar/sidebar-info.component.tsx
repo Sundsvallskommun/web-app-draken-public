@@ -36,6 +36,7 @@ import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -483,7 +484,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       {errand?.status !== ErrandStatus.Parkerad ? (
         <>
           <PhaseChanger />
-          <SuspendErrandComponent disabled={false} />
+          {isSuspendEnabled() && <SuspendErrandComponent disabled={false} />}
         </>
       ) : (
         errand?.status === ErrandStatus.Parkerad && (
