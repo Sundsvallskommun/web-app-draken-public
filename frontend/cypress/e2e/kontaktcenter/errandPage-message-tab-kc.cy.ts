@@ -48,20 +48,26 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         'PUT',
         `**/supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication/*/viewed/true`,
         mockSupportErrandCommunication
-      );
+      ).as('viewed');
 
       goToMessageTab();
       if (
         cy.get('[data-cy="message-container"] .sk-avatar').should('have.length', mockSupportErrandCommunication.length)
       ) {
         mockSupportErrandCommunication.forEach((communication) => {
-          cy.get(`[data-cy="message-${communication.communicationID}"]`).should('exist').click();
-          cy.get('[data-cy="close-message-wrapper"]')
+          cy.get(`[data-cy="message-${communication.communicationID}"]`).should('exist');
+          cy.get(`[data-cy="message-${communication.communicationID}"] button.sk-btn-ghost svg`)
             .should('exist')
-            .first()
-            .within(() => {
-              cy.get('[data-cy="close-message-wrapper-icon"]').should('exist').click({ force: true });
+            .click();
+
+          cy.wait('@viewed');
+          if (communication.communicationAttachments.length !== 0) {
+            communication.communicationAttachments.forEach((a) => {
+              cy.get(`div.message-${communication.communicationID} ul button[role="listitem"]`)
+                .should('exist')
+                .contains(a.name);
             });
+          }
         });
       }
     });
@@ -70,11 +76,11 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       goToMessageTab();
       cy.get('[data-cy="new-message-button"]').should('exist').click();
 
-      cy.get('[data-cy="message-channel-radio-button-group"]')
+      cy.get('[data-cy="message-channel-radio-button-group mt-8"]').should('exist');
+      cy.get('[data-cy="message-channel-radio-button-group mt-8"] li input[value="email"]').should('exist');
+      cy.get('[data-cy="message-channel-radio-button-group mt-8"] li input[value="sms"]')
         .should('exist')
-        .within(() => {
-          cy.get('[data-cy="useSms-radiobutton-true"]').should('exist').check({ force: true });
-        });
+        .check({ force: true });
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock message');
 
       cy.get('[data-cy="newPhoneNumber"]').should('exist').clear().type('+46701740635');
@@ -95,14 +101,12 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock message');
 
-      cy.get('[data-cy="message-channel-radio-button-group"]')
+      cy.get('[data-cy="message-channel-radio-button-group mt-8"] li input[value="email"]')
         .should('exist')
-        .within(() => {
-          cy.get('[data-cy="useEmail-radiobutton-true"]').should('exist').check({ force: true });
-        });
+        .check({ force: true });
 
-      cy.get('[data-cy="email-input"]').should('exist').clear().type('test@example.com');
-      cy.get('[data-cy="add-email-button"]').should('exist').click({ force: true });
+      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
+      cy.get('[data-cy="add-new-email-button"]').should('exist').click({ force: true });
 
       cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
       cy.get('button').contains('Bläddra').should('exist').click();

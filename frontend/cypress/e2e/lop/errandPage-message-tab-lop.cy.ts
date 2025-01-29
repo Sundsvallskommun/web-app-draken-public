@@ -15,7 +15,6 @@ import { onlyOn } from '@cypress/skip-test';
 import { interceptFormData } from 'cypress-intercept-formdata';
 import { CyHttpMessages } from 'cypress/types/net-stubbing';
 
-////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Message tab', () => {
     beforeEach(() => {
