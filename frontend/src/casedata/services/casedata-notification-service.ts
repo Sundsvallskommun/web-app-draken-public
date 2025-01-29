@@ -1,8 +1,6 @@
-import {
-  Notification as CasedataNotification,
-  PatchNotification,
-} from '@common/data-contracts/case-data/data-contracts';
+import { Notification as CasedataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { PatchNotificationDto } from 'src/data-contracts/backend/data-contracts';
 
 export const getCasedataNotifications: (municipalityId: string) => Promise<CasedataNotification[]> = (
   municipalityId
@@ -25,8 +23,9 @@ export const acknowledgeCasedataNotification: (
   if (!notification.id) {
     return Promise.reject('Missing id on notification');
   }
-  const data: PatchNotification = {
+  const data: PatchNotificationDto = {
     id: notification.id,
+    errandId: notification.errandId,
     ownerId: notification.ownerId,
     type: notification.type,
     description: notification.description,
@@ -35,7 +34,7 @@ export const acknowledgeCasedataNotification: (
     acknowledged: true,
   };
   return apiService
-    .patch<boolean, PatchNotification>(`casedatanotifications/${municipalityId}`, data)
+    .patch<boolean, PatchNotificationDto>(`casedatanotifications/${municipalityId}`, data)
     .then((res) => {
       return true;
     })

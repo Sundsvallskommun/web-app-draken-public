@@ -1153,45 +1153,6 @@ export interface MessageRequest {
   emailHeaders?: EmailHeader[];
 }
 
-export interface PatchNotification {
-  /**
-   * Unique identifier for the notification
-   * @example "123e4567-e89b-12d3-a456-426614174000"
-   */
-  id?: string;
-  /**
-   * Owner id of the notification
-   * @example "AD01"
-   */
-  ownerId?: string;
-  /**
-   * Type of the notification
-   * @example "CREATE"
-   */
-  type?: string;
-  /**
-   * Description of the notification
-   * @example "Some description of the notification"
-   */
-  description?: string;
-  /**
-   * Content of the notification
-   * @example "Some content of the notification"
-   */
-  content?: string;
-  /**
-   * Timestamp when the notification expires
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  expires?: string;
-  /**
-   * Acknowledged status of the notification
-   * @example true
-   */
-  acknowledged?: boolean;
-}
-
 export interface PatchErrand {
   /**
    * Case ID from the client.
