@@ -36,6 +36,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
 
   const hasTags =
     types.length > 0 ||
+    statuses.length > 0 ||
     priorities.length > 0 ||
     startdate ||
     enddate ||

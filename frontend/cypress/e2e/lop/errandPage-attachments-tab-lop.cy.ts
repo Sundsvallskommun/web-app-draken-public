@@ -13,15 +13,13 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { imageMimeTypes } from '@supportmanagement/services/support-attachment-service';
 
-////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Errand page support attachments tab', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
-      cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
-      cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
+      cy.intercept('GET', '**/me', mockMe).as('getMe');
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
@@ -41,7 +39,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs .sk-menubar button')
-        .eq(2)
+        .eq(3)
         .should('have.text', `Bilagor (${mockSupportAttachments.length})`)
         .click({ force: true });
     });
@@ -69,11 +67,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
         cy.get(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).should('exist').click();
         cy.get(`[data-cy="open-attachment-${attachment.id}"]`).should('exist').contains('Öppna').click();
-        if (imageMimeTypes.find((type) => type === attachment.mimeType)) {
-          cy.wait('@getAttachment');
+        cy.wait('@getAttachment');
+        if (attachment.mimeType !== 'application/pdf') {
           cy.get('img').should('exist');
           cy.get('.modal-close-btn').should('exist').click();
         }
+
         cy.get(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).should('exist').click();
         cy.get(`[data-cy="delete-attachment-${attachment.id}"]`).should('exist').contains('Ta bort').click();
         cy.get('.sk-modal-dialog button.sk-btn-secondary').should('exist').contains('Nej');
@@ -88,7 +87,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         'attachment.txt'
       ).as('uploadAttachment');
       cy.get('[data-cy="add-attachment-button"]').should('exist').contains('Ladda upp bilaga').click();
-      cy.get('[data-cy="browse-button"]').should('exist').contains('Bläddra').click();
+      cy.get('[data-cy="dragdrop-upload"]').should('exist').click();
       //if empty file
       cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/empty-attachment.txt', { force: true });
       cy.get('.sk-form-error-message').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');

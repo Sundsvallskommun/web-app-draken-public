@@ -123,7 +123,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="search-button-owner"').should('be.disabled');
       cy.get('[data-cy="personal-number-error-message"')
         .should('exist')
-        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ÅÅÅÅMMDD-XXXX)');
+        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
       cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="search-button-owner"').should('be.enabled');
       cy.get('[data-cy="personal-number-error-message"').should('not.exist');

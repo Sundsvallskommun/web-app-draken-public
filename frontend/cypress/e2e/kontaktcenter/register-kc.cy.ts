@@ -73,7 +73,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="type-input"]').select(typ.displayName);
       cy.get('[data-cy="description-input"]').type('Mock description');
       cy.contains('Spara ärende').click();
-      cy.wait('@patchfacilities');
       cy.wait(`@updateErrand`).should(({ request, response }) => {
         expect(request.body.classification.category).to.equal(cat.name);
         expect(request.body.classification.type).to.equal(typ.name);

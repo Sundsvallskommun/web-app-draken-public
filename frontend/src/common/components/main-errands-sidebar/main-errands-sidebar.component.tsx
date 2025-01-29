@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
-import { isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -93,7 +93,7 @@ export const MainErrandsSidebar: React.FC<{
             </FormProvider>
           )}
         </div>
-        {isLOP() && user.permissions?.canViewAttestations && getApplicationEnvironment() === 'TEST' && (
+        {attestationEnabled(user) && (
           <>
             <Divider />
             <div className="flex flex-col gap-8 py-24">

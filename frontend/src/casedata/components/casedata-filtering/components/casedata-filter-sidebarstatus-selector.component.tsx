@@ -69,13 +69,17 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingErrands.totalElements,
       },
-      {
-        label: getStatusLabel(suspendedStatuses),
-        key: suspendedStatuses[0],
-        statuses: suspendedStatuses,
-        icon: 'circle-pause',
-        totalStatusErrands: suspendedErrands.totalElements,
-      },
+      ...(isSuspendEnabled()
+        ? [
+            {
+              label: getStatusLabel(suspendedStatuses),
+              key: suspendedStatuses[0],
+              statuses: suspendedStatuses,
+              icon: 'circle-pause',
+              totalStatusErrands: suspendedErrands.totalElements,
+            },
+          ]
+        : []),
       {
         label: getStatusLabel(assignedStatuses),
         key: assignedStatuses[0],
