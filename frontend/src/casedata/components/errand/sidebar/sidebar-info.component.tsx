@@ -536,7 +536,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         )
       )}
 
-      {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
+      {uiPhase !== UiPhase.slutfor && uiPhase !== UiPhase.uppfoljning && errand.phase !== ErrandPhase.verkstalla && (
         <>
           <Button
             className="mt-16"
@@ -547,12 +547,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               setCauseIsEmpty(false);
             }}
             disabled={
-              !(
-                uiPhase === UiPhase.granskning ||
-                uiPhase === UiPhase.utredning ||
-                uiPhase === UiPhase.beslut ||
-                uiPhase === UiPhase.uppfoljning
-              ) ||
+              !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
               !isErrandAdmin(errand, user) ||
               isErrandLocked(errand)
             }
