@@ -297,6 +297,7 @@ export interface CasedataNotificationDto {
 
 export interface PatchNotificationDto {
   id?: string;
+  errandId?: number;
   ownerId?: string;
   type?: string;
   description?: string;
@@ -444,6 +445,7 @@ export interface SupportNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: boolean;
+  globalAcknowledged?: boolean;
   errandId: string;
   errandNumber: string;
 }
