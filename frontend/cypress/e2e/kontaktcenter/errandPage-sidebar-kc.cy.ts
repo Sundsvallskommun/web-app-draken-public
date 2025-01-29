@@ -230,7 +230,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="history-table-details-close-button"]').should('exist').contains('Stäng').click();
     });
 
-    it.only('Can manage Vidarebefodra', () => {
+    it('Can manage Vidarebefodra', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );

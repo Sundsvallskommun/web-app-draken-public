@@ -1,4 +1,11 @@
-import { Errand as ErrandDTO, MessageResponse } from '@/data-contracts/case-data/data-contracts';
+import {
+  AttachmentResponse,
+  Classification,
+  EmailHeader,
+  Errand as ErrandDTO,
+  MessageResponse as IMessageResponse,
+  MessageResponseDirectionEnum,
+} from '@/data-contracts/case-data/data-contracts';
 import {
   DigitalMailAttachment,
   DigitalMailAttachmentContentTypeEnum,
@@ -22,9 +29,9 @@ import { generateMessageId, sendDigitalMail, sendEmail, sendSms, sendWebMessage 
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
-import { IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString, Validate, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
 
 export enum MessageClassification {
@@ -77,6 +84,75 @@ class SmsDto {
 class DecisionMessageDto {
   @IsString()
   errandId: string;
+}
+
+class MessageResponse implements IMessageResponse {
+  @IsOptional()
+  @IsString()
+  messageId?: string;
+  @IsOptional()
+  @IsString()
+  errandId?: number;
+  @IsOptional()
+  @IsString()
+  municipalityId?: string;
+  @IsOptional()
+  @IsString()
+  namespace?: string;
+  @IsOptional()
+  @IsString()
+  direction?: MessageResponseDirectionEnum;
+  @IsOptional()
+  @IsString()
+  familyId?: string;
+  @IsOptional()
+  @IsString()
+  externalCaseId?: string;
+  @IsOptional()
+  @IsString()
+  message?: string;
+  @IsOptional()
+  @IsString()
+  sent?: string;
+  @IsOptional()
+  @IsString()
+  subject?: string;
+  @IsOptional()
+  @IsString()
+  username?: string;
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+  @IsOptional()
+  @IsString()
+  messageType?: string;
+  @IsOptional()
+  @IsString()
+  mobileNumber?: string;
+  @IsOptional()
+  @IsArray()
+  recipients?: string[];
+  @IsOptional()
+  @IsString()
+  email?: string;
+  @IsOptional()
+  @IsString()
+  userId?: string;
+  @IsOptional()
+  @IsString()
+  viewed?: boolean;
+  @IsOptional()
+  @IsString()
+  classification?: Classification;
+  @IsOptional()
+  @IsArray()
+  attachments?: AttachmentResponse[];
+  @IsOptional()
+  @IsArray()
+  emailHeaders?: EmailHeader[];
 }
 
 export interface AgnosticMessageResponse {
@@ -319,15 +395,16 @@ export class MessageController {
   @Get('/casedata/:municipalityId/errand/:errandId/messages')
   @OpenAPI({ summary: 'Return all messages by errand id' })
   @UseBefore(authMiddleware)
+  @ResponseSchema(MessageResponse)
   async errandMessages(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: MessageResponse[],
-  ): Promise<{ data: MessageResponse[]; message: string }> {
+    @Res() response: IMessageResponse[],
+  ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<MessageResponse[]>({ url, baseURL }, req.user).catch(e => {
+    const res = await this.apiService.get<IMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching messages for errand: ', errandId);
       throw e;
     });
@@ -343,8 +420,8 @@ export class MessageController {
     @Param('messageId') messageId: string,
     @Param('municipalityId') municipalityId: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: MessageResponse[],
-  ): Promise<{ data: MessageResponse[]; message: string }> {
+    @Res() response: IMessageResponse[],
+  ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<any, any>({ url, baseURL }, req.user);

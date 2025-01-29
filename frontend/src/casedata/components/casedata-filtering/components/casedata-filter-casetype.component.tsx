@@ -39,6 +39,7 @@ export const CasedataFilterCaseType: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {Object.entries(getCaseLabels())
+            .sort((a, b) => a[1].localeCompare(b[1]))
             .filter(
               (s: [string, string]) =>
                 s[0].toLowerCase().includes(query.toLowerCase()) || s[1].toLowerCase().includes(query.toLowerCase())

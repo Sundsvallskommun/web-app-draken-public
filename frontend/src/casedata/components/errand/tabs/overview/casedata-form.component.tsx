@@ -177,17 +177,19 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 }}
               >
                 <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
-                {Object.entries(getCaseLabels()).map(([key, label]: [string, string], index) => {
-                  return (
-                    <Select.Option
-                      className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                      key={`caseType-${key}`}
-                      value={key}
-                    >
-                      {label}
-                    </Select.Option>
-                  );
-                })}
+                {Object.entries(getCaseLabels())
+                  .sort((a, b) => a[1].localeCompare(b[1]))
+                  .map(([key, label]: [string, string], index) => {
+                    return (
+                      <Select.Option
+                        className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                        key={`caseType-${key}`}
+                        value={key}
+                      >
+                        {label}
+                      </Select.Option>
+                    );
+                  })}
               </Select>
               {errors.caseType && (
                 <div className="my-sm text-error">

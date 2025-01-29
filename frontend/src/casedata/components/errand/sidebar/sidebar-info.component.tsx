@@ -31,11 +31,12 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -209,7 +210,10 @@ export const SidebarInfo: React.FC<{}> = () => {
     console.error('Something went wrong when saving');
   };
 
-  const { admin, status } = watch();
+  const { admin } = watch();
+
+  const status = useMemo(() => getValues().status, [getValues]);
+
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
 
@@ -480,7 +484,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       {errand?.status !== ErrandStatus.Parkerad ? (
         <>
           <PhaseChanger />
-          <SuspendErrandComponent disabled={false} />
+          {isSuspendEnabled() && <SuspendErrandComponent disabled={false} />}
         </>
       ) : (
         errand?.status === ErrandStatus.Parkerad && (
@@ -533,7 +537,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         )
       )}
 
-      {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
+      {uiPhase !== UiPhase.slutfor && uiPhase !== UiPhase.uppfoljning && errand.phase !== ErrandPhase.verkstalla && (
         <>
           <Button
             className="mt-16"
@@ -544,12 +548,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               setCauseIsEmpty(false);
             }}
             disabled={
-              !(
-                uiPhase === UiPhase.granskning ||
-                uiPhase === UiPhase.utredning ||
-                uiPhase === UiPhase.beslut ||
-                uiPhase === UiPhase.uppfoljning
-              ) ||
+              !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
               !isErrandAdmin(errand, user) ||
               isErrandLocked(errand)
             }

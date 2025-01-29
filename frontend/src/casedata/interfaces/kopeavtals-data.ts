@@ -91,7 +91,7 @@ export interface KopeavtalsTemplate {
   };
   signatureTerms: {
     condition?: {
-      [key in 'emptyRow' | 'example']:
+      [key in 'emptyRowSeller' | 'emptyRowBuyer' | 'example']:
         | {
             header: string;
             conditionText?: string;

@@ -76,9 +76,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       goToMessageTab();
       cy.get('[data-cy="new-message-button"]').should('exist').click();
 
-      cy.get('[data-cy="message-channel-radio-button-group mt-8"]').should('exist');
-      cy.get('[data-cy="message-channel-radio-button-group mt-8"] li input[value="email"]').should('exist');
-      cy.get('[data-cy="message-channel-radio-button-group mt-8"] li input[value="sms"]')
+      cy.get('[data-cy="message-channel-radio-button-group"]').should('exist');
+      cy.get('[data-cy="message-channel-radio-button-group"] li input[value="email"]').should('exist');
+      cy.get('[data-cy="message-channel-radio-button-group"] li input[value="sms"]')
         .should('exist')
         .check({ force: true });
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock message');
@@ -101,12 +101,12 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock message');
 
-      cy.get('[data-cy="message-channel-radio-button-group mt-8"] li input[value="email"]')
+      cy.get('[data-cy="message-channel-radio-button-group"] li input[value="email"]')
         .should('exist')
         .check({ force: true });
 
       cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
-      cy.get('[data-cy="add-new-email-button"]').should('exist').click({ force: true });
+      cy.get('[data-cy="add-new-email-button"]').should('exist').click({ force: true, multiple: true });
 
       cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
       cy.get('button').contains('Bläddra').should('exist').click();
