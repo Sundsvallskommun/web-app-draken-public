@@ -1,29 +1,12 @@
 import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
-import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Avatar,
-  Button,
-  cx,
-  Divider,
-  FormControl,
-  FormLabel,
-  RadioButton,
-  Select,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Mail } from 'lucide-react';
+import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import { isSupportErrandLocked, validateAction, Status } from '@supportmanagement/services/support-errand-service';
-import {
-  getMessageAttachment,
-  Message,
-  setMessageViewStatus,
-} from '@supportmanagement/services/support-message-service';
-import dayjs from 'dayjs';
+import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
-import { getSender } from './rendered-support-message.component';
 import MessageTreeComponent from './support-messages-tree.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 
@@ -44,7 +27,6 @@ export const SupportMessagesTab: React.FC<{
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const [sortedMessages, setSortedMessages] = useState(props.messages);
-  const toastMessage = useSnackbar();
 
   const emailBody = `${
     isLOP()
@@ -184,7 +166,7 @@ export const SupportMessagesTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isSupportErrandLocked(supportErrand) || !allowed)}
-            rightIcon={<LucideIcon name="mail" size={18} />}
+            rightIcon={<Icon icon={<Mail />} size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
               setShowSelectedMessage(false);

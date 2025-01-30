@@ -73,7 +73,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
         {handledParams &&
           handledParams
             .filter((param) => param.values?.length > 0)
-            .sort((a, b) => a?.displayName?.localeCompare(b.displayName))
+            .sort((a, b) => a?.displayName?.localeCompare(b?.displayName))
             .map((param, idx) => (
               <div key={`${param.key}-${idx}`} className="flex flex-row gap-md">
                 <div className="font-bold" key={`label-${idx}`}>

@@ -3,7 +3,6 @@ import { RenderedSupportMessage } from './rendered-support-message.component';
 import { Divider } from '@mui/material';
 import { Button, cx } from '@sk-web-gui/react';
 import {
-  Message,
   MessageNode,
   countAllMessages,
   countUnreadMessages,

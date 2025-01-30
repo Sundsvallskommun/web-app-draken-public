@@ -1,11 +1,10 @@
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
+import { CornerDownRight, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus, Image } from 'lucide-react';
 import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import {
   isSupportErrandLocked,
-  SupportErrand,
   SupportStakeholderRole,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
@@ -133,7 +132,7 @@ export const RenderedSupportMessage: React.FC<{
             <div className="w-5/6 ml-sm">
               <div className="my-0 flex justify-between">
                 <div>
-                  {!root ? <LucideIcon size={16} className="mr-sm" name="corner-down-right" /> : null}
+                  {!root ? <Icon size={16} className="mr-sm" icon={<CornerDownRight />} /> : null}
                   <p
                     className={cx(`mr-md break-all text-small font-bold`)}
                     dangerouslySetInnerHTML={{
@@ -159,7 +158,7 @@ export const RenderedSupportMessage: React.FC<{
               {message.communicationAttachments?.length > 0 ? (
                 <>
                   <div className="mx-sm inline-flex items-center gap-xs">
-                    <LucideIcon name="paperclip" size="1.5rem" />
+                    <Icon icon={<Paperclip />} size="1.5rem" />
                     <span className="text-xs">{message.communicationAttachments?.length}</span>
                   </div>
                   <span className="text-xs mx-sm">|</span>
@@ -168,15 +167,15 @@ export const RenderedSupportMessage: React.FC<{
               <span className="flex text-xs whitespace-nowrap items-center">
                 {message.communicationType === 'SMS' ? (
                   <>
-                    <Icon icon={<LucideIcon name="smartphone" />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                    <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
                   </>
                 ) : message.communicationType === 'EMAIL' ? (
                   <>
-                    <Icon icon={<LucideIcon name="mail" />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                    <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
                   </>
                 ) : message.communicationType === 'WEB_MESSAGE' ? (
                   <>
-                    <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                    <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
                   </>
                 ) : (
                   ''
@@ -200,7 +199,7 @@ export const RenderedSupportMessage: React.FC<{
                 setExpanded(expanded ? false : true);
               }}
             >
-              <LucideIcon name={expanded ? 'square-minus' : 'square-plus'} />
+              <Icon icon={expanded ? <SquareMinus /> : <SquarePlus />} />
             </Button>
           </div>
         </div>
@@ -238,7 +237,7 @@ export const RenderedSupportMessage: React.FC<{
         >
           {message?.communicationAttachments.length > 0 ? (
             <ul className="flex flex-wrap gap-sm items-center my-12">
-              <LucideIcon name="paperclip" size="1.6rem" />
+              <Icon icon={<Paperclip />} size="1.6rem" />
               {message?.communicationAttachments?.map((a, idx) => (
                 <Button
                   key={`${a.name}-${idx}`}
@@ -272,7 +271,8 @@ export const RenderedSupportMessage: React.FC<{
                       });
                   }}
                   role="listitem"
-                  leftIcon={a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />}
+                  // eslint-disable-next-line jsx-a11y/alt-text
+                  leftIcon={a.name.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
                   variant="tertiary"
                 >
                   {a.name}
