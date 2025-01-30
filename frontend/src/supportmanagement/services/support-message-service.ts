@@ -83,16 +83,19 @@ export const sendClosingMessage = (
       Channels[supportErrand.channel] === Channels.ESERVICE ||
       Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
         ? 'webmessage'
-        : contactChannels.contactMeans === ContactChannelType.EMAIL || contactChannels.contactMeans === ContactChannelType.Email
+        : contactChannels.contactMeans === ContactChannelType.EMAIL ||
+          contactChannels.contactMeans === ContactChannelType.Email
         ? 'email'
         : 'sms',
     emails:
-      contactChannels.contactMeans === ContactChannelType.EMAIL || contactChannels.contactMeans === ContactChannelType.Email
+      contactChannels.contactMeans === ContactChannelType.EMAIL ||
+      contactChannels.contactMeans === ContactChannelType.Email
         ? contactChannels.values.map((v) => ({ value: v.value }))
         : [],
     recipientEmail: '',
     phoneNumbers:
-      contactChannels.contactMeans === ContactChannelType.PHONE || contactChannels.contactMeans === ContactChannelType.Phone
+      contactChannels.contactMeans === ContactChannelType.PHONE ||
+      contactChannels.contactMeans === ContactChannelType.Phone
         ? contactChannels.values.map((v) => ({ value: v.value }))
         : [],
     plaintextMessage: plaintextMessageBody,
@@ -108,7 +111,12 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
   if (!data.errandId) {
     return Promise.reject('No errand id found, cannot send message');
   }
-  const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails, ...data.phoneNumbers];
+  const targets =
+    data.contactMeans === 'webmessage'
+      ? [{ value: '' }]
+      : data.contactMeans === 'email'
+      ? [...data.emails]
+      : [...data.phoneNumbers];
   const msgPromises = targets.map(async (target) => {
     const attachmentPromises: Promise<{ name: string; blob: Blob }>[] = (data.attachments || []).map(async (f) => {
       const fileItem = f.file[0];
