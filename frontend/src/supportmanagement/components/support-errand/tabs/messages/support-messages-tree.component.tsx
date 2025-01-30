@@ -9,6 +9,11 @@ import {
 } from '@supportmanagement/services/support-message-service';
 
 interface MessageTreeProps {
+  update: () => void;
+  setRichText: React.Dispatch<React.SetStateAction<string>>;
+  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  richText: string;
+  emailBody: string;
   nodes: MessageNode[];
   selected: string;
   onSelect: (node: MessageNode) => void;
@@ -19,17 +24,32 @@ const getId = (node: MessageNode): string => {
 };
 
 const MessageNodeComponent: React.FC<{
+  update: () => void;
+  setRichText: React.Dispatch<React.SetStateAction<string>>;
+  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  richText: string;
+  emailBody: string;
   node: MessageNode;
   selected: string;
   onSelect: (node: MessageNode) => void;
   root?: boolean;
-}> = ({ node, selected, onSelect, root = false }) => {
+}> = ({ update, setRichText, setShowMessageForm, richText, emailBody, node, selected, onSelect, root = false }) => {
   const [showChildren, setShowChildren] = useState(true);
 
   return (
     <>
       <div className="m-md mr-0" id={`node-${getId(node)}`}>
-        <RenderedSupportMessage message={node} selected={selected} onSelect={onSelect} root={root}>
+        <RenderedSupportMessage
+          update={update}
+          message={node}
+          setShowMessageForm={setShowMessageForm}
+          setRichText={setRichText}
+          richText={richText}
+          emailBody={emailBody}
+          selected={selected}
+          onSelect={onSelect}
+          root={root}
+        >
           {root && node.children?.length ? (
             <Button
               size="sm"
@@ -52,6 +72,11 @@ const MessageNodeComponent: React.FC<{
           <div className={cx(root ? 'border-l' : 'border-l')}>
             {node.children.map((child, idx) => (
               <MessageNodeComponent
+                update={update}
+                setRichText={setRichText}
+                setShowMessageForm={setShowMessageForm}
+                richText={richText}
+                emailBody={emailBody}
                 key={`${idx}-${getId(child)}`}
                 node={child}
                 selected={selected}
@@ -65,13 +90,32 @@ const MessageNodeComponent: React.FC<{
   );
 };
 
-const MessageTreeComponent: React.FC<MessageTreeProps> = ({ nodes, selected, onSelect }) => {
+const MessageTreeComponent: React.FC<MessageTreeProps> = ({
+  update,
+  setRichText,
+  setShowMessageForm,
+  richText,
+  emailBody,
+  nodes,
+  selected,
+  onSelect,
+}) => {
   return (
     <div className="my-lg">
       {nodes.map((node, idx) => (
         <Fragment key={`${idx}-${getId(node)}`}>
           <Divider />
-          <MessageNodeComponent node={node} selected={selected} onSelect={onSelect} root={true} />
+          <MessageNodeComponent
+            update={update}
+            setRichText={setRichText}
+            setShowMessageForm={setShowMessageForm}
+            richText={richText}
+            emailBody={emailBody}
+            node={node}
+            selected={selected}
+            onSelect={onSelect}
+            root={true}
+          />
         </Fragment>
       ))}
     </div>
