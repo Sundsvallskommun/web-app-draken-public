@@ -6,10 +6,8 @@ import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnac
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
-  Relation,
   SupportErrand,
   SupportStakeholderFormModel,
-  SupportStakeholderRole,
   emptyContact,
   isSupportErrandLocked,
 } from '@supportmanagement/services/support-errand-service';
@@ -18,6 +16,8 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
+import { Metadata } from 'next';
+import { MetadataRoles } from '@common/data-contracts/supportmanagement/data-contracts';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -34,6 +34,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setSupportErrand,
     municipalityId,
     user,
+    supportMetadataRoles,
   }: {
     user: User;
     municipalityId: string;
@@ -41,6 +42,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setSupportErrand: any;
     supportMetadata: SupportMetadata;
     supportAttachments: SupportAttachment[];
+    supportMetadataRoles: MetadataRoles[];
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
@@ -118,7 +120,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   };
 
   const onMakeOwner = async (stakeholder: SupportStakeholderFormModel) => {
-    stakeholder.role = SupportStakeholderRole.PRIMARY;
+    stakeholder.role = 'PRIMARY';
 
     const customer = stakeholderCustomers;
     const contacts = stakeholderContacts.filter((con) => con.internalId !== stakeholder.internalId);
@@ -158,12 +160,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               );
               if (matchingIndex !== -1) {
                 existingStakeholders[matchingIndex] = e;
-                const newContacts = existingStakeholders.filter(
-                  (stakeholder) => stakeholder.role !== SupportStakeholderRole.PRIMARY
-                );
-                const newCustomers = existingStakeholders.filter(
-                  (stakeholder) => stakeholder.role === SupportStakeholderRole.PRIMARY
-                );
+                const newContacts = existingStakeholders.filter((stakeholder) => stakeholder.role !== 'PRIMARY');
+                const newCustomers = existingStakeholders.filter((stakeholder) => stakeholder.role === 'PRIMARY');
                 setValue('stakeholders', existingStakeholders, { shouldDirty: true });
                 setStakeholderContacts(newContacts);
                 setStakeholderCustomers(newCustomers);
@@ -220,7 +218,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 Ta bort
               </Button>
 
-              {contact.role === SupportStakeholderRole.CONTACT && stakeholderCustomers.length === 0 ? (
+              {contact.role === 'CONTACT' && stakeholderCustomers.length === 0 ? (
                 <Button
                   disabled={isSupportErrandLocked(supportErrand)}
                   data-cy="make-stakeholder-owner-button"
@@ -352,7 +350,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   };
 
   const addStakeholder = (stakeholder) => {
-    if (stakeholder.role === SupportStakeholderRole.PRIMARY) {
+    if (stakeholder.role === 'PRIMARY') {
       stakeholderCustomers.push(stakeholder);
       setValue('customer', stakeholderCustomers, { shouldDirty: true });
     } else {
@@ -377,7 +375,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                   allowOrganization={allowsOrganization}
                   setUnsaved={props.setUnsaved}
                   onSave={(contact) => addStakeholder(contact)}
-                  contact={{ ...emptyContact, role: SupportStakeholderRole.PRIMARY }}
+                  contact={{ ...emptyContact, role: 'PRIMARY' }}
                   editing={false}
                   label="Ärendeägare"
                   id="owner"
@@ -396,7 +394,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 allowRelation={isLOP()}
                 allowOrganization={allowsOrganization}
                 setUnsaved={props.setUnsaved}
-                contact={{ ...emptyContact, role: SupportStakeholderRole.CONTACT }}
+                contact={{ ...emptyContact, role: 'CONTACT' }}
                 editing={false}
                 onSave={(contact) => addStakeholder(contact)}
                 label="Övrig part"
@@ -408,9 +406,10 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <FormControl className="mt-40 w-full">
                 <FormLabel>Tillagda parter</FormLabel>
                 <div className="flex flex-row gap-12 flex-wrap">
-                  {stakeholderContacts.map((stakeholder, idx) =>
-                    renderContact(stakeholder, idx, Relation[stakeholder.role])
-                  )}
+                  {stakeholderContacts.map((stakeholder, idx) => {
+                    const role = supportMetadataRoles.find((r) => r.name === stakeholder.role)?.displayName;
+                    return renderContact(stakeholder, idx, role);
+                  })}
                 </div>
               </FormControl>
             ) : null}

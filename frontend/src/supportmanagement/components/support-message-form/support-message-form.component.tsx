@@ -33,7 +33,6 @@ import {
   Channels,
   Status,
   SupportErrand,
-  SupportStakeholderRole,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -516,7 +515,7 @@ export const SupportMessageForm: React.FC<{
           ) : null}
           {contactMeans === 'webmessage'
             ? supportErrand.stakeholders
-                .filter((o) => o.role.indexOf(SupportStakeholderRole.PRIMARY) !== -1)
+                .filter((o) => o.role.indexOf('PRIMARY') !== -1)
                 .map((filteredOwner, idx) => (
                   <div key={`owner-${idx}`}>
                     <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}

@@ -30,16 +30,6 @@ export enum ExternalIdType {
   COMPANY = 'COMPANY',
 }
 
-export enum SupportStakeholderRole {
-  PRIMARY = 'PRIMARY',
-  CONTACT = 'CONTACT',
-  APPROVER = 'APPROVER',
-  EMPLOYEE = 'EMPLOYEE',
-  MANAGER = 'MANAGER',
-  SUBSTITUTE = 'SUBSTITUTE',
-  USER = 'USER',
-}
-
 // Keeping both enums for now, as the backend uses the uppercase version
 // but existing stakeholders use the lowercase version
 export enum ContactChannelType {
@@ -47,17 +37,6 @@ export enum ContactChannelType {
   EMAIL = 'EMAIL',
   Phone = 'Phone',
   PHONE = 'PHONE',
-}
-
-export enum Relation {
-  // PERSON = 'Person',
-  PRIMARY = 'Ärendeägare',
-  CONTACT = 'Övrig part',
-  APPROVER = 'Godkännande chef',
-  EMPLOYEE = 'Anställd',
-  MANAGER = 'Chef',
-  SUBSTITUTE = 'Ersättare',
-  USER = 'Användare',
 }
 
 export enum PrettyRelation {
@@ -665,7 +644,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       labels: e.labels || [],
       customer:
         e.stakeholders
-          ?.filter((s) => s.role === SupportStakeholderRole.PRIMARY)
+          ?.filter((s) => s.role === 'PRIMARY')
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
@@ -674,7 +653,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-            newRole: SupportStakeholderRole.PRIMARY,
+            newRole: 'PRIMARY',
             internalId: uuidv4(),
             emails: s.contactChannels
               .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
@@ -685,7 +664,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           })) || [],
       contacts:
         e.stakeholders
-          ?.filter((s) => s.role !== SupportStakeholderRole.PRIMARY)
+          ?.filter((s) => s.role !== 'PRIMARY')
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
@@ -694,7 +673,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-            newRole: s.role as SupportStakeholderRole,
+            newRole: s.role as string,
             internalId: uuidv4(),
             emails: s.contactChannels
               .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)

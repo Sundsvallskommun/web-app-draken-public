@@ -47,6 +47,10 @@ interface SupportMetadata {
   contactReasons?: ContactReason[];
 }
 
+interface SupportRoles {
+  name: string;
+  displayName?: string;
+}
 @Controller()
 export class SupportMetadataController {
   private apiService = new ApiService();
@@ -63,6 +67,19 @@ export class SupportMetadataController {
   ): Promise<SupportMetadata> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
     const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
+    return response.status(200).send(res.data);
+  }
+
+  @Get('/supportmetadata/:municipalityId/roles')
+  @OpenAPI({ summary: 'Get support roles' })
+  @UseBefore(authMiddleware)
+  async fetchSupportMetadataRoles(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Res() response: any,
+  ): Promise<SupportRoles> {
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/roles`;
+    const res = await this.apiService.get<SupportRoles>({ url }, req.user);
     return response.status(200).send(res.data);
   }
 }

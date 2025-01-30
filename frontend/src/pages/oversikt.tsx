@@ -5,7 +5,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
-import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import { getSupportMetadata, getSupportMetadataRoles } from '@supportmanagement/services/support-metadata-service';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
@@ -13,8 +13,17 @@ import { AttestationTab } from '@supportmanagement/components/attestation-tab/at
 export const Oversikt: React.FC = () => {
   const router = useRouter();
 
-  const { user, isLoggedIn, administrators, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } =
-    useAppContext();
+  const {
+    user,
+    isLoggedIn,
+    administrators,
+    setAdministrators,
+    municipalityId,
+    setMunicipalityId,
+    setSupportMetadata,
+    setSupportMetadataRoles,
+    supportMetadataRoles,
+  } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
   useEffect(() => {
@@ -39,6 +48,12 @@ export const Oversikt: React.FC = () => {
     (isKC() || isIK() || isLOP()) &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+  }, [municipalityId]);
+
+  useEffect(() => {
+    (isKC() || isIK() || isLOP()) &&
+      municipalityId &&
+      getSupportMetadataRoles(municipalityId).then((res) => setSupportMetadataRoles(res.roles));
   }, [municipalityId]);
 
   return (

@@ -13,6 +13,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { mockMetaDataRoles } from '../lop/fixtures/mockMetadata';
 //import { imageMimeTypes } from '@supportmanagement/services/support-attachment-service';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
@@ -30,6 +31,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportMessages).as('getMessages');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
+      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
