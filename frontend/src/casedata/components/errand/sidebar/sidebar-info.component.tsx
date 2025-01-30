@@ -9,6 +9,7 @@ import {
   getErrand,
   isErrandAdmin,
   isErrandLocked,
+  phaseChangeInProgress,
   setSuspendedErrands,
   triggerErrandPhaseChange,
   updateErrandStatus,
@@ -36,6 +37,8 @@ import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { isPT } from '@common/services/application-service';
+import { AppealButtonComponent } from '../appeal-button.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -535,6 +538,9 @@ export const SidebarInfo: React.FC<{}> = () => {
           </>
         )
       )}
+      {isPT() ? (
+        <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand as IErrand)} />
+      ) : null}
 
       {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
         <>

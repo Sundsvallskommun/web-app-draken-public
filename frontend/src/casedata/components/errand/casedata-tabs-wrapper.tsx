@@ -19,6 +19,7 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { getAssets } from '@casedata/services/asset-service';
 import { Role } from '@casedata/interfaces/role';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
@@ -340,7 +341,12 @@ export const CasedataTabsWrapper: React.FC = () => {
             <div className="text-lg my-sm">Ärendet har sparats</div>
           </div>
         ) : (
-          <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
+          <WarnIfUnsavedChanges
+            showWarning={
+              (unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision) &&
+              errand?.status !== ErrandStatus.BeslutVerkstallt
+            }
+          >
             <Tabs
               className="border-1 rounded-12 bg-background-content pt-6 pl-0"
               tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap"
