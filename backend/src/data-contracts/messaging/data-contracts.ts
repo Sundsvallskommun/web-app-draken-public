@@ -39,7 +39,7 @@ export interface WebMessageParty {
    * The message party id
    * @format uuid
    */
-  partyId: string;
+  partyId?: string;
   /** External references */
   externalReferences?: ExternalReference[];
 }
@@ -281,25 +281,15 @@ export interface Address {
    */
   lastName?: string;
   /**
-   * The city
-   * @example "Main Street"
+   * The address
+   * @example "Main Street 1"
    */
-  city?: string;
+  address?: string;
   /**
    * The apartment number
    * @example "1101"
    */
   apartmentNumber?: string;
-  /**
-   * The organization number of the recipient
-   * @example "123456-7890"
-   */
-  organizationNumber?: string;
-  /**
-   * The address
-   * @example "Main Street 1"
-   */
-  address?: string;
   /**
    * The care of
    * @example "c/o John Doe"
@@ -310,6 +300,11 @@ export interface Address {
    * @example "12345"
    */
   zipCode?: string;
+  /**
+   * The city
+   * @example "Main Street"
+   */
+  city?: string;
   /**
    * The country
    * @example "Sweden"
@@ -334,8 +329,7 @@ export interface LetterAttachment {
 
 /** Party */
 export interface LetterParty {
-  /** @minItems 1 */
-  partyIds: string[];
+  partyIds?: string[];
   addresses?: Address[];
   /** External references */
   externalReferences?: ExternalReference[];
@@ -792,9 +786,9 @@ export interface UserMessage {
 
 /** User messages model */
 export interface UserMessages {
-  messages?: UserMessage[];
   /** PagingMetaData model */
   _meta?: PagingMetaData;
+  messages?: UserMessage[];
 }
 
 export interface LetterStatistics {

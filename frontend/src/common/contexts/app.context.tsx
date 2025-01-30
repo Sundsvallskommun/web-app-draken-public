@@ -18,6 +18,7 @@ import { SupportMetadata } from '@supportmanagement/services/support-metadata-se
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { createContext, useContext, useState } from 'react';
+import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 export interface AppContextInterface {
   isLoading: boolean;
@@ -68,10 +69,10 @@ export interface AppContextInterface {
   supportAdmins;
   setSupportAdmins: (admins: SupportAdmin[]) => void;
 
-  stakeholderContacts;
+  stakeholderContacts: SupportStakeholderFormModel[];
   setStakeholderContacts: (stakeholderContacts: SupportStakeholderFormModel[]) => void;
 
-  stakeholderCustomers;
+  stakeholderCustomers: SupportStakeholderFormModel[];
   setStakeholderCustomers: (stakeholderCustomers: SupportStakeholderFormModel[]) => void;
 
   notifications: (SupportNotification | CaseDataNotification)[];
@@ -124,6 +125,9 @@ export interface AppContextInterface {
 
   uiPhase: UiPhase;
   setUiPhase: (phase: UiPhase) => void;
+
+  billingRecords: CPageBillingRecord;
+  setBillingRecords: (billingRecords: CPageBillingRecord) => void;
 }
 
 const AppContext = createContext<AppContextInterface>(null);
@@ -165,6 +169,7 @@ export function AppWrapper({ children }) {
   const [isCookieConsentOpen, setIsCookieConsentOpen] = useState(true);
   const [notifications, setNotifications] = useState<(SupportNotification | CaseDataNotification)[]>([]);
   const [uiPhase, setUiPhase] = useState<UiPhase>();
+  const [billingRecords, setBillingRecords] = useState<CPageBillingRecord>({ content: [] });
 
   return (
     <AppContext.Provider
@@ -279,6 +284,9 @@ export function AppWrapper({ children }) {
 
         uiPhase,
         setUiPhase: (phase: UiPhase) => setUiPhase(phase),
+
+        billingRecords,
+        setBillingRecords: (billingRecords: CPageBillingRecord) => setBillingRecords(billingRecords),
       }}
     >
       {children}

@@ -1,9 +1,13 @@
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
+import { IErrand } from '@casedata/interfaces/errand';
+import { Role } from '@casedata/interfaces/role';
+import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
+import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, cx } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React from 'react';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export const RenderedMessage: React.FC<{
   message: MessageResponse;
@@ -21,11 +25,33 @@ export const RenderedMessage: React.FC<{
     />
   );
 
+  const {
+    municipalityId,
+    errand,
+  }: {
+    municipalityId: string;
+    errand: IErrand;
+  } = useAppContext();
+
   const getSender = (msg: MessageResponse) =>
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
   const getSenderInitials = (msg: MessageResponse) =>
     msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
+
+  const getMessageOwner = (msg: MessageResponse) => {
+    if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
+      const ownerInfomration = errand.stakeholders.filter((stakeholder) => stakeholder.roles.includes(Role.APPLICANT));
+      const isWebMessageOpenE = msg.messageType === 'WEBMESSAGE' && msg.externalCaseId !== null;
+      const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
+        stakeholder.emails.some((email) => email.value === msg.email)
+      );
+
+      if (isWebMessageOpenE || isOwnerStakeholderEmail) {
+        return <span className="text-xs whitespace-nowrap">Ärendeägare</span>;
+      }
+    }
+  };
 
   return (
     <>
@@ -63,39 +89,42 @@ export const RenderedMessage: React.FC<{
             ></p>
           </div>
         </div>
-        <div className="inline-flex items-start flex-nowrap">
-          <span className="text-xs whitespace-nowrap">{dayjs(message.sent).format('YYYY-MM-DD HH:mm')}</span>
-          <span className="text-xs mx-sm">|</span>
-          {message.attachments?.length > 0 ? (
-            <>
-              <div className="mx-sm inline-flex items-center gap-xs">
-                <LucideIcon name="paperclip" size="1.5rem" />
-                <span className="text-xs">{message.attachments?.length}</span>
-              </div>
-              <span className="text-xs mx-sm">|</span>
-            </>
-          ) : null}
-          <span className="text-xs whitespace-nowrap">
-            {message.messageType === 'SMS' ? (
+        <div className="flex flex-col align-end items-end justify-between">
+          <div className="inline-flex items-start flex-nowrap">
+            <span className="text-xs whitespace-nowrap">{dayjs(message.sent).format('YYYY-MM-DD HH:mm')}</span>
+            <span className="text-xs mx-sm">|</span>
+            {message.attachments?.length > 0 ? (
               <>
-                <LucideIcon name="smartphone" size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                <div className="mx-sm inline-flex items-center gap-xs">
+                  <LucideIcon name="paperclip" size="1.5rem" />
+                  <span className="text-xs">{message.attachments?.length}</span>
+                </div>
+                <span className="text-xs mx-sm">|</span>
               </>
-            ) : message.messageType === 'EMAIL' ? (
-              <>
-                <LucideIcon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via e-post
-              </>
-            ) : message.messageType === 'DIGITAL_MAIL' ? (
-              <>
-                <LucideIcon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
-              </>
-            ) : message.messageType === 'WEBMESSAGE' || message.externalCaseId ? (
-              <>
-                <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
-              </>
-            ) : (
-              ''
-            )}
-          </span>
+            ) : null}
+            <span className="text-xs whitespace-nowrap">
+              {message.messageType === 'SMS' ? (
+                <>
+                  <LucideIcon name="smartphone" size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                </>
+              ) : message.messageType === 'EMAIL' ? (
+                <>
+                  <LucideIcon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                </>
+              ) : message.messageType === 'DIGITAL_MAIL' ? (
+                <>
+                  <LucideIcon name="mail" size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
+                </>
+              ) : message.messageType === 'WEBMESSAGE' || message.externalCaseId ? (
+                <>
+                  <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                </>
+              ) : (
+                ''
+              )}
+            </span>
+          </div>
+          {getMessageOwner(message)}
         </div>
         <div>
           <span

@@ -70,6 +70,8 @@ export interface LagenhetsArendeTemplate {
     indexAdjustedFee: 'true' | 'false';
     period: 'yearly' | 'byYear' | 'byLease' | 'indexAdjustedFee' | 'prepaid';
     prepaid: 'true' | 'false';
+    prepaidFromDate?: string;
+    prepaidToDate?: string;
     yearlyFee?: number;
     feeByYear?: number;
     associatedFeeYear?: number;
@@ -145,6 +147,7 @@ export interface LagenhetsArendeTemplate {
         | {
             header: string;
             conditionText?: string;
+            date?: string;
           }
         | undefined;
     };
@@ -197,7 +200,7 @@ export interface LagenhetsArendeTemplate {
   };
   signatureTerms: {
     condition?: {
-      [key in 'emptyRow' | 'example']:
+      [key in 'emptyRowPropertyowner' | 'emptyRowLeaseholder' | 'example']:
         | {
             header: string;
             conditionText?: string;

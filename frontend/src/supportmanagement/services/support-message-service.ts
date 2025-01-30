@@ -1,10 +1,11 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { isLOP } from '@common/services/application-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
+import { v4 as uuidv4 } from 'uuid';
 import { SingleSupportAttachment, SupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -46,12 +47,34 @@ export const sendClosingMessage = (
   municipalityId: string
 ) => {
   const contactChannels = applicantContactChannel(supportErrand);
-  const messageBody = `
-  Hej,<br><br>Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>Servicecenter Lön och pension<br>Sundsvalls kommun<br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9:00-12:00<br>`;
-  const plaintextMessageBody = messageBody.replace(
+  const messageBody = isLOP()
+    ? `Hej,<br><br>
+    
+    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
+    
+    Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>
+    Servicecenter Lön och pension<br>
+    Sundsvalls kommun<br>
+    <a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>
+    060-19 26 00, telefontid 9:00-12:00<br>`
+    : `Hej,<br><br>
+    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
+
+    Med vänliga hälsningar<br>
+    Intern Kundtjänst<br>
+    <a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a><br>
+    060-191565<br>`;
+
+  let plaintextMessageBody = messageBody.replace(
     '<a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a>',
     'lonochpension@sundsvall.se'
   );
+
+  plaintextMessageBody = messageBody.replace(
+    '<a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a>',
+    'internkundtjanst@sundsvall.se'
+  );
+
   return sendMessage({
     municipalityId: municipalityId,
     errandId: supportErrand.id,
@@ -60,16 +83,16 @@ export const sendClosingMessage = (
       Channels[supportErrand.channel] === Channels.ESERVICE ||
       Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
         ? 'webmessage'
-        : contactChannels.contactMeans === ContactChannelType.EMAIL
+        : contactChannels.contactMeans === ContactChannelType.EMAIL || contactChannels.contactMeans === ContactChannelType.Email
         ? 'email'
         : 'sms',
     emails:
-      contactChannels.contactMeans === ContactChannelType.EMAIL
+      contactChannels.contactMeans === ContactChannelType.EMAIL || contactChannels.contactMeans === ContactChannelType.Email
         ? contactChannels.values.map((v) => ({ value: v.value }))
         : [],
     recipientEmail: '',
     phoneNumbers:
-      contactChannels.contactMeans === ContactChannelType.PHONE
+      contactChannels.contactMeans === ContactChannelType.PHONE || contactChannels.contactMeans === ContactChannelType.Phone
         ? contactChannels.values.map((v) => ({ value: v.value }))
         : [],
     plaintextMessage: plaintextMessageBody,
@@ -204,6 +227,32 @@ export const setMessageViewStatus: (
     .catch((e) => {
       console.error('Something went wrong when setting message isViewed status: ', communicationID);
       throw e;
+    });
+};
+
+export const getMessageAttachment: (
+  municipalityId: string,
+  errandId: string,
+  communicationID: string,
+  attachmentId: string
+) => Promise<ApiResponse<SupportAttachment[]>> = (municipalityId, errandId, communicationID, attachmentId) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot fetch.');
+  }
+  if (!communicationID) {
+    console.error('No communication id found, cannot fetch.');
+  }
+  if (!attachmentId) {
+    console.error('No attachment id found, cannot fetch.');
+  }
+
+  const url = `supportmessage/${municipalityId}/errand/${errandId}/communication/${communicationID}/attachments/${attachmentId}/streamed`;
+  return apiService
+    .get<any>(url)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching attachment');
+      return { data: [], message: 'error' };
     });
 };
 

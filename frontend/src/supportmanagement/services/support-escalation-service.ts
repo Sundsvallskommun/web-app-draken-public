@@ -12,7 +12,7 @@ const extractContactInfo = (c: SupportStakeholderFormModel) => {
   const phone = maybe(
     c &&
       (c?.contactChannels
-        ?.filter((c) => c.type === ContactChannelType.PHONE)
+        ?.filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
         .map((c) => c.value)
         .join(', ') ||
         c?.phoneNumbers?.map((c) => c.value).join(', '))
@@ -20,7 +20,7 @@ const extractContactInfo = (c: SupportStakeholderFormModel) => {
   const email = maybe(
     c &&
       (c?.contactChannels
-        ?.filter((c) => c.type === ContactChannelType.EMAIL)
+        ?.filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
         .map((c) => c.value)
         .join(', ') ||
         c?.emails?.map((c) => c.value).join(', '))

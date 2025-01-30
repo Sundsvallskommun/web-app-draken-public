@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
 import { PrettyRole } from '@casedata/interfaces/role';
 import { isMEX, isPT } from '@common/services/application-service';
-import { Relation } from '@supportmanagement/services/support-errand-service';
+import { ContactChannelType, Relation } from '@supportmanagement/services/support-errand-service';
 
 const CommonNestedEmailArrayV2 = ({
   errand,
@@ -45,7 +45,7 @@ const CommonNestedEmailArrayV2 = ({
       errand?.stakeholders?.map((stakeholder) => {
         if (stakeholder?.contactChannels?.length) {
           stakeholder?.contactChannels?.map((channel) => {
-            if (channel.type === 'Email') {
+            if (channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email) {
               stakeholders.push({
                 email: channel?.value ?? [],
                 role: Relation[stakeholder.role],
@@ -96,6 +96,7 @@ const CommonNestedEmailArrayV2 = ({
       <FormLabel>Lägg till ny e-postadress{required ? <span aria-hidden="true">*</span> : null}</FormLabel>
       <div className="w-full flex gap-16 mb-8">
         <Input
+          data-cy={`new-email-input`}
           placeholder="Ange e-postadress"
           {...register('newEmail')}
           className={cx(error ? 'border-error' : null, `w-full`)}

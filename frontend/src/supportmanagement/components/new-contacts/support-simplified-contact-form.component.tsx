@@ -41,6 +41,7 @@ import {
 import {
   emptyContact,
   ExternalIdType,
+  Relation,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   SupportStakeholderTypeEnum,
@@ -53,6 +54,7 @@ import { AppContextInterface, useAppContext } from '@contexts/app.context';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
+  allowRelation?: boolean;
   contact: SupportStakeholderFormModel;
   editing: boolean;
   setUnsaved: (unsaved: boolean) => void;
@@ -64,6 +66,7 @@ export const SupportSimplifiedContactForm: React.FC<{
 }> = (props) => {
   const {
     allowOrganization = false,
+    allowRelation = false,
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
@@ -246,7 +249,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     if (!contact.internalId) {
       setValue(`stakeholderType`, contact.stakeholderType);
     }
-    setValue(`newRole`, contact.role as SupportStakeholderRole);
   }, []);
 
   const validEmailOrPhonenumberExists = () =>
@@ -563,10 +565,15 @@ export const SupportSimplifiedContactForm: React.FC<{
           <FormControl className="w-full">
             {isLOP() || isIK() ? (
               <FormLabel>
-                Sök på {searchMode === 'person' ? 'personnummer' : 'personnummer eller användarnamn'}
+                Sök på{' '}
+                {searchMode === 'person'
+                  ? 'personnummer (ååååmmddxxxx)'
+                  : 'personnummer (ååååmmddxxxx) eller användarnamn'}
               </FormLabel>
             ) : (
-              <FormLabel>Sök på {searchMode === 'person' ? 'personnummer' : 'organisationsnummer'}</FormLabel>
+              <FormLabel>
+                Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
+              </FormLabel>
             )}
 
             <div>
@@ -580,8 +587,10 @@ export const SupportSimplifiedContactForm: React.FC<{
               {searchMode === 'person' ? (
                 <>
                   <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
+                    <Input.LeftAddin icon>
+                      <LucideIcon name="search" />
+                    </Input.LeftAddin>
                     <Input
-                      placeholder={'ÅÅÅÅMMDDXXXX'}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}
@@ -659,7 +668,6 @@ export const SupportSimplifiedContactForm: React.FC<{
                       setSearchResult(false);
                       setValue('stakeholderType', 'PERSON');
                     }}
-                    placeholder={'ÅÅÅÅMMDDXXXX'}
                     searchLabel={searching ? 'Söker' : 'Sök'}
                   />
 
@@ -685,8 +693,10 @@ export const SupportSimplifiedContactForm: React.FC<{
               ) : (
                 <>
                   <Input.Group size="md" disabled={props.disabled || manual}>
+                    <Input.LeftAddin icon>
+                      <LucideIcon name="search" />
+                    </Input.LeftAddin>
                     <Input
-                      placeholder={'KKLLMM-NNNN'}
                       disabled={props.disabled}
                       aria-disabled={props.disabled}
                       readOnly={manual}
@@ -905,6 +915,45 @@ export const SupportSimplifiedContactForm: React.FC<{
                       </div>
                     )}
                   </FormControl>
+                  {allowRelation ? (
+                    <FormControl id={`contact-relation`} size="sm" className="w-1/2">
+                      <FormLabel>Roll</FormLabel>
+                      <Select
+                        data-cy={`role-select`}
+                        disabled={props.disabled}
+                        {...register(`role`)}
+                        className={cx(formState.errors.role ? 'border-2 border-error' : null, 'w-full')}
+                      >
+                        <Select.Option key="" value="">
+                          Välj roll
+                        </Select.Option>
+                        {Object.entries(Relation)
+                          .filter(
+                            ([key]) =>
+                              !(
+                                contact.role === SupportStakeholderRole.CONTACT &&
+                                [Relation.PRIMARY].includes(Relation[key])
+                              )
+                          )
+                          .sort((a, b) => (a[1] > b[1] ? 1 : -1))
+                          .map(([key, relation]) => {
+                            return (
+                              <Select.Option key={key} value={key}>
+                                {relation}
+                              </Select.Option>
+                            );
+                          })}
+                      </Select>
+
+                      {errors && formState.errors.role && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>{formState.errors.role?.message}</FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  ) : (
+                    <div className="w-1/2"></div>
+                  )}
                 </div>
                 <div className="flex gap-lg">
                   <FormControl id={`firstName`} className="w-1/2">

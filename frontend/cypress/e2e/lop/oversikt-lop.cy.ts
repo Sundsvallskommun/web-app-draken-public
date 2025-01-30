@@ -17,12 +17,14 @@ import {
   mockSupportErrandsEmpty,
 } from './fixtures/mockSupportErrands';
 import { mockNotifications } from './fixtures/mockSupportNotifications';
+import { mockBillingRecords } from './fixtures/mockBillingRecords';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Overview errands lop', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/billing/2281/billingrecords**', mockBillingRecords).as('getBillingRecords');
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
       cy.intercept('GET', '**/supporterrands/2281?page=1*', mockSupportErrandsEmpty).as('getErrandsEmpty');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
@@ -45,12 +47,13 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       const headerRow = cy.get('[data-cy="main-table"] .sk-table-thead-tr').first();
       headerRow.get('th').eq(0).find('span').first().should('have.text', 'Status');
       headerRow.get('th').eq(1).find('span').first().should('have.text', 'Verksamhet');
-      headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendetyp');
-      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Ärendenummer');
-      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Registrerades');
-      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Senaste aktivitet');
-      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Prioritet');
-      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Ärendeknapp');
+      headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendekategori');
+      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Ärendetyp');
+      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Inkom via');
+      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Registrerades');
+      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Senaste aktivitet');
+      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Prioritet');
+      headerRow.get('th').eq(8).find('span').first().should('have.text', 'Ansvarig');
     });
 
     it('displays the filters', () => {
@@ -87,9 +90,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@unFilterCatErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
 
-      //Ärendetyp
-      cy.get('[data-cy="Ärendetyp-filter"]').type('2');
-      cy.get(`[data-cy=Ärendetyp-filter-${mockCategories[0].types[0].displayName}]`).should('exist').click();
+      //Ärendekategori
+      cy.get('[data-cy="Ärendekategori-filter"]').type('2');
+      cy.get(`[data-cy=Ärendekategori-filter-${mockCategories[0].types[0].displayName}]`).should('exist').click();
 
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockFilteredCategoryErrands).as('getFilterTypeErrands');
 
@@ -99,8 +102,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockFilteredCategoryErrands.content.length
       );
 
-      cy.get('[data-cy="Ärendetyp-filter"]').type('2');
-      cy.get('[data-cy="Ärendetyp-filter"]').siblings('div').get('[aria-label="Rensa ärendetyp"]').click();
+      cy.get('[data-cy="Ärendekategori-filter"]').type('2');
+      cy.get('[data-cy="Ärendekategori-filter"]').siblings('div').get('[aria-label="Rensa ärendetyp"]').click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSupportErrands).as('unFilterTypeErrands');
       cy.wait('@unFilterTypeErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);

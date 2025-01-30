@@ -15,13 +15,14 @@ import {
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   PageErrand,
+  ExternalTag,
+  Parameter,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
-// import { Errand as CaseDataErrand, ErrandApiData } from '@/interfaces/errand.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
@@ -33,10 +34,11 @@ import ApiService from '@/services/api.service';
 import { checkIfSupportAdministrator } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck, toOffsetDateTime, withRetries } from '@/utils/util';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+import { Type as TypeTransformer } from 'class-transformer';
 
 export enum CustomerType {
   PRIVATE,
@@ -77,7 +79,20 @@ export interface SupportErrandParameters {
   value: string;
 }
 
-export type ExternalTags = Array<{ key: string; value: string }>;
+export class CExternalTag implements ExternalTag {
+  @IsString()
+  key: string;
+  @IsString()
+  value: string;
+}
+
+export class CParameter implements Parameter {
+  @IsString()
+  key: string;
+  @IsArray()
+  @IsOptional()
+  values: string[];
+}
 
 export class SupportErrandDto implements SupportErrand {
   @IsString()
@@ -143,12 +158,14 @@ export class SupportErrandDto implements SupportErrand {
   stakeholders: SupportStakeholder[];
   @IsArray()
   @IsOptional()
-  externalTags: ExternalTags;
-  parameters: {
-    key: string;
-    displayName: string;
-    values: string[];
-  }[];
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CExternalTag)
+  externalTags: ExternalTag[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CParameter)
+  parameters: Parameter[];
 }
 
 class ForwardFormDto {
@@ -284,8 +301,10 @@ export class SupportErrandController {
       queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'Email')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and stakeholders.contactChannels.type~'Phone')`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and (stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}' or stakeholders.contactChannels.type~'${ContactChannelType.Email}'))`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and (stakeholders.contactChannels.type~'${
+        ContactChannelType.PHONE
+      }' or stakeholders.contactChannels.type~'${ContactChannelType.Phone}'))`;
       queryFilter += ` or exists(stakeholders.organizationName ~ '*${query}*')`;
       queryFilter += ` or exists(stakeholders.externalId ~ '*${query}*')`;
       queryFilter += ` or exists(parameters.values~'*${query}*')`;
@@ -503,7 +522,7 @@ export class SupportErrandController {
 
     const stakeholders: CasedataStakeholderDTO[] = [];
     existingSupportErrand.data.stakeholders.forEach((s: SupportStakeholder) => {
-      if (!s.firstName) {
+      if (!s.firstName && !s.organizationName) {
         console.error('Missing required fields for stakeholder');
         logger.error('Missing required fields for stakeholder');
         return response.status(400).send('Missing required fields for stakeholder');
@@ -536,12 +555,12 @@ export class SupportErrandController {
           contactInformation:
             s.contactChannels?.length > 0
               ? s.contactChannels.map(c =>
-                  c.type === ContactChannelType.PHONE
+                  c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone
                     ? {
                         contactType: ContactInformationContactTypeEnum.PHONE,
                         value: c.value,
                       }
-                    : c.type === ContactChannelType.EMAIL
+                    : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email
                     ? {
                         contactType: ContactInformationContactTypeEnum.EMAIL,
                         value: c.value,
@@ -551,7 +570,7 @@ export class SupportErrandController {
               : [],
           firstName: '',
           lastName: '',
-          organizationName: s.firstName,
+          organizationName: s.organizationName,
           organizationNumber: s.externalId,
         });
       } else {
@@ -577,7 +596,7 @@ export class SupportErrandController {
                         contactType: ContactInformationContactTypeEnum.PHONE,
                         value: c.value,
                       }
-                    : c.type === ContactChannelType.EMAIL
+                    : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email
                     ? {
                         contactType: ContactInformationContactTypeEnum.EMAIL,
                         value: c.value,
@@ -653,7 +672,7 @@ export class SupportErrandController {
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
-    const CASEDATA_SERVICE = `case-data/9.0`;
+    const CASEDATA_SERVICE = `case-data/10.0`;
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
       .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand }, req.user)

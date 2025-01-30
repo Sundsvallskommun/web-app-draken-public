@@ -9,42 +9,6 @@
  * ---------------------------------------------------------------
  */
 
-/** Namespace configuration model */
-export interface NamespaceConfig {
-  /**
-   * Namespace
-   * @example "CONTACTCENTER"
-   */
-  namespace?: string;
-  /**
-   * Municipality connected to the namespace
-   * @example "2281"
-   */
-  municipalityId?: string;
-  /**
-   * Displayname for the namespace
-   * @example "Kontaktcenter"
-   */
-  displayName: string;
-  /**
-   * Prefix for errand numbers in this namespace
-   * @example "KC"
-   */
-  shortCode: string;
-  /**
-   * Timestamp when the configuration was created
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  created?: string;
-  /**
-   * Timestamp when the configuration was last modified
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  modified?: string;
-}
-
 export interface Problem {
   /** @format uri */
   instance?: string;
@@ -148,6 +112,42 @@ export interface Violation {
   message?: string;
 }
 
+/** Namespace configuration model */
+export interface NamespaceConfig {
+  /**
+   * Namespace
+   * @example "CONTACTCENTER"
+   */
+  namespace?: string;
+  /**
+   * Municipality connected to the namespace
+   * @example "2281"
+   */
+  municipalityId?: string;
+  /**
+   * Display name for the namespace
+   * @example "Kontaktcenter"
+   */
+  displayName: string;
+  /**
+   * Prefix for errand numbers in this namespace
+   * @example "KC"
+   */
+  shortCode: string;
+  /**
+   * Timestamp when the configuration was created
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  created?: string;
+  /**
+   * Timestamp when the configuration was last modified
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  modified?: string;
+}
+
 /** Label model */
 export interface Label {
   /**
@@ -162,7 +162,7 @@ export interface Label {
   displayName?: string;
   /**
    * Name for the label
-   * @example "keycard"
+   * @example "keyCard"
    */
   name: string;
   labels?: Label[];
@@ -251,7 +251,7 @@ export interface EmailIntegration {
 export interface Status {
   /**
    * Name for the status
-   * @example "statusname"
+   * @example "statusName"
    */
   name: string;
   /**
@@ -346,11 +346,11 @@ export interface ContactReason {
 export interface Category {
   /**
    * Name for the category
-   * @example "categoryname"
+   * @example "Category name"
    */
   name: string;
   /**
-   * Displayname for the category
+   * Display name for the category
    * @example "Displayed name"
    */
   displayName?: string;
@@ -378,7 +378,7 @@ export interface Type {
    */
   name: string;
   /**
-   * Displayname for the type
+   * Display name for the type
    * @example "Displayed name"
    */
   displayName?: string;
@@ -545,7 +545,7 @@ export interface Errand {
 export interface ExternalTag {
   /**
    * Key for external tag
-   * @example "caseid"
+   * @example "caseId"
    */
   key: string;
   /**
@@ -749,7 +749,6 @@ export interface CreateErrandNoteRequest {
   partyId?: string;
   /**
    * The note subject
-   * @max 255
    * @minLength 1
    * @maxLength 255
    * @example "This is a subject"
@@ -757,7 +756,6 @@ export interface CreateErrandNoteRequest {
   subject: string;
   /**
    * The note body
-   * @max 2048
    * @minLength 1
    * @maxLength 2048
    * @example "This is a note"
@@ -837,7 +835,7 @@ export interface EmailRequest {
    */
   sender: string;
   /**
-   * Optional displayname of sender on email. If left out, email will be displayed as sender name.
+   * Optional display name of sender on email. If left out, email will be displayed as sender name.
    * @example "Firstname Lastname"
    */
   senderName?: string;
@@ -874,15 +872,13 @@ export interface EmailRequest {
 export interface UpdateErrandNoteRequest {
   /**
    * The note subject
-   * @max 255
    * @minLength 1
    * @maxLength 255
    * @example "This is a subject"
    */
   subject: string;
   /**
-   * The note nody
-   * @max 2048
+   * The note body
    * @minLength 1
    * @maxLength 2048
    * @example "This is a note"
@@ -992,17 +988,17 @@ export interface PageErrand {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  sort?: SortObject[];
+  sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
   empty?: boolean;
 }
 
@@ -1014,16 +1010,14 @@ export interface PageableObject {
   pageSize?: number;
   /** @format int64 */
   offset?: number;
-  sort?: SortObject[];
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
-  direction?: string;
-  nullHandling?: string;
-  ascending?: boolean;
-  property?: string;
-  ignoreCase?: boolean;
+  empty?: boolean;
+  sorted?: boolean;
+  unsorted?: boolean;
 }
 
 /** Revision model */
@@ -1089,21 +1083,6 @@ export interface Operation {
 /** FindErrandNotesRequest model */
 export interface FindErrandNotesRequest {
   /**
-   * Context for note
-   * @example "SUPPORT"
-   */
-  context?: string;
-  /**
-   * Role of note creator
-   * @example "FIRST_LINE_SUPPORT"
-   */
-  role?: string;
-  /**
-   * Party id (e.g. a personId or an organizationId)
-   * @example "81471222-5798-11e9-ae24-57fa13b361e1"
-   */
-  partyId?: string;
-  /**
    * Page number
    * @format int32
    * @min 1
@@ -1120,6 +1099,21 @@ export interface FindErrandNotesRequest {
    * @example 100
    */
   limit?: number;
+  /**
+   * Context for note
+   * @example "SUPPORT"
+   */
+  context?: string;
+  /**
+   * Role of note creator
+   * @example "FIRST_LINE_SUPPORT"
+   */
+  role?: string;
+  /**
+   * Party id (e.g. a personId or an organizationId)
+   * @example "81471222-5798-11e9-ae24-57fa13b361e1"
+   */
+  partyId?: string;
 }
 
 /** FindErrandNotesResponse model */
@@ -1223,17 +1217,17 @@ export interface PageEvent {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
-  sort?: SortObject[];
+  sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
   empty?: boolean;
 }
 

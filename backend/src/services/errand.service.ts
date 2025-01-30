@@ -9,7 +9,7 @@ import { getLastUpdatedAdministrator } from './stakeholder.service';
 import { Errand as ErrandDTO, PatchErrandCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
 import { CASEDATA_NAMESPACE } from '@/config';
 
-const SERVICE = `case-data/9.0`;
+const SERVICE = `case-data/10.0`;
 
 export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) => Promise<boolean> = async (errand, user) => {
   const apiService = new ApiService();
@@ -35,6 +35,14 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
     ...(errandData.endDate && { endDate: errandData.endDate }),
     ...(errandData.diaryNumber && { diaryNumber: errandData.diaryNumber }),
     ...(errandData.phase && { phase: errandData.phase }),
+    ...(errandData.suspension && errandData.suspension.suspendedFrom && errandData.suspension.suspendedTo
+      ? {
+          suspension: {
+            suspendedFrom: errandData.suspension.suspendedFrom,
+            suspendedTo: errandData.suspension.suspendedTo,
+          },
+        }
+      : {}),
     ...(errandData.status && {
       statuses: errandData.status && [
         {

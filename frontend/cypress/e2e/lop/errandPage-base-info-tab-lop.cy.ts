@@ -21,7 +21,6 @@ import { mockAddress } from '../case-data/fixtures/mockAddress';
 import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 import { mockEmployee } from './fixtures/mockEmployee';
 
-////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Errand page', () => {
     beforeEach(() => {
@@ -124,7 +123,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="search-button-owner"').should('be.disabled');
       cy.get('[data-cy="personal-number-error-message"')
         .should('exist')
-        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ÅÅÅÅMMDD-XXXX)');
+        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
       cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="search-button-owner"').should('be.enabled');
       cy.get('[data-cy="personal-number-error-message"').should('not.exist');
@@ -305,6 +304,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
       // Submit it
       cy.get('[data-cy="submit-contact-person-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@patchErrandContacts').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(1);
         const s: SupportStakeholderFormModel = request.body.stakeholders[0];
@@ -313,7 +313,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.lastName).to.equal(mockAdressResponse.data.lastname);
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.role).to.equal('PRIMARY');
-        expect(s.stakeholderType).to.equal('PERSON');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
@@ -347,6 +346,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
       // Submit it
       cy.get('[data-cy="submit-contact-person-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@patchErrandContacts').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(1);
         const s: SupportStakeholderFormModel = request.body.stakeholders[0];
@@ -355,7 +355,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.lastName).to.equal(mockEmployee.data.lastname);
         expect(s.externalIdType).to.equal('EMPLOYEE');
         expect(s.role).to.equal('PRIMARY');
-        expect(s.stakeholderType).to.equal('PERSON');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
@@ -431,8 +430,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="contact-careOf"]').type('TestcareOf');
       cy.get('[data-cy="contact-zipCode"]').type('12345');
       // TODO Uncomment when city is added to the form
-      // cy.get('[data-cy="contact-city"]').type('Teststaden');
+      cy.get('[data-cy="contact-city"]').type('Teststaden');
       cy.get('[data-cy="submit-contact-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@patchErrandContacts').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(1);
         const s: SupportStakeholderFormModel = request.body.stakeholders[0];
@@ -442,10 +442,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.careOf).to.equal('TestcareOf');
         expect(s.zipCode).to.equal('12345');
         // TODO Uncomment when city is added to the form
-        // expect(s.city).to.equal('Teststaden');
+        expect(s.city).to.equal('Teststaden');
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.role).to.equal('PRIMARY');
-        expect(s.stakeholderType).to.equal('PERSON');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
@@ -482,6 +481,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       // TODO Uncomment when city is added to the form
       // cy.get('[data-cy="contact-city"]').type('Teststaden');
       cy.get('[data-cy="submit-contact-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@patchErrandContacts').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(1);
         const s: SupportStakeholderFormModel = request.body.stakeholders[0];
@@ -494,7 +494,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         // expect(s.city).to.equal('Teststaden');
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.role).to.equal('PRIMARY');
-        expect(s.stakeholderType).to.equal('PERSON');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
@@ -525,6 +524,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="contact-zipCode"]').type('12345');
       cy.get('[data-cy="contact-city"]').type('Teststaden');
       cy.get('[data-cy="submit-contact-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@patchErrandContacts').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(1);
         const s: SupportStakeholderFormModel = request.body.stakeholders[0];
@@ -536,24 +536,23 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.city).to.equal('Teststaden');
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.role).to.equal('CONTACT');
-        expect(s.stakeholderType).to.equal('PERSON');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
 
-    it('allows editing contact person information', () => {
+    it('allows editing primary contact person information', () => {
       cy.intercept('PATCH', '**/supporterrands/2281/3f0e57b2-2876-4cb8-000-537b5805be27', mockSupportErrand).as(
         'patchErrandContacts'
       );
-      // cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as('geterr2');
       cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('[data-cy="edit-stakeholder-button"]').first().click();
+      cy.get('[data-cy="edit-stakeholder-button-PRIMARY-0"]').click();
       cy.get('[data-cy="searchmode-selector-modal"]').should('not.exist');
       cy.get('[data-cy="contact-firstName"]').should('exist').clear().type('Test');
       cy.get('[data-cy="contact-lastName"]').should('exist').clear().type('Testsson');
       cy.get('[data-cy="submit-contact-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@updateErrand').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(mockSupportErrand.stakeholders.length);
         const s: SupportStakeholderFormModel = request.body.stakeholders[0];
@@ -561,7 +560,31 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.lastName).to.equal('Testsson');
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.role).to.equal('PRIMARY');
-        expect(s.stakeholderType).to.equal('PERSON');
+        expect([200, 304]).to.include(response && response.statusCode);
+      });
+    });
+
+    it('allows editing secondary contact person information', () => {
+      cy.intercept('PATCH', '**/supporterrands/2281/3f0e57b2-2876-4cb8-000-537b5805be27', mockSupportErrand).as(
+        'patchErrandContacts'
+      );
+      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.get('[data-cy="edit-stakeholder-button-CONTACT-0"]').click();
+      cy.get('[data-cy="searchmode-selector-modal"]').should('not.exist');
+      cy.get('[data-cy="contact-firstName"]').should('exist').clear().type('Test');
+      cy.get('[data-cy="contact-lastName"]').should('exist').clear().type('Testsson');
+      cy.get('[data-cy="role-select"]').should('exist').select('MANAGER');
+      cy.get('[data-cy="submit-contact-button"]').click();
+      cy.get('[data-cy="save-button"]').click();
+      cy.wait('@updateErrand').should(({ request, response }) => {
+        expect(request.body.stakeholders.length).to.equal(mockSupportErrand.stakeholders.length);
+        const s: SupportStakeholderFormModel = request.body.stakeholders[1];
+        expect(s.firstName).to.equal('Test');
+        expect(s.lastName).to.equal('Testsson');
+        expect(s.externalIdType).to.equal('PRIVATE');
+        expect(s.role).to.equal('MANAGER');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
@@ -599,12 +622,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           mockAdressResponse.data.addresses[0].city
       );
       cy.get('[data-cy="stakeholder-phone"]').should('exist');
-      cy.get('[data-cy="email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
+      cy.get('[data-cy="new-email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
       cy.get('[data-cy="add-email-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="newPhoneNumber"]').should('exist').type('70000000');
       cy.get('[data-cy="newPhoneNumber-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="submit-contact-person-button"]').should('exist').contains('Lägg till ärendeägare').click();
-
+      cy.get('[data-cy="save-button"]').click();
       cy.wait('@patchErrandContacts').should(({ request, response }) => {
         expect(request.body.stakeholders.length).to.equal(1);
         const m = mockAdressResponse.data;
@@ -612,7 +635,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.firstName).to.equal(m.givenname);
         expect(s.lastName).to.equal(m.lastname);
         expect(s.role).to.equal('PRIMARY');
-        expect(s.stakeholderType).to.equal('PERSON');
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.contactChannels[0].value).to.equal(Cypress.env('mockEmail'));
         expect(s.contactChannels[1].value).to.equal('+4670000000');

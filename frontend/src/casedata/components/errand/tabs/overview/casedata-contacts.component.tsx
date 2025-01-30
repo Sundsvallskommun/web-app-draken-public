@@ -10,7 +10,7 @@ import {
   editStakeholder,
   getOwnerStakeholder,
   getStakeholderRelation,
-  removeStakeholder
+  removeStakeholder,
 } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
@@ -147,7 +147,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
           data-cy={`rendered-${contact.roles[0]}`}
           className="bg-background-content border rounded-button "
         >
-          <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between">
+          <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
             <div className="font-bold text-small">
               {getStakeholderRelation(contact)
                 ? MEXRelation[getStakeholderRelation(contact)] || PTRelation[getStakeholderRelation(contact)]

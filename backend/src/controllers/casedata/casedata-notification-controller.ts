@@ -7,7 +7,7 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -63,6 +63,9 @@ export class PatchNotificationDto implements PatchNotification {
   @IsString()
   id?: string;
   @IsOptional()
+  @IsNumber()
+  errandId?: number;
+  @IsOptional()
   @IsString()
   ownerId?: string;
   @IsOptional()
@@ -86,7 +89,7 @@ export class PatchNotificationDto implements PatchNotification {
 export class CasedataNotificationController {
   private apiService = new ApiService();
   private namespace = CASEDATA_NAMESPACE;
-  SERVICE = `case-data/9.0`;
+  SERVICE = `case-data/10.0`;
 
   @Get('/casedatanotifications/:municipalityId')
   @OpenAPI({ summary: 'Get notifications' })

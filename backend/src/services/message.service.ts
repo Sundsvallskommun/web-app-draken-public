@@ -43,7 +43,7 @@ interface SmsMessage {
 }
 
 const NOTIFY_CONTACTS = false;
-const SERVICE = `case-data/9.0`;
+const SERVICE = `case-data/10.0`;
 const MESSAGING_SERVICE = `messaging/6.0`;
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
@@ -148,6 +148,7 @@ export const sendEmail = (
           header_message_Id: message.headers['MESSAGE_ID']?.[0],
           header_reply_to: message.headers['IN_REPLY_TO']?.[0],
           header_references: message.headers['REFERENCES']?.join(','),
+          email: message.emailAddress,
         },
         req.user,
       )
@@ -231,6 +232,7 @@ export const saveMessageOnErrand: (
     header_reply_to: string;
     header_references: string;
     mobileNumber?: string;
+    email?: string;
   },
   user: User,
 ) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
@@ -247,7 +249,6 @@ export const saveMessageOnErrand: (
     messageId: message.id,
     messageType: message.messageType || '',
     classification: message.messageClassification as unknown as Classification,
-    errandNumber: errand.errandNumber,
     direction: MessageRequestDirectionEnum.OUTBOUND,
     familyId: '',
     externalCaseId: errand.externalCaseId || '',
@@ -258,9 +259,10 @@ export const saveMessageOnErrand: (
     firstName: user.firstName,
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
+    recipients: message.email ? [message.email] : [],
     email: process.env.CASEDATA_SENDER_EMAIL || '',
     userId: '',
-    attachmentRequests: attachments.map(a => ({
+    attachments: attachments.map(a => ({
       content: a.content || a.base64Data,
       name: a.name || a.filename || a.fileName,
       contentType: a.contentType || a.mimeType,

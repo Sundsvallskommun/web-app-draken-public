@@ -9,7 +9,6 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
@@ -35,6 +34,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
+import { Role } from '@casedata/interfaces/role';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -529,6 +530,15 @@ export const MessageComposer: React.FC<{
 
           {contactMeans === 'email' || contactMeans === 'webmessage' ? (
             <>
+              {contactMeans === 'webmessage'
+                ? errand.stakeholders
+                    .filter((o) => o.roles.indexOf(Role.APPLICANT) !== -1)
+                    .map((filteredOwner, idx) => (
+                      <div key={`owner-${idx}`}>
+                        <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
+                      </div>
+                    ))
+                : null}
               <FormControl id="addExisting" className="w-full">
                 <FormLabel>Bilagor från ärendet</FormLabel>
                 <div className="flex gap-16">
@@ -724,7 +734,7 @@ export const MessageComposer: React.FC<{
               newAttachmentsFields.forEach((field) => {
                 appendMessageAttachment(field);
               });
-              setValue('newAttachments', []);
+
               closeAttachmentModal();
             }}
             data-cy="upload-button"

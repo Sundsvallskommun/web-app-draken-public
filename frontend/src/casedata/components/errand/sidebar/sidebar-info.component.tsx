@@ -9,6 +9,7 @@ import {
   getErrand,
   isErrandAdmin,
   isErrandLocked,
+  setSuspendedErrands,
   triggerErrandPhaseChange,
   updateErrandStatus,
   validateAction,
@@ -22,15 +23,20 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
+  Label,
   Modal,
   Select,
   Textarea,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
+import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -43,7 +49,7 @@ export const SidebarInfo: React.FC<{}> = () => {
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState<'status' | 'admin' | false>();
+  const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'suspend' | false>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
@@ -204,7 +210,10 @@ export const SidebarInfo: React.FC<{}> = () => {
     console.error('Something went wrong when saving');
   };
 
-  const { admin, status } = watch();
+  const { admin } = watch();
+
+  const status = useMemo(() => getValues().status, [getValues]);
+
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
 
@@ -309,6 +318,32 @@ export const SidebarInfo: React.FC<{}> = () => {
           message: 'Något gick fel när fasbytet inleddes',
           status: 'error',
         });
+        setIsLoading(false);
+      });
+  };
+
+  const activateErrand = () => {
+    setIsLoading('suspend');
+    setError(false);
+    return setSuspendedErrands(errand.id, municipalityId, ErrandStatus.ArendeInkommit, null, null)
+      .then((res) => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Ärendet återupptogs',
+          status: 'success',
+        });
+        setIsLoading(false);
+        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      })
+      .catch((e) => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när ärendet skulle återupptas',
+          status: 'error',
+        });
+        setError(true);
         setIsLoading(false);
       });
   };
@@ -446,30 +481,89 @@ export const SidebarInfo: React.FC<{}> = () => {
 
       <Divider className="my-20"></Divider>
 
-      <PhaseChanger />
-      {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
-        <Button
-          className="mt-16"
-          color="primary"
-          variant="secondary"
-          onClick={() => {
-            setModalIsOpen(true);
-            setCauseIsEmpty(false);
-          }}
-          disabled={
-            !(
-              uiPhase === UiPhase.granskning ||
-              uiPhase === UiPhase.utredning ||
-              uiPhase === UiPhase.beslut ||
-              uiPhase === UiPhase.uppfoljning
-            ) ||
-            !isErrandAdmin(errand, user) ||
-            isErrandLocked(errand)
-          }
-        >
-          Avsluta ärendet
-        </Button>
+      {errand?.status !== ErrandStatus.Parkerad ? (
+        <>
+          <PhaseChanger />
+          {isSuspendEnabled() && <SuspendErrandComponent disabled={false} />}
+        </>
+      ) : (
+        errand?.status === ErrandStatus.Parkerad && (
+          <>
+            <div className="flex">
+              <Label>
+                <LucideIcon size="1.5rem" name="circle-pause" />{' '}
+                {errand?.status === ErrandStatus.Parkerad ? 'Parkerat ' : 'Tilldelat '}
+              </Label>
+              <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
+            </div>
+            <p className="text-small">
+              {getValues('admin') === 'Välj handläggare' ? (
+                <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
+              ) : (
+                <span className="mb-24">
+                  <strong>{getValues('admin')}</strong>
+                  {errand?.status === ErrandStatus.Parkerad
+                    ? ' parkerade ärendet med en påminnelse '
+                    : ' tilldelades ärendet'}{' '}
+                  {errand.suspension.suspendedTo !== null
+                    ? dayjs(errand.suspension.suspendedTo).format('DD MMM, HH:mm')
+                    : errand?.status === ErrandStatus.Parkerad && '(datum saknas)'}
+                </span>
+              )}
+            </p>
+
+            <Button
+              className="mt-16"
+              color="vattjom"
+              data-cy="suspend-button"
+              leftIcon={<LucideIcon name="circle-play" />}
+              variant="secondary"
+              disabled={!allowed}
+              loading={isLoading === 'status'}
+              loadingText="Återupptar"
+              onClick={() => {
+                confirm
+                  .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      activateErrand();
+                    }
+                  });
+              }}
+            >
+              Återuppta ärende
+            </Button>
+          </>
+        )
       )}
+
+      {uiPhase !== UiPhase.slutfor &&
+        errand.phase !== ErrandPhase.verkstalla &&
+        errand.phase !== ErrandPhase.uppfoljning && (
+          <>
+            <Button
+              className="mt-16"
+              color="primary"
+              variant="secondary"
+              onClick={() => {
+                setModalIsOpen(true);
+                setCauseIsEmpty(false);
+              }}
+              disabled={
+                !(
+                  uiPhase === UiPhase.granskning ||
+                  uiPhase === UiPhase.utredning ||
+                  uiPhase === UiPhase.beslut ||
+                  uiPhase === UiPhase.uppfoljning
+                ) ||
+                !isErrandAdmin(errand, user) ||
+                isErrandLocked(errand)
+              }
+            >
+              Avsluta ärendet
+            </Button>
+          </>
+        )}
 
       <Modal
         label="Avsluta ärendet"

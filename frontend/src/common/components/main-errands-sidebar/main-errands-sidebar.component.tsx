@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
-import { isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -31,7 +31,7 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user }: AppContextInterface = useAppContext();
+  const { user, billingRecords }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const applicationName = getApplicationName();
@@ -93,22 +93,23 @@ export const MainErrandsSidebar: React.FC<{
             </FormProvider>
           )}
         </div>
-        {isLOP() && user.permissions?.canViewAttestations && getApplicationEnvironment() === 'TEST' && (
+        {attestationEnabled(user) && (
           <>
             <Divider />
             <div className="flex flex-col gap-8 py-24">
               <Button
                 onClick={() => setShowAttestationTable(true)}
                 leftIcon={<LucideIcon name="square-pen" />}
-                className="w-full text-right justify-between"
+                className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
               >
                 <span className="w-full flex justify-between">
                   Attestering
                   <Badge
-                  /* TODO inverted={button.key !== selectedErrandStatus}
-                color={button.key === selectedErrandStatus ? 'tertiary' : 'vattjom'}
-                counter={button.totalStatusErrands || '0'}*/
+                    className="min-w-fit px-4"
+                    inverted={!showAttestationTable}
+                    color={showAttestationTable ? 'tertiary' : 'vattjom'}
+                    counter={billingRecords.totalElements || '0'}
                   />
                 </span>
               </Button>

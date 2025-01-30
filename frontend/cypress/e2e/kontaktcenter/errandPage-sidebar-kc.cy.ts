@@ -15,7 +15,7 @@ import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressR
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
 import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
-import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
+import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
@@ -82,7 +82,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       });
     });
 
-    it.only('Can manage Handläggning', () => {
+    it('Can manage Handläggning', () => {
       const patchFacility = {
         id: 123,
         version: 1,
@@ -102,11 +102,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetAdminResponse
       ).as('setAdmin');
-      cy.intercept(
-        'PATCH',
-        '**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-        patchFacility
-      ).as('patchfacilities');
       cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -119,7 +114,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.wait('@setAdmin').then((interception) => {
         expect(interception?.response?.statusCode).to.eq(200);
       });
-      cy.wait('@patchfacilities');
 
       // Status
       cy.get(`[data-cy="status-input"]`).should('exist');
@@ -161,6 +155,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-modal-dialog').should('exist').contains('Parkera ärendet');
       cy.get('.sk-modal-dialog .sk-btn-primary').contains('Parkera ärende').click();
       const solveLables = [
+        { label: 'Hänvisat att återkomma', id: 'REFERRED_TO_RETURN' },
         { label: 'Hänvisat till intern service', id: 'INTERNAL_SERVICE' },
         { label: 'Hänvisat till självservice', id: 'SELF_SERVICE' },
         { label: 'Kopplat samtal', id: 'CONNECTED' },
@@ -233,6 +228,37 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="history-log"] div.sk-avatar').should('have.length', mockSupportHistory.totalElements);
       cy.get('[data-cy="history-log"] div button').first().click();
       cy.get('[data-cy="history-table-details-close-button"]').should('exist').contains('Stäng').click();
+    });
+
+    it('Can manage Vidarebefodra', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      cy.intercept(
+        'POST',
+        `**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/forward`,
+        mockForwardSupportErrandToMEX
+      ).as('postMessage');
+
+      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Vidarebefordra ärendet').click();
+      cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
+      cy.get('[data-cy="resolution-input"]').should('exist').select('Mark och exploatering (MEX)');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
+
+      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Vidarebefordra ärende').click();
+
+      cy.get('.sk-dialog').should('exist').contains('Vill du vidarebefordra ärendet?');
+      cy.get('.sk-dialog .sk-btn-secondary').contains('Nej').should('exist');
+      cy.get('.sk-dialog .sk-btn-primary').contains('Ja').should('exist').click();
+      cy.wait('@postMessage').then(({ request }) => {
+        expect(request.body.department).to.equal('MEX');
+        expect(request.body.recipient).to.equal('DEPARTMENT');
+      });
+      cy.wait('@getErrand');
     });
   });
 });

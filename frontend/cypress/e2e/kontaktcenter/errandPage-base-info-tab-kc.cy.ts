@@ -115,29 +115,28 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
-      // TODO skip validation for now due to mixed AD/personNumber search
       // Person
-      // cy.get('[data-cy="contact-personNumber-owner"]').type('WORD!');
-      // cy.get('[data-cy="search-button-owner"]').should('be.disabled');
-      // cy.get('[data-cy="personal-number-error-message"]')
-      //   .should('exist')
-      //   .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: 19YYMMDD-NNNN)');
-      // cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
-      // cy.get('[data-cy="search-button-owner"]').should('be.enabled');
-      // cy.get('[data-cy="personal-number-error-message"]').should('not.exist');
+      cy.get('[data-cy="contact-personNumber-owner"]').type('WORD!');
+      cy.get('[data-cy="search-button-owner"]').should('be.disabled');
+      cy.get('[data-cy="personal-number-error-message"]')
+        .should('exist')
+        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
+      cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
+      cy.get('[data-cy="search-button-owner"]').should('be.enabled');
+      cy.get('[data-cy="personal-number-error-message"]').should('not.exist');
 
       // Enterprise
       cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
       cy.get('[data-cy="contact-orgNumber-owner"]').type('WORD!');
       cy.get('[data-cy="org-number-error-message"]')
         .should('exist')
-        .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: KKLLMM-NNNN)');
+        .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
       cy.get('[data-cy="contact-orgNumber-owner"]')
         .clear()
         .type(Cypress.env('mockOrganizationNumber').replace('-', ''));
       cy.get('[data-cy="org-number-error-message"]')
         .should('exist')
-        .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: KKLLMM-NNNN)');
+        .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
       cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber'));
       cy.get('[data-cy="search-button-owner"]').should('be.enabled');
       cy.get('[data-cy="org-number-error-message"]').should('not.exist');
@@ -148,7 +147,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="search-button-owner"]').should('be.disabled');
       cy.get('[data-cy="org-number-error-message"]')
         .should('exist')
-        .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: KKLLMM-NNNN)');
+        .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
       cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber'));
       cy.get('[data-cy="search-button-owner"]').should('be.enabled');
       cy.get('[data-cy="org-number-error-message"]').should('not.exist');
@@ -603,7 +602,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('[data-cy="edit-stakeholder-button"]').first().click();
+      cy.get('[data-cy="edit-stakeholder-button-CONTACT-0"]').first().click();
       cy.get('[data-cy="searchmode-selector-modal"]').should('not.exist');
       cy.get('[data-cy="contact-firstName"]').should('exist').clear().type('Test');
       cy.get('[data-cy="contact-lastName"]').should('exist').clear().type('Testsson');
@@ -641,7 +640,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithOrganizationStakeholder');
-      cy.get('[data-cy="edit-stakeholder-button"]').first().click();
+      cy.get('[data-cy="edit-stakeholder-button-PRIMARY-0"]').first().click();
       cy.get('[data-cy="searchmode-selector-modal"]').should('not.exist');
       cy.get('[data-cy="contact-organizationNumber"]').should('exist').and('have.value', '000000-0000');
       cy.get('[data-cy="contact-organizationName"]').should('exist').and('have.value', 'Testbolaget');
@@ -685,7 +684,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
           mockAdressResponse.data.addresses[0].city
       );
       cy.get('[data-cy="stakeholder-phone"]').should('exist');
-      cy.get('[data-cy="email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
+      cy.get('[data-cy="new-email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
       cy.get('[data-cy="add-email-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="newPhoneNumber"]').should('exist').type('70000000');
       cy.get('[data-cy="newPhoneNumber-button"]').should('exist').contains('Lägg till').click();
@@ -699,7 +698,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="stakeholder-phone"]').contains('+4670000000');
     });
 
-    it.only('make contact to errande owner', () => {
+    it('make contact to errande owner', () => {
       cy.intercept('PATCH', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin', {
         ...mockSupportErrand,
         id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
@@ -781,18 +780,22 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
         patchFacility
       ).as('patchfacilities');
+      cy.intercept('GET', '**/estateByPropertyDesignation/Balder%201', mockFacilitiesData).as(
+        'getFacilityByDesignationBalder1'
+      );
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       // add
       cy.get('[data-cy="facility-disclosure"]').click();
-      cy.get('[data-cy="facility-search"]').type('Balder 1', { force: true });
-      cy.get('[data-cy="suggestion-list"] label').eq(0).contains('SUNDSVALL BALDER 1').should('exist');
+      cy.get('[data-cy="facility-search"]').focus().type('Balder 1', { delay: 100 });
+      cy.wait('@getFacilityByDesignationBalder1');
+      cy.get('[data-cy="suggestion-list"] label').eq(0).contains('BALDER 1').should('exist');
       cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').should('be.disabled');
       cy.get('.sk-form-combobox-list-option').contains('BALDER 1').click();
+      cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').should('be.enabled');
 
       // check
-      cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').should('be.enabled');
       cy.get('[data-cy="facility-table"]').contains('Visa fastighetsinformation');
       cy.get('[data-cy="facility-table"]').contains('SUNDSVALL BALDER 1');
 

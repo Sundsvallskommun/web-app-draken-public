@@ -60,7 +60,7 @@ export type AttachmentCategory =
   | 'INQUIRY_LAND_SALE'
   | 'LAND_PURCHASE_REQUEST'
   | 'RECEIVED_MAP'
-  | 'PROTOCOL'
+  | 'MEX_PROTOCOL'
   | 'ROAD_ALLOWANCE_APPROVAL'
   | 'PREVIOUS_AGREEMENT'
   | 'TERMINATION_OF_HUNTING_RIGHTS'
@@ -89,7 +89,7 @@ export enum AttachmentLabels {
   'LAND_PURCHASE_REQUEST' = 'Förfrågan markköp',
   'ROAD_ALLOWANCE_APPROVAL' = 'Godkännande för vägbidrag',
   'RECEIVED_MAP' = 'Karta inkommen',
-  'PROTOCOL' = 'Protokoll',
+  'MEX_PROTOCOL' = 'Protokoll',
   'PREVIOUS_AGREEMENT' = 'Tidigare avtal',
   'TERMINATION_OF_HUNTING_RIGHTS' = 'Uppsägning jakträtt',
   'OTHER' = 'Övrigt',
@@ -130,7 +130,7 @@ export const getAttachmentKey: (label: string) => AttachmentCategory = (label) =
     case 'Karta inkommen':
       return 'RECEIVED_MAP';
     case 'Protokoll':
-      return 'PROTOCOL';
+      return 'MEX_PROTOCOL';
     case 'Tidigare avtal':
       return 'PREVIOUS_AGREEMENT';
     case 'Uppsägning jakträtt':
@@ -374,6 +374,7 @@ export const fetchAttachment: (
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
+
   const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
@@ -384,19 +385,42 @@ export const fetchAttachment: (
     });
 };
 
-export const fetchErrandAttachments: (municipalityId: string, errandNumber: string) => Promise<ApiResponse<Attachment[]>> = (
-  municipalityId,
-  errandNumber
-) => {
-  if (!errandNumber) {
+export const fetchErrandAttachments: (
+  municipalityId: string,
+  errandId: number
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId) => {
+  if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/attachments/errand/${errandNumber}`;
+  const url = `casedata/${municipalityId}/errand/${errandId}/attachments`;
   return apiService
     .get<ApiResponse<Attachment[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching attachments for errand: ', errandNumber);
+      console.error('Something went wrong when fetching attachments for errand: ', errandId);
+      return { data: [], message: 'error' };
+    });
+};
+
+export const messageAttachment: (
+  municipalityId: string,
+  errandId: number,
+  messageId: string,
+  attachmentId: string
+) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, messageId, attachmentId) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot fetch. Returning.');
+  }
+  if (!attachmentId) {
+    console.error('No attachment id found, cannot fetch. Returning.');
+  }
+
+  const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
+  return apiService
+    .get<any>(url)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching attachment');
       return { data: [], message: 'error' };
     });
 };

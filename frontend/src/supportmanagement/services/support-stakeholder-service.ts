@@ -3,11 +3,11 @@ import { SupportAdmin } from './support-admin-service';
 import {
   ContactChannelType,
   SupportErrand,
-  SupportStakeholder,
   SupportStakeholderFormModel,
   SupportStakeholderRole,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
+import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export const getAdminName = (a: SupportAdmin, r: SupportErrand) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;
@@ -32,8 +32,8 @@ export const applicantContactChannel = (errand: SupportErrand) => {
   }
 
   const contactChannel =
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL) ||
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE);
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL || c.type ===  ContactChannelType.Email) ||
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone);
 
   if (!contactChannel) {
     return { contactMeans: ContactChannelType.EMAIL, values: [] };
@@ -72,7 +72,6 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: SupportStakehold
       parameters.push({ key: 'administrationName', values: [c.administrationName], displayName: 'Förvaltningsnamn' });
     }
     const stakeholder: SupportStakeholder = {
-      stakeholderType: mapExternalIdTypeToStakeholderType(c),
       externalId: c.externalId || c.organizationNumber,
       externalIdType: c.externalIdType,
       role,
@@ -85,8 +84,8 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: SupportStakehold
       careOf: c.careOf,
       country: 'SVERIGE',
       contactChannels: [
-        ...c.emails.map((e) => ({ type: 'Email', value: e.value })),
-        ...c.phoneNumbers.map((e) => ({ type: 'Phone', value: trimPhoneNumber(e.value) })),
+        ...c.emails.map((e) => ({ type: ContactChannelType.EMAIL, value: e.value })),
+        ...c.phoneNumbers.map((e) => ({ type: ContactChannelType.PHONE, value: trimPhoneNumber(e.value) })),
       ],
       parameters,
     };
@@ -105,7 +104,7 @@ export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormMod
     }
   }
   data.contacts?.forEach((c) => {
-    const stakeholder = buildStakeholder(c, SupportStakeholderRole.CONTACT);
+    const stakeholder = buildStakeholder(c, c.role as SupportStakeholderRole);
     if (stakeholder) {
       stakeholders.push(stakeholder);
     }

@@ -2,7 +2,6 @@ import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/me
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { sendAttachments } from '@casedata/services/casedata-attachment-service';
-import { MessageResponse } from '@common/data-contracts/case-data/data-contracts';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -10,6 +9,7 @@ import { isMEX } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
   municipalityId,
@@ -107,6 +107,7 @@ export const sendMessage: (
 
               sendAttachments(municipalityId, errand.id, errand.errandNumber, attachmentsToSave);
             }
+            data.newAttachments = [];
 
             return true;
           })
@@ -233,7 +234,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
     .then((res) => {
       return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
     })
@@ -242,7 +243,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
       return tree;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);
+      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
       throw e;
     });
 };
@@ -255,7 +256,7 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/messages/${errand?.errandNumber}`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
     .then((res) => {
       const list: MessageResponse[] = res.data.data.sort((a, b) =>
         dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0

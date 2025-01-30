@@ -85,7 +85,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         { key: 'ledningar', label: 'Ledningar' },
         { key: 'expenses', label: 'Kostnader' },
         { key: 'pollution', label: 'Markföroreningar' },
-        { key: 'upphorande', label: 'Upphörande och återställning' },
+        { key: 'upphorande', label: 'Arrendets upphörande och återställning av området' },
         { key: 'damages', label: 'Skada och ansvar' },
         { key: 'special', label: 'Särskilda bestämmelser' },
         { key: 'jordabalk', label: 'Hänvisning till Jordabalken' },
@@ -111,7 +111,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="costs-disclosure"]').contains('Kostnader').should('exist');
       cy.get('[data-cy="soil-pollution-disclosure"]').contains('Markföroreningar').should('exist');
       cy.get('[data-cy="termination-reinstatement-disclosure"]')
-        .contains('Upphörande och återställning')
+        .contains('Arrendets upphörande och återställning av området')
         .should('exist');
       cy.get('[data-cy="damages-disclosure"]').contains('Skada och ansvar').should('exist');
       cy.get('[data-cy="special-provisions-disclosure"]').contains('Särskilda bestämmelser').should('exist');
@@ -365,9 +365,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get(`[data-cy="${r}-row"] [type="checkbox"]`).should('exist').should('have.value', r).check({ force: true });
         if (r !== rows[4] && r !== rows[3]) {
           cy.get(`[data-cy="${r}-row"] [type="text"]`).should('exist').type('1200');
+        } else if (r === rows[3]) {
+          cy.get(`[data-cy="previouslyPaid-from-input"]`).click().clear().type('2024-01-01');
+          cy.get(`[data-cy="previouslyPaid-to-input"]`).click().clear().type('2024-12-01');
         } else if (r === rows[4]) {
           cy.get(`[data-cy="${r}-row"] select#noticePeriod`).should('not.be.disabled').select(2);
-          cy.get(`[data-cy="${r}-row"] [type="text"]`).should('exist').clear().type('1200');
         }
 
         cy.get('[data-cy="paymentPeriod"] [type="radio"]').eq(0).should('have.value', 'year').check();
@@ -590,7 +592,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           key: 'upphorandeTerms.condition.noRefundLeaseFee',
           header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
           conditionText:
-            'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kr',
+            'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
           extraField: {
             key: 'upphorandeTerms.noRefundLeaseFeeAmount',
             placeholder: 'SEK',

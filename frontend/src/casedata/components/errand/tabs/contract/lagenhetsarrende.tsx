@@ -18,6 +18,7 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
+  DatePicker,
   Disclosure,
   FormControl,
   FormLabel,
@@ -31,6 +32,8 @@ import {
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
+import sanitized from '@common/services/sanitizer-service';
+import dayjs from 'dayjs';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -291,6 +294,41 @@ export const Lagenhetsarrende: React.FC<{
     setUnsaved(true);
   };
 
+  const renderSignatures = (relationType) => {
+    return signatures
+      .map((signature) => {
+        const stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
+        const relation = getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : '';
+        if (relation === relationType) {
+          return `<div style="display:inline-block;margin-right:20px;">
+            <p><b>${relation}</b></p><br>
+            <p>Ort och datum:</p><br>
+            <p>.........................................................</p>
+            <p>${
+              stakeholder.firstName
+                ? `${stakeholder.firstName} ${stakeholder.lastName}`
+                : `${stakeholder.organizationName}`
+            }</p><br><br>
+            </div>`;
+        }
+        return '';
+      })
+      .join('');
+  };
+
+  const renderEmptySignatures = (relation, rows) => {
+    let emptyRows = '';
+    for (let i = 0; i < rows; i++) {
+      emptyRows += `<div style="display:inline-block;margin-right:20px;">
+            <p><b>${relation}</b></p><br>
+            <p>Ort och datum:</p><br>
+            <p>.........................................................</p>
+            <br style="margin-top:2.5px;"></p><br><br>
+            </div>`;
+    }
+    return emptyRows;
+  };
+
   const saveButton = (inSection) => {
     return (
       <div className="my-md">
@@ -302,7 +340,7 @@ export const Lagenhetsarrende: React.FC<{
               disabled={!allowed}
               onClick={() => {
                 setIsLoading(true);
-                onSave(getValues()).then(() => {
+                onSave({ ...getValues(), signature }).then(() => {
                   setIsLoading(undefined);
                   setTextIsDirty(false);
                 });
@@ -452,6 +490,8 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="area-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
         label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Komplett' : ''}
+        labelColor={watch().omrade?.length > 0 ? 'success' : `warning`}
+        initalOpen={watch().omrade?.length > 0}
         color="gronsta"
         variant="alt"
         onClick={() => {
@@ -512,9 +552,7 @@ export const Lagenhetsarrende: React.FC<{
                 </FormControl>
               </FormControl> */}
               <FormControl>
-                <FormLabel>
-                  Ange vilka arrendeområdet ligger inom [[[fastighet/erna:]]] (hämtad från uppgifter)
-                </FormLabel>
+                <FormLabel>Ange vilka fastighet/er som avtalet omfattar</FormLabel>
                 {errand.facilities?.length > 0 ? (
                   getErrandPropertyDesignations(errand).map((p, idx) => (
                     <Checkbox
@@ -550,7 +588,7 @@ export const Lagenhetsarrende: React.FC<{
                 />
               </FormControl>
               <FormControl id="mapAttachments" className="w-full">
-                <FormLabel>Ange kartbilaga/or där områdets läge är skrafferat och märkt</FormLabel>
+                <FormLabel>Området är märkt med bokstav</FormLabel>
                 <Input
                   value={getValues().omradeTerms?.mapAttachments}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -558,15 +596,15 @@ export const Lagenhetsarrende: React.FC<{
                   }}
                 />
               </FormControl>
-              {/* <FormControl id="mapAttachmentReference" className="w-full">
-                <FormLabel>Ange referenser till hur området skrafferat och märkt i bilagan/or</FormLabel>
+              <FormControl id="mapAttachmentReference" className="w-full">
+                <FormLabel>Nummer på kartbilaga</FormLabel>
                 <Input
                   value={getValues().omradeTerms?.mapAttachmentReference}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setValue('omradeTerms.mapAttachmentReference', e.target.value);
                   }}
                 />
-              </FormControl> */}
+              </FormControl>
               <Button
                 size="md"
                 onClick={(e) => {
@@ -574,11 +612,18 @@ export const Lagenhetsarrende: React.FC<{
                   e.stopPropagation();
                   // const content = `<strong>Område</strong>
                   // <p>Typ av område: ${getValues().omradeTerms?.areaType}</p><br />
-                  const content = `<p>Fastigheter: ${
-                    selectedProperties?.length > 0 ? selectedProperties.join(', ') : '(saknas)'
-                  }</p><br />
-                  <p>Areal: ${getValues().omradeTerms?.areaSize}</p><br />
-                  <p>Kartbilaga: ${getValues().omradeTerms?.mapAttachments}</p><br />`;
+                  const content = `<p>Arrendeområdet ligger inom fastigheten: </p>
+                    <ul>
+                    ${
+                      selectedProperties?.length > 0
+                        ? selectedProperties.map((property) => `<li>${property}</li>`).join('')
+                        : '<li>(saknas)</li>'
+                    }
+                    </ul>
+                    <p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm.</p>
+                    <p>Området är märkt ${getValues().omradeTerms?.mapAttachments} enligt kartbilaga ${
+                    getValues().omradeTerms?.mapAttachmentReference
+                  }.</p><br />`;
                   // <p>Referens till kartbilaga: ${getValues().omradeTerms?.mapAttachmentReference}</p><br />`;
                   setOmrade(content);
                   setShowOmrade(false);
@@ -611,6 +656,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="purpose-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ändamål</h2>}
         label={doneMark.findIndex((temp) => temp === 'andamal') !== -1 ? 'Komplett' : ''}
+        labelColor={watch().andamal?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().andamal?.length > 0}
         color="gronsta"
         variant="alt"
@@ -825,7 +871,7 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'andamalTerms.condition.consent',
                       header: 'Fastighetsägarens medgivande',
-                      conditionText: 'Området får ej utan fastighetsägarens medgivande användas till annat ändamål',
+                      conditionText: 'Området får ej utan fastighetsägarens medgivande användas till annat ändamål.',
                     },
                     {
                       key: 'andamalTerms.condition.detailedplan',
@@ -841,24 +887,25 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = '<strong>Området får användas till följande ändamål</strong>';
-                  getValues('andamalTerms.condition.byggnad') ? (content += '<p>Byggnad</p>') : '';
-                  getValues('andamalTerms.condition.batplats') ? (content += '<p>Båtplats</p>') : '';
-                  getValues('andamalTerms.condition.idrattsandamal') ? (content += '<p>Idrottsändamål</p>') : '';
-                  getValues('andamalTerms.condition.led') ? (content += '<p>Led</p>') : '';
-                  getValues('andamalTerms.condition.parkering') ? (content += '<p>Parkering</p>') : '';
-                  getValues('andamalTerms.condition.skylt') ? (content += '<p>Skylt</p>') : '';
-                  getValues('andamalTerms.condition.snotipp') ? (content += '<p>Snötipp</p>') : '';
-                  getValues('andamalTerms.condition.tomtkomplement') ? (content += '<p>Tomtkomplement</p>') : '';
-                  getValues('andamalTerms.condition.upplag') ? (content += '<p>Upplag</p>') : '';
-                  getValues('andamalTerms.condition.uppstallning') ? (content += '<p>Uppställning</p>') : '';
-                  getValues('andamalTerms.condition.ytjordvarme') ? (content += '<p>Ytjordvärme</p>') : '';
-                  getValues('andamalTerms.condition.vag') ? (content += '<p>Väg</p>') : '';
+                  let content = `Området får användas till följande ändamål<ul>`;
+                  getValues('andamalTerms.condition.byggnad') ? (content += '<li>Byggnad</li>') : '';
+                  getValues('andamalTerms.condition.batplats') ? (content += '<li>Båtplats</li>') : '';
+                  getValues('andamalTerms.condition.idrattsandamal') ? (content += '<li>Idrottsändamål</li>') : '';
+                  getValues('andamalTerms.condition.led') ? (content += '<li>Led</li>') : '';
+                  getValues('andamalTerms.condition.parkering') ? (content += '<li>Parkering</li>') : '';
+                  getValues('andamalTerms.condition.skylt') ? (content += '<li>Skylt</li>') : '';
+                  getValues('andamalTerms.condition.snotipp') ? (content += '<li>Snötipp</li>') : '';
+                  getValues('andamalTerms.condition.tomtkomplement') ? (content += '<li>Tomtkomplement</li>') : '';
+                  getValues('andamalTerms.condition.upplag') ? (content += '<li>Upplag</li>') : '';
+                  getValues('andamalTerms.condition.uppstallning') ? (content += '<li>Uppställning</li>') : '';
+                  getValues('andamalTerms.condition.ytjordvarme') ? (content += '<li>Ytjordvärme</li>') : '';
+                  getValues('andamalTerms.condition.vag') ? (content += '<li>Väg</li>') : '';
                   getValues('andamalTerms.condition.atervinningsstation')
-                    ? (content += '<p>Återvinningsstation</p>')
+                    ? (content += '<li>Återvinningsstation</li>')
                     : '';
-                  getValues('andamalTerms.condition.other') ? (content += '<p>XXXX</p>') : '';
+                  getValues('andamalTerms.condition.other') ? (content += '<li>XXXX</li>') : '';
 
+                  content += `</ul>`;
                   // content += `<br />
                   // <strong>Förtydligande</strong><p>${getValues('andamalTerms.clarification')}</p><br />
                   // <p>Bygglov finns: ${getValues('andamalTerms.bygglovExists') ? 'Ja' : 'Nej'}</p>`;
@@ -900,6 +947,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="tenancy-period-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendetid och uppsägning</h2>}
         label={doneMark.findIndex((temp) => temp === 'arrendetid') !== -1 ? 'Komplett' : ''}
+        labelColor={watch().arrendetid?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendetid?.length > 0}
         color="gronsta"
         variant="alt"
@@ -982,13 +1030,13 @@ export const Lagenhetsarrende: React.FC<{
                   <FormLabel>Ange tid för automatisk förlängning</FormLabel>
                   <Select className="w-full" onChange={(e) => setValue('arrendetidTerms.autoRenewal', e.target.value)}>
                     <Select.Option key="" value="">
-                      Välj antal månader
+                      Välj antal år
                     </Select.Option>
                     <Select.Option value={1}>1</Select.Option>
                     <Select.Option value={2}>2</Select.Option>
                     <Select.Option value={3}>3</Select.Option>
-                    <Select.Option value={6}>6</Select.Option>
-                    <Select.Option value={12}>12</Select.Option>
+                    <Select.Option value={5}>5</Select.Option>
+                    <Select.Option value={10}>10</Select.Option>
                   </Select>
                 </FormControl>
               </div>
@@ -1024,42 +1072,32 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = `<strong>Arrendetid och uppsägning</strong>
-                  <p>Området upplåts ${getValues().arrendetidTerms?.startDate} till och med ${
+                  let content = `
+                  <p>Området upplåts fr.o.m ${getValues().arrendetidTerms?.startDate} t.o.m ${
                     getValues().arrendetidTerms?.endDate
-                  }</p><br /> 
-                  <p>Uppsägningstid: ${getValues().arrendetidTerms?.monthsNotice} ${
-                    getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
                   }</p>
                   <p>Uppsägningstiden är ömsesidig och avtalet ska sägas upp senast ${
                     getValues().arrendetidTerms?.monthsNotice
                   } ${
                     getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
-                  } före avtalstidens utgång.</p><br />
-                  <p>Arrendetid vid förlängning: ${getValues().arrendetidTerms?.autoRenewal} månader</p><br />
-
-                  <br />
+                  } före avtalstidens utgång.</p>
                   ${
                     getValues('arrendetidTerms.condition.extension')
-                      ? `<p>Om avtalet inte sägs upp förlängs arrendetiden automatiskt med ${
+                      ? `<p>Om avtalet inte sägs upp förlängs arrendetiden med ${
                           getValues().arrendetidTerms?.autoRenewal
-                        } månader i sänder med oförändrad uppsägningstid. Det betyder att om avtalet förlängs med ny arrendetid så ska avtalet sägas upp senast ${
+                        } år i sänder med oförändrad uppsägningstid. Det betyder att om avtalet förlängs med ny arrendetid så ska avtalet sägas upp senast ${
                           getValues().arrendetidTerms?.monthsNotice
                         } ${
                           getValues().arrendetidTerms?.monthsNotice === '1' ? 'månad' : 'månader'
                         } innan den nya arrendetidens utgång.</p>`
                       : ''
-                  } 
-
-                  <br /> 
-                  ${
+                  }${
                     getValues('arrendetidTerms.condition.end')
-                      ? `<p>${getValues('arrendetidTerms.condition.end').conditionText} </p><br />`
+                      ? `${getValues('arrendetidTerms.condition.end').conditionText} `
                       : ''
-                  }
-                  ${
+                  }${
                     getValues('arrendetidTerms.condition.termination')
-                      ? `<p>${getValues('arrendetidTerms.condition.termination').conditionText} </p><br />`
+                      ? `${getValues('arrendetidTerms.condition.termination').conditionText}`
                       : ''
                   }
                    `;
@@ -1093,7 +1131,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="lease-fee-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Arrendeavgift</h2>}
-        // label={watch().arrendeavgift?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'arrendeavgift') !== -1 ? 'Komplett' : ''}
         labelColor={watch().arrendeavgift?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().arrendeavgift?.length > 0}
         color="gronsta"
@@ -1152,7 +1190,7 @@ export const Lagenhetsarrende: React.FC<{
                         </Checkbox>
                       </FormControl>
                       <FormControl id="annualFee" className="flex-grow">
-                        <FormLabel>Ange avgift per år</FormLabel>
+                        <FormLabel>Ange avgift per år i kronor</FormLabel>
                         <Input
                           type="text"
                           disabled={getValues('arrendeavgiftTerms.yearly') !== 'true'}
@@ -1182,7 +1220,7 @@ export const Lagenhetsarrende: React.FC<{
                       </FormControl>
                       <div className="flex w-full justify-between">
                         <FormControl id="feeByYear" className="flex-grow max-w-[45%]">
-                          <FormLabel>Ange avgift för årtal</FormLabel>
+                          <FormLabel>Ange avgift för årtal i kronor</FormLabel>
                           <Input
                             type="text"
                             disabled={getValues('arrendeavgiftTerms.byYear') !== 'true'}
@@ -1220,7 +1258,7 @@ export const Lagenhetsarrende: React.FC<{
                         </Checkbox>
                       </FormControl>
                       <FormControl id="feeByLease" className="flex-grow">
-                        <FormLabel>Ange avgift för upplåtelsetid</FormLabel>
+                        <FormLabel>Ange avgift för upplåtelsetid i kronor</FormLabel>
                         <Input
                           type="text"
                           disabled={getValues('arrendeavgiftTerms.byLease') !== 'true'}
@@ -1245,9 +1283,35 @@ export const Lagenhetsarrende: React.FC<{
                             );
                           }}
                         >
-                          <strong>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</strong>
+                          <strong>För perioden XX – XX är avgiften betald av tidigare arrendator.</strong>
                         </Checkbox>
                       </FormControl>
+                      <div className="flex justify-between gap-32 w-full">
+                        <FormControl className="flex-grow max-w-[45%]">
+                          <FormLabel>Välj fr.o.m datum</FormLabel>
+                          <DatePicker
+                            value={getValues('arrendeavgiftTerms.prepaidFromDate')}
+                            disabled={getValues('arrendeavgiftTerms.prepaid') !== 'true'}
+                            onChange={(e) => setValue('arrendeavgiftTerms.prepaidFromDate', e.target.value)}
+                            data-cy="previouslyPaid-from-input"
+                            max={dayjs(getValues('arrendeavgiftTerms.prepaidToDate')).format('YYYY-MM-DD')}
+                          />
+                        </FormControl>
+                        <FormControl className="flex-grow max-w-[45%]">
+                          <FormLabel>Välj fr.o.m datum</FormLabel>
+                          <DatePicker
+                            value={getValues('arrendeavgiftTerms.prepaidToDate')}
+                            disabled={getValues('arrendeavgiftTerms.prepaid') !== 'true'}
+                            onChange={(e) => setValue('arrendeavgiftTerms.prepaidToDate', e.target.value)}
+                            data-cy="previouslyPaid-to-input"
+                            min={
+                              getValues('arrendeavgiftTerms.prepaidFromDate')
+                                ? dayjs(getValues('arrendeavgiftTerms.prepaidFromDate')).format('YYYY-MM-DD')
+                                : null
+                            }
+                          />
+                        </FormControl>
+                      </div>
                     </Table.Column>
                   </Table.Row>
                   <Table.Row data-cy="indexAdjustedFee-row">
@@ -1273,28 +1337,37 @@ export const Lagenhetsarrende: React.FC<{
                           id={`noticePeriod`}
                           className="flex-grow max-w-[45%]"
                           disabled={getValues('arrendeavgiftTerms.indexAdjustedFee') !== 'true'}
-                          onChange={(e) => setValue('arrendeavgiftTerms.indexYear', e.target.value)}
-                          // {...register('arrendeavgiftTerms.indexYear')}
                         >
                           <FormLabel>Välj årtal för beräkning</FormLabel>
-                          <Select className="w-full">
+                          <Select
+                            className="w-full"
+                            onChange={(e) => {
+                              setValue(
+                                'arrendeavgiftTerms.indexYear',
+                                Number(e.target.options[e.target.selectedIndex].text)
+                              );
+                              setValue('arrendeavgiftTerms.indexFee', Number(e.target.value));
+                            }}
+                          >
                             <Select.Option key="" value="">
                               Välj årtal
                             </Select.Option>
-                            <Select.Option value={2020}>2020</Select.Option>
-                            <Select.Option value={2021}>2021</Select.Option>
-                            <Select.Option value={2022}>2022</Select.Option>
-                            <Select.Option value={2023}>2023</Select.Option>
-                            <Select.Option value={2024}>2024</Select.Option>
+                            <Select.Option value={314.59}>2012</Select.Option>
+                            <Select.Option value={314.4}>2013</Select.Option>
+                            <Select.Option value={314.02}>2014</Select.Option>
+                            <Select.Option value={314.29}>2015</Select.Option>
+                            <Select.Option value={318}>2016</Select.Option>
+                            <Select.Option value={323.38}>2017</Select.Option>
+                            <Select.Option value={330.72}>2018</Select.Option>
+                            <Select.Option value={336.04}>2019</Select.Option>
+                            <Select.Option value={336.97}>2020</Select.Option>
+                            <Select.Option value={346.44}>2021</Select.Option>
+                            <Select.Option value={384.04}>2022</Select.Option>
+                            <Select.Option value={409.07}>2023</Select.Option>
+                            <Select.Option value={415.51}>2024</Select.Option>
+                            <Select.Option value={0}>2025</Select.Option>
+                            {/* Need correct value for 2025, fix when available */}
                           </Select>
-                        </FormControl>
-                        <FormControl
-                          id={`yearlyIndexAdjustedFee`}
-                          className="flex-grow max-w-[45%]"
-                          disabled={getValues('arrendeavgiftTerms.indexAdjustedFee') !== 'true'}
-                        >
-                          <FormLabel>Ange indexuppräkningstal</FormLabel>
-                          <Input type="text" placeholder="SEK" {...register('arrendeavgiftTerms.indexFee')} />
                         </FormControl>
                       </div>
                     </Table.Column>
@@ -1355,31 +1428,36 @@ export const Lagenhetsarrende: React.FC<{
                   let content = ``;
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgift per år: ${getValues('arrendeavgiftTerms.yearlyFee')}</p><br />`);
+                    (content += `<p>Avgift per år är: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
-                    (content += `<p>Avgift för årtal ${getValues(
-                      'arrendeavgiftTerms.associatedFeeYear'
-                    )} är ${getValues('arrendeavgiftTerms.feeByYear')}</p><br />`);
+                    (content += `<p>Avgift för år ${getValues('arrendeavgiftTerms.associatedFeeYear')} är ${getValues(
+                      'arrendeavgiftTerms.feeByYear'
+                    )} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
-                    (content += `<p>Avgift för upplåtelsetid: ${getValues('arrendeavgiftTerms.feeByLease')}</p><br />`);
+                    (content += `<p>Avgiften för upplåtelsetiden är ${getValues(
+                      'arrendeavgiftTerms.feeByLease'
+                    )} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
-                    (content += `<p>För perioden 20XXx-xx – 20XX-xx-xx är avgiften erlagd av tidigare arrendator.</p><br />`);
+                    (content += `<p>För perioden ${getValues('arrendeavgiftTerms.prepaidFromDate')} – ${getValues(
+                      'arrendeavgiftTerms.prepaidToDate'
+                    )} är avgiften erlagd av tidigare arrendator.</p><br />`);
 
                   getValues('arrendeavgiftTerms.indexAdjustedFee') === 'true' &&
-                    (content += `<p>Indexreglerad avgift: Ja</p><br />Avgiften ska i sin helhet indexregleras med hänsyn till konsumentprisindex (totalindex) enligt 1980 års indexserie. Basmånad för indexuppräkningen är oktober månad ${getValues(
+                    (content += `<p>Avgiften ska i sin helhet indexregleras med hänsyn till konsumentprisindex (totalindex) enligt 1980 års indexserie. Basmånad för indexuppräkningen är oktober månad ${getValues(
                       'arrendeavgiftTerms.indexYear'
                     )} (indextal ${getValues(
                       'arrendeavgiftTerms.indexFee'
-                    )}). Reglering av avgiften ska ske vid varje års början med hänsyn tagen till indextalet för oktober månad närmast årsskiftet. Avgiften ska dock aldrig sättas lägre än den i avtalet angivna grundavgiften.</p><br />`);
+                    )}). Reglering av avgiften ska ske vid varje års början med hänsyn tagen till indextalet för oktober månad närmast årsskiftet. Avgiften ska dock aldrig sättas lägre än den i avtalet angivna grundavgiften.</p>`);
 
                   content += `<p>Avgiften ska erläggas ${
                     getValues('arrendeavgiftTerms.yearOrQuarter') === 'year' ? 'årsvis' : 'kvartalsvis'
-                  } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}</p>`;
+                  } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}.</p>`;
 
                   setArrendeavgift(content);
+                  setValue('arrendeavgift', content);
                   setShowArrendeavgift(false);
                 }}
               >
@@ -1409,7 +1487,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="shovel" />} />}
         data-cy="building-permits-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Bygglov och tillstånd</h2>}
-        // label={watch().bygglov?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'bygglov') !== -1 ? 'Komplett' : ''}
         labelColor={watch().bygglov?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().bygglov?.length > 0}
         color="gronsta"
@@ -1459,8 +1537,7 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'bygglovTerms.condition.buildingOwnership',
                       header: 'Arrendator äger byggnader som står inom området',
-                      conditionText:
-                        'Arrendatorn äger byggnader som står inom området, bygglov beviljat enligt [[BYGG 20XX – XXXX]].',
+                      conditionText: 'Arrendatorn äger byggnader som står inom området.',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
@@ -1471,19 +1548,14 @@ export const Lagenhetsarrende: React.FC<{
                   e.preventDefault();
                   e.stopPropagation();
                   const content = `
-                  <strong>Bygglov och tillstånd</strong><br /><br />
                   ${
                     getValues('bygglovTerms.condition.permitFees')
-                      ? `<p><strong>${getValues('bygglovTerms.condition.permitFees').header}</strong></p><p>${
-                          getValues('bygglovTerms.condition.permitFees').conditionText
-                        }</p>`
+                      ? `<p>${getValues('bygglovTerms.condition.permitFees').conditionText}</p>`
                       : ''
-                  }<br />
+                  }
                   ${
                     getValues('bygglovTerms.condition.buildingOwnership')
-                      ? `<p><strong>${getValues('bygglovTerms.condition.buildingOwnership').header}</strong></p><p>${
-                          getValues('bygglovTerms.condition.buildingOwnership').conditionText
-                        }</p>`
+                      ? `<p>${getValues('bygglovTerms.condition.buildingOwnership').conditionText}</p>`
                       : ''
                   }<br />
                   `;
@@ -1518,7 +1590,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="repeat" />} />}
         data-cy="assignment-subassignment-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Överlåtelse och underupplåtelse</h2>}
-        // label={watch().overlatelse?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'overlatelse') !== -1 ? 'Komplett' : ''}
         labelColor={watch().overlatelse?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().overlatelse?.length > 0}
         color="gronsta"
@@ -1577,9 +1649,7 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().overlatelseTerms.condition.subletting
-                      ? `<p>${getValues().overlatelseTerms.condition.subletting.header}</p><p>${
-                          getValues().overlatelseTerms.condition.subletting.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().overlatelseTerms.condition.subletting.conditionText}</p><br />`
                       : ''
                   }
                   
@@ -1615,7 +1685,7 @@ export const Lagenhetsarrende: React.FC<{
         data-cy="enrollment-disclosure"
         icon={<Icon icon={<LucideIcon name="square-pen" />} />}
         header={<h2 className="text-h4-sm md:text-h4-md">Inskrivning</h2>}
-        // label={watch().inskrivning?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'inskrivning') !== -1 ? 'Komplett' : ''}
         labelColor={watch().inskrivning?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().inskrivning?.length > 0}
         color="gronsta"
@@ -1626,6 +1696,14 @@ export const Lagenhetsarrende: React.FC<{
       >
         <div className="flex flex-col gap-16">
           <div className="flex gap-18 justify-start">
+            <Button
+              color="vattjom"
+              inverted={true}
+              rightIcon={<LucideIcon name="pen" />}
+              onClick={() => setShowInskrivning(true)}
+            >
+              Fyll i villkor
+            </Button>
             <Checkbox
               data-cy="manual-text-checkbox-enrollment"
               onChange={() => {
@@ -1635,6 +1713,50 @@ export const Lagenhetsarrende: React.FC<{
               Redigera text manuellt
             </Checkbox>
           </div>
+          <Modal
+            show={showInskrivning}
+            onClose={() => setShowInskrivning(false)}
+            className="w-[56rem]"
+            label={'Villkor för inskrivning'}
+          >
+            <Modal.Content>
+              <Table dense background data-cy="inskrivning-table">
+                <Table.Header>
+                  <Table.HeaderColumn>Välj villkor för inskrivning</Table.HeaderColumn>
+                </Table.Header>
+                <Table.Body>
+                  {[
+                    {
+                      key: 'inskrivningTerms.condition.inskrivning',
+
+                      header: 'Avtal får inte inskrivas',
+                      conditionText: 'Detta avtal får inte inskrivas.',
+                    },
+                  ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
+                </Table.Body>
+              </Table>
+              <Button
+                size="md"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const content = `
+                  ${
+                    getValues().inskrivningTerms.condition.inskrivning
+                      ? `<p>${getValues().inskrivningTerms.condition.inskrivning.conditionText}</p><br />`
+                      : ''
+                  }
+                  
+              `;
+
+                  setInskrivning(content);
+                  setShowInskrivning(false);
+                }}
+              >
+                Importera
+              </Button>
+            </Modal.Content>
+          </Modal>
           <FormControl id="inskrivning" className="w-full">
             <Input type="hidden" {...register('inskrivning')} />
             <div className="h-[42rem] -mb-48" data-cy="enrollment-richtext-wrapper">
@@ -1657,7 +1779,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="person-standing" />} />}
         data-cy="condition-care-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skick och skötsel</h2>}
-        // label={watch().skick?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'skick') !== -1 ? 'Komplett' : ''}
         labelColor={watch().skick?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skick?.length > 0}
         color="gronsta"
@@ -1721,16 +1843,12 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().skickTerms.condition.nuisance
-                      ? `<p><strong>${getValues().skickTerms.condition.nuisance.header}</strong></p><p>${
-                          getValues().skickTerms.condition.nuisance.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().skickTerms.condition.nuisance.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().skickTerms.condition.accessibility
-                      ? `<p><strong>${getValues().skickTerms.condition.accessibility.header}</strong></p><p>${
-                          getValues().skickTerms.condition.accessibility.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().skickTerms.condition.accessibility.conditionText}</p>`
                       : ''
                   }
               `;
@@ -1765,7 +1883,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="slash" />} />}
         data-cy="wires-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Ledningar</h2>}
-        // label={watch().ledningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'ledningar') !== -1 ? 'Komplett' : ''}
         labelColor={watch().ledningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().ledningar?.length > 0}
         color="gronsta"
@@ -1824,9 +1942,7 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().ledningarTerms.condition.ledningar
-                      ? `<p><strong>${getValues().ledningarTerms.condition.ledningar.header}</strong></p><p>${
-                          getValues().ledningarTerms.condition.ledningar.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().ledningarTerms.condition.ledningar.conditionText}</p><br />`
                       : ''
                   }
 
@@ -1862,7 +1978,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="calculator" />} />}
         data-cy="costs-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Kostnader</h2>}
-        // label={watch().kostnader?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'kostnader') !== -1 ? 'Komplett' : ''}
         labelColor={watch().kostnader?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().kostnader?.length > 0}
         color="gronsta"
@@ -1959,7 +2075,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="mountain-snow" />} />}
         data-cy="soil-pollution-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Markföroreningar</h2>}
-        // label={watch().markfororeningar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'markfororeningar') !== -1 ? 'Komplett' : ''}
         labelColor={watch().markfororeningar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().markfororeningar?.length > 0}
         color="gronsta"
@@ -2015,8 +2131,9 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'markfororeningarTerms.condition.testDone',
                       header: 'Miljöprovtagning och rapport',
-                      conditionText:
-                        'Miljöprovtagning av området är utförd [[2024-XX-XX]]. Arrendatorn har tagit del av provtagningsrapporten.',
+                      conditionText: `Miljöprovtagning av området är utförd ${
+                        getValues().markfororeningarTerms.condition.testDone?.date ?? 'åååå-mm-dd'
+                      }. Arrendatorn har tagit del av provtagningsrapporten.`,
                     },
                     {
                       key: 'markfororeningarTerms.condition.testingAtEnd',
@@ -2041,43 +2158,29 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().markfororeningarTerms.condition.pollutionAvoidance
-                      ? `<p><strong>${
-                          getValues().markfororeningarTerms.condition.pollutionAvoidance.header
-                        }</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.pollutionAvoidance.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.pollutionAvoidance.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.verificationResponsibility
-                      ? `<p><strong>${
-                          getValues().markfororeningarTerms.condition.verificationResponsibility.header
-                        }</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.verificationResponsibility.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.verificationResponsibility.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testDone
-                      ? `<p><strong>${getValues().markfororeningarTerms.condition.testDone.header}</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.testDone.conditionText
-                        }</p><br />`
+                      ? `<p>Miljöprovtagning av området är utförd ${
+                          getValues().markfororeningarTerms.condition.testDone?.date ?? 'åååå-mm-dd'
+                        }. Arrendatorn har tagit del av provtagningsrapporten.</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testingAtEnd
-                      ? `<p><strong>${getValues().markfororeningarTerms.condition.testingAtEnd.header}</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.testingAtEnd.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtEnd.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().markfororeningarTerms.condition.testingAtTransfer
-                      ? `<p><strong>${
-                          getValues().markfororeningarTerms.condition.testingAtTransfer.header
-                        }</strong></p><p>${
-                          getValues().markfororeningarTerms.condition.testingAtTransfer.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().markfororeningarTerms.condition.testingAtTransfer.conditionText}</p>`
                       : ''
                   }
                   `;
@@ -2111,8 +2214,8 @@ export const Lagenhetsarrende: React.FC<{
       <Disclosure
         icon={<Icon icon={<LucideIcon name="undo" />} />}
         data-cy="termination-reinstatement-disclosure"
-        header={<h2 className="text-h4-sm md:text-h4-md">Upphörande och återställning</h2>}
-        // label={watch().upphorande?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        header={<h2 className="text-h4-sm md:text-h4-md">Arrendets upphörande och återställning av området</h2>}
+        label={doneMark.findIndex((temp) => temp === 'upphorande') !== -1 ? 'Komplett' : ''}
         labelColor={watch().upphorande?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().upphorande?.length > 0}
         color="gronsta"
@@ -2161,7 +2264,7 @@ export const Lagenhetsarrende: React.FC<{
                     },
                     {
                       key: 'upphorandeTerms.condition.restorationBuildingRemoval',
-                      header: 'Återställning och borttagning av byggnader',
+                      header: 'Återställning och städning inkl. byggnader',
                       conditionText:
                         'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Alla byggnader/anläggningar inom området ska tas bort. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har avflyttat från den i detta avtal angivna adressen',
                     },
@@ -2169,7 +2272,7 @@ export const Lagenhetsarrende: React.FC<{
                       key: 'upphorandeTerms.condition.noRefundLeaseFee',
                       header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
                       conditionText:
-                        'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kr',
+                        'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
                       /*extraField: {
                         key: 'upphorandeTerms.noRefundLeaseFeeAmount',
                         placeholder: 'SEK',
@@ -2182,12 +2285,6 @@ export const Lagenhetsarrende: React.FC<{
                       conditionText:
                         'När avtalet upphör ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
                     },
-                    {
-                      key: 'upphorandeTerms.condition.inspectionLandWater',
-                      header: 'Besiktning och friskrivning för mark- och vattenområden',
-                      conditionText:
-                        'Vid avtalets upphörande ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat mark- och vattenområde, dels för kostnader som arrendatorn nedlagt inom området',
-                    },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
               </Table>
@@ -2199,53 +2296,28 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().upphorandeTerms.condition.restorationCleaning
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.restorationCleaning.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.restorationCleaning.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.restorationCleaning.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().upphorandeTerms.condition.restorationBuildingRemoval
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.restorationBuildingRemoval.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.restorationBuildingRemoval.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.restorationBuildingRemoval.conditionText}</p>`
                       : ''
                   }
                   ${
                     getValues().upphorandeTerms.condition.noRefundLeaseFee
-                      ? `<p><strong>${getValues().upphorandeTerms.condition.noRefundLeaseFee.header}</strong></p><p>${
-                          getValues().upphorandeTerms.condition.noRefundLeaseFee.conditionText
-                        }</p><br />
+                      ? `<p>${getValues().upphorandeTerms.condition.noRefundLeaseFee.conditionText}</p>
                       ${
                         getValues().upphorandeTerms.noRefundLeaseFeeAmount
                           ? `<p><strong>Belopp för återbetalning:</strong> ${
                               getValues().upphorandeTerms.noRefundLeaseFeeAmount
                             }</p><br />`
                           : ''
-                      }
-                        `
+                      }`
                       : ''
-                  }
-                  ${
+                  }${
                     getValues().upphorandeTerms.condition.inspectionRequirements
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.inspectionRequirements.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.inspectionRequirements.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
-                    getValues().upphorandeTerms.condition.inspectionLandWater
-                      ? `<p><strong>${
-                          getValues().upphorandeTerms.condition.inspectionLandWater.header
-                        }</strong></p><p>${
-                          getValues().upphorandeTerms.condition.inspectionLandWater.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().upphorandeTerms.condition.inspectionRequirements.conditionText}</p>`
                       : ''
                   }
                   `;
@@ -2280,7 +2352,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="clipboard-list" />} />}
         data-cy="damages-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Skada och ansvar</h2>}
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'skadaansvar') !== -1 ? 'Komplett' : ''}
         labelColor={watch().skadaansvar?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().skadaansvar?.length > 0}
         color="gronsta"
@@ -2322,24 +2394,6 @@ export const Lagenhetsarrende: React.FC<{
                 <Table.Body>
                   {[
                     {
-                      key: 'skadaansvarTerms.condition.skadeaterstallning',
-                      header: 'Skadeåterställning och kostnadsansvar för arrendatorn',
-                      conditionText:
-                        'Arrendatorn ska för det fall det uppstår skador till följd av arrendatorns nyttjande av området ombesörja och bekosta återställande av skador. Fastighetsägaren äger annars rätt att vidta nödvändiga åtgärder på arrendatorns bekostnad.',
-                    },
-                    {
-                      key: 'skadaansvarTerms.condition.skadestandsskyldighet',
-                      header: 'Skadeståndsskyldighet och skydd mot tredjepartsanspråk för arrendatorn',
-                      conditionText:
-                        'Arrendatorn ska hålla fastighetsägaren fullt ut skadeslös för eventuella krav eller anspråk från myndighet eller tredje man till följd av den verksamhet arrendatorn bedriver på området, inklusive ansvar avseende miljöskada.',
-                    },
-                    {
-                      key: 'skadaansvarTerms.condition.befrielse',
-                      header: 'Befrielse från ansvar för fastighetsägaren vid myndighetsåtgärder',
-                      conditionText:
-                        'Fastighetsägaren svarar inte för olägenhet eller kostnader som orsakas arrendatorn till följd av myndighetsåtgärder eller liknande.',
-                    },
-                    {
                       key: 'skadaansvarTerms.condition.begransning',
                       header: 'Begränsning av fastighetsägarens ansvar för skador och krav mot arrendatorn',
                       conditionText:
@@ -2355,35 +2409,8 @@ export const Lagenhetsarrende: React.FC<{
                   e.stopPropagation();
                   const content = `
                   ${
-                    getValues().skadaansvarTerms.condition.skadeaterstallning
-                      ? `<p><strong>${
-                          getValues().skadaansvarTerms.condition.skadeaterstallning.header
-                        }</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.skadeaterstallning.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
-                    getValues().skadaansvarTerms.condition.skadestandsskyldighet
-                      ? `<p><strong>${
-                          getValues().skadaansvarTerms.condition.skadestandsskyldighet.header
-                        }</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.skadestandsskyldighet.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
-                    getValues().skadaansvarTerms.condition.befrielse
-                      ? `<p><strong>${getValues().skadaansvarTerms.condition.befrielse.header}</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.befrielse.conditionText
-                        }</p><br />`
-                      : ''
-                  }
-                  ${
                     getValues().skadaansvarTerms.condition.begransning
-                      ? `<p><strong>${getValues().skadaansvarTerms.condition.begransning.header}</strong></p><p>${
-                          getValues().skadaansvarTerms.condition.begransning.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().skadaansvarTerms.condition.begransning.conditionText}</p><br />`
                       : ''
                   }
                   `;
@@ -2425,7 +2452,7 @@ export const Lagenhetsarrende: React.FC<{
               : 'Övriga villkor'}{' '}
           </h2>
         }
-        // label={watch().skadaansvar?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'additionalTerms') !== -1 ? 'Komplett' : ''}
         labelColor={watch().additionalTerms?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().additionalTerms?.length > 0}
         color="gronsta"
@@ -2469,7 +2496,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
         data-cy="special-provisions-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Särskilda bestämmelser</h2>}
-        // label={watch().sarskilda?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'sarskilda') !== -1 ? 'Komplett' : ''}
         labelColor={watch().sarskilda?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().sarskilda?.length > 0}
         color="gronsta"
@@ -2563,7 +2590,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
         data-cy="soilbeam-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'jordabalken') !== -1 ? 'Komplett' : ''}
         labelColor={watch().jordabalken?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().jordabalken?.length > 0}
         color="gronsta"
@@ -2630,14 +2657,14 @@ export const Lagenhetsarrende: React.FC<{
                     getValues().jordabalkenTerms.condition.jordabalken
                       ? `<p>${getValues().jordabalkenTerms.condition.jordabalken.header}</p><p>${
                           getValues().jordabalkenTerms.condition.jordabalken.conditionText
-                        }</p><br />`
+                        }</p>`
                       : ''
                   }
                   ${
                     getValues().jordabalkenTerms.condition.replaces
                       ? `<p>${getValues().jordabalkenTerms.condition.replaces.header}</p><p>${
                           getValues().jordabalkenTerms.condition.replaces.conditionText
-                        }</p><br />`
+                        }</p>`
                       : ''
                   }
                   `;
@@ -2671,7 +2698,7 @@ export const Lagenhetsarrende: React.FC<{
         icon={<Icon icon={<LucideIcon name="pen" />} />}
         data-cy="signature-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Underskrifter</h2>}
-        // label={watch().jordabalken?.length > 0 ? <Icon size={18} name="check" /> : ''}
+        label={doneMark.findIndex((temp) => temp === 'signature') !== -1 ? 'Komplett' : ''}
         labelColor={watch().signature?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().signature?.length > 0}
         color="gronsta"
@@ -2688,17 +2715,18 @@ export const Lagenhetsarrende: React.FC<{
               rightIcon={<LucideIcon name="pen" />}
               onClick={() => setShowSignature(true)}
             >
-              Fyll i villkor
+              Välj villkor för underskrifter
             </Button>
-            <Checkbox
+            {/*             <Checkbox
               data-cy="manual-text-checkbox-signature"
               onChange={() => {
                 setEditSignature(!editSignature);
               }}
             >
               Redigera text manuellt
-            </Checkbox>
+            </Checkbox> */}
           </div>
+
           <Modal
             show={showSignature}
             onClose={() => setShowSignature(false)}
@@ -2716,7 +2744,7 @@ export const Lagenhetsarrende: React.FC<{
                       key: 'signatureTerms.condition.example',
                       header: 'Avtalsexemplar',
                       conditionText:
-                        'Detta avtal har upprättats i två likalydande exemplar varav säljare och köpare tagit varsitt. ',
+                        'Detta avtal har upprättats i två likalydande exemplar varav parterna tagit var sitt. ',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
@@ -2753,12 +2781,20 @@ export const Lagenhetsarrende: React.FC<{
               </Table>
 
               <FormControl id="areaSize" className="w-full">
-                <FormLabel>Ange antal av extra underskriftsrader</FormLabel>
+                <FormLabel>Ange antal av extra underskriftsrader för fastighetsägare</FormLabel>
                 <Input
                   type="number"
-                  value={getValues().signatureTerms.condition.emptyRow?.conditionText}
+                  value={getValues().signatureTerms.condition.emptyRowPropertyowner?.conditionText}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    setValue('signatureTerms.condition.emptyRow.conditionText', e.target.value);
+                    setValue('signatureTerms.condition.emptyRowPropertyowner.conditionText', e.target.value);
+                  }}
+                />
+                <FormLabel>Ange antal av extra underskriftsrader för arrendator</FormLabel>
+                <Input
+                  type="number"
+                  value={getValues().signatureTerms.condition.emptyRowLeaseholder?.conditionText}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setValue('signatureTerms.condition.emptyRowLeaseholder.conditionText', e.target.value);
                   }}
                 />
               </FormControl>
@@ -2779,39 +2815,22 @@ export const Lagenhetsarrende: React.FC<{
 
                   content += `<br />`;
 
-                  signatures.forEach((signature, idx) => {
-                    let stakeholder = errand.stakeholders.find((temp) => temp.id === signature);
-                    content += `
-                        <p><b>${
-                          getStakeholderRelation(stakeholder) ? MEXRelation[getStakeholderRelation(stakeholder)] : ''
-                        }</b></p>
-                        <p>${
-                          stakeholder.firstName
-                            ? `${stakeholder.firstName} ${stakeholder.lastName}`
-                            : `${stakeholder.organizationName}`
-                        }</p>
-                        <br>
-                        <br>
-                        <p>Ort och datum:</p>
-                        <br>
-                        <p>........................................................................................................</p>
-                        <br><br>
-                        `;
-                  });
-
-                  let emptySignatures = parseInt(getValues().signatureTerms.condition.emptyRow?.conditionText);
-                  for (let i = 0; i < emptySignatures; i++) {
-                    content += `
-                  <p><b></b></p>
-                  <p></p>
-                  <br>
-                  <br>
-                  <p>Ort och datum:</p>
-                  <br>
-                  <p>........................................................................................................</p>
-                  <br><br>
-                  `;
-                  }
+                  content +=
+                    `<div>` +
+                    renderSignatures(MEXRelation.PROPERTY_OWNER) +
+                    renderEmptySignatures(
+                      MEXRelation.PROPERTY_OWNER,
+                      parseInt(getValues().signatureTerms.condition.emptyRowPropertyowner?.conditionText)
+                    ) +
+                    `</div>`;
+                  content +=
+                    `<div>` +
+                    renderSignatures(MEXRelation.LEASEHOLDER) +
+                    renderEmptySignatures(
+                      MEXRelation.LEASEHOLDER,
+                      parseInt(getValues().signatureTerms.condition.emptyRowLeaseholder?.conditionText)
+                    ) +
+                    `</div>`;
 
                   setSignature(content);
                   setShowSignature(false);
@@ -2821,21 +2840,9 @@ export const Lagenhetsarrende: React.FC<{
               </Button>
             </Modal.Content>
           </Modal>
-          <FormControl id="signature" className="w-full">
-            <Input type="hidden" {...register('signature')} />
-            <div className="h-[42rem] -mb-48" data-cy="signature-richtext-wrapper">
-              <ContractTextEditorWrapper
-                val={signature}
-                label="signature"
-                setDirty={setTextIsDirty}
-                setValue={setValue}
-                trigger={trigger}
-                setState={setSignature}
-                readOnly={!editSignature}
-                editorRef={quillRefSignature}
-              />
-            </div>
-          </FormControl>
+          <div className="h-[42rem] -mb-20 text-sm overflow-auto" data-cy="signature-richtext-wrapper">
+            <div dangerouslySetInnerHTML={{ __html: sanitized(signature) }} />
+          </div>
           {saveButton('signature')}
         </div>
       </Disclosure>

@@ -1,23 +1,22 @@
-import { apiService, Data } from '@common/services/api-service';
-import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { All, Priority } from '@supportmanagement/interfaces/priority';
-import { v4 as uuidv4 } from 'uuid';
-import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
-import { saveSupportNote } from './support-note-service';
-import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
+import { apiService, Data } from '@common/services/api-service';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { RequestInfoFormProps } from '@supportmanagement/components/support-errand/sidebar/request-info.component';
+import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
+import { saveSupportNote } from './support-note-service';
+import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 
 export interface Customer {
   id: string;
@@ -41,13 +40,17 @@ export enum SupportStakeholderRole {
   USER = 'USER',
 }
 
+// Keeping both enums for now, as the backend uses the uppercase version
+// but existing stakeholders use the lowercase version
 export enum ContactChannelType {
-  EMAIL = 'Email',
-  PHONE = 'Phone',
+  Email = 'Email',
+  EMAIL = 'EMAIL',
+  Phone = 'Phone',
+  PHONE = 'PHONE',
 }
 
 export enum Relation {
-  PERSON = 'PERSON',
+  // PERSON = 'Person',
   PRIMARY = 'Ärendeägare',
   CONTACT = 'Övrig part',
   APPROVER = 'Godkännande chef',
@@ -69,33 +72,6 @@ export enum SupportStakeholderTypeEnum {
 
 // Define a type based on the enum values
 export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
-
-export interface SupportStakeholder {
-  stakeholderType: SupportStakeholderType;
-  organizationNumber?: string;
-  organizationName?: string;
-  personId?: string;
-  relation?: string;
-  // Lines above are placeholders so that the form component works
-  // and is future proofed.
-  personNumber?: string;
-  internalId?: string;
-  externalId?: string;
-  externalIdType?: string;
-  role?: string;
-  firstName?: string;
-  lastName?: string;
-  address?: string;
-  city?: string;
-  careOf?: string;
-  zipCode?: string;
-  country?: string;
-  contactChannels?: {
-    type: string;
-    value: string;
-  }[];
-  parameters?: { key: string; values: string[]; displayName?: string }[];
-}
 
 export type ExternalTags = Array<{ key: string; value: string }>;
 export interface SupportErrandDto {
@@ -343,7 +319,7 @@ export enum ResolutionLabelLOP {
 export enum ResolutionLabelIK {
   REFER_TO_CONTACTSUNDSVALL = 'Hänvisat till Kontakt Sundsvall',
   SELF_SERVICE = 'Hänvisat till självservice',
-  SOLVED = 'Informerat /intern har löst hela ärendet',
+  SOLVED = 'Informerat / Intern Kundtjänst har löst ärendet',
   REFER_TO_PHONE = 'Behöver återkomma/hänvisat till telefontid',
   REGISTERED = 'Tagit emot/registrerat/paketerat ärende',
   CONNECTED = 'Kopplat samtal',
@@ -357,6 +333,7 @@ export enum ResolutionLabelKS {
   REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
   SELF_SERVICE = 'Hänvisat till självservice',
   INTERNAL_SERVICE = 'Hänvisat till intern service',
+  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
 }
 
 export const ongoingSupportErrandLabelsKC = [
@@ -411,20 +388,12 @@ export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
   );
 };
 
-export const attestationLabels = [
-  { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Timmar', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Belopp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Chef', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärende', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-  { label: 'Attesterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
-];
-
 export interface SupportStakeholderFormModel extends SupportStakeholder {
-  newRole: SupportStakeholderRole;
+  stakeholderType: SupportStakeholderType;
+  internalId: string;
+  organizationNumber?: string;
+  personId?: string;
+  personNumber?: string;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
   username?: string;
@@ -433,7 +402,6 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
-  newRole: SupportStakeholderRole.CONTACT,
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
@@ -473,7 +441,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedUserId: undefined,
   assignedGroupId: undefined,
   resolution: 'INFORMED',
-  channel: 'PHONE',
+  channel: ContactChannelType.PHONE,
   municipalityId: '2281',
   description: '',
   messageContact: 'false',
@@ -490,7 +458,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
-  return errand?.status === Status.SOLVED;
+  return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
 };
 
 export const useSupportErrands = (
@@ -566,13 +534,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(
-          municipalityId,
-          page,
-          size,
-          { ...filter, status: `${Status.SUSPENDED},${Status.ASSIGNED}` },
-          sort
-        )
+        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.SUSPENDED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
@@ -715,10 +677,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             newRole: SupportStakeholderRole.PRIMARY,
             internalId: uuidv4(),
             emails: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.EMAIL)
+              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
               .map((c) => ({ value: c.value })),
             phoneNumbers: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.PHONE)
+              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
               .map((c) => ({ value: c.value })),
           })) || [],
       contacts:
@@ -735,10 +697,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             newRole: s.role as SupportStakeholderRole,
             internalId: uuidv4(),
             emails: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.EMAIL)
+              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
               .map((c) => ({ value: c.value })),
             phoneNumbers: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.PHONE)
+              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
               .map((c) => ({ value: c.value })),
           })) || [],
     };
@@ -873,7 +835,7 @@ export const updateSupportErrand: (
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
-    externalTags: [],
+    externalTags: formdata.externalTags || [],
   };
   if (formdata.caseId) {
     data.externalTags.push({
@@ -1097,14 +1059,14 @@ export const forwardSupportErrand: (
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
     errand.stakeholders.forEach((s) => {
-      if (!s.firstName) {
+      if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
       }
       // TODO Check for email and phone?
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE)) {
+      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)) {
       //   throw new Error('MISSING_PHONE');
       // }
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL)) {
+      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)) {
       //   throw new Error('MISSING_EMAIL');
       // }
     });

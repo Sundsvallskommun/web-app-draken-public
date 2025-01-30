@@ -47,6 +47,7 @@ import ApiService from '@services/api.service';
 import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { additionalConverters } from './utils/custom-validation-classes';
 
 const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
 const sessionTTL = 4 * 24 * 60 * 60;
@@ -309,16 +310,18 @@ class App {
     const schemas = validationMetadatasToSchemas({
       classTransformerMetadataStorage: defaultMetadataStorage,
       refPointerPrefix: '#/components/schemas/',
+      additionalConverters: additionalConverters,
     });
 
     const routingControllersOptions = {
+      routePrefix: `${BASE_URL_PREFIX}`,
       controllers: controllers,
     };
 
     const storage = getMetadataArgsStorage();
     const spec = routingControllersToSpec(storage, routingControllersOptions, {
       components: {
-        schemas,
+        schemas: schemas as { [schema: string]: unknown },
         securitySchemes: {
           basicAuth: {
             scheme: 'basic',
@@ -327,12 +330,13 @@ class App {
         },
       },
       info: {
-        description: 'Parkeringstillstånd',
-        title: 'API',
+        title: `Proxy API`,
+        description: '',
         version: '1.0.0',
       },
     });
 
+    this.app.use(`${BASE_URL_PREFIX}/swagger.json`, (req, res) => res.json(spec));
     this.app.use(`${BASE_URL_PREFIX}/api-docs`, swaggerUi.serve, swaggerUi.setup(spec));
   }
 

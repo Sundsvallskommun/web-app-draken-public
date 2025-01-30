@@ -143,6 +143,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('.ql-editor').type('Mock investigation text');
         });
 
+
+        cy.get(`[data-cy="suspend-button"]`).should('exist').contains('Parkera ärende').click();
+
       cy.get('[data-cy="save-investigation-description-button"]').should('exist').click();
 
       cy.wait('@postRenderPdf').should(({ request }) => {

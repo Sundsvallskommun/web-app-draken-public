@@ -108,7 +108,8 @@ const defaultKopeavtalTemplate: KopeavtalsTemplate = {
   },
   signatureTerms: {
     condition: {
-      emptyRow: undefined,
+      emptyRowSeller: undefined,
+      emptyRowBuyer: undefined,
       example: undefined,
     },
   },
@@ -167,18 +168,9 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
       atervinningsstation: undefined,
       clarification: undefined,
       bygglovExists: undefined,
-      other: {
-        header: '',
-        conditionText: '',
-      },
-      consent: {
-        header: '',
-        conditionText: '',
-      },
-      detailedplan: {
-        header: '',
-        conditionText: '',
-      },
+      other: undefined,
+      consent: undefined,
+      detailedplan: undefined,
     },
   },
   arrendetidTerms: {
@@ -216,10 +208,7 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   },
   inskrivningTerms: {
     condition: {
-      inskrivning: {
-        header: 'Inskrivning',
-        conditionText: '',
-      },
+      inskrivning: undefined,
     },
   },
   skickTerms: {
@@ -279,7 +268,8 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   },
   signatureTerms: {
     condition: {
-      emptyRow: undefined,
+      emptyRowPropertyowner: undefined,
+      emptyRowLeaseholder: undefined,
       example: undefined,
     },
   },
@@ -435,10 +425,6 @@ export const renderContractPdf: (
       : contract.type === 'LAND_LEASE'
       ? `mex.contract.landlease`
       : 'mex.contract.purchaseagreement';
-
-  if (contract.additionalTerms?.[0].terms) {
-    contract.indexTerms.push(contract.additionalTerms[0]);
-  }
 
   const renderBody: TemplateSelector = {
     identifier: templateIdentifier,
@@ -846,7 +832,7 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
         ],
       },
       {
-        header: 'Upphörande och återställning',
+        header: 'Arrendets upphörande och återställning av området',
         terms: [
           {
             description: 'content',
@@ -863,6 +849,19 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
           },
         ],
       },
+      ...(lagenhetsarrende.additionalTerms?.[0]?.header && lagenhetsarrende.additionalTerms?.[0]?.terms?.[0]?.term
+        ? [
+            {
+              header: lagenhetsarrende.additionalTerms?.[0]?.header.toString(),
+              terms: [
+                {
+                  description: 'content',
+                  term: lagenhetsarrende.additionalTerms?.[0]?.terms[0]?.term.toString(),
+                },
+              ],
+            },
+          ]
+        : []),
       {
         header: 'Särskilda bestämmelser',
         terms: [
@@ -919,7 +918,8 @@ export const contractToLagenhetsArrende = (contract: Contract): LagenhetsArrende
     ledningar: contract.indexTerms.find((t) => t.header === 'Ledningar')?.terms[0].term,
     kostnader: contract.indexTerms.find((t) => t.header === 'Kostnader')?.terms[0].term,
     markfororeningar: contract.indexTerms.find((t) => t.header === 'Markföroreningar')?.terms[0].term,
-    upphorande: contract.indexTerms.find((t) => t.header === 'Upphörande och återställning')?.terms[0].term,
+    upphorande: contract.indexTerms.find((t) => t.header === 'Arrendets upphörande och återställning av området')
+      ?.terms[0].term,
     skadaansvar: contract.indexTerms.find((t) => t.header === 'Skada och ansvar')?.terms[0].term,
     sarskilda: contract.indexTerms.find((t) => t.header === 'Särskilda bestämmelser')?.terms[0].term,
     jordabalken: contract.indexTerms.find((t) => t.header === 'Hänvisning till jordabalken')?.terms[0].term,
@@ -1037,4 +1037,4 @@ export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, 
       console.error('Something went wrong when triggering errand phase change', e);
       throw e;
     });
-}
+};

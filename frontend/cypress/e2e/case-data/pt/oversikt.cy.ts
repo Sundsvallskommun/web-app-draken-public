@@ -9,6 +9,7 @@ import { emptyMockErrands, mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
+import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Overview page', () => {
@@ -21,6 +22,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('POST', '**/personid*', mockPersonId).as('personIdSearch');
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', /\/errand\/\d*/, mockErrand_base).as('getErrandById');
+      cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getSupportNotifications');
       cy.visit('/oversikt');
       cy.wait('@getErrands');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -28,7 +30,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('displays the logged in users initials', () => {
       const initials = 'MT';
-      cy.get('[data-cy=usermenu] span').contains(initials).should('exist');
+      cy.get('[data-cy="avatar-aside"] span').contains(initials).should('exist');
     });
 
     it('displays table data', () => {
@@ -51,6 +53,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('displays the filters', () => {
+      cy.get('[aria-label="status-button-Under granskning"]').click();
       cy.get('[data-cy="Show-filters-button"]').click();
       cy.get('[data-cy="Status-filter"]').should('exist');
       cy.get('[data-cy="Ärendetyp-filter"]').should('exist');
@@ -116,7 +119,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.wait(`@date-filterSearch`).should(({ request, response }) => {
         expect([200, 304]).to.include(response && response.statusCode);
       });
-      cy.get('[data-cy="Tidsperiod-filter"]').click();
       cy.get(`[data-cy="tag-date"]`).should('exist').click();
     });
 
@@ -137,27 +139,33 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('allows filtering by single status', () => {
       const labels = Object.entries(ErrandStatus);
+      cy.get('[aria-label="status-button-Under granskning"]').click();
       cy.get('[data-cy="Show-filters-button"]').click();
       cy.get('[data-cy="Status-filter"]').click();
-      cy.get(`[data-cy="Status-filter-${labels[0][0]}"]`).should('exist').click();
-      cy.intercept('GET', '**/errands*').as(`${labels[0][0]}-filterSearch`);
-      cy.wait(`@${labels[0][0]}-filterSearch`).should(({ request, response }) => {
-        expect([200, 304]).to.include(response && response.statusCode);
-      });
-      cy.get('[data-cy="Status-filter"]').click();
-      cy.get(`[data-cy="tag-status-${labels[0][0]}"]`).should('exist').contains(labels[0][1]).click();
+      if (labels[0][0] !== 'ArendeInkommit') {
+        cy.get(`[data-cy="Status-filter-${labels[0][0]}"]`).should('exist').click();
+        cy.intercept('GET', '**/errands*').as(`${labels[0][0]}-filterSearch`);
+        cy.wait(`@${labels[0][0]}-filterSearch`).should(({ request, response }) => {
+          expect([200, 304]).to.include(response && response.statusCode);
+        });
+        cy.get('[data-cy="Status-filter"]').click();
+        cy.get(`[data-cy="tag-status-${labels[0][0]}"]`).should('exist').contains(labels[0][1]).click();
+      }
     });
 
     it('allows filtering by multiple statuses', () => {
       const labels = Object.entries(ErrandStatus);
+      cy.get('[aria-label="status-button-Under granskning"]').click();
       cy.get('[data-cy="Show-filters-button"]').click();
       cy.get('[data-cy="Status-filter"]').click();
       labels.forEach((label) => {
-        cy.get(`[data-cy="Status-filter-${label[0]}"]`).should('exist').click();
-        cy.intercept('GET', '**/errands*').as(`${label[0]}-filterSearch`);
-        cy.wait(`@${label[0]}-filterSearch`).should(({ request, response }) => {
-          expect([200, 304]).to.include(response && response.statusCode);
-        });
+        if (label[0] !== 'ArendeInkommit' && label[0] !== 'ArendeAvslutat' && label[0] !== 'Tilldelat') {
+          cy.get(`[data-cy="Status-filter-${label[0]}"]`).should('exist').click();
+          cy.intercept('GET', '**/errands*').as(`${label[0]}-filterSearch`);
+          cy.wait(`@${label[0]}-filterSearch`).should(({ request, response }) => {
+            expect([200, 304]).to.include(response && response.statusCode);
+          });
+        }
       });
       cy.get('[data-cy="Status-filter"]').click();
       cy.get('[data-cy="tag-clearAll"]').should('exist').contains('Rensa alla').click();

@@ -28,13 +28,14 @@ import {
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
 import router from 'next/router';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
+import { get } from 'cypress/types/lodash';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -97,6 +98,8 @@ export const SidebarInfo: React.FC<{
     any,
     undefined
   > = useFormContext();
+
+  const formIsNotValid = useMemo(() => !formState.isValid, [formState.isValid]);
 
   const { admin, status, priority } = watch();
 
@@ -523,7 +526,7 @@ export const SidebarInfo: React.FC<{
               disabled={
                 isSupportErrandLocked(supportErrand) ||
                 !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
-                !formState.isValid
+                formIsNotValid
               }
               onClick={handleSubmit(() => {
                 return onSubmit();

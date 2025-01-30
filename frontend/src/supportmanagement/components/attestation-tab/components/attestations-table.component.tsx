@@ -1,16 +1,18 @@
+import { formatCurrency, prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
+import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import {
   SupportErrandsData,
-  attestationLabels,
   findAttestationStatusLabelForAttestationStatusKey,
 } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
 export interface AttestationTableForm {
   sortOrder: 'asc' | 'desc';
@@ -22,64 +24,12 @@ export interface AttestationTableForm {
   pageSize: number;
 }
 
-const attestationData = [
-  {
-    id: '1',
-    type: 'Extra utbetalning - Systemet',
-    quantity: '1',
-    amount: '500 sek',
-    totalAmount: '500 sek',
-    supervisor: 'Sandra Eriksson',
-    registeredBy: 'Emma Eriksson',
-    registeredAt: '2024-01-01 12.00',
-    updatedAt: '2024-01-01 13.00',
-    errandId: '1234-55567',
-    attested: '2024-01-01 12.00',
-    status: 'APPROVED',
-    referenceNumber: '111',
-    approvedBy: 'Sandra Eriksson',
-    approved: '2024-01-01 12.00',
-  },
-  {
-    id: '2',
-    type: 'Extra utbetalning - Direktinsättning',
-    quantity: '2',
-    amount: '1500 sek',
-    totalAmount: '3000 sek',
-    supervisor: 'Sandra Eriksson',
-    registeredBy: 'Emma Eriksson',
-    registeredAt: '2024-01-01 12.00',
-    updatedAt: '2024-01-01 14.00',
-    errandId: '1234-55568',
-    attested: '2024-01-01 12.00',
-    status: 'DENIED',
-    referenceNumber: '222',
-    approvedBy: 'Sandra Eriksson',
-    approved: '2024-01-01 12.00',
-  },
-  {
-    id: '3',
-    type: 'Extra utbetalning - Direktinsättning',
-    quantity: '3',
-    amount: '300 sek',
-    totalAmount: '900 sek',
-    supervisor: 'Sandra Larsson',
-    registeredBy: 'Emma Larsson',
-    registeredAt: '2024-01-01 12.00',
-    updatedAt: '2024-01-01 15.00',
-    errandId: '1234-55569',
-    attested: '',
-    status: 'NONE',
-    referenceNumber: '333',
-  },
-];
-
 export const AttestationsTable: React.FC<{
-  setSelectedInvoice;
-  setShowSelectedInvoice;
-}> = ({ setSelectedInvoice, setShowSelectedInvoice }) => {
+  setSelectedRecord;
+  setShowSelectedRecord;
+}> = ({ setSelectedRecord, setShowSelectedRecord }) => {
   const { watch, setValue, register } = useFormContext<AttestationTableForm>();
-  const { municipalityId }: AppContextInterface = useAppContext();
+  const { municipalityId, billingRecords }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -96,14 +46,14 @@ export const AttestationsTable: React.FC<{
   };
 
   const serverSideSortableCols: { [key: number]: string } = {
-    0: 'type',
-    1: 'hours',
-    2: 'amount',
+    0: 'invoice.description',
+    1: 'invoice.invoiceRows.quantity',
+    2: 'invoice.totalAmount',
     3: 'supervisor',
-    4: 'registeredAt',
-    5: 'updatedAt',
+    4: 'created',
+    5: 'modified',
     6: 'errandId',
-    7: 'attested',
+    7: 'approved',
     8: 'status',
   };
 
@@ -133,27 +83,34 @@ export const AttestationsTable: React.FC<{
     </Table.HeaderColumn>
   ));
 
-  const StatusButtonComponent = (invoice) => {
+  const StatusButtonComponent = (record) => {
     let color,
       inverted = false,
       icon = null,
       variant = null;
-    switch (invoice.status) {
-      case 'APPROVED':
+    switch (record.status) {
+      case CBillingRecordStatusEnum.APPROVED:
         color = 'gronsta';
         inverted = true;
         icon = 'check';
         variant = 'primary';
         break;
-      case 'DENIED':
+      case CBillingRecordStatusEnum.REJECTED:
         color = 'error';
         icon = 'thumbs-down';
         variant = 'primary';
         inverted = true;
         break;
-      case 'NONE':
+      case CBillingRecordStatusEnum.NEW:
         color = 'tertiary';
+        icon = 'eye';
         variant = 'secondary';
+        break;
+      case CBillingRecordStatusEnum.INVOICED:
+        color = 'vattjom';
+        inverted = true;
+        icon = 'check';
+        variant = 'primary';
         break;
       default:
         color = 'tertiary';
@@ -167,37 +124,48 @@ export const AttestationsTable: React.FC<{
         size="sm"
         className="w-full"
         onClick={() => {
-          setSelectedInvoice(invoice);
-          setShowSelectedInvoice(true);
+          setSelectedRecord(record);
+          setShowSelectedRecord(true);
         }}
       >
         {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
-        {findAttestationStatusLabelForAttestationStatusKey(invoice.status)}
+        {findAttestationStatusLabelForAttestationStatusKey(record.status)}
       </Button>
     );
   };
 
-  const rows = (attestationData || []).map((invoice: any, index) => {
+  const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
+
+  const rows = (billingRecords?.content || []).map((record: CBillingRecord, index) => {
     return (
       <Table.Row key={`row-${index}`}>
         <Table.HeaderColumn
           scope="row"
           className="w-[275px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {invoice.type}
+          {maybe(record?.invoice?.description)}
         </Table.HeaderColumn>
-        <Table.Column>{invoice.quantity}</Table.Column>
-        <Table.Column>{invoice.amount}</Table.Column>
-        <Table.Column>{invoice.supervisor}</Table.Column>
-        <Table.Column>{invoice.registeredAt}</Table.Column>
-        <Table.Column>{invoice.updatedAt}</Table.Column>
+        <Table.Column>{maybe(record?.invoice.invoiceRows?.[0]?.quantity)}</Table.Column>
+        <Table.Column>{formatCurrency(maybe(record.invoice?.totalAmount))}</Table.Column>
+        <Table.Column>{maybe(record.extraParameters?.['referenceName'])}</Table.Column>
+        <Table.Column>{prettyTime(record.created)}</Table.Column>
+        <Table.Column>{prettyTime(record.modified)}</Table.Column>
         <Table.Column>
-          <NextLink href={`/arende/${municipalityId}/${invoice.errandId}`} target="_blank" className="underline">
-            {invoice.errandId}
-          </NextLink>
+          {record.extraParameters?.['errandId'] ? (
+            <NextLink
+              href={`/arende/${municipalityId}/${record.extraParameters?.['errandId']}`}
+              target="_blank"
+              className="underline"
+            >
+              {maybe(record.extraParameters?.['errandNumber'])}
+            </NextLink>
+          ) : (
+            maybe(record.extraParameters?.['errandNumber'])
+          )}
         </Table.Column>
-        <Table.Column>{invoice.attested}</Table.Column>
-        <Table.Column sticky>{StatusButtonComponent(invoice)}</Table.Column>
+        <Table.Column>{prettyTime(record.approved)}</Table.Column>
+        <Table.Column>{billingrecordStatusToLabel(record.status)}</Table.Column>
+        <Table.Column sticky>{StatusButtonComponent(record)}</Table.Column>
       </Table.Row>
     );
   });
@@ -227,14 +195,14 @@ export const AttestationsTable: React.FC<{
             </caption>
           )
         )}*/}
-        {attestationData.length > 0 && (
+        {billingRecords?.numberOfElements > 0 && (
           <>
             <Table.Header>{headers}</Table.Header>
             <Table.Body>{rows}</Table.Body>
           </>
         )}
 
-        {attestationData?.length > 0 && (
+        {billingRecords?.numberOfElements > 0 && (
           <Table.Footer>
             <div className="sk-table-bottom-section sk-table-pagination-mobile">
               <label className="sk-table-bottom-section-label" htmlFor="paginationSelect">
@@ -245,7 +213,9 @@ export const AttestationsTable: React.FC<{
                 size="sm"
                 variant="tertiary"
                 value={(page || 0).toString()}
-                onSelectValue={(value) => setValue('page', parseInt(value, 10))}
+                onSelectValue={(value) => {
+                  setValue('page', parseInt(value, 10));
+                }}
               >
                 {totalPages &&
                   Array.from(Array(totalPages).keys()).map((page) => (

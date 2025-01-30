@@ -34,6 +34,10 @@ export interface ApiErrand {
   facilities: FacilityDTO[];
   notes: ErrandNote[];
   messageIds: { messageId: string; adAccount: string }[];
+  suspension?: {
+    suspendedFrom?: string;
+    suspendedTo?: string;
+  };
 }
 
 export interface ApiPagingData {
@@ -92,6 +96,10 @@ export interface IErrand {
   attachments: Attachment[];
   messageIds: { messageId: string; adAccount: string }[];
   extraParameters: ExtraParameter[];
+  suspension?: {
+    suspendedFrom?: string;
+    suspendedTo?: string;
+  };
 }
 
 export interface ErrandsData extends Data {
@@ -108,6 +116,10 @@ export interface ErrandsData extends Data {
     sticky?: boolean;
     shownForStatus: ErrandPhase | All;
   }[];
+  suspension?: {
+    suspendedFrom?: string;
+    suspendedTo?: string;
+  };
 }
 
 export interface RegisterErrandData {
@@ -131,4 +143,8 @@ export interface RegisterErrandData {
   applicationReceived: string;
   decision: string;
   extraParameters: ExtraParameter[];
+  suspension?: {
+    suspendedFrom?: string;
+    suspendedTo?: string;
+  };
 }

@@ -16,7 +16,7 @@ import { ResponseData } from './casedata-notes.controller';
 @Controller()
 export class CaseDataDecisionsController {
   private apiService = new ApiService();
-  SERVICE = `case-data/9.0`;
+  SERVICE = `case-data/10.0`;
 
   async isUnsigning(municipalityId: string, errandid: string, decision: Decision, user: User) {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandid}/decisions/${decision.id}`;

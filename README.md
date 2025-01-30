@@ -11,7 +11,7 @@ För MEX (Mark och exploatering):
 | ActiveDirectory     |     1.0 |
 | Citizen             |     2.0 |
 | CaseData            |     9.0 |
-| Messaging           |     5.1 |
+| Messaging           |     6.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     1.0 |
@@ -23,7 +23,7 @@ För KS (Kontakt Sundsvall):
 
 | API                 | Version |
 | ------------------- | ------: |
-| CaseData            |     9.0 |
+| CaseData            |    10.0 |
 | SupportManagement   |     9.0 |
 | Citizen             |     2.0 |
 | ActiveDirectory     |     1.1 |
@@ -39,8 +39,8 @@ För PT (Parkeringstillstånd):
 | ------------------- | ------: |
 | ActiveDirectory     |     1.0 |
 | Citizen             |     2.0 |
-| CaseData            |     9.0 |
-| Messaging           |     5.1 |
+| CaseData            |    10.0 |
+| Messaging           |     6.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     1.0 |
@@ -57,7 +57,7 @@ För LOP (Lön och pension):
 | Templating          |     2.0 |
 | BusinessEngagements |     2.0 |
 | Employee            |     1.0 |
-| BillingPreprocessor |     2.0 |
+| BillingPreprocessor |     2.1 |
 | SimulatorServer     |     2.0 |
 
 ## Utveckling

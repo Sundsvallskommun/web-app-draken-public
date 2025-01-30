@@ -33,6 +33,7 @@ import {
   Channels,
   Status,
   SupportErrand,
+  SupportStakeholderRole,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -383,7 +384,7 @@ export const SupportMessageForm: React.FC<{
 
       <div className="w-full pt-16">
         <strong className="text-md">Kontaktväg</strong>
-        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group mt-8">
+        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
           <RadioButton
             disabled={props.locked}
             data-cy="useEmail-radiobutton-true"
@@ -428,7 +429,7 @@ export const SupportMessageForm: React.FC<{
 
       <div className="w-full pt-16">
         <strong className="text-md">Typ av meddelande</strong>
-        <RadioButton.Group data-cy="message-channel-radio-button-group" className="mt-sm !gap-4">
+        <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
             name="typeOfMessage"
@@ -513,7 +514,15 @@ export const SupportMessageForm: React.FC<{
               <FormErrorMessage>{errors?.emails?.message}</FormErrorMessage>
             </div>
           ) : null}
-
+          {contactMeans === 'webmessage'
+            ? supportErrand.stakeholders
+                .filter((o) => o.role.indexOf(SupportStakeholderRole.PRIMARY) !== -1)
+                .map((filteredOwner, idx) => (
+                  <div key={`owner-${idx}`}>
+                    <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
+                  </div>
+                ))
+            : null}
           <FormControl id="addExisting" className="w-full mt-md">
             <FormLabel>Bilagor från ärendet</FormLabel>
             <div className="flex items-center justify-between">

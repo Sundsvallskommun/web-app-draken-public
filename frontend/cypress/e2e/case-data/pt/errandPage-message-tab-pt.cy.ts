@@ -10,23 +10,28 @@ import { mockAddress } from '../fixtures/mockAddress';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockAsset } from '../fixtures/mockAsset';
 import { Role } from '@casedata/interfaces/role';
+import { mockContract } from '../fixtures/mockContract';
 
+//Needs fixing
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Message tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/messages/*', mockMessages);
-      cy.intercept('POST', '**/messages', mockMessages);
+      cy.intercept('GET', /\/pt\/casedata\/\d+\/errand\/errandNumber\/\w+-\d+-\d+$/, mockPTErrand_base).as(
+        'getErrandById'
+      );
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/pt\/casedata\/\d+\/errand\/\d+\/messages$/, mockMessages).as('getMessages');
+      cy.intercept('POST', /\/pt\/casedata\/\d+\/errand\/\d+\/messages$/, mockMessages).as('postMessages');
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
-      cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
+      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
     });
 
     const goToMessageTab = () => {
@@ -36,10 +41,13 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('button').contains('Meddelanden').should('exist').click();
     };
 
-    it('views messages in inbox', () => {
-      cy.intercept('PUT', `**/messages/*/viewed/*`, mockMessages);
+    it.only('views messages in inbox', () => {
+      cy.intercept('PUT', /\/pt\/casedata\/\d+\/errand\/\d+\/messages\/\d+\/viewed$/, mockMessages).as(
+        'putMessageViewed'
+      );
 
       goToMessageTab();
+      cy.wait('@getMessages');
       if (cy.get('[data-cy="message-container"] .sk-avatar').should('have.length', mockMessages.data.length)) {
         mockMessages.data.forEach((message) => {
           if (message.messageType === 'EMAIL' && message.emailHeaders[0].header === 'MESSAGE_ID') {

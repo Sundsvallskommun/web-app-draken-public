@@ -6,7 +6,7 @@ import { latestBy } from '@/utils/util';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import { CASEDATA_NAMESPACE } from '@/config';
 
-const SERVICE = `case-data/9.0`;
+const SERVICE = `case-data/10.0`;
 
 export const getOwnerStakeholder: (e: ErrandDTO) => StakeholderDTO = e => e.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
 

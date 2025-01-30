@@ -51,6 +51,7 @@ class ApiService {
         };
         if (response.headers.location && !response.config.url.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
+          logger.info(`Base URL was: ${response.config.baseURL}`);
           return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers: defaultHeaders }).catch(e => {
             logger.error(`Error in location header request: ${e.details}`);
             logger.error(`Base URL was: ${e.config?.baseURL}`);
@@ -81,7 +82,12 @@ class ApiService {
       return { data: res.data, message: 'success' };
     } catch (error: unknown | AxiosError) {
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
+        logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response.data)}`);
+        logger.error(`Error url: ${error.response.config.url}`);
+        logger.error(`Error data: ${error.response.config.data?.slice(0, 1500)}`);
+        logger.error(`Error method: ${error.response.config.method}`);
+        logger.error(`Error headers: ${error.response.config.headers}`);
         throw new HttpException(404, 'Not found');
       } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);

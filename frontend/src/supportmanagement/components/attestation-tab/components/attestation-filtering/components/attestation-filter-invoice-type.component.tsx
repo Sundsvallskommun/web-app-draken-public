@@ -1,35 +1,26 @@
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import React from 'react';
+import { invoiceTypes } from '@supportmanagement/services/support-billing-service';
+import { use } from 'chai';
+import React, { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export interface AttestationTypeFilter {
-  type: string[];
+export interface AttestationInvoiceTypeFilter {
+  invoiceType: string[];
 }
 
-export const AttestationTypeValues = {
-  type: [],
+export const AttestationInvoiceTypeValues = {
+  invoiceType: [],
 };
 
-const attestationTypes = [
-  {
-    id: 1,
-    displayName: 'Extra utbetalning - Systemet',
-  },
-  {
-    id: 1,
-    displayName: 'Extra utbetalning - Direktinsättning',
-  },
-];
-
-export const AttestationFilterTypeComponent: React.FC = () => {
-  const { register } = useFormContext<AttestationTypeFilter>();
+export const AttestationFilterInvoiceTypeComponent: React.FC = () => {
+  const { register, getValues } = useFormContext<AttestationInvoiceTypeFilter>();
 
   return (
     <PopupMenu>
       <PopupMenu.Button
         rightIcon={<LucideIcon name="chevron-down" />}
-        data-cy="attestationType-filter"
+        data-cy="attestationInvoiceType-filter"
         variant="tertiary"
         showBackground={false}
         size="sm"
@@ -39,16 +30,16 @@ export const AttestationFilterTypeComponent: React.FC = () => {
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <PopupMenu.Items autoFocus={false}>
-          {attestationTypes.map((type, index) => {
+          {invoiceTypes.map((invoiceType, index) => {
             return (
-              <PopupMenu.Item key={`${type.displayName}-${index}`}>
+              <PopupMenu.Item key={`${invoiceType}-${index}`}>
                 <Checkbox
                   labelPosition="left"
-                  value={type.displayName}
-                  {...register('type')}
-                  data-cy={`attestationType-filter-${type.displayName}`}
+                  value={invoiceType.displayName}
+                  {...register('invoiceType')}
+                  data-cy={`attestationType-filter-${invoiceType}`}
                 >
-                  {type.displayName}
+                  {invoiceType.displayName}
                 </Checkbox>
               </PopupMenu.Item>
             );
