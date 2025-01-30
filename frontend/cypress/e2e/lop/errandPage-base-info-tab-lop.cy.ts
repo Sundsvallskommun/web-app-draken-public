@@ -429,7 +429,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="contact-address"]').type('Testaddress');
       cy.get('[data-cy="contact-careOf"]').type('TestcareOf');
       cy.get('[data-cy="contact-zipCode"]').type('12345');
-      // TODO Uncomment when city is added to the form
       cy.get('[data-cy="contact-city"]').type('Teststaden');
       cy.get('[data-cy="submit-contact-button"]').click();
       cy.get('[data-cy="save-button"]').click();
@@ -441,7 +440,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.address).to.equal('Testaddress');
         expect(s.careOf).to.equal('TestcareOf');
         expect(s.zipCode).to.equal('12345');
-        // TODO Uncomment when city is added to the form
         expect(s.city).to.equal('Teststaden');
         expect(s.externalIdType).to.equal('PRIVATE');
         expect(s.role).to.equal('PRIMARY');

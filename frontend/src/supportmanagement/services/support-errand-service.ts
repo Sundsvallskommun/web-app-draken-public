@@ -1062,13 +1062,6 @@ export const forwardSupportErrand: (
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
       }
-      // TODO Check for email and phone?
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)) {
-      //   throw new Error('MISSING_PHONE');
-      // }
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)) {
-      //   throw new Error('MISSING_EMAIL');
-      // }
     });
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
