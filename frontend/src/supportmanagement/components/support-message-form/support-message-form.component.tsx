@@ -9,13 +9,14 @@ import { User } from '@common/interfaces/user';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Paperclip, File, X } from 'lucide-react';
 import {
   Button,
   Chip,
   FormControl,
   FormErrorMessage,
   FormLabel,
+  Icon,
   Input,
   Modal,
   RadioButton,
@@ -384,7 +385,7 @@ export const SupportMessageForm: React.FC<{
 
       <div className="w-full pt-16">
         <strong className="text-md">Kontaktväg</strong>
-        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group mt-8">
+        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
           <RadioButton
             disabled={props.locked}
             data-cy="useEmail-radiobutton-true"
@@ -429,7 +430,7 @@ export const SupportMessageForm: React.FC<{
 
       <div className="w-full pt-16">
         <strong className="text-md">Typ av meddelande</strong>
-        <RadioButton.Group data-cy="message-channel-radio-button-group" className="mt-sm !gap-4">
+        <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
             name="typeOfMessage"
@@ -618,7 +619,7 @@ export const SupportMessageForm: React.FC<{
           <Button
             variant="tertiary"
             color="primary"
-            leftIcon={<LucideIcon name="paperclip" />}
+            leftIcon={<Icon icon={<Paperclip />} />}
             onClick={() => setIsAttachmentModalOpen(true)}
             data-cy="add-attachment-button"
           >
@@ -639,7 +640,7 @@ export const SupportMessageForm: React.FC<{
                 >
                   <div className="flex w-5/6 gap-10">
                     <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                      <LucideIcon name="file" size={25} />
+                      <Icon icon={<File />} size={25} />
                     </div>
                     <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
                   </div>
@@ -651,7 +652,7 @@ export const SupportMessageForm: React.FC<{
                       className="self-end"
                       onClick={() => removeMessageAttachment(index)}
                     >
-                      <LucideIcon name="x" />
+                      <Icon icon={<X />} />
                     </Button>
                   </div>
                 </div>

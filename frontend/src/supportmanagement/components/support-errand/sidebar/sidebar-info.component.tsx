@@ -28,7 +28,7 @@ import {
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
 import router from 'next/router';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
@@ -99,6 +99,8 @@ export const SidebarInfo: React.FC<{
     undefined
   > = useFormContext();
 
+  const formIsNotValid = useMemo(() => !formState.isValid, [formState.isValid]);
+
   const { admin, status, priority } = watch();
 
   const update = () => {
@@ -110,7 +112,6 @@ export const SidebarInfo: React.FC<{
   const onSubmit = () => {
     setError(false);
     setIsLoading(true);
-    console.log('formdata', getValues());
 
     const municipalityId = defaultSupportErrandInformation.municipalityId;
 
@@ -525,7 +526,7 @@ export const SidebarInfo: React.FC<{
               disabled={
                 isSupportErrandLocked(supportErrand) ||
                 !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
-                !formState.isValid
+                formIsNotValid
               }
               onClick={handleSubmit(() => {
                 return onSubmit();
