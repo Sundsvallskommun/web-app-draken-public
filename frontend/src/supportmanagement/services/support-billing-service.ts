@@ -17,6 +17,7 @@ import { twoDecimals } from '@common/services/helper-service';
 import * as yup from 'yup';
 import { User } from '@common/interfaces/user';
 import { All } from '@casedata/interfaces/priority';
+import { ExternalCustomerIdentity, InternalCustomerIdentity, invoiceSettings } from './invoiceSettings';
 
 export const attestationLabels = [
   { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -37,31 +38,31 @@ export interface CustomerIdentity {
   customerName: string;
 }
 
-export const customerIdentities: CustomerIdentity[] = [
-  { orgId: '28', treeLevel: 2, customerId: '10', customerName: 'Kommunstyrelsekontoret' },
-  { orgId: '2849', treeLevel: 3, customerId: '15', customerName: 'Servicecenter' },
-  { orgId: '58', treeLevel: 2, customerId: '16', customerName: 'Drakfastigheter' },
-  { orgId: '31', treeLevel: 2, customerId: '20', customerName: 'Individ- och Arbetsmarknadsförvaltningen	' },
-  { orgId: '26', treeLevel: 2, customerId: '30', customerName: 'Stadsbyggnadskontoret' },
-  { orgId: '27', treeLevel: 2, customerId: '32', customerName: 'Lantmäterikontoret' },
-  { orgId: '30', treeLevel: 2, customerId: '40', customerName: 'Kultur och fritid' },
-  { orgId: '24', treeLevel: 2, customerId: '60', customerName: 'Barn och Utbildning' },
-  { orgId: '23', treeLevel: 2, customerId: '70', customerName: 'Vård och Omsorgsförvaltningen' },
-  { orgId: '25', treeLevel: 2, customerId: '80', customerName: 'Miljökontoret' },
-  { orgId: '29', treeLevel: 2, customerId: '90', customerName: 'Överförmyndarkontoret' },
-];
+// export const customerIdentities: CustomerIdentity[] = [
+//   { orgId: '28', treeLevel: 2, customerId: '10', customerName: 'Kommunstyrelsekontoret' },
+//   { orgId: '2849', treeLevel: 3, customerId: '15', customerName: 'Servicecenter' },
+//   { orgId: '58', treeLevel: 2, customerId: '16', customerName: 'Drakfastigheter' },
+//   { orgId: '31', treeLevel: 2, customerId: '20', customerName: 'Individ- och Arbetsmarknadsförvaltningen	' },
+//   { orgId: '26', treeLevel: 2, customerId: '30', customerName: 'Stadsbyggnadskontoret' },
+//   { orgId: '27', treeLevel: 2, customerId: '32', customerName: 'Lantmäterikontoret' },
+//   { orgId: '30', treeLevel: 2, customerId: '40', customerName: 'Kultur och fritid' },
+//   { orgId: '24', treeLevel: 2, customerId: '60', customerName: 'Barn och Utbildning' },
+//   { orgId: '23', treeLevel: 2, customerId: '70', customerName: 'Vård och Omsorgsförvaltningen' },
+//   { orgId: '25', treeLevel: 2, customerId: '80', customerName: 'Miljökontoret' },
+//   { orgId: '29', treeLevel: 2, customerId: '90', customerName: 'Överförmyndarkontoret' },
+// ];
 
-export const invoiceActivities = [
-  { id: 0, value: '5756', displayName: '5756 - Lön och pension' },
-  { id: 1, value: '5757', displayName: '5757 - Heroma' },
-];
+// export const invoiceActivities = [
+//   { id: 0, value: '5756', displayName: '5756 - Lön och pension' },
+//   { id: 1, value: '5757', displayName: '5757 - Heroma' },
+// ];
 
-export const invoiceTypes = [
-  { id: 0, key: 'DIREKTINSATTNING', displayName: 'Extra utbetalning - Direktinsättning' },
-  { id: 1, key: 'SYSTEMET', displayName: 'Extra utbetalning - Systemet' },
-  { id: 2, key: 'LONEUNDERLAG', displayName: 'Manuell hantering - Löneunderlag' },
-  { id: 3, key: 'EXTRA', displayName: 'Extra beställning' },
-];
+// export const invoiceTypes = [
+//   { id: 0, key: 'DIREKTINSATTNING', displayName: 'Extra utbetalning - Direktinsättning' },
+//   { id: 1, key: 'SYSTEMET', displayName: 'Extra utbetalning - Systemet' },
+//   { id: 2, key: 'LONEUNDERLAG', displayName: 'Manuell hantering - Löneunderlag' },
+//   { id: 3, key: 'EXTRA', displayName: 'Extra beställning' },
+// ];
 
 export const billingrecordStatusToLabel = (status: string) => {
   switch (status) {
@@ -84,29 +85,29 @@ export const billingFormSchema = yup.object({
   invoice: yup.object({
     customerId: yup.string().required('Fyll i kundidentitet'),
     customerReference: yup.string().required('Fyll i referensnummer'),
-    invoiceRows: yup.array().of(
-      yup.object({
-        quantity: yup
-          .number()
-          .typeError('Ange i format 1,23')
-          .test('isnumber', 'Ange i format 1,23', (q) => {
-            return /^\d*\.?\d{0,2}$/g.test(q.toString());
-          })
-          .test('positivt', 'Måste vara 0 eller större', (q) => q > 0)
-          .required('Fyll i antal timmar'),
-        costPerUnit: yup.string().required('Fyll i timpris'),
-        totalAmount: yup.string().nullable(),
-        accountInformation: yup.object({
-          activity: yup
-            .mixed<string>()
-            .required('Välj aktivitet')
-            .oneOf(
-              invoiceActivities.map((a) => a.value),
-              'Välj aktivitet'
-            ),
-        }),
-      })
-    ),
+    // invoiceRows: yup.array().of(
+    //   yup.object({
+    //     quantity: yup
+    //       .number()
+    //       .typeError('Ange i format 1,23')
+    //       .test('isnumber', 'Ange i format 1,23', (q) => {
+    //         return /^\d*\.?\d{0,2}$/g.test(q.toString());
+    //       })
+    //       .test('positivt', 'Måste vara 0 eller större', (q) => q > 0)
+    //       .required('Fyll i antal timmar'),
+    //     costPerUnit: yup.string().required('Fyll i timpris'),
+    //     totalAmount: yup.string().nullable(),
+    //     accountInformation: yup.object({
+    //       activity: yup
+    //         .mixed<string>()
+    //         .required('Välj aktivitet')
+    //         .oneOf(
+    //           invoiceSettings.activities.map((a) => a.value),
+    //           'Välj aktivitet'
+    //         ),
+    //     }),
+    //   })
+    // ),
   }),
   totalAmount: yup.string().nullable(),
   registeredBy: yup.string(),
@@ -121,23 +122,24 @@ export const emptyBillingRecord: CBillingRecord = {
   invoice: {
     referenceId: 'foobar',
     customerId: '',
-    description: invoiceTypes[0].displayName,
-    invoiceRows: [
-      {
-        accountInformation: {
-          activity: '',
-          costCenter: 'foobar',
-          subaccount: 'foobar',
-          department: 'foobar',
-          counterpart: 'foobar',
-        },
-        descriptions: [''],
-        detailedDescriptions: [''],
-        quantity: 1,
-        costPerUnit: 300,
-        totalAmount: 300,
-      },
-    ],
+    description: invoiceSettings.invoiceTypes[0].invoiceType,
+    invoiceRows: invoiceSettings.invoiceTypes[0].internal.invoiceRows,
+    // invoiceRows: [
+    //   {
+    //     accountInformation: {
+    //       activity: '',
+    //       costCenter: 'foobar',
+    //       subaccount: 'foobar',
+    //       department: 'foobar',
+    //       counterpart: 'foobar',
+    //     },
+    //     descriptions: [''],
+    //     detailedDescriptions: [''],
+    //     quantity: 1,
+    //     costPerUnit: 300,
+    //     totalAmount: 300,
+    //   },
+    // ],
     totalAmount: 0,
   },
 };
@@ -156,7 +158,7 @@ const satisfyApi = (data: CBillingRecord) => {
     row.quantity = twoDecimals(parseFloat(row.quantity.toString()));
     row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit.toString()));
   });
-  data.category = 'SALARY_AND_PENSION';
+  data.category = invoiceSettings.category;
   return data;
 };
 
@@ -205,14 +207,15 @@ export const saveBillingRecord: (
   const action = record.id ? apiService.put : apiService.post;
   let data = satisfyApi(record);
   console.log('Saving data:', data);
-  return action<CBillingRecord, CBillingRecord>(url, data)
-    .then((res) => {
-      return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when updating invoice');
-      throw e;
-    });
+  return Promise.resolve(true);
+  // return action<CBillingRecord, CBillingRecord>(url, data)
+  //   .then((res) => {
+  //     return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
+  //   })
+  //   .catch((e) => {
+  //     console.error('Something went wrong when updating invoice');
+  //     throw e;
+  //   });
 };
 
 const saveBillingRecordReferenceToErrand: (
@@ -248,7 +251,9 @@ const parseInvoiceAdministrationInfo: (orgTree: string) => {
   return {
     administrationCode: orgTree.split('¤')[0].split('|')[1].toString(),
     administrationName: orgTree.split('¤')[0].split('|')[2].toString(),
-    is2849: orgTree.split('¤').some((x) => x.split('|')[1].toString() === '2849'),
+    is2849:
+      orgTree.split('¤')[1].split('|')[1] === '28' &&
+      orgTree.split('¤').some((x) => x.split('|')[1].toString() === '2849'),
   };
 };
 
@@ -268,22 +273,67 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
     });
 };
 
-export const getEmployeeOrganizationId: (username: string, domain?: string) => Promise<string> = async (
-  username,
-  domain
-) => {
+export const getEmployeeOrganizationId: (
+  username: string,
+  domain?: string
+) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string }> = async (username, domain) => {
   const employeeData = await getEmployeeData(username, domain);
+  console.log('employeeData: ', employeeData);
   const orgData = parseInvoiceAdministrationInfo(employeeData.orgTree);
-  return orgData.is2849 ? '2849' : orgData.administrationCode;
+  return {
+    companyId: employeeData.companyId,
+    organizationId: orgData.is2849 ? '2849' : orgData.administrationCode,
+    referenceNumber: employeeData.referenceNumber,
+  };
 };
 
 export const getEmployeeCustomerIdentity: (
   username: string,
   domain?: string
-) => Promise<CustomerIdentity | undefined> = async (username, domain) => {
-  const orgId = await getEmployeeOrganizationId(username, domain);
-  const customerIdentity = customerIdentities.find((c) => c.orgId === orgId);
-  return customerIdentity;
+) => Promise<
+  | {
+      type: 'INTERNAL';
+      identity: InternalCustomerIdentity | undefined;
+      referenceNumber: string;
+    }
+  | {
+      type: 'EXTERNAL';
+      identity: ExternalCustomerIdentity | undefined;
+      referenceNumber: string;
+    }
+> = async (username, domain) => {
+  const employeeOrgData = await getEmployeeOrganizationId(username, domain);
+  console.log('employeeOrgData: ', employeeOrgData);
+  const isInternal = employeeOrgData.companyId === 1;
+  if (isInternal) {
+    console.log('Processing internal customer identity');
+    const identity = invoiceSettings.customers.internal.find((c) => c.orgId[0] === employeeOrgData.organizationId);
+    const referenceNumber = employeeOrgData?.referenceNumber ?? '';
+    return {
+      type: 'INTERNAL',
+      identity,
+      referenceNumber,
+    };
+  } else {
+    console.log('Processing external customer identity');
+    const identity = invoiceSettings.customers.external.find((c) => c.companyId === employeeOrgData.companyId);
+    const referenceNumber = identity?.customerReference ?? '';
+    return {
+      type: 'EXTERNAL',
+      identity,
+      referenceNumber,
+    };
+  }
+};
+
+export const getOrganizationPartyId: (orgNr: string) => Promise<string> = async (orgNr) => {
+  return apiService
+    .get<string>(`party/${orgNr}`)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching party id');
+      throw e;
+    });
 };
 
 export const getBillingRecord: (recordId: string, municipalityId: string) => Promise<CBillingRecord> = (
