@@ -105,7 +105,7 @@ const CommonNestedEmailArrayV2 = ({
         />
         <Button
           type="button"
-          data-cy={`add-email-button`}
+          data-cy={`add-new-email-button`}
           variant="tertiary"
           size="md"
           onClick={() => {

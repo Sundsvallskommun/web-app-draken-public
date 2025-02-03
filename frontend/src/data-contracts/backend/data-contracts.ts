@@ -82,11 +82,9 @@ export interface CBillingRecord {
 }
 
 export interface CSortObject {
-  direction?: string;
-  nullHandling?: string;
-  ascending?: boolean;
-  property?: string;
-  ignoreCase?: boolean;
+  unsorted?: boolean;
+  empty?: boolean;
+  sorted?: boolean;
 }
 
 export interface CPageableObject {
@@ -249,6 +247,7 @@ export interface CreateErrandDto {
   stakeholders?: CreateStakeholderDto[];
   decisions?: string;
   extraParameters?: any[];
+  suspension?: object;
 }
 
 export interface CPatchErrandDto {
@@ -267,6 +266,7 @@ export interface CPatchErrandDto {
   diaryNumber?: string;
   decisions?: string;
   extraParameters?: any[];
+  suspension?: object;
 }
 
 export interface CreateErrandNoteDto {
@@ -297,6 +297,7 @@ export interface CasedataNotificationDto {
 
 export interface PatchNotificationDto {
   id?: string;
+  errandId?: number;
   ownerId?: string;
   type?: string;
   description?: string;
@@ -328,6 +329,31 @@ export interface SmsDto {
 
 export interface DecisionMessageDto {
   errandId: string;
+}
+
+export interface MessageResponse {
+  messageId?: string;
+  errandId?: string;
+  municipalityId?: string;
+  namespace?: string;
+  direction?: string;
+  familyId?: string;
+  externalCaseId?: string;
+  message?: string;
+  sent?: string;
+  subject?: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  messageType?: string;
+  mobileNumber?: string;
+  recipients?: any[];
+  email?: string;
+  userId?: string;
+  viewed?: string;
+  classification?: string;
+  attachments?: any[];
+  emailHeaders?: any[];
 }
 
 export interface SupportAttachmentDto {
@@ -419,6 +445,7 @@ export interface SupportNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: boolean;
+  globalAcknowledged?: boolean;
   errandId: string;
   errandNumber: string;
 }
@@ -500,6 +527,7 @@ export enum CreateErrandDtoStatusEnum {
   Tilldelat = 'Tilldelat',
   HanterasIAnnatSystem = 'Hanteras i annat system',
   ValueArendetAvvisas = 'Ärendet avvisas',
+  Parkerad = 'Parkerad',
 }
 
 export enum CPatchErrandDtoStatusEnum {
@@ -520,4 +548,5 @@ export enum CPatchErrandDtoStatusEnum {
   Tilldelat = 'Tilldelat',
   HanterasIAnnatSystem = 'Hanteras i annat system',
   ValueArendetAvvisas = 'Ärendet avvisas',
+  Parkerad = 'Parkerad',
 }

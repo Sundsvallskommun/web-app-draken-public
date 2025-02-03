@@ -1,12 +1,13 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
-import { MessageResponse, MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
+import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, cx } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React from 'react';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export const RenderedMessage: React.FC<{
   message: MessageResponse;
