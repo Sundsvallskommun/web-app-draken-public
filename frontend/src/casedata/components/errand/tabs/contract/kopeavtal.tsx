@@ -1662,14 +1662,6 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
             >
               Välj villkor för underskrifter
             </Button>
-            {/*             <Checkbox
-              data-cy="manual-text-checkbox-soilbeam"
-              onChange={() => {
-                setEditSignature(!editSignature);
-              }}
-            >
-              Redigera text manuellt
-            </Checkbox> */}
           </div>
           <Modal
             show={showSignature}
