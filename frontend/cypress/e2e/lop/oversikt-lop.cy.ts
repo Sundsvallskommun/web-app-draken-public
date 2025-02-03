@@ -2,7 +2,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
-import { mockCategories, mockMetaData, mockMetaDataRoles } from './fixtures/mockMetadata';
+import { mockCategories, mockMetaData } from './fixtures/mockMetadata';
 import {
   mockEmptySupportErrand,
   mockFilterAdminErrands,
@@ -28,7 +28,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
       cy.intercept('GET', '**/supporterrands/2281?page=1*', mockSupportErrandsEmpty).as('getErrandsEmpty');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
-      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('GET', '**/supportnotifications/2281', mockNotifications).as('getSupportNotifications');
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
       cy.visit('/oversikt/');

@@ -16,7 +16,6 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { mockMetaDataRoles } from '../lop/fixtures/mockMetadata';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Errand page', () => {
@@ -33,7 +32,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportMessages).as('getMessages');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
-      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
       cy.intercept('POST', `**/organization`, mockOrganizationResponse).as('getOrganization');

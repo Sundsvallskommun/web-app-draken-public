@@ -1,12 +1,10 @@
-import { MetadataResponse, MetadataRoles, Type } from '@common/data-contracts/supportmanagement/data-contracts';
+import { MetadataResponse, Type } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 import { sortBy } from '@common/services/helper-service';
 
 export type SupportType = Type;
 
 export type SupportMetadata = MetadataResponse;
-
-export type SupportRoles = MetadataRoles;
 
 export const getSupportMetadata: (municipalityId: string) => Promise<{ metadata: SupportMetadata; error?: string }> = (
   municipalityId
@@ -26,20 +24,4 @@ export const getSupportMetadata: (municipalityId: string) => Promise<{ metadata:
           error?: string;
         })
     );
-};
-
-export const getSupportMetadataRoles: (municipalityId: string) => Promise<{ roles: SupportRoles[]; error?: string }> = (
-  municipalityId
-) => {
-  let url = `supportmetadata/${municipalityId}/roles`;
-  return apiService
-    .get<SupportRoles[]>(url)
-    .then((res: any) => {
-      const roles = res.data;
-      return { roles: roles };
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching roles', e);
-      throw e;
-    });
 };

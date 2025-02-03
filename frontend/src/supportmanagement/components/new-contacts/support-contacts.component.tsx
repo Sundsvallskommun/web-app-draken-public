@@ -16,8 +16,6 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
-import { Metadata } from 'next';
-import { MetadataRoles } from '@common/data-contracts/supportmanagement/data-contracts';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -34,7 +32,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setSupportErrand,
     municipalityId,
     user,
-    supportMetadataRoles,
+    supportMetadata,
   }: {
     user: User;
     municipalityId: string;
@@ -42,7 +40,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setSupportErrand: any;
     supportMetadata: SupportMetadata;
     supportAttachments: SupportAttachment[];
-    supportMetadataRoles: MetadataRoles[];
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
@@ -407,7 +404,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 <FormLabel>Tillagda parter</FormLabel>
                 <div className="flex flex-row gap-12 flex-wrap">
                   {stakeholderContacts.map((stakeholder, idx) => {
-                    const role = supportMetadataRoles.find((r) => r.name === stakeholder.role)?.displayName;
+                    const role = supportMetadata.roles.find((r) => r.name === stakeholder.role)?.displayName;
                     return renderContact(stakeholder, idx, role);
                   })}
                 </div>

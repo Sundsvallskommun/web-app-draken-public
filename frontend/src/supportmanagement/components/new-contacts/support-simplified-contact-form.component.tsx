@@ -23,7 +23,7 @@ import {
 } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { isIK, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -49,7 +49,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { getSupportMetadataRoles } from '@supportmanagement/services/support-metadata-service';
+import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -164,13 +164,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const {
-    supportErrand,
-    supportMetadata,
-    municipalityId,
-    supportMetadataRoles,
-    setSupportMetadataRoles,
-  }: AppContextInterface = useAppContext();
+  const { supportErrand, supportMetadata, municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -276,7 +270,9 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [organizationNumber, personNumber]);
 
   useEffect(() => {
-    municipalityId && getSupportMetadataRoles(municipalityId).then((res) => setSupportMetadataRoles(res.roles));
+    (isKC() || isIK() || isLOP()) &&
+      municipalityId &&
+      getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
@@ -936,8 +932,8 @@ export const SupportSimplifiedContactForm: React.FC<{
                         <Select.Option key="" value="">
                           Välj roll
                         </Select.Option>
-                        {supportMetadataRoles &&
-                          Object.entries(supportMetadataRoles)
+                        {supportMetadata &&
+                          Object.entries(supportMetadata.roles)
                             .filter(
                               ([, relation]) => !(contact.role === 'CONTACT' && ['PRIMARY'].includes(relation.name))
                             )

@@ -20,7 +20,7 @@ const CommonNestedEmailArrayV2 = ({
   addingStakeholder = false,
 }) => {
   const { emails, existingEmail, newEmail } = watch();
-  const { supportMetadataRoles }: AppContextInterface = useAppContext();
+  const { supportMetadata }: AppContextInterface = useAppContext();
   const { fields, remove, append } = useFieldArray({
     control,
     name: 'emails',
@@ -47,7 +47,7 @@ const CommonNestedEmailArrayV2 = ({
         if (stakeholder?.contactChannels?.length) {
           stakeholder?.contactChannels?.map((channel) => {
             if (channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email) {
-              const role = supportMetadataRoles.find((r) => r.name === stakeholder.role)?.displayName;
+              const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
               stakeholders.push({
                 email: channel?.value ?? [],
                 role: [role],

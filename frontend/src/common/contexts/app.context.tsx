@@ -14,7 +14,7 @@ import {
   SupportStakeholderFormModel,
   emptySupportErrandList,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata, SupportRoles } from '@supportmanagement/services/support-metadata-service';
+import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { createContext, useContext, useState } from 'react';
@@ -53,9 +53,6 @@ export interface AppContextInterface {
 
   supportMetadata: SupportMetadata;
   setSupportMetadata: (supportMetadata: SupportMetadata) => void;
-
-  supportMetadataRoles: SupportRoles[];
-  setSupportMetadataRoles: (supportRoles: SupportRoles[]) => void;
 
   supportErrand;
   setSupportErrand: (supportErrand: SupportErrand) => void;
@@ -159,7 +156,6 @@ export function AppWrapper({ children }) {
   const [assets, setAssets] = useState<Asset[]>();
   const [supportErrand, setSupportErrand] = useState<SupportErrand>();
   const [supportMetadata, setSupportMetadata] = useState<SupportMetadata>();
-  const [supportMetadataRoles, setSupportMetadataRoles] = useState<SupportRoles[]>([]);
   const [supportAttachments, setSupportAttachments] = useState<SupportAttachment[]>();
   const [selectedSupportErrandStatuses, setSelectedSupportErrandStatuses] = useState<Status[]>([Status.NEW]);
   const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<string[]>(['ArendeInkommit']);
@@ -209,9 +205,6 @@ export function AppWrapper({ children }) {
 
         supportMetadata,
         setSupportMetadata: (supportMetadata: SupportMetadata) => setSupportMetadata(supportMetadata),
-
-        supportMetadataRoles,
-        setSupportMetadataRoles: (supportRoles: SupportRoles[]) => setSupportMetadataRoles(supportRoles),
 
         supportAttachments,
         setSupportAttachments: (supportAttachments: SupportAttachment[]) => setSupportAttachments(supportAttachments),

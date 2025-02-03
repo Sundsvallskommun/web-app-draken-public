@@ -3,7 +3,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
-import { mockMetaData, mockMetaDataRoles } from './fixtures/mockMetadata';
+import { mockMetaData } from './fixtures/mockMetadata';
 import {
   mockDifferentUserSupportErrand,
   mockEmptySupportErrand,
@@ -11,7 +11,6 @@ import {
   mockSupportAttachments,
   mockSupportErrand,
   mockSupportMessages,
-  modifyField,
 } from './fixtures/mockSupportErrands';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
@@ -19,9 +18,6 @@ import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
-import { Resolution } from '@supportmanagement/services/support-errand-service';
-import { interceptFormData } from 'cypress-intercept-formdata';
-import { CyHttpMessages } from 'cypress/types/net-stubbing';
 
 ////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
@@ -43,7 +39,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         'getHistory'
       );
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
-      cy.intercept('GET', '**/supportmetadata/2281/roles', mockMetaDataRoles).as('getSupportMetadataRoles');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
