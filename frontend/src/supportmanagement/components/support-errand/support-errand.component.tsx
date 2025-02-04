@@ -1,12 +1,13 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
 import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   ApiSupportErrand,
   SupportErrand,
   defaultSupportErrandInformation,
+  emptySupportErrand,
   getSupportErrandById,
   initiateSupportErrand,
   supportErrandIsEmpty,
@@ -19,6 +20,8 @@ import * as yup from 'yup';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
+import { SaveButtonComponent } from '../save-button/save-button.component';
+import { ArrowRight } from 'lucide-react';
 
 let formSchema = yup
   .object({
@@ -44,7 +47,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (e: ApiSupportErrand) => void;
+    setSupportErrand: (e: any) => void;
     supportAdmins: SupportAdmin[];
     setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
@@ -107,24 +110,27 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand)) {
-        initiateSupportErrand(municipalityId)
-          .then((result) => {
-            setSupportErrand(result);
-            methods.reset(result);
-          })
-          .catch((e) => {
-            console.error('Error when initiating errand:', e);
-            setIsLoading(false);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när ärendet skulle initieras',
-              status: 'error',
-            });
-          });
-      }
+      setSupportErrand(emptySupportErrand);
     }
+    // else {
+    //   if (municipalityId && supportErrandIsEmpty(supportErrand)) {
+    //     initiateSupportErrand(municipalityId)
+    //       .then((result) => {
+    //         setSupportErrand(result);
+    //         methods.reset(result);
+    //       })
+    //       .catch((e) => {
+    //         console.error('Error when initiating errand:', e);
+    //         setIsLoading(false);
+    //         toastMessage({
+    //           position: 'bottom',
+    //           closeable: false,
+    //           message: 'Något gick fel när ärendet skulle initieras',
+    //           status: 'error',
+    //         });
+    //       });
+    //   }
+    // }
   }, [router, municipalityId]);
 
   return (
@@ -170,6 +176,18 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                               >
                                 Avbryt
                               </Button>
+                              <SaveButtonComponent
+                                errand={supportErrand}
+                                registeringNewErrand={typeof supportErrand?.id === 'undefined'}
+                                setUnsaved={() => {}}
+                                update={() => {}}
+                                verifyAndClose={function (): void {
+                                  throw new Error('Function not implemented.');
+                                }}
+                                label="Registrera"
+                                color="vattjom"
+                                icon={<Icon icon={<ArrowRight />} size={18} />}
+                              />
                             </div>
                           </div>
                         ) : null}

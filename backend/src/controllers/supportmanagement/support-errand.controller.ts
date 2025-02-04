@@ -387,7 +387,7 @@ export class SupportErrandController {
   async initiateSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: Partial<SupportErrandDto>,
+    @Body() data: SupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
@@ -401,19 +401,19 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
-    const body: SupportErrand = {
-      reporterUserId: req.user.username,
-      assignedUserId: req.user.username,
-      classification: {
-        category: 'NONE',
-        type: 'NONE',
-      },
-      priority: 'MEDIUM' as SupportPriority,
-      status: Status.NEW,
-      resolution: Resolution.INFORMED,
-      title: 'Empty errand',
-    };
-    const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: body }, req.user).catch(e => {
+    // const body: SupportErrand = {
+    //   reporterUserId: req.user.username,
+    //   assignedUserId: req.user.username,
+    //   classification: {
+    //     category: 'NONE',
+    //     type: 'NONE',
+    //   },
+    //   priority: 'MEDIUM' as SupportPriority,
+    //   status: Status.NEW,
+    //   resolution: Resolution.INFORMED,
+    //   title: 'Empty errand',
+    // };
+    const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: data }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
       throw e;

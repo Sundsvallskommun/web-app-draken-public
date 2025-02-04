@@ -202,6 +202,17 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
+export const emptySupportErrand: Partial<SupportErrand> = {
+  classification: {
+    category: '',
+    type: '',
+  },
+  description: '',
+  resolution: 'INFORMED',
+  priority: Priority.MEDIUM,
+  status: Status.NEW,
+};
+
 export const newStatuses = [Status.NEW];
 
 export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
@@ -427,8 +438,8 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   id: '',
   title: '',
   priority: Priority.MEDIUM,
-  category: 'NONE',
-  type: 'NONE',
+  category: '',
+  type: '',
   labels: [],
   contactReason: '',
   contactReasonDescription: '',
@@ -752,9 +763,12 @@ export const getSupportErrands: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | SupportErrand> = (municipalityId) => {
+export const initiateSupportErrand: (
+  municipalityId: string,
+  body: Partial<SupportErrandDto>
+) => Promise<any | SupportErrand> = (municipalityId, body) => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, body)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
