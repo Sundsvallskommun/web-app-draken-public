@@ -40,6 +40,9 @@ export class CAccountInformation implements AccountInformation {
   @IsOptional()
   @IsString()
   counterpart?: string;
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
 }
 
 export class CInvoiceRow implements InvoiceRow {
@@ -62,9 +65,9 @@ export class CInvoiceRow implements InvoiceRow {
   @IsNumber()
   quantity?: number;
   @IsOptional()
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @TypeTransformer(() => CAccountInformation)
-  accountInformation?: AccountInformation;
+  accountInformation?: AccountInformation[];
 }
 
 export class CInvoice implements Invoice {

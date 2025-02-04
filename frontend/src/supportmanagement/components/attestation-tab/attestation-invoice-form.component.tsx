@@ -7,6 +7,7 @@ import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@
 import {
   approveBillingRecord,
   billingFormSchema,
+  getInvoiceRows,
   rejectBillingRecord,
   saveBillingRecord,
   setBillingRecordStatus,
@@ -51,6 +52,8 @@ export const AttestationInvoiceForm: React.FC<{
     mode: 'onSubmit',
   });
 
+  formControls.setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
+
   const {
     register,
     control,
@@ -65,10 +68,17 @@ export const AttestationInvoiceForm: React.FC<{
     formState: { errors, isDirty },
   } = formControls;
 
-  const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
-    control, // control props comes from useForm (optional: if you are using FormProvider)
-    name: 'invoice.invoiceRows', // unique name for your Field Array
-  });
+  const handleDescriptionChange = (description: any, identity: string) => {
+    setValue('invoice.description', description);
+    const formRows = getInvoiceRows(
+      selectedRecord.extraParameters['errandNumber'] || '(saknas)',
+      description,
+      getValues('type'),
+      identity
+      // getValues('invoice.customerId')
+    );
+    setValue('invoice.invoiceRows', formRows);
+  };
 
   const onError = () => {
     console.log('getValues()', getValues());
@@ -173,7 +183,10 @@ export const AttestationInvoiceForm: React.FC<{
       </Table>
 
       <FormProvider {...formControls}>
-        <BillingForm recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])} />
+        <BillingForm
+          recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])}
+          handleDescriptionChange={handleDescriptionChange}
+        />
       </FormProvider>
 
       <Divider />
