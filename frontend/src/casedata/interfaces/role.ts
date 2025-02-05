@@ -29,7 +29,6 @@ export enum Role {
 export enum MEXRelation {
   LEASEHOLDER = 'Arrendator',
   COMPANY_SIGNATORY = 'Firmatecknare',
-  ASSOCIATION_REPRESENTATIVE = 'Föreningsrepresentant',
   CASHIER = 'Kassör',
   BUYER = 'Köpare',
   CHAIRMAN = 'Ordförande',
@@ -37,9 +36,12 @@ export enum MEXRelation {
   LAND_RIGHT_OWNER = 'Tomträttshavare',
   USUFRUCTUARY = 'Nyttjanderättshavare',
   PROPERTY_OWNER = 'Fastighetsägare',
-  PERSON = 'Privatperson',
-  ORGANIZATION = 'Företagsrepresentant',
-  RIGHTS_HOLDER = 'Rättighetshavare',
+  DEPARTMENT_HEAD = 'Avdelningschef',
+  DEVELOPER = 'Exploatör',
+  FELLOW_APPLICANT = 'Medsökande',
+  SECTION_HEAD = 'Sektionschef',
+  ALTERNATE = 'Suppleant',
+  SECRETARY = 'Sekreterare',
 }
 
 export enum PTRelation {
@@ -64,7 +66,6 @@ export enum PrettyRole {
   DOCTOR = 'Läkare',
   LEASEHOLDER = 'Arrendator',
   COMPANY_SIGNATORY = 'Firmatecknare',
-  ASSOCIATION_REPRESENTATIVE = 'Föreningsrepresentant',
   CASHIER = 'Kassör',
   BUYER = 'Köpare',
   CHAIRMAN = 'Ordförande',
@@ -72,5 +73,9 @@ export enum PrettyRole {
   GRANTOR = 'Upplåtare',
   LAND_RIGHT_OWNER = 'Tomträttshavare',
   USUFRUCTUARY = 'Nyttjanderättshavare',
-  PERSON = 'Privatperson',
+  DEPARTMENT_HEAD = 'Avdelningschef',
+  DEVELOPER = 'Exploatör',
+  SECTION_HEAD = 'Sektionschef',
+  ALTERNATE = 'Suppleant',
+  SECRETARY = 'Sekreterare',
 }
