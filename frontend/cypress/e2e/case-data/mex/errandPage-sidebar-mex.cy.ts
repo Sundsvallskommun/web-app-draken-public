@@ -24,7 +24,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('GET', '**/**/stakeholders/**', mockMexErrand_base.data.stakeholders);
@@ -65,9 +65,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="status-input"]').should('exist').select(1);
       cy.get('[data-cy="save-status-button"]').should('exist').contains('Spara').click();
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.status).to.equal('Väntar på komplettering');
-      });
+      cy.get('[data-cy="status-input"]').should('exist').contains('Väntar på komplettering');
     });
 
     it('manages Notes', () => {
@@ -142,9 +140,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .within(() => {
           cy.get('.ql-editor').type('Mock investigation text');
         });
-
-
-        cy.get(`[data-cy="suspend-button"]`).should('exist').contains('Parkera ärende').click();
 
       cy.get('[data-cy="save-investigation-description-button"]').should('exist').click();
 

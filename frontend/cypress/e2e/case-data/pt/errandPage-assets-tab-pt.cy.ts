@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
-import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockAttachments, mockAttachmentsPT } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
@@ -22,17 +22,20 @@ const tableHeaderColumns = {
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page assets tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/messages/PRH-2022-000019', mockMessages);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('POST', '**/personid', mockPersonId);
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachmentsPT).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
       cy.intercept('POST', '**/stakeholders/personNumber', mockPTErrand_base.data.stakeholders);
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
+      cy.intercept('GET', '**/messages/*', mockMessages);
+      cy.intercept('POST', '**/messages', mockMessages);
 
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
+      cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
 
       cy.visit(`/arende/2281/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
@@ -57,7 +60,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="table-column-status"]').should('exist').contains('span', 'Aktivt');
       cy.get('[data-cy="table-column-errandNumber"]').should('exist').contains('span', 'PRH-2023-000283');
       cy.get('[data-cy="table-column-issued"]').should('exist').contains('span', '2023-01-01');
-      cy.get('[data-cy="table-column-validTo"]').should('exist').contains('span', '2023-01-01-2023-12-24');
+      cy.get('[data-cy="table-column-validTo"]').should('exist').contains('span', '2023-01-01 - 2023-12-24');
     });
   });
 });

@@ -18,7 +18,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('POST', '**/personid', mockPersonId);
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
@@ -28,6 +29,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         mockMexErrand_base.data.extraParameters.find((param) => param.key === 'contractId')?.values[0]
       ).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
@@ -47,7 +49,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('Can handle attachment alternatives', () => {
       mockAttachments.data.forEach((attachment) => {
-        cy.intercept('GET', `**/casedata/2281/attachments/${attachment.id}`, attachment).as('getAttachment');
+        cy.intercept('GET', `**/casedata/2281/errands/101/attachments/${attachment.id}`, attachment).as(
+          'getAttachment'
+        );
         cy.intercept('DELETE', `**/casedata/2281/errands/101/attachments/${attachment.id}`, attachment).as(
           'deleteAttachment'
         );
@@ -89,7 +93,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('Can upload attachment/attachments', () => {
-      cy.intercept('POST', `**/casedata/2281/attachments`, 'attachment.txt').as('uploadAttachment');
+      cy.intercept('POST', `**/casedata/2281/errands/101/attachments`, 'attachment.txt').as('uploadAttachment');
       cy.intercept('GET', '**/errand/101*', mockMexErrand_base).as('getErrandAfterUpload');
       cy.get('[data-cy="add-attachment-button"]').should('exist').contains('Ladda upp bilaga').click();
       cy.get('[data-cy="dragdrop-upload"]').should('exist').contains('klicka för att bläddra på din enhet').click();

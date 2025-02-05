@@ -11,7 +11,11 @@ import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-ed
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
-import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
+import {
+  invalidPhoneMessage,
+  phonePattern,
+  supportManagementPhonePatternOrCountryCode,
+} from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -30,7 +34,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
@@ -116,7 +120,11 @@ let formSchema = yup
         .min(1, 'Ange minst ett telefonnummer')
         .required('Ange minst ett telefonnummer'),
     }),
-    newPhoneNumber: yup.string(),
+    newPhoneNumber: yup
+      .string()
+      .trim()
+      .transform((val) => val && val.replace('-', ''))
+      .matches(phonePattern, invalidPhoneMessage),
     messageBody: yup.string().required('Text måste anges'),
     messageBodyPlaintext: yup.string(),
     attachUtredning: yup.bool(),
@@ -522,7 +530,7 @@ export const MessageComposer: React.FC<{
 
               {errors?.newPhoneNumber && (
                 <div className="my-sm text-error">
-                  <FormErrorMessage>{errors?.newPhoneNumber?.message}</FormErrorMessage>
+                  <FormErrorMessage data-cy="messagePhone-error">{errors?.newPhoneNumber?.message}</FormErrorMessage>
                 </div>
               )}
             </>
@@ -622,7 +630,7 @@ export const MessageComposer: React.FC<{
                     color="primary"
                     leftIcon={<LucideIcon name="paperclip" />}
                     onClick={() => setIsAttachmentModalOpen(true)}
-                    data-cy="add-attachment-button"
+                    data-cy="add-attachment-button-email"
                   >
                     Bifoga fil
                   </Button>

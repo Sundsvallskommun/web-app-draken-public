@@ -24,7 +24,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', /2281\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
-      cy.intercept('GET', /2281\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
@@ -64,6 +64,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('.sk-modal-footer button.sk-btn-primary').contains('Ja').should('exist').click();
       cy.wait('@postErrand');
       cy.wait('@getErrandById');
+      cy.wait('@getErrandAttachments');
       cy.visit(`/arende/${mockMexErrand_base.data.id}`);
     });
 

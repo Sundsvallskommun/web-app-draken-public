@@ -2784,6 +2784,7 @@ export const Lagenhetsarrende: React.FC<{
                 <FormLabel>Ange antal av extra underskriftsrader för fastighetsägare</FormLabel>
                 <Input
                   type="number"
+                  data-cy="signature-propertyowner"
                   value={getValues().signatureTerms.condition.emptyRowPropertyowner?.conditionText}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setValue('signatureTerms.condition.emptyRowPropertyowner.conditionText', e.target.value);
@@ -2792,6 +2793,7 @@ export const Lagenhetsarrende: React.FC<{
                 <FormLabel>Ange antal av extra underskriftsrader för arrendator</FormLabel>
                 <Input
                   type="number"
+                  data-cy="signature-leaseholder"
                   value={getValues().signatureTerms.condition.emptyRowLeaseholder?.conditionText}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setValue('signatureTerms.condition.emptyRowLeaseholder.conditionText', e.target.value);

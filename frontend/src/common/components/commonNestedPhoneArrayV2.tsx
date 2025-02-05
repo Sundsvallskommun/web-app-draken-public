@@ -32,7 +32,7 @@ const CommonNestedPhoneArrayV2 = ({
           data-cy={`newPhoneNumber`}
           className={cx(error ? 'border-error' : null, 'w-full mr-16')}
           placeholder="+4670-..."
-          defaultValue={'+46'}
+          defaultValue={newPhoneNumber ? '' : PREFILL_VALUE}
           {...register(`newPhoneNumber`)}
         />
         <Button
@@ -43,7 +43,7 @@ const CommonNestedPhoneArrayV2 = ({
           color="primary"
           onClick={() => {
             append({ value: newPhoneNumber });
-            setValue(`newPhoneNumber`, PREFILL_VALUE);
+            setValue(`newPhoneNumber`, newPhoneNumber ? '' : PREFILL_VALUE);
             trigger();
           }}
           disabled={newPhoneNumber === '' || newPhoneNumber === PREFILL_VALUE || (errors && !!errors.newPhoneNumber)}
