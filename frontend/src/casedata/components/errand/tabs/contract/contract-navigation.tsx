@@ -19,7 +19,7 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
       : contractType === ContractType.LAND_LEASE
       ? [
           { key: 'parties', label: 'Parter' },
-          { key: 'area', label: 'Område' },
+          { key: 'area', label: 'Område och upplåtelse' },
           { key: 'purpose', label: 'Ändamål' },
           { key: 'arrendetid', label: 'Arrendetid och uppsägning' },
           { key: 'arrendeavgift', label: 'Arrendeavgift' },
