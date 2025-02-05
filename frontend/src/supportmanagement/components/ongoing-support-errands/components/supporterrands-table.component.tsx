@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { Role } from '@casedata/interfaces/role';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -200,6 +201,18 @@ export const SupportErrandsTable: React.FC = () => {
     );
   };
 
+  const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
+    const primaryStakeholder = errand.stakeholders.find((primary) => primary.role === 'PRIMARY');
+    if (primaryStakeholder) {
+      const { firstName, lastName, contactChannels } = primaryStakeholder;
+      if (firstName && lastName) return `${firstName} ${lastName}`;
+
+      const emailChannel = contactChannels.find((channel) => channel.type === 'EMAIL');
+      if (emailChannel?.value) return emailChannel.value;
+    }
+    return '';
+  };
+
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
     return (
       <Table.Row
@@ -244,8 +257,15 @@ export const SupportErrandsTable: React.FC = () => {
           </Table.Column>
         )}
         <Table.Column>{Channels[errand?.channel]}</Table.Column>
-        <Table.Column>
-          <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
+        <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+          <div>
+            <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
+          </div>
+          {isLOP() ? (
+            <div>
+              <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
+            </div>
+          ) : null}
         </Table.Column>
         <Table.Column>
           <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
