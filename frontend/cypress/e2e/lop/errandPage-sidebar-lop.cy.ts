@@ -11,7 +11,6 @@ import {
   mockSupportAttachments,
   mockSupportErrand,
   mockSupportMessages,
-  modifyField,
 } from './fixtures/mockSupportErrands';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
@@ -19,9 +18,6 @@ import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
-import { Resolution } from '@supportmanagement/services/support-errand-service';
-import { interceptFormData } from 'cypress-intercept-formdata';
-import { CyHttpMessages } from 'cypress/types/net-stubbing';
 
 ////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {

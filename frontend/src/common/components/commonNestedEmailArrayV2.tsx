@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
 import { PrettyRole } from '@casedata/interfaces/role';
 import { isMEX, isPT } from '@common/services/application-service';
-import { ContactChannelType, Relation } from '@supportmanagement/services/support-errand-service';
+import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
 
 const CommonNestedEmailArrayV2 = ({
   errand,
@@ -19,7 +20,7 @@ const CommonNestedEmailArrayV2 = ({
   addingStakeholder = false,
 }) => {
   const { emails, existingEmail, newEmail } = watch();
-
+  const { supportMetadata }: AppContextInterface = useAppContext();
   const { fields, remove, append } = useFieldArray({
     control,
     name: 'emails',
@@ -46,9 +47,10 @@ const CommonNestedEmailArrayV2 = ({
         if (stakeholder?.contactChannels?.length) {
           stakeholder?.contactChannels?.map((channel) => {
             if (channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email) {
+              const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
               stakeholders.push({
                 email: channel?.value ?? [],
-                role: Relation[stakeholder.role],
+                role: [role],
               });
             }
           });

@@ -3,11 +3,7 @@ import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { CornerDownRight, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus, Image } from 'lucide-react';
 import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import {
-  isSupportErrandLocked,
-  SupportStakeholderRole,
-  validateAction,
-} from '@supportmanagement/services/support-errand-service';
+import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
@@ -79,9 +75,7 @@ export const RenderedSupportMessage: React.FC<{
 
   const getMessageOwner = (msg: Message) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
-      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) =>
-        stakeholder.role.includes(SupportStakeholderRole.PRIMARY)
-      );
+      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) => stakeholder.role.includes('PRIMARY'));
       const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.contactChannels.some((value) => value.value === msg.sender)
