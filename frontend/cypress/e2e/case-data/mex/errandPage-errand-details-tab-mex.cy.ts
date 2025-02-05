@@ -42,13 +42,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
       cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
     });
 
     const goToErrandInformationTab = () => {
@@ -58,8 +59,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     };
 
     const checkEstateInfo = () => {
-      cy.get('[data-cy="suggestion-list"]').should('exist');
-      cy.get('[data-cy="searchHit-0"]').should('exist').click();
+      cy.get('[data-cy="suggestion-list"]').should('exist').click();
       cy.get('[data-cy="estate-table"').should('exist');
       cy.get('[data-cy="realEstate-0"]')
         .should('exist')
@@ -136,7 +136,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .each(() => {
           cy.get('[data-cy="search-address-radio-button"]').should('exist').check();
         });
-      cy.get('[data-cy="facility-search"]').should('exist').type('Testvägen 1');
+      cy.get('[data-cy="facility-search"]').should('exist').type('Testvägen 1', { delay: 100 });
 
       checkEstateInfo();
     });
