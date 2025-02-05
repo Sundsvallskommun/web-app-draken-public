@@ -3,11 +3,7 @@ import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { CornerDownRight, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus, Image } from 'lucide-react';
 import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import {
-  isSupportErrandLocked,
-  SupportStakeholderRole,
-  validateAction,
-} from '@supportmanagement/services/support-errand-service';
+import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
