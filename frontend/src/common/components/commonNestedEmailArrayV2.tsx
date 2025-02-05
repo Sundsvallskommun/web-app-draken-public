@@ -65,7 +65,12 @@ const CommonNestedEmailArrayV2 = ({
         <>
           <FormLabel>Lägg till befintlig e-postadress</FormLabel>
           <div className="flex gap-16 mb-16">
-            <Select className="w-full" {...register('existingEmail')} placeholder="Välj mottagare">
+            <Select
+              data-cy="existing-email-addresses"
+              className="w-full"
+              {...register('existingEmail')}
+              placeholder="Välj mottagare"
+            >
               <Select.Option value="">Välj mottagare</Select.Option>
               {listedEmails.map((email, index) => {
                 return (

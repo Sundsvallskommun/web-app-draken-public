@@ -61,7 +61,7 @@ export const mockPTErrand_base: { data: ApiErrand; message: string } = {
         contactInformation: [
           {
             contactType: 'PHONE',
-            value: Cypress.env('mockPhoneNumber'),
+            value: '+46701740635',
           },
           {
             contactType: 'EMAIL',
