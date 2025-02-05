@@ -26,7 +26,6 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { Role } from '@casedata/interfaces/role';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
