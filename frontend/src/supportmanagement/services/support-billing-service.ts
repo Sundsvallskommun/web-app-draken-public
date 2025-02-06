@@ -61,6 +61,7 @@ export const billingFormSchema = yup.object({
   id: yup.string(),
   type: yup.string().required('Fyll i faktureringstyp'),
   invoice: yup.object({
+    description: yup.string().required('Fyll i faktureringstyp'),
     customerId: yup.string().required('Fyll i kundidentitet'),
     customerReference: yup.string().required('Fyll i referensnummer'),
     invoiceRows: yup.array().of(
@@ -75,15 +76,17 @@ export const billingFormSchema = yup.object({
           .required('Fyll i antal timmar'),
         costPerUnit: yup.string().required('Fyll i timpris'),
         totalAmount: yup.string().nullable(),
-        // accountInformation: yup.object({
-        //   activity: yup
-        //     .mixed<string>()
-        //     .required('Välj aktivitet')
-        //     .oneOf(
-        //       invoiceSettings.activities.map((a) => a.value),
-        //       'Välj aktivitet'
-        //     ),
-        // }),
+        accountInformation: yup.array().of(
+          yup.object({
+            activity: yup
+              .mixed<string>()
+              .required('Välj aktivitet')
+              .oneOf(
+                invoiceSettings.activities.map((a) => a.value),
+                'Välj aktivitet'
+              ),
+          })
+        ),
       })
     ),
   }),
@@ -272,7 +275,7 @@ export const saveBillingRecord: (
   const action = record.id ? apiService.put : apiService.post;
   let data = satisfyApi(record);
   console.log('Saving data:', data);
-  // return Promise.resolve(true);
+  return Promise.resolve(true);
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
       return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;

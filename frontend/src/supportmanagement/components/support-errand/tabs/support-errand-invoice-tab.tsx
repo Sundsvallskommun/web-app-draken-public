@@ -191,9 +191,7 @@ export const SupportErrandInvoiceTab: React.FC<{
           {record.status === CBillingRecordStatusEnum.NEW ? (
             <div>
               <Button
-                disabled={
-                  isSupportErrandLocked(supportErrand) || !allowed || !formControls.formState.isValid || isLoading
-                }
+                disabled={isSupportErrandLocked(supportErrand) || !allowed || isLoading}
                 onClick={handleSubmit(onSubmit, onError)}
                 data-cy="save-invoice-button"
               >

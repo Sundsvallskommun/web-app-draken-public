@@ -21,35 +21,29 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
       <div className="my-lg gap-xl">
         <FormControl>
           <FormLabel>Faktureringstyp</FormLabel>
-
-          <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
-            <div className="flex justify-between flex-wrap w-full">
-              {invoiceSettings.invoiceTypes.map((invoiceType) => (
-                <div className="w-1/2" key={invoiceType.invoiceType}>
-                  <RadioButton
-                    data-cy={`invoice-type-${invoiceType}`}
-                    className="mr-lg mb-sm whitespace-nowrap"
-                    name={invoiceType.invoiceType}
-                    id={invoiceType.invoiceType}
-                    value={invoiceType.invoiceType}
-                    {...register('invoice.description')}
-                    onChange={(e) => {
-                      console.log('invoiceType: ', e.target.value);
-                      handleDescriptionChange(e.target.value, getValues().invoice.customerId);
-                    }}
-                    defaultChecked={getValues().invoice.description === invoiceType.invoiceType}
-                  >
-                    {invoiceType.invoiceType}
-                  </RadioButton>
-                </div>
-              ))}
-              {errors.type && (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.type?.message}</FormErrorMessage>
-                </div>
-              )}
+          <Select
+            {...register('invoice.description')}
+            data-cy="activity-input"
+            className="w-full text-dark-primary"
+            size="md"
+            placeholder={'0'}
+            onChange={(e) => {
+              handleDescriptionChange(e.target.value, getValues().invoice.customerId);
+              trigger();
+            }}
+          >
+            <Select.Option value={''}>Välj faktureringstyp</Select.Option>
+            {invoiceSettings.invoiceTypes.map((invoiceType) => (
+              <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
+                {invoiceType.invoiceType}
+              </Select.Option>
+            ))}
+          </Select>
+          {errors.invoice?.description && (
+            <div className="text-error">
+              <FormErrorMessage>{errors.invoice?.description.message}</FormErrorMessage>
             </div>
-          </RadioButton.Group>
+          )}
         </FormControl>
       </div>
 
@@ -298,7 +292,9 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
               data-cy="activity-input"
               className="w-full text-dark-primary"
               onChange={(e) => {
-                setValue('invoice.invoiceRows.0.accountInformation.0.activity', e.target.value);
+                getValues('invoice.invoiceRows.0.accountInformation').forEach((accountInformation, index) => {
+                  setValue(`invoice.invoiceRows.0.accountInformation.${index}.activity`, e.target.value);
+                });
               }}
               size="md"
               placeholder={'0'}
