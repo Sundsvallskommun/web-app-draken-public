@@ -488,7 +488,7 @@ export const Lagenhetsarrende: React.FC<{
       <Disclosure
         icon={<Icon icon={<LucideIcon name="map-pin" />} />}
         data-cy="area-disclosure"
-        header={<h2 className="text-h4-sm md:text-h4-md">Område</h2>}
+        header={<h2 className="text-h4-sm md:text-h4-md">Område och upplåtelse</h2>}
         label={doneMark.findIndex((temp) => temp === 'omrade') !== -1 ? 'Komplett' : ''}
         labelColor={watch().omrade?.length > 0 ? 'success' : `warning`}
         initalOpen={watch().omrade?.length > 0}
@@ -521,7 +521,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showOmrade}
             onClose={() => setShowOmrade(false)}
             className="w-[56rem]"
-            label={'Villkor för område'}
+            label={'Område och upplåtelse'}
           >
             <Modal.Content>
               {/* <FormControl id="areaType" className="my-md">
@@ -612,19 +612,15 @@ export const Lagenhetsarrende: React.FC<{
                   e.stopPropagation();
                   // const content = `<strong>Område</strong>
                   // <p>Typ av område: ${getValues().omradeTerms?.areaType}</p><br />
-                  const content = `<p>Arrendeområdet ligger inom fastigheten: </p>
+                  const content = `<p>Fastighetsägaren upplåter till arrendatorn rätt att använda arrendeområdet enligt villkoren i detta avtal.</p><p>Arrendeområdet ligger inom fastigheten: </p>
                     <ul>
                     ${
                       selectedProperties?.length > 0
                         ? selectedProperties.map((property) => `<li>${property}</li>`).join('')
                         : '<li>(saknas)</li>'
-                    }
-                    </ul>
-                    <p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm.</p>
-                    <p>Området är märkt ${getValues().omradeTerms?.mapAttachments} enligt kartbilaga ${
-                    getValues().omradeTerms?.mapAttachmentReference
-                  }.</p><br />`;
-                  // <p>Referens till kartbilaga: ${getValues().omradeTerms?.mapAttachmentReference}</p><br />`;
+                    }</ul><br /><p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm. Området är märkt ${
+                    getValues().omradeTerms?.mapAttachments
+                  } enligt kartbilaga ${getValues().omradeTerms?.mapAttachmentReference}.</p><br />`;
                   setOmrade(content);
                   setShowOmrade(false);
                 }}
@@ -683,12 +679,7 @@ export const Lagenhetsarrende: React.FC<{
               Redigera text manuellt
             </Checkbox>
           </div>
-          <Modal
-            show={showAndamal}
-            onClose={() => setShowAndamal(false)}
-            className="w-[56rem]"
-            label={'Villkor för ändamål'}
-          >
+          <Modal show={showAndamal} onClose={() => setShowAndamal(false)} className="w-[56rem]" label={'Ändamål'}>
             <Modal.Content>
               <FormControl>
                 <FormLabel>
@@ -870,12 +861,12 @@ export const Lagenhetsarrende: React.FC<{
                   {[
                     {
                       key: 'andamalTerms.condition.consent',
-                      header: 'Fastighetsägarens medgivande',
-                      conditionText: 'Området får ej utan fastighetsägarens medgivande användas till annat ändamål.',
+                      header: 'Området får ej användas till annat ändamål',
+                      conditionText: 'Området får ej utan fastighetsägarens medgivande användas till annat ändamål',
                     },
                     {
                       key: 'andamalTerms.condition.detailedplan',
-                      header: 'Gällande detaljplan',
+                      header: 'Området är allmän plats',
                       conditionText: 'Området ligger på allmän platsmark enligt gällande detaljplan.',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
@@ -978,7 +969,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showArrendetid}
             onClose={() => setShowArrendetid(false)}
             className="w-[56rem]"
-            label={'Villkor för arrendetid och uppsägning'}
+            label={'Arrendetid och uppsägning'}
           >
             <Modal.Content>
               <div className="flex justify-between gap-32 items-end">
@@ -1055,7 +1046,7 @@ export const Lagenhetsarrende: React.FC<{
                     },
                     {
                       key: 'arrendetidTerms.condition.end',
-                      header: 'Avtal upphör',
+                      header: 'Avtal upphör utan uppsägning',
                       conditionText: 'Avtalet upphör vid avtalstidens utgång utan att uppsägning behöver ske.',
                     },
                     {
@@ -1075,7 +1066,7 @@ export const Lagenhetsarrende: React.FC<{
                   let content = `
                   <p>Området upplåts fr.o.m ${getValues().arrendetidTerms?.startDate} t.o.m ${
                     getValues().arrendetidTerms?.endDate
-                  }</p>
+                  }.</p>
                   <p>Uppsägningstiden är ömsesidig och avtalet ska sägas upp senast ${
                     getValues().arrendetidTerms?.monthsNotice
                   } ${
@@ -1162,7 +1153,7 @@ export const Lagenhetsarrende: React.FC<{
           <Modal
             show={showArrendeavgift}
             onClose={() => setShowArrendeavgift(false)}
-            label={'Villkor för arrendeavgift'}
+            label={'Arrendeavgift'}
             className="w-[56rem]"
           >
             <Modal.Content>
@@ -1329,7 +1320,7 @@ export const Lagenhetsarrende: React.FC<{
                             );
                           }}
                         >
-                          <strong>Indexreglerad avgift</strong>
+                          <strong>Index</strong>
                         </Checkbox>
                       </FormControl>
                       <div className="flex justify-between gap-32 w-full">
@@ -1519,7 +1510,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showBygglov}
             onClose={() => setShowBygglov(false)}
             className="w-[56rem]"
-            label={'Villkor för bygglov och tillstånd'}
+            label={'Bygglov och tillstånd'}
           >
             <Modal.Content>
               <Table dense background data-cy="buildPermits-table">
@@ -1530,13 +1521,13 @@ export const Lagenhetsarrende: React.FC<{
                   {[
                     {
                       key: 'bygglovTerms.condition.permitFees',
-                      header: 'Arrendator står för tillståndskostnader',
+                      header: 'Arrendator skaffar de tillstånd som krävs',
                       conditionText:
                         'Arrendatorn är skyldig att skaffa och bekosta de tillstånd som krävs för verksamheten på området. Föreskrifter som meddelas av myndighet eller som följer av lag ska följas.',
                     },
                     {
                       key: 'bygglovTerms.condition.buildingOwnership',
-                      header: 'Arrendator äger byggnader som står inom området',
+                      header: 'Arrendator äger byggnader inom området',
                       conditionText: 'Arrendatorn äger byggnader som står inom området.',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
@@ -1622,7 +1613,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showOverlatelse}
             onClose={() => setShowOverlatelse(false)}
             className="w-[56rem]"
-            label={'Villkor för överlåtelse och underupplåtelse'}
+            label={'Överlåtelse och underupplåtelse'}
           >
             <Modal.Content>
               <Table dense background data-cy="overlatelse-table">
@@ -1634,7 +1625,7 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'overlatelseTerms.condition.subletting',
 
-                      header: 'Överlåtelse och underupplåtelse',
+                      header: 'Arrendator får inte överlåta arrendet utan godkännande',
                       conditionText:
                         'Arrendatorn får inte utan fastighetsägarens skriftliga godkännande överlåta eller på annat sätt överföra rättigheterna enligt detta avtal på annan.',
                     },
@@ -1717,7 +1708,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showInskrivning}
             onClose={() => setShowInskrivning(false)}
             className="w-[56rem]"
-            label={'Villkor för inskrivning'}
+            label={'Inskrivning'}
           >
             <Modal.Content>
               <Table dense background data-cy="inskrivning-table">
@@ -1807,12 +1798,7 @@ export const Lagenhetsarrende: React.FC<{
               Redigera text manuellt
             </Checkbox>
           </div>
-          <Modal
-            show={showSkick}
-            onClose={() => setShowSkick(false)}
-            className="w-[56rem]"
-            label={'Villkor för skick och skötsel'}
-          >
+          <Modal show={showSkick} onClose={() => setShowSkick(false)} className="w-[56rem]" label={'Skick och skötsel'}>
             <Modal.Content>
               <Table dense background data-cy="conditionsCare-table">
                 <Table.Header>
@@ -1822,13 +1808,13 @@ export const Lagenhetsarrende: React.FC<{
                   {[
                     {
                       key: 'skickTerms.condition.nuisance',
-                      header: 'Ansvar för undvikande av olägenhet',
+                      header: 'Området ska hållas städat',
                       conditionText:
                         'Området upplåts i befintligt skick. Det åligger arrendatorn att hålla området i städat och vårdat skick och hålla god ordning i sin verksamhet inom området. Arrendatorn ska tillse att den verksamhet han bedriver inom området inte på något vis medför olägenhet för grannar eller någon annan samt för andra verksamheter i anslutning till området.',
                     },
                     {
                       key: 'skickTerms.condition.accessibility',
-                      header: 'Skyldighet att upprätthålla framkomlighet för allmänheten',
+                      header: 'Allmänhetens framkomlighet får inte hindras',
                       conditionText:
                         'Arrendatorn är skyldig att bedriva sin verksamhet inom området så den inte hindrar allmänhetens framkomlighet intill arrendeområdet.',
                     },
@@ -1911,12 +1897,7 @@ export const Lagenhetsarrende: React.FC<{
               Redigera text manuellt
             </Checkbox>
           </div>
-          <Modal
-            show={showLedningar}
-            onClose={() => setShowLedningar(false)}
-            className="w-[56rem]"
-            label={'Villkor för Ledningar'}
-          >
+          <Modal show={showLedningar} onClose={() => setShowLedningar(false)} className="w-[56rem]" label={'Ledningar'}>
             <Modal.Content>
               <Table dense background data-cy="wires-table">
                 <Table.Header>
@@ -1927,7 +1908,7 @@ export const Lagenhetsarrende: React.FC<{
                     {
                       key: 'ledningarTerms.condition.ledningar',
 
-                      header: 'Rätt till Ledningsunderhåll utan Ersättning',
+                      header: 'Fastighetsägare har rätt att anlägga ledningar',
                       conditionText:
                         'Fastighetsägaren förbehåller sig, och annan som får hans medgivande, rätt att anlägga och bibehålla luft- och markförlagda ledningar samt kablar på området. Fastighetsägaren har rätt att få tillträde till området för underhåll av sådana ledningar och kablar. Arrendatorn är skyldig att tåla detta intrång utan ersättning.',
                     },
@@ -2006,12 +1987,7 @@ export const Lagenhetsarrende: React.FC<{
               Redigera text manuellt
             </Checkbox>
           </div>
-          <Modal
-            show={showKostnader}
-            onClose={() => setShowKostnader(false)}
-            className="w-[56rem]"
-            label={'Villkor för kostnader'}
-          >
+          <Modal show={showKostnader} onClose={() => setShowKostnader(false)} className="w-[56rem]" label={'Kostnader'}>
             <Modal.Content>
               <Table dense background data-cy="costs-table">
                 <Table.Header>
@@ -2021,10 +1997,9 @@ export const Lagenhetsarrende: React.FC<{
                   {[
                     {
                       key: 'kostnaderTerms.condition.kostnader',
-
-                      header:
+                      header: 'Arrendatorn står för kostnader och drift för områdets nyttjande',
+                      conditionText:
                         'Arrendatorn ansvarar för avgifter, drift och övriga kostnader som krävs för områdets nyttjande.',
-                      conditionText: '',
                     },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
                 </Table.Body>
@@ -2037,9 +2012,7 @@ export const Lagenhetsarrende: React.FC<{
                   const content = `
                   ${
                     getValues().kostnaderTerms.condition.kostnader
-                      ? `<p>${getValues().kostnaderTerms.condition.kostnader.header}</p><p>${
-                          getValues().kostnaderTerms.condition.kostnader.conditionText
-                        }</p><br />`
+                      ? `<p>${getValues().kostnaderTerms.condition.kostnader.conditionText}</p>`
                       : ''
                   }
 
@@ -2107,18 +2080,18 @@ export const Lagenhetsarrende: React.FC<{
             show={showMarkfororeningar}
             onClose={() => setShowMarkfororeningar(false)}
             className="w-[56rem]"
-            label={'Villkor för skog'}
+            label={'Markföroreningar'}
           >
             <Modal.Content>
               <Table dense background data-cy="soilPollution-table">
                 <Table.Header>
-                  <Table.HeaderColumn>Välj villkor för skog</Table.HeaderColumn>
+                  <Table.HeaderColumn>Välj villkor för markföroreningar</Table.HeaderColumn>
                 </Table.Header>
                 <Table.Body>
                   {[
                     {
                       key: 'markfororeningarTerms.condition.pollutionAvoidance',
-                      header: 'Ansvar för undvikande av föroreningar enligt Miljöbalken',
+                      header: 'Schaktmassor får inte innehålla förorening',
                       conditionText:
                         'Arrendatorn påminns om att som verkamhetsutövare är det dennes ansvar, enligt miljöbalkens bestämmelser, att tillse att ev. schaktmassor eller annat material som tillförs området inte innehåller någon förorening till skada för mark och vatten.',
                     },
@@ -2130,14 +2103,14 @@ export const Lagenhetsarrende: React.FC<{
                     },
                     {
                       key: 'markfororeningarTerms.condition.testDone',
-                      header: 'Miljöprovtagning och rapport',
+                      header: 'Miljöprovtagning är utförd',
                       conditionText: `Miljöprovtagning av området är utförd ${
                         getValues().markfororeningarTerms.condition.testDone?.date ?? 'åååå-mm-dd'
                       }. Arrendatorn har tagit del av provtagningsrapporten.`,
                     },
                     {
                       key: 'markfororeningarTerms.condition.testingAtEnd',
-                      header: 'Krav på miljöprovtagning och provtagningplan vid avtalets upphörande',
+                      header: 'Arrendator ska återlämna mark utan förorening',
                       conditionText:
                         'Det är arrendatorns skyldighet att visa att området lämnas fritt från föroreningar. Miljöprovtagning av området ska utföras i samband med att arrendet upphör om fastighetsägaren så kräver. En provtagningsplan ska inlämnas till fastighetsägaren för godkännande innan provtagning sker. Provtagningen bekostas av arrendatorn.',
                     },
@@ -2247,12 +2220,12 @@ export const Lagenhetsarrende: React.FC<{
             show={showUpphorande}
             onClose={() => setShowUpphorande(false)}
             className="w-[56rem]"
-            label={'Villkor för upphörande och återställning'}
+            label={'Arrendets upphörande och återställning'}
           >
             <Modal.Content>
               <Table dense background data-cy="terminationReinstatement-table">
                 <Table.Header>
-                  <Table.HeaderColumn>Välj villkor för upphörande och återställning</Table.HeaderColumn>
+                  <Table.HeaderColumn>Välj villkor för arrendets upphörande och återställning</Table.HeaderColumn>
                 </Table.Header>
                 <Table.Body>
                   {[
@@ -2270,7 +2243,7 @@ export const Lagenhetsarrende: React.FC<{
                     },
                     {
                       key: 'upphorandeTerms.condition.noRefundLeaseFee',
-                      header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
+                      header: 'Avgift återbetalas ej vid förtida upphörande',
                       conditionText:
                         'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
                       /*extraField: {
@@ -2281,7 +2254,7 @@ export const Lagenhetsarrende: React.FC<{
                     },
                     {
                       key: 'upphorandeTerms.condition.inspectionRequirements',
-                      header: 'Besiktningskrav och friskrivning av ersättningsskyldighet',
+                      header: 'Besiktning och friskrivning',
                       conditionText:
                         'När avtalet upphör ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
                     },
@@ -2384,7 +2357,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showSkadaansvar}
             onClose={() => setShowSkadaansvar(false)}
             className="w-[56rem]"
-            label={'Villkor för skada och ansvar'}
+            label={'Skada och ansvar'}
           >
             <Modal.Content>
               <Table dense background data-cy="damages-table">
@@ -2395,7 +2368,7 @@ export const Lagenhetsarrende: React.FC<{
                   {[
                     {
                       key: 'skadaansvarTerms.condition.begransning',
-                      header: 'Begränsning av fastighetsägarens ansvar för skador och krav mot arrendatorn',
+                      header: 'Arrendatorn ansvarar för skada inom området',
                       conditionText:
                         'Fastighetsägaren är inte ansvarig för skada på arrendestället eller arrendatorn tillhörig egendom som orsakas av markens beskaffenhet, grundvattenförändringar, tredje man eller allmänheten. Om krav skulle riktas mot arrendatorns verksamhet ska arrendatorn skyndsamt underrätta fastighetsägaren om detta.',
                     },
@@ -2528,7 +2501,7 @@ export const Lagenhetsarrende: React.FC<{
             show={showSarskilda}
             onClose={() => setShowSarskilda(false)}
             className="w-[56rem]"
-            label={'Villkor för särskilda bestämmelser'}
+            label={'Särskilda bestämmelser'}
           >
             <Modal.Content>
               <Table dense background data-cy="special-provisions-table">
