@@ -50,6 +50,7 @@ export const SupportErrandInvoiceTab: React.FC<{
 
   const [record, setRecord] = useState<CBillingRecord | undefined>(emptyBillingRecord);
   const [recipientName, setRecipientname] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const existingRecordId =
@@ -87,19 +88,19 @@ export const SupportErrandInvoiceTab: React.FC<{
               console.log('org: ', org);
               console.log('Setting partyId: ', org.partyId);
               setValue('recipient.partyId', org.partyId);
-              console.log('setting org.address.city: ', org.address.city);
-              setValue('recipient.addressDetails.street', org?.address?.city);
-              console.log('setting org.address.careOf: ', org.address.careOf);
-              setValue('recipient.addressDetails.careOf', org?.address?.careOf);
-              console.log('setting org.address.postcode: ', org.address.postcode);
-              setValue('recipient.addressDetails.postalCode', org?.address?.postcode);
-              console.log('setting org.address.city: ', org.address.city);
-              setValue('recipient.addressDetails.city', org?.address?.city);
+              setValue('recipient.addressDetails', {
+                city: org?.address?.city,
+                street: org?.address?.street,
+                careOf: org?.address?.careOf,
+                postalCode: org?.address?.postcode,
+              });
             });
-            // Fetch address details from LegalEntity
           }
           setValue('invoice.customerReference', res.referenceNumber);
-          handleDescriptionChange(invoiceSettings.invoiceTypes[0].invoiceType, res.type === "INTERNAL" ? res.identity.customerId.toString() : res.identity.name);
+          handleDescriptionChange(
+            invoiceSettings.invoiceTypes[0].invoiceType,
+            res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.name
+          );
         });
         setRecipientname(`${manager?.firstName} ${manager?.lastName}` || '');
         setValue(`extraParameters`, {
@@ -180,13 +181,19 @@ export const SupportErrandInvoiceTab: React.FC<{
         <h2 className="text-h2-md">Fakturering</h2>
         <span>Fyll i följande faktureringsunderlag.</span>
         <FormProvider {...formControls}>
-          <BillingForm recipientName={recipientName} handleDescriptionChange={handleDescriptionChange} />
+          <BillingForm
+            recipientName={recipientName}
+            handleDescriptionChange={handleDescriptionChange}
+            setIsLoading={setIsLoading}
+          />
         </FormProvider>
         <div className="flex flex-row justify-end">
           {record.status === CBillingRecordStatusEnum.NEW ? (
             <div>
               <Button
-                disabled={isSupportErrandLocked(supportErrand) || !allowed}
+                disabled={
+                  isSupportErrandLocked(supportErrand) || !allowed || !formControls.formState.isValid || isLoading
+                }
                 onClick={handleSubmit(onSubmit, onError)}
                 data-cy="save-invoice-button"
               >
