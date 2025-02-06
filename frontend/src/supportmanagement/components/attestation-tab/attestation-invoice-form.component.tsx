@@ -13,11 +13,10 @@ import {
   setBillingRecordStatus,
 } from '@supportmanagement/services/support-billing-service';
 import NextLink from 'next/link';
-import { useEffect, useState } from 'react';
-import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import { BillingForm } from '../billing/billing-form.component';
-import { validateAction } from '@casedata/services/casedata-errand-service';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
@@ -186,6 +185,7 @@ export const AttestationInvoiceForm: React.FC<{
         <BillingForm
           recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])}
           handleDescriptionChange={handleDescriptionChange}
+          setIsLoading={() => {}}
         />
       </FormProvider>
 

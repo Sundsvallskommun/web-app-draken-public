@@ -1,10 +1,11 @@
 import { twoDecimals } from '@common/services/helper-service';
 import { FormControl, FormErrorMessage, FormLabel, Input, RadioButton, Select } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
+import { getOrganization } from '@supportmanagement/services/support-billing-service';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
-export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
+export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoading }) => {
   const {
     control,
     register,
@@ -222,6 +223,35 @@ export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
               size="md"
               onChange={(e) => {
                 console.log('Kundidentitet change: ', e.target.value);
+                setValue('invoice.customerId', e.target.value);
+                if (getValues('type') === 'EXTERNAL') {
+                  setValue('recipient.organizationName', e.target.value);
+                  const selectedIdentity = invoiceSettings.customers.external.find(
+                    (identity) => identity.name === e.target.value
+                  );
+                  console.log('Selected identity: ', selectedIdentity);
+                  setIsLoading(true);
+                  getOrganization(selectedIdentity.orgNr).then((org) => {
+                    setIsLoading(false);
+                    console.log('org: ', org);
+                    console.log('Setting partyId: ', org.partyId);
+                    setValue('recipient.partyId', org.partyId);
+                    console.log('Setting recipient.addressDetails: ', {
+                      city: org?.address?.city,
+                      street: org?.address?.street,
+                      careOf: org?.address?.careOf,
+                      postalCode: org?.address?.postcode,
+                    });
+                    setValue('recipient.addressDetails', {
+                      city: org?.address?.city,
+                      street: org?.address?.street,
+                      careOf: org?.address?.careOf,
+                      postalCode: org?.address?.postcode,
+                    });
+                  });
+                } else {
+                  setValue('recipient', undefined);
+                }
                 handleDescriptionChange(getValues('invoice.description'), e.target.value);
               }}
               placeholder={'0'}
@@ -232,7 +262,7 @@ export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
                       {identity.name}
                     </Select.Option>
                   ))
-                : getValues().type === 'INTERNAL'
+                : getValues().type === 'EXTERNAL'
                 ? invoiceSettings.customers.external.map((identity) => (
                     <Select.Option key={identity.orgNr || identity.companyId} value={identity.name}>
                       {identity.name}
@@ -245,6 +275,18 @@ export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
                 <FormErrorMessage>{errors.invoice.customerId?.message}</FormErrorMessage>
               </div>
             )}
+            {getValues().recipient ? (
+              <div>
+                Vald kund:
+                <p>PartyID: {getValues().recipient.partyId}</p>
+                <p>{getValues().recipient.organizationName}</p>
+                <p>{getValues().recipient.addressDetails?.careOf}</p>
+                <p>{getValues().recipient.addressDetails?.street}</p>
+                <p>
+                  {getValues().recipient.addressDetails?.postalCode} {getValues().recipient.addressDetails?.city}
+                </p>
+              </div>
+            ) : null}
           </FormControl>
         </div>
 
@@ -256,12 +298,7 @@ export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
               data-cy="activity-input"
               className="w-full text-dark-primary"
               onChange={(e) => {
-                console.log('Activity: ', e.target.value);
                 setValue('invoice.invoiceRows.0.accountInformation.0.activity', e.target.value);
-                console.log('GV ROWS', getValues('invoice.invoiceRows'));
-                // if (getValues('invoice.invoiceRows').length > 1) {
-                //   setValue('invoice.invoiceRows.1.accountInformation.0.activity', e.target.value);
-                // }
               }}
               size="md"
               placeholder={'0'}
@@ -284,7 +321,7 @@ export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
         </div>
       </div>
       <div>
-        <span> {JSON.stringify(getValues().recipient)}</span>
+        <span> {JSON.stringify(watch())}</span>
       </div>
     </>
   );

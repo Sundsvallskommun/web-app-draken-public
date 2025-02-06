@@ -135,9 +135,13 @@ export const emptyBillingRecord: CBillingRecord = {
 export const getInvoiceRows = (errandNumber: string, description: string, type: string, identity: string) => {
   console.log('Getting invoice rows for: ', description, type, identity);
   const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === description);
+  if (!invoiceType) {
+    console.error('Could not find invoice type for description: ', description);
+    return [];
+  }
   const { invoiceRows, accountInformation } = type === 'INTERNAL' ? invoiceType?.internal : invoiceType?.external;
-  console.log('Invoice rows: ', invoiceRows);
-  console.log('Account information: ', accountInformation);
+  // console.log('Invoice rows: ', invoiceRows);
+  // console.log('Account information: ', accountInformation);
   if (!invoiceRows || !accountInformation) {
     console.error('Could not find invoice rows for description: ', description);
     return [];
@@ -151,9 +155,9 @@ export const getInvoiceRows = (errandNumber: string, description: string, type: 
     const totalAmount = row.costPerUnit * quantity;
     const _accRows = row.accountInformationRows.map((metaDataRow) => {
       const project = metaDataRow.project || accountInformation.project || undefined;
-      console.log('metaDataRow.amountFromParent: ', metaDataRow.amountFromParent);
+      // console.log('metaDataRow.amountFromParent: ', metaDataRow.amountFromParent);
       const amount = metaDataRow.amountFromParent ? totalAmount : metaDataRow.amount;
-      console.log('AMOUNT FOR ROW: ', amount);
+      // console.log('AMOUNT FOR ROW: ', amount);
       return {
         ...(accountInformation.costCenter && { costCenter: accountInformation.costCenter }),
         ...(accountInformation.subaccount && { subaccount: accountInformation.subaccount }),
@@ -166,7 +170,7 @@ export const getInvoiceRows = (errandNumber: string, description: string, type: 
         counterpart,
       };
     });
-    console.log('Generated rows: ', _accRows);
+    // console.log('Generated rows: ', _accRows);
     // const acc: CAccountInformation = {
     //   ...(accountInformation.costCenter && { costCenter: accountInformation.costCenter }),
     //   ...(accountInformation.subaccount && { subaccount: accountInformation.subaccount }),
