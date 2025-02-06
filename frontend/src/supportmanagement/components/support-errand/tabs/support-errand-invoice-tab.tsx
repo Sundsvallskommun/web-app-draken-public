@@ -4,6 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import { BillingForm } from '@supportmanagement/components/billing/billing-form.component';
+import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import {
   emptyBillingRecord,
   billingFormSchema,
@@ -11,6 +12,8 @@ import {
   getEmployeeCustomerIdentity,
   getEmployeeData,
   saveBillingRecord,
+  getInvoiceRows,
+  getOrganization,
 } from '@supportmanagement/services/support-billing-service';
 import {
   ApiSupportErrand,
@@ -19,9 +22,14 @@ import {
   SupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import {
+  CBillingRecord,
+  CBillingRecordStatusEnum,
+  CBillingRecordTypeEnum,
+  CInvoiceRow,
+} from 'src/data-contracts/backend/data-contracts';
 
 export const SupportErrandInvoiceTab: React.FC<{
   errand: ApiSupportErrand;
@@ -51,18 +59,47 @@ export const SupportErrandInvoiceTab: React.FC<{
         setRecord(rec);
         setRecipientname(rec.extraParameters['referenceName'] || '');
         reset(rec);
+        setTimeout(() => {
+          handleDescriptionChange(rec.invoice.description, rec.invoice.customerId);
+        }, 0);
       });
     } else {
       setRecord(emptyBillingRecord);
+      setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
       setValue(`invoice.invoiceRows.${0}.descriptions.0`, `Ärendenummer: ${supportErrand.errandNumber}`);
       const manager = supportErrand.stakeholders?.find((s) => s.role === 'MANAGER');
       const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
       if (managerUserName) {
-        getEmployeeData(managerUserName).then((res) => {
-          setValue('invoice.customerReference', res.referenceNumber);
-        });
+        // getEmployeeData(managerUserName).then((res) => {
+        //   setValue('invoice.customerReference', res.referenceNumber);
+        // });
         getEmployeeCustomerIdentity(managerUserName).then((res) => {
-          setValue('invoice.customerId', res.customerId);
+          if (res.type === 'INTERNAL') {
+            setValue('type', CBillingRecordTypeEnum.INTERNAL);
+            setValue('invoice.customerId', res.identity.customerId.toString());
+          } else if (res.type === 'EXTERNAL') {
+            setValue('type', CBillingRecordTypeEnum.EXTERNAL);
+            setValue('invoice.customerId', res.identity.name);
+            setValue('recipient.organizationName', res.identity.name);
+            // Fetch partyId for res.identity.orgNr from Party
+            console.log('res.identity.orgNr: ', res.identity.orgNr);
+            getOrganization(res.identity.orgNr).then((org) => {
+              console.log('org: ', org);
+              console.log('Setting partyId: ', org.partyId);
+              setValue('recipient.partyId', org.partyId);
+              console.log('setting org.address.city: ', org.address.city);
+              setValue('recipient.addressDetails.street', org?.address?.city);
+              console.log('setting org.address.careOf: ', org.address.careOf);
+              setValue('recipient.addressDetails.careOf', org?.address?.careOf);
+              console.log('setting org.address.postcode: ', org.address.postcode);
+              setValue('recipient.addressDetails.postalCode', org?.address?.postcode);
+              console.log('setting org.address.city: ', org.address.city);
+              setValue('recipient.addressDetails.city', org?.address?.city);
+            });
+            // Fetch address details from LegalEntity
+          }
+          setValue('invoice.customerReference', res.referenceNumber);
+          handleDescriptionChange(invoiceSettings.invoiceTypes[0].invoiceType, res.type === "INTERNAL" ? res.identity.customerId.toString() : res.identity.name);
         });
         setRecipientname(`${manager?.firstName} ${manager?.lastName}` || '');
         setValue(`extraParameters`, {
@@ -94,13 +131,27 @@ export const SupportErrandInvoiceTab: React.FC<{
 
   const toastMessage = useSnackbar();
 
+  const handleDescriptionChange = (description: string, identity: string) => {
+    setValue('invoice.description', description);
+    const formRows = getInvoiceRows(
+      supportErrand.errandNumber,
+      description,
+      getValues('type'),
+      identity
+      //getValues('invoice.customerId')
+    );
+    setValue('invoice.invoiceRows', formRows);
+  };
+
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(supportErrand, user) && record?.status === CBillingRecordStatusEnum.NEW;
     setAllowed(_a);
   }, [user, supportErrand]);
 
-  const onError = () => {};
+  const onError = (error) => {
+    console.log('error', error);
+  };
 
   const onSubmit = () => {
     return saveBillingRecord(supportErrand, municipalityId, getValues())
@@ -129,7 +180,7 @@ export const SupportErrandInvoiceTab: React.FC<{
         <h2 className="text-h2-md">Fakturering</h2>
         <span>Fyll i följande faktureringsunderlag.</span>
         <FormProvider {...formControls}>
-          <BillingForm recipientName={recipientName} />
+          <BillingForm recipientName={recipientName} handleDescriptionChange={handleDescriptionChange} />
         </FormProvider>
         <div className="flex flex-row justify-end">
           {record.status === CBillingRecordStatusEnum.NEW ? (
@@ -137,6 +188,7 @@ export const SupportErrandInvoiceTab: React.FC<{
               <Button
                 disabled={isSupportErrandLocked(supportErrand) || !allowed}
                 onClick={handleSubmit(onSubmit, onError)}
+                data-cy="save-invoice-button"
               >
                 Spara
               </Button>

@@ -17,6 +17,53 @@ export interface OrgNrPayload {
   orgNr: string;
 }
 
+export interface CLegalForm {
+  legalFormCode: string;
+  legalFormDescription: string;
+}
+
+export interface CAddress {
+  city?: string;
+  street?: string;
+  postcode?: string;
+  careOf?: string;
+}
+
+export interface CMunicipality {
+  municipalityCode: string;
+  municipalityName: string;
+}
+
+export interface CCounty {
+  countyCode: string;
+  countyName: string;
+}
+
+export interface CBusinessInformation {
+  companyName: string;
+  legalForm: CLegalForm;
+  address: CAddress;
+  emailAddress?: string;
+  phoneNumber: string;
+  municipality: CMunicipality;
+  county: CCounty;
+  businessSignatory: string;
+  companyDescription: string;
+}
+
+export interface CBbusinessWithId {
+  partyId: string;
+  companyName: string;
+  legalForm: CLegalForm;
+  address: CAddress;
+  emailAddress?: string;
+  phoneNumber: string;
+  municipality: CMunicipality;
+  county: CCounty;
+  businessSignatory: string;
+  companyDescription: string;
+}
+
 export interface CAccountInformation {
   costCenter?: string;
   subaccount?: string;
@@ -26,6 +73,7 @@ export interface CAccountInformation {
   article?: string;
   project?: string;
   counterpart?: string;
+  amount?: number;
 }
 
 export interface CInvoiceRow {
@@ -35,7 +83,7 @@ export interface CInvoiceRow {
   vatCode?: string;
   costPerUnit?: number;
   quantity?: number;
-  accountInformation?: CAccountInformation;
+  accountInformation?: CAccountInformation[];
 }
 
 export interface CInvoice {

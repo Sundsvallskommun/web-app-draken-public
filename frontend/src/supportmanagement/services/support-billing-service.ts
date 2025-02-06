@@ -4,10 +4,14 @@ import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect } from 'react';
 import {
+  CAccountInformation,
+  CBbusinessWithId,
   CBillingRecord,
   CBillingRecordStatusEnum,
   CBillingRecordTypeEnum,
+  CBusinessInformation,
   CExternalTag,
+  CInvoiceRow,
   CPageBillingRecord,
   SupportErrandDto,
 } from 'src/data-contracts/backend/data-contracts';
@@ -17,6 +21,7 @@ import { twoDecimals } from '@common/services/helper-service';
 import * as yup from 'yup';
 import { User } from '@common/interfaces/user';
 import { All } from '@casedata/interfaces/priority';
+import { ExternalCustomerIdentity, InternalCustomerIdentity, invoiceSettings } from './invoiceSettings';
 
 export const attestationLabels = [
   { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -36,32 +41,6 @@ export interface CustomerIdentity {
   customerId: string;
   customerName: string;
 }
-
-export const customerIdentities: CustomerIdentity[] = [
-  { orgId: '28', treeLevel: 2, customerId: '10', customerName: 'Kommunstyrelsekontoret' },
-  { orgId: '2849', treeLevel: 3, customerId: '15', customerName: 'Servicecenter' },
-  { orgId: '58', treeLevel: 2, customerId: '16', customerName: 'Drakfastigheter' },
-  { orgId: '31', treeLevel: 2, customerId: '20', customerName: 'Individ- och Arbetsmarknadsförvaltningen	' },
-  { orgId: '26', treeLevel: 2, customerId: '30', customerName: 'Stadsbyggnadskontoret' },
-  { orgId: '27', treeLevel: 2, customerId: '32', customerName: 'Lantmäterikontoret' },
-  { orgId: '30', treeLevel: 2, customerId: '40', customerName: 'Kultur och fritid' },
-  { orgId: '24', treeLevel: 2, customerId: '60', customerName: 'Barn och Utbildning' },
-  { orgId: '23', treeLevel: 2, customerId: '70', customerName: 'Vård och Omsorgsförvaltningen' },
-  { orgId: '25', treeLevel: 2, customerId: '80', customerName: 'Miljökontoret' },
-  { orgId: '29', treeLevel: 2, customerId: '90', customerName: 'Överförmyndarkontoret' },
-];
-
-export const invoiceActivities = [
-  { id: 0, value: '5756', displayName: '5756 - Lön och pension' },
-  { id: 1, value: '5757', displayName: '5757 - Heroma' },
-];
-
-export const invoiceTypes = [
-  { id: 0, key: 'DIREKTINSATTNING', displayName: 'Extra utbetalning - Direktinsättning' },
-  { id: 1, key: 'SYSTEMET', displayName: 'Extra utbetalning - Systemet' },
-  { id: 2, key: 'LONEUNDERLAG', displayName: 'Manuell hantering - Löneunderlag' },
-  { id: 3, key: 'EXTRA', displayName: 'Extra beställning' },
-];
 
 export const billingrecordStatusToLabel = (status: string) => {
   switch (status) {
@@ -96,15 +75,15 @@ export const billingFormSchema = yup.object({
           .required('Fyll i antal timmar'),
         costPerUnit: yup.string().required('Fyll i timpris'),
         totalAmount: yup.string().nullable(),
-        accountInformation: yup.object({
-          activity: yup
-            .mixed<string>()
-            .required('Välj aktivitet')
-            .oneOf(
-              invoiceActivities.map((a) => a.value),
-              'Välj aktivitet'
-            ),
-        }),
+        // accountInformation: yup.object({
+        //   activity: yup
+        //     .mixed<string>()
+        //     .required('Välj aktivitet')
+        //     .oneOf(
+        //       invoiceSettings.activities.map((a) => a.value),
+        //       'Välj aktivitet'
+        //     ),
+        // }),
       })
     ),
   }),
@@ -118,46 +97,129 @@ export const emptyBillingRecord: CBillingRecord = {
   category: 'SALARY_AND_PENSION',
   type: CBillingRecordTypeEnum.INTERNAL,
   status: CBillingRecordStatusEnum.NEW,
+  recipient: {
+    partyId: '',
+    organizationName: '',
+    addressDetails: {
+      street: '',
+      careOf: '',
+      postalCode: '',
+      city: '',
+    },
+  },
   invoice: {
-    referenceId: 'foobar',
+    referenceId: 'N/A',
     customerId: '',
-    description: invoiceTypes[0].displayName,
-    invoiceRows: [
-      {
-        accountInformation: {
-          activity: '',
-          costCenter: 'foobar',
-          subaccount: 'foobar',
-          department: 'foobar',
-          counterpart: 'foobar',
-        },
-        descriptions: [''],
-        detailedDescriptions: [''],
-        quantity: 1,
-        costPerUnit: 300,
-        totalAmount: 300,
-      },
-    ],
-    totalAmount: 0,
+    description: invoiceSettings.invoiceTypes[0].invoiceType,
+    invoiceRows: invoiceSettings.invoiceTypes[0].internal.invoiceRows,
+    // invoiceRows: [
+    //   {
+    //     accountInformation: {
+    //       activity: '',
+    //       costCenter: 'foobar',
+    //       subaccount: 'foobar',
+    //       department: 'foobar',
+    //       counterpart: 'foobar',
+    //     },
+    //     descriptions: [''],
+    //     detailedDescriptions: [''],
+    //     quantity: 1,
+    //     costPerUnit: 300,
+    //     totalAmount: 300,
+    //   },
+    // ],
+    // totalAmount: 0,
   },
 };
 
+export const getInvoiceRows = (errandNumber: string, description: string, type: string, identity: string) => {
+  console.log('Getting invoice rows for: ', description, type, identity);
+  const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === description);
+  const { invoiceRows, accountInformation } = type === 'INTERNAL' ? invoiceType?.internal : invoiceType?.external;
+  console.log('Invoice rows: ', invoiceRows);
+  console.log('Account information: ', accountInformation);
+  if (!invoiceRows || !accountInformation) {
+    console.error('Could not find invoice rows for description: ', description);
+    return [];
+  }
+  const counterpart =
+    type === 'INTERNAL'
+      ? invoiceSettings.customers.internal.find((c) => c.customerId === parseInt(identity, 10))?.counterpart
+      : invoiceSettings.customers.external.find((c) => c.name === identity)?.counterpart;
+  const formRows: CInvoiceRow[] = invoiceRows.map((row, index) => {
+    const quantity = 1;
+    const totalAmount = row.costPerUnit * quantity;
+    const _accRows = row.accountInformationRows.map((metaDataRow) => {
+      const project = metaDataRow.project || accountInformation.project || undefined;
+      console.log('metaDataRow.amountFromParent: ', metaDataRow.amountFromParent);
+      const amount = metaDataRow.amountFromParent ? totalAmount : metaDataRow.amount;
+      console.log('AMOUNT FOR ROW: ', amount);
+      return {
+        ...(accountInformation.costCenter && { costCenter: accountInformation.costCenter }),
+        ...(accountInformation.subaccount && { subaccount: accountInformation.subaccount }),
+        ...(accountInformation.department && { department: accountInformation.department }),
+        ...(accountInformation.accuralKey && { accuralKey: accountInformation.accuralKey }),
+        ...(accountInformation.activity && { activity: accountInformation.activity }),
+        ...(accountInformation.article && { article: accountInformation.article }),
+        amount,
+        project,
+        counterpart,
+      };
+    });
+    console.log('Generated rows: ', _accRows);
+    // const acc: CAccountInformation = {
+    //   ...(accountInformation.costCenter && { costCenter: accountInformation.costCenter }),
+    //   ...(accountInformation.subaccount && { subaccount: accountInformation.subaccount }),
+    //   ...(accountInformation.department && { department: accountInformation.department }),
+    //   ...(accountInformation.accuralKey && { accuralKey: accountInformation.accuralKey }),
+    //   ...(accountInformation.activity && { activity: accountInformation.activity }),
+    //   ...(accountInformation.article && { article: accountInformation.article }),
+    //   ...(accountInformation.project && { project: accountInformation.project }),
+    //   counterpart,
+    //   // amount: row.costPerUnit * quantity,
+    // };
+    return {
+      descriptions: [row.description.replace('<errandNumber>', errandNumber)],
+      detailedDescriptions: [],
+      totalAmount,
+      costPerUnit: row.costPerUnit,
+      quantity,
+      accountInformation: _accRows,
+    };
+  });
+  return formRows;
+};
+
 const satisfyApi = (data: CBillingRecord) => {
-  delete data.id;
-  delete data.created;
-  delete data.modified;
-  delete data.approved;
-  data.invoice.totalAmount = null;
-  data.invoice.invoiceRows.forEach((row) => {
-    row.totalAmount = null;
-    row.accountInformation = data.invoice.invoiceRows?.[0]?.accountInformation;
+  console.log('Satisfying API: ', data);
+  // const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === data.invoice.description);
+  // const { invoiceRows, accountInformation } = data.type === 'INTERNAL' ? invoiceType?.internal : invoiceType?.external;
+  const processed: Partial<CBillingRecord> = {};
+  // delete satisfying.id;
+  // delete satisfying.created;
+  // delete satisfying.modified;
+  // delete satisfying.approved;
+  // satisfying.invoice.totalAmount = null;
+  processed.recipient = data.type === 'EXTERNAL' ? data.recipient : undefined;
+  processed.invoice = { ...data.invoice };
+  delete processed.invoice.totalAmount;
+  processed.invoice.invoiceRows = data.invoice.invoiceRows.map((row) => {
+    delete row.totalAmount;
+    // row.accountInformation = row.accountInformation.map((acc) => {
+    //   acc.amount = row.costPerUnit * row.quantity;
+    //   return acc;
+    // });
     row.detailedDescriptions = row.detailedDescriptions.filter((d) => d !== '');
     // Convert strings to numbers
     row.quantity = twoDecimals(parseFloat(row.quantity.toString()));
     row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit.toString()));
+    return row;
   });
-  data.category = 'SALARY_AND_PENSION';
-  return data;
+  processed.category = invoiceSettings.category;
+  processed.type = data.type;
+  processed.status = data.status;
+  processed.extraParameters = data.extraParameters;
+  return processed as CBillingRecord;
 };
 
 export const approveBillingRecord: (municipalityId: string, record: CBillingRecord, user: User) => Promise<boolean> = (
@@ -201,10 +263,12 @@ export const saveBillingRecord: (
   municipalityId: string,
   record: CBillingRecord
 ) => Promise<boolean> = (errand, municipalityId, record) => {
+  console.log('Saving billing record: ', record);
   const url = `billing/${municipalityId}/billingrecords${record.id ? `/${record.id}` : ''}`;
   const action = record.id ? apiService.put : apiService.post;
   let data = satisfyApi(record);
   console.log('Saving data:', data);
+  // return Promise.resolve(true);
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
       return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
@@ -248,7 +312,9 @@ const parseInvoiceAdministrationInfo: (orgTree: string) => {
   return {
     administrationCode: orgTree.split('¤')[0].split('|')[1].toString(),
     administrationName: orgTree.split('¤')[0].split('|')[2].toString(),
-    is2849: orgTree.split('¤').some((x) => x.split('|')[1].toString() === '2849'),
+    is2849:
+      orgTree.split('¤')[1].split('|')[1] === '28' &&
+      orgTree.split('¤').some((x) => x.split('|')[1].toString() === '2849'),
   };
 };
 
@@ -268,22 +334,69 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
     });
 };
 
-export const getEmployeeOrganizationId: (username: string, domain?: string) => Promise<string> = async (
-  username,
-  domain
-) => {
+export const getEmployeeOrganizationId: (
+  username: string,
+  domain?: string
+) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string }> = async (username, domain) => {
   const employeeData = await getEmployeeData(username, domain);
+  console.log('Employee data: ', employeeData);
   const orgData = parseInvoiceAdministrationInfo(employeeData.orgTree);
-  return orgData.is2849 ? '2849' : orgData.administrationCode;
+  console.log('Org data: ', orgData);
+  return {
+    companyId: employeeData.companyId,
+    organizationId: orgData.is2849 ? '2849' : orgData.administrationCode,
+    referenceNumber: employeeData.referenceNumber,
+  };
 };
 
 export const getEmployeeCustomerIdentity: (
   username: string,
   domain?: string
-) => Promise<CustomerIdentity | undefined> = async (username, domain) => {
-  const orgId = await getEmployeeOrganizationId(username, domain);
-  const customerIdentity = customerIdentities.find((c) => c.orgId === orgId);
-  return customerIdentity;
+) => Promise<
+  | {
+      type: 'INTERNAL';
+      identity: InternalCustomerIdentity | undefined;
+      referenceNumber: string;
+    }
+  | {
+      type: 'EXTERNAL';
+      identity: ExternalCustomerIdentity | undefined;
+      referenceNumber: string;
+    }
+> = async (username, domain) => {
+  console.log('Looking up customer identity for user: ', username);
+  const employeeOrgData = await getEmployeeOrganizationId(username, domain);
+  console.log('Employee org data: ', employeeOrgData);
+  const isInternal = employeeOrgData.companyId === 1;
+  if (isInternal) {
+    const identity = invoiceSettings.customers.internal.find((c) => c.orgId[0] === employeeOrgData.organizationId);
+    const referenceNumber = employeeOrgData?.referenceNumber ?? '';
+    console.log('Internal customer identity: ', identity);
+    return {
+      type: 'INTERNAL',
+      identity,
+      referenceNumber,
+    };
+  } else {
+    const identity = invoiceSettings.customers.external.find((c) => c.companyId === employeeOrgData.companyId);
+    const referenceNumber = identity?.customerReference ?? '';
+    console.log('External customer identity: ', identity);
+    return {
+      type: 'EXTERNAL',
+      identity,
+      referenceNumber,
+    };
+  }
+};
+
+export const getOrganization: (orgNr: string) => Promise<CBbusinessWithId> = async (orgNr) => {
+  return apiService
+    .post<ApiResponse<CBbusinessWithId>, { orgNr: string }>(`organization/`, { orgNr })
+    .then((res) => res.data.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching organization');
+      throw e;
+    });
 };
 
 export const getBillingRecord: (recordId: string, municipalityId: string) => Promise<CBillingRecord> = (

@@ -2,12 +2,14 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import authMiddleware from '@middlewares/auth.middleware';
-import { IsString } from 'class-validator';
+import { isObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type as TypeTransformer } from 'class-transformer';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 import { MUNICIPALITY_ID } from '@/config';
 import { logger } from '@/utils/logger';
+import { Address, BusinessInformation, County, LegalForm, Municipality } from '@/data-contracts/businessengagements/data-contracts';
 
 class SsnPayload {
   @IsString()
@@ -73,56 +75,79 @@ interface EmployedPersonData {
   loginName: string;
 }
 
-interface OrgInfo {
+class CLegalForm implements LegalForm {
+  @IsString()
+  legalFormCode: string;
+  @IsString()
+  legalFormDescription: string;
+}
+
+class CAddress implements Address {
+  @IsString()
+  @IsOptional()
+  city: string;
+  @IsString()
+  @IsOptional()
+  street: string;
+  @IsString()
+  @IsOptional()
+  postcode: string;
+  @IsString()
+  @IsOptional()
+  careOf: string;
+}
+
+class CMunicipality implements Municipality {
+  @IsString()
+  municipalityCode: string;
+  @IsString()
+  municipalityName: string;
+}
+
+class CCounty implements County {
+  @IsString()
+  countyCode: string;
+  @IsString()
+  countyName: string;
+}
+
+class CBusinessInformation implements BusinessInformation {
+  @IsString()
   companyName: string;
-  legalForm: {
-    legalFormDescription: string;
-    legalFormCode: string;
-  };
-  address: {
-    city: string;
-    street: string;
-    careOf: string;
-  };
+  @ValidateNested()
+  @TypeTransformer(() => CLegalForm)
+  legalForm: LegalForm;
+  @ValidateNested()
+  @TypeTransformer(() => CAddress)
+  address: Address;
+  @IsString()
+  @IsOptional()
+  emailAddress?: string;
+  @IsString()
   phoneNumber: string;
-  municipality: {
-    municipalityName: string;
-    municipalityCode: string;
-  };
-  county: {
-    countyName: string;
-    countyCode: string;
-  };
-  fiscalYear: {
-    fromDay: number;
-    fromMonth: number;
-    toDay: number;
-    toMonth: number;
-  };
-  companyForm: {
-    companyFormCode: string;
-    companyFormDescription: string;
-  };
-  companyRegistrationTime: string;
-  companyLocation: {
-    address: {
-      city: string;
-      street: string;
-      postcode: string;
-    };
-  };
+  @ValidateNested()
+  @TypeTransformer(() => CMunicipality)
+  municipality: Municipality;
+  @ValidateNested()
+  @TypeTransformer(() => CCounty)
+  county: County;
+  companyLocation: Address;
+  @IsString()
   businessSignatory: string;
+  @IsString()
   companyDescription: string;
-  sharesInformation: {
-    shareTypes: string[];
-    numberOfShares: number;
-    shareCapital: number;
-    shareCurrency: string;
-  };
+}
+
+interface BusinessWithId {
+  partyId: string;
+}
+class CBbusinessWithId extends CBusinessInformation implements BusinessWithId {
+  @IsString()
+  partyId: string;
 }
 
 interface ResponseData {
-  data: Citizenaddress | OrgInfo;
+  data: Citizenaddress | BusinessInformation;
   message: string;
 }
 
@@ -190,6 +215,7 @@ export class AddressController {
 
   @Post('/organization/')
   @OpenAPI({ summary: 'Return info for given organization number' })
+  @ResponseSchema(CBbusinessWithId)
   @UseBefore(authMiddleware, validationMiddleware(OrgNrPayload, 'body'))
   async organization(@Req() req: RequestWithUser, @Res() response: any, @Body() orgNrPayload: OrgNrPayload): Promise<ResponseData> {
     const formattedOrgNr = formatOrgNr(orgNrPayload.orgNr, OrgNumberFormat.NODASH);
@@ -198,9 +224,11 @@ export class AddressController {
 
     const url = `businessengagements/3.0/${MUNICIPALITY_ID}/information/${guidRes.data}`;
 
-    const res = await this.apiService.get<OrgInfo>({ url }, req.user);
+    const res = await this.apiService.get<BusinessInformation>({ url }, req.user);
 
-    return { data: res.data, message: 'success' } as ResponseData;
+    const result: BusinessWithId = { ...res.data, partyId: guidRes.data };
+
+    return { data: result, message: 'success' } as ResponseData;
   }
 
   @Get('/portalpersondata/personal/:loginName')

@@ -1,6 +1,6 @@
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { invoiceTypes } from '@supportmanagement/services/support-billing-service';
+import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { use } from 'chai';
 import React, { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -30,16 +30,16 @@ export const AttestationFilterInvoiceTypeComponent: React.FC = () => {
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <PopupMenu.Items autoFocus={false}>
-          {invoiceTypes.map((invoiceType, index) => {
+          {invoiceSettings.invoiceTypes.map((invoiceType, index) => {
             return (
               <PopupMenu.Item key={`${invoiceType}-${index}`}>
                 <Checkbox
                   labelPosition="left"
-                  value={invoiceType.displayName}
+                  value={invoiceType.invoiceType}
                   {...register('invoiceType')}
                   data-cy={`attestationType-filter-${invoiceType}`}
                 >
-                  {invoiceType.displayName}
+                  {invoiceType.invoiceType}
                 </Checkbox>
               </PopupMenu.Item>
             );
