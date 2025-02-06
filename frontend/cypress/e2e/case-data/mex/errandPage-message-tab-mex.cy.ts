@@ -134,7 +134,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .select(ownerEmail + ' (Ärendeägare)');
       cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test.com');
       cy.get('[data-cy="add-new-email-button"]').should('be.disabled');
-      //cy.get('[data-cy="messageEmail-error"]').should('exist').contains('E-postadressen har fel format');
       cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
       cy.get('[data-cy="add-new-email-button"]').should('be.enabled').click({ force: true });
 

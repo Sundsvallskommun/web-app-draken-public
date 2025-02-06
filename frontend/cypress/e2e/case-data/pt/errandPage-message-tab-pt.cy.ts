@@ -99,7 +99,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="newPhoneNumber"]').should('exist').clear().type('123abc3456');
       cy.get('[data-cy="messagePhone-error"]').should('exist').contains('Ej giltigt telefonnummer');
 
-      cy.get('[data-cy="newPhoneNumber"]').should('exist').clear().type('+46701740635');
+      cy.get('[data-cy="newPhoneNumber"]').should('exist').clear().type(Cypress.env('mockPhoneNumberCountryCode'));
       cy.get('[data-cy="messagePhone-error"]').should('not.exist');
       cy.get('[data-cy="newPhoneNumber-button"]').should('be.enabled').click({ force: true });
 
@@ -107,7 +107,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('button').should('exist').contains('Ja').click();
 
       cy.wait('@sendSms').should(({ request }) => {
-        expect(request.body.phonenumber).to.equal('+46701740635');
+        expect(request.body.phonenumber).to.equal(Cypress.env('mockPhoneNumberCountryCode'));
       });
     });
 

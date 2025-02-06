@@ -80,13 +80,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       // Fields in errand form
       cy.get('[data-cy="channel-input"]').should('exist');
       cy.get('[data-cy="channel-input"]').should('have.value', channel);
-      // cy.get('[data-cy="channel-input"]').children().contains(channel).should('exist');
       cy.get('[data-cy="municipality-input"]').should('exist');
       cy.get('[data-cy="municipality-input"]').children().contains('Sundsvall').should('exist');
       cy.get('[data-cy="casetype-input"]').should('exist');
-      //cy.get('[data-cy="casetype-input"]').children().contains(caseLabel).should('exist');
       cy.get('[data-cy="priority-input"]').should('exist');
-      //cy.get('[data-cy="priority-input"]').children().contains(priority).should('exist');
 
       cy.get('[data-cy="registered-applicants"]').should('exist');
       const renderedApplicant = cy.get('[data-cy="registered-applicants"] [data-cy="rendered-APPLICANT"]');
@@ -141,9 +138,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="priority-input"]').should('be.disabled');
       cy.get('[data-cy="channel-input"]').should('be.disabled');
       cy.get('[data-cy="municipality-input"]').should('be.disabled');
-
-      // cy.get('[data-cy="edit-stakeholder-menu"]').should('not.exist');
-      // cy.get('[data-cy="edit-stakeholder-button"]').should('not.exist');
 
       cy.get('[data-cy="save-and-continue-button"]').should('be.disabled');
       cy.get('[data-cy="save-button"]').should('not.exist');
@@ -300,8 +294,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         },
       ];
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
-      //cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
-      //cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}/stakeholders`, mockMexErrand_base).as(
         'patchErrand'
       );
@@ -653,7 +645,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]').should('exist');
       const renderedContact = cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]');
       renderedContact.get('[data-cy="stakeholder-ssn"]').should('contain', contact[0].personalNumber);
-      //renderedContact.get('[data-cy="stakeholder-relation"]').should('contain', contact[0].extraParameters.relation);
       renderedContact
         .get('[data-cy="stakeholder-adress"]')
         .should(

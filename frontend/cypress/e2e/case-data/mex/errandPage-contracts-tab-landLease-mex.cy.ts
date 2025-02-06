@@ -595,11 +595,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
           conditionText:
             'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
-          /*extraField: {
-            key: 'upphorandeTerms.noRefundLeaseFeeAmount',
-            placeholder: 'SEK',
-            header: 'Ange belopp för återbetalning',
-          },*/
         },
         {
           key: 'upphorandeTerms.condition.inspectionRequirements',

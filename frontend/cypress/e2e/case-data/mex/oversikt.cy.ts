@@ -22,8 +22,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('POST', '**/personid*', mockPersonId).as('personIdSearch');
-      //cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
-      //cy.intercept('GET', /\/errand\/\d*/, mockErrand_base).as('getErrandById');
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
@@ -177,6 +175,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     //   cy.get(`[data-cy="tag-status-${labels[0][0]}"]`).should('exist').contains(labels[0][1]).click();
     // });
 
+    // Not used currently
     // it.only('allows filtering by multiple statuses', () => {
     //   const labels = Object.entries(ErrandStatus);
     //   cy.get('[data-cy="Show-filters-button"]').click();
