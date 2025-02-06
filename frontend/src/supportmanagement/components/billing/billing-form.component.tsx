@@ -117,39 +117,6 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
               </FormControl>
             </div>
           </div>
-          <div className="my-sm w-full">
-            <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
-              <FormLabel>Beskrivning</FormLabel>
-              <Input
-                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.0`)}
-                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.0-input`}
-                className="w-full text-dark-primary"
-                type="text"
-                size="md"
-              />
-              <Input
-                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.1`)}
-                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.1-input`}
-                className="w-full text-dark-primary"
-                type="text"
-                size="md"
-              />
-              <Input
-                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.2`)}
-                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.2-input`}
-                className="w-full text-dark-primary"
-                type="text"
-                size="md"
-              />
-              {errors.invoice?.invoiceRows?.[index]?.detailedDescriptions?.[0] && (
-                <div className="text-error">
-                  <FormErrorMessage>
-                    {errors.invoice?.invoiceRows[index]?.detailedDescriptions?.[0]?.message as string}
-                  </FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
           {row.accountInformation?.map((accountInformation, accountIndex) => (
             <div key={accountIndex} className="my-sm w-full">
               <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
