@@ -1,7 +1,7 @@
 export enum Priority {
-  HIGH = 'Hög',
-  MEDIUM = 'Medel',
-  LOW = 'Låg',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
 }
 
 export enum All {

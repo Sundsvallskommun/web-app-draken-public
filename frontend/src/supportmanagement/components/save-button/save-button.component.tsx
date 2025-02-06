@@ -104,8 +104,8 @@ export const SaveButtonComponent: React.FC<{
   const onSubmit = (close: boolean) => {
     const data: SupportErrand = getValues();
     const dataToSave: Partial<SupportErrand> = {
-      reporterUserId: data.assignedUserId,
-      assignedUserId: data.assignedUserId,
+      reporterUserId: user.username,
+      assignedUserId: user.username,
       classification: {
         category: data.category,
         type: data.type,
@@ -113,7 +113,10 @@ export const SaveButtonComponent: React.FC<{
       priority: data.priority,
       status: data.status,
       resolution: data.resolution,
-      title: '',
+      title: 'Supportmanagement errand',
+      channel: data.channel,
+      contactReason: data.contactReason,
+      contactReasonDescription: data.contactReasonDescription,
     };
     // if (formState.dirtyFields['administratorName']) {
     //   data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
@@ -152,7 +155,7 @@ export const SaveButtonComponent: React.FC<{
           throw new Error('Errand could not be registered');
         }
 
-        const e = await getSupportErrandById(municipalityId, res.errandId);
+        const e = await getSupportErrandById(municipalityId, res.id);
         setSupportErrand(e.errand);
 
         if (registeringNewErrand) {
