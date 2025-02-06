@@ -15,7 +15,7 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class BillingController {
   private apiService = new ApiService();
-  private SERVICE = `billingpreprocessor/2.1`;
+  private SERVICE = `billingpreprocessor/3.0`;
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })

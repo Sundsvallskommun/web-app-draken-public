@@ -10,14 +10,14 @@
  */
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
 }
 
 export interface StatusType {
@@ -45,10 +45,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,14 +81,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -561,6 +561,8 @@ export interface Parameter {
   key: string;
   /** Parameter display name */
   displayName?: string;
+  /** Parameter group name */
+  group?: string;
   /** Parameter values */
   values?: string[];
 }
@@ -672,7 +674,7 @@ export interface Notification {
    * Name of the owner of the notification
    * @example "Test Testorsson"
    */
-  ownerFullName: string;
+  ownerFullName?: string;
   /**
    * Owner id of the notification
    * @example "AD01"
@@ -710,7 +712,12 @@ export interface Notification {
    */
   expires?: string;
   /**
-   * Acknowledged status of the notification
+   * Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone.
+   * @example true
+   */
+  globalAcknowledged?: boolean;
+  /**
+   * Acknowledged status of the notification (owner level). I.e. this notification is acknowledged by the owner of this notification.
    * @example true
    */
   acknowledged?: boolean;
@@ -988,29 +995,29 @@ export interface PageErrand {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  first?: boolean;
-  last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
   unpaged?: boolean;
 }
 
@@ -1217,17 +1224,17 @@ export interface PageEvent {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  first?: boolean;
-  last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

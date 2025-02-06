@@ -47,23 +47,6 @@ export interface TemplateRequest {
   changeLog?: string;
 }
 
-export interface Problem {
-  title?: string;
-  detail?: string;
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-}
-
-export interface StatusType {
-  /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
-}
-
 /** Template */
 export interface TemplateResponse {
   /** Identifier */
@@ -85,6 +68,23 @@ export interface TemplateResponse {
    * @format date-time
    */
   lastModifiedAt?: string;
+}
+
+export interface Problem {
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+  title?: string;
+  detail?: string;
+}
+
+export interface StatusType {
+  /** @format int32 */
+  statusCode?: number;
+  reasonPhrase?: string;
 }
 
 /**

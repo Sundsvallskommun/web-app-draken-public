@@ -10,14 +10,14 @@
  */
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -45,10 +45,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,14 +81,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -154,6 +154,12 @@ export interface AccountInformation {
    * @example "11830000"
    */
   counterpart?: string;
+  /**
+   * Amount
+   * @format float
+   * @example 1399.95
+   */
+  amount?: number;
 }
 
 /** Address details model */
@@ -306,8 +312,8 @@ export interface InvoiceRow {
    * @example 9
    */
   quantity?: number;
-  /** Account information model */
-  accountInformation?: AccountInformation;
+  /** Account information */
+  accountInformation?: AccountInformation[];
 }
 
 /** Billing recipient model */
@@ -364,10 +370,11 @@ export enum Type {
 }
 
 export interface PageBillingRecord {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
@@ -378,20 +385,19 @@ export interface PageBillingRecord {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  unpaged?: boolean;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {

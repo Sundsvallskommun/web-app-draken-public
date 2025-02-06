@@ -57,7 +57,7 @@ För LOP (Lön och pension):
 | Templating          |     2.0 |
 | BusinessEngagements |     2.0 |
 | Employee            |     1.0 |
-| BillingPreprocessor |     2.1 |
+| BillingPreprocessor |     3.0 |
 | SimulatorServer     |     2.0 |
 
 ## Utveckling

@@ -1,16 +1,10 @@
 import { twoDecimals } from '@common/services/helper-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Checkbox, FormControl, FormErrorMessage, FormLabel, Input, RadioButton, Select } from '@sk-web-gui/react';
-import {
-  customerIdentities,
-  invoiceActivities,
-  invoiceTypes,
-} from '@supportmanagement/services/support-billing-service';
-import { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { FormControl, FormErrorMessage, FormLabel, Input, RadioButton, Select } from '@sk-web-gui/react';
+import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
+import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
-export const BillingForm = ({ recipientName }) => {
+export const BillingForm = ({ recipientName, handleDescriptionChange }) => {
   const {
     control,
     register,
@@ -21,59 +15,6 @@ export const BillingForm = ({ recipientName }) => {
     formState: { errors },
   } = useFormContext<CBillingRecord>();
 
-  const { user }: AppContextInterface = useAppContext();
-
-  const [development, setDevelopment] = useState<boolean>(false);
-  const [developmentCost, setDevelopmentCost] = useState<number>(0);
-
-  const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
-    control,
-    name: 'invoice.invoiceRows',
-  });
-  
-  const quantity = watch('invoice.invoiceRows.0.quantity');
-  const activity = watch('invoice.invoiceRows.0.accountInformation.activity');
-  const totalAmount = watch('invoice.invoiceRows.0.totalAmount');
-
-  const handleDevelopmentCost = (checked) => {
-    if (checked) {
-      append({
-        descriptions: ['Utvecklingskostnad 2%'],
-        quantity: 1,
-        costPerUnit: twoDecimals(totalAmount * 0.02),
-        totalAmount: twoDecimals(totalAmount * 0.02),
-        accountInformation: {
-          activity: getValues().invoice.invoiceRows[0].accountInformation.activity,
-          project: '11041',
-        },
-      });
-    } else {
-      remove(fields.length - 1);
-    }
-    setDevelopment(checked);
-  };
-
-  useEffect(() => {
-    const newTotal = getValues(`invoice.invoiceRows.${0}.quantity`) * getValues(`invoice.invoiceRows.${0}.costPerUnit`);
-    setValue(`invoice.invoiceRows.${0}.totalAmount`, twoDecimals(newTotal));
-    setDevelopmentCost(twoDecimals(newTotal * 0.02));
-    if (fields.length > 1) {
-      setValue(`invoice.invoiceRows.${1}.costPerUnit`, twoDecimals(newTotal * 0.02));
-      setValue(`invoice.invoiceRows.${1}.totalAmount`, twoDecimals(newTotal * 0.02));
-      setValue(
-        `invoice.invoiceRows.${1}.accountInformation.activity`,
-        getValues().invoice.invoiceRows[0].accountInformation.activity
-      );
-    }
-  }, [quantity, activity]);
-
-  useEffect(() => {
-    setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
-    if (fields.length === 2) {
-      setDevelopment(true);
-    }
-  }, [fields]);
-
   return (
     <>
       <div className="my-lg gap-xl">
@@ -82,18 +23,22 @@ export const BillingForm = ({ recipientName }) => {
 
           <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
             <div className="flex justify-between flex-wrap w-full">
-              {invoiceTypes.map((invoiceType) => (
-                <div className="w-1/2" key={invoiceType.key}>
+              {invoiceSettings.invoiceTypes.map((invoiceType) => (
+                <div className="w-1/2" key={invoiceType.invoiceType}>
                   <RadioButton
                     data-cy={`invoice-type-${invoiceType}`}
                     className="mr-lg mb-sm whitespace-nowrap"
-                    name={invoiceType.key}
-                    id={invoiceType.key}
-                    value={invoiceType.displayName}
+                    name={invoiceType.invoiceType}
+                    id={invoiceType.invoiceType}
+                    value={invoiceType.invoiceType}
                     {...register('invoice.description')}
-                    defaultChecked={getValues().type === invoiceType.displayName}
+                    onChange={(e) => {
+                      console.log('invoiceType: ', e.target.value);
+                      handleDescriptionChange(e.target.value, getValues().invoice.customerId);
+                    }}
+                    defaultChecked={getValues().invoice.description === invoiceType.invoiceType}
                   >
-                    {invoiceType.displayName}
+                    {invoiceType.invoiceType}
                   </RadioButton>
                 </div>
               ))}
@@ -106,20 +51,11 @@ export const BillingForm = ({ recipientName }) => {
           </RadioButton.Group>
         </FormControl>
       </div>
-      <Checkbox
-        checked={development}
-        value={development ? 'true' : 'false'}
-        onChange={(e) => {
-          handleDevelopmentCost(e.currentTarget.checked);
-        }}
-        indeterminate={false}
-      >
-        Utvecklingskostnad?
-      </Checkbox>
-      {fields.map((field, index) => (
-        <div key={field.id} className="bg-blue-50 my-8 px-12 py-12 rounded-24">
+
+      {watch('invoice.invoiceRows').map((row, index) => (
+        <div key={`row-${index}`} className="bg-blue-50 my-8 px-12 py-12 rounded-24">
           <div className="flex gap-md mt-8">
-            <span>{getValues(`invoice.invoiceRows.${index}.descriptions`)}</span>
+            <span>{row.descriptions?.[0]}</span>
           </div>
           <div className="flex gap-md mt-8">
             <div className="my-sm w-1/3">
@@ -130,13 +66,16 @@ export const BillingForm = ({ recipientName }) => {
                   data-cy="quantity-input"
                   onChange={(e) => {
                     setValue(`invoice.invoiceRows.${index}.quantity`, twoDecimals(parseFloat(e.target.value)));
+                    setValue(
+                      `invoice.invoiceRows.${index}.totalAmount`,
+                      twoDecimals(row.costPerUnit * row.quantity) || 0
+                    );
                   }}
                   className="w-full text-dark-primary"
                   type="number"
                   step={0.01}
                   min={0}
                   size="md"
-                  readOnly={index === 1 && development}
                 />
                 {errors.invoice?.invoiceRows?.[index]?.quantity && (
                   <div className="text-error">
@@ -147,7 +86,7 @@ export const BillingForm = ({ recipientName }) => {
             </div>
 
             <div className="my-sm gap-xl w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}-costPerUnit`} className="w-full">
+              <FormControl id={`invoice.invoiceRows.${index}.costPerUnit`} className="w-full">
                 <FormLabel>Timpris</FormLabel>
                 <Input
                   {...register(`invoice.invoiceRows.${index}.costPerUnit`)}
@@ -216,6 +155,20 @@ export const BillingForm = ({ recipientName }) => {
               )}
             </FormControl>
           </div>
+          {row.accountInformation?.map((accountInformation, accountIndex) => (
+            <div key={accountIndex} className="my-sm w-full">
+              <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
+                <FormLabel>Kontoinformation</FormLabel>
+                <span>costCenter (från metadata.activity): {accountInformation?.costCenter}</span>
+                <span>subaccount (från metadata): {accountInformation?.subaccount}</span>
+                <span>department (från metadata): {accountInformation?.department}</span>
+                <span>activity (från metadata.activity): {accountInformation?.activity}</span>
+                <span>project (från metadata): {accountInformation?.project}</span>
+                <span>counterpart (från metadata): {accountInformation?.counterpart}</span>
+                <span>amount (beräknas): {accountInformation?.amount}</span>
+              </FormControl>
+            </div>
+          ))}
         </div>
       ))}
       <div className="flex mb-md gap-24">
@@ -267,13 +220,25 @@ export const BillingForm = ({ recipientName }) => {
               data-cy="customerId-input"
               className="w-full text-dark-primary"
               size="md"
+              onChange={(e) => {
+                console.log('Kundidentitet change: ', e.target.value);
+                handleDescriptionChange(getValues('invoice.description'), e.target.value);
+              }}
               placeholder={'0'}
             >
-              {customerIdentities.map((identity) => (
-                <Select.Option key={identity.customerId} value={identity.customerId}>
-                  {identity.customerName}
-                </Select.Option>
-              ))}
+              {getValues().type === 'INTERNAL'
+                ? invoiceSettings.customers.internal.map((identity) => (
+                    <Select.Option key={identity.customerId} value={identity.customerId}>
+                      {identity.name}
+                    </Select.Option>
+                  ))
+                : getValues().type === 'INTERNAL'
+                ? invoiceSettings.customers.external.map((identity) => (
+                    <Select.Option key={identity.orgNr || identity.companyId} value={identity.name}>
+                      {identity.name}
+                    </Select.Option>
+                  ))
+                : null}
             </Select>
             {errors.invoice?.customerId && (
               <div className="text-error">
@@ -287,28 +252,39 @@ export const BillingForm = ({ recipientName }) => {
           <FormControl id="category" className="w-full">
             <FormLabel>Aktivitet</FormLabel>
             <Select
-              {...register('invoice.invoiceRows.0.accountInformation.activity')}
+              {...register('invoice.invoiceRows.0.accountInformation.0.activity')}
               data-cy="activity-input"
               className="w-full text-dark-primary"
+              onChange={(e) => {
+                console.log('Activity: ', e.target.value);
+                setValue('invoice.invoiceRows.0.accountInformation.0.activity', e.target.value);
+                console.log('GV ROWS', getValues('invoice.invoiceRows'));
+                // if (getValues('invoice.invoiceRows').length > 1) {
+                //   setValue('invoice.invoiceRows.1.accountInformation.0.activity', e.target.value);
+                // }
+              }}
               size="md"
               placeholder={'0'}
             >
               <Select.Option value={''}>Välj aktivitet</Select.Option>
-              {invoiceActivities.map((activity) => (
-                <Select.Option key={activity.id} value={activity.value}>
-                  {activity.displayName}
+              {invoiceSettings.activities.map((activity) => (
+                <Select.Option key={activity.name} value={activity.value}>
+                  {activity.name}
                 </Select.Option>
               ))}
             </Select>
-            {errors.invoice?.invoiceRows?.[0]?.accountInformation?.activity && (
+            {errors.invoice?.invoiceRows?.[0]?.accountInformation?.[0]?.activity && (
               <div className="text-error">
                 <FormErrorMessage>
-                  {errors.invoice?.invoiceRows?.[0]?.accountInformation?.activity.message}
+                  {errors.invoice?.invoiceRows?.[0]?.accountInformation?.[0]?.activity.message}
                 </FormErrorMessage>
               </div>
             )}
           </FormControl>
         </div>
+      </div>
+      <div>
+        <span> {JSON.stringify(getValues().recipient)}</span>
       </div>
     </>
   );
