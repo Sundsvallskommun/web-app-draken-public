@@ -177,10 +177,11 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                                 Avbryt
                               </Button>
                               <SaveButtonComponent
-                                errand={supportErrand}
-                                registeringNewErrand={typeof supportErrand?.id === 'undefined'}
+                                supportErrand={supportErrand}
+                                setSupportErrand={setSupportErrand}
                                 setUnsaved={() => {}}
                                 update={() => {}}
+                                registeringNewErrand={typeof supportErrand?.id === 'undefined'}
                                 verifyAndClose={function (): void {
                                   throw new Error('Function not implemented.');
                                 }}

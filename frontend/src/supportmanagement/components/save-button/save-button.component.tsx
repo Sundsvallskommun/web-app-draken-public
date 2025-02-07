@@ -3,6 +3,7 @@ import { getErrand, isErrandLocked, saveErrand } from '@casedata/services/caseda
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import {
@@ -10,13 +11,15 @@ import {
   initiateSupportErrand,
   isSupportErrandLocked,
   SupportErrand,
+  SupportErrandDto,
 } from '@supportmanagement/services/support-errand-service';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{
-  errand: SupportErrand;
+  supportErrand: SupportErrand;
+  setSupportErrand: (e: SupportErrand) => void;
   verifyAndClose: () => void;
   registeringNewErrand?: boolean;
   setUnsaved: (unsaved: boolean) => void;
@@ -29,12 +32,10 @@ export const SaveButtonComponent: React.FC<{
     administrators,
     user,
     municipalityId,
-    setSupportErrand,
   }: {
-    administrators: Stakeholder[];
+    administrators: Admin[];
     user: User;
     municipalityId: string;
-    setSupportErrand: (e: SupportErrand) => void;
   } = useAppContext();
   const [richText, setRichText] = useState<string>('');
   const [modalAction, setModalAction] = useState<() => Promise<any>>();
@@ -48,7 +49,7 @@ export const SaveButtonComponent: React.FC<{
     content: 'Vill du spara ärendet?',
   });
 
-  const { errand, verifyAndClose, setUnsaved, update, registeringNewErrand } = props;
+  const { supportErrand, setSupportErrand, verifyAndClose, setUnsaved, update, registeringNewErrand } = props;
 
   const {
     handleSubmit,
@@ -61,21 +62,19 @@ export const SaveButtonComponent: React.FC<{
     reset,
     formState,
     formState: { errors },
-  }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  }: UseFormReturn<Partial<SupportErrand>, any, undefined> = useFormContext();
 
   const [doneSaving, setDoneSaving] = useState(false);
-  useEffect(() => {
-    if (errand?.id && doneSaving) {
-      router.push(
-        `/arende/${municipalityId}/${errand.errandNumber}`,
-        `/arende/${municipalityId}/${errand.errandNumber}`,
-        { shallow: true }
-      );
-    }
-  }, [doneSaving, errand?.id, errand?.errandNumber, municipalityId, router]);
+  // useEffect(() => {
+  //   if (errand?.id && doneSaving) {
+  //     router.push(`/arende/${municipalityId}/${errand.id}`, `/arende/${municipalityId}/${errand.id}`, {
+  //       shallow: true,
+  //     });
+  //   }
+  // }, [doneSaving, errand?.id, municipalityId, router]);
 
   useEffect(() => {
-    const registeringNewErrand = typeof errand?.id === 'undefined';
+    const registeringNewErrand = typeof supportErrand?.id === 'undefined';
     if (registeringNewErrand) {
       setConfirmContent({
         title: 'Registrera ärende',
@@ -95,49 +94,35 @@ export const SaveButtonComponent: React.FC<{
         content: 'Vill du spara ärendet?',
       });
     }
-  }, [errand]);
+  }, [supportErrand]);
+
+  useEffect(() => {
+    if (supportErrand?.id && doneSaving) {
+      router.push(`/arende/${municipalityId}/${supportErrand.id}`, `/arende/${municipalityId}/${supportErrand.id}`, {
+        shallow: true,
+      });
+    }
+  }, [supportErrand, doneSaving, municipalityId]);
 
   const onError = (errors, e) => {
     console.error('Some error', errors);
   };
 
   const onSubmit = (close: boolean) => {
-    const data: SupportErrand = getValues();
-    const dataToSave: Partial<SupportErrand> = {
-      reporterUserId: user.username,
-      assignedUserId: user.username,
+    const data: Partial<SupportErrand> = getValues();
+    const dataToSave: Partial<SupportErrandDto> = {
       classification: {
         category: data.category,
         type: data.type,
       },
-      priority: data.priority,
-      status: data.status,
-      resolution: data.resolution,
-      title: 'Supportmanagement errand',
-      channel: data.channel,
       contactReason: data.contactReason,
       contactReasonDescription: data.contactReasonDescription,
+      channel: data.channel,
+      stakeholders: data.stakeholders,
+      priority: data.priority,
+      status: data.status,
+      title: data.title,
     };
-    // if (formState.dirtyFields['administratorName']) {
-    //   data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
-    // }
-    // let dataToSave: Partial<SupportErrand> & { municipalityId: string };
-    // if (registeringNewErrand) {
-    //   dataToSave = data;
-    // } else {
-    //   let dirtyData = {
-    //     id: data.id,
-    //     municipalityId: data.municipalityId,
-    //     ...(data.administrator && { administrator: data.administrator }),
-    //   };
-    //   Object.entries(formState.dirtyFields).forEach(([field, dirty]) => {
-    //     if (dirty) {
-    //       dirtyData[field] = data[field];
-    //     }
-    //   });
-
-    //   dataToSave = dirtyData;
-    // }
 
     setError(false);
     let setIsLoading;
@@ -151,11 +136,11 @@ export const SaveButtonComponent: React.FC<{
         if (close) {
           verifyAndClose();
         }
-        if (!res.errandSuccessful) {
+        if (!res) {
           throw new Error('Errand could not be registered');
         }
 
-        const e = await getSupportErrandById(municipalityId, res.id);
+        const e = await getSupportErrandById(res.id, municipalityId);
         setSupportErrand(e.errand);
 
         if (registeringNewErrand) {
@@ -173,12 +158,11 @@ export const SaveButtonComponent: React.FC<{
           message: 'Ärendet sparades',
           status: 'success',
         });
+
         return true;
       })
       .then(() => {
-        if (registeringNewErrand) {
-          setDoneSaving(true);
-        }
+        setDoneSaving(true);
       })
       .catch((e) => {
         console.error('Error when updating errand:', e);
@@ -196,8 +180,6 @@ export const SaveButtonComponent: React.FC<{
 
   const onSubmitAndContinue = () => onSubmit(false);
 
-  console.log(getValues());
-
   return (
     <div>
       <div className="w-full flex gap-lg items-end">
@@ -205,8 +187,8 @@ export const SaveButtonComponent: React.FC<{
           <Button
             data-cy="save-and-continue-button"
             disabled={
-              isSupportErrandLocked(errand) ||
-              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
+              isSupportErrandLocked(supportErrand) ||
+              (!formState.dirtyFields.category && !formState.dirtyFields.type) ||
               !formState.isValid
             }
             type="button"
