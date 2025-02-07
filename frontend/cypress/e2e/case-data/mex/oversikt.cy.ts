@@ -158,7 +158,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('allows filtering by single status', () => {
       const labels = Object.entries(ErrandStatus);
-      console.log(labels);
       cy.get('button').contains('Öppnade ärenden').click();
       cy.get('[data-cy="Show-filters-button"]').click();
       cy.get('[data-cy="Status-filter"]').click();
