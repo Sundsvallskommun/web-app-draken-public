@@ -10,6 +10,7 @@ import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 import { MUNICIPALITY_ID } from '@/config';
 import { logger } from '@/utils/logger';
 import { Address, BusinessInformation, County, LegalForm, Municipality } from '@/data-contracts/businessengagements/data-contracts';
+import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
 
 class SsnPayload {
   @IsString()
@@ -111,37 +112,55 @@ class CCounty implements County {
   countyName: string;
 }
 
-class CBusinessInformation implements BusinessInformation {
+class CLEPostAddress implements LEPostAddress {
   @IsString()
-  companyName: string;
-  @ValidateNested()
-  @TypeTransformer(() => CLegalForm)
-  legalForm: LegalForm;
-  @ValidateNested()
-  @TypeTransformer(() => CAddress)
-  address: Address;
+  coAdress?: string | null;
   @IsString()
-  @IsOptional()
-  emailAddress?: string;
+  country?: string | null;
   @IsString()
-  phoneNumber: string;
-  @ValidateNested()
-  @TypeTransformer(() => CMunicipality)
-  municipality: Municipality;
-  @ValidateNested()
-  @TypeTransformer(() => CCounty)
-  county: County;
-  companyLocation: Address;
+  postalCode?: string | null;
   @IsString()
-  businessSignatory: string;
+  city?: string | null;
   @IsString()
-  companyDescription: string;
+  address1?: string | null;
+  @IsString()
+  address2?: string | null;
 }
 
-interface BusinessWithId {
+class CLEAddress implements LEAddress {
+  @IsString()
+  addressArea?: string | null;
+  @IsString()
+  adressNumber?: string | null;
+  @IsString()
+  city?: string | null;
+  @IsString()
+  postalCode?: string | null;
+  @IsString()
+  municipality?: string | null;
+  @IsString()
+  county?: string | null;
+}
+
+class CLegalEntity2 implements LegalEntity2 {
+  @IsString()
+  legalEntityId?: string | null;
+  @IsString()
+  organizationNumber?: string | null;
+  @IsString()
+  name?: string | null;
+  @ValidateNested()
+  @TypeTransformer(() => CLEPostAddress)
+  postAddress?: LEPostAddress;
+  @ValidateNested()
+  @TypeTransformer(() => CLEAddress)
+  address?: LEAddress;
+}
+
+interface LegalEntity2WithId {
   partyId: string;
 }
-class CBbusinessWithId extends CBusinessInformation implements BusinessWithId {
+class CLegalEntity2WithId extends CLegalEntity2 implements LegalEntity2WithId {
   @IsString()
   partyId: string;
 }
@@ -215,18 +234,18 @@ export class AddressController {
 
   @Post('/organization/')
   @OpenAPI({ summary: 'Return info for given organization number' })
-  @ResponseSchema(CBbusinessWithId)
+  @ResponseSchema(CLegalEntity2WithId)
   @UseBefore(authMiddleware, validationMiddleware(OrgNrPayload, 'body'))
   async organization(@Req() req: RequestWithUser, @Res() response: any, @Body() orgNrPayload: OrgNrPayload): Promise<ResponseData> {
     const formattedOrgNr = formatOrgNr(orgNrPayload.orgNr, OrgNumberFormat.NODASH);
     const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `businessengagements/2.0/${MUNICIPALITY_ID}/information/${guidRes.data}`;
+    const url = `legalentity/1.0/${guidRes.data}`;
 
-    const res = await this.apiService.get<BusinessInformation>({ url }, req.user);
+    const res = await this.apiService.get<LegalEntity2>({ url }, req.user);
 
-    const result: BusinessWithId = { ...res.data, partyId: guidRes.data };
+    const result: LegalEntity2WithId = { ...res.data, partyId: guidRes.data };
 
     return { data: result, message: 'success' } as ResponseData;
   }

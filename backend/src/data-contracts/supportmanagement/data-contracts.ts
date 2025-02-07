@@ -10,13 +10,13 @@
  */
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
+  title?: string;
+  detail?: string;
   status?: StatusType;
 }
 
@@ -45,10 +45,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,13 +81,13 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
+  title?: string;
+  detail?: string;
   status?: StatusType;
   suppressed?: {
     stackTrace?: {
@@ -995,6 +995,7 @@ export interface PageErrand {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1005,19 +1006,18 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
@@ -1224,6 +1224,7 @@ export interface PageEvent {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1234,7 +1235,6 @@ export interface PageEvent {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 

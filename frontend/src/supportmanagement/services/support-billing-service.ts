@@ -1,27 +1,24 @@
+import { All } from '@casedata/interfaces/priority';
 import { PortalPersonData } from '@common/data-contracts/employee/data-contracts';
+import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { twoDecimals } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect } from 'react';
 import {
-  CAccountInformation,
-  CBbusinessWithId,
   CBillingRecord,
   CBillingRecordStatusEnum,
   CBillingRecordTypeEnum,
-  CBusinessInformation,
   CExternalTag,
   CInvoiceRow,
+  CLegalEntity2WithId,
   CPageBillingRecord,
   SupportErrandDto,
 } from 'src/data-contracts/backend/data-contracts';
-import { SupportErrand } from './support-errand-service';
-import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { twoDecimals } from '@common/services/helper-service';
 import * as yup from 'yup';
-import { User } from '@common/interfaces/user';
-import { All } from '@casedata/interfaces/priority';
 import { ExternalCustomerIdentity, InternalCustomerIdentity, invoiceSettings } from './invoiceSettings';
+import { SupportErrand } from './support-errand-service';
 
 export const attestationLabels = [
   { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -66,6 +63,7 @@ export const billingFormSchema = yup.object({
     customerReference: yup.string().required('Fyll i referensnummer'),
     invoiceRows: yup.array().of(
       yup.object({
+        // visible: yup.boolean().default(true),
         quantity: yup
           .number()
           .typeError('Ange i format 1,23')
@@ -114,29 +112,34 @@ export const emptyBillingRecord: CBillingRecord = {
     referenceId: 'N/A',
     customerId: '',
     description: invoiceSettings.invoiceTypes[0].invoiceType,
-    invoiceRows: invoiceSettings.invoiceTypes[0].internal.invoiceRows,
-    // invoiceRows: [
-    //   {
-    //     accountInformation: {
-    //       activity: '',
-    //       costCenter: 'foobar',
-    //       subaccount: 'foobar',
-    //       department: 'foobar',
-    //       counterpart: 'foobar',
-    //     },
-    //     descriptions: [''],
-    //     detailedDescriptions: [''],
-    //     quantity: 1,
-    //     costPerUnit: 300,
-    //     totalAmount: 300,
-    //   },
-    // ],
-    // totalAmount: 0,
+    invoiceRows: [
+      {
+        descriptions: ['(Beskrivning saknas)'],
+        detailedDescriptions: [],
+        totalAmount: 0,
+        costPerUnit: invoiceSettings.invoiceTypes[0].internal.invoiceRows[0].costPerUnit,
+        quantity: 0,
+        accountInformation: [
+          {
+            costCenter: invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter,
+            activity: invoiceSettings.activities[0].value,
+          },
+        ],
+      },
+    ],
   },
 };
 
-export const getInvoiceRows = (errandNumber: string, description: string, type: string, identity: string) => {
-  console.log('Getting invoice rows for: ', description, type, identity);
+export const getInvoiceRows = (
+  errandNumber: string,
+  description: string,
+  type: string,
+  identity: string,
+  quantity: number,
+  costCenter: string,
+  activity: string
+) => {
+  console.log('Getting invoice rows for: ', description, type, identity, quantity);
   const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === description);
   if (!invoiceType) {
     console.error('Could not find invoice type for description: ', description);
@@ -153,45 +156,40 @@ export const getInvoiceRows = (errandNumber: string, description: string, type: 
     type === 'INTERNAL'
       ? invoiceSettings.customers.internal.find((c) => c.customerId === parseInt(identity, 10))?.counterpart
       : invoiceSettings.customers.external.find((c) => c.name === identity)?.counterpart;
-  const formRows: CInvoiceRow[] = invoiceRows.map((row, index) => {
-    const quantity = 1;
-    const totalAmount = row.costPerUnit * quantity;
-    const _accRows = row.accountInformationRows.map((metaDataRow) => {
-      const project = metaDataRow.project || accountInformation.project || undefined;
-      // console.log('metaDataRow.amountFromParent: ', metaDataRow.amountFromParent);
-      const amount = metaDataRow.amountFromParent ? totalAmount : metaDataRow.amount;
-      // console.log('AMOUNT FOR ROW: ', amount);
+  const formRows: CInvoiceRow[] = invoiceRows.map((invoiceRow, index) => {
+    const totalAmount = isNaN(quantity) ? 0 : twoDecimals(invoiceRow.costPerUnit * quantity);
+    const _accRows = invoiceRow.accountInformationRows.map((accountInformationRow) => {
+      const project = accountInformationRow.project || accountInformation.project || undefined;
+      let amount = 0;
+      if (accountInformationRow.amountFromParent) {
+        amount = totalAmount;
+        console.log("Amount is from parent, using parent's total amount: ", amount);
+      } else {
+        amount = isNaN(quantity) ? 0 : twoDecimals(quantity * accountInformationRow.amount);
+        console.log('Amount is not from parent, calculating amount: ', amount);
+      }
       return {
-        ...(accountInformation.costCenter && { costCenter: accountInformation.costCenter }),
+        costCenter,
         ...(accountInformation.subaccount && { subaccount: accountInformation.subaccount }),
         ...(accountInformation.department && { department: accountInformation.department }),
         ...(accountInformation.accuralKey && { accuralKey: accountInformation.accuralKey }),
-        ...(accountInformation.activity && { activity: accountInformation.activity }),
         ...(accountInformation.article && { article: accountInformation.article }),
+        activity: activity || accountInformation.activity,
         amount,
         project,
         counterpart,
       };
     });
-    // console.log('Generated rows: ', _accRows);
-    // const acc: CAccountInformation = {
-    //   ...(accountInformation.costCenter && { costCenter: accountInformation.costCenter }),
-    //   ...(accountInformation.subaccount && { subaccount: accountInformation.subaccount }),
-    //   ...(accountInformation.department && { department: accountInformation.department }),
-    //   ...(accountInformation.accuralKey && { accuralKey: accountInformation.accuralKey }),
-    //   ...(accountInformation.activity && { activity: accountInformation.activity }),
-    //   ...(accountInformation.article && { article: accountInformation.article }),
-    //   ...(accountInformation.project && { project: accountInformation.project }),
-    //   counterpart,
-    //   // amount: row.costPerUnit * quantity,
-    // };
+    console.log('Generated rows: ', _accRows);
     return {
-      descriptions: [row.description.replace('<errandNumber>', errandNumber)],
+      descriptions: [invoiceRow.description.replace('<errandNumber>', errandNumber)],
       detailedDescriptions: [],
       totalAmount,
-      costPerUnit: row.costPerUnit,
-      quantity,
+      costPerUnit: invoiceRow.costPerUnit,
+      quantity: isNaN(quantity) ? 0 : quantity,
       accountInformation: _accRows,
+      // TODO ADD REAL vatCode
+      ...(type === 'EXTERNAL' && { vatCode: '25' }),
     };
   });
   return formRows;
@@ -199,25 +197,13 @@ export const getInvoiceRows = (errandNumber: string, description: string, type: 
 
 const satisfyApi = (data: CBillingRecord) => {
   console.log('Satisfying API: ', data);
-  // const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === data.invoice.description);
-  // const { invoiceRows, accountInformation } = data.type === 'INTERNAL' ? invoiceType?.internal : invoiceType?.external;
   const processed: Partial<CBillingRecord> = {};
-  // delete satisfying.id;
-  // delete satisfying.created;
-  // delete satisfying.modified;
-  // delete satisfying.approved;
-  // satisfying.invoice.totalAmount = null;
   processed.recipient = data.type === 'EXTERNAL' ? data.recipient : undefined;
   processed.invoice = { ...data.invoice };
   delete processed.invoice.totalAmount;
   processed.invoice.invoiceRows = data.invoice.invoiceRows.map((row) => {
     delete row.totalAmount;
-    // row.accountInformation = row.accountInformation.map((acc) => {
-    //   acc.amount = row.costPerUnit * row.quantity;
-    //   return acc;
-    // });
     row.detailedDescriptions = row.detailedDescriptions.filter((d) => d !== '');
-    // Convert strings to numbers
     row.quantity = twoDecimals(parseFloat(row.quantity.toString()));
     row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit.toString()));
     return row;
@@ -275,7 +261,7 @@ export const saveBillingRecord: (
   const action = record.id ? apiService.put : apiService.post;
   let data = satisfyApi(record);
   console.log('Saving data:', data);
-  return Promise.resolve(true);
+  // return Promise.resolve(true);
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
       return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
@@ -396,13 +382,32 @@ export const getEmployeeCustomerIdentity: (
   }
 };
 
-export const getOrganization: (orgNr: string) => Promise<CBbusinessWithId> = async (orgNr) => {
+export const getOrganization: (orgNr: string) => Promise<{
+  partyId: string;
+  address: {
+    city: string;
+    street: string;
+    careOf: string;
+    postalCode: string;
+  };
+}> = async (orgNr) => {
   return apiService
-    .post<ApiResponse<CBbusinessWithId>, { orgNr: string }>(`organization/`, { orgNr })
-    .then((res) => res.data.data)
+    .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>(`organization/`, { orgNr })
+    .then((res) => {
+      const org = res.data.data;
+      return {
+        partyId: org.partyId,
+        address: {
+          city: org?.address?.city || '',
+          street: org?.postAddress?.address1 || org?.address?.addressArea || '',
+          careOf: org?.postAddress?.coAdress || '',
+          postalCode: org?.address?.postalCode || '',
+        },
+      };
+    })
     .catch((e) => {
       console.error('Something went wrong when fetching organization');
-      throw e;
+      return undefined;
     });
 };
 

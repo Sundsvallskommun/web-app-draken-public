@@ -336,6 +336,18 @@ export type MultiPolygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][][];
 };
 
+/** Parameter model */
+export interface Parameter {
+  /** Parameter key */
+  key: string;
+  /** Parameter display name */
+  displayName?: string;
+  /** Parameter group name */
+  group?: string;
+  /** Parameter values */
+  values?: string[];
+}
+
 export type Point = GeoJsonObject & {
   coordinates?: LngLatAlt;
 };
@@ -389,6 +401,8 @@ export interface Stakeholder {
   emailAddress?: string;
   /** Address for stakeholder */
   address?: Address;
+  /** Parameters for the stakeholder */
+  parameters?: Parameter[];
 }
 
 /** Term */
