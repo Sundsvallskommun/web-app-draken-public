@@ -39,29 +39,39 @@ export interface CCounty {
   countyName: string;
 }
 
-export interface CBusinessInformation {
-  companyName: string;
-  legalForm: CLegalForm;
-  address: CAddress;
-  emailAddress?: string;
-  phoneNumber: string;
-  municipality: CMunicipality;
-  county: CCounty;
-  businessSignatory: string;
-  companyDescription: string;
+export interface CLEPostAddress {
+  coAdress: string;
+  country: string;
+  postalCode: string;
+  city: string;
+  address1: string;
+  address2: string;
 }
 
-export interface CBbusinessWithId {
+export interface CLEAddress {
+  addressArea: string;
+  adressNumber: string;
+  city: string;
+  postalCode: string;
+  municipality: string;
+  county: string;
+}
+
+export interface CLegalEntity2 {
+  legalEntityId: string;
+  organizationNumber: string;
+  name: string;
+  postAddress: CLEPostAddress;
+  address: CLEAddress;
+}
+
+export interface CLegalEntity2WithId {
   partyId: string;
-  companyName: string;
-  legalForm: CLegalForm;
-  address: CAddress;
-  emailAddress?: string;
-  phoneNumber: string;
-  municipality: CMunicipality;
-  county: CCounty;
-  businessSignatory: string;
-  companyDescription: string;
+  legalEntityId: string;
+  organizationNumber: string;
+  name: string;
+  postAddress: CLEPostAddress;
+  address: CLEAddress;
 }
 
 export interface CAccountInformation {

@@ -13,10 +13,10 @@ import {
   setBillingRecordStatus,
 } from '@supportmanagement/services/support-billing-service';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
-import { BillingForm } from '../billing/billing-form.component';
+import BillingForm from '../billing/billing-form.component';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
@@ -46,12 +46,12 @@ export const AttestationInvoiceForm: React.FC<{
   // }, [user, supportErrand]);
 
   const formControls = useForm<CBillingRecord>({
-    defaultValues: selectedRecord,
+    defaultValues: structuredClone(selectedRecord),
     resolver: yupResolver(billingFormSchema),
     mode: 'onSubmit',
   });
 
-  formControls.setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
+  // formControls.setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
 
   const {
     register,
@@ -67,17 +67,31 @@ export const AttestationInvoiceForm: React.FC<{
     formState: { errors, isDirty },
   } = formControls;
 
-  const handleDescriptionChange = (description: any, identity: string) => {
-    setValue('invoice.description', description);
-    const formRows = getInvoiceRows(
-      selectedRecord.extraParameters['errandNumber'] || '(saknas)',
-      description,
-      getValues('type'),
-      identity
-      // getValues('invoice.customerId')
-    );
-    setValue('invoice.invoiceRows', formRows);
-  };
+  const handleChange = useCallback(
+    (description: string, identity: string, quantity: number, costCenter: string, activity: string) => {
+      setValue('invoice.description', description);
+      const formRows = getInvoiceRows(
+        selectedRecord.extraParameters['errandNumber'] || '(saknas)',
+        description,
+        getValues('type'),
+        identity,
+        quantity,
+        costCenter,
+        activity
+      );
+      setValue('invoice.invoiceRows', formRows);
+    },
+    [selectedRecord, getValues, setValue]
+  );
+
+  useEffect(() => {
+    const description = selectedRecord.invoice.description;
+    const identity = selectedRecord.invoice.customerId;
+    const quantity = selectedRecord.invoice.invoiceRows[0].quantity;
+    const costCenter = selectedRecord.invoice.invoiceRows[0].accountInformation[0].costCenter;
+    const activity = selectedRecord.invoice.invoiceRows[0].accountInformation[0].activity;
+    handleChange(description, identity, quantity, costCenter, activity);
+  }, [handleChange, selectedRecord]);
 
   const onError = () => {
     console.log('getValues()', getValues());
@@ -93,6 +107,7 @@ export const AttestationInvoiceForm: React.FC<{
           message: 'Fakturan sparades',
           status: 'success',
         });
+        props.update(getValues().id);
       })
       .catch(() => {
         toastMessage({
@@ -151,43 +166,44 @@ export const AttestationInvoiceForm: React.FC<{
   return (
     <div className="px-40 my-lg gap-24">
       <input type="hidden" {...register('id')} />
+      <div className="flex flex-col gap-md mb-32">
+        <Table background>
+          <Table.Header>
+            <Table.HeaderColumn>Ärende</Table.HeaderColumn>
+            <Table.HeaderColumn>Registrerad</Table.HeaderColumn>
+            <Table.HeaderColumn>Av</Table.HeaderColumn>
+            <Table.HeaderColumn>Uppdaterad</Table.HeaderColumn>
+          </Table.Header>
+          <Table.Body>
+            <Table.Row>
+              <Table.Column>
+                {selectedRecord.extraParameters?.['errandId'] ? (
+                  <NextLink
+                    href={`/arende/${municipalityId}/${selectedRecord.extraParameters?.['errandId']}`}
+                    target="_blank"
+                    className="underline"
+                  >
+                    {maybe(selectedRecord.extraParameters?.['errandNumber'])}
+                  </NextLink>
+                ) : (
+                  maybe(selectedRecord.extraParameters?.['errandNumber'])
+                )}
+              </Table.Column>
+              <Table.Column>{prettyTime(selectedRecord.created)}</Table.Column>
+              <Table.Column>{maybe(selectedRecord.extraParameters?.['referenceName'])}</Table.Column>
+              <Table.Column>{prettyTime(selectedRecord.modified)}</Table.Column>
+            </Table.Row>
+          </Table.Body>
+        </Table>
 
-      <Table background>
-        <Table.Header>
-          <Table.HeaderColumn>Ärende</Table.HeaderColumn>
-          <Table.HeaderColumn>Registrerad</Table.HeaderColumn>
-          <Table.HeaderColumn>Av</Table.HeaderColumn>
-          <Table.HeaderColumn>Uppdaterad</Table.HeaderColumn>
-        </Table.Header>
-        <Table.Body>
-          <Table.Row>
-            <Table.Column>
-              {selectedRecord.extraParameters?.['errandId'] ? (
-                <NextLink
-                  href={`/arende/${municipalityId}/${selectedRecord.extraParameters?.['errandId']}`}
-                  target="_blank"
-                  className="underline"
-                >
-                  {maybe(selectedRecord.extraParameters?.['errandNumber'])}
-                </NextLink>
-              ) : (
-                maybe(selectedRecord.extraParameters?.['errandNumber'])
-              )}
-            </Table.Column>
-            <Table.Column>{prettyTime(selectedRecord.created)}</Table.Column>
-            <Table.Column>{maybe(selectedRecord.extraParameters?.['referenceName'])}</Table.Column>
-            <Table.Column>{prettyTime(selectedRecord.modified)}</Table.Column>
-          </Table.Row>
-        </Table.Body>
-      </Table>
-
-      <FormProvider {...formControls}>
-        <BillingForm
-          recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])}
-          handleDescriptionChange={handleDescriptionChange}
-          setIsLoading={() => {}}
-        />
-      </FormProvider>
+        <FormProvider {...formControls}>
+          <BillingForm
+            recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])}
+            handleChange={handleChange}
+            setIsLoading={() => {}}
+          />
+        </FormProvider>
+      </div>
 
       <Divider />
 

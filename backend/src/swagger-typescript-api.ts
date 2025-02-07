@@ -52,6 +52,10 @@ const APIS = [
     name: 'billingpreprocessor',
     version: '3.0',
   },
+  {
+    name: 'legalentity',
+    version: '1.0',
+  },
 ];
 
 const stdout = (error, stdout, stderr) => {

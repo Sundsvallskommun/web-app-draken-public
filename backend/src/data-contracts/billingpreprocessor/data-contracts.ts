@@ -156,7 +156,6 @@ export interface AccountInformation {
   counterpart?: string;
   /**
    * Amount
-   * @format float
    * @example 1399.95
    */
   amount?: number;
@@ -277,7 +276,6 @@ export interface Invoice {
   dueDate?: string;
   /**
    * Total sum of all invoice rows
-   * @format float
    * @example 1399.95
    */
   totalAmount?: number;
@@ -290,7 +288,6 @@ export interface InvoiceRow {
   detailedDescriptions?: string[];
   /**
    * Total sum of invoice row
-   * @format float
    * @example 1399.95
    */
   totalAmount?: number;
@@ -302,13 +299,11 @@ export interface InvoiceRow {
   vatCode?: string;
   /**
    * Cost per unit
-   * @format float
    * @example 155.55
    */
   costPerUnit?: number;
   /**
    * Total amount of units
-   * @format float
    * @example 9
    */
   quantity?: number;
@@ -394,14 +389,14 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
-  unsorted?: boolean;
   empty?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }

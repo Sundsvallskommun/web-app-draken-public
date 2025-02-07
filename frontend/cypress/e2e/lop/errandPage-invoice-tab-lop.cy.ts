@@ -1,8 +1,10 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
+import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
+import { mockLegalEntityResponse } from './fixtures/mockLegalEntityResponse';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockPortalPersonData_external, mockPortalPersonData_internal } from './fixtures/mockPortalPersonData';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
@@ -13,8 +15,6 @@ import {
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
 import { mock } from 'node:test';
-import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
-import { mockOrganization } from '../case-data/fixtures/mockOrganization';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Invoice tab', () => {
@@ -37,7 +37,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('POST', '**/billingrecords', {}).as('saveBillingRecord');
       cy.intercept('POST', '**/organization', {
         data: {
-          ...mockOrganization.data,
+          ...mockLegalEntityResponse.data,
           partyId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         },
       }).as('getOrganization');
@@ -180,6 +180,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
                 detailedDescriptions: [],
                 costPerUnit: 306,
                 quantity: 1,
+                vatCode: '25',
                 accountInformation: [
                   {
                     amount: 300,
@@ -206,9 +207,10 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
             partyId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
             organizationName: 'Sundsvall Elnät AB',
             addressDetails: {
-              street: 'TEST 4',
-              careOf: 'c/o Test',
-              city: 'TEST 4',
+              street: mockLegalEntityResponse.data.address.addressArea,
+              careOf: mockLegalEntityResponse.data.postAddress.coAdress,
+              city: mockLegalEntityResponse.data.address.city,
+              postalCode: mockLegalEntityResponse.data.postAddress.postalCode,
             },
           },
           extraParameters: {

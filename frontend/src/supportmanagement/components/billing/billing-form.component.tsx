@@ -1,11 +1,20 @@
-import { twoDecimals } from '@common/services/helper-service';
-import { FormControl, FormErrorMessage, FormLabel, Input, RadioButton, Select } from '@sk-web-gui/react';
+import { FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
-export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoading }) => {
+const BillingForm: React.FC<{
+  recipientName: string;
+  handleChange: (
+    description: string,
+    customerId: string,
+    quantity: number,
+    costCenter: string,
+    activity: string
+  ) => void;
+  setIsLoading: (isLoading: boolean) => void;
+}> = ({ recipientName, handleChange, setIsLoading }) => {
   const {
     control,
     register,
@@ -18,121 +27,98 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
 
   return (
     <>
-      <div className="my-lg gap-xl">
-        <FormControl>
-          <FormLabel>Faktureringstyp</FormLabel>
-          <Select
-            {...register('invoice.description')}
-            data-cy="activity-input"
-            className="w-full text-dark-primary"
-            size="md"
-            placeholder={'0'}
-            onChange={(e) => {
-              handleDescriptionChange(e.target.value, getValues().invoice.customerId);
-              trigger();
-            }}
-          >
-            <Select.Option value={''}>Välj faktureringstyp</Select.Option>
-            {invoiceSettings.invoiceTypes.map((invoiceType) => (
-              <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
-                {invoiceType.invoiceType}
-              </Select.Option>
-            ))}
-          </Select>
-          {errors.invoice?.description && (
-            <div className="text-error">
-              <FormErrorMessage>{errors.invoice?.description.message}</FormErrorMessage>
-            </div>
-          )}
-        </FormControl>
-      </div>
-
-      {watch('invoice.invoiceRows').map((row, index) => (
-        <div key={`row-${index}`} className="bg-blue-50 my-8 px-12 py-12 rounded-24">
-          <div className="flex gap-md mt-8">
-            <span>{row.descriptions?.[0]}</span>
-          </div>
-          <div className="flex gap-md mt-8">
-            <div className="my-sm w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}-quantity`} className="w-full">
-                <FormLabel>Antal timmar</FormLabel>
-                <Input
-                  {...register(`invoice.invoiceRows.${index}.quantity`)}
-                  data-cy="quantity-input"
-                  onChange={(e) => {
-                    setValue(`invoice.invoiceRows.${index}.quantity`, twoDecimals(parseFloat(e.target.value)));
-                    setValue(
-                      `invoice.invoiceRows.${index}.totalAmount`,
-                      twoDecimals(row.costPerUnit * row.quantity) || 0
-                    );
-                  }}
-                  className="w-full text-dark-primary"
-                  type="number"
-                  step={0.01}
-                  min={0}
-                  size="md"
-                />
-                {errors.invoice?.invoiceRows?.[index]?.quantity && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.invoice?.invoiceRows[index]?.quantity?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
-
-            <div className="my-sm gap-xl w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}.costPerUnit`} className="w-full">
-                <FormLabel>Timpris</FormLabel>
-                <Input
-                  {...register(`invoice.invoiceRows.${index}.costPerUnit`)}
-                  data-cy="costPerUnit-input"
-                  className="w-full text-dark-primary"
-                  size="md"
-                  placeholder={'0'}
-                  readOnly
-                />
-                {errors.invoice?.invoiceRows?.[index]?.costPerUnit && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.invoice?.invoiceRows[index]?.costPerUnit?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
-            <div className="my-sm w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
-                <FormLabel>Total kostnad</FormLabel>
-                <Input
-                  {...register(`invoice.invoiceRows.${index}.totalAmount`)}
-                  data-cy="totalAmount-input"
-                  className="w-full text-dark-primary"
-                  type="text"
-                  readOnly
-                  size="md"
-                />
-                {errors.invoice?.invoiceRows?.[index]?.totalAmount && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.invoice?.invoiceRows[index]?.totalAmount?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
-          </div>
-          {row.accountInformation?.map((accountInformation, accountIndex) => (
-            <div key={accountIndex} className="my-sm w-full">
-              <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
-                <FormLabel>Kontoinformation</FormLabel>
-                <span>costCenter (från metadata.activity): {accountInformation?.costCenter}</span>
-                <span>subaccount (från metadata): {accountInformation?.subaccount}</span>
-                <span>department (från metadata): {accountInformation?.department}</span>
-                <span>activity (från metadata.activity): {accountInformation?.activity}</span>
-                <span>project (från metadata): {accountInformation?.project}</span>
-                <span>counterpart (från metadata): {accountInformation?.counterpart}</span>
-                <span>amount (beräknas): {accountInformation?.amount}</span>
-              </FormControl>
-            </div>
+      <FormControl>
+        <FormLabel>Faktureringstyp</FormLabel>
+        <Select
+          {...register('invoice.description')}
+          data-cy="activity-input"
+          className="w-full text-dark-primary"
+          size="md"
+          placeholder={'0'}
+          onChange={(e) => {
+            const selectedInvoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === e.target.value);
+            const selectedDescription = e.target.value;
+            const customerId = getValues().invoice.customerId;
+            const isInternal = getValues().type === 'INTERNAL';
+            const defaultQuantity = 1;
+            const costcenter = isInternal
+              ? selectedInvoiceType?.internal.accountInformation.costCenter
+              : selectedInvoiceType?.external.accountInformation.costCenter;
+            const activity = isInternal
+              ? selectedInvoiceType?.internal.accountInformation.activity
+              : selectedInvoiceType?.external.accountInformation.activity;
+            handleChange(selectedDescription, customerId, defaultQuantity, costcenter, activity);
+            trigger();
+          }}
+        >
+          <Select.Option value={''}>Välj faktureringstyp</Select.Option>
+          {invoiceSettings.invoiceTypes.map((invoiceType) => (
+            <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
+              {invoiceType.invoiceType}
+            </Select.Option>
           ))}
-        </div>
-      ))}
+        </Select>
+        {errors.invoice?.description && (
+          <div className="text-error">
+            <FormErrorMessage>{errors.invoice?.description.message}</FormErrorMessage>
+          </div>
+        )}
+      </FormControl>
+
+      <FormControl id={`invoice.invoiceRows.${0}-quantity`}>
+        <FormLabel>Antal</FormLabel>
+        <Input
+          {...register(`invoice.invoiceRows.${0}.quantity`)}
+          data-cy="quantity-input"
+          onChange={(e) => {
+            handleChange(
+              getValues('invoice.description'),
+              getValues('invoice.customerId'),
+              parseFloat(e.target.value),
+              getValues('invoice.invoiceRows.0.accountInformation.0.costCenter'),
+              getValues('invoice.invoiceRows.0.accountInformation.0.activity')
+            );
+          }}
+          className="w-full text-dark-primary"
+          type="number"
+          step={0.01}
+          min={0}
+          max={999999}
+          size="md"
+        />
+        {errors.invoice?.invoiceRows?.[0]?.quantity && (
+          <div className="text-error">
+            <FormErrorMessage>{errors.invoice?.invoiceRows[0]?.quantity?.message}</FormErrorMessage>
+          </div>
+        )}
+      </FormControl>
+
+      <Table dense background data-cy="seller-table">
+        <Table.Header>
+          <Table.HeaderColumn>Beskrivning</Table.HeaderColumn>
+          <Table.HeaderColumn>Antal</Table.HeaderColumn>
+          <Table.HeaderColumn>Pris</Table.HeaderColumn>
+          <Table.HeaderColumn>Summa</Table.HeaderColumn>
+        </Table.Header>
+        <Table.Body>
+          {watch('invoice.invoiceRows').map((row, index) => {
+            return (
+              <Table.Row key={`row-${index}`}>
+                <Table.Column>
+                  <div>{row.descriptions?.[0]}</div>
+                  <div>
+                    ({getValues(`invoice.invoiceRows.${index}.accountInformation.0.costCenter`)},{' '}
+                    {getValues(`invoice.invoiceRows.${index}.accountInformation.0.activity`)})
+                  </div>
+                </Table.Column>
+                <Table.Column>{getValues(`invoice.invoiceRows.${index}.quantity`)}</Table.Column>
+                <Table.Column>{getValues(`invoice.invoiceRows.${index}.costPerUnit`)}</Table.Column>
+                <Table.Column>{getValues(`invoice.invoiceRows.${index}.totalAmount`)}</Table.Column>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table>
       <div className="flex mb-md gap-24">
         <div className="flex w-1/2">
           <FormControl id="supervisor" className="w-full">
@@ -183,7 +169,6 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
               className="w-full text-dark-primary"
               size="md"
               onChange={(e) => {
-                console.log('Kundidentitet change: ', e.target.value);
                 setValue('invoice.customerId', e.target.value);
                 if (getValues('type') === 'EXTERNAL') {
                   setValue('recipient.organizationName', e.target.value);
@@ -192,28 +177,21 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
                   );
                   console.log('Selected identity: ', selectedIdentity);
                   setIsLoading(true);
-                  getOrganization(selectedIdentity.orgNr).then((org) => {
+                  getOrganization(selectedIdentity.orgNr).then(({ partyId, address }) => {
                     setIsLoading(false);
-                    console.log('org: ', org);
-                    console.log('Setting partyId: ', org.partyId);
-                    setValue('recipient.partyId', org.partyId);
-                    console.log('Setting recipient.addressDetails: ', {
-                      city: org?.address?.city,
-                      street: org?.address?.street,
-                      careOf: org?.address?.careOf,
-                      postalCode: org?.address?.postcode,
-                    });
-                    setValue('recipient.addressDetails', {
-                      city: org?.address?.city,
-                      street: org?.address?.street,
-                      careOf: org?.address?.careOf,
-                      postalCode: org?.address?.postcode,
-                    });
+                    setValue('recipient.partyId', partyId);
+                    setValue('recipient.addressDetails', address);
                   });
                 } else {
                   setValue('recipient', undefined);
                 }
-                handleDescriptionChange(getValues('invoice.description'), e.target.value);
+                handleChange(
+                  getValues('invoice.description'),
+                  e.target.value,
+                  1,
+                  getValues('invoice.invoiceRows.0.accountInformation.0.costCenter'),
+                  getValues('invoice.invoiceRows.0.accountInformation.0.activity')
+                );
               }}
               placeholder={'0'}
             >
@@ -236,7 +214,7 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
                 <FormErrorMessage>{errors.invoice.customerId?.message}</FormErrorMessage>
               </div>
             )}
-            {getValues().recipient ? (
+            {/* {getValues().recipient ? (
               <div>
                 Vald kund:
                 <p>PartyID: {getValues().recipient.partyId}</p>
@@ -247,7 +225,7 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
                   {getValues().recipient.addressDetails?.postalCode} {getValues().recipient.addressDetails?.city}
                 </p>
               </div>
-            ) : null}
+            ) : null} */}
           </FormControl>
         </div>
 
@@ -259,8 +237,23 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
               data-cy="activity-input"
               className="w-full text-dark-primary"
               onChange={(e) => {
-                getValues('invoice.invoiceRows.0.accountInformation').forEach((accountInformation, index) => {
-                  setValue(`invoice.invoiceRows.0.accountInformation.${index}.activity`, e.target.value);
+                const selectedActivity = invoiceSettings.activities.find((a) => a.value === e.target.value);
+                if (!selectedActivity) {
+                  return;
+                }
+
+                const selectedDescription = getValues('invoice.description');
+                const customerId = getValues('invoice.customerId');
+                const costcenter = selectedActivity.costCenter;
+                const quantity = getValues('invoice.invoiceRows.0.quantity');
+                handleChange(selectedDescription, customerId, quantity, costcenter, selectedActivity.value);
+                getValues('invoice.invoiceRows').forEach((row, index) => {
+                  row.accountInformation.forEach((accountInformation, accountIndex) => {
+                    setValue(
+                      `invoice.invoiceRows.${index}.accountInformation.${accountIndex}.activity`,
+                      selectedActivity.value
+                    );
+                  });
                 });
               }}
               size="md"
@@ -283,9 +276,11 @@ export const BillingForm = ({ recipientName, handleDescriptionChange, setIsLoadi
           </FormControl>
         </div>
       </div>
-      <div>
+      {/* <div>
         <span> {JSON.stringify(watch())}</span>
-      </div>
+      </div> */}
     </>
   );
 };
+
+export default BillingForm;
