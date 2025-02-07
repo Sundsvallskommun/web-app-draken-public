@@ -79,16 +79,12 @@ export const newStatuses = [ErrandStatus.ArendeInkommit];
 export const ongoingStatuses = [
   ErrandStatus.UnderGranskning,
   ErrandStatus.VantarPaKomplettering,
-  ErrandStatus.KompletteringInkommen,
-  ErrandStatus.InterntKomplettering,
   ErrandStatus.InterntAterkoppling,
-  ErrandStatus.UnderRemiss,
-  ErrandStatus.AterkopplingRemiss,
   ErrandStatus.UnderUtredning,
   ErrandStatus.UnderBeslut,
   ErrandStatus.Beslutad,
   ErrandStatus.BeslutVerkstallt,
-  ErrandStatus.BeslutOverklagat,
+  ...(isPT() ? [ErrandStatus.BeslutOverklagat] : []),
 ];
 
 export const suspendedStatuses = [ErrandStatus.Parkerad];
