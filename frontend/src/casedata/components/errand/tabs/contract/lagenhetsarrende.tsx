@@ -1289,7 +1289,7 @@ export const Lagenhetsarrende: React.FC<{
                           />
                         </FormControl>
                         <FormControl className="flex-grow max-w-[45%]">
-                          <FormLabel>Välj fr.o.m datum</FormLabel>
+                          <FormLabel>Välj t.o.m datum</FormLabel>
                           <DatePicker
                             value={getValues('arrendeavgiftTerms.prepaidToDate')}
                             disabled={getValues('arrendeavgiftTerms.prepaid') !== 'true'}
