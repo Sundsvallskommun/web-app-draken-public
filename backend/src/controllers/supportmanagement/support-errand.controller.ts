@@ -408,11 +408,15 @@ export class SupportErrandController {
         category: data.classification.category,
         type: data.classification.type,
       },
+      businessRelated: data.businessRelated,
+      description: data.description,
+      contactReason: data.contactReason,
+      contactReasonDescription: data.contactReasonDescription,
       channel: data.channel,
       priority: data.priority,
       status: data.status,
       resolution: data.resolution,
-      title: 'New errand',
+      title: 'Empty errand',
     };
     const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');

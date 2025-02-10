@@ -7,6 +7,7 @@ import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import {
+  emptySupportErrand,
   getSupportErrandById,
   initiateSupportErrand,
   isSupportErrandLocked,
@@ -14,7 +15,7 @@ import {
   SupportErrandDto,
 } from '@supportmanagement/services/support-errand-service';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{
@@ -64,7 +65,7 @@ export const SaveButtonComponent: React.FC<{
     formState: { errors },
   }: UseFormReturn<Partial<SupportErrand>, any, undefined> = useFormContext();
 
-  const [doneSaving, setDoneSaving] = useState(false);
+  //const [doneSaving, setDoneSaving] = useState(false);
   // useEffect(() => {
   //   if (errand?.id && doneSaving) {
   //     router.push(`/arende/${municipalityId}/${errand.id}`, `/arende/${municipalityId}/${errand.id}`, {
@@ -96,14 +97,6 @@ export const SaveButtonComponent: React.FC<{
     }
   }, [supportErrand]);
 
-  useEffect(() => {
-    if (supportErrand?.id && doneSaving) {
-      router.push(`/arende/${municipalityId}/${supportErrand.id}`, `/arende/${municipalityId}/${supportErrand.id}`, {
-        shallow: true,
-      });
-    }
-  }, [supportErrand, doneSaving, municipalityId]);
-
   const onError = (errors, e) => {
     console.error('Some error', errors);
   };
@@ -111,10 +104,13 @@ export const SaveButtonComponent: React.FC<{
   const onSubmit = (close: boolean) => {
     const data: Partial<SupportErrand> = getValues();
     const dataToSave: Partial<SupportErrandDto> = {
+      assignedUserId: data.assignedUserId,
+      reporterUserId: data.reporterUserId,
       classification: {
         category: data.category,
         type: data.type,
       },
+      businessRelated: data.businessRelated,
       contactReason: data.contactReason,
       contactReasonDescription: data.contactReasonDescription,
       channel: data.channel,
@@ -139,31 +135,25 @@ export const SaveButtonComponent: React.FC<{
         if (!res) {
           throw new Error('Errand could not be registered');
         }
+        reset();
+        await getSupportErrandById(res.id, municipalityId).then((e) => {
+          setSupportErrand(e.errand);
 
-        const e = await getSupportErrandById(res.id, municipalityId);
-        setSupportErrand(e.errand);
+          router.push(`/arende/${municipalityId}/${e.errand.id}`, `/arende/${municipalityId}/${e.errand.id}`, {
+            shallow: true,
+          });
 
-        if (registeringNewErrand) {
-          setUnsaved(false);
-          setTimeout(() => {
-            reset(e.errand);
-          }, 0);
-        }
-        setTimeout(() => {
-          reset(e.errand);
-        }, 0);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet sparades',
-          status: 'success',
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Ärendet sparades',
+            status: 'success',
+          });
         });
 
         return true;
       })
-      .then(() => {
-        setDoneSaving(true);
-      })
+
       .catch((e) => {
         console.error('Error when updating errand:', e);
         toastMessage({
@@ -181,47 +171,44 @@ export const SaveButtonComponent: React.FC<{
   const onSubmitAndContinue = () => onSubmit(false);
 
   return (
-    <div>
-      <div className="w-full flex gap-lg items-end">
-        <div className="w-min">
-          <Button
-            data-cy="save-and-continue-button"
-            disabled={
-              isSupportErrandLocked(supportErrand) ||
-              (!formState.dirtyFields.category && !formState.dirtyFields.type) ||
-              !formState.isValid
-            }
-            type="button"
-            onClick={handleSubmit(() => {
-              return saveConfirm
-                .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
-                .then((confirmed) => {
-                  if (confirmed) {
-                    onSubmitAndContinue();
-                  }
-                  return confirmed ? () => true : () => {};
-                });
-            }, onError)}
-            color={
-              (props.color as
-                | 'info'
-                | 'success'
-                | 'primary'
-                | 'warning'
-                | 'error'
-                | 'vattjom'
-                | 'gronsta'
-                | 'bjornstigen'
-                | 'juniskar') || 'primary'
-            }
-            rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
-            loading={isLoadingContinue}
-            loadingText="Sparar"
-          >
-            {props.label || 'Spara'}
-          </Button>
-        </div>
-      </div>
+    <div className="w-full">
+      <Button
+        className="w-full"
+        data-cy="save-and-continue-button"
+        disabled={
+          isSupportErrandLocked(supportErrand) ||
+          (!formState.dirtyFields.category && !formState.dirtyFields.type) ||
+          !formState.isValid
+        }
+        type="button"
+        onClick={handleSubmit(() => {
+          return saveConfirm
+            .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
+            .then((confirmed) => {
+              if (confirmed) {
+                onSubmitAndContinue();
+              }
+              return confirmed ? () => true : () => {};
+            });
+        }, onError)}
+        color={
+          (props.color as
+            | 'info'
+            | 'success'
+            | 'primary'
+            | 'warning'
+            | 'error'
+            | 'vattjom'
+            | 'gronsta'
+            | 'bjornstigen'
+            | 'juniskar') || 'primary'
+        }
+        rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
+        loading={isLoadingContinue}
+        loadingText="Sparar"
+      >
+        {props.label || 'Spara'}
+      </Button>
     </div>
   );
 };

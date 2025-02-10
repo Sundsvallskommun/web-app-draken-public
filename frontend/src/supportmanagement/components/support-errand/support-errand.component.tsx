@@ -4,12 +4,10 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
 import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
-  ApiSupportErrand,
   SupportErrand,
   defaultSupportErrandInformation,
   emptySupportErrand,
   getSupportErrandById,
-  initiateSupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -20,8 +18,6 @@ import * as yup from 'yup';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { SaveButtonComponent } from '../save-button/save-button.component';
-import { ArrowRight } from 'lucide-react';
 
 let formSchema = yup
   .object({
@@ -37,6 +33,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
+  const [doneSaving, setDoneSaving] = useState(false);
   const {
     municipalityId,
     supportErrand,
@@ -112,25 +109,6 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
     } else {
       setSupportErrand(emptySupportErrand);
     }
-    // else {
-    //   if (municipalityId && supportErrandIsEmpty(supportErrand)) {
-    //     initiateSupportErrand(municipalityId)
-    //       .then((result) => {
-    //         setSupportErrand(result);
-    //         methods.reset(result);
-    //       })
-    //       .catch((e) => {
-    //         console.error('Error when initiating errand:', e);
-    //         setIsLoading(false);
-    //         toastMessage({
-    //           position: 'bottom',
-    //           closeable: false,
-    //           message: 'Något gick fel när ärendet skulle initieras',
-    //           status: 'error',
-    //         });
-    //       });
-    //   }
-    // }
   }, [router, municipalityId]);
 
   return (
@@ -176,19 +154,6 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                               >
                                 Avbryt
                               </Button>
-                              <SaveButtonComponent
-                                supportErrand={supportErrand}
-                                setSupportErrand={setSupportErrand}
-                                setUnsaved={() => {}}
-                                update={() => {}}
-                                registeringNewErrand={typeof supportErrand?.id === 'undefined'}
-                                verifyAndClose={function (): void {
-                                  throw new Error('Function not implemented.');
-                                }}
-                                label="Registrera"
-                                color="vattjom"
-                                icon={<Icon icon={<ArrowRight />} size={18} />}
-                              />
                             </div>
                           </div>
                         ) : null}
@@ -205,10 +170,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
               )}
             </main>
           </div>
-          {/* {!supportErrandIsEmpty(supportErrand) ? <SidebarWrapper /> : null} */}
-          {supportErrand?.id ? (
-            <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
-          ) : null}
+          <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
         </div>
       </div>
     </FormProvider>

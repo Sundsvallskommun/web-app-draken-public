@@ -5,6 +5,8 @@ import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
+import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { useAppContext } from '@contexts/app.context';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -32,6 +34,12 @@ export const Sidebar: React.FC<{
   const menuRef = useRef<HTMLDivElement>(null);
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
+
+  const {
+    supportErrand,
+  }: {
+    supportErrand: SupportErrand;
+  } = useAppContext();
 
   const updateScroll = () => {
     if (menuRef.current) {
@@ -97,6 +105,7 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
+                  disabled={idx !== 0 && supportErrandIsEmpty(supportErrand)}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}

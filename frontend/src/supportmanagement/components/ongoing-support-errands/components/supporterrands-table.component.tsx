@@ -14,7 +14,6 @@ import {
   Status,
   StatusLabel,
   SupportErrand,
-  SupportErrandsData,
   getLabelCategory,
   getLabelSubType,
   getLabelType,
