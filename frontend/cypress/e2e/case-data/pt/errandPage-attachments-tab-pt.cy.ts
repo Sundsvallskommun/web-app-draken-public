@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
-import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockAttachments, mockAttachmentsPT } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
@@ -14,39 +14,42 @@ import { mockAsset } from '../fixtures/mockAsset';
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page attachments tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/messages/PRH-2022-000019*', mockMessages);
+      cy.intercept('GET', '**/messages/*', mockMessages);
+      cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('POST', '**/personid', mockPersonId);
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachmentsPT).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
       cy.intercept('POST', '**/stakeholders/personNumber', mockPTErrand_base.data.stakeholders);
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
 
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
+      cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
 
       cy.visit(`/arende/${mockPTErrand_base.data.municipalityId}/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs .sk-menubar button')
         .eq(2)
-        .should('have.text', `Bilagor (${mockAttachments.data.length})`)
+        .should('have.text', `Bilagor (${mockAttachmentsPT.data.length})`)
         .click({ force: true });
     });
 
     it('shows the correct attachment information', () => {
       cy.get('[data-cy="casedataAttachments-list"] .attachment-item').should(
         'have.length',
-        mockAttachments.data.length
+        mockAttachmentsPT.data.length
       );
     });
 
     it('Can handle attachment alternatives', () => {
-      mockAttachments.data.forEach((attachment) => {
+      mockAttachmentsPT.data.forEach((attachment) => {
         cy.intercept(
           'GET',
-          `**/casedata/${mockPTErrand_base.data.municipalityId}/attachments/${attachment.id}`,
+          `**/casedata/${mockPTErrand_base.data.municipalityId}/errands/${mockPTErrand_base.data.id}/attachments/${attachment.id}`,
           attachment
         ).as('getAttachment');
         cy.intercept(
@@ -67,7 +70,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
           .click({ force: true });
         //Can open attachment
         cy.get(`[data-cy="open-attachment-${attachment.id}"]`).should('exist').contains('Öppna').click();
-        if (imageMimeTypes.find((type) => type === attachment.mimeType)) {
+        if (attachment.mimeType !== 'application/pdf') {
           cy.wait('@getAttachment');
           cy.get('img').should('exist');
           cy.get('.modal-close-btn').should('exist').click();
@@ -94,19 +97,21 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('Can upload attachment/attachments', () => {
-      cy.intercept('POST', `**/casedata/${mockPTErrand_base.data.municipalityId}/attachments`, 'attachment.txt').as(
-        'uploadAttachment'
-      );
+      cy.intercept(
+        'POST',
+        `**/casedata/${mockPTErrand_base.data.municipalityId}/errands/442/attachments`,
+        'attachment.txt'
+      ).as('uploadAttachment');
       cy.intercept('GET', '**/errand/442*', mockPTErrand_base).as('getErrandAfterUpload');
       cy.get('[data-cy="add-attachment-button"]').should('exist').contains('Ladda upp bilaga').click();
-      cy.get('[data-cy="browse-button"]').should('exist').contains('Bläddra').click();
+      cy.get('[data-cy="dragdrop-upload"]').should('exist').click();
       //if empty file
       cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/empty-attachment.txt', { force: true });
-      cy.get('.sk-form-error-message').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
+      cy.get('[id="attachment-error"]').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
 
       //if wrong format file
       cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/testwrongformat.jfif', { force: true });
-      cy.get('.sk-form-error-message').should('have.text', 'Filtypen stöds inte.');
+      cy.get('[id="attachment-error"]').should('have.text', 'Filtypen stöds inte.');
 
       // right format and not empty
       cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/attachment.txt', { force: true });

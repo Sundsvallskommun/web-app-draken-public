@@ -19,7 +19,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/contract/2024-01026', {
         data: {
@@ -34,6 +35,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/stakeholders/personNumber').as('getStakeholders');
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
       cy.wait('@getContract');
@@ -162,7 +164,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'damages',
         'special-provisions',
         'soilbeam',
-        'signature',
       ];
 
       dataCys.forEach((datacy) => {
@@ -202,8 +203,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('#areaSize').should('exist').type('200');
       cy.get('#mapAttachments').should('exist').type('mapattachment.txt');
-      // Is not in use right now
-      // cy.get('#mapAttachmentReference').should('exist').type('map reference');
+
+      cy.get('#mapAttachmentReference').should('exist').type('map reference');
 
       cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
 
@@ -563,6 +564,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .check({ force: true });
       });
 
+      cy.get('[name="markfororeningarTerms.condition.testDone.date"]').type('2024-01-01');
       cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
 
       cy.get('[data-cy="soil-pollution-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
@@ -580,11 +582,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           key: 'upphorandeTerms.condition.restorationCleaning',
           header: 'Återställning och städning',
           conditionText:
-            'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har avflyttat från den i detta avtal angivna adressen',
+            'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har flyttat från adressen som angivits i detta avtal.',
         },
         {
           key: 'upphorandeTerms.condition.restorationBuildingRemoval',
-          header: 'Återställning och borttagning av byggnader',
+          header: 'Återställning och städning inkl. byggnader',
           conditionText:
             'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Alla byggnader/anläggningar inom området ska tas bort. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har avflyttat från den i detta avtal angivna adressen',
         },
@@ -593,23 +595,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
           conditionText:
             'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
-          extraField: {
-            key: 'upphorandeTerms.noRefundLeaseFeeAmount',
-            placeholder: 'SEK',
-            header: 'Ange belopp för återbetalning',
-          },
         },
         {
           key: 'upphorandeTerms.condition.inspectionRequirements',
           header: 'Besiktningskrav och friskrivning av ersättningsskyldighet',
           conditionText:
-            'Vid avtalets upphörande ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
-        },
-        {
-          key: 'upphorandeTerms.condition.inspectionLandWater',
-          header: 'Besiktning och friskrivning för mark- och vattenområden',
-          conditionText:
-            'Vid avtalets upphörande ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat mark- och vattenområde, dels för kostnader som arrendatorn nedlagt inom området',
+            'När avtalet upphör ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
         },
       ];
 
@@ -652,24 +643,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     //DAMAGES
     it('manages damages automatically in land lease contracts', () => {
       const damages = [
-        {
-          key: 'skadaansvarTerms.condition.skadeaterstallning',
-          header: 'Skadeåterställning och kostnadsansvar för arrendatorn',
-          conditionText:
-            'Arrendatorn ska för det fall det uppstår skador till följd av arrendatorns nyttjande av området ombesörja och bekosta återställande av skador. Fastighetsägaren äger annars rätt att vidta nödvändiga åtgärder på arrendatorns bekostnad.',
-        },
-        {
-          key: 'skadaansvarTerms.condition.skadestandsskyldighet',
-          header: 'Skadeståndsskyldighet och skydd mot tredjepartsanspråk för arrendatorn',
-          conditionText:
-            'Arrendatorn ska hålla fastighetsägaren fullt ut skadeslös för eventuella krav eller anspråk från myndighet eller tredje man till följd av den verksamhet arrendatorn bedriver på området, inklusive ansvar avseende miljöskada.',
-        },
-        {
-          key: 'skadaansvarTerms.condition.befrielse',
-          header: 'Befrielse från ansvar för fastighetsägaren vid myndighetsåtgärder',
-          conditionText:
-            'Fastighetsägaren svarar inte för olägenhet eller kostnader som orsakas arrendatorn till följd av myndighetsåtgärder eller liknande.',
-        },
         {
           key: 'skadaansvarTerms.condition.begransning',
           header: 'Begränsning av fastighetsägarens ansvar för skador och krav mot arrendatorn',
@@ -794,7 +767,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
+        .contains('Välj villkor för underskrifter')
         .should('exist')
         .click();
       cy.get('.sk-modal-dialog').should('exist');
@@ -814,10 +787,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .check({ force: true });
       });
 
-      cy.get('.sk-modal-dialog .sk-form-input').should('exist').type('1');
+      cy.get('[data-cy="signature-propertyowner"]').should('exist').type('1');
+      cy.get('[data-cy="signature-leaseholder"]').should('exist').type('1');
       cy.get('button').should('exist').contains('Importera').click();
 
-      cy.get('[data-cy="signature-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
       cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@getErrand');
 
