@@ -55,7 +55,6 @@ export const SupportErrandInvoiceTab: React.FC<{
       supportErrand && supportErrand.externalTags?.find((t) => t.key === 'billingRecordId')?.value;
     if (existingRecordId) {
       getBillingRecord(existingRecordId, municipalityId).then((rec) => {
-        console.log('EXISTING RECORD', rec);
         setRecord(rec);
         setRecipientname(rec.extraParameters['referenceName'] || '');
         reset(rec);
@@ -148,7 +147,6 @@ export const SupportErrandInvoiceTab: React.FC<{
       costCenter,
       activity
     );
-    console.log('Rows generated: ', formRows);
     setValue('invoice.invoiceRows', formRows);
   };
 
@@ -159,7 +157,7 @@ export const SupportErrandInvoiceTab: React.FC<{
   }, [user, supportErrand]);
 
   const onError = (error) => {
-    console.log('error', error);
+    console.error('error', error);
   };
 
   const onSubmit = () => {

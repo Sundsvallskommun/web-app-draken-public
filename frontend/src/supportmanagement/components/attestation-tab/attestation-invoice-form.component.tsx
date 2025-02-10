@@ -93,9 +93,8 @@ export const AttestationInvoiceForm: React.FC<{
     handleChange(description, identity, quantity, costCenter, activity);
   }, [handleChange, selectedRecord]);
 
-  const onError = () => {
-    console.log('getValues()', getValues());
-    console.log('errors', errors);
+  const onError = (error) => {
+    console.error('error', error);
   };
 
   const onSubmit = () => {
