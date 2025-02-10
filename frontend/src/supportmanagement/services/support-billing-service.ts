@@ -204,6 +204,7 @@ const satisfyApi = (data: CBillingRecord) => {
   processed.category = invoiceSettings.category;
   processed.type = data.type;
   processed.status = data.status;
+  processed.approvedBy = data.approvedBy;
   processed.extraParameters = data.extraParameters;
   return processed as CBillingRecord;
 };
