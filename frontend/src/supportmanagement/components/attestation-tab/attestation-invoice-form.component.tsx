@@ -196,11 +196,7 @@ export const AttestationInvoiceForm: React.FC<{
         </Table>
 
         <FormProvider {...formControls}>
-          <BillingForm
-            recipientName={maybe(selectedRecord.extraParameters?.['referenceName'])}
-            handleChange={handleChange}
-            setIsLoading={() => {}}
-          />
+          <BillingForm handleChange={handleChange} setIsLoading={() => {}} />
         </FormProvider>
       </div>
 

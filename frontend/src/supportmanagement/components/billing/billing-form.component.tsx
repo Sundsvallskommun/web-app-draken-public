@@ -1,11 +1,12 @@
-import { FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 const BillingForm: React.FC<{
-  recipientName: string;
+  resetManager?: () => void;
   handleChange: (
     description: string,
     customerId: string,
@@ -14,7 +15,7 @@ const BillingForm: React.FC<{
     activity: string
   ) => void;
   setIsLoading: (isLoading: boolean) => void;
-}> = ({ recipientName, handleChange, setIsLoading }) => {
+}> = ({ resetManager, handleChange, setIsLoading }) => {
   const {
     control,
     register,
@@ -123,13 +124,22 @@ const BillingForm: React.FC<{
         <div className="flex w-1/2">
           <FormControl id="supervisor" className="w-full">
             <FormLabel>Chef</FormLabel>
-            <Input
-              data-cy="manager-input"
-              className="w-full text-dark-primary"
-              readOnly
-              value={recipientName}
-              size="md"
-            />
+            <Input.Group>
+              <Input
+                data-cy="manager-input"
+                className="w-full text-dark-primary"
+                readOnly={getValues().status !== 'NEW'}
+                {...register('extraParameters.referenceName')}
+                size="md"
+              />
+              {resetManager && getValues().status === 'NEW' ? (
+                <Input.RightAddin>
+                  <Button iconButton variant="ghost" onClick={resetManager}>
+                    <LucideIcon name="refresh-ccw" />
+                  </Button>
+                </Input.RightAddin>
+              ) : null}
+            </Input.Group>
             {errors.recipient ? (
               <div className="text-error">
                 <FormErrorMessage>{errors.recipient?.message}</FormErrorMessage>
@@ -147,7 +157,7 @@ const BillingForm: React.FC<{
               data-cy="referenceNumber-input"
               className="w-full text-dark-primary"
               size="md"
-              readOnly
+              readOnly={getValues().status !== 'NEW'}
             />
             {errors.invoice?.customerReference ? (
               <div className="text-error">

@@ -48,8 +48,45 @@ export const SupportErrandInvoiceTab: React.FC<{
   } = useAppContext();
 
   const [record, setRecord] = useState<CBillingRecord | undefined>(emptyBillingRecord);
-  const [recipientName, setRecipientname] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const resetManager = (manager) => {
+    const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+    getEmployeeCustomerIdentity(managerUserName).then((res) => {
+      if (res.type === 'INTERNAL') {
+        console.log('Found employee res: ', res);
+        setValue('type', CBillingRecordTypeEnum.INTERNAL);
+        setTimeout(() => {
+          setValue('invoice.customerId', res.identity.customerId.toString());
+        }, 20);
+      } else if (res.type === 'EXTERNAL') {
+        setValue('type', CBillingRecordTypeEnum.EXTERNAL);
+        setValue('invoice.customerId', res.identity.name);
+        setValue('recipient.organizationName', res.identity.name);
+        getOrganization(res.identity.orgNr).then(({ partyId, address }) => {
+          setValue('recipient.partyId', partyId);
+          setValue('recipient.addressDetails', address);
+        });
+      }
+      setValue('invoice.customerReference', res.referenceNumber);
+      handleChange(
+        invoiceSettings.invoiceTypes[0].invoiceType,
+        res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.name,
+        1,
+        res.type === 'INTERNAL'
+          ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter
+          : invoiceSettings.invoiceTypes[0].external.accountInformation.costCenter,
+        res.type === 'INTERNAL'
+          ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity
+          : invoiceSettings.invoiceTypes[0].external.accountInformation.activity
+      );
+    });
+    setValue(`extraParameters`, {
+      errandNumber: supportErrand.errandNumber,
+      errandId: supportErrand.id,
+      referenceName: `${manager?.firstName} ${manager?.lastName}`,
+    });
+  };
 
   useEffect(() => {
     const existingRecordId =
@@ -57,7 +94,6 @@ export const SupportErrandInvoiceTab: React.FC<{
     if (existingRecordId) {
       getBillingRecord(existingRecordId, municipalityId).then((rec) => {
         setRecord(rec);
-        setRecipientname(rec.extraParameters['referenceName'] || '');
         reset(rec);
         setTimeout(() => {
           handleChange(
@@ -75,38 +111,7 @@ export const SupportErrandInvoiceTab: React.FC<{
       const manager = supportErrand.stakeholders?.find((s) => s.role === 'MANAGER');
       const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
       if (managerUserName) {
-        getEmployeeCustomerIdentity(managerUserName).then((res) => {
-          if (res.type === 'INTERNAL') {
-            setValue('type', CBillingRecordTypeEnum.INTERNAL);
-            setValue('invoice.customerId', res.identity.customerId.toString());
-          } else if (res.type === 'EXTERNAL') {
-            setValue('type', CBillingRecordTypeEnum.EXTERNAL);
-            setValue('invoice.customerId', res.identity.name);
-            setValue('recipient.organizationName', res.identity.name);
-            getOrganization(res.identity.orgNr).then(({ partyId, address }) => {
-              setValue('recipient.partyId', partyId);
-              setValue('recipient.addressDetails', address);
-            });
-          }
-          setValue('invoice.customerReference', res.referenceNumber);
-          handleChange(
-            invoiceSettings.invoiceTypes[0].invoiceType,
-            res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.name,
-            1,
-            res.type === 'INTERNAL'
-              ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter
-              : invoiceSettings.invoiceTypes[0].external.accountInformation.costCenter,
-            res.type === 'INTERNAL'
-              ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity
-              : invoiceSettings.invoiceTypes[0].external.accountInformation.activity
-          );
-        });
-        setRecipientname(`${manager?.firstName} ${manager?.lastName}` || '');
-        setValue(`extraParameters`, {
-          errandNumber: supportErrand.errandNumber,
-          errandId: supportErrand.id,
-          referenceName: `${manager?.firstName} ${manager?.lastName}`,
-        });
+        resetManager(manager);
       }
     }
   }, [supportErrand]);
@@ -162,8 +167,10 @@ export const SupportErrandInvoiceTab: React.FC<{
   };
 
   const onSubmit = () => {
+    setIsLoading(true);
     return saveBillingRecord(supportErrand, municipalityId, getValues())
       .then(() => {
+        setIsLoading(false);
         toastMessage({
           position: 'bottom',
           closeable: false,
@@ -188,15 +195,24 @@ export const SupportErrandInvoiceTab: React.FC<{
         <h2 className="text-h2-md">Fakturering</h2>
         <span>Fyll i följande faktureringsunderlag.</span>
         <FormProvider {...formControls}>
-          <BillingForm recipientName={recipientName} handleChange={handleChange} setIsLoading={setIsLoading} />
+          <BillingForm
+            resetManager={() => {
+              const manager = supportErrand.stakeholders?.find((s) => s.role === 'MANAGER');
+              resetManager(manager);
+            }}
+            handleChange={handleChange}
+            setIsLoading={setIsLoading}
+          />
         </FormProvider>
-        <div className="flex flex-row justify-end">
+        <div className="flex flex-row justify-end gap-md">
           {record.status === CBillingRecordStatusEnum.NEW ? (
             <div>
               <Button
                 disabled={isSupportErrandLocked(supportErrand) || !allowed || isLoading}
                 onClick={handleSubmit(onSubmit, onError)}
                 data-cy="save-invoice-button"
+                loading={isLoading}
+                loadingText="Sparar"
               >
                 Spara
               </Button>
