@@ -188,8 +188,8 @@ export const getInvoiceRows = (
       costPerUnit: invoiceRow.costPerUnit,
       quantity: isNaN(quantity) ? 0 : quantity,
       accountInformation: _accRows,
-      // TODO ADD REAL vatCode
-      ...(type === 'EXTERNAL' && { vatCode: '25' }),
+      // Use vatCode=00 for all external customers for now
+      ...(type === 'EXTERNAL' && { vatCode: '00' }),
     };
   });
   return formRows;
