@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+import { prettyTime } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -214,6 +215,13 @@ export const SupportErrandInvoiceTab: React.FC<{
             </Button>
           ) : null}
         </div>
+        {record.status === CBillingRecordStatusEnum.APPROVED ? (
+          <span className="flex justify-end">
+            <span className="text-small">
+              <b>Attesterad av:</b> {record.approvedBy}, {prettyTime(record.approved)}
+            </span>
+          </span>
+        ) : null}
       </div>
     </div>
   );
