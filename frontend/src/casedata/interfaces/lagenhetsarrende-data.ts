@@ -190,13 +190,17 @@ export interface LagenhetsArendeTemplate {
   };
   jordabalkenTerms: {
     condition?: {
-      [key in 'jordabalken' | 'replaces']:
+      [key in 'jordabalken']:
         | {
             header: string;
             conditionText?: string;
           }
         | undefined;
     };
+    replaces: 'true' | 'false';
+    fromDate?: string;
+    previousFromDate?: string;
+    additionDate?: string;
   };
   signatureTerms: {
     condition?: {

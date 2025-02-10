@@ -2610,14 +2610,57 @@ export const Lagenhetsarrende: React.FC<{
                       header: 'I övrigt gäller vad som stadgas i 7 eller 8 kap jordabalken om lägenhetsarrende.',
                       conditionText: '',
                     },
-                    {
-                      key: 'jordabalkenTerms.condition.replaces',
-
-                      header:
-                        'Detta avtal ersätter fr.o.m. 20XX-XX-XX det mellan parterna tidigare träffade avtalet daterat 1988-01-01 samt tillägg daterat 19XX-XX-XX.',
-                      conditionText: '',
-                    },
                   ].map(renderContractTermCheckboxList({ getValues, setValue, register }))}
+                  <Table.Row>
+                    <Table.Column className="flex flex-col items-start">
+                      <FormControl className="my-md" data-cy="jordabalkenTerms.condition.replaces-checkbox">
+                        <Checkbox
+                          name="period"
+                          value={'jordabalkenTerms'}
+                          data-cy="jordabalkenTerms-replace-row"
+                          defaultChecked={getValues('jordabalkenTerms.replaces') === 'true'}
+                          onChange={(e) => {
+                            setValue(
+                              'jordabalkenTerms.replaces',
+                              getValues('jordabalkenTerms.replaces') === 'true' ? 'false' : 'true'
+                            );
+                          }}
+                        >
+                          <span>
+                            Detta avtal ersätter fr.o.m. {getValues('jordabalkenTerms.fromDate') || 'åååå-mm-dd'} det
+                            mellan parterna tidigare träffade avtalet daterat{' '}
+                            {getValues('jordabalkenTerms.previousFromDate') || 'åååå-mm-dd'} samt tillägg daterat{' '}
+                            {getValues('jordabalkenTerms.additionDate') || 'åååå-mm-dd'}.
+                          </span>
+                        </Checkbox>
+                        {getValues('jordabalkenTerms.replaces') === 'true' ? (
+                          <>
+                            <FormLabel>Välj fr.o.m datum</FormLabel>
+                            <DatePicker
+                              value={getValues('jordabalkenTerms.fromDate')}
+                              disabled={!getValues('jordabalkenTerms.replaces')}
+                              onChange={(e) => setValue('jordabalkenTerms.fromDate', e.target.value)}
+                              data-cy="jordabalken-from-input"
+                            />
+                            <FormLabel>Välj tidigare träffade datum</FormLabel>
+                            <DatePicker
+                              value={getValues('jordabalkenTerms.previousFromDate')}
+                              disabled={!getValues('jordabalkenTerms.replaces')}
+                              onChange={(e) => setValue('jordabalkenTerms.previousFromDate', e.target.value)}
+                              data-cy="jordabalken-previous-from-input"
+                            />
+                            <FormLabel>Välj tillägg datum</FormLabel>
+                            <DatePicker
+                              value={getValues('jordabalkenTerms.additionDate')}
+                              disabled={!getValues('jordabalkenTerms.replaces')}
+                              onChange={(e) => setValue('jordabalkenTerms.additionDate', e.target.value)}
+                              data-cy="jordabalken-addition-input"
+                            />
+                          </>
+                        ) : null}
+                      </FormControl>
+                    </Table.Column>
+                  </Table.Row>
                 </Table.Body>
               </Table>
               <Button
@@ -2634,10 +2677,12 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   ${
-                    getValues().jordabalkenTerms.condition.replaces
-                      ? `<p>${getValues().jordabalkenTerms.condition.replaces.header}</p><p>${
-                          getValues().jordabalkenTerms.condition.replaces.conditionText
-                        }</p>`
+                    getValues().jordabalkenTerms.replaces === 'true'
+                      ? `<p>Detta avtal ersätter fr.o.m. ${
+                          getValues().jordabalkenTerms.fromDate || 'åååå-mm-dd'
+                        } det mellan parterna tidigare träffade avtalet daterat ${
+                          getValues().jordabalkenTerms.previousFromDate || 'åååå-mm-dd'
+                        } samt tillägg daterat ${getValues().jordabalkenTerms.additionDate || 'åååå-mm-dd'}.</p>`
                       : ''
                   }
                   `;

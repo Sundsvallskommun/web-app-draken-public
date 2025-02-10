@@ -729,7 +729,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           key: 'jordabalkenTerms.condition.replaces',
 
           header:
-            'Detta avtal ersätter fr.o.m. 20XX-XX-XX det mellan parterna tidigare träffade avtalet daterat 1988-01-01 samt tillägg daterat 19XX-XX-XX.',
+            'Detta avtal ersätter fr.o.m. åååå-mm-dd det mellan parterna tidigare träffade avtalet daterat åååå-mm-dd samt tillägg daterat åååå-mm-dd.',
           conditionText: '',
         },
       ];
@@ -751,6 +751,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .should('exist')
           .check({ force: true });
       });
+
+      cy.get('[data-cy="jordabalken-from-input"]').should('exist').type('2024-01-01');
+      cy.get('[data-cy="jordabalken-previous-from-input"]').should('exist').type('1988-05-09');
+      cy.get('[data-cy="jordabalken-addition-input"]').should('exist').type('1994-12-24');
 
       cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
 
