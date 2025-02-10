@@ -138,6 +138,14 @@ export class CRecipient implements Recipient {
   addressDetails: AddressDetails;
 }
 
+class CExtraParameters {
+  @IsString()
+  errandId: string;
+  @IsString()
+  errandNumber: string;
+  @IsString()
+  referenceName: string;
+}
 export class CBillingRecord implements BillingRecord {
   @IsOptional()
   @IsString()
@@ -165,7 +173,13 @@ export class CBillingRecord implements BillingRecord {
   invoice: CInvoice;
   @IsOptional()
   @IsObject()
-  extraParameters?: Record<string, string>;
+  @ValidateNested()
+  @TypeTransformer(() => CExtraParameters)
+  extraParameters?: {
+    errandId: string;
+    errandNumber: string;
+    referenceName: string;
+  };
 }
 export class CSortObject implements SortObject {
   @IsOptional()

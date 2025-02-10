@@ -125,6 +125,12 @@ export interface CRecipient {
   addressDetails: CAddressDetails;
 }
 
+export interface CExtraParameters {
+  errandId: string;
+  errandNumber: string;
+  referenceName: string;
+}
+
 export interface CBillingRecord {
   id?: string;
   approvedBy?: any;
@@ -136,7 +142,7 @@ export interface CBillingRecord {
   type: CBillingRecordTypeEnum;
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
-  extraParameters?: object;
+  extraParameters?: CExtraParameters;
 }
 
 export interface CSortObject {
