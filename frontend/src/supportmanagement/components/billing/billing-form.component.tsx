@@ -175,7 +175,6 @@ const BillingForm: React.FC<{
                   const selectedIdentity = invoiceSettings.customers.external.find(
                     (identity) => identity.name === e.target.value
                   );
-                  console.log('Selected identity: ', selectedIdentity);
                   setIsLoading(true);
                   getOrganization(selectedIdentity.orgNr).then(({ partyId, address }) => {
                     setIsLoading(false);

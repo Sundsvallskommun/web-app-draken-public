@@ -139,15 +139,12 @@ export const getInvoiceRows = (
   costCenter: string,
   activity: string
 ) => {
-  console.log('Getting invoice rows for: ', description, type, identity, quantity);
   const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === description);
   if (!invoiceType) {
     console.error('Could not find invoice type for description: ', description);
     return [];
   }
   const { invoiceRows, accountInformation } = type === 'INTERNAL' ? invoiceType?.internal : invoiceType?.external;
-  // console.log('Invoice rows: ', invoiceRows);
-  // console.log('Account information: ', accountInformation);
   if (!invoiceRows || !accountInformation) {
     console.error('Could not find invoice rows for description: ', description);
     return [];
@@ -163,10 +160,8 @@ export const getInvoiceRows = (
       let amount = 0;
       if (accountInformationRow.amountFromParent) {
         amount = totalAmount;
-        console.log("Amount is from parent, using parent's total amount: ", amount);
       } else {
         amount = isNaN(quantity) ? 0 : twoDecimals(quantity * accountInformationRow.amount);
-        console.log('Amount is not from parent, calculating amount: ', amount);
       }
       return {
         costCenter,
@@ -180,7 +175,6 @@ export const getInvoiceRows = (
         counterpart,
       };
     });
-    console.log('Generated rows: ', _accRows);
     return {
       descriptions: [invoiceRow.description.replace('<errandNumber>', errandNumber)],
       detailedDescriptions: [],
@@ -196,7 +190,6 @@ export const getInvoiceRows = (
 };
 
 const satisfyApi = (data: CBillingRecord) => {
-  console.log('Satisfying API: ', data);
   const processed: Partial<CBillingRecord> = {};
   processed.recipient = data.type === 'EXTERNAL' ? data.recipient : undefined;
   processed.invoice = { ...data.invoice };
@@ -256,12 +249,9 @@ export const saveBillingRecord: (
   municipalityId: string,
   record: CBillingRecord
 ) => Promise<boolean> = (errand, municipalityId, record) => {
-  console.log('Saving billing record: ', record);
   const url = `billing/${municipalityId}/billingrecords${record.id ? `/${record.id}` : ''}`;
   const action = record.id ? apiService.put : apiService.post;
   let data = satisfyApi(record);
-  console.log('Saving data:', data);
-  // return Promise.resolve(true);
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
       return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
@@ -332,9 +322,7 @@ export const getEmployeeOrganizationId: (
   domain?: string
 ) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string }> = async (username, domain) => {
   const employeeData = await getEmployeeData(username, domain);
-  console.log('Employee data: ', employeeData);
   const orgData = parseInvoiceAdministrationInfo(employeeData.orgTree);
-  console.log('Org data: ', orgData);
   return {
     companyId: employeeData.companyId,
     organizationId: orgData.is2849 ? '2849' : orgData.administrationCode,
@@ -357,14 +345,11 @@ export const getEmployeeCustomerIdentity: (
       referenceNumber: string;
     }
 > = async (username, domain) => {
-  console.log('Looking up customer identity for user: ', username);
   const employeeOrgData = await getEmployeeOrganizationId(username, domain);
-  console.log('Employee org data: ', employeeOrgData);
   const isInternal = employeeOrgData.companyId === 1;
   if (isInternal) {
     const identity = invoiceSettings.customers.internal.find((c) => c.orgId[0] === employeeOrgData.organizationId);
     const referenceNumber = employeeOrgData?.referenceNumber ?? '';
-    console.log('Internal customer identity: ', identity);
     return {
       type: 'INTERNAL',
       identity,
@@ -373,7 +358,6 @@ export const getEmployeeCustomerIdentity: (
   } else {
     const identity = invoiceSettings.customers.external.find((c) => c.companyId === employeeOrgData.companyId);
     const referenceNumber = identity?.customerReference ?? '';
-    console.log('External customer identity: ', identity);
     return {
       type: 'EXTERNAL',
       identity,
@@ -484,14 +468,12 @@ export const useBillingRecords = (
 
   useEffect(() => {
     if (size && size > 0) {
-      console.log('size changed: ', size);
       fetchBillingRecords().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
 
   useEffect(() => {
     if (page && page !== -1) {
-      console.log('page changed: ', page);
       fetchBillingRecords(page).then(() => setIsLoading(false));
     }
     //eslint-disable-next-line
