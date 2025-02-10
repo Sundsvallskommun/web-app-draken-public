@@ -73,63 +73,105 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       ).as('updateSupportErrand');
       goToInvoiceTab();
       const mockOrgId = mockPortalPersonData_internal.data.orgTree.split('|').slice(1, 2)[0];
+      const internalInvoiceType = invoiceSettings.invoiceTypes.find(
+        (t) => (t.invoiceType = 'Extra löneutbetalning - Systemet')
+      ).internal;
+      const internalCustomer = invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId);
+      const baseData = {
+        category: 'SALARY_AND_PENSION',
+        status: 'NEW',
+        type: 'INTERNAL',
+        invoice: {
+          customerId: invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId).customerId.toString(),
+          description: 'Extra löneutbetalning - Systemet',
+          customerReference: mockPortalPersonData_internal.data.referenceNumber,
+          ourReference: mockMe.data.name,
+          referenceId: 'N/A',
+          invoiceRows: [
+            {
+              descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
+              detailedDescriptions: [],
+              costPerUnit: 300,
+              quantity: 1,
+              accountInformation: [
+                {
+                  amount: 300,
+                  costCenter: internalInvoiceType.accountInformation.costCenter,
+                  subaccount: internalInvoiceType.accountInformation.subaccount,
+                  department: internalInvoiceType.accountInformation.department,
+                  activity: '5756',
+                  counterpart: internalCustomer.counterpart,
+                },
+              ],
+            },
+            {
+              descriptions: ['Utvecklingskostnad 2%'],
+              detailedDescriptions: [],
+              costPerUnit: 6,
+              quantity: 1,
+              accountInformation: [
+                {
+                  amount: 6,
+                  costCenter: internalInvoiceType.accountInformation.costCenter,
+                  subaccount: internalInvoiceType.accountInformation.subaccount,
+                  department: internalInvoiceType.accountInformation.department,
+                  activity: internalInvoiceType.accountInformation.activity,
+                  counterpart: internalCustomer.counterpart,
+                },
+              ],
+            },
+          ],
+        },
+        extraParameters: {
+          errandNumber: mockSupportErrand_billing.errandNumber,
+          errandId: mockSupportErrand_billing.id,
+          referenceName: `${mockSupportErrand_billing.stakeholders[0].firstName} ${mockSupportErrand_billing.stakeholders[0].lastName}`,
+        },
+      };
       cy.get('[data-cy="save-invoice-button"]').should('exist').click();
       cy.wait('@saveBillingRecord').should(({ request, response }) => {
-        const internalInvoiceType = invoiceSettings.invoiceTypes.find(
-          (t) => (t.invoiceType = 'Extra löneutbetalning - Systemet')
-        ).internal;
-        const internalCustomer = invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId);
-        expect(request.body).to.deep.equal({
-          category: 'SALARY_AND_PENSION',
-          status: 'NEW',
-          type: 'INTERNAL',
-          invoice: {
-            customerId: invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId).customerId.toString(),
-            description: 'Extra löneutbetalning - Systemet',
-            customerReference: mockPortalPersonData_internal.data.referenceNumber,
-            ourReference: mockMe.data.name,
-            referenceId: 'N/A',
-            invoiceRows: [
-              {
-                descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
-                detailedDescriptions: [],
-                costPerUnit: 300,
-                quantity: 1,
-                accountInformation: [
-                  {
-                    amount: 300,
-                    costCenter: internalInvoiceType.accountInformation.costCenter,
-                    subaccount: internalInvoiceType.accountInformation.subaccount,
-                    department: internalInvoiceType.accountInformation.department,
-                    activity: '5756',
-                    counterpart: internalCustomer.counterpart,
-                  },
-                ],
-              },
-              {
-                descriptions: ['Utvecklingskostnad 2%'],
-                detailedDescriptions: [],
-                costPerUnit: 6,
-                quantity: 1,
-                accountInformation: [
-                  {
-                    amount: 6,
-                    costCenter: internalInvoiceType.accountInformation.costCenter,
-                    subaccount: internalInvoiceType.accountInformation.subaccount,
-                    department: internalInvoiceType.accountInformation.department,
-                    activity: internalInvoiceType.accountInformation.activity,
-                    counterpart: internalCustomer.counterpart,
-                  },
-                ],
-              },
-            ],
-          },
-          extraParameters: {
-            errandNumber: mockSupportErrand_billing.errandNumber,
-            errandId: mockSupportErrand_billing.id,
-            referenceName: `${mockSupportErrand_billing.stakeholders[0].firstName} ${mockSupportErrand_billing.stakeholders[0].lastName}`,
-          },
+        expect(request.body).to.deep.equal(baseData);
+      });
+
+      // Change description
+      cy.get('[data-cy="invoice-description-input"]').select('Extra beställning');
+      cy.get('[data-cy="save-invoice-button"]').click();
+      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+        const modifiedData = structuredClone(baseData);
+        const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === 'Extra beställning').internal;
+        modifiedData.invoice.description = 'Extra beställning';
+        modifiedData.invoice.invoiceRows[0].costPerUnit = invoiceType.invoiceRows[0].costPerUnit;
+        modifiedData.invoice.invoiceRows[0].accountInformation[0].amount = invoiceType.invoiceRows[0].costPerUnit;
+        modifiedData.invoice.invoiceRows[1].costPerUnit = invoiceType.invoiceRows[1].costPerUnit;
+        modifiedData.invoice.invoiceRows[1].accountInformation[0].amount = invoiceType.invoiceRows[1].costPerUnit;
+        expect(request.body).to.deep.equal(modifiedData);
+      });
+
+      // Change customer
+      cy.get('[data-cy="customerId-input"]').select('40');
+      cy.get('[data-cy="save-invoice-button"]').click();
+      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+        const modifiedData = structuredClone(baseData);
+        const counterpart = invoiceSettings.customers.internal.find((c) => c.customerId === 40).counterpart;
+        modifiedData.invoice.customerId = '40';
+        modifiedData.invoice.invoiceRows[0].accountInformation[0].counterpart = counterpart;
+        modifiedData.invoice.invoiceRows[1].accountInformation[0].counterpart = counterpart;
+        expect(request.body).to.deep.equal(modifiedData);
+      });
+
+      // Change activity
+      cy.get('[data-cy="activity-input"]').select('5757');
+      cy.get('[data-cy="save-invoice-button"]').click();
+      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+        const modifiedData = structuredClone(baseData);
+        const costcenter = invoiceSettings.activities.find((a) => a.value === '5757').costCenter;
+        modifiedData.invoice.invoiceRows.forEach((row) => {
+          row.accountInformation[0].activity = '5757';
+          row.accountInformation[0].costCenter = costcenter;
         });
+        expect(request.body.invoice.invoiceRows[0].accountInformation).to.deep.equal(
+          modifiedData.invoice.invoiceRows[0].accountInformation
+        );
       });
     });
 
@@ -180,7 +222,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
                 detailedDescriptions: [],
                 costPerUnit: 306,
                 quantity: 1,
-                vatCode: '25',
+                vatCode: '00',
                 accountInformation: [
                   {
                     amount: 300,

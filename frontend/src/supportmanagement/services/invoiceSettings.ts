@@ -63,11 +63,6 @@ export const invoiceSettings: {
 } = {
   category: 'SALARY_AND_PENSION',
   activities: [
-    // {
-    //   value: null,
-    //   name: 'Standard',
-    //   default: 'true',
-    // },
     {
       value: '5756',
       name: 'Lön och pension',
