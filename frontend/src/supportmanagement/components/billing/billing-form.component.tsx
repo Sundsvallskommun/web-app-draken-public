@@ -32,7 +32,7 @@ const BillingForm: React.FC<{
         <FormLabel>Faktureringstyp</FormLabel>
         <Select
           {...register('invoice.description')}
-          data-cy="activity-input"
+          data-cy="invoice-description-input"
           className="w-full text-dark-primary"
           size="md"
           placeholder={'0'}
