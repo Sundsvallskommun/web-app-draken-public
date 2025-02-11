@@ -72,7 +72,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   return (
     <>
       <input type="hidden" {...register('id')} />
-      {supportErrand?.title !== 'Empty errand' ? (
+      {supportErrand?.title !== 'Empty errand' && !supportErrandIsEmpty(supportErrand) ? (
         <FormControl id="subject-line">
           <FormLabel>Ämnesrad</FormLabel>
           <p>{supportErrand.title}</p>

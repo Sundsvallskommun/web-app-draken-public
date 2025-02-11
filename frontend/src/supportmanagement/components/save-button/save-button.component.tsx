@@ -111,6 +111,7 @@ export const SaveButtonComponent: React.FC<{
         type: data.type,
       },
       businessRelated: data.businessRelated,
+      description: data.description,
       contactReason: data.contactReason,
       contactReasonDescription: data.contactReasonDescription,
       channel: data.channel,
