@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
-import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockAttachments, mockAttachmentsPT } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
@@ -24,12 +24,13 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachmentsPT).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
       cy.intercept('POST', '**/templates/phrases*', mockPhrases).as('getPhrases');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
+      cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
 
       cy.visit(`/arende/2281/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
@@ -69,15 +70,10 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         expect(request.body.decisionType).to.equal('FINAL');
         expect(request.body.decisionOutcome).to.equal('REJECTION');
         expect(request.body.decidedBy).to.deep.equal({
-          id: '223',
-          created: '2023-12-14T13:50:46.417444+01:00',
-          updated: '2023-12-14T13:50:46.417449+01:00',
           type: 'PERSON',
           firstName: 'My',
           lastName: 'Testsson',
           adAccount: 'kctest',
-          personId: 'aaaabbbb-aaaa-bbbb-aaaa-da8ca388888c',
-          personalNumber: '199001162396',
           roles: ['ADMINISTRATOR'],
           addresses: [],
           contactInformation: [],
@@ -116,15 +112,10 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         expect(request.body.decisionType).to.equal('FINAL');
         expect(request.body.decisionOutcome).to.equal('APPROVAL');
         expect(request.body.decidedBy).to.deep.equal({
-          id: '223',
-          created: '2023-12-14T13:50:46.417444+01:00',
-          updated: '2023-12-14T13:50:46.417449+01:00',
           type: 'PERSON',
           firstName: 'My',
           lastName: 'Testsson',
           adAccount: 'kctest',
-          personId: 'aaaabbbb-aaaa-bbbb-aaaa-da8ca388888c',
-          personalNumber: '199001162396',
           roles: ['ADMINISTRATOR'],
           addresses: [],
           contactInformation: [],

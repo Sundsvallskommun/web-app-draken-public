@@ -205,7 +205,7 @@ export const SidebarInfo: React.FC<{}> = () => {
 
   const { admin } = watch();
 
-  const status = useMemo(() => getValues().status, [getValues]);
+  const status = useMemo(() => getValues().status, [getValues()]);
 
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);

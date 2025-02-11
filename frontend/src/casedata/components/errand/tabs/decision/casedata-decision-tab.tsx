@@ -658,7 +658,15 @@ export const CasedataDecisionTab: React.FC<{
             color="primary"
             size="md"
             onClick={handleSubmit(onSubmit, onError)}
-            disabled={isLoading || !formState.isValid || isErrandLocked(errand) || !allowed || isSent()}
+            disabled={
+              isLoading ||
+              !formState.isValid ||
+              !getValues('validFrom') ||
+              !getValues('validTo') ||
+              isErrandLocked(errand) ||
+              !allowed ||
+              isSent()
+            }
           >
             {isLoading ? 'Sparar' : 'Spara beslutstext'}
           </Button>
