@@ -310,6 +310,25 @@ export const MessageComposer: React.FC<{
     }, 0);
   }, [contactMeans]);
 
+  const defaultSignature = () => {
+    let content =
+      `<br><br>Med vänlig hälsning<br><br><b>` + errand.administratorName + `</b><br><br><b>Sundsvalls kommun</b>`;
+    content += isMEX()
+      ? `<p>Stadsbyggnadskontoret</p>
+       <p>Mark- och exploateringsavdelningen</p>`
+      : isPT()
+      ? `
+       <p>Gatuavdelningen, Trafiksektionen</p>`
+      : null;
+    content += `<p>851 85 Sundsvall</p><p>Besöksadress: Norrmalmsgatan 4</p><p>Telefon: +46 60 19 10 00</p><a href="http://www.sundsvall.se/" target="_blank">www.sundsvall.se</a><br><br>`;
+
+    content += `<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>`;
+    content += `<p>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR).</p><br>`;
+    content += `<p>Läs mer på <a href="http://www.sundsvall.se/personuppgifter" target="_blank">www.sundsvall.se/personuppgifter</a>.</p>`;
+
+    return content;
+  };
+
   useEffect(() => {
     setReplying(!!props.message?.messageId);
     setValue('messageTemplate', '');
@@ -322,10 +341,10 @@ export const MessageComposer: React.FC<{
       setValue('emails', [{ value: props.message.email }]);
       setValue('contactMeans', props.message.messageType === 'WEBMESSAGE' ? 'webmessage' : 'email');
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setRichText(historyHeader + props.message.message);
+      setRichText(defaultSignature() + historyHeader + props.message.message);
       trigger();
     } else {
-      setRichText('');
+      setRichText(defaultSignature());
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
       setValue('contactMeans', !!errand.externalCaseId ? 'webmessage' : 'email');
@@ -354,24 +373,7 @@ export const MessageComposer: React.FC<{
         'Tack för din förfrågan.<br><br>Vi på mark- och exploateringsavdelningen kan tyvärr inte svara på frågor om ledningar i kommunens mark. Du ska istället att vända dig till respektive ledningsägare för att få informationen du söker. Här nedan följer kontaktuppgifter till de kommunala bolagen och för kommunal gatubelysning.<br><br>MittSverige Vatten & Avfall lämnar upplysningar om va-ledningsnätet.<br>Tel kundservice: 020-120 25 00<br>E-post: kundservice@msva.se<br><br>Sundsvall Energi AB lämnar uppgifter om fjärrvärmeledningsnätet<br>Tel växel: 060-19 20 80<br>E-post: info@sundsvallenergi.se<br><br>Sundsvalls Elnät lämnar uppgifter om elkraft.<br>Tel: 060-600 50 20<br>E-post: info@sundsvallelnat.se<br><br>ServaNet lämnar uppgifter om bredband<br>Tel kundcenter: 0200-12 00 35<br><br>Gatuavdelningen belysningsingenjör lämnar upplysningar om kommunens ledningar för gatubelysning.<br>E-post: gatuavdelningen@sundsvall.se';
     }
 
-    // Meddelande avslut
-    content += `<br><br><p>Med vänliga hälsningar</p><br>`;
-
-    content += isMEX()
-      ? `<p>Stadsbyggnadskontoret</p>
-         <p>Mark- och exploateringsavdelningen</p>`
-      : isPT()
-      ? `
-         <p>Gatuavdelningen, Trafiksektionen</p>`
-      : null;
-    content += `<p>Handläggare: ` + errand.administratorName + `</p>`;
-
-    // info
-    content += '<br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande';
-
-    // GDPR
-    content +=
-      '<br><br>De personuppgifter du lämnar kommer att behandlas i enlighet med dataskyddsförordningen GDPR. Läs mer om hur vi hanterar personuppgifter, <a href="http://www.sundsvall.se/personuppgifter" target="_blank">Behandling av personuppgifter, Sundsvalls kommun</a>';
+    content += defaultSignature();
 
     // lägger till enbart för mex-feedbackPrio och mex-feedbackNormal
     if (inTemplateValue === 'mex-feedbackPrio' || inTemplateValue === 'mex-feedbackNormal') {
