@@ -263,8 +263,8 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   jordabalkenTerms: {
     condition: {
       jordabalken: undefined,
-      replaces: undefined,
     },
+    replaces: undefined,
   },
   signatureTerms: {
     condition: {
