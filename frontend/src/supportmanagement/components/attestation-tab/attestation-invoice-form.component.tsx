@@ -51,8 +51,6 @@ export const AttestationInvoiceForm: React.FC<{
     mode: 'onSubmit',
   });
 
-  // formControls.setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
-
   const {
     register,
     control,
