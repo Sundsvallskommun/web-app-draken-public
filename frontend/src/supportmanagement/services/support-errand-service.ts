@@ -767,7 +767,6 @@ export const initiateSupportErrand: (
   municipalityId: string,
   body: Partial<SupportErrandDto>
 ) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
-  console.log(body);
   return apiService
     .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, body)
     .then((res) => {

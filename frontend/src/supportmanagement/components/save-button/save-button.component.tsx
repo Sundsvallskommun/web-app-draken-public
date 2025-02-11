@@ -1,13 +1,9 @@
-import { Stakeholder } from '@casedata/interfaces/stakeholder';
-import { getErrand, isErrandLocked, saveErrand } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import {
-  emptySupportErrand,
   getSupportErrandById,
   initiateSupportErrand,
   isSupportErrandLocked,
@@ -15,7 +11,7 @@ import {
   SupportErrandDto,
 } from '@supportmanagement/services/support-errand-service';
 import { useRouter } from 'next/router';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{
@@ -30,16 +26,12 @@ export const SaveButtonComponent: React.FC<{
   icon?: JSX.Element;
 }> = (props) => {
   const {
-    administrators,
-    user,
     municipalityId,
   }: {
     administrators: Admin[];
     user: User;
     municipalityId: string;
   } = useAppContext();
-  const [richText, setRichText] = useState<string>('');
-  const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [error, setError] = useState(false);
   const [isLoadingContinue, setIsLoadingContinue] = useState(false);
   const router = useRouter();
@@ -50,29 +42,14 @@ export const SaveButtonComponent: React.FC<{
     content: 'Vill du spara ärendet?',
   });
 
-  const { supportErrand, setSupportErrand, verifyAndClose, setUnsaved, update, registeringNewErrand } = props;
+  const { supportErrand, setSupportErrand, verifyAndClose, setUnsaved, update } = props;
 
   const {
     handleSubmit,
-    register,
-    control,
-    watch,
-    setValue,
     getValues,
-    trigger,
     reset,
     formState,
-    formState: { errors },
   }: UseFormReturn<Partial<SupportErrand>, any, undefined> = useFormContext();
-
-  //const [doneSaving, setDoneSaving] = useState(false);
-  // useEffect(() => {
-  //   if (errand?.id && doneSaving) {
-  //     router.push(`/arende/${municipalityId}/${errand.id}`, `/arende/${municipalityId}/${errand.id}`, {
-  //       shallow: true,
-  //     });
-  //   }
-  // }, [doneSaving, errand?.id, municipalityId, router]);
 
   useEffect(() => {
     const registeringNewErrand = typeof supportErrand?.id === 'undefined';
