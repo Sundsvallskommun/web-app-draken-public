@@ -374,6 +374,11 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="w-full py-24 px-32">
         <div className="flex">
           <div className="w-full">
+            {errand?.externalCaseId ? (
+              <>
+                <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
+              </>
+            ) : null}
             {isMEX() ? (
               <Facilities
                 facilities={realEstates}
