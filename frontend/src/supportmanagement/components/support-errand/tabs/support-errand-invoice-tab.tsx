@@ -54,7 +54,6 @@ export const SupportErrandInvoiceTab: React.FC<{
     const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
     getEmployeeCustomerIdentity(managerUserName).then((res) => {
       if (res.type === 'INTERNAL') {
-        console.log('Found employee res: ', res);
         setValue('type', CBillingRecordTypeEnum.INTERNAL);
         setTimeout(() => {
           setValue('invoice.customerId', res.identity.customerId.toString());
