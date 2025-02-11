@@ -11,16 +11,13 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       color = 'primary';
       icon = 'check';
       break;
-    case ErrandStatus.AterkopplingRemiss:
     case ErrandStatus.BeslutOverklagat:
     case ErrandStatus.BeslutVerkstallt:
     case ErrandStatus.Beslutad:
 
-    case ErrandStatus.KompletteringInkommen:
     case ErrandStatus.UnderGranskning:
     case ErrandStatus.UnderUtredning:
     case ErrandStatus.UnderBeslut:
-    case ErrandStatus.UnderRemiss:
       color = 'gronsta';
       icon = 'pen';
       break;
@@ -32,7 +29,6 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       inverted = true;
       icon = 'clock-10';
       break;
-    case ErrandStatus.InterntKomplettering:
     case ErrandStatus.InterntAterkoppling:
       color = 'gronsta';
       inverted = true;
