@@ -1,24 +1,9 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
-import {
-  appealErrand,
-  getErrand,
-  isErrandAdmin,
-  isErrandLocked,
-  saveErrand,
-} from '@casedata/services/casedata-errand-service';
+import { UiPhase } from '@casedata/interfaces/errand-phase';
+import { appealErrand, getErrand } from '@casedata/services/casedata-errand-service';
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
-import {
-  Button,
-  ConfirmationDialogContextProvider,
-  FormControl,
-  FormLabel,
-  Modal,
-  Spinner,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import router from 'next/router';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -26,11 +11,8 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
   const {
     municipalityId,
-    user,
     errand,
     setErrand,
-    administrators,
-    uiPhase,
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
 
@@ -39,14 +21,6 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
   const saveConfirm = useConfirm();
   const {
     handleSubmit,
-    register,
-    control,
-    watch,
-    setValue,
-    getValues,
-    trigger,
-    reset,
-    formState,
     formState: { errors },
   }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
@@ -120,36 +94,4 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
       Överklaga ärendet
     </Button>
   );
-
-  // <Modal
-  //   label="Överklaga ärendet"
-  //   show={modalAppealIsOpen}
-  //   onClose={() => {
-  //     setModalAppealIsOpen(false);
-  //   }}
-  //   className="min-w-[48rem]"
-  // >
-  //   <Modal.Content className="pb-0">
-  //     <FormControl className="w-full">
-  //       <FormLabel>
-  //         Beskriv orsak till överklagan<span aria-hidden="true">*</span>
-  //       </FormLabel>
-
-  //       <small className="my-0 text-dark-secondary">Texten sparas som en tjänsteanteckning på ärendet.</small>
-  //     </FormControl>
-  //   </Modal.Content>
-  //   <Modal.Footer>
-  //     <Button
-  //       variant="primary"
-  //       color="vattjom"
-  //       className="w-full mt-8"
-  //       disabled={false}
-  //       onClick={() => {
-  //         setModalAppealIsOpen(false); //TODO: Add appeal function
-  //       }}
-  //     >
-  //       Avsluta ärendet
-  //     </Button>
-  //   </Modal.Footer>
-  // </Modal>
 };

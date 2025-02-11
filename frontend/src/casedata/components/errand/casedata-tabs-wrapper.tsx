@@ -341,12 +341,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             <div className="text-lg my-sm">Ärendet har sparats</div>
           </div>
         ) : (
-          <WarnIfUnsavedChanges
-            showWarning={
-              (unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision) &&
-              errand?.status !== ErrandStatus.BeslutVerkstallt
-            }
-          >
+          <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
             <Tabs
               className="border-1 rounded-12 bg-background-content pt-6 pl-0"
               tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap"

@@ -840,14 +840,11 @@ export const appealErrand: (data: Partial<IErrand> & { municipalityId: string })
     ...(data.channel && { channel: ApiChannels['WEB_UI'] }),
     caseTitleAddition: CaseLabels.PT.APPEAL,
     caseType: 'APPEAL',
-    phase: ErrandPhase.aktualisering,
-    status: ErrandStatus.ArendeInkommit,
     relatesTo: [relatedErrand],
     applicationReceived: dayjs().toISOString(),
     stakeholders: makeStakeholdersList(data),
   };
 
-  console.log('erranddata', errandData);
   return apiService
     .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(`casedata/${data.municipalityId}/errands`, errandData)
     .then(async (res) => {
