@@ -223,18 +223,6 @@ const BillingForm: React.FC<{
                 <FormErrorMessage>{errors.invoice.customerId?.message}</FormErrorMessage>
               </div>
             )}
-            {/* {getValues().recipient ? (
-              <div>
-                Vald kund:
-                <p>PartyID: {getValues().recipient.partyId}</p>
-                <p>{getValues().recipient.organizationName}</p>
-                <p>{getValues().recipient.addressDetails?.careOf}</p>
-                <p>{getValues().recipient.addressDetails?.street}</p>
-                <p>
-                  {getValues().recipient.addressDetails?.postalCode} {getValues().recipient.addressDetails?.city}
-                </p>
-              </div>
-            ) : null} */}
           </FormControl>
         </div>
 
