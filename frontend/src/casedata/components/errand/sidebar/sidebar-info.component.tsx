@@ -39,6 +39,8 @@ import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/s
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { isPT } from '@common/services/application-service';
 import { AppealButtonComponent } from '../appeal-button.component';
+import { isSuspendEnabled } from '@common/services/feature-flag-service';
+
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -486,7 +488,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       {errand?.status !== ErrandStatus.Parkerad ? (
         <>
           <PhaseChanger />
-          <SuspendErrandComponent disabled={false} />
+          {isSuspendEnabled() && <SuspendErrandComponent disabled={false} />}
         </>
       ) : (
         errand?.status === ErrandStatus.Parkerad && (
@@ -542,31 +544,33 @@ export const SidebarInfo: React.FC<{}> = () => {
         <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand as IErrand)} />
       ) : null}
 
-      {uiPhase !== UiPhase.slutfor && errand.phase !== ErrandPhase.verkstalla && (
-        <>
-          <Button
-            className="mt-16"
-            color="primary"
-            variant="secondary"
-            onClick={() => {
-              setModalIsOpen(true);
-              setCauseIsEmpty(false);
-            }}
-            disabled={
-              !(
-                uiPhase === UiPhase.granskning ||
-                uiPhase === UiPhase.utredning ||
-                uiPhase === UiPhase.beslut ||
-                uiPhase === UiPhase.uppfoljning
-              ) ||
-              !isErrandAdmin(errand, user) ||
-              isErrandLocked(errand)
-            }
-          >
-            Avsluta ärendet
-          </Button>
-        </>
-      )}
+      {uiPhase !== UiPhase.slutfor &&
+        errand.phase !== ErrandPhase.verkstalla &&
+        errand.phase !== ErrandPhase.uppfoljning && (
+          <>
+            <Button
+              className="mt-16"
+              color="primary"
+              variant="secondary"
+              onClick={() => {
+                setModalIsOpen(true);
+                setCauseIsEmpty(false);
+              }}
+              disabled={
+                !(
+                  uiPhase === UiPhase.granskning ||
+                  uiPhase === UiPhase.utredning ||
+                  uiPhase === UiPhase.beslut ||
+                  uiPhase === UiPhase.uppfoljning
+                ) ||
+                !isErrandAdmin(errand, user) ||
+                isErrandLocked(errand)
+              }
+            >
+              Avsluta ärendet
+            </Button>
+          </>
+        )}
 
       <Modal
         label="Avsluta ärendet"

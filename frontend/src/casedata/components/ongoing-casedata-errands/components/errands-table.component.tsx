@@ -128,7 +128,10 @@ export const ErrandsTable: React.FC = () => {
                 : ''}
             </>
           ) : (
-            <>{Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1]}</>
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+              <div>{Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1]}</div>
+              <div>{errand.errandNumber}</div>
+            </div>
           )}
         </Table.Column>
         {isPT() && <Table.Column>{errand.errandNumber}</Table.Column>}

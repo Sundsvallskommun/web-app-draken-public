@@ -23,7 +23,7 @@ import {
 } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { isIK, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -41,9 +41,7 @@ import {
 import {
   emptyContact,
   ExternalIdType,
-  Relation,
   SupportStakeholderFormModel,
-  SupportStakeholderRole,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
@@ -51,6 +49,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 
 export const SupportSimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -165,7 +164,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { supportErrand, supportMetadata }: AppContextInterface = useAppContext();
+  const { supportErrand, supportMetadata, municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -269,6 +268,12 @@ export const SupportSimplifiedContactForm: React.FC<{
       reset({}, { keepErrors: true });
     }
   }, [organizationNumber, personNumber]);
+
+  useEffect(() => {
+    (isKC() || isIK() || isLOP()) &&
+      municipalityId &&
+      getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+  }, [municipalityId]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
     if (!editing) {
@@ -927,22 +932,17 @@ export const SupportSimplifiedContactForm: React.FC<{
                         <Select.Option key="" value="">
                           Välj roll
                         </Select.Option>
-                        {Object.entries(Relation)
-                          .filter(
-                            ([key]) =>
-                              !(
-                                contact.role === SupportStakeholderRole.CONTACT &&
-                                [Relation.PRIMARY].includes(Relation[key])
-                              )
-                          )
-                          .sort((a, b) => (a[1] > b[1] ? 1 : -1))
-                          .map(([key, relation]) => {
-                            return (
-                              <Select.Option key={key} value={key}>
-                                {relation}
+                        {supportMetadata &&
+                          Object.entries(supportMetadata.roles)
+                            .filter(
+                              ([, relation]) => !(contact.role === 'CONTACT' && ['PRIMARY'].includes(relation.name))
+                            )
+                            .sort((a, b) => (a[1].displayName > b[1].displayName ? 1 : -1))
+                            .map(([key, relation]) => (
+                              <Select.Option key={key} value={relation.name}>
+                                {relation.displayName}
                               </Select.Option>
-                            );
-                          })}
+                            ))}
                       </Select>
 
                       {errors && formState.errors.role && (
