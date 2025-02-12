@@ -179,12 +179,12 @@ const BillingForm: React.FC<{
               className="w-full text-dark-primary"
               size="md"
               onChange={(e) => {
-                setValue('invoice.customerId', e.target.value);
                 if (getValues('type') === 'EXTERNAL') {
                   setValue('recipient.organizationName', e.target.value);
                   const selectedIdentity = invoiceSettings.customers.external.find(
-                    (identity) => identity.name === e.target.value
+                    (identity) => identity.companyId.toString() === e.target.value
                   );
+                  setValue('invoice.customerId', selectedIdentity.companyId.toString());
                   setIsLoading(true);
                   getOrganization(selectedIdentity.orgNr).then(({ partyId, address }) => {
                     setIsLoading(false);
@@ -192,6 +192,7 @@ const BillingForm: React.FC<{
                     setValue('recipient.addressDetails', address);
                   });
                 } else {
+                  setValue('invoice.customerId', e.target.value);
                   setValue('recipient', undefined);
                 }
                 handleChange(
@@ -212,7 +213,7 @@ const BillingForm: React.FC<{
                   ))
                 : getValues().type === 'EXTERNAL'
                 ? invoiceSettings.customers.external.map((identity) => (
-                    <Select.Option key={identity.orgNr || identity.companyId} value={identity.name}>
+                    <Select.Option key={identity.orgNr || identity.companyId} value={identity.companyId}>
                       {identity.name}
                     </Select.Option>
                   ))
