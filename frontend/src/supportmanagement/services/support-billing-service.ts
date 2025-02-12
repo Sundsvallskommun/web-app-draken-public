@@ -152,7 +152,7 @@ export const getInvoiceRows = (
   const counterpart =
     type === 'INTERNAL'
       ? invoiceSettings.customers.internal.find((c) => c.customerId === parseInt(identity, 10))?.counterpart
-      : invoiceSettings.customers.external.find((c) => c.name === identity)?.counterpart;
+      : invoiceSettings.customers.external.find((c) => c.companyId.toString() === identity)?.counterpart;
   const formRows: CInvoiceRow[] = invoiceRows.map((invoiceRow, index) => {
     const totalAmount = isNaN(quantity) ? 0 : twoDecimals(invoiceRow.costPerUnit * quantity);
     const _accRows = invoiceRow.accountInformationRows.map((accountInformationRow) => {
