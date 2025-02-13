@@ -367,7 +367,10 @@ export const getEmployeeCustomerIdentity: (
   }
 };
 
-export const getOrganization: (orgNr: string) => Promise<{
+export const getOrganization: (
+  orgNr: string,
+  addressSource: 'address' | 'postAddress'
+) => Promise<{
   partyId: string;
   address: {
     city: string;
@@ -375,19 +378,34 @@ export const getOrganization: (orgNr: string) => Promise<{
     careOf: string;
     postalCode: string;
   };
-}> = async (orgNr) => {
+}> = async (orgNr, addressSource) => {
   return apiService
     .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>(`organization/`, { orgNr })
     .then((res) => {
       const org = res.data.data;
       return {
         partyId: org.partyId,
-        address: {
-          city: org?.address?.city || '',
-          street: org?.postAddress?.address1 || org?.address?.addressArea || '',
-          careOf: org?.postAddress?.coAdress || '',
-          postalCode: org?.address?.postalCode || '',
-        },
+        address:
+          addressSource === 'address'
+            ? {
+                city: org?.address?.city || '',
+                street: org?.address.addressArea || '',
+                careOf: '',
+                postalCode: org?.address?.postalCode || '',
+              }
+            : addressSource === 'postAddress'
+            ? {
+                city: org?.postAddress?.city || '',
+                street: `${org?.postAddress?.address1 || ''} ${org?.postAddress?.address2 || ''}`,
+                careOf: org?.postAddress?.coAdress || '',
+                postalCode: org?.postAddress?.postalCode || '',
+              }
+            : {
+                city: '',
+                street: '',
+                careOf: '',
+                postalCode: '',
+              },
       };
     })
     .catch((e) => {

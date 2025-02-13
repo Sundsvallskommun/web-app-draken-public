@@ -60,9 +60,9 @@ export const SupportErrandInvoiceTab: React.FC<{
         }, 20);
       } else if (res.type === 'EXTERNAL') {
         setValue('type', CBillingRecordTypeEnum.EXTERNAL);
-        setValue('invoice.customerId', res.identity.name);
         setValue('recipient.organizationName', res.identity.name);
-        getOrganization(res.identity.orgNr).then(({ partyId, address }) => {
+        setValue('invoice.customerId', res.identity.companyId.toString());
+        getOrganization(res.identity.orgNr, res.identity.legalEntityAddressSource).then(({ partyId, address }) => {
           setValue('recipient.partyId', partyId);
           setValue('recipient.addressDetails', address);
         });
@@ -70,7 +70,7 @@ export const SupportErrandInvoiceTab: React.FC<{
       setValue('invoice.customerReference', res.referenceNumber);
       handleChange(
         invoiceSettings.invoiceTypes[0].invoiceType,
-        res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.name,
+        res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.companyId.toString(),
         1,
         res.type === 'INTERNAL'
           ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter

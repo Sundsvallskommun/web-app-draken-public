@@ -180,17 +180,19 @@ const BillingForm: React.FC<{
               size="md"
               onChange={(e) => {
                 if (getValues('type') === 'EXTERNAL') {
-                  setValue('recipient.organizationName', e.target.value);
                   const selectedIdentity = invoiceSettings.customers.external.find(
                     (identity) => identity.companyId.toString() === e.target.value
                   );
+                  setValue('recipient.organizationName', selectedIdentity.name);
                   setValue('invoice.customerId', selectedIdentity.companyId.toString());
                   setIsLoading(true);
-                  getOrganization(selectedIdentity.orgNr).then(({ partyId, address }) => {
-                    setIsLoading(false);
-                    setValue('recipient.partyId', partyId);
-                    setValue('recipient.addressDetails', address);
-                  });
+                  getOrganization(selectedIdentity.orgNr, selectedIdentity.legalEntityAddressSource).then(
+                    ({ partyId, address }) => {
+                      setIsLoading(false);
+                      setValue('recipient.partyId', partyId);
+                      setValue('recipient.addressDetails', address);
+                    }
+                  );
                 } else {
                   setValue('invoice.customerId', e.target.value);
                   setValue('recipient', undefined);
@@ -274,9 +276,6 @@ const BillingForm: React.FC<{
           </FormControl>
         </div>
       </div>
-      {/* <div>
-        <span> {JSON.stringify(watch())}</span>
-      </div> */}
     </>
   );
 };
