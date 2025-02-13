@@ -211,7 +211,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           status: 'NEW',
           type: 'EXTERNAL',
           invoice: {
-            customerId: mockPortalPersonData_external.data.company,
+            customerId: mockPortalPersonData_external.data.companyId.toString(),
             description: 'Extra löneutbetalning - Systemet',
             customerReference: externalCustomer.customerReference,
             ourReference: mockMe.data.name,
@@ -250,7 +250,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
             organizationName: 'Sundsvall Elnät AB',
             addressDetails: {
               street: mockLegalEntityResponse.data.address.addressArea,
-              careOf: mockLegalEntityResponse.data.postAddress.coAdress,
+              careOf: '',
               city: mockLegalEntityResponse.data.address.city,
               postalCode: mockLegalEntityResponse.data.postAddress.postalCode,
             },

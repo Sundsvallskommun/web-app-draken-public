@@ -15,6 +15,7 @@ export interface InternalCustomerIdentity extends CustomerIdentity {
 export interface ExternalCustomerIdentity extends CustomerIdentity {
   orgNr?: string;
   customerReference?: string;
+  legalEntityAddressSource: 'address' | 'postAddress';
 }
 
 export interface InvoiceActivity {
@@ -342,6 +343,7 @@ export const invoiceSettings: {
         name: 'Medelpads Räddningstjänstförbund',
         counterpart: '831',
         customerReference: 'MAR01ENB',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 3,
@@ -350,6 +352,7 @@ export const invoiceSettings: {
         name: 'Midlanda Flygplats',
         counterpart: '542',
         customerReference: '12564/CÖ',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 14,
@@ -358,6 +361,7 @@ export const invoiceSettings: {
         name: 'Mitthem',
         counterpart: '555',
         customerReference: 'Erika Wass',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 9,
@@ -366,6 +370,7 @@ export const invoiceSettings: {
         name: 'MittSverige Vatten AB',
         counterpart: '521',
         customerReference: 'SELJM',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 53,
@@ -374,6 +379,7 @@ export const invoiceSettings: {
         name: 'Ostkustbanan',
         counterpart: '627',
         customerReference: 'Ingela Bendrot',
+        legalEntityAddressSource: 'postAddress',
       },
       {
         companyId: 12,
@@ -382,6 +388,7 @@ export const invoiceSettings: {
         name: 'Servanet',
         counterpart: '512',
         customerReference: 'SEVRN',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 15,
@@ -390,14 +397,16 @@ export const invoiceSettings: {
         name: 'SKIFU',
         counterpart: '557',
         customerReference: '6520-900-100',
+        legalEntityAddressSource: 'address',
       },
       {
-        companyId: 21,
+        companyId: 54,
         displayOrder: 8,
         orgNr: '5564786654',
         name: 'Stadsbacken',
         counterpart: '500',
         customerReference: 'SAN26JOH',
+        legalEntityAddressSource: 'postAddress',
       },
       {
         companyId: 11,
@@ -406,6 +415,7 @@ export const invoiceSettings: {
         name: 'Sundsvall Elnät AB',
         counterpart: '511',
         customerReference: 'SEVRN',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 8,
@@ -414,6 +424,7 @@ export const invoiceSettings: {
         name: 'Sundsvall Energi AB',
         counterpart: '510',
         customerReference: 'EME12JOH',
+        legalEntityAddressSource: 'address',
       },
       {
         companyId: 17,
@@ -422,6 +433,7 @@ export const invoiceSettings: {
         name: 'Sundsvall Logistikpark',
         counterpart: '554',
         customerReference: 'Mikael Olsson',
+        legalEntityAddressSource: 'postAddress',
       },
       {
         companyId: 16,
@@ -430,6 +442,7 @@ export const invoiceSettings: {
         name: 'Sundsvalls Hamn',
         counterpart: '551',
         customerReference: 'Ing-Marie Alm',
+        legalEntityAddressSource: 'address',
       },
     ],
   },
