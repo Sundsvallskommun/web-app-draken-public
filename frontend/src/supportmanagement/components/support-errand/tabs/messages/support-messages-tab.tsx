@@ -63,6 +63,11 @@ export const SupportMessagesTab: React.FC<{
     setSelected(message.communicationID);
     setSelectedMessage(message);
     setShowSelectedMessage(true);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, 0);
+    });
   };
 
   useEffect(() => {
