@@ -95,7 +95,7 @@ export const SaveButtonComponent: React.FC<{
       stakeholders: data.stakeholders,
       priority: data.priority,
       status: data.status,
-      title: data.title,
+      title: 'Empty errand',
     };
 
     setError(false);

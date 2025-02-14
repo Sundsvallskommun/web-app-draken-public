@@ -20,7 +20,7 @@ export const getApplicantName = (r: SupportErrand) => {
 const trimPhoneNumber = (s: string) => s.trim().replace('-', '');
 
 export const applicantHasContactChannel: (errand: SupportErrand) => boolean = (errand) => {
-  const applicant = errand.stakeholders?.find((s) => s.role === 'PRIMARY');
+  const applicant = errand?.stakeholders?.find((s) => s.role === 'PRIMARY');
   return applicant ? applicant.contactChannels.length > 0 : false;
 };
 
