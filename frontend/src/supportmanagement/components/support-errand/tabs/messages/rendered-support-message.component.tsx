@@ -199,11 +199,11 @@ export const RenderedSupportMessage: React.FC<{
               disabled={isSupportErrandLocked(supportErrand) || !allowed}
               size="sm"
               variant="primary"
-              onClick={() => {
-                onSelect(message);
+              onClick={async () => {
+                await onSelect(message);
                 setTimeout(() => {
                   setShowMessageForm(true);
-                }, 500);
+                }, 0);
               }}
             >
               Svara
