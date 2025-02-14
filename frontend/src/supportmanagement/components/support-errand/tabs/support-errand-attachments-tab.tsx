@@ -443,7 +443,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                   className={`attachment-item flex justify-between gap-12 rounded-sm p-12 text-md border-t`}
                 >
                   <div
-                    className="flex gap-12 cursor-pointer"
+                    className="flex gap-12 cursor-pointer items-center"
                     onClick={() => {
                       clickHandler(attachment);
                     }}
@@ -459,7 +459,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       <p>
                         <strong>{attachment.fileName}</strong>{' '}
                       </p>
-                      <p>Uppladdad den {dayjs(attachment.created).format('YYYY-MM-DD HH:mm')}</p>
                     </div>
                   </div>
 
