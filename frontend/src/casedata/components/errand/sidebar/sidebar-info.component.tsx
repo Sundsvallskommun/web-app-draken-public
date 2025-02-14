@@ -41,7 +41,6 @@ import { isPT } from '@common/services/application-service';
 import { AppealButtonComponent } from '../appeal-button.component';
 import { isSuspendEnabled } from '@common/services/feature-flag-service';
 
-
 export const SidebarInfo: React.FC<{}> = () => {
   const {
     municipalityId,
@@ -541,7 +540,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         )
       )}
       {isPT() ? (
-        <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand as IErrand)} />
+        <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand)} />
       ) : null}
 
       {uiPhase !== UiPhase.slutfor &&
