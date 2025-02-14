@@ -241,6 +241,7 @@ export const SupportMessagesTab: React.FC<{
           <SupportMessageForm
             locked={isSupportErrandLocked(supportErrand)}
             showMessageForm={showMessageForm}
+            showSelectedMessage={showSelectedMessage}
             setShowMessageForm={setShowMessageForm}
             prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
             prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
