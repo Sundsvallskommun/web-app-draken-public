@@ -43,18 +43,7 @@ export const RenderedSupportMessage: React.FC<{
   onSelect: (msg: Message) => void;
   root?: boolean;
   children: any;
-}> = ({
-  update,
-  setRichText,
-  setShowMessageForm,
-  richText,
-  emailBody,
-  message,
-  selected,
-  onSelect,
-  root = false,
-  children,
-}) => {
+}> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
   const { supportErrand, municipalityId, user }: AppContextInterface = useAppContext();
   const [allowed, setAllowed] = useState(false);
   const [expanded, setExpanded] = useState(message.communicationType === 'WEB_MESSAGE' ? true : false);
@@ -112,9 +101,6 @@ export const RenderedSupportMessage: React.FC<{
       <div
         data-cy={`message-${message.communicationID}`}
         key={`message-${message.communicationID}`}
-        onClick={() => {
-          onSelect(message);
-        }}
         className={cx(
           `rounded-4 m-0 py-sm px-sm text-md hover:bg-background-color-mixin-1
           }`
@@ -191,6 +177,7 @@ export const RenderedSupportMessage: React.FC<{
               size="sm"
               onClick={() => {
                 setExpanded(expanded ? false : true);
+                !expanded && onSelect(message);
               }}
             >
               <Icon icon={expanded ? <SquareMinus /> : <SquarePlus />} />
@@ -212,11 +199,11 @@ export const RenderedSupportMessage: React.FC<{
               disabled={isSupportErrandLocked(supportErrand) || !allowed}
               size="sm"
               variant="primary"
-              onClick={() => {
+              onClick={async () => {
+                await onSelect(message);
                 setTimeout(() => {
-                  setRichText(emailBody + richText);
                   setShowMessageForm(true);
-                }, 100);
+                }, 0);
               }}
             >
               Svara

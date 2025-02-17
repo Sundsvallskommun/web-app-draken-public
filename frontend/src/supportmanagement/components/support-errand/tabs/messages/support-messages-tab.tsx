@@ -63,6 +63,11 @@ export const SupportMessagesTab: React.FC<{
     setSelected(message.communicationID);
     setSelectedMessage(message);
     setShowSelectedMessage(true);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, 0);
+    });
   };
 
   useEffect(() => {
@@ -241,6 +246,7 @@ export const SupportMessagesTab: React.FC<{
           <SupportMessageForm
             locked={isSupportErrandLocked(supportErrand)}
             showMessageForm={showMessageForm}
+            showSelectedMessage={showSelectedMessage}
             setShowMessageForm={setShowMessageForm}
             prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
             prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
