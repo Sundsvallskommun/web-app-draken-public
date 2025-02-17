@@ -79,24 +79,7 @@ export const SaveButtonComponent: React.FC<{
   };
 
   const onSubmit = (close: boolean) => {
-    const data: Partial<SupportErrand> = getValues();
-    const dataToSave: Partial<SupportErrandDto> = {
-      assignedUserId: data.assignedUserId,
-      reporterUserId: data.reporterUserId,
-      classification: {
-        category: data.category,
-        type: data.type,
-      },
-      businessRelated: data.businessRelated,
-      description: data.description,
-      contactReason: data.contactReason,
-      contactReasonDescription: data.contactReasonDescription,
-      channel: data.channel,
-      stakeholders: data.stakeholders,
-      priority: data.priority,
-      status: data.status,
-      title: data.title,
-    };
+    const dataToSave: Partial<SupportErrand> = getValues();
 
     setError(false);
     let setIsLoading;

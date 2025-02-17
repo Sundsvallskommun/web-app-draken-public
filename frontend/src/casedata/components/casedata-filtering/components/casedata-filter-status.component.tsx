@@ -1,4 +1,5 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { isMEX } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
@@ -43,7 +44,8 @@ export const CasedataFilterStatus: React.FC = () => {
               return (
                 s[1] !== ErrandStatus.ArendeAvslutat &&
                 s[1] !== ErrandStatus.ArendeInkommit &&
-                s[1] !== ErrandStatus.Tilldelat
+                s[1] !== ErrandStatus.Tilldelat &&
+                (!isMEX() || s[1] !== ErrandStatus.BeslutOverklagat)
               );
             })
             .filter(

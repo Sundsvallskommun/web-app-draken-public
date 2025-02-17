@@ -30,16 +30,6 @@ export enum ExternalIdType {
   COMPANY = 'COMPANY',
 }
 
-export enum SupportStakeholderRole {
-  PRIMARY = 'PRIMARY',
-  CONTACT = 'CONTACT',
-  APPROVER = 'APPROVER',
-  EMPLOYEE = 'EMPLOYEE',
-  MANAGER = 'MANAGER',
-  SUBSTITUTE = 'SUBSTITUTE',
-  USER = 'USER',
-}
-
 // Keeping both enums for now, as the backend uses the uppercase version
 // but existing stakeholders use the lowercase version
 export enum ContactChannelType {
@@ -47,17 +37,6 @@ export enum ContactChannelType {
   EMAIL = 'EMAIL',
   Phone = 'Phone',
   PHONE = 'PHONE',
-}
-
-export enum Relation {
-  // PERSON = 'Person',
-  PRIMARY = 'Ärendeägare',
-  CONTACT = 'Övrig part',
-  APPROVER = 'Godkännande chef',
-  EMPLOYEE = 'Anställd',
-  MANAGER = 'Chef',
-  SUBSTITUTE = 'Ersättare',
-  USER = 'Användare',
 }
 
 export enum PrettyRelation {
@@ -676,7 +655,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       labels: e.labels || [],
       customer:
         e.stakeholders
-          ?.filter((s) => s.role === SupportStakeholderRole.PRIMARY)
+          ?.filter((s) => s.role === 'PRIMARY')
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
@@ -685,7 +664,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-            newRole: SupportStakeholderRole.PRIMARY,
+            newRole: 'PRIMARY',
             internalId: uuidv4(),
             emails: s.contactChannels
               .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
@@ -696,7 +675,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           })) || [],
       contacts:
         e.stakeholders
-          ?.filter((s) => s.role !== SupportStakeholderRole.PRIMARY)
+          ?.filter((s) => s.role !== 'PRIMARY')
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
@@ -705,7 +684,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-            newRole: s.role as SupportStakeholderRole,
+            newRole: s.role as string,
             internalId: uuidv4(),
             emails: s.contactChannels
               .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
@@ -765,10 +744,30 @@ export const getSupportErrands: (
 
 export const initiateSupportErrand: (
   municipalityId: string,
-  body: Partial<SupportErrandDto>
+  body: Partial<SupportErrand>
 ) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
+  const data: Partial<SupportErrandDto> = {
+    title: 'Empty errand',
+    ...(body.priority && {
+      priority: Object.keys(Priority).find((key) => Priority[key] === body.priority) as Priority,
+    }),
+    classification: {
+      ...(body.category && { category: body.category }),
+      ...(body.type && { type: body.type }),
+    },
+    labels: body.labels,
+    ...(body.contactReason && { contactReason: body.contactReason }),
+    ...(body.contactReasonDescription && { contactReasonDescription: body.contactReasonDescription }),
+    businessRelated: !!body.businessRelated,
+    status: body.status,
+    ...(body.resolution && { resolution: body.resolution }),
+    ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
+    ...(body.channel && { channel: body.channel }),
+    ...(body.description && { description: body.description }),
+    ...(body.assignedUserId && { assignedUserId: body.assignedUserId }),
+  };
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, body)
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, data)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
@@ -1076,13 +1075,6 @@ export const forwardSupportErrand: (
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
       }
-      // TODO Check for email and phone?
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)) {
-      //   throw new Error('MISSING_PHONE');
-      // }
-      // if (!s.contactChannels.some((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)) {
-      //   throw new Error('MISSING_EMAIL');
-      // }
     });
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)

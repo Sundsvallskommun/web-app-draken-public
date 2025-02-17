@@ -79,16 +79,12 @@ export const newStatuses = [ErrandStatus.ArendeInkommit];
 export const ongoingStatuses = [
   ErrandStatus.UnderGranskning,
   ErrandStatus.VantarPaKomplettering,
-  ErrandStatus.KompletteringInkommen,
-  ErrandStatus.InterntKomplettering,
   ErrandStatus.InterntAterkoppling,
-  ErrandStatus.UnderRemiss,
-  ErrandStatus.AterkopplingRemiss,
   ErrandStatus.UnderUtredning,
   ErrandStatus.UnderBeslut,
   ErrandStatus.Beslutad,
   ErrandStatus.BeslutVerkstallt,
-  ErrandStatus.BeslutOverklagat,
+  ...(isPT() ? [ErrandStatus.BeslutOverklagat] : []),
 ];
 
 export const suspendedStatuses = [ErrandStatus.Parkerad];
@@ -142,11 +138,7 @@ export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = 
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return (
-    errand?.status === ErrandStatus.ArendeAvslutat ||
-    errand?.status === ErrandStatus.Tilldelat ||
-    phaseChangeInProgress(errand as IErrand)
-  );
+  return errand?.status === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
 };
 
 export const getPriorityColor = (priority: Priority) => {

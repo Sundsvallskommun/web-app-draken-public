@@ -12,16 +12,13 @@ import { mockAddress } from '../fixtures/mockAddress';
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Message tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/messages/*', mockMessages);
-      cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/attachments\/errand\/\d*/, mockAttachments).as('getErrandAttachments');
-      cy.intercept('POST', /\/attachments/, mockAttachments).as('saveMessageAttachments');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
@@ -30,6 +27,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         '**/contract/2024-01026',
         mockMexErrand_base.data.extraParameters.find((param) => param.key === 'contractId')?.values[0]
       ).as('getContract');
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
     });
 
     const goToMessageTab = () => {
@@ -92,12 +90,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="messageTemplate"]').should('exist').select(1);
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
 
-      cy.get('[data-cy="messagePhone-input"]').should('exist').clear().type('1234567890');
+      cy.get('[data-cy="newPhoneNumber"]').should('exist').clear().type('1234abc890');
       cy.get('[data-cy="messagePhone-error"]').should('exist').contains('Ej giltigt telefonnummer');
 
-      cy.get('[data-cy="messagePhone-input"]').should('exist').clear().type('+46701740635');
+      cy.get('[data-cy="newPhoneNumber"]').should('exist').clear().type('+46701740635');
       cy.get('[data-cy="messagePhone-error"]').should('not.exist');
 
+      cy.get('[data-cy="newPhoneNumber-button"]').should('be.enabled').click({ force: true });
       cy.get('[data-cy="send-message-button"]').should('be.enabled').click({ force: true });
       cy.get('button').should('exist').contains('Ja').click();
 
@@ -130,17 +129,22 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .find((stakeholder) => stakeholder.roles.includes('APPLICANT'))
         ?.contactInformation?.find((c) => c.contactType === 'EMAIL')?.value;
 
-      cy.get('[data-cy="messageEmail-input"]').should('exist').and('have.value', ownerEmail).clear().type('test.com');
-      cy.get('[data-cy="messageEmail-error"]').should('exist').contains('E-postadressen har fel format');
-      cy.get('[data-cy="messageEmail-input"]').should('exist').clear().type('test@example.com');
+      cy.get('[data-cy="existing-email-addresses"]')
+        .should('exist')
+        .select(ownerEmail + ' (Ärendeägare)');
+      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test.com');
+      cy.get('[data-cy="add-new-email-button"]').should('be.disabled');
+      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
+      cy.get('[data-cy="add-new-email-button"]').should('be.enabled').click({ force: true });
 
       // Add existing attachment
       cy.get('[data-cy="select-errand-attachment"]').should('exist').select(1);
-      cy.get('[data-cy="add-selected-attachment"]').should('exist').click({ force: true });
+      cy.get('[data-cy="add-attachment-button-email"]').should('exist').click({ force: true });
+      cy.get('[data-cy="browse-button"]').should('exist').click({ force: true });
 
       // Try to add empty attachment
       cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/empty-attachment.txt', { force: true });
-      cy.get('[data-cy="new-attachment-error"]')
+      cy.get('[id="newAttachments-error"]')
         .should('exist')
         .contains('Bilagan du försöker lägga till är tom. Försök igen.');
 
@@ -149,7 +153,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="attachment-wrapper"] .sk-icon').should('exist');
 
       cy.get('[data-cy="send-message-button"]').should('be.enabled').click({ force: true });
-      cy.get('button').should('exist').contains('Ja').click();
+      cy.get('button').contains('Ja').click();
 
       cy.wait('@sendEmail').should(({ response }) => {
         expect(response.statusCode).to.equal(200);
@@ -201,7 +205,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="respond-button"]').should('exist').click({ force: true });
 
           cy.get('[data-cy="messageTemplate"]').should('exist').select(1);
-          cy.get('[data-cy="messageEmail-input"]').should('exist').and('have.value', message.email);
+          cy.get('[data-cy="email-tag-0"]').should('exist').contains(message.email);
           cy.get('[data-cy="send-message-button"]').should('exist').click({ force: true });
           cy.get('button').should('exist').contains('Ja').click();
 
@@ -225,7 +229,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       mockMessages.data.forEach((message) => {
         if (message.direction === 'INBOUND' && message.messageType === 'WEBMESSAGE') {
-          cy.get(`[data-cy="node-${message.messageID}"]`).should('exist').click();
+          cy.get(`[data-cy="node-${message.messageId}"]`).should('exist').click();
           cy.get('[data-cy="respond-button"]').should('exist').click({ force: true });
 
           cy.get('[data-cy="messageTemplate"]').should('exist').select(1);
