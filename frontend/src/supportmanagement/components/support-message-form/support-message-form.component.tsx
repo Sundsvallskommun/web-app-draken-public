@@ -131,6 +131,7 @@ export const SupportMessageForm: React.FC<{
   setRichText: React.Dispatch<React.SetStateAction<string>>;
   message: Message;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  showSelectedMessage: boolean;
   setUnsaved?: (boolean) => void;
   update?: () => void;
 }> = (props) => {
@@ -146,7 +147,7 @@ export const SupportMessageForm: React.FC<{
     supportAttachments: SupportAttachment[];
   } = useAppContext();
 
-  const { richText, setRichText, emailBody, smsBody } = props;
+  const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
 
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
@@ -366,7 +367,8 @@ export const SupportMessageForm: React.FC<{
       setValue('headerReferences', references.join(','));
       setValue('emails', [{ value: props.message.sender }]);
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setRichText(historyHeader + props.message.messageBody);
+
+      setRichText(emailBody + historyHeader + props.message.messageBody);
 
       trigger();
     } else {
