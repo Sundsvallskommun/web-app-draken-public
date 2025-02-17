@@ -744,10 +744,30 @@ export const getSupportErrands: (
 
 export const initiateSupportErrand: (
   municipalityId: string,
-  body: Partial<SupportErrandDto>
+  body: Partial<SupportErrand>
 ) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
+  const data: Partial<SupportErrandDto> = {
+    title: 'Empty errand',
+    ...(body.priority && {
+      priority: Object.keys(Priority).find((key) => Priority[key] === body.priority) as Priority,
+    }),
+    classification: {
+      ...(body.category && { category: body.category }),
+      ...(body.type && { type: body.type }),
+    },
+    labels: body.labels,
+    ...(body.contactReason && { contactReason: body.contactReason }),
+    ...(body.contactReasonDescription && { contactReasonDescription: body.contactReasonDescription }),
+    businessRelated: !!body.businessRelated,
+    status: body.status,
+    ...(body.resolution && { resolution: body.resolution }),
+    ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
+    ...(body.channel && { channel: body.channel }),
+    ...(body.description && { description: body.description }),
+    ...(body.assignedUserId && { assignedUserId: body.assignedUserId }),
+  };
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, body)
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, data)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
