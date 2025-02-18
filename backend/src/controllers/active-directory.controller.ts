@@ -32,6 +32,7 @@ export class ActiveDirectoryController {
     const domain = 'personal';
     const url = `activedirectory/1.0/groupmembers/${domain}/${process.env.ADMIN_GROUP}`;
     const res = await this.apiService.get<AdUser[]>({ url }, req.user);
-    return response.status(200).send({ data: res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid })), message: 'ok' });
+    // return response.status(200).send({ data: res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid })), message: 'ok' });
+    return response.status(200).send({ data: [], message: 'ok' });
   }
 }
