@@ -113,7 +113,7 @@ export const PhaseChanger = () => {
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ button: 'N/A', title: 'N/A?', message: '' });
-    } else if (uiPhase === UiPhase.slutfor && errand.phase === ErrandPhase.uppfoljning) {
+    } else if (errand.phase === ErrandPhase.uppfoljning) {
       setPhaseChangeText({ button: 'Avsluta ärende', title: 'Vill du avsluta ärendet?', message: '' });
     } else {
       setPhaseChangeText({

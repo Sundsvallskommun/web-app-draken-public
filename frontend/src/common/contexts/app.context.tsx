@@ -162,7 +162,6 @@ export function AppWrapper({ children }) {
   const [supportAdmins, setSupportAdmins] = useState<SupportAdmin[]>([]);
   const [stakeholderContacts, setStakeholderContacts] = useState<SupportStakeholderFormModel[]>([]);
   const [stakeholderCustomers, setStakeholderCustomers] = useState<SupportStakeholderFormModel[]>([]);
-
   const [municipalityId, setMunicipalityId] = useState<string>();
   const [sidebarLabel, setSidebarLabel] = useState<string>();
   const [administrators, setAdministrators] = useState<Admin[]>([]);

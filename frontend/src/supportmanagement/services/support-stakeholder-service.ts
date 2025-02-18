@@ -4,7 +4,6 @@ import {
   ContactChannelType,
   SupportErrand,
   SupportStakeholderFormModel,
-  SupportStakeholderRole,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
@@ -14,25 +13,25 @@ export const getAdminName = (a: SupportAdmin, r: SupportErrand) => {
 };
 
 export const getApplicantName = (r: SupportErrand) => {
-  const applicant = r.stakeholders?.find((s) => s.role === SupportStakeholderRole.PRIMARY);
+  const applicant = r.stakeholders?.find((s) => s.role === 'PRIMARY');
   return applicant ? `${applicant.firstName} ${applicant.lastName}` : '(saknas)';
 };
 
 const trimPhoneNumber = (s: string) => s.trim().replace('-', '');
 
 export const applicantHasContactChannel: (errand: SupportErrand) => boolean = (errand) => {
-  const applicant = errand.stakeholders?.find((s) => s.role === SupportStakeholderRole.PRIMARY);
+  const applicant = errand?.stakeholders?.find((s) => s.role === 'PRIMARY');
   return applicant ? applicant.contactChannels.length > 0 : false;
 };
 
 export const applicantContactChannel = (errand: SupportErrand) => {
-  const applicant = errand.stakeholders?.find((s) => s.role === SupportStakeholderRole.PRIMARY);
+  const applicant = errand.stakeholders?.find((s) => s.role === 'PRIMARY');
   if (!applicant) {
     return { contactMeans: ContactChannelType.EMAIL, values: [] };
   }
 
   const contactChannel =
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL || c.type ===  ContactChannelType.Email) ||
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email) ||
     applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone);
 
   if (!contactChannel) {
@@ -48,7 +47,7 @@ export const applicantContactChannel = (errand: SupportErrand) => {
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
   c.externalIdType === 'COMPANY' ? SupportStakeholderTypeEnum.ORGANIZATION : SupportStakeholderTypeEnum.PERSON;
 
-const buildStakeholder = (c: SupportStakeholderFormModel, role: SupportStakeholderRole) => {
+const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
   if (
     c.externalId ||
     c.organizationName ||
@@ -98,13 +97,13 @@ export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormMod
   const stakeholders: SupportStakeholder[] = [];
   if (data.customer && data.customer?.length > 0) {
     const c = data.customer[0];
-    const customer = buildStakeholder(c, SupportStakeholderRole.PRIMARY);
+    const customer = buildStakeholder(c, 'PRIMARY');
     if (customer) {
       stakeholders.push(customer);
     }
   }
   data.contacts?.forEach((c) => {
-    const stakeholder = buildStakeholder(c, c.role as SupportStakeholderRole);
+    const stakeholder = buildStakeholder(c, c.role);
     if (stakeholder) {
       stakeholders.push(stakeholder);
     }

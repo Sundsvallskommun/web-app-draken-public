@@ -17,9 +17,14 @@ export default defineConfig({
       // The value below is an organization number for testing validation, it is not a organization number
       mockOrganizationNumber: '556026-9986',
       mockInvalidOrganizationNumber: '556026-9987',
+      // The value below is a test email, it is not a real email
       mockEmail: 'a@example.com',
+      // The value below is a test email, it is not a real email
+      mockRecipientEmail: ' mail@example.com',
       // The value below is a test phone number from Post- och telestyrelsen, it is not a real phone number
       mockPhoneNumber: '0701740635',
+      // The value below is a test phone number from Post- och telestyrelsen, it is not a real phone number
+      mockPhoneNumberCountryCode: '+46701740635',
       // The value below is a test username, it is not a real username
       mockAdUsername: 'abc01abc',
     },

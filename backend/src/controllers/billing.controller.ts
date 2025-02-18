@@ -40,7 +40,7 @@ export class BillingController {
       return response.status(400).send('Municipality id missing');
     }
     const filterList = [];
-    // TODO Will query filter be used?
+    // TODO Will query filter be used? Still not decided.
     // if (query) {
     //   let guidRes = null;
     //   const isPersonNumber = luhnCheck(query);

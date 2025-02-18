@@ -9,13 +9,14 @@ import { User } from '@common/interfaces/user';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Paperclip, File, X } from 'lucide-react';
 import {
   Button,
   Chip,
   FormControl,
   FormErrorMessage,
   FormLabel,
+  Icon,
   Input,
   Modal,
   RadioButton,
@@ -33,7 +34,6 @@ import {
   Channels,
   Status,
   SupportErrand,
-  SupportStakeholderRole,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -131,6 +131,7 @@ export const SupportMessageForm: React.FC<{
   setRichText: React.Dispatch<React.SetStateAction<string>>;
   message: Message;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  showSelectedMessage: boolean;
   setUnsaved?: (boolean) => void;
   update?: () => void;
 }> = (props) => {
@@ -146,7 +147,7 @@ export const SupportMessageForm: React.FC<{
     supportAttachments: SupportAttachment[];
   } = useAppContext();
 
-  const { richText, setRichText, emailBody, smsBody } = props;
+  const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
 
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
@@ -366,7 +367,8 @@ export const SupportMessageForm: React.FC<{
       setValue('headerReferences', references.join(','));
       setValue('emails', [{ value: props.message.sender }]);
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setRichText(historyHeader + props.message.messageBody);
+
+      setRichText(emailBody + historyHeader + props.message.messageBody);
 
       trigger();
     } else {
@@ -516,7 +518,7 @@ export const SupportMessageForm: React.FC<{
           ) : null}
           {contactMeans === 'webmessage'
             ? supportErrand.stakeholders
-                .filter((o) => o.role.indexOf(SupportStakeholderRole.PRIMARY) !== -1)
+                .filter((o) => o.role.indexOf('PRIMARY') !== -1)
                 .map((filteredOwner, idx) => (
                   <div key={`owner-${idx}`}>
                     <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
@@ -618,7 +620,7 @@ export const SupportMessageForm: React.FC<{
           <Button
             variant="tertiary"
             color="primary"
-            leftIcon={<LucideIcon name="paperclip" />}
+            leftIcon={<Icon icon={<Paperclip />} />}
             onClick={() => setIsAttachmentModalOpen(true)}
             data-cy="add-attachment-button"
           >
@@ -639,7 +641,7 @@ export const SupportMessageForm: React.FC<{
                 >
                   <div className="flex w-5/6 gap-10">
                     <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                      <LucideIcon name="file" size={25} />
+                      <Icon icon={<File />} size={25} />
                     </div>
                     <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
                   </div>
@@ -651,7 +653,7 @@ export const SupportMessageForm: React.FC<{
                       className="self-end"
                       onClick={() => removeMessageAttachment(index)}
                     >
-                      <LucideIcon name="x" />
+                      <Icon icon={<X />} />
                     </Button>
                   </div>
                 </div>

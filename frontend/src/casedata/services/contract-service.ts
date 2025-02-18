@@ -263,8 +263,8 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   jordabalkenTerms: {
     condition: {
       jordabalken: undefined,
-      replaces: undefined,
     },
+    replaces: undefined,
   },
   signatureTerms: {
     condition: {
@@ -733,7 +733,7 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
     ),
     indexTerms: [
       {
-        header: 'Område',
+        header: 'Område och upplåtelse',
         terms: [
           {
             description: 'content',
@@ -907,7 +907,7 @@ export const contractToLagenhetsArrende = (contract: Contract): LagenhetsArrende
     grantors: contract.stakeholders
       .filter((s) => s.roles.includes('PROPERTY_OWNER'))
       .map(contractStakeholderToKopeavtalStakeholder),
-    omrade: contract.indexTerms.find((t) => t.header === 'Område')?.terms[0].term,
+    omrade: contract.indexTerms.find((t) => t.header === 'Område och upplåtelse')?.terms[0].term,
     andamal: contract.indexTerms.find((t) => t.header === 'Ändamål')?.terms[0].term,
     arrendetid: contract.indexTerms.find((t) => t.header === 'Arrendetid och uppsägning')?.terms[0].term,
     arrendeavgift: contract.indexTerms.find((t) => t.header === 'Arrendeavgift')?.terms[0].term,

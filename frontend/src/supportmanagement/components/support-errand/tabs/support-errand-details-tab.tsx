@@ -70,10 +70,16 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
     <div className="pt-xl pb-16 px-40 flex flex-col">
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
+        {supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value ? (
+          <div className="flex flex-row gap-md">
+            <strong>Ärendenummer i e-tjänst</strong>
+            <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>
+          </div>
+        ) : null}
         {handledParams &&
           handledParams
             .filter((param) => param.values?.length > 0)
-            .sort((a, b) => a.displayName.localeCompare(b.displayName))
+            .sort((a, b) => a?.displayName?.localeCompare(b?.displayName))
             .map((param, idx) => (
               <div key={`${param.key}-${idx}`} className="flex flex-row gap-md">
                 <div className="font-bold" key={`label-${idx}`}>

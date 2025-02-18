@@ -1,7 +1,7 @@
 export const mockMessages = {
   data: [
     {
-      messageID: '2aacb240-aaaa-aaaa-aaaa-24d979c04eff',
+      messageId: '2aacb240-aaaa-aaaa-aaaa-24d979c04eff',
       errandNumber: 'PRH-2022-000019',
       direction: 'OUTBOUND',
       familyID: '',
@@ -15,6 +15,7 @@ export const mockMessages = {
       messageType: 'EMAIL',
       mobileNumber: '',
       email: Cypress.env('mockEmail'),
+      recipients: [Cypress.env('mockRecipientEmail')],
       userID: '',
       viewed: true,
       classification: 'INFORMATION',
@@ -27,7 +28,7 @@ export const mockMessages = {
       ],
     },
     {
-      messageID: '2aacb240-aaaa-aaaa-aaaa-24d979c04efo',
+      messageId: '2aacb240-aaaa-aaaa-aaaa-24d979c04efo',
       errandNumber: 'PRH-2022-000019',
       direction: 'INBOUND',
       familyID: '',
@@ -41,6 +42,7 @@ export const mockMessages = {
       messageType: 'EMAIL',
       mobileNumber: '',
       email: Cypress.env('mockEmail'),
+      recipients: [Cypress.env('mockRecipientEmail')],
       userID: '',
       viewed: true,
       classification: 'INFORMATION',
@@ -61,7 +63,7 @@ export const mockMessages = {
       ],
     },
     {
-      messageID: '2aacb240-aaaa-aaaa-aaaa-24d979c04efo',
+      messageId: '2aacb240-aaaa-aaaa-aaaa-24d979c04efo',
       errandNumber: 'PRH-2022-000019',
       direction: 'INBOUND',
       familyID: '',
@@ -75,6 +77,7 @@ export const mockMessages = {
       messageType: 'WEBMESSAGE',
       mobileNumber: '',
       email: Cypress.env('mockEmail'),
+      recipients: [Cypress.env('mockRecipientEmail')],
       userID: '',
       viewed: true,
       classification: 'INFORMATION',
@@ -82,7 +85,7 @@ export const mockMessages = {
       emailHeaders: [],
     },
     {
-      messageID: '8f705bab-aaaa-aaaa-aaaa-c7d41d264f2d',
+      messageId: '8f705bab-aaaa-aaaa-aaaa-c7d41d264f2d',
       errandNumber: 'PRH-2022-000019',
       direction: 'OUTBOUND',
       familyID: '',
@@ -96,6 +99,7 @@ export const mockMessages = {
       messageType: 'EMAIL',
       mobileNumber: '',
       email: Cypress.env('mockEmail'),
+      recipients: [Cypress.env('mockRecipientEmail')],
       userID: '',
       viewed: false,
       classification: 'INFORMATION',

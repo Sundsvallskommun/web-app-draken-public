@@ -90,14 +90,7 @@ export const SidebarInfo: React.FC<{}> = () => {
   }, [errand, administrators]);
 
   useEffect(() => {
-    const s = [
-      ErrandStatus.VantarPaKomplettering,
-      ErrandStatus.KompletteringInkommen,
-      ErrandStatus.InterntKomplettering,
-      ErrandStatus.InterntAterkoppling,
-      ErrandStatus.AterkopplingRemiss,
-      ErrandStatus.Tilldelat,
-    ];
+    const s = [ErrandStatus.VantarPaKomplettering, ErrandStatus.InterntAterkoppling, ErrandStatus.Tilldelat];
     if (errand?.phase === ErrandPhase.aktualisering) {
       s.unshift(ErrandStatus.ArendeInkommit);
     }
@@ -212,7 +205,7 @@ export const SidebarInfo: React.FC<{}> = () => {
 
   const { admin } = watch();
 
-  const status = useMemo(() => getValues().status, [getValues]);
+  const status = useMemo(() => getValues().status, [getValues()]);
 
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
