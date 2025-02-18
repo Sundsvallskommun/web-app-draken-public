@@ -130,6 +130,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               <FormControl id="resolution" className="w-full" required>
                 <RadioButton.Group data-cy="solve-radiolist">
                   {Object.entries(isLOP() ? ResolutionLabelLOP : isIK() ? ResolutionLabelIK : ResolutionLabelKS)
+                    .filter(([_key, _label]) => _label !== 'Vidarebefordrat via växelprogrammet')
                     .sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([_key, _label], idx) => (
                       <RadioButton
