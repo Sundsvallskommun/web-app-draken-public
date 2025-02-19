@@ -9,6 +9,8 @@
  * ---------------------------------------------------------------
  */
 
+import { BooleanSchema } from 'yup';
+
 export interface SsnPayload {
   ssn: string;
 }
@@ -304,6 +306,7 @@ export interface PatchNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: boolean;
+  globalAcknowledged?: boolean;
 }
 
 export interface MessageDto {

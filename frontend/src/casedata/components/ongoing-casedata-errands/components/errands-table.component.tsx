@@ -2,10 +2,11 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { Priority } from '@casedata/interfaces/priority';
 import { findStatusLabelForStatusKey, getCaseLabels, isErrandClosed } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
-import { isPT } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Callout } from '@sk-web-gui/react';
 import { Badge, Button, Input, Label, Pagination, Select, Spinner, Table, cx, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import NextLink from 'next/link';
@@ -13,6 +14,8 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
+import dayjs from 'dayjs';
+import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -68,7 +71,12 @@ export const ErrandsTable: React.FC = () => {
     }
   };
 
-  const handleClick = (errand) => {
+  const handleClick = async (errand) => {
+    if (errand.notifications && errand.notifications.length > 0) {
+      await globalAcknowledgeCasedataNotification(municipalityId, errand.notifications[0]).catch(() => {
+        throw new Error('Failed to acknowledge notification');
+      });
+    }
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.errandNumber}`, '_blank');
   };
 
@@ -92,6 +100,8 @@ export const ErrandsTable: React.FC = () => {
     </Table.HeaderColumn>
   ));
 
+  console.log('data.errands', data);
+
   const rows = (data.errands || []).map((errand: IErrand, index) => {
     return (
       <Table.Row
@@ -110,6 +120,28 @@ export const ErrandsTable: React.FC = () => {
             getErrandPropertyDesignations(errand).join(', ')
           )}
         </Table.HeaderColumn>
+        <Table.Column className="w-[0px]">
+          <div>
+            {errand.notifications[0]?.globalAcknowledged === false ? (
+              <>
+                <Callout color="vattjom"></Callout>
+                <span className="sr-only">Ny händelse på ärendet</span>
+              </>
+            ) : null}
+          </div>
+        </Table.Column>
+        <Table.Column>
+          <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+            <div>
+              <time dateTime={errand.notifications[0]?.created}>
+                {errand.notifications[0]?.created
+                  ? dayjs(errand.notifications[0]?.created).format('YYYY-MM-DD HH:mm')
+                  : ''}
+              </time>
+            </div>
+            <div className="italic">{errand.notifications[0]?.description}</div>
+          </div>
+        </Table.Column>
         <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
           {isPT() ? (
             <>
@@ -176,9 +208,6 @@ export const ErrandsTable: React.FC = () => {
         )}
         <Table.Column>
           <time dateTime={errand.created}>{errand.created}</time>
-        </Table.Column>
-        <Table.Column>
-          <time dateTime={errand.updated}>{errand.updated}</time>
         </Table.Column>
         <Table.Column>
           {`${errand.administrator?.firstName || ''} ${errand.administrator?.lastName || ''}`}

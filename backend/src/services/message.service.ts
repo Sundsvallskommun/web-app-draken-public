@@ -43,7 +43,7 @@ interface SmsMessage {
 }
 
 const NOTIFY_CONTACTS = false;
-const SERVICE = `case-data/10.0`;
+const SERVICE = `case-data/11.0`;
 const MESSAGING_SERVICE = `messaging/6.0`;
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;

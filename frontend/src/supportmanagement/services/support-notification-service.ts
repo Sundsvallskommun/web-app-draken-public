@@ -31,3 +31,22 @@ export const acknowledgeSupportNotification: (
       throw e;
     });
 };
+
+export const globalAcknowledgeSupportNotification: (
+  municipalityId: string,
+  notification: SupportNotification
+) => Promise<boolean> = (municipalityId, notification) => {
+  if (!notification.id) {
+    return Promise.reject('Missing id on notification');
+  }
+  const data = { ...notification, ownerFullName: notification.ownerFullName || '', globalAcknowledged: true };
+  return apiService
+    .patch<boolean, SupportNotification>(`supportnotifications/${municipalityId}`, data)
+    .then((res) => {
+      return true;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when acknowledging notification');
+      throw e;
+    });
+};

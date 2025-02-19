@@ -8,7 +8,7 @@ import { Attachment } from './attachment';
 import { ApiErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { ExtraParameter, Notification } from '@common/data-contracts/case-data/data-contracts';
 
 export interface ApiErrand {
   id: number;
@@ -38,6 +38,7 @@ export interface ApiErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  notifications?: Notification[];
 }
 
 export interface ApiPagingData {
@@ -100,6 +101,7 @@ export interface IErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  notifications?: Notification[];
 }
 
 export interface ErrandsData extends Data {

@@ -37,7 +37,7 @@ interface ResponseData {
 @UseBefore(hasPermissions(['canEditCasedata']))
 export class CaseDataErrandController {
   private apiService = new ApiService();
-  SERVICE = `case-data/10.0`;
+  SERVICE = `case-data/11.0`;
 
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
     const applicant: StakeholderDTO & { personalNumber?: string } = errandData.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
@@ -195,7 +195,7 @@ export class CaseDataErrandController {
       filterList.push(`(caseType in [${ss.join(',')}])`);
     }
     if (sort) {
-      url += `&sort=${sort}`;
+      url += `&sort=desc`;
     }
     if (stakeholders) {
       // If both query and stakeholder filter is applied, the stakeholder parts will collide

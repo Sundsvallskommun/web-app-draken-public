@@ -55,22 +55,24 @@ export const emptyErrandList: ErrandsData = {
 
 export const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Notifikationer', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Prio', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
 ];
 
 export const ongoingCaseDataPTErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Notifikationer', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Prioritet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendeägare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
@@ -202,6 +204,8 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
         suspendedFrom: e.suspension?.suspendedFrom,
         suspendedTo: e.suspension?.suspendedTo,
       },
+
+      notifications: e.notifications,
     };
     return ierrand;
   } catch (e) {

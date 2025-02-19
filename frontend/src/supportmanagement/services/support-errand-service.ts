@@ -1,4 +1,8 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  Label,
+  Notification,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
@@ -17,6 +21,7 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { support } from 'cypress/types/jquery';
 
 export interface Customer {
   id: string;
@@ -80,6 +85,7 @@ export interface SupportErrandDto {
   assignedGroupId?: string;
   stakeholders: SupportStakeholder[];
   externalTags: ExternalTags;
+  activeNotifications: Notification[];
 }
 
 export interface ApiSupportErrand extends SupportErrandDto {
@@ -317,11 +323,12 @@ export enum ResolutionLabelKS {
 
 export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Notifikationer', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
@@ -334,12 +341,13 @@ export const ongoingSupportErrandLabelsKC = [
 
 export const ongoingSupportErrandLabelsLoP = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Notifikationer', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
@@ -469,7 +477,9 @@ export const useSupportErrands = (
       setIsLoading(true);
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
+          console.log('fetchErrands', res);
           setSupportErrands({ ...res, isLoading: false });
+          console.log(supportErrands);
         })
         .catch((err) => {
           toastMessage({

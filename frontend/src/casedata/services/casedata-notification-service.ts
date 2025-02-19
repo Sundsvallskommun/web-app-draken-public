@@ -43,3 +43,32 @@ export const acknowledgeCasedataNotification: (
       throw e;
     });
 };
+
+export const globalAcknowledgeCasedataNotification: (
+  municipalityId: string,
+  notification: CasedataNotification
+) => Promise<boolean> = (municipalityId, notification) => {
+  if (!notification.id) {
+    return Promise.reject('Missing id on notification');
+  }
+  const data: PatchNotificationDto = {
+    id: notification.id,
+    errandId: notification.errandId,
+    ownerId: notification.ownerId,
+    type: notification.type,
+    description: notification.description,
+    content: notification.content,
+    expires: notification.expires,
+    globalAcknowledged: true,
+  };
+  return apiService
+    .patch<boolean, PatchNotificationDto>(`casedatanotifications/${municipalityId}`, data)
+    .then((res) => {
+      console.log(res);
+      return true;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when acknowledging notification');
+      throw e;
+    });
+};

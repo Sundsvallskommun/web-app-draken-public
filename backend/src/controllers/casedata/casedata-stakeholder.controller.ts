@@ -18,7 +18,7 @@ interface ResponseData {
 @Controller()
 export class CasedataStakeholderController {
   private apiService = new ApiService();
-  SERVICE = `case-data/10.0`;
+  SERVICE = `case-data/11.0`;
 
   @Patch('/casedata/:municipalityId/errands/:errandId/stakeholders/:id')
   @HttpCode(201)
