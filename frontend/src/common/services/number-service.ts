@@ -36,7 +36,8 @@ export function numberToSwedishWords(n) {
     chunkCount++;
   }
 
-  return [words, ...parts].join(' ');
+  let result = [words, ...parts].join(' ').trimStart();
+  return result.charAt(0).toUpperCase() + result.slice(1);
 
   function convertChunk(chunk) {
     let chunkWords = '';
