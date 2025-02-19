@@ -2447,15 +2447,17 @@ export const Lagenhetsarrende: React.FC<{
           </div>
 
           <FormControl id="additionalTerms" className="w-full">
-            <Input type="hidden" {...register('additionalTerms')} />
+            <Input type="hidden" {...register('additionalTerms.0.terms.0.term')} />
             <div className="h-[42rem] -mb-48" data-cy="additional-terms-richtext-wrapper">
               <ContractTextEditorWrapper
-                val={getValues('additionalTerms.0.terms.0.term')}
+                val={additionalTerms[0]?.terms[0]?.term}
                 label="additionalTerms.0.terms.0.term"
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setAdditionalTerms}
+                setState={(value) => {
+                  setAdditionalTerms([{ header: getValues('additionalTerms.0.header'), terms: [{ term: value }] }]);
+                }}
                 readOnly={false}
                 editorRef={quillRefAdditionalTerms}
               />
