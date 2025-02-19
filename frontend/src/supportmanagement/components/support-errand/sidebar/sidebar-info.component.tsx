@@ -35,7 +35,6 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { get } from 'cypress/types/lodash';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;

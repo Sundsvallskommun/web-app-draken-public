@@ -342,8 +342,8 @@ export const CasedataTabsWrapper: React.FC = () => {
         ) : (
           <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
             <Tabs
-              className="border-1 rounded-12 bg-background-content pt-6 pl-0"
-              tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap"
+              className="border-1 rounded-12 bg-background-content pt-22 pl-5"
+              tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
               panelsClassName="border-t-1"
               // TODO uncomment to set Avtal tab to be active when in TEST environment
               // current={getApplicationEnvironment() === 'TEST' ? 3 : current}
