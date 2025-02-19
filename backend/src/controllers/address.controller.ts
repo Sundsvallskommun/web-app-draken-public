@@ -196,7 +196,7 @@ export class AddressController {
     const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `businessengagements/2.0/${MUNICIPALITY_ID}/information/${guidRes.data}`;
+    const url = `businessengagements/3.0/${MUNICIPALITY_ID}/information/${guidRes.data}`;
 
     const res = await this.apiService.get<OrgInfo>({ url }, req.user);
 

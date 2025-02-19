@@ -56,7 +56,7 @@ export class SupportNotificationDto {
 export class SupportNotificationController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/9.0`;
+  SERVICE = `supportmanagement/9.2`;
 
   @Get('/supportnotifications/:municipalityId')
   @OpenAPI({ summary: 'Get support notifications' })
