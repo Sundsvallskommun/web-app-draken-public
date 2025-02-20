@@ -7,6 +7,7 @@ import {
   PatchErrandPriorityEnum,
   Stakeholder as StakeholderDTO,
   ExtraParameter,
+  RelatedErrand,
 } from '@/data-contracts/case-data/data-contracts';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
@@ -81,6 +82,12 @@ export class CreateErrandDto implements ErrandDTO {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  @IsOptional()
+  @IsArray()
+  relatesTo?: RelatedErrand[];
+  @IsString()
+  @IsOptional()
+  applicationReceived?: string;
 }
 
 export class CPatchErrandDto implements IPatchErrandDTO {
@@ -137,4 +144,10 @@ export class CPatchErrandDto implements IPatchErrandDTO {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  @IsOptional()
+  @IsArray()
+  relatesTo?: RelatedErrand[];
+  @IsString()
+  @IsOptional()
+  applicationReceived?: string;
 }

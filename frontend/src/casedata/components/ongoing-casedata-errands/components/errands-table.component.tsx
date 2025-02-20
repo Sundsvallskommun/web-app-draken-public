@@ -122,6 +122,9 @@ export const ErrandsTable: React.FC = () => {
                 : Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
                   'Förnyat parkeringstillstånd'
                 ? 'Förnyelse av p-tillstånd'
+                : Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
+                  'Överklagan'
+                ? 'Överklagan av p-tillstånd'
                 : ''}
             </>
           ) : (
