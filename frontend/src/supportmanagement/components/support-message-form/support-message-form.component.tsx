@@ -41,6 +41,7 @@ import { Message, MessageRequest, sendMessage } from '@supportmanagement/service
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { isKC } from '@common/services/application-service';
 
 const PREFILL_VALUE = '+46';
 
@@ -279,6 +280,9 @@ export const SupportMessageForm: React.FC<{
       ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
       ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
     };
+    if (isKC()) {
+      messageData.senderName = 'Kontakt Sundsvall';
+    }
     sendMessage(messageData)
       .then(async (success) => {
         if (!success) {
