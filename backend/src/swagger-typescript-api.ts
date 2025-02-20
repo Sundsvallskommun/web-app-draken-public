@@ -38,7 +38,7 @@ const APIS = [
   },
   {
     name: 'case-data',
-    version: '10.0',
+    version: '11.0',
   },
   {
     name: 'supportmanagement',

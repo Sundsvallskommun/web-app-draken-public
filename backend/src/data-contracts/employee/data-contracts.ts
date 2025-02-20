@@ -68,10 +68,9 @@ export interface Employment {
   isManual?: boolean;
   paTeam?: string | null;
   isMainEmployment?: boolean;
+  isManager?: boolean | null;
   manager?: Manager;
   aid?: string | null;
-  eventType?: string | null;
-  eventInfo?: string | null;
   empRowId?: string | null;
 }
 
@@ -127,6 +126,7 @@ export interface PortalPersonData {
   referenceNumber?: string | null;
   isManager?: boolean;
   loginName?: string | null;
+  fullOrgTree?: string | null;
 }
 
 export interface ProblemDetails {

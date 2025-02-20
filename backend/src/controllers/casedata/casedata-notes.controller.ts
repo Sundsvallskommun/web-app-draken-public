@@ -20,7 +20,7 @@ export interface ResponseData {
 @Controller()
 export class CasedataNotesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/10.0`;
+  SERVICE = `case-data/11.0`;
 
   @Patch('/casedata/:municipalityId/errands/:id/notes')
   @HttpCode(201)

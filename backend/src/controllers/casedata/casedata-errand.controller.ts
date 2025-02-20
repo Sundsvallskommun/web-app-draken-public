@@ -37,7 +37,7 @@ interface ResponseData {
 @UseBefore(hasPermissions(['canEditCasedata']))
 export class CaseDataErrandController {
   private apiService = new ApiService();
-  SERVICE = `case-data/10.0`;
+  SERVICE = `case-data/11.0`;
 
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
     const applicant: StakeholderDTO & { personalNumber?: string } = errandData.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
@@ -286,7 +286,7 @@ export class CaseDataErrandController {
       .then(errandPatchResponse => {
         const statusPutPromises =
           data.statuses?.map(async (status, idx) => {
-            const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/statuses`;
+            const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/status`;
             const baseURL = apiURL(this.SERVICE);
             const putStatus = () =>
               this.apiService.put<any, StatusDTO[]>({ url, baseURL, data: [status] }, req.user).catch(e => {
