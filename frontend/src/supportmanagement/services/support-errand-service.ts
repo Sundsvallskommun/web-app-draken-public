@@ -421,7 +421,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedGroupId: undefined,
   resolution: 'INFORMED',
   channel: ContactChannelType.PHONE,
-  municipalityId: '2281',
+  municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',
   contactMeans: 'useEmail',
