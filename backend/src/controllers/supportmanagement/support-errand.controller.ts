@@ -39,6 +39,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Type as TypeTransformer } from 'class-transformer';
+import { isIK, isKC, isLOP } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -387,9 +388,9 @@ export class SupportErrandController {
   async initiateSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: Partial<SupportErrandDto>,
+    @Body() data: SupportErrandDto,
     @Res() response: any,
-  ): Promise<{ data: any; message: string }> {
+  ): Promise<{ data: SupportErrandDto; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
@@ -401,18 +402,60 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
-    const body: SupportErrand = {
-      reporterUserId: req.user.username,
-      assignedUserId: req.user.username,
-      classification: {
-        category: 'NONE',
-        type: 'NONE',
-      },
-      priority: 'MEDIUM' as SupportPriority,
-      status: Status.NEW,
-      resolution: Resolution.INFORMED,
-      title: 'Empty errand',
-    };
+    const body: SupportErrand = isKC()
+      ? {
+          reporterUserId: req.user.username,
+          assignedUserId: req.user.username,
+          classification: {
+            category: data.classification.category,
+            type: data.classification.type,
+          },
+          labels: data.labels,
+          businessRelated: data.businessRelated,
+          description: data.description,
+          contactReason: data.contactReason,
+          contactReasonDescription: data.contactReasonDescription,
+          channel: data.channel,
+          priority: data.priority,
+          status: data.status,
+          resolution: data.resolution,
+          title: 'Empty errand',
+        }
+      : isLOP()
+      ? {
+          reporterUserId: req.user.username,
+          assignedUserId: req.user.username,
+          classification: {
+            category: data.classification.category,
+            type: data.classification.type,
+          },
+          labels: data.labels,
+          businessRelated: data.businessRelated,
+          description: data.description,
+          channel: data.channel,
+          priority: data.priority,
+          status: data.status,
+          resolution: data.resolution,
+          title: 'Empty errand',
+        }
+      : isIK()
+      ? {
+          reporterUserId: req.user.username,
+          assignedUserId: req.user.username,
+          classification: {
+            category: data.classification.category,
+            type: data.classification.type,
+          },
+          labels: data.labels,
+          businessRelated: data.businessRelated,
+          description: data.description,
+          channel: data.channel,
+          priority: data.priority,
+          status: data.status,
+          resolution: data.resolution,
+          title: 'Empty errand',
+        }
+      : null;
     const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);

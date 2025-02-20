@@ -181,6 +181,17 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
+export const emptySupportErrand: Partial<SupportErrand> = {
+  classification: {
+    category: '',
+    type: '',
+  },
+  description: '',
+  resolution: 'INFORMED',
+  priority: Priority.MEDIUM,
+  status: Status.NEW,
+};
+
 export const newStatuses = [Status.NEW];
 
 export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
@@ -406,8 +417,8 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   id: '',
   title: '',
   priority: Priority.MEDIUM,
-  category: 'NONE',
-  type: 'NONE',
+  category: '',
+  type: '',
   labels: [],
   contactReason: '',
   contactReasonDescription: '',
@@ -731,9 +742,32 @@ export const getSupportErrands: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | SupportErrand> = (municipalityId) => {
+export const initiateSupportErrand: (
+  municipalityId: string,
+  body: Partial<SupportErrand>
+) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
+  const data: Partial<SupportErrandDto> = {
+    title: 'Empty errand',
+    ...(body.priority && {
+      priority: Object.keys(Priority).find((key) => Priority[key] === body.priority) as Priority,
+    }),
+    classification: {
+      ...(body.category && { category: body.category }),
+      ...(body.type && { type: body.type }),
+    },
+    labels: body.labels,
+    ...(body.contactReason && { contactReason: body.contactReason }),
+    ...(body.contactReasonDescription && { contactReasonDescription: body.contactReasonDescription }),
+    businessRelated: !!body.businessRelated,
+    status: body.status,
+    ...(body.resolution && { resolution: body.resolution }),
+    ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
+    ...(body.channel && { channel: body.channel }),
+    ...(body.description && { description: body.description }),
+    ...(body.assignedUserId && { assignedUserId: body.assignedUserId }),
+  };
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, data)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
