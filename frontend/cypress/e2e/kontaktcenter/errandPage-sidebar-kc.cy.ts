@@ -161,7 +161,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         { label: 'Kopplat samtal', id: 'CONNECTED' },
         { label: 'Löst av Kontakt Sundsvall', id: 'SOLVED' },
         { label: 'Registrerat i annat system', id: 'REGISTERED_EXTERNAL_SYSTEM' },
-        { label: 'Vidarebefordrat via växelprogrammet', id: 'REFERRED_VIA_EXCHANGE' },
       ];
 
       //can change supportErrand to solved
