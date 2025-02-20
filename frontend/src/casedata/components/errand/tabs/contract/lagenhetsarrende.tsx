@@ -1260,8 +1260,8 @@ export const Lagenhetsarrende: React.FC<{
                     </Table.Column>
                   </Table.Row>
                   <Table.Row data-cy="previouslyPaid-row">
-                    <Table.Column className="!py-16 flex flex-col items-start justify-center !gap-18">
-                      <FormControl>
+                    <Table.Column className="!py-16 flex flex-col items-start w-full !gap-18">
+                      <FormControl className="flex flex-row w-full items-center justify-start gap-10">
                         <Checkbox
                           name="period"
                           value={'previouslyPaid'}
@@ -1273,12 +1273,8 @@ export const Lagenhetsarrende: React.FC<{
                               getValues('arrendeavgiftTerms.prepaid') === 'true' ? 'false' : 'true'
                             );
                           }}
-                        >
-                          <strong>För perioden XX – XX är avgiften betald av tidigare arrendator.</strong>
-                        </Checkbox>
-                      </FormControl>
-                      <div className="flex justify-between gap-32 w-full">
-                        <FormControl className="flex-grow max-w-[45%]">
+                        ></Checkbox>
+                        <FormControl className="w-1/3">
                           <FormLabel>Välj fr.o.m datum</FormLabel>
                           <DatePicker
                             value={getValues('arrendeavgiftTerms.prepaidFromDate')}
@@ -1288,7 +1284,7 @@ export const Lagenhetsarrende: React.FC<{
                             max={dayjs(getValues('arrendeavgiftTerms.prepaidToDate')).format('YYYY-MM-DD')}
                           />
                         </FormControl>
-                        <FormControl className="flex-grow max-w-[45%]">
+                        <FormControl className="w-1/3">
                           <FormLabel>Välj t.o.m datum</FormLabel>
                           <DatePicker
                             value={getValues('arrendeavgiftTerms.prepaidToDate')}
@@ -1302,6 +1298,11 @@ export const Lagenhetsarrende: React.FC<{
                             }
                           />
                         </FormControl>
+                      </FormControl>
+                      <div>
+                        För perioden {getValues('arrendeavgiftTerms.prepaidFromDate') || 'åååå-mm-dd'} –{' '}
+                        {getValues('arrendeavgiftTerms.prepaidToDate') || 'åååå-mm-dd'} är avgiften betald av tidigare
+                        arrendator.
                       </div>
                     </Table.Column>
                   </Table.Row>
