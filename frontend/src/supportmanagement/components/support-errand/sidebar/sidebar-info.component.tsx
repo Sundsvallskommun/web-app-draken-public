@@ -87,6 +87,8 @@ export const SidebarInfo: React.FC<{
         }
       }
       setAllowed(_a);
+    } else {
+      setAllowed(isAdmin());
     }
   }, [user, supportErrand]);
 
@@ -284,6 +286,7 @@ export const SidebarInfo: React.FC<{
   };
 
   useEffect(() => {
+    console.log('Supporterrand: ', supportErrand);
     if (administrators && supportErrand?.assignedUserId) {
       const match =
         administrators.filter((a) => {
@@ -293,33 +296,34 @@ export const SidebarInfo: React.FC<{
     } else {
       setValue('admin', 'Välj handläggare');
     }
-    if (supportErrand?.id && supportErrand?.status) {
+
+    if (supportErrand?.status) {
       setValue('status', findStatusLabelForStatusKey(supportErrand.status));
     } else {
       setValue('status', 'Välj status');
     }
-    if (supportErrand?.id && supportErrand?.priority) {
+
+    if (supportErrand?.priority) {
       setValue('priority', findPriorityLabelForPriorityKey(supportErrand.priority));
-    } else if (supportErrandIsEmpty(supportErrand)) {
-      setValue('priority', 'MEDIUM');
-      setValue('status', Status.NEW);
+      // setValue('priority', supportErrand.priority);
+      // } else if (supportErrandIsEmpty(supportErrand)) {
+      //   findPriorityLabelForPriorityKey(supportErrand?.priority);
+      // setValue('priority', 'MEDIUM');
+      // setValue('status', Status.NEW);
     } else {
       setValue('priority', 'Välj prioritet');
     }
   }, [supportErrand, administrators]);
 
   useEffect(() => {
-    if (!supportErrandIsEmpty(supportErrand)) {
+    console.log('Proi and status', supportErrand?.priority, supportErrand?.status);
+    if (supportErrand?.priority && supportErrand?.status) {
       const s = [StatusLabel.NEW, StatusLabel.ONGOING, StatusLabel.PENDING, StatusLabel.AWAITING_INTERNAL_RESPONSE];
-      if (!s.includes(findStatusLabelForStatusKey(supportErrand.status as Status))) {
-        s.unshift(findStatusLabelForStatusKey(supportErrand.status as Status));
+      if (!s.includes(findStatusLabelForStatusKey(supportErrand?.status as Status))) {
+        s.unshift(findStatusLabelForStatusKey(supportErrand?.status as Status));
       }
       setSelectableStatuses(s);
-    }
-  }, [supportErrand]);
 
-  useEffect(() => {
-    if (!supportErrandIsEmpty(supportErrand)) {
       const prio = [Priority.LOW, Priority.MEDIUM, Priority.HIGH];
       if (!prio.includes(findPriorityLabelForPriorityKey(supportErrand.priority as Priority))) {
         prio.unshift(findPriorityLabelForPriorityKey(supportErrand.priority as Priority));
@@ -479,7 +483,7 @@ export const SidebarInfo: React.FC<{
               </Button>
             </FormLabel>
             <Select
-              disabled={supportErrandIsEmpty(supportErrand)}
+              // disabled={supportErrandIsEmpty(supportErrand)}
               className="w-full"
               size="sm"
               data-cy="admin-input"
@@ -509,7 +513,10 @@ export const SidebarInfo: React.FC<{
               aria-label="Välj status"
               {...register('status')}
               value={status}
-              disabled={supportErrand?.status === Status.SOLVED || !supportErrand?.assignedUserId}
+              disabled={
+                supportErrand?.status === Status.SOLVED ||
+                (!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId)
+              }
             >
               {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
               {selectableStatuses.map((c: string, index) => (
@@ -531,7 +538,7 @@ export const SidebarInfo: React.FC<{
                 aria-label="Välj prioritet"
                 {...register('priority')}
                 value={priority}
-                disabled={!supportErrand?.assignedUserId}
+                disabled={!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId}
               >
                 {!supportErrand?.priority ? <Select.Option>Välj prioritet</Select.Option> : null}
                 {selectablePriorities.map((c: string, index) => (

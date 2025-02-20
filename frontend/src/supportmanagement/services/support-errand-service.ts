@@ -181,16 +181,16 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
-export const emptySupportErrand: Partial<SupportErrand> = {
-  classification: {
-    category: '',
-    type: '',
-  },
-  description: '',
-  resolution: 'INFORMED',
-  priority: Priority.MEDIUM,
-  status: Status.NEW,
-};
+// export const emptySupportErrand: Partial<SupportErrand> = {
+//   classification: {
+//     category: '',
+//     type: '',
+//   },
+//   description: '',
+//   resolution: 'INFORMED',
+//   priority: Priority.MEDIUM,
+//   status: Status.NEW,
+// };
 
 export const newStatuses = [Status.NEW];
 
@@ -416,7 +416,7 @@ export const emptySupportErrandList: SupportErrandsData = {
 export const defaultSupportErrandInformation: SupportErrand | any = {
   id: '',
   title: '',
-  priority: Priority.MEDIUM,
+  priority: 'MEDIUM',
   category: '',
   type: '',
   labels: [],
@@ -746,6 +746,7 @@ export const initiateSupportErrand: (
   municipalityId: string,
   body: Partial<SupportErrand>
 ) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
+  console.log("Initiating errand with body: ", body);
   const data: Partial<SupportErrandDto> = {
     title: 'Empty errand',
     ...(body.priority && {
@@ -759,7 +760,13 @@ export const initiateSupportErrand: (
     ...(body.contactReason && { contactReason: body.contactReason }),
     ...(body.contactReasonDescription && { contactReasonDescription: body.contactReasonDescription }),
     businessRelated: !!body.businessRelated,
-    status: body.status,
+    ...(body.status && {
+      status: Object.keys(Status).find((key) => StatusLabel[key] === body.status) as Status,
+      suspension: {
+        suspendedFrom: undefined,
+        suspendedTo: undefined,
+      },
+    }),
     ...(body.resolution && { resolution: body.resolution }),
     ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
     ...(body.channel && { channel: body.channel }),
@@ -789,6 +796,7 @@ export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
 ) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
+  console.log('Updating with: ', formdata);
   let responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
