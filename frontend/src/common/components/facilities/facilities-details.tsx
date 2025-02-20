@@ -103,7 +103,7 @@ export const FacilityDetails: React.FC<{
           <h2 className="text-h4-md mb-16 mx-8" data-cy="estate-designation">
             {estate?.designation}
           </h2>
-          <Tabs>
+          <Tabs tabslistClassName="ml-12 pt-14">
             <Tabs.Item>
               <Tabs.Button className="text-small" data-cy="ownership-tab">
                 Ägande

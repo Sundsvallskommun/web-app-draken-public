@@ -1,6 +1,6 @@
 const envalid = require('envalid');
 
-const authDependent = envalid.makeValidator(x => {
+const authDependent = envalid.makeValidator((x) => {
   const authEnabled = process.env.HEALTH_AUTH === 'true';
 
   if (authEnabled && !x.length) {
@@ -8,7 +8,7 @@ const authDependent = envalid.makeValidator(x => {
   }
 
   return x;
-})
+});
 
 envalid.cleanEnv(process.env, {
   NEXT_PUBLIC_API_URL: envalid.str(),
@@ -33,9 +33,13 @@ module.exports = withBundleAnalyzer({
   sassOptions: {
     prependData: `$basePath: '${process.env.NEXT_PUBLIC_BASEPATH || ''}';`,
   },
+  transpilePackages: ['lucide-react'],
+  experimental: {
+    optimizePackageImports: ['@sk-web-gui'],
+  },
   async rewrites() {
-    return [{ source: '/napi/:path*', destination: '/api/:path*' }]
-  },  
+    return [{ source: '/napi/:path*', destination: '/api/:path*' }];
+  },
   async redirects() {
     return [
       {
