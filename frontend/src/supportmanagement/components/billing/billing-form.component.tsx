@@ -1,16 +1,21 @@
-import { twoDecimals } from '@common/services/helper-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Checkbox, FormControl, FormErrorMessage, FormLabel, Input, RadioButton, Select } from '@sk-web-gui/react';
-import {
-  customerIdentities,
-  invoiceActivities,
-  invoiceTypes,
-} from '@supportmanagement/services/support-billing-service';
-import { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
+import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
+import { getOrganization } from '@supportmanagement/services/support-billing-service';
+import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
-export const BillingForm = ({ recipientName }) => {
+const BillingForm: React.FC<{
+  resetManager?: () => void;
+  handleChange: (
+    description: string,
+    customerId: string,
+    quantity: number,
+    costCenter: string,
+    activity: string
+  ) => void;
+  setIsLoading: (isLoading: boolean) => void;
+}> = ({ resetManager, handleChange, setIsLoading }) => {
   const {
     control,
     register,
@@ -21,214 +26,120 @@ export const BillingForm = ({ recipientName }) => {
     formState: { errors },
   } = useFormContext<CBillingRecord>();
 
-  const { user }: AppContextInterface = useAppContext();
-
-  const [development, setDevelopment] = useState<boolean>(false);
-  const [developmentCost, setDevelopmentCost] = useState<number>(0);
-
-  const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
-    control,
-    name: 'invoice.invoiceRows',
-  });
-  
-  const quantity = watch('invoice.invoiceRows.0.quantity');
-  const activity = watch('invoice.invoiceRows.0.accountInformation.activity');
-  const totalAmount = watch('invoice.invoiceRows.0.totalAmount');
-
-  const handleDevelopmentCost = (checked) => {
-    if (checked) {
-      append({
-        descriptions: ['Utvecklingskostnad 2%'],
-        quantity: 1,
-        costPerUnit: twoDecimals(totalAmount * 0.02),
-        totalAmount: twoDecimals(totalAmount * 0.02),
-        accountInformation: {
-          activity: getValues().invoice.invoiceRows[0].accountInformation.activity,
-          project: '11041',
-        },
-      });
-    } else {
-      remove(fields.length - 1);
-    }
-    setDevelopment(checked);
-  };
-
-  useEffect(() => {
-    const newTotal = getValues(`invoice.invoiceRows.${0}.quantity`) * getValues(`invoice.invoiceRows.${0}.costPerUnit`);
-    setValue(`invoice.invoiceRows.${0}.totalAmount`, twoDecimals(newTotal));
-    setDevelopmentCost(twoDecimals(newTotal * 0.02));
-    if (fields.length > 1) {
-      setValue(`invoice.invoiceRows.${1}.costPerUnit`, twoDecimals(newTotal * 0.02));
-      setValue(`invoice.invoiceRows.${1}.totalAmount`, twoDecimals(newTotal * 0.02));
-      setValue(
-        `invoice.invoiceRows.${1}.accountInformation.activity`,
-        getValues().invoice.invoiceRows[0].accountInformation.activity
-      );
-    }
-  }, [quantity, activity]);
-
-  useEffect(() => {
-    setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
-    if (fields.length === 2) {
-      setDevelopment(true);
-    }
-  }, [fields]);
-
   return (
     <>
-      <div className="my-lg gap-xl">
-        <FormControl>
-          <FormLabel>Faktureringstyp</FormLabel>
+      <FormControl>
+        <FormLabel>Faktureringstyp</FormLabel>
+        <Select
+          {...register('invoice.description')}
+          data-cy="invoice-description-input"
+          className="w-full text-dark-primary"
+          size="md"
+          placeholder={'0'}
+          onChange={(e) => {
+            const selectedInvoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === e.target.value);
+            const selectedDescription = e.target.value;
+            const customerId = getValues().invoice.customerId;
+            const isInternal = getValues().type === 'INTERNAL';
+            const defaultQuantity = 1;
+            const costcenter = isInternal
+              ? selectedInvoiceType?.internal.accountInformation.costCenter
+              : selectedInvoiceType?.external.accountInformation.costCenter;
+            const activity = isInternal
+              ? selectedInvoiceType?.internal.accountInformation.activity
+              : selectedInvoiceType?.external.accountInformation.activity;
+            handleChange(selectedDescription, customerId, defaultQuantity, costcenter, activity);
+            trigger();
+          }}
+        >
+          <Select.Option value={''}>Välj faktureringstyp</Select.Option>
+          {invoiceSettings.invoiceTypes.map((invoiceType) => (
+            <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
+              {invoiceType.invoiceType}
+            </Select.Option>
+          ))}
+        </Select>
+        {errors.invoice?.description && (
+          <div className="text-error">
+            <FormErrorMessage>{errors.invoice?.description.message}</FormErrorMessage>
+          </div>
+        )}
+      </FormControl>
 
-          <RadioButton.Group className="block w-full" data-cy="radio-button-group" inline={true}>
-            <div className="flex justify-between flex-wrap w-full">
-              {invoiceTypes.map((invoiceType) => (
-                <div className="w-1/2" key={invoiceType.key}>
-                  <RadioButton
-                    data-cy={`invoice-type-${invoiceType}`}
-                    className="mr-lg mb-sm whitespace-nowrap"
-                    name={invoiceType.key}
-                    id={invoiceType.key}
-                    value={invoiceType.displayName}
-                    {...register('invoice.description')}
-                    defaultChecked={getValues().type === invoiceType.displayName}
-                  >
-                    {invoiceType.displayName}
-                  </RadioButton>
-                </div>
-              ))}
-              {errors.type && (
-                <div className="text-error">
-                  <FormErrorMessage>{errors.type?.message}</FormErrorMessage>
-                </div>
-              )}
-            </div>
-          </RadioButton.Group>
-        </FormControl>
-      </div>
-      <Checkbox
-        checked={development}
-        value={development ? 'true' : 'false'}
-        onChange={(e) => {
-          handleDevelopmentCost(e.currentTarget.checked);
-        }}
-        indeterminate={false}
-      >
-        Utvecklingskostnad?
-      </Checkbox>
-      {fields.map((field, index) => (
-        <div key={field.id} className="bg-blue-50 my-8 px-12 py-12 rounded-24">
-          <div className="flex gap-md mt-8">
-            <span>{getValues(`invoice.invoiceRows.${index}.descriptions`)}</span>
+      <FormControl id={`invoice.invoiceRows.${0}-quantity`}>
+        <FormLabel>Antal</FormLabel>
+        <Input
+          {...register(`invoice.invoiceRows.${0}.quantity`)}
+          data-cy="quantity-input"
+          onChange={(e) => {
+            handleChange(
+              getValues('invoice.description'),
+              getValues('invoice.customerId'),
+              parseFloat(e.target.value),
+              getValues('invoice.invoiceRows.0.accountInformation.0.costCenter'),
+              getValues('invoice.invoiceRows.0.accountInformation.0.activity')
+            );
+          }}
+          className="w-full text-dark-primary"
+          type="number"
+          step={0.01}
+          min={0}
+          max={999999}
+          size="md"
+        />
+        {errors.invoice?.invoiceRows?.[0]?.quantity && (
+          <div className="text-error">
+            <FormErrorMessage>{errors.invoice?.invoiceRows[0]?.quantity?.message}</FormErrorMessage>
           </div>
-          <div className="flex gap-md mt-8">
-            <div className="my-sm w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}-quantity`} className="w-full">
-                <FormLabel>Antal timmar</FormLabel>
-                <Input
-                  {...register(`invoice.invoiceRows.${index}.quantity`)}
-                  data-cy="quantity-input"
-                  onChange={(e) => {
-                    setValue(`invoice.invoiceRows.${index}.quantity`, twoDecimals(parseFloat(e.target.value)));
-                  }}
-                  className="w-full text-dark-primary"
-                  type="number"
-                  step={0.01}
-                  min={0}
-                  size="md"
-                  readOnly={index === 1 && development}
-                />
-                {errors.invoice?.invoiceRows?.[index]?.quantity && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.invoice?.invoiceRows[index]?.quantity?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
+        )}
+      </FormControl>
 
-            <div className="my-sm gap-xl w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}-costPerUnit`} className="w-full">
-                <FormLabel>Timpris</FormLabel>
-                <Input
-                  {...register(`invoice.invoiceRows.${index}.costPerUnit`)}
-                  data-cy="costPerUnit-input"
-                  className="w-full text-dark-primary"
-                  size="md"
-                  placeholder={'0'}
-                  readOnly
-                />
-                {errors.invoice?.invoiceRows?.[index]?.costPerUnit && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.invoice?.invoiceRows[index]?.costPerUnit?.message}</FormErrorMessage>
+      <Table dense background data-cy="seller-table">
+        <Table.Header>
+          <Table.HeaderColumn>Beskrivning</Table.HeaderColumn>
+          <Table.HeaderColumn>Antal</Table.HeaderColumn>
+          <Table.HeaderColumn>Pris</Table.HeaderColumn>
+          <Table.HeaderColumn>Summa</Table.HeaderColumn>
+        </Table.Header>
+        <Table.Body>
+          {watch('invoice.invoiceRows').map((row, index) => {
+            return (
+              <Table.Row key={`row-${index}`}>
+                <Table.Column>
+                  <div>{row.descriptions?.[0]}</div>
+                  <div>
+                    ({getValues(`invoice.invoiceRows.${index}.accountInformation.0.costCenter`)},{' '}
+                    {getValues(`invoice.invoiceRows.${index}.accountInformation.0.activity`)})
                   </div>
-                )}
-              </FormControl>
-            </div>
-            <div className="my-sm w-1/3">
-              <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
-                <FormLabel>Total kostnad</FormLabel>
-                <Input
-                  {...register(`invoice.invoiceRows.${index}.totalAmount`)}
-                  data-cy="totalAmount-input"
-                  className="w-full text-dark-primary"
-                  type="text"
-                  readOnly
-                  size="md"
-                />
-                {errors.invoice?.invoiceRows?.[index]?.totalAmount && (
-                  <div className="text-error">
-                    <FormErrorMessage>{errors.invoice?.invoiceRows[index]?.totalAmount?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
-          </div>
-          <div className="my-sm w-full">
-            <FormControl id={`invoice.invoiceRows.${index}-totalAmount`} className="w-full">
-              <FormLabel>Beskrivning</FormLabel>
-              <Input
-                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.0`)}
-                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.0-input`}
-                className="w-full text-dark-primary"
-                type="text"
-                size="md"
-              />
-              <Input
-                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.1`)}
-                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.1-input`}
-                className="w-full text-dark-primary"
-                type="text"
-                size="md"
-              />
-              <Input
-                {...register(`invoice.invoiceRows.${index}.detailedDescriptions.2`)}
-                data-cy={`invoice.invoiceRows.${index}.detailedDescriptions.2-input`}
-                className="w-full text-dark-primary"
-                type="text"
-                size="md"
-              />
-              {errors.invoice?.invoiceRows?.[index]?.detailedDescriptions?.[0] && (
-                <div className="text-error">
-                  <FormErrorMessage>
-                    {errors.invoice?.invoiceRows[index]?.detailedDescriptions?.[0]?.message as string}
-                  </FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
-        </div>
-      ))}
+                </Table.Column>
+                <Table.Column>{getValues(`invoice.invoiceRows.${index}.quantity`)}</Table.Column>
+                <Table.Column>{getValues(`invoice.invoiceRows.${index}.costPerUnit`)}</Table.Column>
+                <Table.Column>{getValues(`invoice.invoiceRows.${index}.totalAmount`)}</Table.Column>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table>
       <div className="flex mb-md gap-24">
         <div className="flex w-1/2">
           <FormControl id="supervisor" className="w-full">
             <FormLabel>Chef</FormLabel>
-            <Input
-              data-cy="manager-input"
-              className="w-full text-dark-primary"
-              readOnly
-              value={recipientName}
-              size="md"
-            />
+            <Input.Group>
+              <Input
+                data-cy="manager-input"
+                className="w-full text-dark-primary"
+                readOnly={getValues().status !== 'NEW'}
+                {...register('extraParameters.referenceName')}
+                size="md"
+              />
+              {resetManager && getValues().status === 'NEW' ? (
+                <Input.RightAddin>
+                  <Button iconButton variant="ghost" onClick={resetManager}>
+                    <LucideIcon name="refresh-ccw" />
+                  </Button>
+                </Input.RightAddin>
+              ) : null}
+            </Input.Group>
             {errors.recipient ? (
               <div className="text-error">
                 <FormErrorMessage>{errors.recipient?.message}</FormErrorMessage>
@@ -246,7 +157,7 @@ export const BillingForm = ({ recipientName }) => {
               data-cy="referenceNumber-input"
               className="w-full text-dark-primary"
               size="md"
-              readOnly
+              readOnly={getValues().status !== 'NEW'}
             />
             {errors.invoice?.customerReference ? (
               <div className="text-error">
@@ -267,13 +178,48 @@ export const BillingForm = ({ recipientName }) => {
               data-cy="customerId-input"
               className="w-full text-dark-primary"
               size="md"
+              onChange={(e) => {
+                if (getValues('type') === 'EXTERNAL') {
+                  const selectedIdentity = invoiceSettings.customers.external.find(
+                    (identity) => identity.companyId.toString() === e.target.value
+                  );
+                  setValue('recipient.organizationName', selectedIdentity.name);
+                  setValue('invoice.customerId', selectedIdentity.companyId.toString());
+                  setIsLoading(true);
+                  getOrganization(selectedIdentity.orgNr, selectedIdentity.legalEntityAddressSource).then(
+                    ({ partyId, address }) => {
+                      setIsLoading(false);
+                      setValue('recipient.partyId', partyId);
+                      setValue('recipient.addressDetails', address);
+                    }
+                  );
+                } else {
+                  setValue('invoice.customerId', e.target.value);
+                  setValue('recipient', undefined);
+                }
+                handleChange(
+                  getValues('invoice.description'),
+                  e.target.value,
+                  1,
+                  getValues('invoice.invoiceRows.0.accountInformation.0.costCenter'),
+                  getValues('invoice.invoiceRows.0.accountInformation.0.activity')
+                );
+              }}
               placeholder={'0'}
             >
-              {customerIdentities.map((identity) => (
-                <Select.Option key={identity.customerId} value={identity.customerId}>
-                  {identity.customerName}
-                </Select.Option>
-              ))}
+              {getValues().type === 'INTERNAL'
+                ? invoiceSettings.customers.internal.map((identity) => (
+                    <Select.Option key={identity.customerId} value={identity.customerId}>
+                      {identity.name}
+                    </Select.Option>
+                  ))
+                : getValues().type === 'EXTERNAL'
+                ? invoiceSettings.customers.external.map((identity) => (
+                    <Select.Option key={identity.orgNr || identity.companyId} value={identity.companyId}>
+                      {identity.name}
+                    </Select.Option>
+                  ))
+                : null}
             </Select>
             {errors.invoice?.customerId && (
               <div className="text-error">
@@ -287,23 +233,43 @@ export const BillingForm = ({ recipientName }) => {
           <FormControl id="category" className="w-full">
             <FormLabel>Aktivitet</FormLabel>
             <Select
-              {...register('invoice.invoiceRows.0.accountInformation.activity')}
+              {...register('invoice.invoiceRows.0.accountInformation.0.activity')}
               data-cy="activity-input"
               className="w-full text-dark-primary"
+              onChange={(e) => {
+                const selectedActivity = invoiceSettings.activities.find((a) => a.value === e.target.value);
+                if (!selectedActivity) {
+                  return;
+                }
+
+                const selectedDescription = getValues('invoice.description');
+                const customerId = getValues('invoice.customerId');
+                const costcenter = selectedActivity.costCenter;
+                const quantity = getValues('invoice.invoiceRows.0.quantity');
+                handleChange(selectedDescription, customerId, quantity, costcenter, selectedActivity.value);
+                getValues('invoice.invoiceRows').forEach((row, index) => {
+                  row.accountInformation.forEach((accountInformation, accountIndex) => {
+                    setValue(
+                      `invoice.invoiceRows.${index}.accountInformation.${accountIndex}.activity`,
+                      selectedActivity.value
+                    );
+                  });
+                });
+              }}
               size="md"
               placeholder={'0'}
             >
               <Select.Option value={''}>Välj aktivitet</Select.Option>
-              {invoiceActivities.map((activity) => (
-                <Select.Option key={activity.id} value={activity.value}>
-                  {activity.displayName}
+              {invoiceSettings.activities.map((activity) => (
+                <Select.Option key={activity.name} value={activity.value}>
+                  {activity.name}
                 </Select.Option>
               ))}
             </Select>
-            {errors.invoice?.invoiceRows?.[0]?.accountInformation?.activity && (
+            {errors.invoice?.invoiceRows?.[0]?.accountInformation?.[0]?.activity && (
               <div className="text-error">
                 <FormErrorMessage>
-                  {errors.invoice?.invoiceRows?.[0]?.accountInformation?.activity.message}
+                  {errors.invoice?.invoiceRows?.[0]?.accountInformation?.[0]?.activity.message}
                 </FormErrorMessage>
               </div>
             )}
@@ -313,3 +279,5 @@ export const BillingForm = ({ recipientName }) => {
     </>
   );
 };
+
+export default BillingForm;

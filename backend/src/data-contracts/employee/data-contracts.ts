@@ -68,10 +68,9 @@ export interface Employment {
   isManual?: boolean;
   paTeam?: string | null;
   isMainEmployment?: boolean;
+  isManager?: boolean | null;
   manager?: Manager;
   aid?: string | null;
-  eventType?: string | null;
-  eventInfo?: string | null;
   empRowId?: string | null;
 }
 
