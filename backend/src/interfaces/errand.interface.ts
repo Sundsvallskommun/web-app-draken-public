@@ -8,6 +8,7 @@ import {
   Stakeholder as StakeholderDTO,
   ExtraParameter,
   RelatedErrand,
+  Status,
 } from '@/data-contracts/case-data/data-contracts';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
@@ -53,9 +54,9 @@ export class CreateErrandDto implements ErrandDTO {
   @IsString()
   @IsOptional()
   diaryNumber?: string;
-  @IsEnum(ErrandStatus)
+  @IsObject()
   @IsOptional()
-  status?: ErrandStatus;
+  status?: StatusDTO;
   @IsString()
   @IsOptional()
   statusDescription?: string;
@@ -97,9 +98,12 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   @IsString()
   @IsOptional()
   externalCaseId?: string;
-  @IsEnum(ErrandStatus)
+  @IsObject()
   @IsOptional()
-  status?: ErrandStatus;
+  status?: StatusDTO;
+  @IsArray()
+  @IsOptional()
+  statuses?: StatusDTO[];
   @IsString()
   @IsOptional()
   statusDescription?: string;

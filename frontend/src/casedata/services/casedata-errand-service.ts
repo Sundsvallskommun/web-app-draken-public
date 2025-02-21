@@ -12,7 +12,7 @@ import {
   RelatedErrand,
 } from '@casedata/interfaces/errand';
 import { ErrandPhase, ErrandPhasePT, UiPhase } from '@casedata/interfaces/errand-phase';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ApiErrandStatus, ErrandStatus } from '@casedata/interfaces/errand-status';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import {
   MAX_FILE_SIZE_MB,
@@ -180,11 +180,11 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       status:
         e.statuses?.sort((a, b) =>
           dayjs(a.dateTime).isBefore(dayjs(b.dateTime)) ? 1 : dayjs(b.dateTime).isBefore(dayjs(a.dateTime)) ? -1 : 0
-        )[0]?.statusType || 'Okänd status',
+        )[e.statuses.length - 1]?.statusType || 'Okänd status',
       statusDescription:
         e.statuses?.sort((a, b) =>
           dayjs(a.dateTime).isBefore(dayjs(b.dateTime)) ? 1 : dayjs(b.dateTime).isBefore(dayjs(a.dateTime)) ? -1 : 0
-        )[0]?.description || '',
+        )[e.statuses.length - 1]?.description || '',
       phase: e.phase,
       channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
       municipalityId: e.municipalityId || municipalityId,
@@ -204,6 +204,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
         suspendedTo: e.suspension?.suspendedTo,
       },
       relatesTo: e.relatesTo,
+      notifications: e.notifications,
     };
     return ierrand;
   } catch (e) {
@@ -535,7 +536,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
     ...(data.channel && { channel: ApiChannels[data.channel] }),
     ...(data.description && { description: data.description }),
     ...(data.caseType && { caseTitleAddition: CaseLabels.ALL[data.caseType] }),
-    ...(data.status && { status: data.status }),
+    ...(data.status && { status: { statusType: data.status } }),
     ...(data.phase && { phase: data.phase }),
     stakeholders: stakeholders,
   };
@@ -642,7 +643,7 @@ export const saveCroppedImage = async (
 export const updateErrandStatus = async (municipalityId: string, id: string, status: ErrandStatus) => {
   const e: Partial<RegisterErrandData> = {
     id,
-    status,
+    status: { statusType: status },
   };
   return apiService
     .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${id}`, e)
@@ -785,7 +786,7 @@ export const setSuspendedErrands = async (
   const url = `casedata/${municipalityId}/errands/${errandId}`;
   const data: Partial<RegisterErrandData> = {
     id: errandId.toString(),
-    status: status,
+    statuses: [{ statusType: status }],
     suspension: {
       suspendedFrom: status === ErrandStatus.Parkerad ? dayjs().toISOString() : undefined,
       suspendedTo: status === ErrandStatus.Parkerad ? dayjs(date).set('hour', 7).toISOString() : undefined,

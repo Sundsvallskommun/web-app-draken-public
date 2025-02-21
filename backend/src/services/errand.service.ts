@@ -43,12 +43,13 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
           },
         }
       : {}),
+    ...(errandData.status && { status: errandData.status }),
     ...(errandData.status && {
       statuses: errandData.status && [
         {
           statusType: errandData?.status?.toString(),
           description: errandData?.statusDescription?.toString() || '',
-          dateTime: new Date().toISOString(),
+          created: new Date().toISOString(),
         },
       ],
     }),
