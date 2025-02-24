@@ -127,7 +127,6 @@ export const SidebarInfo: React.FC<{}> = () => {
           setIsLoading(false);
           getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
           reset();
-          pollDisplayPhase();
         });
       })
       .catch((e) => {
