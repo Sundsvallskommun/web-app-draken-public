@@ -202,9 +202,7 @@ export const CasedataAttachments: React.FC = () => {
           setModalFetching(false);
         })
         .then((res) => openModal());
-    }
-    // exclusive exception for .msg
-    else if (Attachment.mimeType === '' && Attachment.name.endsWith(`.msg`)) {
+    } else if (Attachment.name.endsWith(`.msg`)) {
       downloadDocument(Attachment);
     } else {
       toastMessage({
