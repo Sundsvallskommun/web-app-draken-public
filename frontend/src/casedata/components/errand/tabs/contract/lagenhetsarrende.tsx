@@ -2450,7 +2450,7 @@ export const Lagenhetsarrende: React.FC<{
             <Input type="hidden" {...register('additionalTerms.0.terms.0.term')} />
             <div className="h-[42rem] -mb-48" data-cy="additional-terms-richtext-wrapper">
               <ContractTextEditorWrapper
-                val={additionalTerms[0]?.terms[0]?.term}
+                val={additionalTerms?.[0]?.terms?.[0]?.term ?? ''}
                 label="additionalTerms.0.terms.0.term"
                 setDirty={setTextIsDirty}
                 setValue={setValue}
