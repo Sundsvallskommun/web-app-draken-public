@@ -185,6 +185,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
         e.statuses?.sort((a, b) =>
           dayjs(a.dateTime).isBefore(dayjs(b.dateTime)) ? 1 : dayjs(b.dateTime).isBefore(dayjs(a.dateTime)) ? -1 : 0
         )[e.statuses.length - 1]?.description || '',
+      statuses: e.statuses,
       phase: e.phase,
       channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
       municipalityId: e.municipalityId || municipalityId,
@@ -786,12 +787,13 @@ export const setSuspendedErrands = async (
   const url = `casedata/${municipalityId}/errands/${errandId}`;
   const data: Partial<RegisterErrandData> = {
     id: errandId.toString(),
-    statuses: [{ statusType: status }],
+    status: { statusType: status },
     suspension: {
       suspendedFrom: status === ErrandStatus.Parkerad ? dayjs().toISOString() : undefined,
       suspendedTo: status === ErrandStatus.Parkerad ? dayjs(date).set('hour', 7).toISOString() : undefined,
     },
   };
+  console.log('data: ', data);
 
   return apiService
     .patch<Boolean, Partial<RegisterErrandData>>(url, data)

@@ -86,6 +86,7 @@ export interface IErrand {
   priority: string;
   status: string;
   statusDescription: string;
+  statuses: ApiErrandStatus[];
   phase: ErrandPhase;
   channel: Channels;
   municipalityId: string;
