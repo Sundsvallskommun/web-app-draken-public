@@ -1034,6 +1034,9 @@ export const forwardSupportErrand: (
       existingAttachments: [],
       attachmentIds: attachmentId,
     };
+    if (isKC()) {
+      message.senderName = 'Kontakt  Sundsvall';
+    }
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {

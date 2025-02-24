@@ -38,6 +38,7 @@ export interface ApiErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  relatesTo?: RelatedErrand[];
 }
 
 export interface ApiPagingData {
@@ -100,6 +101,7 @@ export interface IErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  relatesTo?: RelatedErrand[];
 }
 
 export interface ErrandsData extends Data {
@@ -122,6 +124,11 @@ export interface ErrandsData extends Data {
   };
 }
 
+export interface RelatedErrand {
+  errandId?: number;
+  errandNumber?: string;
+  relationReason?: string;
+}
 export interface RegisterErrandData {
   id?: string;
   errandNumber?: string;
@@ -147,4 +154,5 @@ export interface RegisterErrandData {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  relatesTo?: RelatedErrand[];
 }
