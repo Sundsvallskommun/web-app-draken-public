@@ -423,7 +423,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   contactReason: '',
   contactReasonDescription: '',
   businessRelated: false,
-  status: Status.NEW,
+  status: 'NEW',
   suspension: {
     suspendedFrom: undefined,
     suspendedTo: undefined,
@@ -746,27 +746,24 @@ export const initiateSupportErrand: (
   municipalityId: string,
   body: Partial<SupportErrand>
 ) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
-  console.log("Initiating errand with body: ", body);
+  console.log('Initiating errand with body: ', body);
   const data: Partial<SupportErrandDto> = {
     title: 'Empty errand',
     ...(body.priority && {
-      priority: Object.keys(Priority).find((key) => Priority[key] === body.priority) as Priority,
+      priority: body.priority,
     }),
     classification: {
       ...(body.category && { category: body.category }),
       ...(body.type && { type: body.type }),
     },
-    labels: body.labels,
+    ...(body.labels && { labels: body.labels }),
     ...(body.contactReason && { contactReason: body.contactReason }),
-    ...(body.contactReasonDescription && { contactReasonDescription: body.contactReasonDescription }),
+    ...(body.contactReason &&
+      typeof body.contactReasonDescription !== 'undefined' && {
+        contactReasonDescription: body.contactReasonDescription,
+      }),
     businessRelated: !!body.businessRelated,
-    ...(body.status && {
-      status: Object.keys(Status).find((key) => StatusLabel[key] === body.status) as Status,
-      suspension: {
-        suspendedFrom: undefined,
-        suspendedTo: undefined,
-      },
-    }),
+    ...(body.status && { status: body.status }),
     ...(body.resolution && { resolution: body.resolution }),
     ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
     ...(body.channel && { channel: body.channel }),
@@ -833,7 +830,7 @@ export const updateSupportErrand: (
   const data: Partial<SupportErrandDto> = {
     ...(formdata.title && { title: formdata.title }),
     ...(formdata.priority && {
-      priority: Object.keys(Priority).find((key) => Priority[key] === formdata.priority) as Priority,
+      priority: formdata.priority,
     }),
     classification: {
       ...(formdata.category && { category: formdata.category }),
@@ -841,10 +838,13 @@ export const updateSupportErrand: (
     },
     labels: formdata.labels,
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(formdata.contactReasonDescription && { contactReasonDescription: formdata.contactReasonDescription }),
+    ...(formdata.contactReason &&
+      typeof formdata.contactReasonDescription !== 'undefined' && {
+        contactReasonDescription: formdata.contactReasonDescription,
+      }),
     businessRelated: !!formdata.businessRelated,
+    ...(formdata.status && { status: formdata.status }),
     ...(formdata.status && {
-      status: Object.keys(Status).find((key) => StatusLabel[key] === formdata.status) as Status,
       suspension: {
         suspendedFrom: undefined,
         suspendedTo: undefined,

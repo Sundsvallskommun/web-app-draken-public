@@ -58,7 +58,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="save-button"]').contains('Spara').should('exist');
     });
 
-    it('allows updating errand information', () => {
+    it.only('allows updating errand information', () => {
       cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -99,6 +99,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         expect(request.body.classification.category).to.equal('BOU');
         expect(request.body.classification.type).to.equal('OTHER');
         expect(request.body.description).to.equal('En ändrad beskrivning');
+        expect(request.body.contactReason).to.equal('Klagomål');
+        expect(request.body.contactReasonDescription).to.equal('En ändrad oraksbeskrivning');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });

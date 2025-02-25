@@ -67,8 +67,8 @@ export const SidebarInfo: React.FC<{
     uiPhase: UiPhase;
     municipalityId: string;
   } = useAppContext();
-  const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
-  const [selectablePriorities, setSelectablePriorities] = useState<string[]>([]);
+  const [selectableStatuses, setSelectableStatuses] = useState<{ key: string; label: string }[]>([]);
+  const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -298,18 +298,13 @@ export const SidebarInfo: React.FC<{
     }
 
     if (supportErrand?.status) {
-      setValue('status', findStatusLabelForStatusKey(supportErrand.status));
+      setValue('status', supportErrand.status);
     } else {
       setValue('status', 'Välj status');
     }
 
     if (supportErrand?.priority) {
-      setValue('priority', findPriorityLabelForPriorityKey(supportErrand.priority));
-      // setValue('priority', supportErrand.priority);
-      // } else if (supportErrandIsEmpty(supportErrand)) {
-      //   findPriorityLabelForPriorityKey(supportErrand?.priority);
-      // setValue('priority', 'MEDIUM');
-      // setValue('status', Status.NEW);
+      setValue('priority', supportErrand.priority);
     } else {
       setValue('priority', 'Välj prioritet');
     }
@@ -318,16 +313,31 @@ export const SidebarInfo: React.FC<{
   useEffect(() => {
     console.log('Proi and status', supportErrand?.priority, supportErrand?.status);
     if (supportErrand?.priority && supportErrand?.status) {
-      const s = [StatusLabel.NEW, StatusLabel.ONGOING, StatusLabel.PENDING, StatusLabel.AWAITING_INTERNAL_RESPONSE];
-      if (!s.includes(findStatusLabelForStatusKey(supportErrand?.status as Status))) {
-        s.unshift(findStatusLabelForStatusKey(supportErrand?.status as Status));
-      }
-      setSelectableStatuses(s);
+      const statuses = [
+        {
+          key: 'NEW',
+          label: StatusLabel.NEW,
+        },
+        {
+          key: 'ONGOING',
+          label: StatusLabel.ONGOING,
+        },
+        {
+          key: 'PENDING',
+          label: StatusLabel.PENDING,
+        },
+        {
+          key: 'AWAITING_INTERNAL_RESPONSE',
+          label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
+        },
+      ];
+      setSelectableStatuses(statuses);
 
-      const prio = [Priority.LOW, Priority.MEDIUM, Priority.HIGH];
-      if (!prio.includes(findPriorityLabelForPriorityKey(supportErrand.priority as Priority))) {
-        prio.unshift(findPriorityLabelForPriorityKey(supportErrand.priority as Priority));
-      }
+      const prio = [
+        { key: 'LOW', label: Priority.LOW },
+        { key: 'MEDIUM', label: Priority.MEDIUM },
+        { key: 'HIGH', label: Priority.HIGH },
+      ];
       setSelectablePriorities(prio);
     }
   }, [supportErrand]);
@@ -519,9 +529,9 @@ export const SidebarInfo: React.FC<{
               }
             >
               {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
-              {selectableStatuses.map((c: string, index) => (
-                <Select.Option value={c} key={`${c}-${index}`}>
-                  {c}
+              {selectableStatuses.map((c: { key: string; label: string }, index) => (
+                <Select.Option value={c.key} key={`${c}-${index}`}>
+                  {c.label}
                 </Select.Option>
               ))}
             </Select>
@@ -541,9 +551,9 @@ export const SidebarInfo: React.FC<{
                 disabled={!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId}
               >
                 {!supportErrand?.priority ? <Select.Option>Välj prioritet</Select.Option> : null}
-                {selectablePriorities.map((c: string, index) => (
-                  <Select.Option value={c} key={`${c}-${index}`}>
-                    {c}
+                {selectablePriorities.map((c: { key: string; label: string }, index) => (
+                  <Select.Option value={c.key} key={`${c}-${index}`}>
+                    {c.label}
                   </Select.Option>
                 ))}
               </Select>
