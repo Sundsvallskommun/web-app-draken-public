@@ -12,7 +12,6 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockContract } from '../fixtures/mockContract';
-import { get } from 'cypress/types/lodash';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page', () => {

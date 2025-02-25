@@ -156,8 +156,8 @@ export const SupportTabsWrapper: React.FC<{
       <div className="mb-xl">
         <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter}>
           <Tabs
-            className="border-1 rounded-12 bg-background-content pt-6 pl-0 "
-            tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap"
+            className="border-1 rounded-12 bg-background-content pt-22 pl-5"
+            tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
             panelsClassName="border-t-1"
             current={current}
             onTabChange={() => {}}
