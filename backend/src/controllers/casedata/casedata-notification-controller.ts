@@ -51,6 +51,9 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsOptional()
   @IsString()
   acknowledged?: boolean;
+  @IsOptional()
+  @IsString()
+  globalAcknowledged?: boolean;
   @IsString()
   errandId: number;
   @IsOptional()
@@ -64,7 +67,7 @@ export class PatchNotificationDto implements PatchNotification {
   id?: string;
   @IsOptional()
   @IsNumber()
-  errandId?: number;
+  errandId: number;
   @IsOptional()
   @IsString()
   ownerId?: string;
@@ -83,13 +86,16 @@ export class PatchNotificationDto implements PatchNotification {
   @IsOptional()
   @IsBoolean()
   acknowledged?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  globalAcknowledged?: boolean;
 }
 
 @Controller()
 export class CasedataNotificationController {
   private apiService = new ApiService();
   private namespace = CASEDATA_NAMESPACE;
-  SERVICE = `case-data/10.0`;
+  SERVICE = `case-data/11.0`;
 
   @Get('/casedatanotifications/:municipalityId')
   @OpenAPI({ summary: 'Get notifications' })

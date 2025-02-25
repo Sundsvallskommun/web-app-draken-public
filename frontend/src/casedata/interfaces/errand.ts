@@ -8,7 +8,7 @@ import { Attachment } from './attachment';
 import { ApiErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { ExtraParameter, Notification } from '@common/data-contracts/case-data/data-contracts';
 
 export interface ApiErrand {
   id: number;
@@ -39,6 +39,7 @@ export interface ApiErrand {
     suspendedTo?: string;
   };
   relatesTo?: RelatedErrand[];
+  notifications?: Notification[];
 }
 
 export interface ApiPagingData {
@@ -85,6 +86,7 @@ export interface IErrand {
   priority: string;
   status: string;
   statusDescription: string;
+  statuses: ApiErrandStatus[];
   phase: ErrandPhase;
   channel: Channels;
   municipalityId: string;
@@ -102,6 +104,7 @@ export interface IErrand {
     suspendedTo?: string;
   };
   relatesTo?: RelatedErrand[];
+  notifications?: Notification[];
 }
 
 export interface ErrandsData extends Data {
@@ -140,10 +143,10 @@ export interface RegisterErrandData {
   startDate: string;
   endDate: string;
   diaryNumber: string;
-  status: string;
+  status: ApiErrandStatus;
   phase: ErrandPhase;
   municipalityId: string;
-  // statuses: StatusesDto[];
+  statuses: ApiErrandStatus[];
   stakeholders: Partial<CreateStakeholderDto>[];
   facilities: string[];
   attachments: string[] | FileList[];

@@ -321,7 +321,17 @@ export const SidebarInfo: React.FC<{}> = () => {
   const activateErrand = () => {
     setIsLoading('suspend');
     setError(false);
-    return setSuspendedErrands(errand.id, municipalityId, ErrandStatus.ArendeInkommit, null, null)
+    const previousStatus = errand.statuses
+      .slice()
+      .reverse()
+      .find((status) => status.statusType !== ErrandStatus.Parkerad)?.statusType;
+    return setSuspendedErrands(
+      errand.id,
+      municipalityId,
+      Object.values(ErrandStatus).find((status) => status === previousStatus),
+      null,
+      null
+    )
       .then((res) => {
         toastMessage({
           position: 'bottom',
@@ -480,7 +490,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       {errand?.status !== ErrandStatus.Parkerad ? (
         <>
           <PhaseChanger />
-          {isSuspendEnabled() && <SuspendErrandComponent disabled={false} />}
+          {<SuspendErrandComponent disabled={false} />}
         </>
       ) : (
         errand?.status === ErrandStatus.Parkerad && (
