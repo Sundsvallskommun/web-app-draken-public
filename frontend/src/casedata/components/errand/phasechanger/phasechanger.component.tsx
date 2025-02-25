@@ -142,7 +142,6 @@ export const PhaseChanger = () => {
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
         setSelectingAdmin(false);
-        pollDisplayPhase();
       })
       .catch((e) => {
         toastMessage({
@@ -198,7 +197,7 @@ export const PhaseChanger = () => {
     <Button disabled variant="secondary" rightIcon={<Spinner size={2} />}>
       Fasbyte pågår
     </Button>
-  ) : uiPhase === UiPhase.registrerad ? (
+  ) : uiPhase === UiPhase.registrerad && !errand.administrator ? (
     <>
       <Button
         variant="primary"

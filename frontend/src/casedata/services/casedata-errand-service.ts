@@ -689,12 +689,6 @@ export const phaseChangeInProgress = (errand: IErrand) => {
     return true;
   }
   if (
-    errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad &&
-    !!errand.administrator
-  ) {
-    return true;
-  }
-  if (
     errand.phase === ErrandPhase.aktualisering ||
     errand.phase === ErrandPhase.utredning ||
     errand.phase === ErrandPhase.beslut ||
