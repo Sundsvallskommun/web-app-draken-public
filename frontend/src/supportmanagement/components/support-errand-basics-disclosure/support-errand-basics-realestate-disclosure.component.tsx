@@ -1,8 +1,9 @@
 import Facilities from '@common/components/facilities/facilities';
 import { FacilityDTO } from '@common/interfaces/facilities';
+import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure } from '@sk-web-gui/react';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -13,6 +14,12 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
 }> = (props) => {
   const [facilities, setFacilities] = useState<FacilityDTO[]>([]);
   const { setValue, watch, getValues } = useFormContext();
+
+  const {
+    supportErrand,
+  }: {
+    supportErrand: SupportErrand;
+  } = useAppContext();
 
   const fac = watch('facilities');
 
@@ -40,6 +47,7 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
   return (
     <div className="mt-md">
       <Disclosure
+        disabled={supportErrandIsEmpty(supportErrand)}
         variant="alt"
         icon={<LucideIcon name="map-pin" />}
         header="Fastigheter"
