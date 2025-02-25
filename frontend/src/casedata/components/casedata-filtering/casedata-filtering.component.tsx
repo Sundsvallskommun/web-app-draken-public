@@ -65,13 +65,15 @@ const CaseDataFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(false);
-  const { selectedErrandStatuses, sidebarLabel } = useAppContext();
+  const { selectedErrandStatuses, sidebarLabel, closedErrands } = useAppContext();
   return (
     <>
       <div className="flex flex-col w-full gap-24">
         <div className="w-full flex items-start md:items-center justify-between flex-col md:flex-row gap-12">
-          <h1 className="p-0 m-0">{sidebarLabel || 'Ärenden'}</h1>
-
+          <h1 className="p-0 m-0">
+            {sidebarLabel || 'Ärenden'}
+            {sidebarLabel === 'Avslutade ärenden' ? ' : ' + closedErrands.totalElements : null}
+          </h1>
           {/* <div className="w-full md:max-w-[48rem]">
             <CasedataFilterQuery />
           </div> */}
