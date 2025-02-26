@@ -79,11 +79,13 @@ export const SupportErrandInvoiceTab: React.FC<{
           ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity
           : invoiceSettings.invoiceTypes[0].external.accountInformation.activity
       );
+    }).catch(() => {
+      console.error('Failed to get employee customer identity');
     });
     setValue(`extraParameters`, {
       errandNumber: supportErrand.errandNumber,
       errandId: supportErrand.id,
-      referenceName: `${manager?.firstName} ${manager?.lastName}`,
+      referenceName: manager ? `${manager?.firstName} ${manager?.lastName}` : '',
     });
   };
 

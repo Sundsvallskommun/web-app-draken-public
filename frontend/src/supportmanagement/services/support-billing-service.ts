@@ -293,6 +293,13 @@ const parseInvoiceAdministrationInfo: (orgTree: string) => {
   administrationName: string;
   is2849: boolean;
 } = (orgTree) => {
+  if (!orgTree) {
+    return {
+      administrationCode: '',
+      administrationName: '',
+      is2849: false,
+    };
+  }
   return {
     administrationCode: orgTree.split('¤')[0].split('|')[1].toString(),
     administrationName: orgTree.split('¤')[0].split('|')[2].toString(),
@@ -322,8 +329,11 @@ export const getEmployeeOrganizationId: (
   username: string,
   domain?: string
 ) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string }> = async (username, domain) => {
+  if (!username || !domain) {
+    return undefined;
+  }
   const employeeData = await getEmployeeData(username, domain);
-  const orgData = parseInvoiceAdministrationInfo(employeeData.orgTree);
+  const orgData = parseInvoiceAdministrationInfo(employeeData?.orgTree);
   return {
     companyId: employeeData.companyId,
     organizationId: orgData.is2849 ? '2849' : orgData.administrationCode,
@@ -347,6 +357,9 @@ export const getEmployeeCustomerIdentity: (
     }
 > = async (username, domain) => {
   const employeeOrgData = await getEmployeeOrganizationId(username, domain);
+  if (!employeeOrgData) {
+    return Promise.reject('Could not fetch employee organization data');
+  }
   const isInternal = employeeOrgData.companyId === 1;
   if (isInternal) {
     const identity = invoiceSettings.customers.internal.find((c) => c.orgId[0] === employeeOrgData.organizationId);
