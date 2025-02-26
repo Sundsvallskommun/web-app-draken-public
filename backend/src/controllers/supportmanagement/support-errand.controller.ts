@@ -385,7 +385,7 @@ export class SupportErrandController {
   @HttpCode(201)
   @OpenAPI({ summary: 'Initiate a new, empty support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
-  async initiateSupportErrand(
+  async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Body() data: SupportErrandDto,
@@ -402,61 +402,12 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
-    const body: SupportErrand = isKC()
-      ? {
-          reporterUserId: req.user.username,
-          assignedUserId: req.user.username,
-          classification: {
-            category: data.classification.category,
-            type: data.classification.type,
-          },
-          labels: data.labels,
-          businessRelated: data.businessRelated,
-          description: data.description,
-          contactReason: data.contactReason,
-          contactReasonDescription: data.contactReasonDescription,
-          channel: data.channel,
-          priority: data.priority,
-          status: data.status,
-          resolution: data.resolution,
-          title: 'Empty errand',
-        }
-      : isLOP()
-      ? {
-          reporterUserId: req.user.username,
-          assignedUserId: req.user.username,
-          classification: {
-            category: data.classification.category,
-            type: data.classification.type,
-          },
-          labels: data.labels,
-          businessRelated: data.businessRelated,
-          description: data.description,
-          channel: data.channel,
-          priority: data.priority,
-          status: data.status,
-          resolution: data.resolution,
-          title: 'Empty errand',
-        }
-      : isIK()
-      ? {
-          reporterUserId: req.user.username,
-          assignedUserId: req.user.username,
-          classification: {
-            category: data.classification.category,
-            type: data.classification.type,
-          },
-          labels: data.labels,
-          businessRelated: data.businessRelated,
-          description: data.description,
-          channel: data.channel,
-          priority: data.priority,
-          status: data.status,
-          resolution: data.resolution,
-          title: 'Empty errand',
-        }
-      : null;
-    const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: body }, req.user).catch(e => {
+    const body: Partial<SupportErrandDto> = {
+      ...data,
+      reporterUserId: req.user.username,
+      assignedUserId: req.user.username,
+    };
+    const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
       throw e;
@@ -473,7 +424,7 @@ export class SupportErrandController {
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
-  async registerSupportErrand(
+  async updateSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
