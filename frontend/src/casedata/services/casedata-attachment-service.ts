@@ -16,6 +16,7 @@ export const documentMimeTypes = [
   'application/x-tika-msoffice',
   'text/plain',
   'application/vnd.ms-excel',
+  'application/vnd.ms-outlook',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.oasis.opendocument.text',
   'application/vnd.oasis.opendocument.spreadsheet',
@@ -306,14 +307,17 @@ export const sendAttachments = (
       throw new Error('TYPE_MISSING');
     }
     const fileData = await toBase64(fileItem);
+    const extension = fileItem.name.split('.').pop();
     const obj: Attachment = {
       category: attachment.type,
       name: fileItem.name,
       note: '',
-      extension: fileItem.name.split('.').pop(),
-      mimeType: fileItem.type,
+      extension,
+      // msg files not handled properly by the browser, so we need to set the mime type manually
+      mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
       file: fileData,
     };
+    console.log(obj);
     const buf = Buffer.from(obj.file, 'base64');
     const blob = new Blob([buf], { type: obj.mimeType });
 
@@ -323,9 +327,10 @@ export const sendAttachments = (
     formData.append(`category`, attachment.type);
     formData.append(`name`, attachment.attachmentName);
     formData.append(`note`, '');
-    formData.append(`extension`, fileItem.name.split('.').pop());
-    formData.append(`mimeType`, fileItem.type);
+    formData.append(`extension`, obj.extension);
+    formData.append(`mimeType`, obj.mimeType);
     formData.append(`errandNumber`, errandNumber);
+    console.log('formData', formData);
 
     const postAttachment = () =>
       apiService
