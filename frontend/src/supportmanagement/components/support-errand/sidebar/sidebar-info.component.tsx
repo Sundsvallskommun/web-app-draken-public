@@ -4,7 +4,17 @@ import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import {
+  Button,
+  Divider,
+  FormControl,
+  FormLabel,
+  Icon,
+  Label,
+  Select,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -36,6 +46,8 @@ import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 import { get } from 'cypress/types/lodash';
+import { SaveButtonComponent } from '@supportmanagement/components/save-button/save-button.component';
+import { ArrowRight } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -55,25 +67,29 @@ export const SidebarInfo: React.FC<{
     uiPhase: UiPhase;
     municipalityId: string;
   } = useAppContext();
-  const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
-  const [selectablePriorities, setSelectablePriorities] = useState<string[]>([]);
+  const [selectableStatuses, setSelectableStatuses] = useState<{ key: string; label: string }[]>([]);
+  const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
-    let _a = validateAction(supportErrand, user);
-    if (supportErrand.assignedUserId?.toLocaleLowerCase() === undefined) {
-      if (
-        supportErrand.channel === 'EMAIL' ||
-        supportErrand.channel === 'ESERVICE' ||
-        supportErrand.channel === 'ESERVICE_INTERNAL'
-      ) {
-        _a = true;
+    if (!supportErrandIsEmpty(supportErrand)) {
+      let _a = validateAction(supportErrand, user);
+      if (supportErrand.assignedUserId?.toLocaleLowerCase() === undefined) {
+        if (
+          supportErrand.channel === 'EMAIL' ||
+          supportErrand.channel === 'ESERVICE' ||
+          supportErrand.channel === 'ESERVICE_INTERNAL'
+        ) {
+          _a = true;
+        }
       }
+      setAllowed(_a);
+    } else {
+      setAllowed(isAdmin());
     }
-    setAllowed(_a);
   }, [user, supportErrand]);
 
   const toast = (kind, label) =>
@@ -279,32 +295,61 @@ export const SidebarInfo: React.FC<{
     } else {
       setValue('admin', 'Välj handläggare');
     }
-    if (supportErrand?.id && supportErrand?.status) {
-      setValue('status', findStatusLabelForStatusKey(supportErrand.status));
+
+    if (supportErrand?.status) {
+      setValue('status', supportErrand.status);
     } else {
       setValue('status', 'Välj status');
     }
-    if (supportErrand?.id && supportErrand?.priority) {
-      setValue('priority', findPriorityLabelForPriorityKey(supportErrand.priority));
+
+    if (supportErrand?.priority) {
+      setValue('priority', supportErrand.priority);
     } else {
       setValue('priority', 'Välj prioritet');
     }
   }, [supportErrand, administrators]);
 
   useEffect(() => {
-    const s = [StatusLabel.NEW, StatusLabel.ONGOING, StatusLabel.PENDING, StatusLabel.AWAITING_INTERNAL_RESPONSE];
-    if (!s.includes(findStatusLabelForStatusKey(supportErrand.status as Status))) {
-      s.unshift(findStatusLabelForStatusKey(supportErrand.status as Status));
-    }
-    setSelectableStatuses(s);
-  }, [supportErrand]);
+    if (supportErrand?.priority && supportErrand?.status) {
+      const statuses = [
+        {
+          key: 'NEW',
+          label: StatusLabel.NEW,
+        },
+        {
+          key: 'ONGOING',
+          label: StatusLabel.ONGOING,
+        },
+        {
+          key: 'PENDING',
+          label: StatusLabel.PENDING,
+        },
+        {
+          key: 'AWAITING_INTERNAL_RESPONSE',
+          label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
+        },
+        {
+          key: 'ASSIGNED',
+          label: StatusLabel.ASSIGNED,
+        },
+        {
+          key: 'SUSPENDED',
+          label: StatusLabel.SUSPENDED,
+        },
+        {
+          key: 'SOLVED',
+          label: StatusLabel.SOLVED,
+        },
+      ];
+      setSelectableStatuses(statuses);
 
-  useEffect(() => {
-    const prio = [Priority.LOW, Priority.MEDIUM, Priority.HIGH];
-    if (!prio.includes(findPriorityLabelForPriorityKey(supportErrand.priority as Priority))) {
-      prio.unshift(findPriorityLabelForPriorityKey(supportErrand.priority as Priority));
+      const prio = [
+        { key: 'LOW', label: Priority.LOW },
+        { key: 'MEDIUM', label: Priority.MEDIUM },
+        { key: 'HIGH', label: Priority.HIGH },
+      ];
+      setSelectablePriorities(prio);
     }
-    setSelectablePriorities(prio);
   }, [supportErrand]);
 
   const handleAction = (action: () => Promise<boolean>, success: () => void, fail: () => void) => {
@@ -436,8 +481,9 @@ export const SidebarInfo: React.FC<{
       <div className="px-0 flex justify-between items-center">
         <span className="text-base md:text-large xl:text-lead font-semibold">Handläggning</span>
       </div>
-      {supportErrand?.id ? (
-        <div className="w-full mt-md flex flex-col gap-12">
+
+      <div className="w-full mt-md flex flex-col gap-12">
+        <>
           <FormControl id="administrator" className="w-full">
             <FormLabel className="flex justify-between text-small">
               Ansvarig{' '}
@@ -445,7 +491,9 @@ export const SidebarInfo: React.FC<{
                 variant="link"
                 className="font-normal"
                 size="sm"
-                disabled={!isAdmin() || supportErrand?.assignedUserId === user.username}
+                disabled={
+                  supportErrandIsEmpty(supportErrand) || !isAdmin() || supportErrand?.assignedUserId === user.username
+                }
                 onClick={() => {
                   selfAssignSupportErrand();
                 }}
@@ -455,6 +503,7 @@ export const SidebarInfo: React.FC<{
               </Button>
             </FormLabel>
             <Select
+              // disabled={supportErrandIsEmpty(supportErrand)}
               className="w-full"
               size="sm"
               data-cy="admin-input"
@@ -484,18 +533,21 @@ export const SidebarInfo: React.FC<{
               aria-label="Välj status"
               {...register('status')}
               value={status}
-              disabled={supportErrand.status === Status.SOLVED || !supportErrand.assignedUserId}
+              disabled={
+                supportErrand?.status === Status.SOLVED ||
+                (!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId)
+              }
             >
               {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
-              {selectableStatuses.map((c: string, index) => (
-                <Select.Option value={c} key={`${c}-${index}`}>
-                  {c}
+              {selectableStatuses.map((c: { key: string; label: string }, index) => (
+                <Select.Option value={c.key} key={`${c}-${index}`}>
+                  {c.label}
                 </Select.Option>
               ))}
             </Select>
           </FormControl>
 
-          {supportErrand.status !== Status.SOLVED && (
+          {supportErrand?.status !== Status.SOLVED && (
             <FormControl id="priority" className="w-full" disabled={!allowed}>
               <FormLabel className="text-small">Prioritet</FormLabel>
               <Select
@@ -506,19 +558,33 @@ export const SidebarInfo: React.FC<{
                 aria-label="Välj prioritet"
                 {...register('priority')}
                 value={priority}
-                disabled={!supportErrand.assignedUserId}
+                disabled={!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId}
               >
                 {!supportErrand?.priority ? <Select.Option>Välj prioritet</Select.Option> : null}
-                {selectablePriorities.map((c: string, index) => (
-                  <Select.Option value={c} key={`${c}-${index}`}>
-                    {c}
+                {selectablePriorities.map((c: { key: string; label: string }, index) => (
+                  <Select.Option value={c.key} key={`${c}-${index}`}>
+                    {c.label}
                   </Select.Option>
                 ))}
               </Select>
             </FormControl>
           )}
+        </>
 
-          <div className="w-full">
+        <div className="w-full">
+          {supportErrandIsEmpty(supportErrand) ? (
+            <SaveButtonComponent
+              supportErrand={supportErrand}
+              setSupportErrand={setSupportErrand}
+              setUnsaved={() => {}}
+              update={() => {}}
+              registeringNewErrand={supportErrandIsEmpty(supportErrand)}
+              verifyAndClose={() => {}}
+              label="Registrera"
+              color="vattjom"
+              icon={<Icon icon={<ArrowRight />} size={18} />}
+            />
+          ) : (
             <Button
               className="w-full my-8"
               data-cy="save-button"
@@ -538,7 +604,8 @@ export const SidebarInfo: React.FC<{
             >
               Spara ärende
             </Button>
-
+          )}
+          <>
             <Divider className="mt-16 mb-24" />
 
             {supportErrand?.status === Status.SOLVED ? (
@@ -626,9 +693,9 @@ export const SidebarInfo: React.FC<{
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
               </div>
             )}
-          </div>
+          </>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 };

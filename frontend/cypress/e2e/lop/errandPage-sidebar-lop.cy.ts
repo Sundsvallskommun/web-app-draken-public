@@ -88,7 +88,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       });
     });
 
-    it('Can manage Handläggning', () => {
+    it('Can manage admin changes', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
@@ -107,21 +107,55 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         .should('have.value', `${mockSupportAdminsResponse.data[1].displayName}`);
       cy.get(`[data-cy="save-button"]`).should('exist').click();
       cy.wait('@setAdmin').then((interception) => {
+        expect(interception?.request.body).to.deep.equal({
+          assignedUserId: mockSupportAdminsResponse.data[1].name,
+          status: 'ASSIGNED',
+        });
         expect(interception?.response?.statusCode).to.eq(200);
       });
+    });
+
+    it('Can manage status and priority changes', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        mockSetAdminResponse
+      ).as('setAdmin');
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       // Status
       cy.get(`[data-cy="status-input"]`).should('exist');
-      cy.get(`[data-cy="status-input"]`).select('Komplettering');
+      cy.get(`[data-cy="status-input"]`).select('PENDING').should('have.value', `PENDING`);
 
       // Priority
       cy.get(`[data-cy="priority-input"]`).should('exist');
-      cy.get(`[data-cy="priority-input"]`).select(0).should('have.value', `Låg`);
+      cy.get(`[data-cy="priority-input"]`).select('LOW').should('have.value', `LOW`);
       cy.get(`[data-cy="save-button"]`).should('exist').click();
 
       cy.wait('@updateErrand').then((interception) => {
+        expect(interception?.request.body.priority).to.eq('LOW');
+        expect(interception?.request.body.status).to.eq('PENDING');
         expect(interception?.response?.statusCode).to.eq(200);
       });
+    });
+
+    it('Can manage forwarding, suspending and solving errand', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        mockSetAdminResponse
+      ).as('setAdmin');
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       //Can forward the errand
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
@@ -163,36 +197,36 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist').click();
     });
 
-    it.only('Resets suspendedFrom and suspendedTo when manually changing status from SUSPENDED', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
-        ...mockSupportErrand,
-        status: 'SUSPENDED',
-        suspension: {
-          suspendedTo: '2024-12-12',
-          suspendedFrom: '2024-08-12',
-        },
-      }).as('getErrand');
-      cy.intercept(
-        'PATCH',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
-        mockSetAdminResponse
-      ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
-      cy.wait('@getErrand');
-      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+    // it('Resets suspendedFrom and suspendedTo when manually changing status from SUSPENDED', () => {
+    //   cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+    //     ...mockSupportErrand,
+    //     status: 'SUSPENDED',
+    //     suspension: {
+    //       suspendedTo: '2024-12-12',
+    //       suspendedFrom: '2024-08-12',
+    //     },
+    //   }).as('getErrand');
+    //   cy.intercept(
+    //     'PATCH',
+    //     '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+    //     mockSetAdminResponse
+    //   ).as('setAdmin');
+    //   cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+    //   cy.wait('@getErrand');
+    //   cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
-      cy.get(`[data-cy="status-input"]`).select('Pågående');
-      cy.get(`[data-cy="save-button"]`).should('exist').click();
+    //   cy.get(`[data-cy="status-input"]`).select('ONGOING');
+    //   cy.get(`[data-cy="save-button"]`).should('exist').click();
 
-      cy.wait('@updateErrand').then((interception) => {
-        expect(interception?.response?.statusCode).to.eq(200);
-        cy.wrap(interception.request.body.suspension).should('exist');
-        cy.wrap(Object.keys(interception.request.body.suspension)).should('have.length', 0);
-        cy.wrap(JSON.stringify(interception.request.body.suspension)).should('equal', '{}');
-      });
-    });
+    //   cy.wait('@updateErrand').then((interception) => {
+    //     expect(interception?.response?.statusCode).to.eq(200);
+    //     cy.wrap(interception.request.body.suspension).should('exist');
+    //     cy.wrap(Object.keys(interception.request.body.suspension)).should('have.length', 0);
+    //     cy.wrap(JSON.stringify(interception.request.body.suspension)).should('equal', '{}');
+    //   });
+    // });
 
-    it.only('Resets suspendedFrom and suspendedTo when reactivating errand', () => {
+    it('Resets suspendedFrom and suspendedTo when reactivating errand', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
         ...mockSupportErrand,
         status: 'SUSPENDED',

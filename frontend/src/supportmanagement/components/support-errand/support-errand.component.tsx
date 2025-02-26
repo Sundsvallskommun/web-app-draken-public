@@ -1,14 +1,12 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
 import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
-  ApiSupportErrand,
   SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
-  initiateSupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -44,7 +42,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (e: ApiSupportErrand) => void;
+    setSupportErrand: (e: any) => void;
     supportAdmins: SupportAdmin[];
     setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
@@ -107,23 +105,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand)) {
-        initiateSupportErrand(municipalityId)
-          .then((result) => {
-            setSupportErrand(result);
-            methods.reset(result);
-          })
-          .catch((e) => {
-            console.error('Error when initiating errand:', e);
-            setIsLoading(false);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när ärendet skulle initieras',
-              status: 'error',
-            });
-          });
-      }
+      setSupportErrand(defaultSupportErrandInformation);
     }
   }, [router, municipalityId]);
 
@@ -186,10 +168,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
               )}
             </main>
           </div>
-          {/* {!supportErrandIsEmpty(supportErrand) ? <SidebarWrapper /> : null} */}
-          {supportErrand?.id ? (
-            <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
-          ) : null}
+          <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
         </div>
       </div>
     </FormProvider>

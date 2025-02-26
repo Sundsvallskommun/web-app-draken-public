@@ -82,18 +82,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       });
     });
 
-    it('Can manage Handläggning', () => {
-      const patchFacility = {
-        id: 123,
-        version: 1,
-        created: '2024-01-01',
-        updated: '2024-06-30',
-        description: 'beskrivning',
-        address: 'Adress1',
-        facilityCollectionName: 'name',
-        mainFacility: true,
-        facilityType: 'BOSTAD',
-      };
+    it('Can manage admin changes', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
@@ -112,21 +101,55 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         .should('have.value', `${mockSupportAdminsResponse.data[1].displayName}`);
       cy.get(`[data-cy="save-button"]`).should('exist').click();
       cy.wait('@setAdmin').then((interception) => {
+        expect(interception?.request.body).to.deep.equal({
+          assignedUserId: mockSupportAdminsResponse.data[1].name,
+          status: 'ASSIGNED',
+        });
         expect(interception?.response?.statusCode).to.eq(200);
       });
+    });
+
+    it('Can manage status and priority changes', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        mockSetAdminResponse
+      ).as('setAdmin');
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       // Status
       cy.get(`[data-cy="status-input"]`).should('exist');
-      cy.get(`[data-cy="status-input"]`).select(2).should('have.value', 'Komplettering');
+      cy.get(`[data-cy="status-input"]`).select('PENDING').should('have.value', 'PENDING');
 
       // Priority
       cy.get(`[data-cy="priority-input"]`).should('exist');
-      cy.get(`[data-cy="priority-input"]`).select(0).should('have.value', `Låg`);
+      cy.get(`[data-cy="priority-input"]`).select('LOW').should('have.value', `LOW`);
       cy.get(`[data-cy="save-button"]`).should('exist').click();
 
       cy.wait('@updateErrand').then((interception) => {
+        expect(interception?.request.body.priority).to.eq('LOW');
+        expect(interception?.request.body.status).to.eq('PENDING');
         expect(interception?.response?.statusCode).to.eq(200);
       });
+    });
+
+    it('Can manage forwarding, suspending and solving errand', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        mockSetAdminResponse
+      ).as('setAdmin');
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       //Can forward the errand
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
