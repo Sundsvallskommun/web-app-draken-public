@@ -45,7 +45,6 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { get } from 'cypress/types/lodash';
 import { SaveButtonComponent } from '@supportmanagement/components/save-button/save-button.component';
 import { ArrowRight } from 'lucide-react';
 
