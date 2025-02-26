@@ -181,17 +181,6 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
-// export const emptySupportErrand: Partial<SupportErrand> = {
-//   classification: {
-//     category: '',
-//     type: '',
-//   },
-//   description: '',
-//   resolution: 'INFORMED',
-//   priority: Priority.MEDIUM,
-//   status: Status.NEW,
-// };
-
 export const newStatuses = [Status.NEW];
 
 export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
@@ -421,7 +410,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   type: '',
   labels: [],
   contactReason: '',
-  contactReasonDescription: '',
+  contactReasonDescription: undefined,
   businessRelated: false,
   status: 'NEW',
   suspension: {
@@ -746,7 +735,6 @@ export const initiateSupportErrand: (
   municipalityId: string,
   body: Partial<SupportErrand>
 ) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
-  console.log('Initiating errand with body: ', body);
   const data: Partial<SupportErrandDto> = {
     title: 'Empty errand',
     ...(body.priority && {

@@ -6,7 +6,6 @@ import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/supp
 import {
   SupportErrand,
   defaultSupportErrandInformation,
-  // emptySupportErrand,
   getSupportErrandById,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
