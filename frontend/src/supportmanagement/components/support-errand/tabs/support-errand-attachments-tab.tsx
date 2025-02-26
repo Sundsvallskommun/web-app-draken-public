@@ -177,12 +177,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
     setAddAttachmentWindowIsOpen(false);
   };
 
-  const clickHandler = (Attachment) => {
-    if (documentMimeTypes.includes(Attachment.mimeType)) {
-      downloadDocument(Attachment);
-    } else if (imageMimeTypes.includes(Attachment.mimeType)) {
+  const clickHandler = (attachment) => {
+    if (documentMimeTypes.includes(attachment.mimeType)) {
+      downloadDocument(attachment);
+    } else if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
-      getSupportAttachment(supportErrand.id.toString(), municipalityId, Attachment)
+      getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
         .then((res) => setModalAttachment(res))
         .then(() => {
           setModalFetching(false);
@@ -190,8 +190,8 @@ export const SupportErrandAttachmentsTab: React.FC<{
         .then((res) => openModal());
     }
     // exclusive exception for .msg
-    else if (Attachment.mimeType === '' && Attachment.name.endsWith(`.msg`)) {
-      downloadDocument(Attachment);
+    else if (attachment.fileName.endsWith(`.msg`)) {
+      downloadDocument(attachment);
     } else {
       toastMessage({
         position: 'bottom',

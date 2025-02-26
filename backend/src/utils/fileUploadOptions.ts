@@ -30,6 +30,7 @@ const allowedMimeTypes = [
   'text/html',
   'application/octet-stream',
   'application/vnd.ms-excel',
+  'application/vnd.ms-outlook',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.oasis.opendocument.text',
   'application/vnd.oasis.opendocument.spreadsheet',
