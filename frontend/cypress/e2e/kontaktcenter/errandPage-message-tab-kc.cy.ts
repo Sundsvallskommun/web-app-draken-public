@@ -12,7 +12,6 @@ import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { onlyOn } from '@cypress/skip-test';
 import { interceptFormData } from 'cypress-intercept-formdata';
-import { CyHttpMessages } from 'cypress/types/net-stubbing';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Message tab', () => {
@@ -87,8 +86,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="newPhoneNumber-button"]').should('exist').click({ force: true });
 
       cy.get('[data-cy="send-message-button"]').should('exist').click();
-      cy.wait('@sendMessage').should(({ request, response }) => {
-        const data = interceptFormData(request as CyHttpMessages.IncomingHttpRequest);
+      cy.wait('@sendMessage').should(({ request }) => {
+        const data = interceptFormData(request);
         expect(data['contactMeans']).to.equal('sms');
         expect(data['plaintextMessage']).to.equal('Mock message');
         expect(data['recipientPhone']).to.equal('+46701740635');
@@ -117,8 +116,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="upload-button"]').contains('Ladda upp').should('exist').click();
 
       cy.get('[data-cy="send-message-button"]').should('exist').click();
-      cy.wait('@sendMessage').should(({ request, response }) => {
-        const data = interceptFormData(request as CyHttpMessages.IncomingHttpRequest);
+      cy.wait('@sendMessage').should(({ request }) => {
+        const data = interceptFormData(request);
         expect(data['contactMeans']).to.equal('email');
         expect(data['plaintextMessage']).to.equal('Mock message');
         expect(data['files']).to.equal('attachment.txt');

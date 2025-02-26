@@ -1,7 +1,5 @@
 import { Config } from 'tailwindcss/types/config';
-import Forms from '@tailwindcss/forms';
-import ContainerQueries from '@tailwindcss/container-queries';
-import Core from '@sk-web-gui/core';
+import { preset } from '@sk-web-gui/core';
 
 export default {
   mode: 'jit',
@@ -24,12 +22,5 @@ export default {
       },
     },
   },
-  plugins: [
-    Forms(),
-    ContainerQueries,
-    Core({
-      colors: [],
-      cssBase: true,
-    }),
-  ],
+  presets: [preset()],
 } satisfies Config;
