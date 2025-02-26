@@ -132,8 +132,6 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                   <section className="bg-transparent pt-24 pb-4">
                     <div className="container m-auto pl-0 pr-24 md:pr-40">
                       <div className="w-full flex flex-wrap flex-col justify-between gap-24">
-                        <div>DATA status: {JSON.stringify(methods.getValues().status)}</div>
-                        <div>DATA priority: {JSON.stringify(methods.getValues().priority)}</div>
                         {!supportErrandIsEmpty(supportErrand) ? (
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
                             {
