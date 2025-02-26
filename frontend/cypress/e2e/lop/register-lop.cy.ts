@@ -66,7 +66,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="labelType-list"]').children().contains(labelType.displayName).click();
       cy.get('[data-cy="description-input"]').type('Mock description');
       cy.get('[data-cy="save-and-continue-button"]').click();
-      cy.contains('Ja').click();
       cy.wait(`@initiateErrand`).should(({ request, response }) => {
         expect(request.body.classification.category).to.equal(labelCat.name);
         expect(request.body.classification.type).to.equal(labelType.name);

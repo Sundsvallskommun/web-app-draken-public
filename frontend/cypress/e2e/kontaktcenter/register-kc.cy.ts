@@ -72,7 +72,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="type-input"]').select(typ.displayName);
       cy.get('[data-cy="description-input"]').type('Mock description');
       cy.get('[data-cy="save-and-continue-button"]').click();
-      cy.contains('Ja').click();
       cy.wait(`@initiateErrand`).should(({ request, response }) => {
         expect(request.body).to.deep.equal({
           businessRelated: false,
@@ -108,9 +107,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="type-input"]').select(typ.displayName);
       cy.get('[data-cy="description-input"]').type('Mock description');
       cy.get('[data-cy="contactReason-input"]').select('E-tjänst saknas');
+      cy.get('[data-cy="show-contactReasonDescription-input"]').should('exist').check({ force: true });
       cy.get('[data-cy="contactReasonDescription-input"]').should('exist').type('Mock contact reason description');
       cy.get('[data-cy="save-and-continue-button"]').click();
-      cy.contains('Ja').click();
       cy.wait(`@initiateErrand`).should(({ request, response }) => {
         expect(request.body).to.deep.equal({
           businessRelated: false,

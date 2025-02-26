@@ -42,7 +42,7 @@ export const SaveButtonComponent: React.FC<{
     content: 'Vill du spara ärendet?',
   });
 
-  const { supportErrand, setSupportErrand, verifyAndClose, setUnsaved, update } = props;
+  const { supportErrand, setSupportErrand, verifyAndClose, setUnsaved, update, registeringNewErrand } = props;
 
   const {
     handleSubmit,
@@ -51,28 +51,14 @@ export const SaveButtonComponent: React.FC<{
     formState,
   }: UseFormReturn<Partial<SupportErrand>, any, undefined> = useFormContext();
 
+  const [savedErrandId, setSavedErrandId] = useState<string>(undefined);
   useEffect(() => {
-    const registeringNewErrand = typeof supportErrand?.id === 'undefined';
-    if (registeringNewErrand) {
-      setConfirmContent({
-        title: 'Registrera ärende',
-        content: (
-          <>
-            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Inkomna
-            ärenden&quot;. Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
-            <br />
-            <br />
-            Vill du fortsätta med registreringen?
-          </>
-        ),
-      });
-    } else {
-      setConfirmContent({
-        title: 'Spara ärendet',
-        content: 'Vill du spara ärendet?',
+    if (savedErrandId) {
+      router.push(`/arende/${municipalityId}/${savedErrandId}`, `/arende/${municipalityId}/${savedErrandId}`, {
+        shallow: true,
       });
     }
-  }, [supportErrand]);
+  }, [savedErrandId, municipalityId, router]);
 
   const onError = (errors, e) => {
     console.error('Some error', errors);
@@ -97,24 +83,29 @@ export const SaveButtonComponent: React.FC<{
           throw new Error('Errand could not be registered');
         }
         reset();
-        await getSupportErrandById(res.id, municipalityId).then((e) => {
-          setSupportErrand(e.errand);
-
-          router.push(`/arende/${municipalityId}/${e.errand.id}`, `/arende/${municipalityId}/${e.errand.id}`, {
-            shallow: true,
-          });
-
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ärendet sparades',
-            status: 'success',
-          });
+        const e = await getSupportErrandById(res.id, municipalityId);
+        if (registeringNewErrand) {
+          setUnsaved(false);
+          setTimeout(() => {
+            reset(e.errand);
+          }, 0);
+        }
+        setTimeout(() => {
+          reset(e.errand);
+        }, 0);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Ärendet sparades',
+          status: 'success',
         });
-
-        return true;
+        return e.errand;
       })
-
+      .then((errand) => {
+        if (registeringNewErrand) {
+          setSavedErrandId(errand.id);
+        }
+      })
       .catch((e) => {
         console.error('Error when updating errand:', e);
         toastMessage({
@@ -142,16 +133,7 @@ export const SaveButtonComponent: React.FC<{
           !formState.isValid
         }
         type="button"
-        onClick={handleSubmit(() => {
-          return saveConfirm
-            .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
-            .then((confirmed) => {
-              if (confirmed) {
-                onSubmitAndContinue();
-              }
-              return confirmed ? () => true : () => {};
-            });
-        }, onError)}
+        onClick={handleSubmit(onSubmitAndContinue, onError)}
         color={
           (props.color as
             | 'info'

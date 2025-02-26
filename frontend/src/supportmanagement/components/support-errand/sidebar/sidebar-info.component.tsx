@@ -286,7 +286,6 @@ export const SidebarInfo: React.FC<{
   };
 
   useEffect(() => {
-    console.log('Supporterrand: ', supportErrand);
     if (administrators && supportErrand?.assignedUserId) {
       const match =
         administrators.filter((a) => {
@@ -579,10 +578,8 @@ export const SidebarInfo: React.FC<{
               setSupportErrand={setSupportErrand}
               setUnsaved={() => {}}
               update={() => {}}
-              registeringNewErrand={typeof supportErrand?.id === 'undefined'}
-              verifyAndClose={function (): void {
-                throw new Error('Function not implemented.');
-              }}
+              registeringNewErrand={supportErrandIsEmpty(supportErrand)}
+              verifyAndClose={() => {}}
               label="Registrera"
               color="vattjom"
               icon={<Icon icon={<ArrowRight />} size={18} />}
