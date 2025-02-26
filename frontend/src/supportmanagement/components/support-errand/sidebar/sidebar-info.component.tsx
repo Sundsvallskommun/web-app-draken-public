@@ -311,7 +311,6 @@ export const SidebarInfo: React.FC<{
   }, [supportErrand, administrators]);
 
   useEffect(() => {
-    console.log('Proi and status', supportErrand?.priority, supportErrand?.status);
     if (supportErrand?.priority && supportErrand?.status) {
       const statuses = [
         {
@@ -329,6 +328,18 @@ export const SidebarInfo: React.FC<{
         {
           key: 'AWAITING_INTERNAL_RESPONSE',
           label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
+        },
+        {
+          key: 'ASSIGNED',
+          label: StatusLabel.ASSIGNED,
+        },
+        {
+          key: 'SUSPENDED',
+          label: StatusLabel.SUSPENDED,
+        },
+        {
+          key: 'SOLVED',
+          label: StatusLabel.SOLVED,
         },
       ];
       setSelectableStatuses(statuses);
