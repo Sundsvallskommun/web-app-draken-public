@@ -15,7 +15,7 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class BillingController {
   private apiService = new ApiService();
-  private SERVICE = `billingpreprocessor/2.1`;
+  private SERVICE = `billingpreprocessor/3.0`;
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })
@@ -70,7 +70,7 @@ export class BillingController {
       filterList.push(`created<'${e}'`);
     }
 
-    const defaultFilter = "&filter=type:'INTERNAL' and category:'SALARY_AND_PENSION'";
+    const defaultFilter = "&filter=category:'SALARY_AND_PENSION'";
     const filter = filterList.length > 0 ? `${defaultFilter} and ${filterList.join(' and ')}` : defaultFilter;
     let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 8}`;
     url += filter;

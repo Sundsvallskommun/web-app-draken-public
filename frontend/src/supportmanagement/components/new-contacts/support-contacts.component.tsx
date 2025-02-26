@@ -404,8 +404,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 <FormLabel>Tillagda parter</FormLabel>
                 <div className="flex flex-row gap-12 flex-wrap">
                   {stakeholderContacts.map((stakeholder, idx) => {
-                    const role = supportMetadata?.roles.find((r) => r.name === stakeholder.role)?.displayName;
-                    return renderContact(stakeholder, idx, role);
+                    const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
+                    return role ? renderContact(stakeholder, idx, role) : null;
                   })}
                 </div>
               </FormControl>
