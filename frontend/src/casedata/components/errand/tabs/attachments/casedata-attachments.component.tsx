@@ -191,7 +191,7 @@ export const CasedataAttachments: React.FC = () => {
     setAddAttachmentWindowIsOpen(false);
   };
 
-  const clickHandler = (attachment) => {
+  const clickHandler = (attachment: Attachment) => {
     if (documentMimeTypes.includes(attachment.mimeType)) {
       downloadDocument(attachment);
     } else if (imageMimeTypes.includes(attachment.mimeType)) {
