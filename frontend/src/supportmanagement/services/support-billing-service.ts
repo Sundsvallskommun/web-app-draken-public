@@ -70,7 +70,7 @@ export const billingFormSchema = yup.object({
           .test('isnumber', 'Ange i format 1,23', (q) => {
             return /^\d*\.?\d{0,2}$/g.test(q.toString());
           })
-          .test('positivt', 'Måste vara 0 eller större', (q) => q > 0)
+          .test('positivt', 'Måste vara större än 0', (q) => q > 0)
           .required('Fyll i antal timmar'),
         costPerUnit: yup.string().required('Fyll i timpris'),
         totalAmount: yup.string().nullable(),
