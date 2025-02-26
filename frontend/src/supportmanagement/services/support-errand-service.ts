@@ -405,14 +405,14 @@ export const emptySupportErrandList: SupportErrandsData = {
 export const defaultSupportErrandInformation: SupportErrand | any = {
   id: '',
   title: '',
-  priority: Priority.MEDIUM,
-  category: 'NONE',
-  type: 'NONE',
+  priority: 'MEDIUM',
+  category: '',
+  type: '',
   labels: [],
   contactReason: '',
-  contactReasonDescription: '',
+  contactReasonDescription: undefined,
   businessRelated: false,
-  status: Status.NEW,
+  status: 'NEW',
   suspension: {
     suspendedFrom: undefined,
     suspendedTo: undefined,
@@ -421,7 +421,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedGroupId: undefined,
   resolution: 'INFORMED',
   channel: ContactChannelType.PHONE,
-  municipalityId: '2281',
+  municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',
   contactMeans: 'useEmail',
@@ -731,9 +731,35 @@ export const getSupportErrands: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | SupportErrand> = (municipalityId) => {
+export const initiateSupportErrand: (
+  municipalityId: string,
+  body: Partial<SupportErrand>
+) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
+  const data: Partial<SupportErrandDto> = {
+    title: 'Empty errand',
+    ...(body.priority && {
+      priority: body.priority,
+    }),
+    classification: {
+      ...(body.category && { category: body.category }),
+      ...(body.type && { type: body.type }),
+    },
+    ...(body.labels && { labels: body.labels }),
+    ...(body.contactReason && { contactReason: body.contactReason }),
+    ...(body.contactReason &&
+      typeof body.contactReasonDescription !== 'undefined' && {
+        contactReasonDescription: body.contactReasonDescription,
+      }),
+    businessRelated: !!body.businessRelated,
+    ...(body.status && { status: body.status }),
+    ...(body.resolution && { resolution: body.resolution }),
+    ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
+    ...(body.channel && { channel: body.channel }),
+    ...(body.description && { description: body.description }),
+    ...(body.assignedUserId && { assignedUserId: body.assignedUserId }),
+  };
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, data)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
@@ -755,6 +781,7 @@ export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
 ) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
+  console.log('Updating with: ', formdata);
   let responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
@@ -791,7 +818,7 @@ export const updateSupportErrand: (
   const data: Partial<SupportErrandDto> = {
     ...(formdata.title && { title: formdata.title }),
     ...(formdata.priority && {
-      priority: Object.keys(Priority).find((key) => Priority[key] === formdata.priority) as Priority,
+      priority: formdata.priority,
     }),
     classification: {
       ...(formdata.category && { category: formdata.category }),
@@ -799,10 +826,13 @@ export const updateSupportErrand: (
     },
     labels: formdata.labels,
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(formdata.contactReasonDescription && { contactReasonDescription: formdata.contactReasonDescription }),
+    ...(formdata.contactReason &&
+      typeof formdata.contactReasonDescription !== 'undefined' && {
+        contactReasonDescription: formdata.contactReasonDescription,
+      }),
     businessRelated: !!formdata.businessRelated,
+    ...(formdata.status && { status: formdata.status }),
     ...(formdata.status && {
-      status: Object.keys(Status).find((key) => StatusLabel[key] === formdata.status) as Status,
       suspension: {
         suspendedFrom: undefined,
         suspendedTo: undefined,
@@ -1034,6 +1064,9 @@ export const forwardSupportErrand: (
       existingAttachments: [],
       attachmentIds: attachmentId,
     };
+    if (isKC()) {
+      message.senderName = 'Kontakt  Sundsvall';
+    }
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {

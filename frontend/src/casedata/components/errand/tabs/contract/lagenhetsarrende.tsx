@@ -34,6 +34,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
 import sanitized from '@common/services/sanitizer-service';
 import dayjs from 'dayjs';
+import { numberToSwedishWords } from '@common/services/number-service';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -1260,8 +1261,8 @@ export const Lagenhetsarrende: React.FC<{
                     </Table.Column>
                   </Table.Row>
                   <Table.Row data-cy="previouslyPaid-row">
-                    <Table.Column className="!py-16 flex flex-col items-start justify-center !gap-18">
-                      <FormControl>
+                    <Table.Column className="!py-16 flex flex-col items-start w-full !gap-18">
+                      <FormControl className="flex flex-row w-full items-center justify-start gap-10">
                         <Checkbox
                           name="period"
                           value={'previouslyPaid'}
@@ -1273,12 +1274,8 @@ export const Lagenhetsarrende: React.FC<{
                               getValues('arrendeavgiftTerms.prepaid') === 'true' ? 'false' : 'true'
                             );
                           }}
-                        >
-                          <strong>För perioden XX – XX är avgiften betald av tidigare arrendator.</strong>
-                        </Checkbox>
-                      </FormControl>
-                      <div className="flex justify-between gap-32 w-full">
-                        <FormControl className="flex-grow max-w-[45%]">
+                        ></Checkbox>
+                        <FormControl className="w-1/3">
                           <FormLabel>Välj fr.o.m datum</FormLabel>
                           <DatePicker
                             value={getValues('arrendeavgiftTerms.prepaidFromDate')}
@@ -1288,7 +1285,7 @@ export const Lagenhetsarrende: React.FC<{
                             max={dayjs(getValues('arrendeavgiftTerms.prepaidToDate')).format('YYYY-MM-DD')}
                           />
                         </FormControl>
-                        <FormControl className="flex-grow max-w-[45%]">
+                        <FormControl className="w-1/3">
                           <FormLabel>Välj t.o.m datum</FormLabel>
                           <DatePicker
                             value={getValues('arrendeavgiftTerms.prepaidToDate')}
@@ -1302,6 +1299,11 @@ export const Lagenhetsarrende: React.FC<{
                             }
                           />
                         </FormControl>
+                      </FormControl>
+                      <div>
+                        För perioden {getValues('arrendeavgiftTerms.prepaidFromDate') || 'åååå-mm-dd'} –{' '}
+                        {getValues('arrendeavgiftTerms.prepaidToDate') || 'åååå-mm-dd'} är avgiften betald av tidigare
+                        arrendator.
                       </div>
                     </Table.Column>
                   </Table.Row>
@@ -1417,19 +1419,22 @@ export const Lagenhetsarrende: React.FC<{
                   e.preventDefault();
                   e.stopPropagation();
                   let content = ``;
+                  let yearlyFee = getValues('arrendeavgiftTerms.yearlyFee');
+                  let feeByYear = getValues('arrendeavgiftTerms.feeByYear');
+                  let feebyLease = getValues('arrendeavgiftTerms.feeByLease');
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgift per år är: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p>`);
+                    (content += `<p>Avgiften per år är: ${yearlyFee} (${numberToSwedishWords(yearlyFee)}) kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
-                    (content += `<p>Avgift för år ${getValues('arrendeavgiftTerms.associatedFeeYear')} är ${getValues(
-                      'arrendeavgiftTerms.feeByYear'
-                    )} kronor</p>`);
+                    (content += `<p>Avgiften för år ${getValues(
+                      'arrendeavgiftTerms.associatedFeeYear'
+                    )} är ${feeByYear} (${numberToSwedishWords(feeByYear)}) kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
-                    (content += `<p>Avgiften för upplåtelsetiden är ${getValues(
-                      'arrendeavgiftTerms.feeByLease'
-                    )} kronor</p>`);
+                    (content += `<p>Avgiften för upplåtelsetiden är ${feebyLease} (${numberToSwedishWords(
+                      feebyLease
+                    )}) kronor</p>`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
                     (content += `<p>För perioden ${getValues('arrendeavgiftTerms.prepaidFromDate')} – ${getValues(
@@ -2447,15 +2452,17 @@ export const Lagenhetsarrende: React.FC<{
           </div>
 
           <FormControl id="additionalTerms" className="w-full">
-            <Input type="hidden" {...register('additionalTerms')} />
+            <Input type="hidden" {...register('additionalTerms.0.terms.0.term')} />
             <div className="h-[42rem] -mb-48" data-cy="additional-terms-richtext-wrapper">
               <ContractTextEditorWrapper
-                val={getValues('additionalTerms.0.terms.0.term')}
+                val={additionalTerms?.[0]?.terms?.[0]?.term ?? ''}
                 label="additionalTerms.0.terms.0.term"
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setAdditionalTerms}
+                setState={(value) => {
+                  setAdditionalTerms([{ header: getValues('additionalTerms.0.header'), terms: [{ term: value }] }]);
+                }}
                 readOnly={false}
                 editorRef={quillRefAdditionalTerms}
               />

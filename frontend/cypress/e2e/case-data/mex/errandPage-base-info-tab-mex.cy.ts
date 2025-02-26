@@ -408,6 +408,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           updated: '2022-10-14T10:38:05.529007+02:00',
           extraParameters: {
             relation: '',
+            extraInformation: 'Extra information',
           },
           personalNumber: Cypress.env('mockPersonNumber'),
           adAccount: 'kctest',
@@ -481,6 +482,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-street"]').clear().type('Testgata');
       cy.get('[data-cy="contact-zip"]').clear().type('12345');
       cy.get('[data-cy="contact-city"]').clear().type('Teststaden');
+      cy.get('[data-cy="contact-extrainfo"]').clear().type('Some information');
 
       cy.get('[data-cy="new-email-input"]').type('test@example.com');
       cy.get('[data-cy="add-new-email-button"]').click();
@@ -512,6 +514,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           updated: '2022-10-14T10:38:05.529007+02:00',
           extraParameters: {
             relation: 'Bror',
+            extraInformation: 'Extra information',
           },
           type: 'PERSON',
           personalNumber: Cypress.env('mockPersonNumber'),
@@ -582,6 +585,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-street"]').should('be.enabled').and('have.value', contact[0].addresses[0].street);
       cy.get('[data-cy="contact-zip"]').should('be.enabled').and('have.value', contact[0].addresses[0].postalCode);
       cy.get('[data-cy="contact-city"]').should('be.enabled').and('have.value', contact[0].addresses[0].city);
+      cy.get('[data-cy="contact-extrainfo"]')
+        .should('be.enabled')
+        .and('have.value', contact[0].extraParameters.extraInformation);
     });
 
     it('makes readOnly orgName field when editing organization stakeholders on errands not created in web UI', () => {
@@ -595,6 +601,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           updated: '2022-10-14T10:38:05.529007+02:00',
           extraParameters: {
             relation: 'Bror',
+            extraInformation: 'Extra information',
           },
           type: 'ORGANIZATION',
           organizationName: 'Bolaget AB',
@@ -662,6 +669,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-street"]').should('be.enabled').and('have.value', contact[0].addresses[0].street);
       cy.get('[data-cy="contact-zip"]').should('be.enabled').and('have.value', contact[0].addresses[0].postalCode);
       cy.get('[data-cy="contact-city"]').should('be.enabled').and('have.value', contact[0].addresses[0].city);
+      cy.get('[data-cy="contact-extrainfo"]')
+        .should('be.enabled')
+        .and('have.value', contact[0].extraParameters.extraInformation);
     });
 
     it('allows converting an existing stakeholder from contact person to owner', () => {

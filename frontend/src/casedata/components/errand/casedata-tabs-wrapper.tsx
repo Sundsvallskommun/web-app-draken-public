@@ -19,6 +19,7 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { getAssets } from '@casedata/services/asset-service';
 import { Role } from '@casedata/interfaces/role';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =

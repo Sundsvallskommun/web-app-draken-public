@@ -2,7 +2,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
-import { Checkbox, Combobox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
+import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
@@ -10,6 +10,7 @@ import {
   SupportErrand,
   defaultSupportErrandInformation,
   isSupportErrandLocked,
+  supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
@@ -71,7 +72,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   return (
     <>
       <input type="hidden" {...register('id')} />
-      {supportErrand?.title !== 'Empty errand' ? (
+      {supportErrand?.title !== 'Empty errand' && !supportErrandIsEmpty(supportErrand) ? (
         <FormControl id="subject-line">
           <FormLabel>Ämnesrad</FormLabel>
           <p>{supportErrand.title}</p>
