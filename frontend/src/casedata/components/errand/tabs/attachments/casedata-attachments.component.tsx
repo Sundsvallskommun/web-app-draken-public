@@ -202,8 +202,8 @@ export const CasedataAttachments: React.FC = () => {
           setModalFetching(false);
         })
         .then((res) => openModal());
-    } else if (Attachment.name.endsWith(`.msg`)) {
-      downloadDocument(Attachment);
+    } else if (attachment.extension === 'msg') {
+      downloadDocument(attachment);
     } else {
       toastMessage({
         position: 'bottom',
