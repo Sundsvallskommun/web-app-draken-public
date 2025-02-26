@@ -46,6 +46,7 @@ export const documentMimeTypes = [
   'application/x-tika-msoffice',
   'text/plain',
   'application/vnd.ms-excel',
+  'application/vnd.ms-outlook',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.oasis.opendocument.text',
   'application/vnd.oasis.opendocument.spreadsheet',
