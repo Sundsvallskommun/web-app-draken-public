@@ -246,7 +246,7 @@ export interface DecisionDTO {
 export interface StatusDTO {
   statusType: string;
   description: string;
-  dateTime: string;
+  created: string;
 }
 
 export interface ContactInfo {
@@ -304,20 +304,23 @@ export interface CreateErrandDto {
   startDate?: string;
   endDate?: string;
   diaryNumber?: string;
-  status?: CreateErrandDtoStatusEnum;
+  status?: StatusDTO;
   statusDescription?: string;
-  statuses?: any[];
+  statuses?: StatusDTO[];
   municipalityId?: string;
   stakeholders?: CreateStakeholderDto[];
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CPatchErrandDto {
   id?: string;
   externalCaseId?: string;
-  status?: CPatchErrandDtoStatusEnum;
+  status?: StatusDTO;
+  statuses?: StatusDTO[];
   statusDescription?: string;
   caseType?: string;
   priority?: string;
@@ -331,6 +334,8 @@ export interface CPatchErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CreateErrandNoteDto {
@@ -355,6 +360,7 @@ export interface CasedataNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: string;
+  globalAcknowledged?: string;
   errandId: string;
   errandNumber?: string;
 }
@@ -368,6 +374,7 @@ export interface PatchNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: boolean;
+  globalAcknowledged?: boolean;
 }
 
 export interface MessageDto {
@@ -571,46 +578,4 @@ export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
 export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
   Y = 'Y',
   N = 'N',
-}
-
-export enum CreateErrandDtoStatusEnum {
-  ValueArendeInkommit = 'Ärende inkommit',
-  UnderGranskning = 'Under granskning',
-  VantarPaKomplettering = 'Väntar på komplettering',
-  KompletteringInkommen = 'Komplettering inkommen',
-  InterntKomplettering = 'Internt komplettering',
-  InterntAterkoppling = 'Internt återkoppling',
-  UnderRemiss = 'Under remiss',
-  ValueAterkopplingRemiss = 'Återkoppling remiss',
-  UnderUtredning = 'Under utredning',
-  UnderBeslut = 'Under beslut',
-  Beslutad = 'Beslutad',
-  BeslutVerkstallt = 'Beslut verkställt',
-  BeslutOverklagat = 'Beslut överklagat',
-  ValueArendeAvslutat = 'Ärende avslutat',
-  Tilldelat = 'Tilldelat',
-  HanterasIAnnatSystem = 'Hanteras i annat system',
-  ValueArendetAvvisas = 'Ärendet avvisas',
-  Parkerad = 'Parkerad',
-}
-
-export enum CPatchErrandDtoStatusEnum {
-  ValueArendeInkommit = 'Ärende inkommit',
-  UnderGranskning = 'Under granskning',
-  VantarPaKomplettering = 'Väntar på komplettering',
-  KompletteringInkommen = 'Komplettering inkommen',
-  InterntKomplettering = 'Internt komplettering',
-  InterntAterkoppling = 'Internt återkoppling',
-  UnderRemiss = 'Under remiss',
-  ValueAterkopplingRemiss = 'Återkoppling remiss',
-  UnderUtredning = 'Under utredning',
-  UnderBeslut = 'Under beslut',
-  Beslutad = 'Beslutad',
-  BeslutVerkstallt = 'Beslut verkställt',
-  BeslutOverklagat = 'Beslut överklagat',
-  ValueArendeAvslutat = 'Ärende avslutat',
-  Tilldelat = 'Tilldelat',
-  HanterasIAnnatSystem = 'Hanteras i annat system',
-  ValueArendetAvvisas = 'Ärendet avvisas',
-  Parkerad = 'Parkerad',
 }
