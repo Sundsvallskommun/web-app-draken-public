@@ -28,7 +28,11 @@ import {
   imageMimeTypes,
   saveSupportAttachments,
 } from '@supportmanagement/services/support-attachment-service';
-import { getSupportErrandById, isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrandById,
+  isSupportErrandLocked,
+  supportErrandIsEmpty,
+} from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -173,12 +177,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
     setAddAttachmentWindowIsOpen(false);
   };
 
-  const clickHandler = (Attachment) => {
-    if (documentMimeTypes.includes(Attachment.mimeType)) {
-      downloadDocument(Attachment);
-    } else if (imageMimeTypes.includes(Attachment.mimeType)) {
+  const clickHandler = (attachment) => {
+    if (documentMimeTypes.includes(attachment.mimeType)) {
+      downloadDocument(attachment);
+    } else if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
-      getSupportAttachment(supportErrand.id.toString(), municipalityId, Attachment)
+      getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
         .then((res) => setModalAttachment(res))
         .then(() => {
           setModalFetching(false);
@@ -186,8 +190,8 @@ export const SupportErrandAttachmentsTab: React.FC<{
         .then((res) => openModal());
     }
     // exclusive exception for .msg
-    else if (Attachment.mimeType === '' && Attachment.name.endsWith(`.msg`)) {
-      downloadDocument(Attachment);
+    else if (attachment.fileName.endsWith(`.msg`)) {
+      downloadDocument(attachment);
     } else {
       toastMessage({
         position: 'bottom',
@@ -404,7 +408,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
             </Modal>
             <Button
               data-cy="add-attachment-button"
-              disabled={isSupportErrandLocked(supportErrand)}
+              disabled={isSupportErrandLocked(supportErrand) || supportErrandIsEmpty(supportErrand)}
               color="vattjom"
               rightIcon={<LucideIcon name="upload" size={16} />}
               inverted

@@ -9,6 +9,132 @@
  * ---------------------------------------------------------------
  */
 
+export interface Status {
+  /**
+   * The type of status
+   * @minLength 0
+   * @maxLength 255
+   * @example "Ärende inkommit"
+   */
+  statusType?: string;
+  /**
+   * Description of the status
+   * @minLength 0
+   * @maxLength 255
+   * @example "Ärende har kommit in från e-tjänsten."
+   */
+  description?: string;
+  /**
+   * The date and time when the status was recorded
+   * @format date-time
+   * @example "2023-01-01T12:00:00Z"
+   */
+  dateTime?: string;
+}
+
+export interface Problem {
+  title?: string;
+  detail?: string;
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+}
+
+export interface StatusType {
+  /** @format int32 */
+  statusCode?: number;
+  reasonPhrase?: string;
+}
+
+export interface ConstraintViolationProblem {
+  cause?: ThrowableProblem;
+  stackTrace?: {
+    classLoaderName?: string;
+    moduleName?: string;
+    moduleVersion?: string;
+    methodName?: string;
+    fileName?: string;
+    /** @format int32 */
+    lineNumber?: number;
+    className?: string;
+    nativeMethod?: boolean;
+  }[];
+  /** @format uri */
+  type?: string;
+  status?: StatusType;
+  violations?: Violation[];
+  title?: string;
+  message?: string;
+  detail?: string;
+  /** @format uri */
+  instance?: string;
+  parameters?: Record<string, object>;
+  suppressed?: {
+    stackTrace?: {
+      classLoaderName?: string;
+      moduleName?: string;
+      moduleVersion?: string;
+      methodName?: string;
+      fileName?: string;
+      /** @format int32 */
+      lineNumber?: number;
+      className?: string;
+      nativeMethod?: boolean;
+    }[];
+    message?: string;
+    localizedMessage?: string;
+  }[];
+  localizedMessage?: string;
+}
+
+export interface ThrowableProblem {
+  cause?: ThrowableProblem;
+  stackTrace?: {
+    classLoaderName?: string;
+    moduleName?: string;
+    moduleVersion?: string;
+    methodName?: string;
+    fileName?: string;
+    /** @format int32 */
+    lineNumber?: number;
+    className?: string;
+    nativeMethod?: boolean;
+  }[];
+  message?: string;
+  title?: string;
+  detail?: string;
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+  suppressed?: {
+    stackTrace?: {
+      classLoaderName?: string;
+      moduleName?: string;
+      moduleVersion?: string;
+      methodName?: string;
+      fileName?: string;
+      /** @format int32 */
+      lineNumber?: number;
+      className?: string;
+      nativeMethod?: boolean;
+    }[];
+    message?: string;
+    localizedMessage?: string;
+  }[];
+  localizedMessage?: string;
+}
+
+export interface Violation {
+  field?: string;
+  message?: string;
+}
+
 /** A stakeholder may have one or more addresses. For example, one POSTAL_ADDRESS and another INVOICE_ADDRESS. */
 export interface Address {
   /**
@@ -946,30 +1072,6 @@ export interface RelatedErrand {
   relationReason?: string;
 }
 
-/** The statuses connected to the errand */
-export interface Status {
-  /**
-   * The type of status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende inkommit"
-   */
-  statusType: string;
-  /**
-   * Description of the status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende har kommit in från e-tjänsten."
-   */
-  description?: string;
-  /**
-   * The date and time when the status was created
-   * @format date-time
-   * @example "2023-01-01T12:00:00Z"
-   */
-  created?: string;
-}
-
 /** Suspension information */
 export interface Suspension {
   /**
@@ -1296,14 +1398,14 @@ export interface PageErrand {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   pageable?: PageableObject;

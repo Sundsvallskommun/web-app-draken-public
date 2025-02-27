@@ -39,6 +39,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Type as TypeTransformer } from 'class-transformer';
+import { isIK, isKC, isLOP } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -384,12 +385,12 @@ export class SupportErrandController {
   @HttpCode(201)
   @OpenAPI({ summary: 'Initiate a new, empty support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
-  async initiateSupportErrand(
+  async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: Partial<SupportErrandDto>,
+    @Body() data: SupportErrandDto,
     @Res() response: any,
-  ): Promise<{ data: any; message: string }> {
+  ): Promise<{ data: SupportErrandDto; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
@@ -401,19 +402,12 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
-    const body: SupportErrand = {
+    const body: Partial<SupportErrandDto> = {
+      ...data,
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      classification: {
-        category: 'NONE',
-        type: 'NONE',
-      },
-      priority: 'MEDIUM' as SupportPriority,
-      status: Status.NEW,
-      resolution: Resolution.INFORMED,
-      title: 'Empty errand',
     };
-    const res = await this.apiService.post<any, SupportErrand>({ url, baseURL, data: body }, req.user).catch(e => {
+    const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
       throw e;
@@ -430,7 +424,7 @@ export class SupportErrandController {
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
-  async registerSupportErrand(
+  async updateSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,

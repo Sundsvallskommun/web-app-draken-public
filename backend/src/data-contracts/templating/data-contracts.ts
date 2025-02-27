@@ -46,7 +46,6 @@ export interface TemplateRequest {
   /** A changelog */
   changeLog?: string;
 }
-
 export interface Problem {
   /** @format uri */
   instance?: string;

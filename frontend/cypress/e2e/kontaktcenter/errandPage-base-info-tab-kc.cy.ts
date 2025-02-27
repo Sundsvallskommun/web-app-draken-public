@@ -99,6 +99,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         expect(request.body.classification.category).to.equal('BOU');
         expect(request.body.classification.type).to.equal('OTHER');
         expect(request.body.description).to.equal('En ändrad beskrivning');
+        expect(request.body.contactReason).to.equal('Klagomål');
+        expect(request.body.contactReasonDescription).to.equal('En ändrad orsaksbeskrivning');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });
@@ -685,7 +687,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       );
       cy.get('[data-cy="stakeholder-phone"]').should('exist');
       cy.get('[data-cy="new-email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
-      cy.get('[data-cy="add-email-button"]').should('exist').contains('Lägg till').click();
+      cy.get('[data-cy="add-new-email-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="newPhoneNumber"]').should('exist').type('70000000');
       cy.get('[data-cy="newPhoneNumber-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="submit-contact-person-button"]').should('exist').contains('Lägg till ärendeägare').click();

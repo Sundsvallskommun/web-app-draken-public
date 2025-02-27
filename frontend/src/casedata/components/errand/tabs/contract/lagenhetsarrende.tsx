@@ -34,6 +34,7 @@ import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
 import sanitized from '@common/services/sanitizer-service';
 import dayjs from 'dayjs';
+import { numberToSwedishWords } from '@common/services/number-service';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -1418,19 +1419,22 @@ export const Lagenhetsarrende: React.FC<{
                   e.preventDefault();
                   e.stopPropagation();
                   let content = ``;
+                  let yearlyFee = getValues('arrendeavgiftTerms.yearlyFee');
+                  let feeByYear = getValues('arrendeavgiftTerms.feeByYear');
+                  let feebyLease = getValues('arrendeavgiftTerms.feeByLease');
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgift per år är: ${getValues('arrendeavgiftTerms.yearlyFee')} kronor</p>`);
+                    (content += `<p>Avgiften per år är: ${yearlyFee} (${numberToSwedishWords(yearlyFee)}) kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
-                    (content += `<p>Avgift för år ${getValues('arrendeavgiftTerms.associatedFeeYear')} är ${getValues(
-                      'arrendeavgiftTerms.feeByYear'
-                    )} kronor</p>`);
+                    (content += `<p>Avgiften för år ${getValues(
+                      'arrendeavgiftTerms.associatedFeeYear'
+                    )} är ${feeByYear} (${numberToSwedishWords(feeByYear)}) kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
-                    (content += `<p>Avgiften för upplåtelsetiden är ${getValues(
-                      'arrendeavgiftTerms.feeByLease'
-                    )} kronor</p>`);
+                    (content += `<p>Avgiften för upplåtelsetiden är ${feebyLease} (${numberToSwedishWords(
+                      feebyLease
+                    )}) kronor</p>`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
                     (content += `<p>För perioden ${getValues('arrendeavgiftTerms.prepaidFromDate')} – ${getValues(
@@ -2448,15 +2452,17 @@ export const Lagenhetsarrende: React.FC<{
           </div>
 
           <FormControl id="additionalTerms" className="w-full">
-            <Input type="hidden" {...register('additionalTerms')} />
+            <Input type="hidden" {...register('additionalTerms.0.terms.0.term')} />
             <div className="h-[42rem] -mb-48" data-cy="additional-terms-richtext-wrapper">
               <ContractTextEditorWrapper
-                val={getValues('additionalTerms.0.terms.0.term')}
+                val={additionalTerms?.[0]?.terms?.[0]?.term ?? ''}
                 label="additionalTerms.0.terms.0.term"
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setAdditionalTerms}
+                setState={(value) => {
+                  setAdditionalTerms([{ header: getValues('additionalTerms.0.header'), terms: [{ term: value }] }]);
+                }}
                 readOnly={false}
                 editorRef={quillRefAdditionalTerms}
               />
