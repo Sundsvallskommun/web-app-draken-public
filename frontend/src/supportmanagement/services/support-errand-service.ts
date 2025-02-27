@@ -781,7 +781,7 @@ export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
 ) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
-  console.log('Updating with: ', formdata);
+  console.log('Updating with: ', formdata); //REMOVE?
   let responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
@@ -1051,10 +1051,10 @@ export const forwardSupportErrand: (
       municipalityId: municipalityId,
       errandId: errand.id,
       contactMeans: 'email',
-      recipientEmail: data.email,
+      recipientEmail: '',
       headerReplyTo: '',
       headerReferences: '',
-      emails: [{ value: data.email }],
+      emails: data.emails,
       subject: 'Vidarebefordran av ärende',
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,
