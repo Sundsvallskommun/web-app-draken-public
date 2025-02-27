@@ -191,21 +191,19 @@ export const CasedataAttachments: React.FC = () => {
     setAddAttachmentWindowIsOpen(false);
   };
 
-  const clickHandler = (Attachment) => {
-    if (documentMimeTypes.includes(Attachment.mimeType)) {
-      downloadDocument(Attachment);
-    } else if (imageMimeTypes.includes(Attachment.mimeType)) {
+  const clickHandler = (attachment: Attachment) => {
+    if (documentMimeTypes.includes(attachment.mimeType)) {
+      downloadDocument(attachment);
+    } else if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
-      fetchAttachment(municipalityId, errand.id, Attachment.id)
+      fetchAttachment(municipalityId, errand.id, attachment.id)
         .then((res) => setModalAttachment(res.data))
         .then(() => {
           setModalFetching(false);
         })
         .then((res) => openModal());
-    }
-    // exclusive exception for .msg
-    else if (Attachment.mimeType === '' && Attachment.name.endsWith(`.msg`)) {
-      downloadDocument(Attachment);
+    } else if (attachment.extension === 'msg') {
+      downloadDocument(attachment);
     } else {
       toastMessage({
         position: 'bottom',

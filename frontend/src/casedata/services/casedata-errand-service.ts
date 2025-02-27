@@ -9,8 +9,9 @@ import {
   IErrand,
   PagedApiErrandsResponse,
   RegisterErrandData,
+  RelatedErrand,
 } from '@casedata/interfaces/errand';
-import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
+import { ErrandPhase, ErrandPhasePT, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import {
@@ -206,6 +207,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       },
 
       notifications: e.notifications,
+      relatesTo: e.relatesTo,
     };
     return ierrand;
   } catch (e) {
@@ -811,5 +813,46 @@ export const setSuspendedErrands = async (
     .catch((e) => {
       console.error('Something went wrong when suspending the errand', e);
       throw new Error('Något gick fel när ärendet skulle parkeras.');
+    });
+};
+
+export const appealErrand: (data: Partial<IErrand> & { municipalityId: string }) => Promise<SaveErrandResponse> = (
+  data
+) => {
+  let result: SaveErrandResponse = {
+    errandSuccessful: false,
+    attachmentsSuccessful: false,
+    noteSuccessful: false,
+  };
+
+  const relatedErrand: Partial<RelatedErrand> = {
+    errandId: data.id,
+    errandNumber: data.errandNumber,
+    relationReason: 'APPEAL',
+  };
+
+  const errandData: Partial<RegisterErrandData> = {
+    ...(data.priority && { priority: ApiPriority[data.priority] }),
+    ...(data.channel && { channel: ApiChannels['WEB_UI'] }),
+    caseTitleAddition: CaseLabels.PT.APPEAL,
+    caseType: 'APPEAL',
+    relatesTo: [relatedErrand],
+    applicationReceived: dayjs().toISOString(),
+    stakeholders: makeStakeholdersList(data),
+  };
+
+  return apiService
+    .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(`casedata/${data.municipalityId}/errands`, errandData)
+    .then(async (res) => {
+      result.errandSuccessful = true;
+      result.errandId = res.data.data.id.toString();
+      return result;
+    })
+    .finally(() => {
+      return result;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when appealing errand');
+      return result;
     });
 };

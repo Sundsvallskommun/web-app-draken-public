@@ -214,9 +214,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           </Select>
         ) : detail.formField.type === 'textarea' ? (
           <>
-            <textarea
+            <Textarea
               rows={3}
-              className="w-full rounded-12 p-md rows={3}-medium text-base"
+              className="w-full"
+              value={detail.value}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
               data-cy={`${detail.field}-textarea`}
             />

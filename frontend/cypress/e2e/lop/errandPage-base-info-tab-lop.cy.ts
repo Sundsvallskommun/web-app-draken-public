@@ -621,7 +621,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       );
       cy.get('[data-cy="stakeholder-phone"]').should('exist');
       cy.get('[data-cy="new-email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
-      cy.get('[data-cy="add-email-button"]').should('exist').contains('Lägg till').click();
+      cy.get('[data-cy="add-new-email-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="newPhoneNumber"]').should('exist').type('70000000');
       cy.get('[data-cy="newPhoneNumber-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="submit-contact-person-button"]').should('exist').contains('Lägg till ärendeägare').click();

@@ -12,7 +12,6 @@ import {
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
-import { get } from 'cypress/types/lodash';
 import { useMemo } from 'react';
 
 export interface SupportManagementStatusFilter {

@@ -49,6 +49,8 @@ export interface WebMessageRequest {
   party: WebMessageParty;
   /** Message */
   message: string;
+  /** Sender */
+  sender?: WebMessageSender;
   /**
    * Determines if the message should be added to the internal or external OeP instance
    * @example "internal"
@@ -59,6 +61,15 @@ export interface WebMessageRequest {
    * @minItems 0
    */
   attachments?: WebMessageAttachment[];
+}
+
+/** Sender */
+export interface WebMessageSender {
+  /**
+   * The user ID of the sender. I.e. employee ID
+   * @example "joe01doe"
+   */
+  userId?: string;
 }
 
 export interface Problem {

@@ -51,7 +51,8 @@ export const sendMessage: (
           name: fileItem.name,
           note: '',
           extension: fileItem.name.split('.').pop(),
-          mimeType: fileItem.type,
+          // msg files not handled properly by the browser, so we need to set the mime type manually
+          mimeType: fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
           file: fileData,
         };
         const buf = Buffer.from(attachment.file, 'base64');

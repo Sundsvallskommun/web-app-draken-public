@@ -19,6 +19,63 @@ export interface OrgNrPayload {
   orgNr: string;
 }
 
+export interface CLegalForm {
+  legalFormCode: string;
+  legalFormDescription: string;
+}
+
+export interface CAddress {
+  city?: string;
+  street?: string;
+  postcode?: string;
+  careOf?: string;
+}
+
+export interface CMunicipality {
+  municipalityCode: string;
+  municipalityName: string;
+}
+
+export interface CCounty {
+  countyCode: string;
+  countyName: string;
+}
+
+export interface CLEPostAddress {
+  coAdress: string;
+  country: string;
+  postalCode: string;
+  city: string;
+  address1: string;
+  address2: string;
+}
+
+export interface CLEAddress {
+  addressArea: string;
+  adressNumber: string;
+  city: string;
+  postalCode: string;
+  municipality: string;
+  county: string;
+}
+
+export interface CLegalEntity2 {
+  legalEntityId: string;
+  organizationNumber: string;
+  name: string;
+  postAddress: CLEPostAddress;
+  address: CLEAddress;
+}
+
+export interface CLegalEntity2WithId {
+  partyId: string;
+  legalEntityId: string;
+  organizationNumber: string;
+  name: string;
+  postAddress: CLEPostAddress;
+  address: CLEAddress;
+}
+
 export interface CAccountInformation {
   costCenter?: string;
   subaccount?: string;
@@ -28,6 +85,7 @@ export interface CAccountInformation {
   article?: string;
   project?: string;
   counterpart?: string;
+  amount?: number;
 }
 
 export interface CInvoiceRow {
@@ -37,7 +95,7 @@ export interface CInvoiceRow {
   vatCode?: string;
   costPerUnit?: number;
   quantity?: number;
-  accountInformation?: CAccountInformation;
+  accountInformation?: CAccountInformation[];
 }
 
 export interface CInvoice {
@@ -69,6 +127,12 @@ export interface CRecipient {
   addressDetails: CAddressDetails;
 }
 
+export interface CExtraParameters {
+  errandId: string;
+  errandNumber: string;
+  referenceName: string;
+}
+
 export interface CBillingRecord {
   id?: string;
   approvedBy?: any;
@@ -80,7 +144,7 @@ export interface CBillingRecord {
   type: CBillingRecordTypeEnum;
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
-  extraParameters?: object;
+  extraParameters?: CExtraParameters;
 }
 
 export interface CSortObject {

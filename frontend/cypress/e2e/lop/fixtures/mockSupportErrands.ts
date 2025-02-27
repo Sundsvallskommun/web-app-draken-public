@@ -27,6 +27,7 @@ export const mockEmptySupportErrand = {
 
 export const mockSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  errandNumber: 'LOP-24120103',
   title: 'Empty errand',
   priority: 'MEDIUM',
   stakeholders: [

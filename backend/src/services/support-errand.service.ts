@@ -5,7 +5,7 @@ import { apiURL } from '@/utils/util';
 import ApiService from './api.service';
 import { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 
-const SERVICE = `supportmanagement/9.0`;
+const SERVICE = `supportmanagement/9.2`;
 const namespace = SUPPORTMANAGEMENT_NAMESPACE;
 
 export const validateSupportAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (

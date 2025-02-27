@@ -50,7 +50,11 @@ const APIS = [
   },
   {
     name: 'billingpreprocessor',
-    version: '2.1',
+    version: '3.0',
+  },
+  {
+    name: 'legalentity',
+    version: '1.0',
   },
 ];
 

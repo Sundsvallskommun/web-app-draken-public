@@ -2,12 +2,15 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import authMiddleware from '@middlewares/auth.middleware';
-import { IsString } from 'class-validator';
+import { isObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type as TypeTransformer } from 'class-transformer';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 import { MUNICIPALITY_ID } from '@/config';
 import { logger } from '@/utils/logger';
+import { Address, BusinessInformation, County, LegalForm, Municipality } from '@/data-contracts/businessengagements/data-contracts';
+import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
 
 class SsnPayload {
   @IsString()
@@ -73,56 +76,97 @@ interface EmployedPersonData {
   loginName: string;
 }
 
-interface OrgInfo {
-  companyName: string;
-  legalForm: {
-    legalFormDescription: string;
-    legalFormCode: string;
-  };
-  address: {
-    city: string;
-    street: string;
-    careOf: string;
-  };
-  phoneNumber: string;
-  municipality: {
-    municipalityName: string;
-    municipalityCode: string;
-  };
-  county: {
-    countyName: string;
-    countyCode: string;
-  };
-  fiscalYear: {
-    fromDay: number;
-    fromMonth: number;
-    toDay: number;
-    toMonth: number;
-  };
-  companyForm: {
-    companyFormCode: string;
-    companyFormDescription: string;
-  };
-  companyRegistrationTime: string;
-  companyLocation: {
-    address: {
-      city: string;
-      street: string;
-      postcode: string;
-    };
-  };
-  businessSignatory: string;
-  companyDescription: string;
-  sharesInformation: {
-    shareTypes: string[];
-    numberOfShares: number;
-    shareCapital: number;
-    shareCurrency: string;
-  };
+class CLegalForm implements LegalForm {
+  @IsString()
+  legalFormCode: string;
+  @IsString()
+  legalFormDescription: string;
+}
+
+class CAddress implements Address {
+  @IsString()
+  @IsOptional()
+  city: string;
+  @IsString()
+  @IsOptional()
+  street: string;
+  @IsString()
+  @IsOptional()
+  postcode: string;
+  @IsString()
+  @IsOptional()
+  careOf: string;
+}
+
+class CMunicipality implements Municipality {
+  @IsString()
+  municipalityCode: string;
+  @IsString()
+  municipalityName: string;
+}
+
+class CCounty implements County {
+  @IsString()
+  countyCode: string;
+  @IsString()
+  countyName: string;
+}
+
+class CLEPostAddress implements LEPostAddress {
+  @IsString()
+  coAdress?: string | null;
+  @IsString()
+  country?: string | null;
+  @IsString()
+  postalCode?: string | null;
+  @IsString()
+  city?: string | null;
+  @IsString()
+  address1?: string | null;
+  @IsString()
+  address2?: string | null;
+}
+
+class CLEAddress implements LEAddress {
+  @IsString()
+  addressArea?: string | null;
+  @IsString()
+  adressNumber?: string | null;
+  @IsString()
+  city?: string | null;
+  @IsString()
+  postalCode?: string | null;
+  @IsString()
+  municipality?: string | null;
+  @IsString()
+  county?: string | null;
+}
+
+class CLegalEntity2 implements LegalEntity2 {
+  @IsString()
+  legalEntityId?: string | null;
+  @IsString()
+  organizationNumber?: string | null;
+  @IsString()
+  name?: string | null;
+  @ValidateNested()
+  @TypeTransformer(() => CLEPostAddress)
+  postAddress?: LEPostAddress;
+  @ValidateNested()
+  @TypeTransformer(() => CLEAddress)
+  address?: LEAddress;
+}
+
+interface LegalEntity2WithId {
+  partyId: string;
+}
+class CLegalEntity2WithId extends CLegalEntity2 implements LegalEntity2WithId {
+  @IsString()
+  partyId: string;
 }
 
 interface ResponseData {
-  data: Citizenaddress | OrgInfo;
+  data: Citizenaddress | BusinessInformation;
   message: string;
 }
 
@@ -190,17 +234,20 @@ export class AddressController {
 
   @Post('/organization/')
   @OpenAPI({ summary: 'Return info for given organization number' })
+  @ResponseSchema(CLegalEntity2WithId)
   @UseBefore(authMiddleware, validationMiddleware(OrgNrPayload, 'body'))
   async organization(@Req() req: RequestWithUser, @Res() response: any, @Body() orgNrPayload: OrgNrPayload): Promise<ResponseData> {
     const formattedOrgNr = formatOrgNr(orgNrPayload.orgNr, OrgNumberFormat.NODASH);
     const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `businessengagements/2.0/${MUNICIPALITY_ID}/information/${guidRes.data}`;
+    const url = `legalentity/1.0/${guidRes.data}`;
 
-    const res = await this.apiService.get<OrgInfo>({ url }, req.user);
+    const res = await this.apiService.get<LegalEntity2>({ url }, req.user);
 
-    return { data: res.data, message: 'success' } as ResponseData;
+    const result: LegalEntity2WithId = { ...res.data, partyId: guidRes.data };
+
+    return { data: result, message: 'success' } as ResponseData;
   }
 
   @Get('/portalpersondata/personal/:loginName')

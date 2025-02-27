@@ -54,6 +54,8 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
     }),
     ...(errandData.stakeholders && { stakeholders: errandData.stakeholders }),
     ...(errandData.extraParameters && { extraParameters: errandData.extraParameters }),
+    ...(errandData.relatesTo && { relatesTo: errandData.relatesTo }),
+    ...(errandData.applicationReceived && { applicationReceived: errandData.applicationReceived }),
   };
   return newErrand;
 };

@@ -56,8 +56,9 @@ För LOP (Lön och pension):
 | ActiveDirectory     |     1.1 |
 | Templating          |     2.0 |
 | BusinessEngagements |     2.0 |
+| LegalEntity         |     1.0 |
 | Employee            |     1.0 |
-| BillingPreprocessor |     2.1 |
+| BillingPreprocessor |     3.0 |
 | SimulatorServer     |     2.0 |
 
 ## Utveckling
