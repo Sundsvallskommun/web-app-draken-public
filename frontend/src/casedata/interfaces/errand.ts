@@ -18,6 +18,7 @@ export interface ApiErrand {
   priority: Priority;
   phase: ErrandPhase;
   channel: string;
+  status: ApiErrandStatus;
   statuses: ApiErrandStatus[];
   description: string;
   caseTitleAddition: string;
@@ -84,8 +85,7 @@ export interface IErrand {
   administrator: Stakeholder;
   administratorName: string;
   priority: string;
-  status: string;
-  statusDescription: string;
+  status: ApiErrandStatus;
   statuses: ApiErrandStatus[];
   phase: ErrandPhase;
   channel: Channels;

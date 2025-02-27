@@ -10,13 +10,13 @@
  */
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
-  title?: string;
-  detail?: string;
   status?: StatusType;
 }
 
@@ -45,10 +45,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,13 +81,13 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
-  title?: string;
-  detail?: string;
   status?: StatusType;
   suppressed?: {
     stackTrace?: {
@@ -994,13 +994,12 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1009,18 +1008,19 @@ export interface PageErrand {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
+  paged?: boolean;
   unpaged?: boolean;
 }
 
@@ -1223,13 +1223,12 @@ export enum EventType {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1238,6 +1237,7 @@ export interface PageEvent {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

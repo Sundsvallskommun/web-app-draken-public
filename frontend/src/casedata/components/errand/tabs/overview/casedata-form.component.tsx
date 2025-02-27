@@ -11,7 +11,6 @@ import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
-
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;

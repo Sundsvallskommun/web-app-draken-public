@@ -304,9 +304,9 @@ export interface CreateErrandDto {
   startDate?: string;
   endDate?: string;
   diaryNumber?: string;
-  status?: object;
+  status?: StatusDTO;
   statusDescription?: string;
-  statuses?: any[];
+  statuses?: StatusDTO[];
   municipalityId?: string;
   stakeholders?: CreateStakeholderDto[];
   decisions?: string;
@@ -319,7 +319,8 @@ export interface CreateErrandDto {
 export interface CPatchErrandDto {
   id?: string;
   externalCaseId?: string;
-  status?: any[];
+  status?: StatusDTO;
+  statuses?: StatusDTO[];
   statusDescription?: string;
   caseType?: string;
   priority?: string;

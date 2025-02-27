@@ -44,15 +44,7 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
         }
       : {}),
     ...(errandData.status && { status: errandData.status }),
-    ...(errandData.status && {
-      statuses: errandData.status && [
-        {
-          statusType: errandData?.status?.toString(),
-          description: errandData?.statusDescription?.toString() || '',
-          created: new Date().toISOString(),
-        },
-      ],
-    }),
+    ...(errandData.statuses && { stauses: errandData.statuses }),
     ...(errandData.stakeholders && { stakeholders: errandData.stakeholders }),
     ...(errandData.extraParameters && { extraParameters: errandData.extraParameters }),
     ...(errandData.relatesTo && { relatesTo: errandData.relatesTo }),

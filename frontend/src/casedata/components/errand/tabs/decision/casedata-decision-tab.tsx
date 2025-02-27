@@ -468,9 +468,9 @@ export const CasedataDecisionTab: React.FC<{
 
   const isSent = () => {
     return (
-      errand.status === ErrandStatus.Beslutad ||
-      errand.status === ErrandStatus.BeslutVerkstallt ||
-      errand.status === ErrandStatus.ArendeAvslutat
+      errand.status.statusType === ErrandStatus.Beslutad ||
+      errand.status.statusType === ErrandStatus.BeslutVerkstallt ||
+      errand.status.statusType === ErrandStatus.ArendeAvslutat
     );
   };
 
@@ -690,7 +690,7 @@ export const CasedataDecisionTab: React.FC<{
               isSaveAndSendLoading ||
               !formState.isValid ||
               [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
-                errand.status as ErrandStatus
+                errand.status.statusType as ErrandStatus
               ) ||
               !validateErrandForDecision(errand) ||
               !validateOwnerForSendingDecision(errand) ||
