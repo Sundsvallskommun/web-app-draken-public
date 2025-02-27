@@ -33,6 +33,12 @@ export const validateSupportAction: (municipalityId: string, errandId: string, u
 export const checkIfSupportAdministrator: (user: User) => Promise<boolean> = async user => {
   const domain = 'personal';
   const apiService = new ApiService();
+  // ÅNGE TODO
+  // När Ånges AD-grupper går att söka i via detta APi behöver möjligen versionen ändras (till 2.0?)
+  // och möjligen ett MUNICIPALITY_ID läggas till, möjligen såsom nedan.
+  //
+  // const url = `activedirectory/2.0/${MUNICIPALITY_ID}/groupmembers/${domain}/${process.env.ADMIN_GROUP}`;
+  //
   const url = `activedirectory/1.0/groupmembers/${domain}/${process.env.ADMIN_GROUP}`;
   const res = await apiService.get<AdUser[]>({ url }, user);
   return res.data.some(u => u.name === user.username);
