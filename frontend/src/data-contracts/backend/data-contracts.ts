@@ -63,6 +63,7 @@ export interface CLegalEntity2 {
   name: string;
   postAddress: CLEPostAddress;
   address: CLEAddress;
+  phoneNumber: string;
 }
 
 export interface CLegalEntity2WithId {
@@ -72,6 +73,7 @@ export interface CLegalEntity2WithId {
   name: string;
   postAddress: CLEPostAddress;
   address: CLEAddress;
+  phoneNumber: string;
 }
 
 export interface CAccountInformation {
@@ -312,6 +314,8 @@ export interface CreateErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CPatchErrandDto {
@@ -331,6 +335,8 @@ export interface CPatchErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CreateErrandNoteDto {

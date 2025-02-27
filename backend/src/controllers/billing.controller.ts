@@ -45,7 +45,7 @@ export class BillingController {
     //   let guidRes = null;
     //   const isPersonNumber = luhnCheck(query);
     //   if (isPersonNumber) {
-    //     const guidUrl = `citizen/2.0/${query}/guid`;
+    //     const guidUrl = `citizen/3.0/${query}/guid`;
     //     guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
     //   }
     //   let queryFilter = `(`;
