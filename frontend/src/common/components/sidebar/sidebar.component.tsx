@@ -1,4 +1,4 @@
-import { isPT } from '@common/services/application-service';
+import { isIK, isKC, isLOP, isPT } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, useGui } from '@sk-web-gui/react';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
@@ -105,7 +105,7 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={idx !== 0 && supportErrandIsEmpty(supportErrand)}
+                  disabled={isKC() || isLOP() || isIK() ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}
