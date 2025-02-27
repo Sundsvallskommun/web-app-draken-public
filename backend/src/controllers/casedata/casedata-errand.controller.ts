@@ -284,19 +284,6 @@ export class CaseDataErrandController {
     const patchResponse = await this.apiService
       .patch<ErrandDTO, Partial<PatchErrandDTO>>({ url, baseURL, data: strippedStakeholders }, req.user)
       .then(errandPatchResponse => {
-        const statusPutPromises =
-          data.statuses?.map(async (status, idx) => {
-            const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/statuses`;
-            const baseURL = apiURL(this.SERVICE);
-            const putStatus = () =>
-              this.apiService.put<any, StatusDTO[]>({ url, baseURL, data: [status] }, req.user).catch(e => {
-                logger.error('Something went wrong when putting status');
-                logger.error(e);
-                throw e;
-              });
-            return withRetries(0, putStatus);
-          }) || [];
-
         const stakeholderPatchPromises =
           data.stakeholders
             ?.filter(s => !s.id)
@@ -327,7 +314,7 @@ export class CaseDataErrandController {
                 });
               return withRetries(0, putStakeholder);
             }) || [];
-        return Promise.all([...statusPutPromises, ...stakeholderPatchPromises, ...stakeholderPutPromises]).then(res => errandPatchResponse);
+        return Promise.all([...stakeholderPatchPromises, ...stakeholderPutPromises]).then(res => errandPatchResponse);
       })
       .catch(e => {
         logger.error('Something went wrong when patching errand');

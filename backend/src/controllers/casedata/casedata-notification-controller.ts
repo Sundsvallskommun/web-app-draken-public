@@ -51,6 +51,9 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsOptional()
   @IsString()
   acknowledged?: boolean;
+  @IsOptional()
+  @IsString()
+  globalAcknowledged?: boolean;
   @IsString()
   errandId: number;
   @IsOptional()
@@ -64,7 +67,7 @@ export class PatchNotificationDto implements PatchNotification {
   id?: string;
   @IsOptional()
   @IsNumber()
-  errandId?: number;
+  errandId: number;
   @IsOptional()
   @IsString()
   ownerId?: string;
@@ -83,8 +86,8 @@ export class PatchNotificationDto implements PatchNotification {
   @IsOptional()
   @IsBoolean()
   acknowledged?: boolean;
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   globalAcknowledged?: boolean;
 }
 

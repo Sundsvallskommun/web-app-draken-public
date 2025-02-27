@@ -761,7 +761,7 @@ export interface Notification {
    */
   acknowledged?: boolean;
   /**
-   * Global acknowledged status of the notification
+   * Acknowledged status of the notification
    * @example true
    */
   globalAcknowledged?: boolean;

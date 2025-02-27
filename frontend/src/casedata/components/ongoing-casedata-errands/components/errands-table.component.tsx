@@ -115,7 +115,7 @@ export const ErrandsTable: React.FC = () => {
           className={cx('w-[200px] whitespace-nowrap text-ellipsis table-caption', !isPT() && ' overflow-hidden')}
         >
           {isPT() ? (
-            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status)} />
+            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType)} />
           ) : (
             getErrandPropertyDesignations(errand).join(', ')
           )}
@@ -217,7 +217,7 @@ export const ErrandsTable: React.FC = () => {
         </Table.Column>
         {!isPT() && (
           <Table.Column>
-            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status)} />
+            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType)} />
           </Table.Column>
         )}
         <Table.Column sticky>

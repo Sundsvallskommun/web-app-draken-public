@@ -18,6 +18,7 @@ export interface ApiErrand {
   priority: Priority;
   phase: ErrandPhase;
   channel: string;
+  status: ApiErrandStatus;
   statuses: ApiErrandStatus[];
   description: string;
   caseTitleAddition: string;
@@ -40,6 +41,7 @@ export interface ApiErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
+  notifications?: Notification[];
 }
 
 export interface ApiPagingData {
@@ -84,8 +86,8 @@ export interface IErrand {
   administrator: Stakeholder;
   administratorName: string;
   priority: string;
-  status: string;
-  statusDescription: string;
+  status: ApiErrandStatus;
+  statuses: ApiErrandStatus[];
   phase: ErrandPhase;
   channel: Channels;
   municipalityId: string;
@@ -104,6 +106,7 @@ export interface IErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
+  notifications?: Notification[];
 }
 
 export interface ErrandsData extends Data {
@@ -142,10 +145,10 @@ export interface RegisterErrandData {
   startDate: string;
   endDate: string;
   diaryNumber: string;
-  status: string;
+  status: ApiErrandStatus;
   phase: ErrandPhase;
   municipalityId: string;
-  // statuses: StatusesDto[];
+  statuses: ApiErrandStatus[];
   stakeholders: Partial<CreateStakeholderDto>[];
   facilities: string[];
   attachments: string[] | FileList[];

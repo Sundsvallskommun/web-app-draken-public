@@ -659,7 +659,7 @@ export class SupportErrandController {
         {
           statusType: ErrandStatus.ArendeInkommit,
           description: ErrandStatus.ArendeInkommit,
-          dateTime: new Date().toISOString(),
+          created: new Date().toISOString(),
         },
       ],
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
