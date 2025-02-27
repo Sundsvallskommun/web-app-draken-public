@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import ApiService from '@/services/api.service';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -30,6 +31,12 @@ export class ActiveDirectoryController {
   @UseBefore(authMiddleware)
   async usersInAdminGroup(@Req() req: RequestWithUser, @Res() response: any): Promise<ResponseData<AdUser>> {
     const domain = 'personal';
+    // ÅNGE TODO
+    // När Ånges AD-grupper går att söka i via detta APi behöver möjligen versionen ändras (till 2.0?)
+    // och möjligen ett MUNICIPALITY_ID läggas till, möjligen såsom nedan.
+    //
+    // const url = `activedirectory/2.0/${MUNICIPALITY_ID}/groupmembers/${domain}/${process.env.ADMIN_GROUP}`;
+    //
     const url = `activedirectory/1.0/groupmembers/${domain}/${process.env.ADMIN_GROUP}`;
     const res = await this.apiService.get<AdUser[]>({ url }, req.user);
     return response.status(200).send({ data: res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid })), message: 'ok' });
