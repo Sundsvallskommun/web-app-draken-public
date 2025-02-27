@@ -21,7 +21,6 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-import { support } from 'cypress/types/jquery';
 
 export interface Customer {
   id: string;

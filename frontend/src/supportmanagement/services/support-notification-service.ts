@@ -1,5 +1,6 @@
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { SupportErrand } from './support-errand-service';
 
 export const getSupportNotifications: (municipalityId: string) => Promise<SupportNotification[]> = (municipalityId) => {
   return apiService
@@ -33,15 +34,14 @@ export const acknowledgeSupportNotification: (
 };
 
 export const globalAcknowledgeSupportNotification: (
-  municipalityId: string,
-  notification: SupportNotification
-) => Promise<boolean> = (municipalityId, notification) => {
-  if (!notification.id) {
-    return Promise.reject('Missing id on notification');
+  errand: SupportErrand,
+  municipalityId: string
+) => Promise<boolean> = (errand, municipalityId) => {
+  if (!errand.id) {
+    return Promise.reject('Missing id on errand');
   }
-  const data = { ...notification, ownerFullName: notification.ownerFullName || '', globalAcknowledged: true };
   return apiService
-    .patch<boolean, SupportNotification>(`supportnotifications/${municipalityId}`, data)
+    .put(`supportnotifications/${municipalityId}/${errand.id}/global-acknowledged`, {})
     .then((res) => {
       return true;
     })
