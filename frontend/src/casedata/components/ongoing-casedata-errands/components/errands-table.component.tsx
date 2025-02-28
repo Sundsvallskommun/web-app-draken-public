@@ -60,7 +60,6 @@ export const ErrandsTable: React.FC = () => {
       if (sortColumn === serverSideSortableColsPT[index]) {
         setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
       } else {
-        console.log(serverSideSortableColsPT[index]);
         setValue('sortColumn', serverSideSortableColsPT[index]);
       }
     } else {

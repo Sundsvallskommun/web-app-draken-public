@@ -9,8 +9,6 @@
  * ---------------------------------------------------------------
  */
 
-import { BooleanSchema } from 'yup';
-
 export interface SsnPayload {
   ssn: string;
 }
