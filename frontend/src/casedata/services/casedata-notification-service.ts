@@ -1,4 +1,4 @@
-import { Notification as CasedataNotification } from '@common/data-contracts/case-data/data-contracts';
+import { Notification as CasedataNotification, Errand } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
 import { PatchNotificationDto } from 'src/data-contracts/backend/data-contracts';
 
@@ -44,27 +44,16 @@ export const acknowledgeCasedataNotification: (
     });
 };
 
-export const globalAcknowledgeCasedataNotification: (
-  municipalityId: string,
-  notification: CasedataNotification
-) => Promise<boolean> = (municipalityId, notification) => {
-  if (!notification.id) {
+export const globalAcknowledgeCasedataNotification: (errand: Errand, municipalityId: string) => Promise<boolean> = (
+  errand,
+  municipalityId
+) => {
+  if (!errand.id) {
     return Promise.reject('Missing id on notification');
   }
-  const data: PatchNotificationDto = {
-    id: notification.id,
-    errandId: notification.errandId,
-    ownerId: notification.ownerId,
-    type: notification.type,
-    description: notification.description,
-    content: notification.content,
-    expires: notification.expires,
-    globalAcknowledged: true,
-  };
   return apiService
-    .patch<boolean, PatchNotificationDto>(`casedatanotifications/${municipalityId}`, data)
+    .put(`casedatanotifications/${municipalityId}/${errand.id}/global-acknowledged`, {})
     .then((res) => {
-      console.log(res);
       return true;
     })
     .catch((e) => {

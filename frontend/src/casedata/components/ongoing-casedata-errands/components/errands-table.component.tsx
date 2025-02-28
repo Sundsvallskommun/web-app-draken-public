@@ -73,7 +73,7 @@ export const ErrandsTable: React.FC = () => {
 
   const handleClick = async (errand) => {
     if (errand.notifications && errand.notifications.length > 0) {
-      await globalAcknowledgeCasedataNotification(municipalityId, errand.notifications[0]).catch(() => {
+      await globalAcknowledgeCasedataNotification(errand, municipalityId).catch(() => {
         throw new Error('Failed to acknowledge notification');
       });
     }
@@ -100,8 +100,6 @@ export const ErrandsTable: React.FC = () => {
     </Table.HeaderColumn>
   ));
 
-  console.log('data.errands', data);
-
   const rows = (data.errands || []).map((errand: IErrand, index) => {
     return (
       <Table.Row
@@ -120,7 +118,7 @@ export const ErrandsTable: React.FC = () => {
             getErrandPropertyDesignations(errand).join(', ')
           )}
         </Table.HeaderColumn>
-        <Table.Column className="w-[0px]">
+        <Table.Column>
           <div>
             {errand.notifications[0]?.globalAcknowledged === false ? (
               <>
@@ -129,8 +127,6 @@ export const ErrandsTable: React.FC = () => {
               </>
             ) : null}
           </div>
-        </Table.Column>
-        <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>
               <time dateTime={errand.notifications[0]?.created}>
