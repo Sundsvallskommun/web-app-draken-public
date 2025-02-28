@@ -1,5 +1,6 @@
 import { ApiResponse, apiService, Data } from '@common/services/api-service';
 import { formatOrgNr, luhnCheck, OrgNumberFormat } from '@common/services/helper-service';
+import { CLegalEntity2WithId } from 'src/data-contracts/backend/data-contracts';
 
 export interface CitizenAddressData extends Data {
   personId: string;
@@ -216,18 +217,16 @@ export const searchADUserByPersonNumber: (personalNumber: string) => Promise<Add
         });
 };
 
-const isValidOrganization = (org: OrgInfo) =>
-  org.companyName &&
-  ((org.companyLocation?.address?.city &&
-    org.companyLocation?.address?.postcode &&
-    org.companyLocation?.address?.street) ||
-    (org.address?.street && org.address?.city && org.address?.postcode));
+const isValidOrganization = (org: CLegalEntity2WithId) =>
+  org.name &&
+  ((org.address?.city && org.address?.postalCode && org.address.addressArea) ||
+    (org.address?.addressArea && org.address?.city && org.address?.postalCode));
 
 export const searchOrganization: (orgNr: string) => Promise<AddressResult> = (orgNr: string) => {
   return !isValidOrgNumber(formatOrgNr(orgNr))
     ? Promise.resolve(undefined)
     : apiService
-        .post<ApiResponse<OrgInfo>, { orgNr: string }>('organization', {
+        .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>('organization', {
           orgNr: formatOrgNr(orgNr, OrgNumberFormat.NODASH),
         })
         .then((res) => res.data.data)
@@ -236,12 +235,16 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult> = (or
             console.error('Invalid address data for organization');
             throw 'Address not found';
           } else {
-            const addressItem = res.companyLocation?.address || res.address || { city: '', postcode: '', street: '' };
+            const addressItem = {
+              city: res.address.city,
+              postcode: res.address.postalCode,
+              street: res.address.addressArea,
+            };
             return {
               personId: undefined,
               firstName: undefined,
               lastName: undefined,
-              organizationName: res.companyName,
+              organizationName: res.name,
               street: addressItem.street,
               careof: undefined,
               zip: addressItem.postcode,

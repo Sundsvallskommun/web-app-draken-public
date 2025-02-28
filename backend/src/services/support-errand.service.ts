@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { AdUser } from '@/controllers/active-directory.controller';
 import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
@@ -31,9 +31,13 @@ export const validateSupportAction: (municipalityId: string, errandId: string, u
 };
 
 export const checkIfSupportAdministrator: (user: User) => Promise<boolean> = async user => {
-  const domain = 'personal';
   const apiService = new ApiService();
-  const url = `activedirectory/1.0/groupmembers/${domain}/${process.env.ADMIN_GROUP}`;
+  // ÅNGE TODO
+  // Ny version (2.0) av activedirectory med kommunkod i urlen.
+  //
+  // Därtill har domän gjorts konfigurerbar i .env-filen.
+  //
+  const url = `activedirectory/2.0/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
   const res = await apiService.get<AdUser[]>({ url }, user);
   return res.data.some(u => u.name === user.username);
 };

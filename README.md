@@ -8,13 +8,13 @@ För MEX (Mark och exploatering):
 
 | API                 | Version |
 | ------------------- | ------: |
-| ActiveDirectory     |     1.0 |
-| Citizen             |     2.0 |
+| ActiveDirectory     |     2.0 |
+| Citizen             |     3.0 |
 | CaseData            |     9.0 |
 | Messaging           |     6.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
-| Employee            |     1.0 |
+| Employee            |     2.0 |
 | BusinessEngagements |     2.0 |
 | Party               |     2.0 |
 | SimulatorServer     |     2.0 |
@@ -25,8 +25,8 @@ För KS (Kontakt Sundsvall):
 | ------------------- | ------: |
 | CaseData            |    10.0 |
 | SupportManagement   |     9.0 |
-| Citizen             |     2.0 |
-| ActiveDirectory     |     1.1 |
+| Citizen             |     3.0 |
+| ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
 | Estateinfo          |     1.0 |
 | BusinessEngagements |     2.0 |
@@ -37,13 +37,13 @@ För PT (Parkeringstillstånd):
 
 | API                 | Version |
 | ------------------- | ------: |
-| ActiveDirectory     |     1.0 |
-| Citizen             |     2.0 |
+| ActiveDirectory     |     2.0 |
+| Citizen             |     3.0 |
 | CaseData            |    10.0 |
 | Messaging           |     6.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
-| Employee            |     1.0 |
+| Employee            |     2.0 |
 | BusinessEngagements |     2.0 |
 | SimulatorServer     |     2.0 |
 
@@ -52,12 +52,12 @@ För LOP (Lön och pension):
 | API                 | Version |
 | ------------------- | ------: |
 | SupportManagement   |     9.0 |
-| Citizen             |     2.0 |
-| ActiveDirectory     |     1.1 |
+| Citizen             |     3.0 |
+| ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
 | BusinessEngagements |     2.0 |
-| LegalEntity         |     1.0 |
-| Employee            |     1.0 |
+| LegalEntity         |     2.0 |
+| Employee            |     2.0 |
 | BillingPreprocessor |     3.0 |
 | SimulatorServer     |     2.0 |
 

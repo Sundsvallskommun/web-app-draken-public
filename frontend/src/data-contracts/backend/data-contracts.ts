@@ -63,6 +63,7 @@ export interface CLegalEntity2 {
   name: string;
   postAddress: CLEPostAddress;
   address: CLEAddress;
+  phoneNumber: string;
 }
 
 export interface CLegalEntity2WithId {
@@ -72,6 +73,7 @@ export interface CLegalEntity2WithId {
   name: string;
   postAddress: CLEPostAddress;
   address: CLEAddress;
+  phoneNumber: string;
 }
 
 export interface CAccountInformation {
