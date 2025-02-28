@@ -322,7 +322,6 @@ export enum ResolutionLabelKS {
 
 export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Notifikationer', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -340,7 +339,6 @@ export const ongoingSupportErrandLabelsKC = [
 
 export const ongoingSupportErrandLabelsLoP = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Notifikationer', screenReaderOnly: true, sortable: false, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -476,9 +474,7 @@ export const useSupportErrands = (
       setIsLoading(true);
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
-          console.log('fetchErrands', res);
           setSupportErrands({ ...res, isLoading: false });
-          console.log(supportErrands);
         })
         .catch((err) => {
           toastMessage({

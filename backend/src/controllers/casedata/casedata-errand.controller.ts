@@ -195,7 +195,7 @@ export class CaseDataErrandController {
       filterList.push(`(caseType in [${ss.join(',')}])`);
     }
     if (sort) {
-      url += `&sort=desc`;
+      url += `&sort=${sort}`;
     }
     if (stakeholders) {
       // If both query and stakeholder filter is applied, the stakeholder parts will collide

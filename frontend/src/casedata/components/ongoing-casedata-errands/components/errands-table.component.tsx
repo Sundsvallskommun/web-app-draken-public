@@ -45,13 +45,13 @@ export const ErrandsTable: React.FC = () => {
   };
 
   const serverSideSortableColsPT: { [key: number]: string } = {
-    0: 'statuses.statusType',
-    1: 'caseType',
-    2: 'errandNumber',
-    3: 'priority',
-    4: 'stakeholders.lastName',
-    5: 'created',
-    6: 'updated',
+    0: 'status.statusType',
+    1: 'updated',
+    2: 'caseType',
+    3: 'errandNumber',
+    4: 'priority',
+    5: 'stakeholders.lastName',
+    6: 'created',
     7: 'administrator',
   };
 
@@ -60,6 +60,7 @@ export const ErrandsTable: React.FC = () => {
       if (sortColumn === serverSideSortableColsPT[index]) {
         setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
       } else {
+        console.log(serverSideSortableColsPT[index]);
         setValue('sortColumn', serverSideSortableColsPT[index]);
       }
     } else {

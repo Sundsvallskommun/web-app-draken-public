@@ -229,7 +229,7 @@ export const SupportErrandsTable: React.FC = () => {
         className="cursor-pointer"
       >
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
-        <Table.Column className="w-[0px]">
+        <Table.Column>
           <div>
             {errand.activeNotifications[0]?.globalAcknowledged === false ? (
               <>
@@ -238,8 +238,6 @@ export const SupportErrandsTable: React.FC = () => {
               </>
             ) : null}
           </div>
-        </Table.Column>
-        <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>
               <time dateTime={errand.activeNotifications[0]?.created}>

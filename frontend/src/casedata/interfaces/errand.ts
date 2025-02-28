@@ -41,7 +41,6 @@ export interface ApiErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
-  notifications?: Notification[];
 }
 
 export interface ApiPagingData {
@@ -106,7 +105,6 @@ export interface IErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
-  notifications?: Notification[];
 }
 
 export interface ErrandsData extends Data {
