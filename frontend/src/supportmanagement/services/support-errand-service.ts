@@ -781,7 +781,6 @@ export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
 ) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
-  console.log('Updating with: ', formdata); //REMOVE?
   let responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
