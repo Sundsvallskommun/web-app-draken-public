@@ -36,12 +36,12 @@ export const ErrandsTable: React.FC = () => {
 
   const serverSideSortableColsMEX: { [key: number]: string } = {
     0: 'facilities.address.propertyDesignation',
-    1: 'caseType',
-    2: 'priority',
-    3: 'created',
-    4: 'updated',
+    1: 'updated',
+    2: 'caseType',
+    3: 'priority',
+    4: 'created',
     5: 'administrator',
-    6: 'statuses.statusType',
+    6: 'status.statusType',
   };
 
   const serverSideSortableColsPT: { [key: number]: string } = {
