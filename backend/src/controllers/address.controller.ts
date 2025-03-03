@@ -155,6 +155,8 @@ class CLegalEntity2 implements LegalEntity2 {
   @ValidateNested()
   @TypeTransformer(() => CLEAddress)
   address?: LEAddress;
+  @IsString()
+  phoneNumber?: string | null;
 }
 
 interface LegalEntity2WithId {
@@ -241,7 +243,7 @@ export class AddressController {
     const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `legalentity/1.0/${guidRes.data}`;
+    const url = `legalentity/2.0/${MUNICIPALITY_ID}/${guidRes.data}`;
 
     const res = await this.apiService.get<LegalEntity2>({ url }, req.user);
 

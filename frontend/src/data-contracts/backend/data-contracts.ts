@@ -63,6 +63,7 @@ export interface CLegalEntity2 {
   name: string;
   postAddress: CLEPostAddress;
   address: CLEAddress;
+  phoneNumber: string;
 }
 
 export interface CLegalEntity2WithId {
@@ -72,6 +73,7 @@ export interface CLegalEntity2WithId {
   name: string;
   postAddress: CLEPostAddress;
   address: CLEAddress;
+  phoneNumber: string;
 }
 
 export interface CAccountInformation {
@@ -304,9 +306,9 @@ export interface CreateErrandDto {
   startDate?: string;
   endDate?: string;
   diaryNumber?: string;
-  status?: StatusDTO;
+  status?: object;
   statusDescription?: string;
-  statuses?: StatusDTO[];
+  statuses?: any[];
   municipalityId?: string;
   stakeholders?: CreateStakeholderDto[];
   decisions?: string;
@@ -319,8 +321,8 @@ export interface CreateErrandDto {
 export interface CPatchErrandDto {
   id?: string;
   externalCaseId?: string;
-  status?: StatusDTO;
-  statuses?: StatusDTO[];
+  status?: object;
+  statuses?: any[];
   statusDescription?: string;
   caseType?: string;
   priority?: string;
