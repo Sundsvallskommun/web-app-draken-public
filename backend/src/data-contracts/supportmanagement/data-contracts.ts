@@ -10,13 +10,13 @@
  */
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
-  title?: string;
-  detail?: string;
   status?: StatusType;
 }
 
@@ -45,10 +45,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,13 +81,13 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
-  title?: string;
-  detail?: string;
   status?: StatusType;
   suppressed?: {
     stackTrace?: {
@@ -521,6 +521,8 @@ export interface Errand {
    * @example ["label1","label2"]
    */
   labels?: string[];
+  /** List of active notifications for the errand */
+  activeNotifications?: Notification[];
   /**
    * Timestamp when errand was created
    * @format date-time
@@ -553,6 +555,88 @@ export interface ExternalTag {
    * @example "8849-2848"
    */
   value: string;
+}
+
+/** List of active notifications for the errand */
+export interface Notification {
+  /**
+   * Unique identifier for the notification
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  id?: string;
+  /**
+   * Timestamp when the notification was created
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  created?: string;
+  /**
+   * Timestamp when the notification was last modified
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  modified?: string;
+  /**
+   * Name of the owner of the notification
+   * @example "Test Testorsson"
+   */
+  ownerFullName?: string;
+  /**
+   * Owner id of the notification
+   * @example "AD01"
+   */
+  ownerId: string;
+  /**
+   * User who created the notification
+   * @example "TestUser"
+   */
+  createdBy?: string;
+  /**
+   * Full name of the user who created the notification
+   * @example "Test Testorsson"
+   */
+  createdByFullName?: string;
+  /**
+   * Type of the notification
+   * @example "CREATE"
+   */
+  type: string;
+  /**
+   * Description of the notification
+   * @example "Some description of the notification"
+   */
+  description: string;
+  /**
+   * Content of the notification
+   * @example "Some content of the notification"
+   */
+  content?: string;
+  /**
+   * Timestamp when the notification expires
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  expires?: string;
+  /**
+   * Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone.
+   * @example true
+   */
+  globalAcknowledged?: boolean;
+  /**
+   * Acknowledged status of the notification (owner level). I.e. this notification is acknowledged by the owner of this notification.
+   * @example true
+   */
+  acknowledged?: boolean;
+  /**
+   * Errand id of the notification
+   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
+   */
+  errandId?: string;
+  /**
+   * Errand number of the notification
+   * @example "PRH-2022-000001"
+   */
+  errandNumber?: string;
 }
 
 /** Parameter model */
@@ -650,87 +734,6 @@ export interface Suspension {
    * @example "2000-10-31T01:30:00+02:00"
    */
   suspendedFrom?: string;
-}
-
-export interface Notification {
-  /**
-   * Unique identifier for the notification
-   * @example "123e4567-e89b-12d3-a456-426614174000"
-   */
-  id?: string;
-  /**
-   * Timestamp when the notification was created
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  created?: string;
-  /**
-   * Timestamp when the notification was last modified
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  modified?: string;
-  /**
-   * Name of the owner of the notification
-   * @example "Test Testorsson"
-   */
-  ownerFullName?: string;
-  /**
-   * Owner id of the notification
-   * @example "AD01"
-   */
-  ownerId: string;
-  /**
-   * User who created the notification
-   * @example "TestUser"
-   */
-  createdBy?: string;
-  /**
-   * Full name of the user who created the notification
-   * @example "Test Testorsson"
-   */
-  createdByFullName?: string;
-  /**
-   * Type of the notification
-   * @example "CREATE"
-   */
-  type: string;
-  /**
-   * Description of the notification
-   * @example "Some description of the notification"
-   */
-  description: string;
-  /**
-   * Content of the notification
-   * @example "Some content of the notification"
-   */
-  content?: string;
-  /**
-   * Timestamp when the notification expires
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  expires?: string;
-  /**
-   * Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone.
-   * @example true
-   */
-  globalAcknowledged?: boolean;
-  /**
-   * Acknowledged status of the notification (owner level). I.e. this notification is acknowledged by the owner of this notification.
-   * @example true
-   */
-  acknowledged?: boolean;
-  /**
-   * Errand id of the notification
-   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
-   */
-  errandId?: string;
-  /**
-   * Errand number of the notification
-   * @example "PRH-2022-000001"
-   */
-  errandNumber?: string;
 }
 
 /** CreateErrandNoteRequest model */
@@ -995,29 +998,29 @@ export interface PageErrand {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
+  paged?: boolean;
   unpaged?: boolean;
 }
 
@@ -1224,17 +1227,17 @@ export interface PageEvent {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

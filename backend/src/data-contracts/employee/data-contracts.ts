@@ -126,6 +126,7 @@ export interface PortalPersonData {
   referenceNumber?: string | null;
   isManager?: boolean;
   loginName?: string | null;
+  fullOrgTree?: string | null;
 }
 
 export interface ProblemDetails {

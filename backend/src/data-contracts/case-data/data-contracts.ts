@@ -33,14 +33,14 @@ export interface Status {
 }
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -68,10 +68,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -104,14 +104,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -1293,15 +1293,15 @@ export interface PageErrand {
 }
 
 export interface PageableObject {
-  paged?: boolean;
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
-  unpaged?: boolean;
+  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1604,6 +1604,8 @@ export enum PatchErrandCaseTypeEnum {
   MEX_ROAD_ASSOCIATION = 'MEX_ROAD_ASSOCIATION',
   MEX_RETURNED_TO_CONTACT_SUNDSVALL = 'MEX_RETURNED_TO_CONTACT_SUNDSVALL',
   MEX_SMALL_BOAT_HARBOR_DOCK_PORT = 'MEX_SMALL_BOAT_HARBOR_DOCK_PORT',
+  MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE',
+  MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS',
   APPEAL = 'APPEAL',
 }
 

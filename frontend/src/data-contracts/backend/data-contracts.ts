@@ -312,6 +312,8 @@ export interface CreateErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CPatchErrandDto {
@@ -331,6 +333,8 @@ export interface CPatchErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CreateErrandNoteDto {
