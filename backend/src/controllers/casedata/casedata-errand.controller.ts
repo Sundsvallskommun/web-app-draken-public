@@ -154,7 +154,7 @@ export class CaseDataErrandController {
       filterList.push(queryFilter);
     }
     if (ongoing) {
-      filterList.push(`not(statuses.statusType:'Beslutad' or statuses.statusType:'Beslut verkställt' or statuses.statusType:'Ärendet avvisas')`);
+      filterList.push(`not(status.statusType:'Beslutad' or status.statusType:'Beslut verkställt' or status.statusType:'Ärendet avvisas')`);
     }
     if (priority) {
       const priorityQuery = [];
@@ -175,7 +175,7 @@ export class CaseDataErrandController {
       const statusQuery = [];
       status.split(',').forEach(s => {
         const label = ErrandStatus[s];
-        statusQuery.push(`statuses.statusType:'${label}'`);
+        statusQuery.push(`status.statusType:'${label}'`);
       });
       filterList.push(`(${statusQuery.join(' or ')})`);
     }
