@@ -135,7 +135,9 @@ export const ErrandsTable: React.FC = () => {
                   : ''}
               </time>
             </div>
-            <div className="italic">{errand.notifications[0]?.description}</div>
+            <div className="italic">
+              {errand.notifications[0]?.description ? errand.notifications[0]?.description : ''}
+            </div>
           </div>
         </Table.Column>
         <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>

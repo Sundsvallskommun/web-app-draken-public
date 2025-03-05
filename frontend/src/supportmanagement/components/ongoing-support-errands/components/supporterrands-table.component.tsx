@@ -246,7 +246,9 @@ export const SupportErrandsTable: React.FC = () => {
                   : ''}
               </time>
             </div>
-            <div className="italic">{errand.activeNotifications[0]?.description}</div>
+            <div className="italic">
+              {errand.activeNotifications[0]?.description ? errand.activeNotifications[0]?.description : ''}
+            </div>
           </div>
         </Table.Column>
         <Table.HeaderColumn
