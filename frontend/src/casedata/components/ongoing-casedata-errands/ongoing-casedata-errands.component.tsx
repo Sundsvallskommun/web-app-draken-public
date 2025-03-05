@@ -56,60 +56,56 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
   const initialFocus = useRef(null);
 
-  const setInitialFocus = () => {
-    setTimeout(() => {
-      initialFocus.current && initialFocus.current.focus();
-    });
-  };
+  const { sidebarLabel, closedErrands } = useAppContext();
 
-  useEffect(() => {
-    setValue('status', selectedErrandStatuses);
-  }, [selectedErrandStatuses]);
+  // useEffect(() => {
+  //   setValue('status', selectedErrandStatuses);
+  // }, [selectedErrandStatuses]);
 
   const router = useRouter();
   const { user, setUser } = useAppContext();
 
-  useEffect(() => {
-    const filterdata = store.get('filter');
+  // useEffect(() => {
+  //   const filterdata = store.get('filter');
 
-    if (filterdata) {
-      let filter;
-      let storedFilters;
-      try {
-        filter = JSON.parse(filterdata);
-        storedFilters = {
-          caseType: filter?.caseType?.split(',') || CaseDataValues.caseType,
-          priority: filter?.priority?.split(',') || CaseDataValues.priority,
-          status: filter?.status !== '' ? filter?.status?.split(',') || CaseDataValues.status : CaseDataValues.status,
-          startdate: filter?.start || CaseDataValues.startdate,
-          enddate: filter?.end || CaseDataValues.enddate,
-          admins:
-            filter?.stakeholders !== user.username ? filter?.stakeholders?.split(',') || CaseDataValues.admins : [],
-          phase: filter?.phase !== '' ? filter?.phase?.split(',') || CaseDataValues.phase : CaseDataValues.phase,
-        };
-        const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
-        setSelectedErrandStatuses(filterStatuses);
-        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => ErrandStatus[s]));
-        setSidebarLabel(selectedStatusLabel);
-      } catch (error) {
-        store.set('filter', JSON.stringify({}));
-        storedFilters = {
-          caseType: CaseDataValues.caseType,
-          priority: CaseDataValues.priority,
-          status: CaseDataValues.status,
-          startdate: CaseDataValues.startdate,
-          enddate: CaseDataValues.enddate,
-          admins: [],
-          phase: CaseDataValues.phase,
-        };
-      }
-      if (filter?.stakeholders === user.username) {
-        setOwnerFilter(true);
-      }
-      resetFilter(storedFilters);
-      triggerFilter();
-    }
-  }, [resetFilter, triggerFilter, user.username]);
+  //   if (filterdata) {
+  //     let filter;
+  //     let storedFilters;
+  //     try {
+  //       filter = JSON.parse(filterdata);
+  //       storedFilters = {
+  //         caseType: filter?.caseType?.split(',') || CaseDataValues.caseType,
+  //         priority: filter?.priority?.split(',') || CaseDataValues.priority,
+  //         status: filter?.status !== '' ? filter?.status?.split(',') || CaseDataValues.status : CaseDataValues.status,
+  //         startdate: filter?.start || CaseDataValues.startdate,
+  //         enddate: filter?.end || CaseDataValues.enddate,
+  //         admins:
+  //           filter?.stakeholders !== user.username ? filter?.stakeholders?.split(',') || CaseDataValues.admins : [],
+  //         phase: filter?.phase !== '' ? filter?.phase?.split(',') || CaseDataValues.phase : CaseDataValues.phase,
+  //       };
+  //       const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
+  //       setSelectedErrandStatuses(filterStatuses);
+  //       const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => ErrandStatus[s]));
+  //       setSidebarLabel(selectedStatusLabel);
+  //     } catch (error) {
+  //       store.set('filter', JSON.stringify({}));
+  //       storedFilters = {
+  //         caseType: CaseDataValues.caseType,
+  //         priority: CaseDataValues.priority,
+  //         status: CaseDataValues.status,
+  //         startdate: CaseDataValues.startdate,
+  //         enddate: CaseDataValues.enddate,
+  //         admins: [],
+  //         phase: CaseDataValues.phase,
+  //       };
+  //     }
+  //     if (filter?.stakeholders === user.username) {
+  //       setOwnerFilter(true);
+  //     }
+  //     resetFilter(storedFilters);
+  //     triggerFilter();
+  //   }
+  // }, [resetFilter, triggerFilter, user.username]);
 
   useEffect(() => {
     const sortData = store.get('sort');
@@ -132,17 +128,17 @@ export const OngoingCaseDataErrands: React.FC = () => {
     //eslint-disable-next-line
   }, [filterObject, sortColumn, sortOrder, pageSize]);
 
-  useEffect(() => {
-    // NOTE: If we set focus on the next button
-    //       the browser will automatically scroll
-    //       down to the button.
-    setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
-    setErrand(undefined);
-    //eslint-disable-next-line
-  }, [router]);
+  // useEffect(() => {
+  //   // NOTE: If we set focus on the next button
+  //   //       the browser will automatically scroll
+  //   //       down to the button.
+  //   setInitialFocus();
+  //   getMe().then((user) => {
+  //     setUser(user);
+  //   });
+  //   setErrand(undefined);
+  //   //eslint-disable-next-line
+  // }, [router]);
 
   useEffect(() => {
     if (errands) {
@@ -155,67 +151,67 @@ export const OngoingCaseDataErrands: React.FC = () => {
     //eslint-disable-next-line
   }, [errands]);
 
-  useEffect(() => {
-    getAdminUsers().then((data) => {
-      setAdministrators(data);
-    });
-    //eslint-disable-next-line
-  }, []);
+  // useEffect(() => {
+  //   getAdminUsers().then((data) => {
+  //     setAdministrators(data);
+  //   });
+  //   //eslint-disable-next-line
+  // }, []);
 
-  useDebounceEffect(
-    () => {
-      const fObj = {};
-      const extraFilterObj = {};
-      if (priorityFilter && priorityFilter.length > 0) {
-        fObj['priority'] = priorityFilter.join(',');
-      }
-      if (caseTypeFilter && caseTypeFilter.length > 0) {
-        fObj['caseType'] = caseTypeFilter.join(',');
-      }
-      if (statusFilter && statusFilter.length > 0) {
-        fObj['status'] = statusFilter.join(',');
-      }
-      if (queryFilter) {
-        fObj['query'] = queryFilter.replace(/\+/g, '').replace(/ /g, '+');
-      }
-      if (administratorFilter && administratorFilter.length > 0) {
-        fObj['stakeholders'] = administratorFilter.join(',');
-      }
-      if (ownerFilter) {
-        fObj['stakeholders'] = user.username;
-      }
-      if (startdate) {
-        const date = startdate.trim();
-        fObj['start'] = date;
-      }
-      if (enddate) {
-        const date = enddate.trim();
-        fObj['end'] = date;
-      }
-      if (propertyDesignation) {
-        extraFilterObj['propertyDesignation'] = propertyDesignation;
-      }
-      if (phaseFilter && phaseFilter.length > 0) {
-        fObj['phase'] = phaseFilter;
-      }
-      setFilterObject(fObj);
-      setExtraFilter(extraFilterObj);
-      store.set('filter', JSON.stringify(fObj));
-    },
-    200,
-    [
-      queryFilter,
-      ownerFilter,
-      priorityFilter,
-      caseTypeFilter,
-      statusFilter,
-      administratorFilter,
-      startdate,
-      enddate,
-      propertyDesignation,
-      phaseFilter,
-    ]
-  );
+  // useDebounceEffect(
+  //   () => {
+  //     const fObj = {};
+  //     const extraFilterObj = {};
+  //     if (priorityFilter && priorityFilter.length > 0) {
+  //       fObj['priority'] = priorityFilter.join(',');
+  //     }
+  //     if (caseTypeFilter && caseTypeFilter.length > 0) {
+  //       fObj['caseType'] = caseTypeFilter.join(',');
+  //     }
+  //     if (statusFilter && statusFilter.length > 0) {
+  //       fObj['status'] = statusFilter.join(',');
+  //     }
+  //     if (queryFilter) {
+  //       fObj['query'] = queryFilter.replace(/\+/g, '').replace(/ /g, '+');
+  //     }
+  //     if (administratorFilter && administratorFilter.length > 0) {
+  //       fObj['stakeholders'] = administratorFilter.join(',');
+  //     }
+  //     if (ownerFilter) {
+  //       fObj['stakeholders'] = user.username;
+  //     }
+  //     if (startdate) {
+  //       const date = startdate.trim();
+  //       fObj['start'] = date;
+  //     }
+  //     if (enddate) {
+  //       const date = enddate.trim();
+  //       fObj['end'] = date;
+  //     }
+  //     if (propertyDesignation) {
+  //       extraFilterObj['propertyDesignation'] = propertyDesignation;
+  //     }
+  //     if (phaseFilter && phaseFilter.length > 0) {
+  //       fObj['phase'] = phaseFilter;
+  //     }
+  //     setFilterObject(fObj);
+  //     setExtraFilter(extraFilterObj);
+  //     store.set('filter', JSON.stringify(fObj));
+  //   },
+  //   200,
+  //   [
+  //     queryFilter,
+  //     ownerFilter,
+  //     priorityFilter,
+  //     caseTypeFilter,
+  //     statusFilter,
+  //     administratorFilter,
+  //     startdate,
+  //     enddate,
+  //     propertyDesignation,
+  //     phaseFilter,
+  //   ]
+  // );
 
   useDebounceEffect(
     () => {
@@ -227,37 +223,17 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
-        <div className="container px-0 flex flex-wrap gap-16 items-center">
-          <FormProvider {...filterForm}>
-            <CasedataFilterQuery />
-          </FormProvider>
-          <Link
-            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-            target="_blank"
-            data-cy="register-new-errand-button"
-          >
-            <Button color={'primary'} variant={'tertiary'}>
-              Nytt ärende
-            </Button>
-          </Link>
-        </div>
-      </div>
+      {/* <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+        <div className="container px-0 flex flex-wrap gap-16 items-center"></div>
+      </div> */}
 
       <main className="px-24 md:px-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
-            <div>
-              <FormProvider {...filterForm}>
-                <CaseDataFiltering
-                  ownerFilterHandler={(e) => {
-                    return setOwnerFilter(e);
-                  }}
-                  ownerFilter={ownerFilter}
-                  administrators={administrators}
-                />
-              </FormProvider>
-            </div>
+            <h1 className="p-0 m-0">
+              {sidebarLabel || 'Ärenden'}
+              {sidebarLabel === 'Avslutade ärenden' ? ' : ' + closedErrands.totalElements : null}
+            </h1>
 
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>

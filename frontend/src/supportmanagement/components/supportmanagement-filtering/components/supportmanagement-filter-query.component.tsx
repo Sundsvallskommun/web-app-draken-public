@@ -33,7 +33,7 @@ export const SupportManagementFilterQuery: React.FC = () => {
   return (
     <SearchField
       value={query}
-      size={isMobile ? 'md' : 'lg'}
+      size="md"
       data-cy="query-filter"
       onChange={(e) => {
         setQuery(e.target.value);

@@ -68,6 +68,8 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
     setBillingRecords,
+    sidebarLabel,
+    solvedSupportErrands,
   } = useAppContext();
 
   const startdate = watchFilter('startdate');
@@ -91,10 +93,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   const initialFocus = useRef(null);
 
-  useEffect(() => {
-    setValue('status', selectedSupportErrandStatuses);
-  }, [selectedSupportErrandStatuses]);
-
   const setInitialFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
@@ -103,77 +101,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   const router = useRouter();
   const { user, setUser } = useAppContext();
-
-  useEffect(() => {
-    const filterdata = store.get('filter');
-
-    if (filterdata && supportMetadata) {
-      let filter;
-      let storedFilters;
-      try {
-        filter = JSON.parse(filterdata);
-        storedFilters = {
-          category: filter?.category?.split(',') || SupportManagementValues.category,
-          labelCategory: filter?.labelCategory?.split(',') || SupportManagementValues.labelCategory,
-          type: filter?.type?.split(',') || SupportManagementValues.type,
-          labelType:
-            Array.from(
-              new Set(
-                filter?.labelType
-                  ?.split(',')
-                  .map((n) => getLabelTypeFromName(n, supportMetadata))
-                  .map((t) => t?.displayName)
-              )
-            ) || SupportManagementValues.labelType,
-          labelSubType:
-            Array.from(
-              new Set(
-                filter?.labelSubType
-                  ?.split(',')
-                  .map((n) => getLabelSubTypeFromName(n, supportMetadata))
-                  .map((t) => t?.displayName)
-              )
-            ) || SupportManagementValues.labelSubType,
-          priority: filter?.priority?.split(',') || SupportManagementValues.priority,
-          channel: filter?.channel?.split(',') || SupportManagementValues.channel,
-          status: filter?.status !== '' ? filter?.status?.split(',') || SupportManagementValues.status : [],
-          startdate: filter?.start || SupportManagementValues.startdate,
-          enddate: filter?.end || SupportManagementValues.enddate,
-          admins:
-            filter?.stakeholders !== user.username
-              ? filter?.stakeholders?.split(',') || SupportManagementValues.admins
-              : [],
-        };
-        const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
-        setSelectedSupportErrandStatuses(filterStatuses);
-        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => Status[s]));
-        setSidebarLabel(selectedStatusLabel);
-      } catch (error) {
-        store.set('filter', JSON.stringify({}));
-        storedFilters = {
-          category: SupportManagementValues.category,
-          labelCategory: SupportManagementValues.labelCategory,
-          type: SupportManagementValues.type,
-          labelType: SupportManagementValues.labelType,
-          labelSubType: SupportManagementValues.labelSubType,
-          priority: SupportManagementValues.priority,
-          channel: SupportManagementValues.channel,
-          status: SupportManagementValues.status,
-          startdate: SupportManagementValues.startdate,
-          enddate: SupportManagementValues.enddate,
-          admins: [],
-        };
-      }
-      if (filter?.stakeholders === user.username) {
-        setOwnerFilter(true);
-      }
-      if (storedFilters.status) {
-        setSelectedSupportErrandStatuses(storedFilters.status || [Status.ONGOING]);
-      }
-      resetFilter(storedFilters);
-      triggerFilter();
-    }
-  }, [resetFilter, triggerFilter, user.username, supportMetadata]);
 
   useEffect(() => {
     const sortData = store.get('sort');
@@ -200,18 +127,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   }, [filterObject, sortColumn, sortOrder, pageSize]);
 
   useEffect(() => {
-    // NOTE: If we set focus on the next button
-    //       the browser will automatically scroll
-    //       down to the button.
-    setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
-    setSupportErrand(undefined);
-    //eslint-disable-next-line
-  }, [router]);
-
-  useEffect(() => {
     if (errands) {
       setSupportErrand(undefined);
       setTableValue('page', errands.page);
@@ -221,101 +136,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     }
     //eslint-disable-next-line
   }, [errands]);
-
-  useEffect(() => {
-    // getAdminUsers().then((data) => {
-    //   setAdministrators(data);
-    // });
-    getSupportAdmins().then(setSupportAdmins);
-    //eslint-disable-next-line
-  }, []);
-
-  useDebounceEffect(
-    () => {
-      const fObj = {};
-      const extraFilterObj = {};
-      if (priorityFilter && priorityFilter.length > 0) {
-        fObj['priority'] = priorityFilter.join(',');
-      }
-      if (categoryFilter && categoryFilter.length > 0) {
-        fObj['category'] = categoryFilter.join(',');
-      }
-      if (labelCategoryFilter && labelCategoryFilter.length > 0) {
-        fObj['labelCategory'] = labelCategoryFilter.join(',');
-      }
-      if (statusFilter && statusFilter.length > 0) {
-        fObj['status'] = statusFilter.join(',');
-      }
-      if (typeFilter && typeFilter.length > 0) {
-        fObj['type'] = typeFilter.join(',');
-      }
-      if (labelTypeFilter && labelTypeFilter.length > 0) {
-        // The labelType filter is a list of displayNames, but the API expects names
-        // so we need to convert the displayNames to names before sending the filter
-        //
-        // This is because the names are unique, but the displayNames are not
-        // and we want to be able to filter on multiple types with the same displayName
-        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-        const matchedTypes = allTypesFlattened.filter((l) => labelTypeFilter.includes(l.displayName));
-        const matchedTypeNames = matchedTypes.map((t) => t.name);
-        fObj['labelType'] = matchedTypeNames.join(',');
-      }
-      if (labelSubTypeFilter && labelSubTypeFilter.length > 0) {
-        // The labelSubType filter is a list of displayNames, but the API expects names
-        // so we need to convert the displayNames to names before sending the filter
-        //
-        // This is because the names are unique, but the displayNames are not
-        // and we want to be able to filter on multiple types with the same displayName
-        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-        const allSubTypesFlattened = allTypesFlattened
-          ?.filter((l) => l.labels?.length > 0)
-          .map((l) => l.labels)
-          .flat();
-        const matchedSubTypes = allSubTypesFlattened.filter((l) => labelSubTypeFilter.includes(l.displayName));
-        const matchedSubTypeNames = matchedSubTypes.map((t) => t.name);
-        fObj['labelSubType'] = matchedSubTypeNames.join(',');
-      }
-      if (channelFilter && channelFilter.length > 0) {
-        fObj['channel'] = channelFilter.join(',');
-      }
-      if (queryFilter) {
-        fObj['query'] = queryFilter.replace(/\+/g, '').replace(/ /g, '+');
-      }
-      if (administratorFilter && administratorFilter.length > 0) {
-        fObj['stakeholders'] = administratorFilter.join(',');
-      }
-      if (ownerFilter) {
-        fObj['stakeholders'] = user.username;
-      }
-      if (startdate) {
-        const date = startdate.trim();
-        fObj['start'] = date;
-      }
-      if (enddate) {
-        const date = enddate.trim();
-        fObj['end'] = date;
-      }
-      setFilterObject(fObj);
-      setExtraFilter(extraFilterObj);
-      store.set('filter', JSON.stringify(fObj));
-    },
-    200,
-    [
-      queryFilter,
-      ownerFilter,
-      priorityFilter,
-      categoryFilter,
-      labelCategoryFilter,
-      statusFilter,
-      typeFilter,
-      labelTypeFilter,
-      labelSubTypeFilter,
-      channelFilter,
-      administratorFilter,
-      startdate,
-      enddate,
-    ]
-  );
 
   useDebounceEffect(
     () => {
@@ -331,39 +151,13 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   return (
     <div className="w-full">
-      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
-        <div className="container px-0 flex flex-wrap gap-16 items-center">
-          <FormProvider {...filterForm}>
-            <SupportManagementFilterQuery />
-          </FormProvider>
-          <Link
-            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-            target="_blank"
-            data-cy="register-new-errand-button"
-          >
-            <Button
-              color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-              variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
-            >
-              Nytt ärende
-            </Button>
-          </Link>
-        </div>
-      </div>
-
       <main className="px-24 md:px-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
-            <div>
-              <FormProvider {...filterForm}>
-                <SupportManagementFiltering
-                  ownerFilterHandler={ownerFilteringHandler}
-                  ownerFilter={ownerFilter}
-                  administrators={supportAdmins}
-                />
-              </FormProvider>
-            </div>
-
+            <h1 className="p-0 m-0">
+              {sidebarLabel || 'Ärenden'}
+              {sidebarLabel === 'Avslutade ärenden' ? ' : ' + solvedSupportErrands.totalElements : null}
+            </h1>
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>
                 <SupportErrandsTable />
