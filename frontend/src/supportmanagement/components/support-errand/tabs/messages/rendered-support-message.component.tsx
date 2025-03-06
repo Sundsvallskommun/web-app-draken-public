@@ -191,7 +191,8 @@ export const RenderedSupportMessage: React.FC<{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {message?.direction === 'INBOUND' && message.communicationType === 'EMAIL' ? (
+          {message?.direction === 'INBOUND' &&
+          (message.communicationType === 'EMAIL' || message.communicationType === 'WEB_MESSAGE') ? (
             <Button
               type="button"
               className="self-start"
