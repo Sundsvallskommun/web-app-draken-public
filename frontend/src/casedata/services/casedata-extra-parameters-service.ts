@@ -10,12 +10,12 @@ export interface UppgiftField {
   value: string;
   label: string;
   formField:
-    | { type: 'text' }
-    | { type: 'date' }
+    | { type: 'text'; options?: { placeholder?: string } }
+    | { type: 'date'; options?: { min?: string; max?: string } }
     | { type: 'datetime-local' }
     | { type: 'textarea' }
     | { type: 'select'; options: { label: string; value: string }[] }
-    | { type: 'radio'; options: { label: string; value: string }[] }
+    | { type: 'radio'; options: { label: string; value: string }[]; inline?: boolean }
     | { type: 'radioPlus'; options: { label: string; value: string }[]; ownOption: string }
     | { type: 'checkbox'; options: { label: string; value: string; name: string }[] };
   section: string;
@@ -44,6 +44,7 @@ export interface ExtraParametersObject {
   PARKING_PERMIT?: UppgiftField[];
   LOST_PARKING_PERMIT?: UppgiftField[];
   PARKING_PERMIT_RENEWAL?: UppgiftField[];
+  APPEAL?: UppgiftField[];
 }
 
 const baseParkingPermitDetails: UppgiftField[] = [
@@ -967,6 +968,72 @@ const template: ExtraParametersObject = {
           },
           { label: 'Nej', value: 'no' },
         ],
+      },
+      section: 'Övergripande',
+    },
+  ],
+  APPEAL: [
+    {
+      field: 'application.appeal.type',
+      value: '',
+      label: 'Typ av överklagan',
+      formField: {
+        type: 'radio',
+        options: [
+          {
+            label: 'Överklagar beslut',
+            value: 'appeal_decision',
+          },
+          { label: 'Överklagar rättidsprövning', value: 'appeal_time' },
+          { label: 'Kommunen överklagar', value: 'appeal_municipality' },
+        ],
+      },
+      section: 'Övergripande',
+    },
+    {
+      field: 'application.appeal.relatesto',
+      value: '',
+      label: 'Ärende som överklagas (ange ärendenummer)',
+      formField: {
+        type: 'text',
+        options: {
+          placeholder: 't.ex. PRH-2024-000275',
+        },
+      },
+      section: 'Övergripande',
+    },
+    {
+      field: 'application.appeal.date',
+      value: '',
+      label: 'Ange datum överklagan inkom till kommunen',
+      formField: {
+        type: 'date',
+      },
+      section: 'Övergripande',
+    },
+    {
+      field: 'application.appeal.recivedintime',
+      value: '',
+      label: 'Rättidsprövning',
+      formField: {
+        type: 'radio',
+        options: [
+          {
+            label: 'Överklagan inkom i rätt tid',
+            value: 'true',
+          },
+          { label: 'Överklagan inkom inte i rätt tid', value: 'false' },
+        ],
+        inline: true,
+      },
+      section: 'Övergripande',
+    },
+    {
+      field: 'application.appeal.extra',
+      value: '',
+      label: 'Övrig infomration',
+      formField: {
+        type: 'textarea',
       },
       section: 'Övergripande',
     },
