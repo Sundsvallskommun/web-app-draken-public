@@ -125,10 +125,6 @@ export class CasedataNotificationController {
     @Body() data: PatchNotificationDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const allowed = true;
-    if (!allowed) {
-      throw new HttpException(403, 'Forbidden');
-    }
     if (!municipalityId) {
       logger.error('No municipality id found, it is needed to update notification.');
       return response.status(400).send('Municipality id missing');
@@ -157,10 +153,6 @@ export class CasedataNotificationController {
     @Param('errandId') errandId: string,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const allowed = true;
-    if (!allowed) {
-      throw new HttpException(403, 'Forbidden');
-    }
     if (!municipalityId) {
       logger.error('No municipality id found, it is needed to update notification.');
       return response.status(400).send('Municipality id missing');
