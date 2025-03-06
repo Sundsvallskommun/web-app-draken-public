@@ -434,7 +434,7 @@ export const MessageComposer: React.FC<{
                   defaultChecked={!!errand.externalCaseId}
                   {...register('contactMeans')}
                 >
-                  OpenE
+                  E-tjänst
                 </RadioButton>
               )}
             </fieldset>
