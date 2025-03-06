@@ -10,7 +10,7 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
-import { Chip } from '@sk-web-gui/react';
+import { Button, Chip } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import dayjs from 'dayjs';
 import { useFormContext } from 'react-hook-form';
@@ -147,9 +147,14 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
         ))}
 
       {hasTags && (
-        <button data-cy="tag-clearAll" className="sk-chip" onClick={() => handleReset()}>
+        <Button
+          data-cy="tag-clearAll"
+          variant="link"
+          className="text-primary-surface hover:text-primary-surface"
+          onClick={() => handleReset()}
+        >
           Rensa alla
-        </button>
+        </Button>
       )}
     </div>
   );

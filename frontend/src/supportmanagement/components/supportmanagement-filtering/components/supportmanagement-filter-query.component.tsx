@@ -38,14 +38,14 @@ export const SupportManagementFilterQuery: React.FC = () => {
       onChange={(e) => {
         setQuery(e.target.value);
       }}
-      className="flex-grow"
+      className={`flex-grow ${query === '' ? 'max-w-[336px]' : 'max-w-[360px]'}`}
       onSearch={() => setValue('query', query)}
       onReset={() => {
         setQuery('');
         setValue('query', '');
       }}
-      title="Sök på ärendenummer eller ärendeintressent (namn, adress, personnummer, e-post, telefon)..."
-      placeholder="Sök på ärendenummer eller ärendeintressent (namn, adress, personnummer, e-post, telefon)..."
+      title="Sök"
+      placeholder="Sök"
     />
   );
 };

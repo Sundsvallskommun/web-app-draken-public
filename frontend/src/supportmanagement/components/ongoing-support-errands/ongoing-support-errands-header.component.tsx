@@ -320,7 +320,7 @@ const OngoingSupportManagementHeader: React.FC = () => {
     setOwnerFilter(e);
   };
   return (
-    <div className="bg-background-content w-full z-sticky px-24 py-24 shadow-md flex flex-row gap-16 justify-between">
+    <div className="bg-background-content w-full z-sticky px-24 py-22 shadow-md flex flex-row gap-16 justify-between">
       <div className="sm:w-[32rem] sm:min-w-[32rem]">
         <NextLink
           href="/"
@@ -337,9 +337,9 @@ const OngoingSupportManagementHeader: React.FC = () => {
         </NextLink>
       </div>
 
-      <div className="max-w-[1600px] w-full mr-52">
+      <div className="max-w-[1600px] w-full">
         <FormProvider {...filterForm}>
-          <div className="flex">
+          <div className="flex items-center">
             <SupportManagementFilterQuery />{' '}
             <SupportManagementFiltering
               ownerFilterHandler={(e) => {
@@ -351,13 +351,6 @@ const OngoingSupportManagementHeader: React.FC = () => {
           </div>
 
           <div className="flex flex-col md:flex-row justify-start gap-16">
-            <Checkbox
-              data-cy="myErrands-filter"
-              checked={ownerFilter}
-              onChange={() => ownerFilteringHandler(!ownerFilter)}
-            >
-              Mina ärenden
-            </Checkbox>
             <SupportManagementFilterTags administrators={supportAdmins} />
           </div>
         </FormProvider>
@@ -367,7 +360,7 @@ const OngoingSupportManagementHeader: React.FC = () => {
         target="_blank"
         data-cy="register-new-errand-button"
       >
-        <Button color={'primary'} variant={'tertiary'}>
+        <Button size="sm" color={'vattjom'} variant="primary">
           Nytt ärende
         </Button>
       </Link>

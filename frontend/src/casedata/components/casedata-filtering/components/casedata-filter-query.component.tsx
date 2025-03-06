@@ -19,8 +19,6 @@ export const CasedataFilterQuery: React.FC = () => {
   const [query, setQuery] = useState<string>(value);
   const gui = useGui();
 
-  const isMobile = useMediaQuery(`screen and (max-width: ${gui.theme.screens.md})`);
-
   useDebounceEffect(
     () => {
       if (query !== value) {
@@ -40,13 +38,14 @@ export const CasedataFilterQuery: React.FC = () => {
         setQuery(e.target.value);
       }}
       showSearchButton={value !== query}
-      className="flex-grow"
+      className={`flex-grow ${query === '' ? 'max-w-[336px]' : 'max-w-[360px]'}`}
       onSearch={() => setValue('query', query)}
       onReset={() => {
         setQuery('');
         setValue('query', '');
       }}
-      placeholder="Skriv för att söka"
+      placeholder="Sök"
+      title="Sök"
     />
   );
 };

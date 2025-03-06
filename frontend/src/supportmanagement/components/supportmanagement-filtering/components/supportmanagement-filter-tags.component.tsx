@@ -1,6 +1,6 @@
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
-import { Chip } from '@sk-web-gui/react';
+import { Button, Chip } from '@sk-web-gui/react';
 import { Channels, Status } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
@@ -219,9 +219,13 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
         ))}
 
       {hasTags && (
-        <button className="sk-chip" onClick={() => handleReset()}>
+        <Button
+          variant="link"
+          className="text-primary-surface hover:text-primary-surface"
+          onClick={() => handleReset()}
+        >
           Rensa alla
-        </button>
+        </Button>
       )}
     </div>
   );
