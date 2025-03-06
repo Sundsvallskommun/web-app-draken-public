@@ -16,16 +16,21 @@ export const mockMexErrand_base = {
     caseTitleAddition: 'Ansökan torgplats',
     phase: 'Beslut',
     externalCaseId: '1234',
+    status: {
+      statusType: 'Under utredning',
+      description: 'Under utredning',
+      created: '2024-05-20T10:50:18.681018+02:00',
+    },
     statuses: [
       {
         statusType: 'Under granskning',
         description: 'Under granskning',
-        dateTime: '2024-05-17T10:50:18.681018+02:00',
+        created: '2024-05-17T10:50:18.681018+02:00',
       },
       {
         statusType: 'Under utredning',
         description: 'Under utredning',
-        dateTime: '2024-05-20T10:50:18.681018+02:00',
+        created: '2024-05-20T10:50:18.681018+02:00',
       },
     ],
     municipalityId: '2281',

@@ -39,8 +39,8 @@ export interface ApiErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
-  relatesTo?: RelatedErrand[];
   notifications?: Notification[];
+  relatesTo?: RelatedErrand[];
 }
 
 export interface ApiPagingData {
@@ -103,8 +103,8 @@ export interface IErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
-  relatesTo?: RelatedErrand[];
   notifications?: Notification[];
+  relatesTo?: RelatedErrand[];
 }
 
 export interface ErrandsData extends Data {
