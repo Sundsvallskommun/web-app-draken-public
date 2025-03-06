@@ -29,9 +29,8 @@ import { useRouter } from 'next/router';
 const OngoingSupportManagementHeader: React.FC = () => {
   const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
-
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
 
   const sortData = store.get('sort');
   let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number };
@@ -54,15 +53,12 @@ const OngoingSupportManagementHeader: React.FC = () => {
     supportMetadata,
     setSupportErrand,
     setSupportAdmins,
-    setAvatar,
     supportAdmins,
     municipalityId,
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
     setBillingRecords,
-    sidebarLabel,
-    solvedSupportErrands,
   } = useAppContext();
 
   const startdate = watchFilter('startdate');
@@ -171,6 +167,30 @@ const OngoingSupportManagementHeader: React.FC = () => {
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
 
   useEffect(() => {
+    const sortData = store.get('sort');
+    if (attestationEnabled(user)) {
+      getBillingRecords(municipalityId, 0, pageSize, {}, { modified: 'desc' }).then(setBillingRecords);
+    }
+
+    if (sortData) {
+      try {
+        let sort = JSON.parse(sortData);
+        setTableValue('size', sort.size);
+        setTableValue('sortOrder', sort.sortOrder);
+        setTableValue('sortColumn', sort.sortColumn);
+        setTableValue('pageSize', sort.pageSize);
+      } catch (error) {
+        store.set('sort', JSON.stringify({}));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    setTableValue('page', 0);
+    //eslint-disable-next-line
+  }, [filterObject, sortColumn, sortOrder, pageSize]);
+
+  useEffect(() => {
     // NOTE: If we set focus on the next button
     //       the browser will automatically scroll
     //       down to the button.
@@ -181,6 +201,17 @@ const OngoingSupportManagementHeader: React.FC = () => {
     setSupportErrand(undefined);
     //eslint-disable-next-line
   }, [router]);
+
+  useEffect(() => {
+    if (errands) {
+      setSupportErrand(undefined);
+      setTableValue('page', errands.page);
+      setTableValue('size', errands.size);
+      setTableValue('totalPages', errands.totalPages);
+      setTableValue('totalElements', errands.totalElements);
+    }
+    //eslint-disable-next-line
+  }, [errands]);
 
   useEffect(() => {
     // getAdminUsers().then((data) => {
@@ -275,6 +306,14 @@ const OngoingSupportManagementHeader: React.FC = () => {
       startdate,
       enddate,
     ]
+  );
+
+  useDebounceEffect(
+    () => {
+      store.set('sort', JSON.stringify(watchTable()));
+    },
+    200,
+    [watchTable, sortObject, pageSize]
   );
 
   const ownerFilteringHandler = async (e) => {

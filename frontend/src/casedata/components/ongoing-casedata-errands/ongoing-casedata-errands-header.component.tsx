@@ -13,7 +13,7 @@ import { CasedataFilterTags } from '../casedata-filtering/components/casedata-fi
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { useRouter } from 'next/router';
-import { OngoingCaseDataErrands, TableForm } from './ongoing-casedata-errands.component';
+import { TableForm } from './ongoing-casedata-errands.component';
 
 const OngoingCaseDataHeader: React.FC = () => {
   const applicationName = getApplicationName();
@@ -50,8 +50,6 @@ const OngoingCaseDataHeader: React.FC = () => {
 
   const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
   const initialFocus = useRef(null);
-
-  const { sidebarLabel, closedErrands } = useAppContext();
 
   const setInitialFocus = () => {
     setTimeout(() => {
@@ -108,27 +106,6 @@ const OngoingCaseDataHeader: React.FC = () => {
     }
   }, [resetFilter, triggerFilter, user.username]);
 
-  // useEffect(() => {
-  //   const sortData = store.get('sort');
-
-  //   if (sortData) {
-  //     try {
-  //       let sort = JSON.parse(sortData);
-  //       setTableValue('size', sort.size);
-  //       setTableValue('pageSize', sort.pageSize);
-  //       setTableValue('sortOrder', sort.sortOrder);
-  //       setTableValue('sortColumn', sort.sortColumn);
-  //     } catch (error) {
-  //       store.set('sort', JSON.stringify({}));
-  //     }
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   setTableValue('page', 0);
-  //   //eslint-disable-next-line
-  // }, [filterObject, sortColumn, sortOrder, pageSize]);
-
   useEffect(() => {
     // NOTE: If we set focus on the next button
     //       the browser will automatically scroll
@@ -140,17 +117,6 @@ const OngoingCaseDataHeader: React.FC = () => {
     setErrand(undefined);
     //eslint-disable-next-line
   }, [router]);
-
-  // useEffect(() => {
-  //   if (errands) {
-  //     setErrand(undefined);
-  //     setTableValue('page', errands.page);
-  //     setTableValue('size', errands.size);
-  //     setTableValue('totalPages', errands.totalPages);
-  //     setTableValue('totalElements', errands.totalElements);
-  //   }
-  //   //eslint-disable-next-line
-  // }, [errands]);
 
   useEffect(() => {
     getAdminUsers().then((data) => {
@@ -214,13 +180,6 @@ const OngoingCaseDataHeader: React.FC = () => {
     ]
   );
 
-  // useDebounceEffect(
-  //   () => {
-  //     store.set('sort', JSON.stringify(watchTable()));
-  //   },
-  //   200,
-  //   [watchTable, sortObject, pageSize]
-  // );
   const ownerFilterHandler = (e) => {
     return setOwnerFilter(e);
   };
