@@ -23,7 +23,7 @@ export class EstateInfoController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `/estateinfo/1.0/estate-by-designation`;
+    const url = `/estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
     const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: query, maxHits: 10 } }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
@@ -36,8 +36,8 @@ export class EstateInfoController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `/estateinfo/1.0/estate-by-address`;
-    const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { address: query, maxHits: 10 } }, req.user);
+    const url = `/estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-address`;
+    const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { address: query } }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
@@ -46,7 +46,7 @@ export class EstateInfoController {
   @UseBefore(authMiddleware)
   async fetchEstateInfo(@Req() req: RequestWithUser, @Param('designation') designation: string) {
     if (designation !== '') {
-      const url = `/estateinfo/1.0/estate-by-designation`;
+      const url = `/estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
       const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: designation, maxHits: 10 } }, req.user).catch(e => {
         throw new HttpException(400, 'Could not find estate for designation: ' + designation);
       });
@@ -54,7 +54,7 @@ export class EstateInfoController {
       const indexOfEstate = res.data.findIndex(estate => estate.designation === designation);
 
       if (res.data.length !== 0 && indexOfEstate !== -1) {
-        const url = `/estateinfo/1.0/estate-data`;
+        const url = `/estateinfo/2.0/estate-data`;
         const result = await this.apiService
           .get<EstateInformation>({ url, params: { objectidentifier: res.data[indexOfEstate].objectidentifier } }, req.user)
           .catch(e => {
