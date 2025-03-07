@@ -37,7 +37,7 @@ export class EstateInfoController {
     }
 
     const url = `/estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-address`;
-    const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { address: query } }, req.user);
+    const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { address: query, maxHits: 10 } }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
