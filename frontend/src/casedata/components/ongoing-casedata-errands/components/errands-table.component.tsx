@@ -16,6 +16,7 @@ import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 import dayjs from 'dayjs';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
+import { sortBy } from '@common/services/helper-service';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -80,6 +81,10 @@ export const ErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.errandNumber}`, '_blank');
   };
 
+  const findLatestNotification = (errand: IErrand) => {
+    return sortBy(errand?.notifications, 'created').reverse()[0];
+  };
+
   const headers = data.labels.map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={header.sticky}>
       {header.screenReaderOnly ? (
@@ -101,6 +106,7 @@ export const ErrandsTable: React.FC = () => {
   ));
 
   const rows = (data.errands || []).map((errand: IErrand, index) => {
+    const notification = findLatestNotification(errand);
     return (
       <Table.Row
         key={`row-${index}`}
@@ -119,26 +125,28 @@ export const ErrandsTable: React.FC = () => {
           )}
         </Table.HeaderColumn>
         <Table.Column>
-          <div>
-            {errand.notifications[0]?.globalAcknowledged === false ? (
-              <>
-                <Callout color="vattjom"></Callout>
-                <span className="sr-only">Ny händelse på ärendet</span>
-              </>
-            ) : null}
-          </div>
-          <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-            <div>
-              <time dateTime={errand.notifications[0]?.created}>
-                {errand.notifications[0]?.created
-                  ? dayjs(errand.notifications[0]?.created).format('YYYY-MM-DD HH:mm')
-                  : ''}
-              </time>
-            </div>
-            <div className="italic">
-              {errand.notifications[0]?.description ? errand.notifications[0]?.description : ''}
-            </div>
-          </div>
+          {!!notification ? (
+            <>
+              <div>
+                {notification?.globalAcknowledged === false ? (
+                  <>
+                    <Callout color="vattjom"></Callout>
+                    <span className="sr-only">Ny händelse på ärendet</span>
+                  </>
+                ) : null}
+              </div>
+              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+                <div>
+                  <time dateTime={notification?.created}>
+                    {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
+                  </time>
+                </div>
+                <div className="italic">{notification?.description ? notification?.description : ''}</div>
+              </div>
+            </>
+          ) : (
+            errand.updated
+          )}
         </Table.Column>
         <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
           {isPT() ? (
