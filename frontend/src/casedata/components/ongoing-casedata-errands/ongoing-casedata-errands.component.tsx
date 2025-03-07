@@ -9,8 +9,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
-import { Button, Link } from '@sk-web-gui/react';
-import { CasedataFilterQuery } from '../casedata-filtering/components/casedata-filter-query.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export interface TableForm {
@@ -25,7 +23,7 @@ export interface TableForm {
 
 export const OngoingCaseDataErrands: React.FC = () => {
   const filterForm = useForm<CaseDataFilter>({ defaultValues: CaseDataValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue, getValues } = filterForm;
   const tableForm = useForm<TableForm>({ defaultValues: { sortColumn: 'updated', sortOrder: 'desc', pageSize: 12 } });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
@@ -38,6 +36,8 @@ export const OngoingCaseDataErrands: React.FC = () => {
     selectedErrandStatuses,
     setSelectedErrandStatuses,
     setSidebarLabel,
+    sidebarLabel,
+    closedErrands,
   }: AppContextInterface = useAppContext();
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -52,7 +52,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
-
   const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
   const initialFocus = useRef(null);
 
@@ -225,22 +224,30 @@ export const OngoingCaseDataErrands: React.FC = () => {
     [watchTable, sortObject, pageSize]
   );
 
+  const numberOfFilters =
+    getValues().caseType.length +
+    getValues().admins.length +
+    (getValues().enddate !== '' ? 1 : 0) +
+    (getValues().startdate !== '' ? 1 : 0) +
+    getValues().phase.length +
+    getValues().priority.length +
+    (getValues().propertyDesignation && getValues().propertyDesignation !== '' ? 1 : 0) +
+    (ownerFilter ? 1 : 0);
+
   return (
     <div className="w-full">
       <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
-            <CasedataFilterQuery />
+            <CaseDataFiltering
+              numberOfFilters={numberOfFilters}
+              ownerFilterHandler={(e) => {
+                return setOwnerFilter(e);
+              }}
+              ownerFilter={ownerFilter}
+              administrators={administrators}
+            />
           </FormProvider>
-          <Link
-            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-            target="_blank"
-            data-cy="register-new-errand-button"
-          >
-            <Button color={'primary'} variant={'tertiary'}>
-              Nytt ärende
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -248,15 +255,10 @@ export const OngoingCaseDataErrands: React.FC = () => {
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
             <div>
-              <FormProvider {...filterForm}>
-                <CaseDataFiltering
-                  ownerFilterHandler={(e) => {
-                    return setOwnerFilter(e);
-                  }}
-                  ownerFilter={ownerFilter}
-                  administrators={administrators}
-                />
-              </FormProvider>
+              <h1 className="p-0 m-0">
+                {sidebarLabel || 'Ärenden'}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + closedErrands.totalElements : null}
+              </h1>
             </div>
 
             <Disclosure.Panel static>

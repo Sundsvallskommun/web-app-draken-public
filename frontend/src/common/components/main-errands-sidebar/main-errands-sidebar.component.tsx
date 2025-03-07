@@ -20,10 +20,10 @@ import {
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 import { useState } from 'react';
-import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -61,7 +61,7 @@ export const MainErrandsSidebar: React.FC<{
         <div>
           <MainTitle />
         </div>
-        <div className="py-24 h-fit flex gap-12 items-center justify-between">
+        <div className="pb-24 h-fit flex gap-12 items-center justify-between">
           <div className="flex gap-12 justify-between items-center">
             <Avatar
               data-cy="avatar-aside"
