@@ -9,8 +9,6 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
-import OngoingCaseDataHeader from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands-header.component';
-import OngoingSupportManagementHeader from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands-header.component';
 
 export const Oversikt: React.FC = () => {
   const router = useRouter();
@@ -47,7 +45,6 @@ export const Oversikt: React.FC = () => {
     <>
       {isKC() || isIK() || isLOP() ? (
         <>
-          <OngoingSupportManagementHeader />
           <SidebarLayout
             title={`${getApplicationName()} - Översikt`}
             setShowAttestationTable={setShowAttestationTable}
@@ -62,7 +59,6 @@ export const Oversikt: React.FC = () => {
         </>
       ) : (
         <>
-          <OngoingCaseDataHeader />
           <SidebarLayout
             setShowAttestationTable={setShowAttestationTable}
             showAttestationTable={showAttestationTable}

@@ -15,7 +15,7 @@ import {
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import {
+import SupportManagementFiltering, {
   SupportManagementFilter,
   SupportManagementValues,
 } from '../supportmanagement-filtering/supportmanagement-filtering.component';
@@ -58,12 +58,13 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     supportMetadata,
     setSupportErrand,
     setSupportAdmins,
+    supportAdmins,
     municipalityId,
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
     sidebarLabel,
-    solvedSupportErrands,
+    closedErrands,
     setBillingRecords,
   } = useAppContext();
 
@@ -322,15 +323,46 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     [watchTable, sortObject, pageSize]
   );
 
+  const ownerFilteringHandler = async (e) => {
+    setOwnerFilter(e);
+  };
+
+  const numberOfFilters =
+    getValues().category.length +
+    getValues().channel.length +
+    getValues().admins.length +
+    getValues().labelCategory.length +
+    getValues().labelSubType.length +
+    getValues().labelType.length +
+    (getValues().enddate !== '' ? 1 : 0) +
+    (getValues().startdate !== '' ? 1 : 0) +
+    getValues().priority.length +
+    (ownerFilter ? 1 : 0);
+
   return (
     <div className="w-full">
+      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+        <div className="container px-0 flex flex-wrap gap-16 items-center">
+          <FormProvider {...filterForm}>
+            <SupportManagementFiltering
+              numberOfFilters={numberOfFilters}
+              ownerFilterHandler={ownerFilteringHandler}
+              ownerFilter={ownerFilter}
+              administrators={supportAdmins}
+            />
+          </FormProvider>
+        </div>
+      </div>
+
       <main className="px-24 md:px-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
-            <h1 className="p-0 m-0">
-              {sidebarLabel || 'Ärenden'}
-              {sidebarLabel === 'Avslutade ärenden' ? ' : ' + solvedSupportErrands.totalElements : null}
-            </h1>
+            <div>
+              <h1 className="p-0 m-0">
+                {sidebarLabel || 'Ärenden'}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + closedErrands.totalElements : null}
+              </h1>
+            </div>
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>
                 <SupportErrandsTable />

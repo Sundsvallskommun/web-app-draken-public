@@ -58,9 +58,9 @@ export const MainErrandsSidebar: React.FC<{
       className="flex-none absolute z-10 bg-vattjom-background-200 h-full min-h-screen max-w-full w-full sm:w-[32rem] sm:min-w-[32rem]"
     >
       <div className="h-full w-full p-24">
-        {/* <div>
+        <div>
           <MainTitle />
-        </div> */}
+        </div>
         <div className="pb-24 h-fit flex gap-12 items-center justify-between">
           <div className="flex gap-12 justify-between items-center">
             <Avatar

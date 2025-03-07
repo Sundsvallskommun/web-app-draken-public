@@ -38,7 +38,7 @@ export const SupportManagementFilterQuery: React.FC = () => {
       onChange={(e) => {
         setQuery(e.target.value);
       }}
-      className={`flex-grow ${query === '' ? 'max-w-[336px]' : 'max-w-[360px]'}`}
+      className="flex-grow max-w-full"
       onSearch={() => setValue('query', query)}
       onReset={() => {
         setQuery('');
