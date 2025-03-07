@@ -1,7 +1,7 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
-import { prettyTime } from '@common/services/helper-service';
+import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -217,7 +217,12 @@ export const SupportErrandsTable: React.FC = () => {
     return '';
   };
 
+  const findLatestNotification = (errand: SupportErrand) => {
+    return sortBy(errand?.activeNotifications, 'created').reverse()[0];
+  };
+
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
+    const notification = findLatestNotification(errand);
     return (
       <Table.Row
         tabIndex={0}
@@ -230,26 +235,32 @@ export const SupportErrandsTable: React.FC = () => {
       >
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
         <Table.Column>
-          <div>
-            {errand.activeNotifications[0]?.globalAcknowledged === false ? (
-              <>
-                <Callout color="vattjom"></Callout>
-                <span className="sr-only">Ny händelse på ärendet</span>
-              </>
-            ) : null}
-          </div>
-          <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-            <div>
-              <time dateTime={errand.activeNotifications[0]?.created}>
-                {errand.activeNotifications[0]?.created
-                  ? dayjs(errand.activeNotifications[0]?.created).format('YYYY-MM-DD HH:mm')
-                  : ''}
-              </time>
-            </div>
-            <div className="italic">
-              {errand.activeNotifications[0]?.description ? errand.activeNotifications[0]?.description : ''}
-            </div>
-          </div>
+          {!!notification ? (
+            <>
+              <div>
+                {errand.activeNotifications[0]?.globalAcknowledged === false ? (
+                  <>
+                    <Callout color="vattjom"></Callout>
+                    <span className="sr-only">Ny händelse på ärendet</span>
+                  </>
+                ) : null}
+              </div>
+              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+                <div>
+                  <time dateTime={errand.activeNotifications[0]?.created}>
+                    {errand.activeNotifications[0]?.created
+                      ? dayjs(errand.activeNotifications[0]?.created).format('YYYY-MM-DD HH:mm')
+                      : ''}
+                  </time>
+                </div>
+                <div className="italic">
+                  {errand.activeNotifications[0]?.description ? errand.activeNotifications[0]?.description : ''}
+                </div>
+              </div>
+            </>
+          ) : (
+            dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
+          )}
         </Table.Column>
         <Table.HeaderColumn
           scope="row"
