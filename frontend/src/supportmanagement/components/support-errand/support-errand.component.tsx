@@ -7,6 +7,7 @@ import {
   SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
+  initiateSupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -30,6 +31,7 @@ let formSchema = yup
 
 export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const {
@@ -105,7 +107,33 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
         });
     } else {
-      setSupportErrand(defaultSupportErrandInformation);
+      setMessage('Registrerar nytt ärende..');
+      setIsLoading(true);
+      if (municipalityId && supportErrandIsEmpty(supportErrand)) {
+        initiateSupportErrand(municipalityId)
+          .then((result) => {
+            setSupportErrand(result);
+            methods.reset(result);
+            return result;
+          })
+          .then((result) =>
+            setTimeout(() => {
+              router.push(`/arende/${municipalityId}/${result.id}`, undefined, {
+                shallow: true,
+              });
+            }, 10)
+          )
+          .catch((e) => {
+            console.error('Error when initiating errand:', e);
+            setIsLoading(false);
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Något gick fel när ärendet skulle initieras',
+              status: 'error',
+            });
+          });
+      }
     }
   }, [router, municipalityId]);
 
@@ -124,7 +152,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
               {isLoading ? (
                 <div className="h-full w-full flex flex-col items-center justify-start p-28">
                   <Spinner size={4} />
-                  <span className="text-gray m-md">Hämtar ärende..</span>
+                  <span className="text-gray m-md">{message}</span>
                 </div>
               ) : (
                 <div className="flex-grow w-full max-w-screen-lg">

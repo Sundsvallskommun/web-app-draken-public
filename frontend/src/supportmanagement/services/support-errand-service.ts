@@ -736,35 +736,11 @@ export const getSupportErrands: (
     });
 };
 
-export const initiateSupportErrand: (
-  municipalityId: string,
-  body: Partial<SupportErrand>
-) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, body) => {
-  const data: Partial<SupportErrandDto> = {
-    title: 'Empty errand',
-    ...(body.priority && {
-      priority: body.priority,
-    }),
-    classification: {
-      ...(body.category && { category: body.category }),
-      ...(body.type && { type: body.type }),
-    },
-    ...(body.labels && { labels: body.labels }),
-    ...(body.contactReason && { contactReason: body.contactReason }),
-    ...(body.contactReason &&
-      typeof body.contactReasonDescription !== 'undefined' && {
-        contactReasonDescription: body.contactReasonDescription,
-      }),
-    businessRelated: !!body.businessRelated,
-    ...(body.status && { status: body.status }),
-    ...(body.resolution && { resolution: body.resolution }),
-    ...(body.escalationEmail && { escalationEmail: body.escalationEmail }),
-    ...(body.channel && { channel: body.channel }),
-    ...(body.description && { description: body.description }),
-    ...(body.assignedUserId && { assignedUserId: body.assignedUserId }),
-  };
+export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
+  municipalityId
+) => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, data)
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
@@ -947,6 +923,7 @@ export const setSupportErrandStatus: (
   municipalityId: string,
   status: Status
 ) => Promise<boolean> = async (errandId, municipalityId, status) => {
+  console.log('setSupportErrandStatus', errandId, municipalityId, status);
   const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
 
   return apiService

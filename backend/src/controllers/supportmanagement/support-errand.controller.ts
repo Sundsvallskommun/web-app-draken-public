@@ -403,10 +403,38 @@ export class SupportErrandController {
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
-      ...data,
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
+      classification: isKC()
+        ? {
+            category: 'CONTACT_SUNDSVALL',
+            type: 'UNCATEGORIZED',
+          }
+        : isLOP()
+        ? {
+            category: 'SALARY',
+            type: 'SALARY.UNCATEGORIZED',
+          }
+        : isIK()
+        ? {
+            category: 'KSK_SERVICE_CENTER',
+            type: '"KSK_SERVICE_CENTER.UNCATEGORIZED"',
+          }
+        : {
+            category: 'CONTACT_SUNDSVALL',
+            type: 'UNCATEGORIZED',
+          },
+      labels: isLOP()
+        ? ['SALARY', 'SALARY.UNCATEGORIZED', 'SALARY.UNCATEGORIZED.UNCATEGORIZED']
+        : isIK()
+        ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
+        : [],
+      priority: 'MEDIUM' as SupportPriority,
+      status: Status.NEW,
+      resolution: Resolution.INFORMED,
+      title: 'New errand',
     };
+    console.log('Registering new errand with body', body);
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
