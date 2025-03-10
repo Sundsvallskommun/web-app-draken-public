@@ -28,7 +28,7 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
         <title>{title}</title>
         <meta name="description" content={applicationName} />
       </Head>
-      <div className="min-h-screen h-full overflow-hidden w-full">
+      <div className="min-h-screen h-full w-full">
         <div className="flex h-full overflow-hidden w-full">
           <MainErrandsSidebar
             showAttestationTable={showAttestationTable}
