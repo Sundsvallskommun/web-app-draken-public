@@ -238,7 +238,7 @@ export const SupportErrandsTable: React.FC = () => {
           {!!notification ? (
             <>
               <div>
-                {errand.activeNotifications[0]?.globalAcknowledged === false ? (
+                {notification?.globalAcknowledged === false ? (
                   <>
                     <Callout color="vattjom"></Callout>
                     <span className="sr-only">Ny händelse på ärendet</span>
@@ -247,15 +247,11 @@ export const SupportErrandsTable: React.FC = () => {
               </div>
               <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
                 <div>
-                  <time dateTime={errand.activeNotifications[0]?.created}>
-                    {errand.activeNotifications[0]?.created
-                      ? dayjs(errand.activeNotifications[0]?.created).format('YYYY-MM-DD HH:mm')
-                      : ''}
+                  <time dateTime={notification?.created}>
+                    {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
                   </time>
                 </div>
-                <div className="italic">
-                  {errand.activeNotifications[0]?.description ? errand.activeNotifications[0]?.description : ''}
-                </div>
+                <div className="italic">{notification?.description ? notification?.description : ''}</div>
               </div>
             </>
           ) : (
