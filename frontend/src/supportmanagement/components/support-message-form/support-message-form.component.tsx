@@ -173,7 +173,7 @@ export const SupportMessageForm: React.FC<{
     defaultValues: {
       id: props.supportErrandId,
       messageContact: true,
-      contactMeans: 'email',
+      contactMeans: '',
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -398,10 +398,15 @@ export const SupportMessageForm: React.FC<{
             name="useEmail"
             id="useEmail"
             value={'email'}
-            defaultChecked={true}
+            defaultChecked={
+              !(
+                Channels[supportErrand.channel] === Channels.ESERVICE ||
+                Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+              )
+            }
             {...register('contactMeans')}
           >
-            Epost
+            E-post
           </RadioButton>
           <RadioButton
             disabled={props.locked}
@@ -424,10 +429,15 @@ export const SupportMessageForm: React.FC<{
               name="useWebmessage"
               id="useWebmessage"
               value={'webmessage'}
-              defaultChecked={false}
+              defaultChecked={
+                !!(
+                  Channels[supportErrand.channel] === Channels.ESERVICE ||
+                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+                )
+              }
               {...register('contactMeans')}
             >
-              OpenE
+              E-tjänst
             </RadioButton>
           ) : null}
         </RadioButton.Group>
