@@ -993,7 +993,7 @@ const template: ExtraParametersObject = {
     {
       field: 'application.appeal.relatesto',
       value: '',
-      label: 'Ärende som överklagas (ange ärendenummer)',
+      label: 'Ärende som överklagas',
       formField: {
         type: 'text',
         options: {

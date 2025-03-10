@@ -177,7 +177,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               >
                 <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
                 {Object.entries(getCaseLabels())
-                  .filter(([key, label]) => label !== '')
+                  .filter(([key, label]) => label !== 'Överklagan')
                   .sort((a, b) => a[1].localeCompare(b[1]))
                   .map(([key, label]: [string, string], index) => {
                     return (

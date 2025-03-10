@@ -170,7 +170,15 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Input
               type={detail.formField.type}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
-              className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
+              value={
+                errand.caseType === 'APPEAL' && detail.formField.type === 'text'
+                  ? errand.relatesTo[0]?.errandNumber
+                  : null
+              }
+              readOnly={errand.caseType === 'APPEAL' && detail.formField.type === 'text'}
+              className={cx(
+                errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? `w-1/2` : 'w-full'
+              )}
               data-cy={`${detail.field}-input`}
               max={detail.formField.type === 'date' ? dayjs().format('YYYY-MM-DD').toString() : undefined}
               placeholder={detail.formField.type === 'text' ? detail.formField.options?.placeholder : undefined}
@@ -227,7 +235,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           <>
             <Textarea
               rows={3}
-              className="w-full"
+              className={cx(errand.caseType === 'APPEAL' ? 'w-2/3' : 'w-full')}
               value={detail.value}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
               data-cy={`${detail.field}-textarea`}
