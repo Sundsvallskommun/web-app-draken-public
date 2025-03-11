@@ -52,36 +52,38 @@ export const SupportErrandInvoiceTab: React.FC<{
 
   const resetManager = (manager) => {
     const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-    getEmployeeCustomerIdentity(managerUserName).then((res) => {
-      if (res.type === 'INTERNAL') {
-        setValue('type', CBillingRecordTypeEnum.INTERNAL);
-        setTimeout(() => {
-          setValue('invoice.customerId', res.identity.customerId.toString());
-        }, 20);
-      } else if (res.type === 'EXTERNAL') {
-        setValue('type', CBillingRecordTypeEnum.EXTERNAL);
-        setValue('recipient.organizationName', res.identity.name);
-        setValue('invoice.customerId', res.identity.companyId.toString());
-        getOrganization(res.identity.orgNr, res.identity.legalEntityAddressSource).then(({ partyId, address }) => {
-          setValue('recipient.partyId', partyId);
-          setValue('recipient.addressDetails', address);
-        });
-      }
-      setValue('invoice.customerReference', res.referenceNumber);
-      handleChange(
-        invoiceSettings.invoiceTypes[0].invoiceType,
-        res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.companyId.toString(),
-        1,
-        res.type === 'INTERNAL'
-          ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter
-          : invoiceSettings.invoiceTypes[0].external.accountInformation.costCenter,
-        res.type === 'INTERNAL'
-          ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity
-          : invoiceSettings.invoiceTypes[0].external.accountInformation.activity
-      );
-    }).catch(() => {
-      console.error('Failed to get employee customer identity');
-    });
+    getEmployeeCustomerIdentity(managerUserName, 'personal')
+      .then((res) => {
+        if (res.type === 'INTERNAL') {
+          setValue('type', CBillingRecordTypeEnum.INTERNAL);
+          setTimeout(() => {
+            setValue('invoice.customerId', res.identity.customerId.toString());
+          }, 20);
+        } else if (res.type === 'EXTERNAL') {
+          setValue('type', CBillingRecordTypeEnum.EXTERNAL);
+          setValue('recipient.organizationName', res.identity.name);
+          setValue('invoice.customerId', res.identity.companyId.toString());
+          getOrganization(res.identity.orgNr, res.identity.legalEntityAddressSource).then(({ partyId, address }) => {
+            setValue('recipient.partyId', partyId);
+            setValue('recipient.addressDetails', address);
+          });
+        }
+        setValue('invoice.customerReference', res.referenceNumber);
+        handleChange(
+          invoiceSettings.invoiceTypes[0].invoiceType,
+          res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.companyId.toString(),
+          1,
+          res.type === 'INTERNAL'
+            ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter
+            : invoiceSettings.invoiceTypes[0].external.accountInformation.costCenter,
+          res.type === 'INTERNAL'
+            ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity
+            : invoiceSettings.invoiceTypes[0].external.accountInformation.activity
+        );
+      })
+      .catch(() => {
+        console.error('Failed to get employee customer identity');
+      });
     setValue(`extraParameters`, {
       errandNumber: supportErrand.errandNumber,
       errandId: supportErrand.id,
