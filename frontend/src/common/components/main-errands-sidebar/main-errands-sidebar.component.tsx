@@ -11,7 +11,7 @@ import {
 import { FormProvider, useForm } from 'react-hook-form';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
+import { Avatar, Badge, Button, cx, Divider, Logo } from '@sk-web-gui/react';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
@@ -33,7 +33,7 @@ export const MainErrandsSidebar: React.FC<{
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user, billingRecords }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
-
+  const [open, setOpen] = useState(true);
   const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
@@ -55,68 +55,96 @@ export const MainErrandsSidebar: React.FC<{
   return (
     <aside
       data-cy="overview-aside"
-      className="flex-none absolute z-10 bg-vattjom-background-200 h-full min-h-screen max-w-full w-full sm:w-[32rem] sm:min-w-[32rem]"
+      className={cx(
+        'transition-all ease-in-out duration-150 flex-none z-10 bg-vattjom-background-200 h-full min-h-screen relative',
+        open ? 'max-lg:shadow-100 sm:w-[32rem] sm:min-w-[32rem]' : 'w-[5.6rem]'
+      )}
     >
-      <div className="h-full w-full p-24">
-        <div className="mb-24">
-          <MainTitle />
-        </div>
-        <div className="pb-24 h-fit flex gap-12 items-center justify-between">
-          <div className="flex gap-12 justify-between items-center">
-            <Avatar
-              data-cy="avatar-aside"
-              className="flex-none"
-              size="md"
-              initials={`${user.firstName.charAt(0).toUpperCase()}${user.lastName.charAt(0).toUpperCase()}`}
-              color="vattjom"
-            />
-            <span className="leading-tight h-fit font-bold mb-0" data-cy="userinfo">
-              {user.firstName} {user.lastName}
-            </span>
+      {open ? (
+        <div className="h-full w-full p-24">
+          <div className="mb-24">
+            <MainTitle />
           </div>
-          {isNotificicationEnabled() && (
-            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          )}
-        </div>
-        <Divider />
-        <div className="flex flex-col gap-8 py-24">
-          {isLOP() || isKC() || isIK() ? (
-            <FormProvider {...suppportManagementFilterForm}>
-              <SupportManagementFilterSidebarStatusSelector
-                showAttestationTable={showAttestationTable}
-                setShowAttestationTable={setShowAttestationTable}
+          <div className="pb-24 h-fit flex gap-12 items-center justify-between">
+            <div className="flex gap-12 justify-between items-center">
+              <Avatar
+                data-cy="avatar-aside"
+                className="flex-none"
+                size="md"
+                initials={`${user.firstName.charAt(0).toUpperCase()}${user.lastName.charAt(0).toUpperCase()}`}
+                color="vattjom"
               />
-            </FormProvider>
-          ) : (
-            <FormProvider {...casedataFilterForm}>
-              <CasedataFilterSidebarStatusSelector />
-            </FormProvider>
-          )}
-        </div>
-        {attestationEnabled(user) && (
-          <>
-            <Divider />
-            <div className="flex flex-col gap-8 py-24">
-              <Button
-                onClick={() => setShowAttestationTable(true)}
-                leftIcon={<LucideIcon name="square-pen" />}
-                className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
-                variant={showAttestationTable ? 'primary' : 'ghost'}
-              >
-                <span className="w-full flex justify-between">
-                  Attestering
-                  <Badge
-                    className="min-w-fit px-4"
-                    inverted={!showAttestationTable}
-                    color={showAttestationTable ? 'tertiary' : 'vattjom'}
-                    counter={billingRecords.totalElements || '0'}
-                  />
-                </span>
-              </Button>
+              <span className="leading-tight h-fit font-bold mb-0" data-cy="userinfo">
+                {user.firstName} {user.lastName}
+              </span>
             </div>
-          </>
-        )}
-      </div>
+            {isNotificicationEnabled() && (
+              <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+            )}
+          </div>
+          <Divider />
+          <div className="flex flex-col gap-8 py-24">
+            {isLOP() || isKC() || isIK() ? (
+              <FormProvider {...suppportManagementFilterForm}>
+                <SupportManagementFilterSidebarStatusSelector
+                  showAttestationTable={showAttestationTable}
+                  setShowAttestationTable={setShowAttestationTable}
+                />
+              </FormProvider>
+            ) : (
+              <FormProvider {...casedataFilterForm}>
+                <CasedataFilterSidebarStatusSelector />
+              </FormProvider>
+            )}
+          </div>
+          {attestationEnabled(user) && (
+            <>
+              <Divider />
+              <div className="flex flex-col gap-8 py-24">
+                <Button
+                  onClick={() => setShowAttestationTable(true)}
+                  leftIcon={<LucideIcon name="square-pen" />}
+                  className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
+                  variant={showAttestationTable ? 'primary' : 'ghost'}
+                >
+                  <span className="w-full flex justify-between">
+                    Attestering
+                    <Badge
+                      className="min-w-fit px-4"
+                      inverted={!showAttestationTable}
+                      color={showAttestationTable ? 'tertiary' : 'vattjom'}
+                      counter={billingRecords.totalElements || '0'}
+                    />
+                  </span>
+                </Button>
+              </div>
+            </>
+          )}
+          <div className="absolute bottom-24 right-24">
+            <Button
+              color="primary"
+              size={'md'}
+              variant="tertiary"
+              aria-label={'Stäng sidomeny'}
+              iconButton
+              leftIcon={<LucideIcon name="chevrons-left" />}
+              onClick={() => setOpen(!open)}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="absolute bottom-24 right-9">
+          <Button
+            color="primary"
+            size={'md'}
+            variant="tertiary"
+            aria-label={'Öppna sidomeny'}
+            iconButton
+            leftIcon={<LucideIcon name="chevrons-right" />}
+            onClick={() => setOpen(!open)}
+          />
+        </div>
+      )}
       {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
     </aside>
   );
