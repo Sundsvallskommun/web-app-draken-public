@@ -112,18 +112,17 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
           >
             <span className="w-full flex justify-between">
               {button.label}
-              {button.key !== closedStatuses[0] && (
-                <Badge
-                  className="min-w-fit px-4"
-                  inverted={!selectedSupportErrandStatuses.includes(button.key as Status) || showAttestationTable}
-                  color={
-                    selectedSupportErrandStatuses.includes(button.key as Status) && !showAttestationTable
-                      ? 'tertiary'
-                      : 'vattjom'
-                  }
-                  counter={isLoading ? '-' : button.totalStatusErrands || '0'}
-                />
-              )}
+
+              <Badge
+                className="min-w-fit px-4"
+                inverted={!selectedSupportErrandStatuses.includes(button.key as Status) || showAttestationTable}
+                color={
+                  selectedSupportErrandStatuses.includes(button.key as Status) && !showAttestationTable
+                    ? 'tertiary'
+                    : 'vattjom'
+                }
+                counter={isLoading ? '-' : button.totalStatusErrands > 99 ? '99+' : button.totalStatusErrands || '0'}
+              />
             </span>
           </Button>
         );

@@ -64,7 +64,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
     sidebarLabel,
-    closedErrands,
+    solvedSupportErrands,
     setBillingRecords,
   } = useAppContext();
 
@@ -360,7 +360,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
             <div>
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + closedErrands.totalElements : null}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + solvedSupportErrands.totalElements : null}
               </h1>
             </div>
             <Disclosure.Panel static>
