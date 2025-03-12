@@ -37,7 +37,7 @@ export const MainErrandsSidebar: React.FC<{
   const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
-  const MainTitle = () => (
+  const MainTitle = (open: boolean) => (
     <NextLink
       href="/"
       className="no-underline"
@@ -46,7 +46,8 @@ export const MainErrandsSidebar: React.FC<{
       }. Gå till startsidan.`}
     >
       <Logo
-        variant="service"
+        className={cx(open ? '' : 'w-[2.8rem]')}
+        variant={open ? 'service' : 'symbol'}
         title={'Draken'}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
@@ -60,12 +61,17 @@ export const MainErrandsSidebar: React.FC<{
         open ? 'max-lg:shadow-100 sm:w-[32rem] sm:min-w-[32rem]' : 'w-[5.6rem]'
       )}
     >
-      {open ? (
-        <div className="h-full w-full p-24">
-          <div className="mb-24">
-            <MainTitle />
-          </div>
-          <div className="pb-24 h-fit flex gap-12 items-center justify-between">
+      <div className={cx('h-full w-full', open ? 'p-24' : '')}>
+        <div className={cx('mb-24', open ? '' : 'flex flex-col items-center justify-center pt-[1rem]')}>
+          {MainTitle(open)}
+        </div>
+        <div
+          className={cx(
+            'h-fit items-center',
+            open ? 'pb-24 flex gap-12 justify-between' : 'pb-15 flex flex-col items-center justify-center'
+          )}
+        >
+          {open && (
             <div className="flex gap-12 justify-between items-center">
               <Avatar
                 data-cy="avatar-aside"
@@ -78,35 +84,39 @@ export const MainErrandsSidebar: React.FC<{
                 {user.firstName} {user.lastName}
               </span>
             </div>
-            {isNotificicationEnabled() && (
-              <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-            )}
-          </div>
-          <Divider />
-          <div className="flex flex-col gap-8 py-24">
-            {isLOP() || isKC() || isIK() ? (
-              <FormProvider {...suppportManagementFilterForm}>
-                <SupportManagementFilterSidebarStatusSelector
-                  showAttestationTable={showAttestationTable}
-                  setShowAttestationTable={setShowAttestationTable}
-                />
-              </FormProvider>
-            ) : (
-              <FormProvider {...casedataFilterForm}>
-                <CasedataFilterSidebarStatusSelector />
-              </FormProvider>
-            )}
-          </div>
-          {attestationEnabled(user) && (
-            <>
-              <Divider />
-              <div className="flex flex-col gap-8 py-24">
-                <Button
-                  onClick={() => setShowAttestationTable(true)}
-                  leftIcon={<LucideIcon name="square-pen" />}
-                  className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
-                  variant={showAttestationTable ? 'primary' : 'ghost'}
-                >
+          )}
+          {isNotificicationEnabled() && (
+            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
+          )}
+        </div>
+        <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+        <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+          {isLOP() || isKC() || isIK() ? (
+            <FormProvider {...suppportManagementFilterForm}>
+              <SupportManagementFilterSidebarStatusSelector
+                showAttestationTable={showAttestationTable}
+                setShowAttestationTable={setShowAttestationTable}
+                iconButton={!open}
+              />
+            </FormProvider>
+          ) : (
+            <FormProvider {...casedataFilterForm}>
+              <CasedataFilterSidebarStatusSelector iconButton={!open} />
+            </FormProvider>
+          )}
+        </div>
+        {attestationEnabled(user) && (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              <Button
+                onClick={() => setShowAttestationTable(true)}
+                leftIcon={<LucideIcon name="square-pen" />}
+                className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
+                variant={showAttestationTable ? 'primary' : 'ghost'}
+                iconButton={!open}
+              >
+                {open && (
                   <span className="w-full flex justify-between">
                     Attestering
                     <Badge
@@ -116,35 +126,26 @@ export const MainErrandsSidebar: React.FC<{
                       counter={billingRecords.totalElements || '0'}
                     />
                   </span>
-                </Button>
-              </div>
-            </>
-          )}
-          <div className="absolute bottom-24 right-24">
-            <Button
-              color="primary"
-              size={'md'}
-              variant="tertiary"
-              aria-label={'Stäng sidomeny'}
-              iconButton
-              leftIcon={<LucideIcon name="chevrons-left" />}
-              onClick={() => setOpen(!open)}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="absolute bottom-24 right-9">
+                )}
+              </Button>
+            </div>
+          </>
+        )}
+        <div
+          className={cx('absolute bottom-[2.4rem]', open ? 'right-[2.4rem]' : 'left-1/2 transform -translate-x-1/2')}
+        >
           <Button
             color="primary"
             size={'md'}
             variant="tertiary"
-            aria-label={'Öppna sidomeny'}
+            aria-label={open ? 'Stäng sidomeny' : 'Öppna sidomeny'}
             iconButton
-            leftIcon={<LucideIcon name="chevrons-right" />}
+            leftIcon={open ? <LucideIcon name="chevrons-left" /> : <LucideIcon name="chevrons-right" />}
             onClick={() => setOpen(!open)}
           />
         </div>
-      )}
+      </div>
+
       {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
     </aside>
   );
