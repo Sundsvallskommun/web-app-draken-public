@@ -1293,10 +1293,10 @@ export interface PageErrand {
 }
 
 export interface PageableObject {
+  paged?: boolean;
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
-  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
