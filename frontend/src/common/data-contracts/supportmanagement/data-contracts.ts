@@ -715,6 +715,11 @@ export interface Notification {
    */
   acknowledged?: boolean;
   /**
+   * Acknowledged status of the notification
+   * @example true
+   */
+  globalAcknowledged?: boolean;
+  /**
    * Errand id of the notification
    * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
    */

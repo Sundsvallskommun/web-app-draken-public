@@ -109,8 +109,8 @@ export const emptyBillingRecord: CBillingRecord = {
     },
   },
   invoice: {
-    referenceId: 'N/A',
     customerId: '',
+    customerReference: '',
     description: invoiceSettings.invoiceTypes[0].invoiceType,
     invoiceRows: [
       {

@@ -78,12 +78,8 @@ export class CInvoice implements Invoice {
   @IsOptional()
   @IsString()
   ourReference?: string;
-  @IsOptional()
   @IsString()
-  customerReference?: string;
-  @IsOptional()
-  @IsString()
-  referenceId?: string;
+  customerReference: string;
   @IsOptional()
   @IsString()
   date?: string;

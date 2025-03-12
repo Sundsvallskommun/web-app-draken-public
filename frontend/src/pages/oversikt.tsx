@@ -44,25 +44,29 @@ export const Oversikt: React.FC = () => {
   return (
     <>
       {isKC() || isIK() || isLOP() ? (
-        <SidebarLayout
-          title={`${getApplicationName()} - Översikt`}
-          setShowAttestationTable={setShowAttestationTable}
-          showAttestationTable={showAttestationTable}
-        >
-          {isLOP() && showAttestationTable && user.permissions.canViewAttestations ? (
-            <AttestationTab />
-          ) : municipalityId ? (
-            <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
-          ) : null}
-        </SidebarLayout>
+        <>
+          <SidebarLayout
+            title={`${getApplicationName()} - Översikt`}
+            setShowAttestationTable={setShowAttestationTable}
+            showAttestationTable={showAttestationTable}
+          >
+            {isLOP() && showAttestationTable && user.permissions.canViewAttestations ? (
+              <AttestationTab />
+            ) : municipalityId ? (
+              <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
+            ) : null}
+          </SidebarLayout>
+        </>
       ) : (
-        <SidebarLayout
-          setShowAttestationTable={setShowAttestationTable}
-          showAttestationTable={showAttestationTable}
-          title={`${getApplicationName()} - Översikt`}
-        >
-          {isPT() ? <OngoingCaseDataErrands /> : isMEX() ? <OngoingCaseDataErrands /> : <></>}
-        </SidebarLayout>
+        <>
+          <SidebarLayout
+            setShowAttestationTable={setShowAttestationTable}
+            showAttestationTable={showAttestationTable}
+            title={`${getApplicationName()} - Översikt`}
+          >
+            {isPT() ? <OngoingCaseDataErrands /> : isMEX() ? <OngoingCaseDataErrands /> : <></>}
+          </SidebarLayout>
+        </>
       )}
     </>
   );

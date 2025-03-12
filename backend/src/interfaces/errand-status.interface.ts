@@ -1,5 +1,5 @@
 import { Status as IStatusDTO } from '@/data-contracts/case-data/data-contracts';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export enum ErrandStatus {
   ArendeInkommit = 'Ärende inkommit',
@@ -26,7 +26,7 @@ export class StatusDTO implements IStatusDTO {
   @IsString()
   statusType: string;
   @IsString()
-  description: string;
+  description?: string;
   @IsString()
-  dateTime: string;
+  created?: string;
 }
