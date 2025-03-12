@@ -18,7 +18,7 @@ import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CaseStatusFilter } from './casedata-filter-status.component';
 
-export const CasedataFilterSidebarStatusSelector: React.FC = () => {
+export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean }> = ({ iconButton }) => {
   const { register } = useFormContext<CaseStatusFilter>();
   const [query, setQuery] = useState<string>('');
 
@@ -97,7 +97,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
   return (
     <>
       {casedataSidebarButtons?.map((button) => {
-        const buttonIsactive = button.statuses.some((s) => {
+        const buttonIsActive = button.statuses.some((s) => {
           return selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(s);
         });
         return (
@@ -107,21 +107,23 @@ export const CasedataFilterSidebarStatusSelector: React.FC = () => {
               setSidebarLabel(button.label);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={buttonIsactive ? 'primary' : 'ghost'}
-            className={`justify-start ${!buttonIsactive && 'hover:bg-dark-ghost'}`}
+            variant={buttonIsActive ? 'primary' : 'ghost'}
+            className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
             leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
+            iconButton={iconButton}
           >
-            <span className="w-full flex justify-between">
-              {button.label}
-
-              <Badge
-                className="min-w-fit px-4"
-                inverted={!selectedErrandStatuses.includes(button.key as ErrandStatus)}
-                color={selectedErrandStatuses.includes(button.key as ErrandStatus) ? 'tertiary' : 'vattjom'}
-                counter={isLoading ? '-' : button.totalStatusErrands > 99 ? '99+' : button.totalStatusErrands || '0'}
-              />
-            </span>
+            {!iconButton && (
+              <span className="w-full flex justify-between">
+                {button.label}
+                <Badge
+                  className="min-w-fit px-4"
+                  inverted={!buttonIsActive}
+                  color={buttonIsActive ? 'tertiary' : 'vattjom'}
+                  counter={isLoading ? '-' : button.totalStatusErrands > 99 ? '99+' : button.totalStatusErrands || '0'}
+                />
+              </span>
+            )}
           </Button>
         );
       })}

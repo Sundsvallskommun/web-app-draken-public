@@ -163,7 +163,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('allows filtering by single status', () => {
       const labels = Object.entries(ErrandStatus);
-      cy.get('button').contains('Öppnade ärenden').click();
+      cy.get('button').contains('Öppna ärenden').click();
       cy.get('[data-cy="Show-filters-button"]').click();
       cy.get('[data-cy="Status-filter"]').click();
       cy.get(`[data-cy="Status-filter-${labels[1][0]}"]`).should('exist').click();
@@ -177,7 +177,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('allows filtering by multiple statuses', () => {
       const labels = Object.entries(ErrandStatus);
-      cy.get('button').contains('Öppnade ärenden').click();
+      cy.get('button').contains('Öppna ärenden').click();
       cy.get('[data-cy="Show-filters-button"]').click();
       cy.get('[data-cy="Status-filter"]').click();
       labels.forEach((label) => {
