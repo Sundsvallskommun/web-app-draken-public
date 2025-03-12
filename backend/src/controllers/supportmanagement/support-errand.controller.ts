@@ -319,7 +319,8 @@ export class SupportErrandController {
       filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
     }
     if (priority) {
-      filterList.push(`priority:'${priority}'`);
+      const ss = priority.split(',').map(s => `priority:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
     }
     if (category) {
       const ss = category.split(',').map(s => `category:'${s}'`);

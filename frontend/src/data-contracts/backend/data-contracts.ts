@@ -102,8 +102,7 @@ export interface CInvoice {
   customerId: string;
   description: string;
   ourReference?: string;
-  customerReference?: string;
-  referenceId?: string;
+  customerReference: string;
   date?: string;
   dueDate?: string;
   totalAmount?: number;
