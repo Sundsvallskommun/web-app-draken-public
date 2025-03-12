@@ -109,7 +109,7 @@ export const MainErrandsSidebar: React.FC<{
                     className="min-w-fit px-4"
                     inverted={!showAttestationTable}
                     color={showAttestationTable ? 'tertiary' : 'vattjom'}
-                    counter={billingRecords.totalElements || '0'}
+                    counter={billingRecords.totalElements > 99 ? '99+' : billingRecords.totalElements || '0'}
                   />
                 </span>
               </Button>
