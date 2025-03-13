@@ -360,7 +360,9 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
             <div>
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + solvedSupportErrands.totalElements : null}
+                {sidebarLabel === 'Avslutade ärenden'
+                  ? ' : ' + (solvedSupportErrands.totalElements ? solvedSupportErrands.totalElements : '')
+                  : null}
               </h1>
             </div>
             <Disclosure.Panel static>
