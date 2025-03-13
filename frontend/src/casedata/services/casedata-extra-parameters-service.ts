@@ -36,7 +36,7 @@ export interface ExtraParametersObject {
   MEX_LAND_INSTRUCTION?: UppgiftField[];
   MEX_OTHER?: UppgiftField[];
   MEX_LAND_SURVEYING_OFFICE?: UppgiftField[];
-  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOUGE_PLANNING_NOTICE?: UppgiftField[];
+  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE?: UppgiftField[];
   MEX_INVOICE?: UppgiftField[];
   MEX_REQUEST_FOR_PUBLIC_DOCUMENT?: UppgiftField[];
   MEX_TERMINATION_OF_LEASE?: UppgiftField[];
@@ -328,7 +328,7 @@ const template: ExtraParametersObject = {
     },
   ],
 
-  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOUGE_PLANNING_NOTICE: [
+  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE: [
     {
       field: 'otherInformation',
       value: '',
