@@ -100,6 +100,12 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
         const buttonIsActive = button.statuses.some((s) => {
           return selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(s);
         });
+        const numberOfErrands = isLoading
+          ? '-'
+          : button.key === closedStatuses[0] && button.totalStatusErrands > 99
+          ? '99+'
+          : button.totalStatusErrands || '0';
+
         return (
           <Button
             onClick={() => {
@@ -120,7 +126,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
                   className="min-w-fit px-4"
                   inverted={!buttonIsActive}
                   color={buttonIsActive ? 'tertiary' : 'vattjom'}
-                  counter={isLoading ? '-' : button.totalStatusErrands > 99 ? '99+' : button.totalStatusErrands || '0'}
+                  counter={numberOfErrands}
                 />
               </span>
             )}

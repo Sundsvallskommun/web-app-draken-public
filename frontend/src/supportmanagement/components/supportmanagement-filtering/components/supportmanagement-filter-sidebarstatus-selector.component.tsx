@@ -98,6 +98,12 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
     <>
       {supportSidebarButtons?.map((button) => {
         const buttonIsActive = selectedSupportErrandStatuses.includes(button.key as Status);
+        const numberOfErrands = isLoading
+          ? '-'
+          : button.key === closedStatuses[0] && button.totalStatusErrands > 99
+          ? '99+'
+          : button.totalStatusErrands || '0';
+
         return (
           <Button
             onClick={() => {
@@ -119,7 +125,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
                   className="min-w-fit px-4"
                   inverted={!buttonIsActive || showAttestationTable}
                   color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
-                  counter={isLoading ? '-' : button.totalStatusErrands > 99 ? '99+' : button.totalStatusErrands || '0'}
+                  counter={numberOfErrands}
                 />
               </span>
             )}
