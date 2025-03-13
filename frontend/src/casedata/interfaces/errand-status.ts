@@ -16,7 +16,7 @@ export enum ErrandStatus {
 }
 
 export interface ApiErrandStatus {
-  statusType: string;
-  description: string;
-  dateTime: string;
+  statusType?: string;
+  description?: string;
+  created?: string;
 }

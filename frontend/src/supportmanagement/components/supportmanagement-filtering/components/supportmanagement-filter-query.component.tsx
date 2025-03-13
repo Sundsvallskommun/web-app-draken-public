@@ -33,19 +33,19 @@ export const SupportManagementFilterQuery: React.FC = () => {
   return (
     <SearchField
       value={query}
-      size={isMobile ? 'md' : 'lg'}
+      size="md"
       data-cy="query-filter"
       onChange={(e) => {
         setQuery(e.target.value);
       }}
-      className="flex-grow"
+      className="flex-grow max-w-full"
       onSearch={() => setValue('query', query)}
       onReset={() => {
         setQuery('');
         setValue('query', '');
       }}
-      title="Sök på ärendenummer eller ärendeintressent (namn, adress, personnummer, e-post, telefon)..."
-      placeholder="Sök på ärendenummer eller ärendeintressent (namn, adress, personnummer, e-post, telefon)..."
+      title="Sök"
+      placeholder="Sök"
     />
   );
 };

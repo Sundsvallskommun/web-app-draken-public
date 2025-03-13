@@ -8,7 +8,7 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 export class SupportNotificationDto {
@@ -136,6 +136,34 @@ export class SupportNotificationController {
     ];
     const res = await this.apiService.patch<any, Partial<SupportNotificationDto[]>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when registering support errand');
+      logger.error(e);
+      throw e;
+    });
+    return response.status(200).send(res.data);
+  }
+
+  @Put('/supportnotifications/:municipalityId/:errandId/global-acknowledged')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'Global-acknowledged all support notification for errand' })
+  async globalAcknowledgedSupportNotification(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Res() response: any,
+  ): Promise<{ data: any; message: string }> {
+    const allowed = true;
+    if (!allowed) {
+      throw new HttpException(403, 'Forbidden');
+    }
+    if (!municipalityId) {
+      console.error('No municipality id found, it is needed to set global acknowledged.');
+      logger.error('No municipality id found, it is needed to set global acknowledged.');
+      return response.status(400).send('Municipality id missing');
+    }
+    const url = `${municipalityId}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.put({ url, baseURL }, req.user).catch(e => {
+      logger.error('Error when global acknowledging support notification');
       logger.error(e);
       throw e;
     });

@@ -1,4 +1,8 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  Label,
+  Notification,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
@@ -80,6 +84,7 @@ export interface SupportErrandDto {
   assignedGroupId?: string;
   stakeholders: SupportStakeholder[];
   externalTags: ExternalTags;
+  activeNotifications: Notification[];
 }
 
 export interface ApiSupportErrand extends SupportErrandDto {
@@ -195,7 +200,7 @@ export const getStatusLabel = (statuses: Status[]) => {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
-      return 'Öppnade ärenden';
+      return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
     } else if (statuses.some((s) => assignedStatuses.includes(s))) {
@@ -317,11 +322,11 @@ export enum ResolutionLabelKS {
 
 export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
@@ -334,12 +339,12 @@ export const ongoingSupportErrandLabelsKC = [
 
 export const ongoingSupportErrandLabelsLoP = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
@@ -781,7 +786,6 @@ export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
 ) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
-  console.log('Updating with: ', formdata);
   let responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
@@ -1051,10 +1055,10 @@ export const forwardSupportErrand: (
       municipalityId: municipalityId,
       errandId: errand.id,
       contactMeans: 'email',
-      recipientEmail: data.email,
+      recipientEmail: '',
       headerReplyTo: '',
       headerReferences: '',
-      emails: [{ value: data.email }],
+      emails: data.emails,
       subject: 'Vidarebefordran av ärende',
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,

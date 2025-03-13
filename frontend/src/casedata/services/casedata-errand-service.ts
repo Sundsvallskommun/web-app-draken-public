@@ -12,7 +12,7 @@ import {
   RelatedErrand,
 } from '@casedata/interfaces/errand';
 import { ErrandPhase, ErrandPhasePT, UiPhase } from '@casedata/interfaces/errand-phase';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ApiErrandStatus, ErrandStatus } from '@casedata/interfaces/errand-status';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import {
   MAX_FILE_SIZE_MB,
@@ -37,6 +37,7 @@ import { ApiResponse, apiService } from '../../common/services/api-service';
 import { replaceExtraParameter } from './casedata-extra-parameters-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
+import { data } from 'node_modules/cypress/types/jquery';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -56,22 +57,22 @@ export const emptyErrandList: ErrandsData = {
 
 export const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Prio', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
 ];
 
 export const ongoingCaseDataPTErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Prioritet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendeägare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Uppdaterad', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
@@ -102,7 +103,7 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
-      return 'Öppnade ärenden';
+      return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
     } else if (statuses.some((s) => assignedStatuses.includes(s))) {
@@ -161,7 +162,7 @@ export const emptyErrand: Partial<IErrand> = {
   municipalityId: defaultMunicipality.id,
   phase: ErrandPhase.aktualisering,
   priority: Priority.MEDIUM,
-  status: ErrandStatus.ArendeInkommit,
+  status: { statusType: ErrandStatus.ArendeInkommit },
 };
 
 export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId) => {
@@ -177,14 +178,8 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       administrator: administrator,
       administratorName: administrator ? `${administrator.firstName} ${administrator.lastName}` : '',
       priority: Priority[e.priority as Priority],
-      status:
-        e.statuses?.sort((a, b) =>
-          dayjs(a.dateTime).isBefore(dayjs(b.dateTime)) ? 1 : dayjs(b.dateTime).isBefore(dayjs(a.dateTime)) ? -1 : 0
-        )[0]?.statusType || 'Okänd status',
-      statusDescription:
-        e.statuses?.sort((a, b) =>
-          dayjs(a.dateTime).isBefore(dayjs(b.dateTime)) ? 1 : dayjs(b.dateTime).isBefore(dayjs(a.dateTime)) ? -1 : 0
-        )[0]?.description || '',
+      status: e.status,
+      statuses: e.statuses,
       phase: e.phase,
       channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
       municipalityId: e.municipalityId || municipalityId,
@@ -203,6 +198,8 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
         suspendedFrom: e.suspension?.suspendedFrom,
         suspendedTo: e.suspension?.suspendedTo,
       },
+
+      notifications: e.notifications,
       relatesTo: e.relatesTo,
     };
     return ierrand;
@@ -536,6 +533,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
     ...(data.description && { description: data.description }),
     ...(data.caseType && { caseTitleAddition: CaseLabels.ALL[data.caseType] }),
     ...(data.status && { status: data.status }),
+    ...(data.statuses && { statuses: data.statuses }),
     ...(data.phase && { phase: data.phase }),
     stakeholders: stakeholders,
   };
@@ -642,7 +640,7 @@ export const saveCroppedImage = async (
 export const updateErrandStatus = async (municipalityId: string, id: string, status: ErrandStatus) => {
   const e: Partial<RegisterErrandData> = {
     id,
-    status,
+    status: { statusType: status },
   };
   return apiService
     .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${id}`, e)
@@ -656,7 +654,7 @@ export const updateErrandStatus = async (municipalityId: string, id: string, sta
 };
 
 export const validateStatusForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
-  return { valid: true, reason: e.status };
+  return { valid: true, reason: e.status.statusType };
 };
 
 export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
@@ -682,7 +680,7 @@ export const phaseChangeInProgress = (errand: IErrand) => {
     return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'CANCELED';
   }
 
-  if (errand.status === ErrandStatus.ArendeAvslutat) {
+  if (errand.status?.statusType === ErrandStatus.ArendeAvslutat) {
     return false;
   }
   if (typeof errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === 'undefined') {
@@ -785,7 +783,7 @@ export const setSuspendedErrands = async (
   const url = `casedata/${municipalityId}/errands/${errandId}`;
   const data: Partial<RegisterErrandData> = {
     id: errandId.toString(),
-    status: status,
+    status: { statusType: status },
     suspension: {
       suspendedFrom: status === ErrandStatus.Parkerad ? dayjs().toISOString() : undefined,
       suspendedTo: status === ErrandStatus.Parkerad ? dayjs(date).set('hour', 7).toISOString() : undefined,

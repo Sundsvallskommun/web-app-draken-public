@@ -10,6 +10,8 @@
  */
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
@@ -45,10 +47,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,6 +83,8 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
@@ -1024,18 +1028,19 @@ export interface PageErrand {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
+  paged?: boolean;
   unpaged?: boolean;
 }
 
@@ -1253,6 +1258,7 @@ export interface PageEvent {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

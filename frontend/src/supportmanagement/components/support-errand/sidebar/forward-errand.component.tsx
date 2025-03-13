@@ -1,3 +1,4 @@
+import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
@@ -37,10 +38,15 @@ import * as yup from 'yup';
 const yupForwardForm = yup.object().shape(
   {
     recipient: yup.string().required('Mottagare är obligatoriskt'),
-    email: yup.string().when('recipient', {
-      is: (recipient: string) => recipient === 'EMAIL',
-      then: yup.string().trim().email('E-postadress har fel format').required('E-postadress måste anges'),
-    }),
+    newEmail: yup
+      .string()
+      .email('E-postadress har fel format')
+      .when(['emails', 'contactMeans'], {
+        is: (emails: [], means: string) => {
+          return !emails.length && means === 'email';
+        },
+        then: yup.string().min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+      }),
     department: yup.string().required('Verksamhet är obligatoriskt'),
     message: yup.string().required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
@@ -52,7 +58,7 @@ export type RECIPIENT = 'DEPARTMENT' | 'EMAIL';
 
 export interface ForwardFormProps {
   recipient: string;
-  email: string;
+  emails: { value: string }[];
   department: 'MEX';
   message: string;
   messageBodyPlaintext: string;
@@ -100,7 +106,13 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     formState: { errors },
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
     resolver: yupResolver(yupForwardForm),
-    defaultValues: { recipient: 'DEPARTMENT', email: '', department: 'MEX', message: '', messageBodyPlaintext: '' },
+    defaultValues: {
+      recipient: 'DEPARTMENT',
+      emails: [],
+      department: 'MEX',
+      message: '',
+      messageBodyPlaintext: '',
+    },
     mode: 'onChange',
   });
 
@@ -177,7 +189,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     if (supportErrand && supportAttachments && supportMetadata && showModal) {
       getEscalationEmails(supportErrand, supportMetadata).then((emails) => {
         if (emails.length > 0) {
-          setValue('email', emails[0].value || '');
+          setValue('emails', [{ value: emails[0].value }]);
         }
       });
       getEscalationMessage(
@@ -239,17 +251,15 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           )}
           {getValues().recipient === 'EMAIL' ? (
             <FormControl id="email" className="w-full">
-              <FormLabel className="text-content font-semibold">Ange mottagarens e-postadress</FormLabel>
-              <Input
+              <CommonNestedEmailArrayV2
+                errand={supportErrand}
                 data-cy="email-input"
-                type="email"
-                placeholder="E-postadress"
-                aria-label="E-postadress"
-                {...register('email')}
+                disabled={disabled}
+                {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
               />
-              {errors && formState.errors.email && (
+              {errors && formState.errors.emails && (
                 <div className="my-sm text-error">
-                  <FormErrorMessage>{formState.errors.email?.message}</FormErrorMessage>
+                  <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
                 </div>
               )}
             </FormControl>
@@ -311,7 +321,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           <Button
             variant="primary"
             color="vattjom"
-            disabled={isLoading || !formState.isValid || disabled}
+            disabled={isLoading || !formState.isValid || getValues('emails').length === 0 || disabled}
             className="w-full"
             loading={isLoading}
             loadingText="Vidarebefordrar ärende"

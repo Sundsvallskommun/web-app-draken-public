@@ -38,7 +38,7 @@ const APIS = [
   },
   {
     name: 'case-data',
-    version: '10.0',
+    version: '11.0',
   },
   {
     name: 'supportmanagement',
@@ -50,11 +50,11 @@ const APIS = [
   },
   {
     name: 'billingpreprocessor',
-    version: '3.0',
+    version: '4.0',
   },
   {
     name: 'legalentity',
-    version: '1.0',
+    version: '2.0',
   },
 ];
 
