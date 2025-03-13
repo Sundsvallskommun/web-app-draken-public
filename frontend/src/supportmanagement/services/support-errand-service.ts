@@ -58,35 +58,6 @@ export enum SupportStakeholderTypeEnum {
 export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
 
 export type ExternalTags = Array<{ key: string; value: string }>;
-// export interface SupportErrandDto {
-//   id?: string;
-//   title?: string;
-//   description?: string;
-//   priority: Priority;
-//   classification: {
-//     category: string;
-//     type: string;
-//   };
-//   labels: string[];
-//   contactReason?: string;
-//   contactReasonDescription?: string;
-//   businessRelated?: boolean;
-//   errandNumber: string;
-//   status: Status;
-//   suspension: {
-//     suspendedFrom: string;
-//     suspendedTo: string;
-//   };
-//   resolution?: string;
-//   escalationEmail?: string;
-//   channel: string;
-//   reporterUserId?: string;
-//   assignedUserId: string;
-//   assignedGroupId?: string;
-//   stakeholders: SupportStakeholder[];
-//   externalTags: ExternalTags;
-//   activeNotifications: Notification[];
-// }
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
@@ -97,21 +68,10 @@ export interface ApiSupportErrand extends SupportErrandDto {
 
 export interface SupportErrand extends ApiSupportErrand {
   caseId?: string;
-  // channel?: string;
   category: string;
   type: string;
-  // labels: string[];
-  // contactReason?: string;
-  // contactReasonDescription?: string;
-  // businessRelated?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
-  // parameters?: {
-  //   key: string;
-  //   displayName?: string;
-  //   group?: string;
-  //   values: string[];
-  // }[];
 }
 
 export interface PagedApiSupportErrands extends ApiPagingData {
