@@ -11,7 +11,7 @@ import {
 } from '@/data-contracts/case-data/data-contracts';
 import {
   Errand as SupportErrand,
-  ErrandAttachmentHeader,
+  ErrandAttachment,
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   PageErrand,
@@ -660,7 +660,6 @@ export class SupportErrandController {
         {
           statusType: ErrandStatus.ArendeInkommit,
           description: ErrandStatus.ArendeInkommit,
-          created: new Date().toISOString(),
         },
       ],
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
@@ -683,11 +682,11 @@ export class SupportErrandController {
     // Fetch support errand attachments
     try {
       const supportErrandAttachmentsUrl = `${municipalityId}/${this.namespace}/errands/${id}/attachments`;
-      const existingSupportErrandAttachments = await this.apiService.get<ErrandAttachmentHeader[]>(
+      const existingSupportErrandAttachments = await this.apiService.get<ErrandAttachment[]>(
         { url: supportErrandAttachmentsUrl, baseURL: supportBaseURL },
         req.user,
       );
-      const attachmentsPromises: Promise<ErrandAttachmentHeader & { fileData: ArrayBuffer }>[] = existingSupportErrandAttachments.data?.map(a => {
+      const attachmentsPromises: Promise<ErrandAttachment & { fileData: ArrayBuffer }>[] = existingSupportErrandAttachments.data?.map(a => {
         const singleAttachmentsUrl = `${municipalityId}/${this.namespace}/errands/${id}/attachments/${a.id}`;
         const filesData = this.apiService
           .get<ArrayBuffer>({ url: singleAttachmentsUrl, baseURL: supportBaseURL, responseType: 'arraybuffer' }, req.user)
