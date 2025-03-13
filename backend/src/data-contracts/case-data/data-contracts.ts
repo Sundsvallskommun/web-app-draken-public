@@ -1072,30 +1072,6 @@ export interface RelatedErrand {
   relationReason?: string;
 }
 
-/** The statuses connected to the errand */
-export interface Status {
-  /**
-   * The type of status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende inkommit"
-   */
-  statusType: string;
-  /**
-   * Description of the status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende har kommit in från e-tjänsten."
-   */
-  description?: string;
-  /**
-   * The date and time when the status was created
-   * @format date-time
-   * @example "2023-01-01T12:00:00Z"
-   */
-  created?: string;
-}
-
 /** Suspension information */
 export interface Suspension {
   /**

@@ -24,7 +24,7 @@ export enum ErrandStatus {
 
 export class StatusDTO implements IStatusDTO {
   @IsString()
-  statusType: string;
+  statusType?: string;
   @IsString()
   description?: string;
   @IsString()
