@@ -1,5 +1,13 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { Communication, EmailRequest, SmsRequest, WebMessageRequest } from '@/data-contracts/supportmanagement/data-contracts';
+import {
+  Communication,
+  CommunicationAttachment,
+  CommunicationCommunicationTypeEnum,
+  CommunicationDirectionEnum,
+  EmailRequest,
+  SmsRequest,
+  WebMessageRequest,
+} from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -8,9 +16,10 @@ import { validateSupportAction } from '@/services/support-errand.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
-import { IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface SupportAttachment {
@@ -64,13 +73,67 @@ class SupportMessageDto {
   attachmentIds: string[];
 }
 
+class CCommunicationAttachment implements CommunicationAttachment {
+  @IsString()
+  @IsOptional()
+  id?: string;
+  @IsString()
+  @IsOptional()
+  fileName?: string;
+  @IsString()
+  @IsOptional()
+  mimeType?: string;
+}
+class CCommunication implements Communication {
+  @IsString()
+  @IsOptional()
+  communicationID?: string;
+  @IsString()
+  @IsOptional()
+  sender?: string;
+  @IsString()
+  @IsOptional()
+  errandNumber?: string;
+  @IsEnum(CommunicationDirectionEnum)
+  @IsOptional()
+  direction?: CommunicationDirectionEnum;
+  @IsString()
+  @IsOptional()
+  messageBody?: string;
+  @IsString()
+  @IsOptional()
+  sent?: string;
+  @IsString()
+  @IsOptional()
+  subject?: string;
+  @IsEnum(CommunicationCommunicationTypeEnum)
+  @IsOptional()
+  communicationType: CommunicationCommunicationTypeEnum;
+  @IsString()
+  @IsOptional()
+  target?: string;
+  @IsBoolean()
+  @IsOptional()
+  internal?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  viewed?: boolean;
+  @IsString()
+  @IsOptional()
+  emailHeaders?: Record<string, string[]>;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CCommunicationAttachment)
+  communicationAttachments?: CommunicationAttachment[];
+}
+
 export const generateMessageId = () => `<${uuidv4()}@CONTACTCENTER>`;
 
 @Controller()
 export class SupportMessageController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/9.2`;
+  private SERVICE = `supportmanagement/10.0`;
 
   @Post('/supportmessage/:municipalityId/:id')
   @HttpCode(201)
@@ -113,7 +176,7 @@ export class SupportMessageController {
         senderName: messageDto.senderName,
         subject: messageDto.subject,
         attachments: files.map(file => ({
-          name: file.originalname,
+          fileName: file.originalname,
           base64EncodedString: file.buffer.toString('base64'),
         })),
         emailHeaders,
@@ -131,7 +194,7 @@ export class SupportMessageController {
       const requestBody: WebMessageRequest = {
         message: messageDto.plaintextMessage,
         attachments: files.map(file => ({
-          name: file.originalname,
+          fileName: file.originalname,
           base64EncodedString: file.buffer.toString('base64'),
         })),
         attachmentIds: messageDto.attachmentIds || [],
@@ -158,6 +221,7 @@ export class SupportMessageController {
   @Get('/supportmessage/:municipalityId/errands/:id/communication')
   @OpenAPI({ summary: 'Get errand messages' })
   @UseBefore(authMiddleware)
+  @ResponseSchema(CCommunication)
   async fetchSupportMessages(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
@@ -189,7 +253,7 @@ export class SupportMessageController {
     return { data: res.data, message: 'success' };
   }
 
-  @Get('/supportmessage/:municipalityId/errand/:errandId/communication/:communicationID/attachments/:attachmentId/streamed')
+  @Get('/supportmessage/:municipalityId/errand/:errandId/communication/:communicationID/attachments/:attachmentId')
   @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
   @UseBefore(authMiddleware)
   async fetchMessageAttachments(
@@ -210,7 +274,7 @@ export class SupportMessageController {
       throw Error('AttachmentId not found');
     }
 
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}/streamed`;
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
 
     const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer' }, req.user).catch(e => {
       logger.error('Something went wrong when fetching attachment for message');
@@ -220,6 +284,6 @@ export class SupportMessageController {
 
     const binaryString = Array.from(new Uint8Array(res.data), v => String.fromCharCode(v)).join('');
     const b64 = Buffer.from(binaryString, 'binary').toString('base64');
-    return { data: b64, message: 'good' };
+    return { data: b64, message: 'ok' };
   }
 }

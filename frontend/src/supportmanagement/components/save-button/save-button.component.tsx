@@ -8,7 +8,6 @@ import {
   initiateSupportErrand,
   isSupportErrandLocked,
   SupportErrand,
-  SupportErrandDto,
 } from '@supportmanagement/services/support-errand-service';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';

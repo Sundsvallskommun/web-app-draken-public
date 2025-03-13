@@ -16,24 +16,6 @@ export enum MessageClassification {
   'Intern dialog' = 'Intern dialog',
 }
 
-export interface WebMessageAttachment {
-  fileName: string;
-  mimeType: 'application/pdf';
-  base64Data: string;
-}
-
-export interface DigitalMailAttachment {
-  contentType: 'application/pdf';
-  content: string;
-  filename: string;
-}
-
-export interface EmailMessageAttachment {
-  content: string;
-  name: string;
-  contentType: 'application/pdf';
-}
-
 interface EmailMessageContent {
   headers: [];
   emailAddress: string;
@@ -52,11 +34,4 @@ export interface Message {
   status: MessageStatus;
   timestamp: string;
   messageId?: string;
-}
-
-export interface MessageDto {
-  text: string;
-  attachUtredning: boolean;
-  errandId: string;
-  attachments?: Attachment[];
 }
