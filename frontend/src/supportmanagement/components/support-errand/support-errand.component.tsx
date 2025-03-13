@@ -81,8 +81,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
     getMe().then((user) => {
       setUser(user);
     });
-    const { id } = router.query;
-    if (id) {
+    if (props.id) {
       setIsLoading(true);
       getSupportErrandById(props.id, municipalityId)
         .then((res) => {
@@ -107,15 +106,10 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
         });
     } else {
-      setMessage('Registrerar nytt ärende..');
-      setIsLoading(true);
-      if (municipalityId && supportErrandIsEmpty(supportErrand)) {
+      if (municipalityId && supportErrandIsEmpty(supportErrand) && !isLoading) {
+        setIsLoading(true);
+        setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)
-          .then((result) => {
-            setSupportErrand(result);
-            methods.reset(result);
-            return result;
-          })
           .then((result) =>
             setTimeout(() => {
               router.push(`/arende/${municipalityId}/${result.id}`, undefined, {
@@ -135,7 +129,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
       }
     }
-  }, [router, municipalityId]);
+  }, [router, municipalityId, props.id]);
 
   return (
     <FormProvider {...methods}>

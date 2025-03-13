@@ -418,7 +418,7 @@ export class SupportErrandController {
         : isIK()
         ? {
             category: 'KSK_SERVICE_CENTER',
-            type: '"KSK_SERVICE_CENTER.UNCATEGORIZED"',
+            type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
@@ -432,9 +432,8 @@ export class SupportErrandController {
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
       resolution: Resolution.INFORMED,
-      title: 'New errand',
+      title: 'Empty errand',
     };
-    console.log('Registering new errand with body', body);
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);

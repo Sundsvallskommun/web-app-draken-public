@@ -25,6 +25,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
       );
+      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
+        'getErrand'
+      );
 
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
@@ -58,36 +61,40 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('sends the correct data for new errand', () => {
-      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockSupportErrand).as('getErrand');
+      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
+        'getErrand'
+      );
       const labelCat = mockMetaData.labels.labelStructure[0];
       const labelType = labelCat.labels[0];
       cy.get('[data-cy="labelCategory-input"]').select(labelCat.displayName);
       cy.get('[data-cy="labelType-input"]').click();
       cy.get('[data-cy="labelType-list"]').children().contains(labelType.displayName).click();
       cy.get('[data-cy="description-input"]').type('Mock description');
-      cy.get('[data-cy="save-and-continue-button"]').click();
-      cy.wait(`@initiateErrand`).should(({ request, response }) => {
+      cy.get('[data-cy="save-button"]').click();
+      cy.wait(`@updateErrand`).should(({ request, response }) => {
         expect(request.body.classification.category).to.equal(labelCat.name);
         expect(request.body.classification.type).to.equal(labelType.name);
         expect(request.body.labels).to.include(labelCat.name);
         expect(request.body.labels).to.include(labelType.name);
         expect(request.body.channel).to.equal('PHONE');
         expect(request.body.priority).to.equal('MEDIUM');
-        expect(request.body.resolution).to.equal('INFORMED');
         expect(request.body.description).to.equal('Mock description');
         expect(request.body).to.deep.equal({
+          assignedUserId: mockEmptySupportErrand.assignedUserId,
           businessRelated: false,
           classification: {
             category: labelCat.name,
             type: labelType.name,
           },
+          externalTags: mockEmptySupportErrand.externalTags,
           labels: [labelCat.name, labelType.name],
           channel: 'PHONE',
           priority: 'MEDIUM',
           resolution: 'INFORMED',
+          stakeholders: [],
           description: 'Mock description',
           status: 'NEW',
-          title: 'Empty errand',
+          suspension: {},
         });
 
         expect([200, 304]).to.include(response && response.statusCode);
