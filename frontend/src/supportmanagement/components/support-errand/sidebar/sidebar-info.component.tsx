@@ -45,7 +45,6 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { SaveButtonComponent } from '@supportmanagement/components/save-button/save-button.component';
 import { ArrowRight } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{
@@ -130,125 +129,60 @@ export const SidebarInfo: React.FC<{
 
     const municipalityId = defaultSupportErrandInformation.municipalityId;
 
-    if (supportErrandIsEmpty(supportErrand)) {
-      const formdata = getValues();
-      return updateSupportErrand(municipalityId, formdata)
-        .then((res) => {
-          setIsLoading(false);
-          if (
-            supportErrand.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin).adAccount
-          ) {
-            saveAdmin();
-          }
+    return updateSupportErrand(municipalityId, getValues())
+      .then((res) => {
+        setIsLoading(false);
+        if (
+          supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin)?.adAccount
+        ) {
+          saveAdmin();
+        } else if (supportErrand.status !== getValues().status) {
+          updateSupportErrandStatus(getValues().status);
+        }
 
-          if (props.unsavedFacility) {
-            saveFacilityInfo(supportErrand.id, getValues().facilities)
-              .then(() => {
-                props.setUnsavedFacility(false);
-                setIsLoading(false);
-              })
-              .catch((e) => {
-                setIsLoading(false);
-                toastMessage({
-                  position: 'bottom',
-                  closeable: false,
-                  message: 'Något gick fel när fastigheter i ärendet sparades',
-                  status: 'error',
-                });
-                return true;
+        if (props.unsavedFacility) {
+          saveFacilityInfo(supportErrand.id, getValues().facilities)
+            .then(() => {
+              props.setUnsavedFacility(false);
+              setIsLoading(false);
+            })
+            .catch((e) => {
+              setIsLoading(false);
+              toastMessage({
+                position: 'bottom',
+                closeable: false,
+                message: 'Något gick fel när fastigheter i ärendet sparades',
+                status: 'error',
               });
-          }
-          if (formdata.status === 'Inkommet' && formdata.assignedUserId) {
-            updateSupportErrandStatus(Status.ONGOING);
-          } else if (formdata.status !== 'Inkommet' && formdata.assignedUserId) {
-            updateSupportErrandStatus(Status[findStatusKeyForStatusLabel(getValues().status)]);
-          }
-          reset();
-          getSupportErrandById(supportErrand.id, municipalityId)
-            .then((res) => setSupportErrand(res.errand))
-            .then(() =>
-              setTimeout(() => {
-                router.push(`/arende/${municipalityId}/${formdata.id}`, `/arende/${municipalityId}/${formdata.id}`, {
-                  shallow: true,
-                });
-              }, 10)
-            );
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ärendet sparades',
-            status: 'success',
-          });
-          return res;
-        })
-        .catch((e) => {
-          console.error('Error when updating errand:', e);
-          setError(true);
-          setIsLoading(false);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när ärendet sparades',
-            status: 'error',
-          });
-          return true;
+              return true;
+            });
+        }
+        update();
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Ärendet uppdaterades',
+          status: 'success',
         });
-    } else {
-      return updateSupportErrand(municipalityId, getValues())
-        .then((res) => {
-          setIsLoading(false);
-          if (
-            supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin)?.adAccount
-          ) {
-            saveAdmin();
-          } else if (supportErrand.status !== Status[findStatusKeyForStatusLabel(getValues().status)]) {
-            updateSupportErrandStatus(Status[findStatusKeyForStatusLabel(getValues().status)]);
-          }
-
-          if (props.unsavedFacility) {
-            saveFacilityInfo(supportErrand.id, getValues().facilities)
-              .then(() => {
-                props.setUnsavedFacility(false);
-                setIsLoading(false);
-              })
-              .catch((e) => {
-                setIsLoading(false);
-                toastMessage({
-                  position: 'bottom',
-                  closeable: false,
-                  message: 'Något gick fel när fastigheter i ärendet sparades',
-                  status: 'error',
-                });
-                return true;
-              });
-          }
-          update();
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ärendet uppdaterades',
-            status: 'success',
-          });
-          setTimeout(async () => {
-            const e = await getSupportErrandById(getValues().id, municipalityId);
-            setSupportErrand(e.errand);
-            reset(e.errand);
-          }, 0);
-          return res;
-        })
-        .catch((e) => {
-          console.error('Error when updating errand:', e);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när ärendet uppdaterades',
-            status: 'error',
-          });
-          setError(true);
-          setIsLoading(false);
-          return true;
+        setTimeout(async () => {
+          const e = await getSupportErrandById(getValues().id, municipalityId);
+          setSupportErrand(e.errand);
+          reset(e.errand);
+        }, 0);
+        return res;
+      })
+      .catch((e) => {
+        console.error('Error when updating errand:', e);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när ärendet uppdaterades',
+          status: 'error',
         });
-    }
+        setError(true);
+        setIsLoading(false);
+        return true;
+      });
   };
 
   const saveAdmin = () => {
@@ -326,14 +260,6 @@ export const SidebarInfo: React.FC<{
         {
           key: 'AWAITING_INTERNAL_RESPONSE',
           label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
-        },
-        {
-          key: 'ASSIGNED',
-          label: StatusLabel.ASSIGNED,
-        },
-        {
-          key: 'SUSPENDED',
-          label: StatusLabel.SUSPENDED,
         },
         {
           key: 'SOLVED',
@@ -571,39 +497,25 @@ export const SidebarInfo: React.FC<{
         </>
 
         <div className="w-full">
-          {supportErrandIsEmpty(supportErrand) ? (
-            <SaveButtonComponent
-              supportErrand={supportErrand}
-              setSupportErrand={setSupportErrand}
-              setUnsaved={() => {}}
-              update={() => {}}
-              registeringNewErrand={supportErrandIsEmpty(supportErrand)}
-              verifyAndClose={() => {}}
-              label="Registrera"
-              color="vattjom"
-              icon={<Icon icon={<ArrowRight />} size={18} />}
-            />
-          ) : (
-            <Button
-              className="w-full my-8"
-              data-cy="save-button"
-              type="button"
-              disabled={
-                isSupportErrandLocked(supportErrand) ||
-                !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
-                formIsNotValid
-              }
-              onClick={handleSubmit(() => {
-                return onSubmit();
-              }, onError)}
-              variant="primary"
-              color="primary"
-              loading={isLoading === true}
-              loadingText="Sparar"
-            >
-              Spara ärende
-            </Button>
-          )}
+          <Button
+            className="w-full my-8"
+            data-cy="save-button"
+            type="button"
+            disabled={
+              isSupportErrandLocked(supportErrand) ||
+              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
+              formIsNotValid
+            }
+            onClick={handleSubmit(() => {
+              return onSubmit();
+            }, onError)}
+            variant="primary"
+            color="primary"
+            loading={isLoading === true}
+            loadingText="Sparar"
+          >
+            Spara ärende
+          </Button>
           <>
             <Divider className="mt-16 mb-24" />
 

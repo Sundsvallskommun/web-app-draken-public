@@ -17,7 +17,7 @@ export const mockEmptySupportErrand = {
     type: 'NONE',
   },
   labels: [],
-  statusTag: 'ONGOING',
+  status: 'NEW',
   resolution: 'INFORMED',
   reporterUserId: 'kctest',
   assignedUserId: 'kctest',

@@ -8,7 +8,7 @@ export const mockEmptySupportErrand = {
     category: 'NONE',
     type: 'NONE',
   },
-  statusTag: 'ONGOING',
+  status: 'ONGOING',
   resolution: 'INFORMED',
   reporterUserId: 'kctest',
   assignedUserId: 'kctest',
