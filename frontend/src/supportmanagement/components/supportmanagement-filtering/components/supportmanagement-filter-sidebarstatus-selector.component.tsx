@@ -119,7 +119,9 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
                   className="min-w-fit px-4"
                   inverted={!buttonIsActive || showAttestationTable}
                   color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
-                  counter={isLoading ? '-' : button.totalStatusErrands > 99 ? '99+' : button.totalStatusErrands || '0'}
+                  counter={
+                    isLoading ? '-' : button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands || '0'
+                  }
                 />
               </span>
             )}
