@@ -38,7 +38,7 @@ export const AttestationTab = () => {
   const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState(undefined);
 
-  const { setSupportErrand, setSupportAdmins, supportAdmins, municipalityId } = useAppContext();
+  const { setSupportErrand, setSupportAdmins, setBillingRecords, supportAdmins, municipalityId } = useAppContext();
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -48,9 +48,12 @@ export const AttestationTab = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
-
   const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
+
+  useEffect(() => {
+    getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
+  }, [municipalityId, page, pageSize, attestationFilterObject, sortObject]);
 
   const setInitialFocus = () => {
     setTimeout(() => {
