@@ -342,7 +342,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   return (
     <div className="w-full">
       <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
-        <div className="w-full">
+        <div className="w-full container px-0">
           <FormProvider {...filterForm}>
             <SupportManagementFiltering
               numberOfFilters={numberOfFilters}
