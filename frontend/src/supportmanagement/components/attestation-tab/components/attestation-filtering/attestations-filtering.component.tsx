@@ -35,7 +35,7 @@ export const AttestationsFilteringComponent: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const { user } = useAppContext();
-  const [show, setShow] = useState<boolean>(false);
+  const [show, setShow] = useState<boolean>(true);
   const [showCreateInvoice, setShowCreateInvoice] = useState<boolean>(false);
 
   const closeCreateInvoice = () => {
