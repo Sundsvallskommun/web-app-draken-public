@@ -219,7 +219,7 @@ export class CNotification implements Notification {
   @IsOptional()
   errandNumber?: string;
 }
-export class SupportErrandDto implements SupportErrand {
+export class SupportErrandDto implements Partial<SupportErrand> {
   @IsString()
   @IsOptional()
   id?: string;
@@ -227,14 +227,16 @@ export class SupportErrandDto implements SupportErrand {
   @IsOptional()
   errandNumber?: string;
   @IsString()
-  title: string;
+  @IsOptional()
+  title?: string;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CSupportStakeholder)
   stakeholders: CSupportStakeholder[];
   @IsString()
-  priority: SupportPriority;
+  @IsOptional()
+  priority?: SupportPriority;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -248,7 +250,8 @@ export class SupportErrandDto implements SupportErrand {
   @TypeTransformer(() => Classification)
   @ValidateNested()
   @IsObject()
-  classification: Classification;
+  @IsOptional()
+  classification?: Classification;
   @IsString()
   status: string;
   @IsOptional()
@@ -261,7 +264,8 @@ export class SupportErrandDto implements SupportErrand {
   @IsString()
   channel?: string;
   @IsString()
-  reporterUserId: string;
+  @IsOptional()
+  reporterUserId?: string;
   @IsString()
   @IsOptional()
   assignedUserId?: string;
@@ -286,7 +290,6 @@ export class SupportErrandDto implements SupportErrand {
   @IsBoolean()
   businessRelated?: boolean;
   @IsOptional()
-  @ValidateNested({ each: true })
   @IsArray()
   labels?: string[];
   @IsArray()
@@ -521,11 +524,10 @@ export class SupportErrandController {
   @Post('/newerrand/:municipalityId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Initiate a new, empty support errand' })
-  @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
+  @UseBefore(authMiddleware)
   async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: SupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
