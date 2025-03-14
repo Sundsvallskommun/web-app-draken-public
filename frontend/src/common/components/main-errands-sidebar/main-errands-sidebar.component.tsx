@@ -20,12 +20,13 @@ import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
-}> = ({ showAttestationTable, setShowAttestationTable }) => {
+  open;
+  setOpen;
+}> = ({ showAttestationTable, setShowAttestationTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [open, setOpen] = useState(true);
   const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
@@ -49,7 +50,7 @@ export const MainErrandsSidebar: React.FC<{
     <aside
       data-cy="overview-aside"
       className={cx(
-        'transition-all ease-in-out duration-150 flex grow z-10 bg-vattjom-background-200 min-h-screen relative',
+        'fixed left-0 transition-all ease-in-out duration-150 flex grow z-10 bg-vattjom-background-200 min-h-screen',
         open ? 'max-lg:shadow-100 sm:w-[32rem] sm:min-w-[32rem]' : 'w-[5.6rem]'
       )}
     >
