@@ -311,8 +311,8 @@ export class SupportErrandDto implements Partial<SupportErrand> {
 class ForwardFormDto {
   @IsString()
   recipient: string;
-  @IsString()
-  email: string;
+  @IsArray()
+  emails: { value: string }[];
   @IsString()
   department: 'MEX';
   @IsString()
