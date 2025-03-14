@@ -1,13 +1,5 @@
 import NextLink from 'next/link';
-import {
-  getApplicationEnvironment,
-  getApplicationName,
-  isIK,
-  isKC,
-  isLOP,
-  isMEX,
-  isPT,
-} from '@common/services/application-service';
+import { getApplicationEnvironment, getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
 import { FormProvider, useForm } from 'react-hook-form';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -31,7 +23,7 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user, billingRecords }: AppContextInterface = useAppContext();
+  const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
   const [open, setOpen] = useState(true);
   const applicationName = getApplicationName();
@@ -57,7 +49,7 @@ export const MainErrandsSidebar: React.FC<{
     <aside
       data-cy="overview-aside"
       className={cx(
-        'transition-all ease-in-out duration-150 flex-none z-10 bg-vattjom-background-200 h-full min-h-screen relative',
+        'transition-all ease-in-out duration-150 flex grow z-10 bg-vattjom-background-200 min-h-screen relative',
         open ? 'max-lg:shadow-100 sm:w-[32rem] sm:min-w-[32rem]' : 'w-[5.6rem]'
       )}
     >
@@ -118,12 +110,18 @@ export const MainErrandsSidebar: React.FC<{
               >
                 {open && (
                   <span className="w-full flex justify-between">
-                    Attestering
+                    Godkänn fakturor
                     <Badge
                       className="min-w-fit px-4"
                       inverted={!showAttestationTable}
                       color={showAttestationTable ? 'tertiary' : 'vattjom'}
-                      counter={billingRecords.totalElements > 99 ? '99+' : billingRecords.totalElements || '0'}
+                      counter={
+                        isLoading
+                          ? '-'
+                          : billingRecords.totalElements > 99
+                          ? '99+'
+                          : billingRecords.totalElements || '0'
+                      }
                     />
                   </span>
                 )}
