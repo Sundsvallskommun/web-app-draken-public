@@ -102,8 +102,7 @@ export interface CInvoice {
   customerId: string;
   description: string;
   ourReference?: string;
-  customerReference?: string;
-  referenceId?: string;
+  customerReference: string;
   date?: string;
   dueDate?: string;
   totalAmount?: number;
@@ -441,29 +440,86 @@ export interface CExternalTag {
 
 export interface CParameter {
   key: string;
+  displayName?: string;
+  group?: string;
   values?: any[];
 }
 
+export interface CContactChannel {
+  type?: string;
+  value?: string;
+}
+
+export interface CSupportStakeholder {
+  externalId?: string;
+  externalIdType?: string;
+  role?: string;
+  city?: string;
+  organizationName?: string;
+  firstName?: string;
+  lastName?: string;
+  address?: string;
+  careOf?: string;
+  zipCode?: string;
+  country?: string;
+  contactChannels?: CContactChannel[];
+  parameters?: CParameter[];
+}
+
+export interface Classification {
+  category: string;
+  type: string;
+}
+
+export interface CSuspension {
+  suspendedFrom?: string;
+  suspendedTo?: string;
+}
+
+export interface CNotification {
+  id?: string;
+  created?: string;
+  modified?: string;
+  ownerFullName?: string;
+  ownerId: string;
+  createdBy?: string;
+  createdByFullName?: string;
+  type: string;
+  description: string;
+  content?: string;
+  expires?: string;
+  globalAcknowledged?: boolean;
+  acknowledged?: boolean;
+  errandId?: string;
+  errandNumber?: string;
+}
+
 export interface SupportErrandDto {
-  assignedUserId?: string;
-  reporterUserId?: string;
-  classification?: object;
-  labels?: any[];
-  contactReason?: string;
-  contactReasonDescription?: string;
-  businessRelated?: boolean;
-  channel?: string;
-  customer?: object;
-  priority?: string;
-  status?: string;
-  suspension?: object;
-  resolution?: string;
-  escalationEmail?: string;
-  title?: string;
-  description?: string;
-  stakeholders?: any[];
+  id?: string;
+  errandNumber?: string;
+  title: string;
+  stakeholders?: CSupportStakeholder[];
+  priority: string;
   externalTags?: CExternalTag[];
   parameters?: CParameter[];
+  classification: Classification;
+  status: string;
+  resolution?: string;
+  description?: string;
+  channel?: string;
+  reporterUserId: string;
+  assignedUserId?: string;
+  assignedGroupId?: string;
+  escalationEmail?: string;
+  contactReason?: string;
+  contactReasonDescription?: string;
+  suspension?: CSuspension;
+  businessRelated?: boolean;
+  labels?: any[];
+  activeNotifications?: CNotification[];
+  created?: string;
+  modified?: string;
+  touched?: string;
 }
 
 export interface ForwardFormDto {
@@ -489,6 +545,28 @@ export interface SupportMessageDto {
   reply_to: string;
   references: string;
   attachmentIds?: any;
+}
+
+export interface CCommunicationAttachment {
+  id?: string;
+  fileName?: string;
+  mimeType?: string;
+}
+
+export interface CCommunication {
+  communicationID?: string;
+  sender?: string;
+  errandNumber?: string;
+  direction?: CCommunicationDirectionEnum;
+  messageBody?: string;
+  sent?: string;
+  subject?: string;
+  communicationType?: CCommunicationCommunicationTypeEnum;
+  target?: string;
+  internal?: boolean;
+  viewed?: boolean;
+  emailHeaders?: string;
+  communicationAttachments: CCommunicationAttachment[];
 }
 
 export interface SupportNoteDto {
@@ -580,4 +658,15 @@ export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
 export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
   Y = 'Y',
   N = 'N',
+}
+
+export enum CCommunicationDirectionEnum {
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
+}
+
+export enum CCommunicationCommunicationTypeEnum {
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }

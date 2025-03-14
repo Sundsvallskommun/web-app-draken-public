@@ -21,6 +21,7 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 export interface Customer {
   id: string;
@@ -57,61 +58,20 @@ export enum SupportStakeholderTypeEnum {
 export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
 
 export type ExternalTags = Array<{ key: string; value: string }>;
-export interface SupportErrandDto {
-  id?: string;
-  title?: string;
-  description?: string;
-  priority: Priority;
-  classification: {
-    category: string;
-    type: string;
-  };
-  labels: string[];
-  contactReason?: string;
-  contactReasonDescription?: string;
-  businessRelated?: boolean;
-  errandNumber: string;
-  status: Status;
-  suspension: {
-    suspendedFrom: string;
-    suspendedTo: string;
-  };
-  resolution?: string;
-  escalationEmail?: string;
-  channel: string;
-  reporterUserId?: string;
-  assignedUserId: string;
-  assignedGroupId?: string;
-  stakeholders: SupportStakeholder[];
-  externalTags: ExternalTags;
-  activeNotifications: Notification[];
-}
 
 export interface ApiSupportErrand extends SupportErrandDto {
-  id: string;
-  created: string;
-  modified: string;
-  touched: string;
+  id?: string;
+  created?: string;
+  modified?: string;
+  touched?: string;
 }
 
 export interface SupportErrand extends ApiSupportErrand {
   caseId?: string;
-  channel: string;
   category: string;
   type: string;
-  labels: string[];
-  contactReason?: string;
-  contactReasonDescription?: string;
-  businessRelated?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
-  parameters?: [
-    {
-      key: string;
-      displayName: string;
-      values: [string];
-    }
-  ];
 }
 
 export interface PagedApiSupportErrands extends ApiPagingData {
@@ -200,7 +160,7 @@ export const getStatusLabel = (statuses: Status[]) => {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
-      return 'Öppnade ärenden';
+      return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
     } else if (statuses.some((s) => assignedStatuses.includes(s))) {
@@ -845,7 +805,7 @@ export const updateSupportErrand: (
     });
 };
 
-export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status;
+export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status as Status;
 
 export const validateAction: (errand: SupportErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;

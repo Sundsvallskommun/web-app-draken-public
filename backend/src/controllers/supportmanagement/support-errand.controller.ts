@@ -11,12 +11,15 @@ import {
 } from '@/data-contracts/case-data/data-contracts';
 import {
   Errand as SupportErrand,
-  ErrandAttachmentHeader,
+  ErrandAttachment,
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   PageErrand,
   ExternalTag,
   Parameter,
+  ContactChannel,
+  Notification,
+  Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
@@ -90,73 +93,148 @@ export class CExternalTag implements ExternalTag {
 export class CParameter implements Parameter {
   @IsString()
   key: string;
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+  @IsString()
+  @IsOptional()
+  group?: string;
   @IsArray()
   @IsOptional()
   values: string[];
 }
 
+export class CContactChannel implements ContactChannel {
+  @IsString()
+  @IsOptional()
+  type?: string;
+  @IsString()
+  @IsOptional()
+  value?: string;
+}
+
+export class CSupportStakeholder implements SupportStakeholder {
+  @IsString()
+  @IsOptional()
+  externalId?: string;
+  @IsString()
+  @IsOptional()
+  externalIdType?: ExternalIdType;
+  @IsString()
+  @IsOptional()
+  role?: string;
+  @IsString()
+  @IsOptional()
+  city?: string;
+  @IsString()
+  @IsOptional()
+  organizationName?: string;
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+  @IsString()
+  @IsOptional()
+  lastName?: string;
+  @IsString()
+  @IsOptional()
+  address?: string;
+  @IsString()
+  @IsOptional()
+  careOf?: string;
+  @IsString()
+  @IsOptional()
+  zipCode?: string;
+  @IsString()
+  @IsOptional()
+  country?: string;
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CContactChannel)
+  contactChannels: CContactChannel[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CParameter)
+  parameters: Parameter[];
+}
+
+export class Classification {
+  @IsString()
+  category: string;
+  @IsString()
+  type: string;
+}
+
+export class CSuspension implements Suspension {
+  @IsString()
+  @IsOptional()
+  suspendedFrom: string;
+  @IsString()
+  @IsOptional()
+  suspendedTo: string;
+}
+
+export class CNotification implements Notification {
+  @IsString()
+  @IsOptional()
+  id?: string;
+  @IsString()
+  @IsOptional()
+  created?: string;
+  @IsString()
+  @IsOptional()
+  modified?: string;
+  @IsString()
+  @IsOptional()
+  ownerFullName?: string;
+  @IsString()
+  ownerId: string;
+  @IsString()
+  @IsOptional()
+  createdBy?: string;
+  @IsString()
+  @IsOptional()
+  createdByFullName?: string;
+  @IsString()
+  type: string;
+  @IsString()
+  description: string;
+  @IsString()
+  @IsOptional()
+  content?: string;
+  @IsString()
+  @IsOptional()
+  expires?: string;
+  @IsBoolean()
+  @IsOptional()
+  globalAcknowledged?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  acknowledged?: boolean;
+  @IsString()
+  @IsOptional()
+  errandId?: string;
+  @IsString()
+  @IsOptional()
+  errandNumber?: string;
+}
 export class SupportErrandDto implements SupportErrand {
   @IsString()
   @IsOptional()
-  assignedUserId: string;
+  id?: string;
   @IsString()
   @IsOptional()
-  reporterUserId: string;
-  @IsOptional()
-  @IsObject()
-  classification: {
-    category: string;
-    type: string;
-  };
-  @IsOptional()
-  @IsArray()
-  labels: string[];
-  @IsOptional()
-  @IsString()
-  contactReason: string;
-  @IsOptional()
-  @IsString()
-  contactReasonDescription: string;
-  @IsOptional()
-  @IsBoolean()
-  businessRelated: boolean;
-  @IsOptional()
-  @IsString()
-  channel: string;
-  @IsOptional()
-  @IsObject()
-  customer: {
-    description: string;
-    id: string;
-    type: CustomerType;
-  };
-  @IsOptional()
-  @IsString()
-  priority: SupportPriority;
-  @IsOptional()
-  @IsString()
-  status: string;
-  @IsOptional()
-  @IsObject()
-  suspension: {
-    suspendedFrom: string;
-    suspendedTo: string;
-  };
-  @IsOptional()
-  @IsString()
-  resolution: string;
-  @IsOptional()
-  @IsString()
-  escalationEmail?: string;
-  @IsOptional()
+  errandNumber?: string;
   @IsString()
   title: string;
-  @IsOptional()
-  @IsString()
-  description: string;
   @IsArray()
   @IsOptional()
-  stakeholders: SupportStakeholder[];
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CSupportStakeholder)
+  stakeholders: CSupportStakeholder[];
+  @IsString()
+  priority: SupportPriority;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -167,6 +245,64 @@ export class SupportErrandDto implements SupportErrand {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
   parameters: Parameter[];
+  @TypeTransformer(() => Classification)
+  @ValidateNested()
+  @IsObject()
+  classification: Classification;
+  @IsString()
+  status: string;
+  @IsOptional()
+  @IsString()
+  resolution?: string;
+  @IsOptional()
+  @IsString()
+  description?: string;
+  @IsOptional()
+  @IsString()
+  channel?: string;
+  @IsString()
+  reporterUserId: string;
+  @IsString()
+  @IsOptional()
+  assignedUserId?: string;
+  @IsString()
+  @IsOptional()
+  assignedGroupId?: string;
+  @IsOptional()
+  @IsString()
+  escalationEmail?: string;
+  @IsOptional()
+  @IsString()
+  contactReason?: string;
+  @IsOptional()
+  @IsString()
+  contactReasonDescription?: string;
+  @TypeTransformer(() => CSuspension)
+  @ValidateNested()
+  @IsObject()
+  @IsOptional()
+  suspension?: CSuspension;
+  @IsOptional()
+  @IsBoolean()
+  businessRelated?: boolean;
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @IsArray()
+  labels?: string[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CNotification)
+  activeNotifications?: CNotification[];
+  @IsOptional()
+  @IsString()
+  created?: string;
+  @IsOptional()
+  @IsString()
+  modified?: string;
+  @IsOptional()
+  @IsString()
+  touched?: string;
 }
 
 class ForwardFormDto {
@@ -192,7 +328,7 @@ export enum SupportStakeholderRole {
 export class SupportErrandController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/9.2`;
+  SERVICE = `supportmanagement/10.0`;
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
@@ -319,7 +455,8 @@ export class SupportErrandController {
       filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
     }
     if (priority) {
-      filterList.push(`priority:'${priority}'`);
+      const ss = priority.split(',').map(s => `priority:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
     }
     if (category) {
       const ss = category.split(',').map(s => `category:'${s}'`);
@@ -686,7 +823,6 @@ export class SupportErrandController {
         {
           statusType: ErrandStatus.ArendeInkommit,
           description: ErrandStatus.ArendeInkommit,
-          created: new Date().toISOString(),
         },
       ],
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
@@ -709,11 +845,11 @@ export class SupportErrandController {
     // Fetch support errand attachments
     try {
       const supportErrandAttachmentsUrl = `${municipalityId}/${this.namespace}/errands/${id}/attachments`;
-      const existingSupportErrandAttachments = await this.apiService.get<ErrandAttachmentHeader[]>(
+      const existingSupportErrandAttachments = await this.apiService.get<ErrandAttachment[]>(
         { url: supportErrandAttachmentsUrl, baseURL: supportBaseURL },
         req.user,
       );
-      const attachmentsPromises: Promise<ErrandAttachmentHeader & { fileData: ArrayBuffer }>[] = existingSupportErrandAttachments.data?.map(a => {
+      const attachmentsPromises: Promise<ErrandAttachment & { fileData: ArrayBuffer }>[] = existingSupportErrandAttachments.data?.map(a => {
         const singleAttachmentsUrl = `${municipalityId}/${this.namespace}/errands/${id}/attachments/${a.id}`;
         const filesData = this.apiService
           .get<ArrayBuffer>({ url: singleAttachmentsUrl, baseURL: supportBaseURL, responseType: 'arraybuffer' }, req.user)

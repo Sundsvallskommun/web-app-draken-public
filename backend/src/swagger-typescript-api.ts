@@ -26,7 +26,7 @@ const APIS = [
   },
   {
     name: 'estateinfo',
-    version: '1.0',
+    version: '2.0',
   },
   {
     name: 'templating',
@@ -42,7 +42,7 @@ const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '9.0',
+    version: '10.0',
   },
   {
     name: 'businessengagements',
@@ -50,7 +50,7 @@ const APIS = [
   },
   {
     name: 'billingpreprocessor',
-    version: '3.0',
+    version: '4.0',
   },
   {
     name: 'legalentity',

@@ -103,7 +103,7 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
-      return 'Öppnade ärenden';
+      return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
     } else if (statuses.some((s) => assignedStatuses.includes(s))) {

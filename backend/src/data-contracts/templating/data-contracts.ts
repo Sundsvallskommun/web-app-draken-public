@@ -87,6 +87,23 @@ export interface TemplateResponse {
   lastModifiedAt?: string;
 }
 
+export interface Problem {
+  title?: string;
+  detail?: string;
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+}
+
+export interface StatusType {
+  /** @format int32 */
+  statusCode?: number;
+  reasonPhrase?: string;
+}
+
 /**
  * Search filter expression
  * @example {"or":[{"eq":{"process":"PRH"}},{"eq":{"verksamhet":"SBK"}}]}

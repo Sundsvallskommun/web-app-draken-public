@@ -523,12 +523,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('case MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOUGE_PLANNING_NOTICE', () => {
+    it('case MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE', () => {
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
-          caseType: 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOUGE_PLANNING_NOTICE',
+          caseType: 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
         })
       ).as('getErrand');
 

@@ -11,7 +11,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 export class SupportHistoryController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/9.2`;
+  private SERVICE = `supportmanagement/10.0`;
 
   @Get('/supporthistory/:municipalityId/:id')
   @OpenAPI({ summary: 'Get events for errand' })
