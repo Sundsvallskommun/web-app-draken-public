@@ -1,31 +1,30 @@
-import { useAppContext } from '@contexts/app.context';
-import { FormProvider, useForm } from 'react-hook-form';
-import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import { Button, Link } from '@sk-web-gui/react';
 import { isMEX, isPT } from '@common/services/application-service';
+import { getMe } from '@common/services/user-service';
+import { useDebounceEffect } from '@common/utils/useDebounceEffect';
+import { useAppContext } from '@contexts/app.context';
 import { Disclosure } from '@headlessui/react';
-import {
-  AttestationsTable,
-  AttestationTableForm,
-} from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
+import { Button, Link } from '@sk-web-gui/react';
+import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
+import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
   AttestationFilter,
   AttestationValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/attestations-filtering.component';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSupportErrands } from '@supportmanagement/services/support-errand-service';
-import { useRouter } from 'next/router';
+import {
+  AttestationsTable,
+  AttestationTableForm,
+} from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
+import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
 import store from '@supportmanagement/services/storage-service';
-import { getMe } from '@common/services/user-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
-import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
-import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import {
   getBillingRecord,
   getBillingRecords,
   useBillingRecords,
 } from '@supportmanagement/services/support-billing-service';
+import { useRouter } from 'next/router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });
@@ -42,7 +41,7 @@ export const AttestationTab = () => {
   const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState(undefined);
 
-  const { setSupportErrand, setSupportAdmins, supportAdmins, municipalityId } = useAppContext();
+  const { setSupportErrand, setSupportAdmins, setBillingRecords, supportAdmins, municipalityId } = useAppContext();
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -52,9 +51,12 @@ export const AttestationTab = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
-
   const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
+
+  useEffect(() => {
+    getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
+  }, [municipalityId, page, pageSize, attestationFilterObject, sortObject]);
 
   const setInitialFocus = () => {
     setTimeout(() => {
