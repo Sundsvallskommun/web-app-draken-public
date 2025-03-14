@@ -101,7 +101,6 @@ const SupportManagementFiltering: React.FC<{
           <SupportManagementFilterQuery />
           <div className="flex gap-16">
             <Button
-              className="md:w-auto"
               onClick={() => setShow(!show)}
               data-cy="show-filters-button"
               color="vattjom"
