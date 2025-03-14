@@ -521,11 +521,10 @@ export class SupportErrandController {
   @Post('/newerrand/:municipalityId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Initiate a new, empty support errand' })
-  @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
+  @UseBefore(authMiddleware)
   async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() data: SupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
