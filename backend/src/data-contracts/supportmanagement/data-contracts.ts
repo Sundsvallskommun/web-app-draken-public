@@ -81,14 +81,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -781,10 +781,10 @@ export interface CreateErrandNoteRequest {
 /** WebMessageAttachment model */
 export interface WebMessageAttachment {
   /**
-   * The attachment filename
+   * The attachment file name
    * @example "test.txt"
    */
-  name: string;
+  fileName: string;
   /**
    * The attachment (file) content as a BASE64-encoded string, max size 10 MB
    * @format base64
@@ -795,6 +795,11 @@ export interface WebMessageAttachment {
 
 /** WebMessageRequest model */
 export interface WebMessageRequest {
+  /**
+   * Indicates if the message is internal
+   * @example false
+   */
+  internal?: boolean;
   /**
    * Message in plain text
    * @example "Message in plain text"
@@ -820,15 +825,20 @@ export interface SmsRequest {
   recipient: string;
   /** Message */
   message: string;
+  /**
+   * Indicates if the message is internal
+   * @example false
+   */
+  internal?: boolean;
 }
 
 /** EmailAttachment model */
 export interface EmailAttachment {
   /**
-   * The attachment filename
+   * The attachment file name
    * @example "test.txt"
    */
-  name: string;
+  fileName: string;
   /**
    * The attachment (file) content as a BASE64-encoded string, max size 10 MB
    * @format base64
@@ -869,6 +879,11 @@ export interface EmailRequest {
    * @example "Message in plain text"
    */
   message: string;
+  /**
+   * Indicates if the message is internal
+   * @example false
+   */
+  internal?: boolean;
   /**
    * Headers for keeping track of email conversations
    * @example {"IN_REPLY_TO":["reply-to@example.com"],"REFERENCES":["reference1","reference2"],"MESSAGE_ID":["123456789"]}
@@ -1000,6 +1015,7 @@ export interface PageErrand {
   totalPages?: number;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1008,7 +1024,6 @@ export interface PageErrand {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1288,6 +1303,11 @@ export interface Communication {
    */
   target?: string;
   /**
+   * Indicates if the message is internal
+   * @example false
+   */
+  internal?: boolean;
+  /**
    * Signal if the message has been viewed or not
    * @example true
    */
@@ -1307,21 +1327,21 @@ export interface CommunicationAttachment {
    * The attachment ID
    * @example "aGVsbG8gd29ybGQK"
    */
-  attachmentID?: string;
+  id?: string;
   /**
-   * The attachment filename
+   * The attachment file name
    * @example "test.txt"
    */
-  name?: string;
+  fileName?: string;
   /**
-   * The attachment content type
+   * The attachment MIME type
    * @example "text/plain"
    */
-  contentType?: string;
+  mimeType?: string;
 }
 
-/** ErrandAttachmentHeader model */
-export interface ErrandAttachmentHeader {
+/** ErrandAttachment model */
+export interface ErrandAttachment {
   /**
    * Unique identifier for the attachment
    * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"

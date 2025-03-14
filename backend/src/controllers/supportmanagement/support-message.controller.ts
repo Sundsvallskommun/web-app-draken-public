@@ -113,7 +113,7 @@ export class SupportMessageController {
         senderName: messageDto.senderName,
         subject: messageDto.subject,
         attachments: files.map(file => ({
-          name: file.originalname,
+          fileName: file.originalname,
           base64EncodedString: file.buffer.toString('base64'),
         })),
         emailHeaders,
@@ -131,7 +131,7 @@ export class SupportMessageController {
       const requestBody: WebMessageRequest = {
         message: messageDto.plaintextMessage,
         attachments: files.map(file => ({
-          name: file.originalname,
+          fileName: file.originalname,
           base64EncodedString: file.buffer.toString('base64'),
         })),
         attachmentIds: messageDto.attachmentIds || [],

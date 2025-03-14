@@ -257,7 +257,9 @@ export const OngoingCaseDataErrands: React.FC = () => {
             <div>
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + closedErrands.totalElements : null}
+                {sidebarLabel === 'Avslutade ärenden'
+                  ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
+                  : null}
               </h1>
             </div>
 
