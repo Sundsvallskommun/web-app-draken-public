@@ -64,7 +64,7 @@ const CaseDataFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
-  const [show, setShow] = useState<boolean>(false);
+  const [show, setShow] = useState<boolean>(true);
   const { selectedErrandStatuses } = useAppContext();
 
   return (
