@@ -98,12 +98,11 @@ const SupportManagementFiltering: React.FC<{
     <>
       <div className="flex flex-col w-full gap-16 py-19">
         <div className="w-full flex items-start md:items-center justify-between md:flex-row gap-16">
-          <div className="w-full">
-            <SupportManagementFilterQuery />
-          </div>
+          <SupportManagementFilterQuery />
+
           <div className="flex gap-16">
             <Button
-              className="w-full md:w-auto"
+              className="md:w-auto"
               onClick={() => setShow(!show)}
               data-cy="show-filters-button"
               color="vattjom"
