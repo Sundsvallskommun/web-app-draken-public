@@ -1,19 +1,12 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, getApplicationName, isMEX, isPT } from '@common/services/application-service';
-import { Button, CookieConsent, Header, Link, Logo } from '@sk-web-gui/react';
+import { getApplicationEnvironment, getApplicationName } from '@common/services/application-service';
+import { CookieConsent, Link } from '@sk-web-gui/react';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
-import router from 'next/router';
-import { FormProvider, useForm } from 'react-hook-form';
-import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import SupportManagementFiltering, {
-  SupportManagementFilter,
-  SupportManagementValues,
-} from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 
 export default function SidebarLayout({ title, children, showAttestationTable, setShowAttestationTable }) {
   const { user, errand, supportErrand }: { user: User; errand: IErrand; supportErrand: SupportErrand } =
@@ -28,13 +21,13 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
         <title>{title}</title>
         <meta name="description" content={applicationName} />
       </Head>
-      <div className="min-h-screen h-full w-full">
-        <div className="flex h-full overflow-hidden w-full">
+      <div className="min-h-screen w-full">
+        <div className="flex grow overflow-hidden w-full">
           <MainErrandsSidebar
             showAttestationTable={showAttestationTable}
             setShowAttestationTable={setShowAttestationTable}
           />{' '}
-          <div className="w-full flex-shirnk flex">{children}</div>
+          <div className="w-full grow flex">{children}</div>
         </div>
       </div>
 

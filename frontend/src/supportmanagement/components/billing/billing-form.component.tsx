@@ -51,6 +51,7 @@ const BillingForm: React.FC<{
             handleChange(selectedDescription, customerId, defaultQuantity, costcenter, activity);
             trigger();
           }}
+          readOnly={getValues().status !== 'NEW'}
         >
           <Select.Option value={''}>Välj faktureringstyp</Select.Option>
           {invoiceSettings.invoiceTypes.map((invoiceType) => (
@@ -86,6 +87,7 @@ const BillingForm: React.FC<{
           min={0}
           max={999999}
           size="md"
+          readOnly={getValues().status !== 'NEW'}
         />
         {errors.invoice?.invoiceRows?.[0]?.quantity && (
           <div className="text-error">
@@ -124,7 +126,7 @@ const BillingForm: React.FC<{
         <div className="flex w-1/2">
           <FormControl id="supervisor" className="w-full">
             <FormLabel>Chef</FormLabel>
-            <Input.Group>
+            <Input.Group readOnly={getValues().status !== 'NEW'}>
               <Input
                 data-cy="manager-input"
                 className="w-full text-dark-primary"
@@ -206,6 +208,7 @@ const BillingForm: React.FC<{
                 );
               }}
               placeholder={'0'}
+              readOnly={getValues().status !== 'NEW'}
             >
               {getValues().type === 'INTERNAL'
                 ? invoiceSettings.customers.internal.map((identity) => (
@@ -258,6 +261,7 @@ const BillingForm: React.FC<{
               }}
               size="md"
               placeholder={'0'}
+              readOnly={getValues().status !== 'NEW'}
             >
               <Select.Option value={''}>Välj aktivitet</Select.Option>
               {invoiceSettings.activities.map((activity) => (
