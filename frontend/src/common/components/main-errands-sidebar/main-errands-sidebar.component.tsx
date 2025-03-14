@@ -1,5 +1,12 @@
 import NextLink from 'next/link';
-import { getApplicationEnvironment, getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import {
+  getApplicationEnvironment,
+  getApplicationName,
+  isAnge,
+  isIK,
+  isKC,
+  isLOP,
+} from '@common/services/application-service';
 import { FormProvider, useForm } from 'react-hook-form';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -16,6 +23,8 @@ import { CaseStatusValues } from '@casedata/components/casedata-filtering/compon
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import Image from 'next/image';
+import Ange_kommun_logo from '../../../styles/Ange_kommun_logo.png';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -39,8 +48,11 @@ export const MainErrandsSidebar: React.FC<{
       }. Gå till startsidan.`}
     >
       <Logo
-        className={cx(open ? '' : 'w-[2.8rem]')}
+        className={cx(open ? '' : isAnge() ? 'w-[4rem]' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
+        symbol={
+          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ange kommun logo" /> : null
+        }
         title={'Draken'}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
