@@ -236,7 +236,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
             <CaseDataFiltering
@@ -251,7 +251,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full">
+      <main className="px-24 md:px-40 pb-40 w-full h-full">
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
             <div>

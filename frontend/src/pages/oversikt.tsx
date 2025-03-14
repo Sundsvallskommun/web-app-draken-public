@@ -64,7 +64,7 @@ export const Oversikt: React.FC = () => {
             showAttestationTable={showAttestationTable}
             title={`${getApplicationName()} - Översikt`}
           >
-            {isPT() ? <OngoingCaseDataErrands /> : isMEX() ? <OngoingCaseDataErrands /> : <></>}
+            <OngoingCaseDataErrands />
           </SidebarLayout>
         </>
       )}

@@ -1,9 +1,7 @@
-import { isMEX, isPT } from '@common/services/application-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
 import { Disclosure } from '@headlessui/react';
-import { Button, Link } from '@sk-web-gui/react';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
@@ -14,7 +12,6 @@ import {
   AttestationsTable,
   AttestationTableForm,
 } from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
-import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
 import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
@@ -163,23 +160,15 @@ export const AttestationTab = () => {
 
   return (
     <div className="w-full">
-      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
-            <SupportManagementFilterQuery />
+            <AttestationsFilteringComponent
+              ownerFilterHandler={ownerFilteringHandler}
+              ownerFilter={ownerFilter}
+              administrators={supportAdmins}
+            />
           </FormProvider>
-          <Link
-            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-            target="_blank"
-            data-cy="register-new-errand-button"
-          >
-            <Button
-              color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-              variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
-            >
-              Nytt ärende
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -187,15 +176,8 @@ export const AttestationTab = () => {
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
             <div>
-              <FormProvider {...filterForm}>
-                <AttestationsFilteringComponent
-                  ownerFilterHandler={ownerFilteringHandler}
-                  ownerFilter={ownerFilter}
-                  administrators={supportAdmins}
-                />
-              </FormProvider>
+              <h1 className="p-0 m-0">Godkänn fakturaunderlag</h1>
             </div>
-
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>
                 <AttestationsTable
