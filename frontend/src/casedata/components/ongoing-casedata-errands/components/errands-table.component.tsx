@@ -128,7 +128,7 @@ export const ErrandsTable: React.FC = () => {
           {!!notification ? (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
               <div>
-                <time dateTime={notification?.created}>
+                <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
                   {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
                 </time>
               </div>
