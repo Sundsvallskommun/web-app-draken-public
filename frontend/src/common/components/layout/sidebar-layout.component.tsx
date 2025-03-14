@@ -34,7 +34,7 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
             showAttestationTable={showAttestationTable}
             setShowAttestationTable={setShowAttestationTable}
           />{' '}
-          <div className="w-full flex-shirnk flex">{children}</div>
+          <div className="w-full flex flex-shrink">{children}</div>
         </div>
       </div>
 
