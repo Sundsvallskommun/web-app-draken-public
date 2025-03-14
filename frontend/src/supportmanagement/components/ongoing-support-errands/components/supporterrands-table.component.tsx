@@ -236,24 +236,14 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
         <Table.Column>
           {!!notification ? (
-            <>
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
               <div>
-                {notification?.globalAcknowledged === false ? (
-                  <>
-                    <Callout color="vattjom"></Callout>
-                    <span className="sr-only">Ny händelse på ärendet</span>
-                  </>
-                ) : null}
+                <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
+                  {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
+                </time>
               </div>
-              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-                <div>
-                  <time dateTime={notification?.created}>
-                    {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
-                  </time>
-                </div>
-                <div className="italic">{notification?.description ? notification?.description : ''}</div>
-              </div>
-            </>
+              <div className="italic">{notification?.description ? notification?.description : ''}</div>
+            </div>
           ) : (
             dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
           )}
