@@ -468,9 +468,9 @@ export const CasedataDecisionTab: React.FC<{
 
   const isSent = () => {
     return (
-      errand.status.statusType === ErrandStatus.Beslutad ||
-      errand.status.statusType === ErrandStatus.BeslutVerkstallt ||
-      errand.status.statusType === ErrandStatus.ArendeAvslutat
+      errand.status?.statusType === ErrandStatus.Beslutad ||
+      errand.status?.statusType === ErrandStatus.BeslutVerkstallt ||
+      errand.status?.statusType === ErrandStatus.ArendeAvslutat
     );
   };
 
