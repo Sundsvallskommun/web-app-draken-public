@@ -130,21 +130,23 @@ export const searchPerson: (ssn: string) => Promise<AddressResult> = (ssn: strin
     ? Promise.resolve(undefined)
     : apiService
         .post<ApiResponse<CitizenAddressData>, { ssn: string }>('address', { ssn: ssn })
-        .then((res) => res.data.data)
+        .then((res) => {
+          return res.data.data;
+        })
         .then((res) => {
           if (res.error) {
             throw 'Address not found';
           } else {
-            const addressItem = res.addresses[0];
+            const addressItem = res.addresses?.[0];
             return {
               personId: res.personId,
               firstName: res.givenname,
               lastName: res.lastname,
               organizationName: '',
-              street: addressItem.address,
-              careof: addressItem.co,
-              zip: addressItem.postalCode,
-              city: addressItem.city,
+              street: addressItem?.address || '',
+              careof: addressItem?.co || '',
+              zip: addressItem?.postalCode || '',
+              city: addressItem?.city || '',
             };
           }
         });
