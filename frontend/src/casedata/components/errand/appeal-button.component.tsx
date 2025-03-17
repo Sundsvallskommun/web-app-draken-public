@@ -4,9 +4,8 @@ import { appealErrand, getErrand } from '@casedata/services/casedata-errand-serv
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { getStaticProps } from 'next/dist/build/templates/pages';
 import router from 'next/router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
