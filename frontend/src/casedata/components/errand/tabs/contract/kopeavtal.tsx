@@ -5,7 +5,6 @@ import { getErrandPropertyDesignations } from '@casedata/services/casedata-facil
 import { getSSNFromPersonId, getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import renderContractTermCheckboxList from '@casedata/services/contract-render-service';
 import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
-import { numberToSwedishWords } from '@common/services/number-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -194,14 +193,6 @@ export const KopeAvtal: React.FC<{
   useEffect(() => {
     setSignature(watch().signature);
   }, [watch().signature]);
-
-  const amountNumber = watch('kopeskillingTerms.amountNumber');
-
-  useEffect(() => {
-    if (amountNumber) {
-      setValue('kopeskillingTerms.amountText', numberToSwedishWords(amountNumber).toLocaleUpperCase() + ' KRONOR');
-    }
-  }, [amountNumber]);
 
   useEffect(() => {
     const doneMarkedElements =
@@ -628,7 +619,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
               </FormControl>
               <FormControl id="kopeskillingTerms.amountText" className="w-full">
                 <FormLabel>Belopp för köpeskillingen i text</FormLabel>
-                <Input data-cy="kopeskilling-amountText" readOnly {...register('kopeskillingTerms.amountText')} />
+                <Input data-cy="kopeskilling-amountText" {...register('kopeskillingTerms.amountText')} />
                 {/* <small>Exempel: TREHUNDRATUSEN KRONOR</small> */}
               </FormControl>
               <Table dense background data-cy="table-kopeskillingTerms">
@@ -694,7 +685,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
                   e.preventDefault();
                   e.stopPropagation();
                   const content = `Belopp för köpeskillingen i text: <strong>${
-                    getValues().kopeskillingTerms.amountText || '(saknas)'
+                    getValues().kopeskillingTerms.amountText || '(saknassss)'
                   }</strong>
 
 Belopp för köpeskillingen i siffror: <strong>${getValues().kopeskillingTerms.amountNumber || '(saknas)'}</strong>
