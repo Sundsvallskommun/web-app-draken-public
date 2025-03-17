@@ -654,7 +654,7 @@ export const updateErrandStatus = async (municipalityId: string, id: string, sta
 };
 
 export const validateStatusForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
-  return { valid: true, reason: e.status.statusType };
+  return { valid: true, reason: e.status?.statusType };
 };
 
 export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {

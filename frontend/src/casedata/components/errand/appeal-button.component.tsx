@@ -4,6 +4,7 @@ import { appealErrand, getErrand } from '@casedata/services/casedata-errand-serv
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { getStaticProps } from 'next/dist/build/templates/pages';
 import router from 'next/router';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -33,15 +34,18 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
         }
 
         const appealedErrand = await getErrand(municipalityId, res.errandId);
-        console.log('Errand:', appealedErrand);
-        setErrand(appealedErrand.errand);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet överklagat',
-          status: 'success',
+        if (!appealedErrand || !appealedErrand.errand) {
+          throw new Error('Failed to fetch the appealed errand');
+        }
+        setErrand(appealedErrand.errand, () => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Överklagan registrerad',
+            status: 'success',
+          });
         });
-        router.push(`/arende/${municipalityId}/${appealedErrand.errand.errandNumber}`);
+        router.replace(`/arende/${municipalityId}/${appealedErrand.errand.errandNumber}`);
         setIsLoading(false);
         return true;
       })
@@ -50,7 +54,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när ärendet överklagat',
+          message: 'Något gick fel när överklagan skulle registreras',
           status: 'error',
         });
         setIsLoading(false);
@@ -67,7 +71,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
 
   return isLoading ? (
     <Button disabled className="mt-16" variant="secondary" rightIcon={<Spinner size={2} />}>
-      Överklaga ärendet
+      Registrera överklagan
     </Button>
   ) : errand.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (
     <Button className="mt-16" variant="secondary" onClick={() => handleClick(errand)}>
@@ -80,7 +84,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
       variant="secondary"
       onClick={handleSubmit(() => {
         return saveConfirm
-          .showConfirmation('Överklaga ärendet', 'Vill du överklaga ärendet?', 'Ja', 'Nej', 'info')
+          .showConfirmation('Registrera överklagan', 'Vill du registrera överklagan?', 'Ja', 'Nej', 'info')
           .then((confirmed) => {
             if (confirmed) {
               setIsLoading(true);
@@ -91,7 +95,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
       })}
       disabled={props.disabled}
     >
-      Överklaga ärendet
+      Registrera överklagan
     </Button>
   );
 };
