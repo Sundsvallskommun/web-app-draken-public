@@ -265,6 +265,18 @@ export const SidebarInfo: React.FC<{
           key: 'SOLVED',
           label: StatusLabel.SOLVED,
         },
+        {
+          key: 'ASSIGNED',
+          label: StatusLabel.ASSIGNED,
+        },
+        {
+          key: 'SUSPENDED',
+          label: StatusLabel.SUSPENDED,
+        },
+        {
+          key: 'SOLVED',
+          label: StatusLabel.SOLVED,
+        },
       ];
       setSelectableStatuses(statuses);
 
