@@ -118,8 +118,8 @@ export const MainErrandsSidebar: React.FC<{
                       counter={
                         isLoading
                           ? '-'
-                          : billingRecords.totalElements > 99
-                          ? '99+'
+                          : billingRecords.totalElements > 999
+                          ? '999+'
                           : billingRecords.totalElements || '0'
                       }
                     />
