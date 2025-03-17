@@ -54,7 +54,7 @@ export default function Layout({ title, children }) {
         variant="service"
         title={'Draken'}
         symbol={
-          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ange kommun logo" /> : null
+          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ånge kommun logo" /> : null
         }
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
@@ -122,7 +122,7 @@ export default function Layout({ title, children }) {
         <Logo
           variant="symbol"
           symbol={
-            isAnge() ? <Image src={Ange_kommun_logo} className="h-[4rem] w-[4rem]" alt="Ange kommun logo" /> : null
+            isAnge() ? <Image src={Ange_kommun_logo} className="h-[4rem] w-[4rem]" alt="Ånge kommun logo" /> : null
           }
           className="h-40"
         />

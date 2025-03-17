@@ -50,7 +50,7 @@ export const MainErrandsSidebar: React.FC<{
         className={cx(open ? '' : isAnge() ? 'w-[4rem]' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
         symbol={
-          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ange kommun logo" /> : null
+          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ånge kommun logo" /> : null
         }
         title={'Draken'}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
