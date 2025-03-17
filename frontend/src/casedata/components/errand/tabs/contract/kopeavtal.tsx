@@ -685,7 +685,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
                   e.preventDefault();
                   e.stopPropagation();
                   const content = `Belopp för köpeskillingen i text: <strong>${
-                    getValues().kopeskillingTerms.amountText || '(saknassss)'
+                    getValues().kopeskillingTerms.amountText || '(saknas)'
                   }</strong>
 
 Belopp för köpeskillingen i siffror: <strong>${getValues().kopeskillingTerms.amountNumber || '(saknas)'}</strong>
