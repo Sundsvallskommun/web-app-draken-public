@@ -39,7 +39,7 @@ import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/s
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { isPT } from '@common/services/application-service';
 import { AppealButtonComponent } from '../appeal-button.component';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
+import { isAppealEnabled, isSuspendEnabled } from '@common/services/feature-flag-service';
 import { sortBy } from '@common/services/helper-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
@@ -540,7 +540,7 @@ export const SidebarInfo: React.FC<{}> = () => {
           </>
         )
       )}
-      {isPT() ? (
+      {isAppealEnabled() ? (
         <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand)} />
       ) : null}
 
