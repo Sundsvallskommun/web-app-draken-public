@@ -67,9 +67,9 @@ export const SupportErrandsTable: React.FC = () => {
     1: 'touched',
     2: 'category',
     3: 'type',
-    4: 'created',
-    5: 'priority',
-    6: 'channel',
+    4: 'channel',
+    5: 'created',
+    6: 'priority',
     7: 'assignedUserId',
   };
 
@@ -83,8 +83,9 @@ export const SupportErrandsTable: React.FC = () => {
           4: 'subType',
           5: 'channel',
           6: 'created',
-          7: 'suspendedTo',
-          8: 'assignedUserId',
+          7: 'priority',
+          8: 'suspendedTo',
+          9: 'assignedUserId',
         }
       : {
           0: 'status',
