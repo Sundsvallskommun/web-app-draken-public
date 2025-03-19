@@ -114,8 +114,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
       cy.get('.ql-editor').should('exist');
-      cy.get('[data-cy="decision-richtext-wrapper"]').find('.ql-blank').type('Mock message');
-
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('not.be.disabled').first().type('Mock message');
       cy.get('[data-cy="radio-button-group"]')
         .should('exist')
         .each(() => {
@@ -170,7 +169,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
       cy.get('.ql-editor').should('exist');
-      cy.get('[data-cy="decision-richtext-wrapper"]').find('.ql-blank').type('Mock message');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('not.be.disabled').first().type('Mock message');
 
       cy.get('[data-cy="radio-button-group"]')
         .should('exist')

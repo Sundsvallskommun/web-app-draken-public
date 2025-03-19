@@ -135,11 +135,19 @@ export const findCaseLabelForCaseType = (caseType: string) =>
   Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === caseType)?.[1];
 
 export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return errand?.status === ErrandStatus.ArendeAvslutat;
+  if (errand?.status && typeof errand?.status === 'object') {
+    return errand?.status?.statusType === ErrandStatus.ArendeAvslutat;
+  } else {
+    return errand?.status === ErrandStatus.ArendeAvslutat;
+  }
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return errand?.status === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
+  if (errand?.status && typeof errand?.status === 'object') {
+    return errand?.status?.statusType === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
+  } else {
+    return errand?.status === ErrandStatus.ArendeAvslutat;
+  }
 };
 
 export const getPriorityColor = (priority: Priority) => {
