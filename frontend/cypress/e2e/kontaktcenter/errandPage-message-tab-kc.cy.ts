@@ -64,7 +64,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
             communication.communicationAttachments.forEach((a) => {
               cy.get(`div.message-${communication.communicationID} ul button[role="listitem"]`)
                 .should('exist')
-                .contains(a.name);
+                .contains(a.fileName);
             });
           }
         });

@@ -19,10 +19,10 @@ import { mock } from 'node:test';
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Invoice tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/portalpersondata/PERSONAL/INTERNALUSER', mockPortalPersonData_internal).as(
+      cy.intercept('GET', '**/portalpersondata/personal/INTERNALUSER', mockPortalPersonData_internal).as(
         'getPortalPersonData_internal'
       );
-      cy.intercept('GET', '**/portalpersondata/PERSONAL/EXTERNALUSER', mockPortalPersonData_external).as(
+      cy.intercept('GET', '**/portalpersondata/personal/EXTERNALUSER', mockPortalPersonData_external).as(
         'getPortalPersonData_external'
       );
       cy.intercept('GET', '**/administrators', mockAdmins);

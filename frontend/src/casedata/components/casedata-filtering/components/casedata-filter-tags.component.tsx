@@ -49,7 +49,6 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
 
   const handleRemoveStatus = (status: string) => {
     const newStatuses = statuses.filter((caseStatus) => caseStatus !== status);
-    console.log('newStatuses', newStatuses);
     setValue('status', newStatuses);
   };
 
@@ -86,9 +85,6 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
     reset(CaseDataValues);
     setValue('status', selectedErrandStatuses);
   };
-
-  console.log('hasTags', hasTags);
-  console.log('status', statuses);
 
   return (
     <div className="flex gap-8 flex-wrap justify-start">
