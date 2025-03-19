@@ -1,5 +1,5 @@
 import { InternalRole } from '@/interfaces/users.interface';
-import { isIK, isKC, isLOP, isMEX, isPT } from './application.service';
+import { isIK, isKA, isKC, isLOP, isMEX, isPT } from './application.service';
 
 // export type RoleADMapping = {
 //   [key in ADRole]: InternalRole;
@@ -20,6 +20,9 @@ if (isMEX()) {
 } else if (isKC()) {
   mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_ks_admin';
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_ks_developer';
+} else if (isKA()) {
+  mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_ka_admin';
+  mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_ka_developer';
 } else if (isIK()) {
   mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_admin';
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_lop_developer';

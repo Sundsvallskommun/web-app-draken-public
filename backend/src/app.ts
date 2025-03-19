@@ -96,7 +96,6 @@ const samlStrategy = new Strategy(
         message: 'Missing SAML profile',
       });
     }
-    logger.info({ profile });
     // Depending on using Onegate or ADFS for federation the profile data looks a bit different
     // Here we use the null coalescing operator (??) to handle both cases.
     // (A switch from Onegate to ADFS was done on august 6 2023 due to problems in MobilityGuard.)

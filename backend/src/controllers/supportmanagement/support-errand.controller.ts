@@ -42,7 +42,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Type as TypeTransformer } from 'class-transformer';
-import { isIK, isKC, isLOP } from '@/services/application.service';
+import { isIK, isKA, isKC, isLOP } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -549,6 +549,11 @@ export class SupportErrandController {
             category: 'CONTACT_SUNDSVALL',
             type: 'UNCATEGORIZED',
           }
+        : isKA()
+        ? {
+            category: 'URBAN_DEVELOPMENT',
+            type: 'URBAN_DEVELOPMENT.GENERAL_INFORMATION',
+          }
         : isLOP()
         ? {
             category: 'SALARY',
@@ -567,6 +572,8 @@ export class SupportErrandController {
         ? ['SALARY', 'SALARY.UNCATEGORIZED', 'SALARY.UNCATEGORIZED.UNCATEGORIZED']
         : isIK()
         ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
+        : isKA()
+        ? ['URBAN_DEVELOPMENT', 'URBAN_DEVELOPMENT.GENERAL_INFORMATION']
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
