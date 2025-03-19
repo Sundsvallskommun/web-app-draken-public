@@ -2,13 +2,13 @@ import {
   acknowledgeCasedataNotification,
   getCasedataNotifications,
 } from '@casedata/services/casedata-notification-service';
-import { isMEX, isPT } from '@common/services/application-service';
+import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
+import { isCaseData } from '@common/services/application-service';
 import { prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { cx, useSnackbar } from '@sk-web-gui/react';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
@@ -32,14 +32,14 @@ export const NotificationItem: React.FC<{ notification: SupportNotification | Ca
           {notification.description}{' '}
           <NextLink
             href={
-              isPT() || isMEX()
+              isCaseData()
                 ? `/arende/${municipalityId}/${notification.errandNumber}`
                 : `/arende/${municipalityId}/${notification.errandId}`
             }
             target="_blank"
             onClick={async (e) => {
               try {
-                if (isPT() || isMEX()) {
+                if (isCaseData()) {
                   await acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification).catch(
                     () => {
                       throw new Error('Failed to acknowledge notification');
@@ -58,7 +58,7 @@ export const NotificationItem: React.FC<{ notification: SupportNotification | Ca
                 // await acknowledgeNotification(municipalityId, notification).catch(() => {
                 //   throw new Error('Failed to acknowledge notification');
                 // });
-                const getNotifications = isPT() || isMEX() ? getCasedataNotifications : getSupportNotifications;
+                const getNotifications = isCaseData() ? getCasedataNotifications : getSupportNotifications;
                 const notifications = await getNotifications(municipalityId);
                 setNotifications(notifications);
               } catch (error) {

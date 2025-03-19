@@ -5,12 +5,14 @@ import { User } from '@common/interfaces/user';
 import {
   getApplicationEnvironment,
   getApplicationName,
+  isCaseData,
   isIK,
   isKA,
   isKC,
   isLOP,
   isMEX,
   isPT,
+  isSupportManagement,
 } from '@common/services/application-service';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -37,12 +39,11 @@ export default function Layout({ title, children }) {
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
-  const errandNumber =
-    isMEX() || isPT()
-      ? errand?.errandNumber
-      : isKC() || isKA() || isIK() || isLOP()
-      ? supportErrand?.errandNumber
-      : undefined;
+  const errandNumber = isCaseData()
+    ? errand?.errandNumber
+    : isSupportManagement() || isKA()
+    ? supportErrand?.errandNumber
+    : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
@@ -123,7 +124,7 @@ export default function Layout({ title, children }) {
         <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {isKC() || isIK() || isLOP() || isKA() ? (
+        {isSupportManagement() || isKA() ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">
@@ -134,12 +135,13 @@ export default function Layout({ title, children }) {
             </span>
             <span className="text-small">({errandNumber})</span>
           </>
-        ) : (
+        ) : null}
+        {isCaseData() ? (
           <>
             <span className="font-bold">Ärende: </span>
             {errandNumber}
           </>
-        )}
+        ) : null}
       </span>
     </div>
   );
@@ -175,10 +177,10 @@ export default function Layout({ title, children }) {
                 data-cy="register-new-errand-button"
               >
                 <Button
-                  color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-                  variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
+                  color={isCaseData() ? 'primary' : 'vattjom'}
+                  variant={isCaseData() ? 'tertiary' : 'primary'}
                   rightIcon={
-                    isMEX() || isPT() ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
+                    isCaseData() ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
                   }
                 >
                   Nytt ärende

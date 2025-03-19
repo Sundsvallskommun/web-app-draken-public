@@ -1,14 +1,19 @@
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
-import Layout from '@common/components/layout/layout.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK, isKA } from '@common/services/application-service';
+import {
+  getApplicationName,
+  isCaseData,
+  isSupportManagement,
+  usesBilling,
+  isKA,
+} from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
+import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
-import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 
 export const Oversikt: React.FC = () => {
   const router = useRouter();
@@ -36,38 +41,36 @@ export const Oversikt: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    (isKC() || isKA() || isIK() || isLOP()) &&
+    (isSupportManagement() || isKA()) &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   return (
     <>
-      {isKC() || isIK() || isLOP() || isKA() ? (
-        <>
-          <SidebarLayout
-            title={`${getApplicationName()} - Översikt`}
-            setShowAttestationTable={setShowAttestationTable}
-            showAttestationTable={showAttestationTable}
-          >
-            {isLOP() && showAttestationTable && user.permissions.canViewAttestations ? (
-              <AttestationTab />
-            ) : municipalityId ? (
-              <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
-            ) : null}
-          </SidebarLayout>
-        </>
-      ) : (
-        <>
-          <SidebarLayout
-            setShowAttestationTable={setShowAttestationTable}
-            showAttestationTable={showAttestationTable}
-            title={`${getApplicationName()} - Översikt`}
-          >
-            <OngoingCaseDataErrands />
-          </SidebarLayout>
-        </>
-      )}
+      {isSupportManagement() || isKA() ? (
+        <SidebarLayout
+          title={`${getApplicationName()} - Översikt`}
+          setShowAttestationTable={setShowAttestationTable}
+          showAttestationTable={showAttestationTable}
+        >
+          {usesBilling() && showAttestationTable && user.permissions.canViewAttestations ? (
+            <AttestationTab />
+          ) : municipalityId ? (
+            <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
+          ) : null}
+        </SidebarLayout>
+      ) : null}
+
+      {isCaseData() ? (
+        <SidebarLayout
+          title={`${getApplicationName()} - Översikt`}
+          setShowAttestationTable={setShowAttestationTable}
+          showAttestationTable={showAttestationTable}
+        >
+          <OngoingCaseDataErrands />
+        </SidebarLayout>
+      ) : null}
     </>
   );
 };

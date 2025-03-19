@@ -1,6 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
-
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -14,7 +13,7 @@ import {
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
-import { isMEX, isPT } from '@common/services/application-service';
+import { isMEX, isPT, usesExtraInfomrationStakeholders } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -1011,7 +1010,7 @@ export const SimplifiedContactForm: React.FC<{
                 )}
               </FormControl>
             </div>
-            {isMEX() ? (
+            {usesExtraInfomrationStakeholders() ? (
               <div className="flex gap-lg">
                 <FormControl id={`extrainfo`} className="w-[244px]">
                   <FormLabel>Extra Information</FormLabel>

@@ -3,14 +3,12 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
-
 import {
   getApplicationEnvironment,
   getApplicationName,
-  isIK,
+  isCaseData,
+  isSupportManagement,
   isKA,
-  isKC,
-  isLOP,
 } from '@common/services/application-service';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
@@ -94,7 +92,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {isLOP() || isKC() || isKA() || isIK() ? (
+          {isSupportManagement() || isKA() ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
@@ -102,11 +100,12 @@ export const MainErrandsSidebar: React.FC<{
                 iconButton={!open}
               />
             </FormProvider>
-          ) : (
+          ) : null}
+          {isCaseData() ? (
             <FormProvider {...casedataFilterForm}>
               <CasedataFilterSidebarStatusSelector iconButton={!open} />
             </FormProvider>
-          )}
+          ) : null}
         </div>
         {attestationEnabled(user) && (
           <>

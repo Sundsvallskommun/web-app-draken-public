@@ -1,4 +1,4 @@
-import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK } from '@common/services/application-service';
+import { getApplicationName, isCaseData, isSupportManagement } from '@common/services/application-service';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
@@ -39,7 +39,7 @@ export default function Start() {
             <div className="text-center">
               <h3 className="mb-20">
                 Logga in till <br aria-hidden />
-                {getApplicationName() || 'appen'}
+                {isSupportManagement() || isCaseData() ? getApplicationName() : 'appen'}
               </h3>
               {message && (
                 <FormErrorMessage>
