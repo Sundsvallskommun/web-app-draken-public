@@ -1,4 +1,3 @@
-import { isMEX, isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -66,10 +65,7 @@ export const AttestationsFilteringComponent: React.FC<{
               target="_blank"
               data-cy="register-new-errand-button"
             >
-              <Button
-                color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-                variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
-              >
+              <Button color={'vattjom'} variant={'primary'}>
                 Nytt ärende
               </Button>
             </Link>

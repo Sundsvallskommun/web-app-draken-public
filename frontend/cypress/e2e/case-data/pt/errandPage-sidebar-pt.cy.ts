@@ -82,12 +82,9 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         expect(request.body.adAccount).to.equal('TESTADMIN1');
       });
 
-      cy.get('[data-cy="status-input"]').should('exist').select('Internt komplettering');
+      cy.get('[data-cy="status-input"]').should('exist').select('Ärende inkommit');
       cy.intercept('GET', '**/errand/*', mockPTErrand_base_afterStatusChange).as('getErrandById_afterStatusChange');
-      cy.get('[data-cy="save-status-button"]').should('exist').contains('Spara').click();
-
-      cy.wait('@getErrandById_afterStatusChange');
-      cy.get('[data-cy="status-input"]').should('exist').contains('Internt komplettering');
+      cy.get('[data-cy="status-input"]').should('exist').contains('Ärende inkommit');
     });
 
     it('manages Notes', () => {

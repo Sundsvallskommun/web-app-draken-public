@@ -1,21 +1,20 @@
-import { appealErrand, getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
+  EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
   extraParametersToUppgiftMapper,
   saveExtraParameters,
-  EXTRAPARAMETER_SEPARATOR,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { isMEX, isPT } from '@common/services/application-service';
+import { usesFacilites } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
-  Disclosure,
   Divider,
   FormControl,
   FormLabel,
@@ -107,10 +106,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     // if (isMEX()) {
     //   await saveFacilities(municipalityId, errand.id, getValues().facilities);
     // }
-
-    if (isPT()) {
-      await appealErrand(errand);
-    }
 
     saveExtraParameters(municipalityId, extraParams, errand)
       .then((res) => {
@@ -414,7 +409,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
-            {isMEX() ? (
+            {usesFacilites() ? (
               <Facilities
                 facilities={realEstates}
                 setUnsaved={props.setUnsaved}

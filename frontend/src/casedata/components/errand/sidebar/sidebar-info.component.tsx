@@ -1,3 +1,4 @@
+import { SuspendErrandComponent } from '@casedata/components/suspend-errand';
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
@@ -17,7 +18,10 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
+import { isAppealEnabled } from '@common/services/feature-flag-service';
+import { sortBy } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
@@ -34,13 +38,8 @@ import {
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
-import { PhaseChanger } from '../phasechanger/phasechanger.component';
-import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { isPT } from '@common/services/application-service';
 import { AppealButtonComponent } from '../appeal-button.component';
-import { isAppealEnabled, isSuspendEnabled } from '@common/services/feature-flag-service';
-import { sortBy } from '@common/services/helper-service';
+import { PhaseChanger } from '../phasechanger/phasechanger.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {

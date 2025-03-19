@@ -1,10 +1,9 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import { getApplicationName, isCaseData, isSupportManagement } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
-import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef } from 'react';
@@ -12,16 +11,7 @@ import { useEffect, useRef } from 'react';
 export const Oversikt: React.FC = () => {
   const router = useRouter();
 
-  const {
-    isLoggedIn,
-    errands,
-    administrators,
-    municipalityId,
-    setSupportMetadata,
-    setAdministrators,
-    setSubPage,
-    setMunicipalityId,
-  } = useAppContext();
+  const { isLoggedIn, setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -56,7 +46,8 @@ export const Oversikt: React.FC = () => {
             Hoppa till innehåll
           </a>
         </NextLink>
-        {isKC() || isIK() || isLOP() ? <SupportErrandComponent /> : <CasedataErrandComponent />}
+        {isSupportManagement() ? <SupportErrandComponent /> : null}
+        {isCaseData() ? <CasedataErrandComponent /> : null}
       </Layout>
     </div>
   );
