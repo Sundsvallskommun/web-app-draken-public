@@ -40,7 +40,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.visit(`/arende/2281/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button')
+      cy.get('.sk-tabs-list button')
         .eq(3)
         .should('have.text', `Tillstånd & tjänster (${mockAsset.data.length})`)
         .click({ force: true });

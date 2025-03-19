@@ -321,7 +321,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           <Button
             variant="primary"
             color="vattjom"
-            disabled={isLoading || !formState.isValid || getValues('emails').length === 0 || disabled}
+            disabled={
+              isLoading ||
+              !formState.isValid ||
+              (getValues().recipient === 'EMAIL' && getValues('emails').length === 0) ||
+              disabled
+            }
             className="w-full"
             loading={isLoading}
             loadingText="Vidarebefordrar ärende"
