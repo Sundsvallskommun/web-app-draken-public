@@ -5,7 +5,7 @@ import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Callout, Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
+import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
@@ -19,13 +19,12 @@ import {
   getLabelType,
   getOngoingSupportErrandLabels,
 } from '@supportmanagement/services/support-errand-service';
+import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
