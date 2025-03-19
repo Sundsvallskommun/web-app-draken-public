@@ -56,7 +56,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           const resolutionLabel = isLOP()
             ? ResolutionLabelLOP[resolution]
             : isIK()
-            ? ResolutionLabelLOP[resolution]
+            ? ResolutionLabelLOP[resolution] //ResolutionLabelIK[resolution]?
             : ResolutionLabelKS[resolution];
           return sendClosingMessage(adminName, supportErrand, resolutionLabel, municipalityId);
         }

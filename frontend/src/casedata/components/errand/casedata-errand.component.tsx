@@ -6,7 +6,7 @@ import { Priority } from '@casedata/interfaces/priority';
 import { emptyErrand, getErrandByErrandNumber, getUiPhase } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { isMEX } from '@common/services/application-service';
+import { usesFacilites } from '@common/services/application-service';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -201,20 +201,21 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                     Ärendeägare
                                   </div>
                                   <div data-cy="errandStakeholder">
-                                    {errand &&
-                                    getOwnerStakeholder(errand) &&
-                                    getOwnerStakeholder(errand).firstName &&
-                                    getOwnerStakeholder(errand).lastName
-                                      ? getOwnerStakeholder(errand).firstName +
-                                        ' ' +
-                                        getOwnerStakeholder(errand).lastName
-                                      : getOwnerStakeholder(errand) && getOwnerStakeholder(errand).organizationName
-                                      ? getOwnerStakeholder(errand).organizationName
-                                      : '(saknas)'}
+                                    {(() => {
+                                      const owner = getOwnerStakeholder(errand);
+                                      if (!owner) return '(saknas)';
+                                      if (owner.firstName && owner.lastName) {
+                                        return `${owner.firstName} ${owner.lastName}`;
+                                      }
+                                      if (owner.organizationName) {
+                                        return owner.organizationName;
+                                      }
+                                      return '(saknas)';
+                                    })()}
                                   </div>
                                 </div>
 
-                                {isMEX() ? (
+                                {usesFacilites() ? (
                                   <div className="pr-sm w-[40%]">
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>

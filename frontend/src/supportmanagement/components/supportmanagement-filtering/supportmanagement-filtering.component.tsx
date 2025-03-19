@@ -28,7 +28,7 @@ import {
   SupportManagementQueryValues,
 } from './components/supportmanagement-filter-query.component';
 
-import { isIK, isLOP } from '@common/services/application-service';
+import { usesThreeLevelCategorization, usesTwoLevelCategorization } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   ChannelFilter,
@@ -125,7 +125,18 @@ const SupportManagementFiltering: React.FC<{
         <div className={cx(show ? 'visible' : 'hidden')}>
           <div className="flex gap-16 items-center">
             <div className="flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
-              {isLOP() || isIK() ? (
+              {usesTwoLevelCategorization() ? (
+                <>
+                  <div className="relative max-md:w-full">
+                    <SupportManagementFilterCategory />
+                  </div>
+                  <div className="relative max-md:w-full">
+                    <SupportManagementFilterType />
+                  </div>
+                </>
+              ) : null}
+
+              {usesThreeLevelCategorization() ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />
@@ -137,16 +148,8 @@ const SupportManagementFiltering: React.FC<{
                     <SupportManagementFilterLabelSubType />
                   </div>
                 </>
-              ) : (
-                <>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterCategory />
-                  </div>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterType />
-                  </div>
-                </>
-              )}
+              ) : null}
+
               <div className="relative max-md:w-full">
                 <SupportManagementFilterPriority />
               </div>
