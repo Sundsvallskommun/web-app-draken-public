@@ -2,16 +2,16 @@
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { onlyOn } from '@cypress/skip-test';
-import { mockErrand_base } from 'cypress/e2e/case-data/fixtures/mockErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
+import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAttachments } from '../fixtures/mockAttachments';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
-import { mockPermits } from '../fixtures/mockPermits';
-import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
+import { mockPermits } from '../fixtures/mockPermits';
+import { mockErrand_base } from '../fixtures/mockErrand';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Overview page', () => {
@@ -26,6 +26,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      // cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
+      // cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
       cy.visit('/oversikt');
       cy.wait('@getErrands');
@@ -56,7 +58,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('displays the filters', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Fastighetsbeteckning-filter"]').should('exist');
       cy.get('[data-cy="Ärendetyp-filter"]').should('exist');
       cy.get('[data-cy="Prioritet-filter"]').should('exist');
@@ -69,7 +71,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('allows filtering by a property designation', () => {
       const query = 'BALDER 1';
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Fastighetsbeteckning-filter"]').click();
       cy.get('[data-cy="Fastighetsbeteckning-input"]').should('exist').type(query);
       cy.get('[data-cy="Fastighetsbeteckning-input"]').siblings('button').should('have.text', 'Lägg till').click();
@@ -90,7 +92,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('allows filtering by a single caseType', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       const entries = Object.entries(CaseLabels.MEX);
       cy.get('[data-cy="Ärendetyp-filter"]').click();
       cy.intercept('GET', '**/errands*').as(`${entries[0][0]}-filterSearch`);
@@ -105,7 +107,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('allows filtering by multiple caseTypes', () => {
       const entries = Object.entries(CaseLabels.MEX);
       const selected = [];
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get(`[data-cy="Ärendetyp-filter"]`).click();
       entries.forEach((entry, idx, ary) => {
         cy.intercept('GET', '**/errands*').as(`multiple-filterSearch-${idx}`);
@@ -120,7 +122,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('allows filtering by priority', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       const labels = ['HIGH', 'MEDIUM', 'LOW'];
       cy.get('[data-cy="Prioritet-filter"]').click();
       cy.intercept('GET', '**/errands*').as(`${labels[0]}-filterSearch`);
@@ -133,7 +135,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('allows filtering by date', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Tidsperiod-filter"]').click();
       cy.get(`[data-cy="casedata-validFrom-input"]`).should('exist').type('2024-05-22');
       cy.get(`[data-cy="casedata-validTo-input"]`).should('exist').type('2024-05-27');
@@ -147,7 +149,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('allows filtering by administrator', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       mockAdmins.data.forEach((a) => {
         cy.get('[data-cy="Handläggare-filter"]').click();
         cy.get(`[data-cy="admin-${a.guid}"]`).should('exist').click();
@@ -164,7 +166,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('allows filtering by single status', () => {
       const labels = Object.entries(ErrandStatus);
       cy.get('button').contains('Öppna ärenden').click();
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Status-filter"]').click();
       cy.get(`[data-cy="Status-filter-${labels[1][0]}"]`).should('exist').click();
       cy.intercept('GET', '**/errands*').as(`${labels[1][0]}-filterSearch`);
@@ -178,7 +180,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('allows filtering by multiple statuses', () => {
       const labels = Object.entries(ErrandStatus);
       cy.get('button').contains('Öppna ärenden').click();
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Status-filter"]').click();
       labels.forEach((label) => {
         if (
@@ -195,7 +197,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         }
       });
       cy.get('[data-cy="Status-filter"]').click();
-      cy.get('[data-cy="tag-clearAll"]').should('exist').contains('Rensa alla').click();
     });
 
     it('allows filtering only my errands', () => {

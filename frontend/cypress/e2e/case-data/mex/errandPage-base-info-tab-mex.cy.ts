@@ -27,7 +27,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-    cy.get('.sk-tabs .sk-menubar button').eq(0).should('have.text', `Grunduppgifter`).click({ force: true });
+    cy.get('.sk-tabs-list button').eq(0).should('have.text', `Grunduppgifter`).click({ force: true });
   };
   describe('Errand page', () => {
     beforeEach(() => {
@@ -119,11 +119,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
+          status: {
+            statusType: ErrandStatus.ArendeAvslutat,
+            description: '',
+            dateTime: '2024-10-14T09:17:52.067+02:00',
+          },
           statuses: [
             {
               statusType: ErrandStatus.ArendeAvslutat,
               description: '',
-              dateTime: '2022-10-14T09:17:52.067+02:00',
+              dateTime: '2024-10-14T09:17:52.067+02:00',
             },
           ],
         })
@@ -252,7 +257,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrandById');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button').eq(0).should('have.text', `Grunduppgifter`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(0).should('have.text', `Grunduppgifter`).click({ force: true });
 
       // Save button disabled when no changes
       cy.get('[data-cy="save-and-continue-button"]').should('be.disabled');
@@ -307,10 +312,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait(300);
       cy.get('[data-cy="search-button-owner"]').click();
 
-      cy.get('[data-cy="organization-search-result"]')
-        .find('p')
-        .contains(mockOrganization.data.companyName)
-        .should('exist');
+      cy.get('[data-cy="organization-search-result"]').find('p').contains(mockOrganization.data.name).should('exist');
 
       cy.get('button').contains('Lägg till ärendeägare').should('be.disabled');
       cy.get('[data-cy="new-email-input"]').type('test@example.com');
