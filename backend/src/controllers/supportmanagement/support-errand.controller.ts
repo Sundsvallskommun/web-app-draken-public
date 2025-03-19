@@ -331,7 +331,7 @@ export enum SupportStakeholderRole {
 export class SupportErrandController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.0`;
+  SERVICE = `supportmanagement/10.1`;
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
