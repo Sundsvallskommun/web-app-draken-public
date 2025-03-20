@@ -191,7 +191,8 @@ export const RenderedSupportMessage: React.FC<{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {message?.direction === 'INBOUND' && message.communicationType === 'EMAIL' ? (
+          {message?.direction === 'INBOUND' &&
+          (message.communicationType === 'EMAIL' || message.communicationType === 'WEB_MESSAGE') ? (
             <Button
               type="button"
               className="self-start"
@@ -221,14 +222,14 @@ export const RenderedSupportMessage: React.FC<{
               <Icon icon={<Paperclip />} size="1.6rem" />
               {message?.communicationAttachments?.map((a, idx) => (
                 <Button
-                  key={`${a.name}-${idx}`}
+                  key={`${a.fileName}-${idx}`}
                   onClick={() => {
-                    getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.attachmentID)
+                    getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
                       .then((res) => {
-                        if (res.data.length !== 0) {
-                          const uri = `data:${a.contentType};base64,${res.data}`;
+                        if (res.data) {
+                          const uri = `data:${a.mimeType};base64,${res.data}`;
                           const link = document.createElement('a');
-                          const filename = a.name;
+                          const filename = a.fileName;
                           link.href = uri;
                           link.setAttribute('download', filename);
                           document.body.appendChild(link);
@@ -253,10 +254,10 @@ export const RenderedSupportMessage: React.FC<{
                   }}
                   role="listitem"
                   // eslint-disable-next-line jsx-a11y/alt-text
-                  leftIcon={a.name.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
+                  leftIcon={a.fileName.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
                   variant="tertiary"
                 >
-                  {a.name}
+                  {a.fileName}
                 </Button>
               ))}
             </ul>

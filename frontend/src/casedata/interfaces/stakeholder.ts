@@ -27,6 +27,7 @@ export interface CreateStakeholderDto {
   extraParameters?: {
     primaryContact?: 'true' | 'false';
     messageAllowed?: 'true' | 'false';
+    extraInformation?: string;
   };
 }
 
@@ -65,4 +66,5 @@ export interface CasedataOwnerOrContact {
     value: string;
   }[];
   adAccount?: string;
+  extraInformation?: string;
 }

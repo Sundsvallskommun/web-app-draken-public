@@ -1,31 +1,27 @@
+import { getMe } from '@common/services/user-service';
+import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
-import { FormProvider, useForm } from 'react-hook-form';
-import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import { Button, Link } from '@sk-web-gui/react';
-import { isMEX, isPT } from '@common/services/application-service';
 import { Disclosure } from '@headlessui/react';
-import {
-  AttestationsTable,
-  AttestationTableForm,
-} from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
+import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
+import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
   AttestationFilter,
   AttestationValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/attestations-filtering.component';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSupportErrands } from '@supportmanagement/services/support-errand-service';
-import { useRouter } from 'next/router';
+import {
+  AttestationsTable,
+  AttestationTableForm,
+} from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
 import store from '@supportmanagement/services/storage-service';
-import { getMe } from '@common/services/user-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
-import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
-import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import {
   getBillingRecord,
   getBillingRecords,
   useBillingRecords,
 } from '@supportmanagement/services/support-billing-service';
+import { useRouter } from 'next/router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });
@@ -42,7 +38,7 @@ export const AttestationTab = () => {
   const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState(undefined);
 
-  const { setSupportErrand, setSupportAdmins, supportAdmins, municipalityId } = useAppContext();
+  const { setSupportErrand, setSupportAdmins, setBillingRecords, supportAdmins, municipalityId } = useAppContext();
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -52,9 +48,12 @@ export const AttestationTab = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
-
   const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
+
+  useEffect(() => {
+    getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
+  }, [municipalityId, page, pageSize, attestationFilterObject, sortObject]);
 
   const setInitialFocus = () => {
     setTimeout(() => {
@@ -161,23 +160,15 @@ export const AttestationTab = () => {
 
   return (
     <div className="w-full">
-      <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
-            <SupportManagementFilterQuery />
+            <AttestationsFilteringComponent
+              ownerFilterHandler={ownerFilteringHandler}
+              ownerFilter={ownerFilter}
+              administrators={supportAdmins}
+            />
           </FormProvider>
-          <Link
-            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-            target="_blank"
-            data-cy="register-new-errand-button"
-          >
-            <Button
-              color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-              variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
-            >
-              Nytt ärende
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -185,15 +176,8 @@ export const AttestationTab = () => {
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
             <div>
-              <FormProvider {...filterForm}>
-                <AttestationsFilteringComponent
-                  ownerFilterHandler={ownerFilteringHandler}
-                  ownerFilter={ownerFilter}
-                  administrators={supportAdmins}
-                />
-              </FormProvider>
+              <h1 className="p-0 m-0">Godkänn fakturaunderlag</h1>
             </div>
-
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>
                 <AttestationsTable

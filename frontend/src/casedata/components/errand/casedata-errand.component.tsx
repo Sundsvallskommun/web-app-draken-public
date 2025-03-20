@@ -30,7 +30,9 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
       municipalityId: yup.string().required('Kommun måste anges'),
       phase: yup.string(),
       priority: yup.string(),
-      status: yup.string(),
+      status: yup.object({
+        statusType: yup.string(),
+      }),
     })
     .required();
 
@@ -162,7 +164,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   <div data-cy="errandStatusLabel" className="font-bold">
                                     Ärendestatus
                                   </div>
-                                  <div data-cy="errandStatus">{errand?.status}</div>
+                                  <div data-cy="errandStatus">{errand?.status?.statusType}</div>
                                 </div>
                                 <div className="pr-sm">
                                   <div className="font-bold" data-cy="errandPriorityLabel">

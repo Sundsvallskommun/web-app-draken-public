@@ -1,19 +1,22 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationName } from '@common/services/application-service';
+import { getApplicationEnvironment, getApplicationName } from '@common/services/application-service';
 import { CookieConsent, Link } from '@sk-web-gui/react';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
+import { useState } from 'react';
 
 export default function SidebarLayout({ title, children, showAttestationTable, setShowAttestationTable }) {
   const { user, errand, supportErrand }: { user: User; errand: IErrand; supportErrand: SupportErrand } =
     useAppContext();
   const applicationName = getApplicationName();
-
+  const applicationEnvironment = getApplicationEnvironment();
   const hostName = window.location.hostname;
+
+  const [open, setOpen] = useState(true);
 
   return (
     <>
@@ -21,12 +24,16 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
         <title>{title}</title>
         <meta name="description" content={applicationName} />
       </Head>
-      <div className="flex min-h-screen h-full overflow-hidden">
-        <MainErrandsSidebar
-          showAttestationTable={showAttestationTable}
-          setShowAttestationTable={setShowAttestationTable}
-        />{' '}
-        <div className="w-full flex-shirnk flex justify-center pl-[32rem]">{children}</div>
+      <div className="min-h-screen w-full">
+        <div className="flex grow overflow-hidden w-full">
+          <MainErrandsSidebar
+            open={open}
+            setOpen={setOpen}
+            showAttestationTable={showAttestationTable}
+            setShowAttestationTable={setShowAttestationTable}
+          />{' '}
+          <div className={`w-full grow flex ${open ? 'pl-[32rem]' : 'pl-[5.6rem]'} transition-all`}>{children}</div>
+        </div>
       </div>
 
       <CookieConsent

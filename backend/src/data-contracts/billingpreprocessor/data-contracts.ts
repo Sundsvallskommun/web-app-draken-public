@@ -10,14 +10,14 @@
  */
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -45,10 +45,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -81,14 +81,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -154,6 +154,11 @@ export interface AccountInformation {
    * @example "11830000"
    */
   counterpart?: string;
+  /**
+   * Amount
+   * @example 1399.95
+   */
+  amount?: number;
 }
 
 /** Address details model */
@@ -251,12 +256,7 @@ export interface Invoice {
    * Customer reference
    * @example "Alice Snuffleupagus"
    */
-  customerReference?: string;
-  /**
-   * Reference id. Mandatory for INTERNAL billing record.
-   * @example "19-ALI22SNU"
-   */
-  referenceId?: string;
+  customerReference: string;
   /**
    * Date for the invoice
    * @format date
@@ -271,7 +271,6 @@ export interface Invoice {
   dueDate?: string;
   /**
    * Total sum of all invoice rows
-   * @format float
    * @example 1399.95
    */
   totalAmount?: number;
@@ -284,7 +283,6 @@ export interface InvoiceRow {
   detailedDescriptions?: string[];
   /**
    * Total sum of invoice row
-   * @format float
    * @example 1399.95
    */
   totalAmount?: number;
@@ -296,18 +294,16 @@ export interface InvoiceRow {
   vatCode?: string;
   /**
    * Cost per unit
-   * @format float
    * @example 155.55
    */
   costPerUnit?: number;
   /**
    * Total amount of units
-   * @format float
    * @example 9
    */
   quantity?: number;
-  /** Account information model */
-  accountInformation?: AccountInformation;
+  /** Account information */
+  accountInformation?: AccountInformation[];
 }
 
 /** Billing recipient model */
@@ -364,10 +360,11 @@ export enum Type {
 }
 
 export interface PageBillingRecord {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
@@ -378,24 +375,23 @@ export interface PageBillingRecord {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  unpaged?: boolean;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
-  unsorted?: boolean;
   empty?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }

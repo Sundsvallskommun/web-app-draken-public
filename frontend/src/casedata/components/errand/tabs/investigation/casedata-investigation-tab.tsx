@@ -225,6 +225,10 @@ export const CasedataInvestigationTab: React.FC<{
         appendPhrases();
       }
     }
+    reset({
+      law: decision?.law,
+      outcome: decision?.decisionOutcome,
+    });
     setValue('errandNumber', props.errand.errandNumber);
     props.setUnsaved(false);
     trigger();

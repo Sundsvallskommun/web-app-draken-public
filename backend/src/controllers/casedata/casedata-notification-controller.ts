@@ -8,7 +8,7 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 export class CasedataNotificationDto implements CasedataNotification {
@@ -51,6 +51,9 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsOptional()
   @IsString()
   acknowledged?: boolean;
+  @IsOptional()
+  @IsString()
+  globalAcknowledged?: boolean;
   @IsString()
   errandId: number;
   @IsOptional()
@@ -64,7 +67,7 @@ export class PatchNotificationDto implements PatchNotification {
   id?: string;
   @IsOptional()
   @IsNumber()
-  errandId?: number;
+  errandId: number;
   @IsOptional()
   @IsString()
   ownerId?: string;
@@ -83,13 +86,16 @@ export class PatchNotificationDto implements PatchNotification {
   @IsOptional()
   @IsBoolean()
   acknowledged?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  globalAcknowledged?: boolean;
 }
 
 @Controller()
 export class CasedataNotificationController {
   private apiService = new ApiService();
   private namespace = CASEDATA_NAMESPACE;
-  SERVICE = `case-data/10.0`;
+  SERVICE = `case-data/11.0`;
 
   @Get('/casedatanotifications/:municipalityId')
   @OpenAPI({ summary: 'Get notifications' })
@@ -119,10 +125,6 @@ export class CasedataNotificationController {
     @Body() data: PatchNotificationDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const allowed = true;
-    if (!allowed) {
-      throw new HttpException(403, 'Forbidden');
-    }
     if (!municipalityId) {
       logger.error('No municipality id found, it is needed to update notification.');
       return response.status(400).send('Municipality id missing');
@@ -135,6 +137,29 @@ export class CasedataNotificationController {
       },
     ];
     const res = await this.apiService.patch<any, Partial<PatchNotificationDto[]>>({ url, baseURL, data: body }, req.user).catch(e => {
+      logger.error('Error when updating notification');
+      logger.error(e);
+      throw e;
+    });
+    return response.status(200).send(res.data);
+  }
+
+  @Put('/casedatanotifications/:municipalityId/:errandId/global-acknowledged')
+  @HttpCode(201)
+  @OpenAPI({ summary: 'Global-acknowledged all casedata notification for errand' })
+  async globalAcknowledgedCasedataNotification(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Res() response: any,
+  ): Promise<{ data: any; message: string }> {
+    if (!municipalityId) {
+      logger.error('No municipality id found, it is needed to update notification.');
+      return response.status(400).send('Municipality id missing');
+    }
+    const url = `${municipalityId}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.put({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when updating notification');
       logger.error(e);
       throw e;

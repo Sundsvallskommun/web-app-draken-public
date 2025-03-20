@@ -239,7 +239,9 @@ export const SidebarGenericNotes: React.FC<{
                                 <PopupMenu.Item>
                                   <Button
                                     leftIcon={<LucideIcon name="pencil" />}
-                                    disabled={noteIsComment(note.noteType) && errand.status === 'Ärende avslutat'}
+                                    disabled={
+                                      noteIsComment(note.noteType) && errand.status.statusType === 'Ärende avslutat'
+                                    }
                                     onClick={() => {
                                       updateNote(note);
                                     }}
@@ -293,7 +295,7 @@ export const SidebarGenericNotes: React.FC<{
               !errand?.id ||
               text === '' ||
               (noteIsTjansteanteckning(noteType) && !isErrandAdmin(errand, user)) ||
-              (noteIsComment(noteType) && errand.status === 'Ärende avslutat')
+              (noteIsComment(noteType) && errand.status.statusType === 'Ärende avslutat')
             }
             loadingText="Sparar"
             loading={isLoading}

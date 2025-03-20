@@ -8,7 +8,7 @@ import { Attachment } from './attachment';
 import { ApiErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { ExtraParameter, Notification } from '@common/data-contracts/case-data/data-contracts';
 
 export interface ApiErrand {
   id: number;
@@ -18,6 +18,7 @@ export interface ApiErrand {
   priority: Priority;
   phase: ErrandPhase;
   channel: string;
+  status: ApiErrandStatus;
   statuses: ApiErrandStatus[];
   description: string;
   caseTitleAddition: string;
@@ -38,6 +39,8 @@ export interface ApiErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  notifications?: Notification[];
+  relatesTo?: RelatedErrand[];
 }
 
 export interface ApiPagingData {
@@ -82,8 +85,8 @@ export interface IErrand {
   administrator: Stakeholder;
   administratorName: string;
   priority: string;
-  status: string;
-  statusDescription: string;
+  status: ApiErrandStatus;
+  statuses: ApiErrandStatus[];
   phase: ErrandPhase;
   channel: Channels;
   municipalityId: string;
@@ -100,6 +103,8 @@ export interface IErrand {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  notifications?: Notification[];
+  relatesTo?: RelatedErrand[];
 }
 
 export interface ErrandsData extends Data {
@@ -122,6 +127,11 @@ export interface ErrandsData extends Data {
   };
 }
 
+export interface RelatedErrand {
+  errandId?: number;
+  errandNumber?: string;
+  relationReason?: string;
+}
 export interface RegisterErrandData {
   id?: string;
   errandNumber?: string;
@@ -133,10 +143,10 @@ export interface RegisterErrandData {
   startDate: string;
   endDate: string;
   diaryNumber: string;
-  status: string;
+  status: ApiErrandStatus;
   phase: ErrandPhase;
   municipalityId: string;
-  // statuses: StatusesDto[];
+  statuses: ApiErrandStatus[];
   stakeholders: Partial<CreateStakeholderDto>[];
   facilities: string[];
   attachments: string[] | FileList[];
@@ -147,4 +157,5 @@ export interface RegisterErrandData {
     suspendedFrom?: string;
     suspendedTo?: string;
   };
+  relatesTo?: RelatedErrand[];
 }

@@ -64,6 +64,7 @@ export const emptyContact: CasedataOwnerOrContact = {
   phoneNumbers: [],
   newEmail: '',
   emails: [],
+  extraInformation: '',
 };
 
 export const SimplifiedContactForm: React.FC<{
@@ -1010,6 +1011,21 @@ export const SimplifiedContactForm: React.FC<{
                 )}
               </FormControl>
             </div>
+            {isMEX() ? (
+              <div className="flex gap-lg">
+                <FormControl id={`extrainfo`} className="w-[244px]">
+                  <FormLabel>Extra Information</FormLabel>
+                  <Input
+                    size="sm"
+                    disabled={props.disabled}
+                    aria-disabled={props.disabled}
+                    className={cx(`readonly:bg-gray-lighter readonly:cursor-not-allowed`)}
+                    data-cy={`contact-extrainfo`}
+                    {...register(`extraInformation`)}
+                  />
+                </FormControl>
+              </div>
+            ) : null}
           </>
           <CommonNestedEmailArrayV2
             addingStakeholder={true}

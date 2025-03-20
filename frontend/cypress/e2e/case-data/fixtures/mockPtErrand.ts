@@ -25,16 +25,21 @@ export const mockPTErrand_base: { data: ApiErrand; message: string } = {
     priority: Priority.MEDIUM,
     caseTitleAddition: 'Nytt parkeringstillstånd',
     phase: ErrandPhase.beslut,
+    status: {
+      statusType: 'Ärende inkommit',
+      description: '',
+      created: '2023-12-14T13:50:45.765+01:00',
+    },
     statuses: [
       {
         statusType: 'Ärende inkommit',
         description: '',
-        dateTime: '2023-12-14T13:50:45.765+01:00',
+        created: '2023-12-14T13:50:45.765+01:00',
       },
       {
         statusType: 'Under utredning',
         description: 'Ärendet utreds',
-        dateTime: '2023-12-14T13:51:14.635643+01:00',
+        created: '2023-12-14T13:51:14.635643+01:00',
       },
     ],
     municipalityId: '2281',
@@ -283,21 +288,26 @@ export const mockPTErrand_base_afterStatusChange: { data: ApiErrand; message: st
     priority: Priority.MEDIUM,
     caseTitleAddition: 'Nytt parkeringstillstånd',
     phase: ErrandPhase.beslut,
+    status: {
+      statusType: 'Ärende inkommit',
+      description: '',
+      created: '2023-12-14T13:50:45.765+01:00',
+    },
     statuses: [
       {
         statusType: 'Ärende inkommit',
         description: '',
-        dateTime: '2023-12-14T13:50:45.765+01:00',
+        created: '2023-12-14T13:50:45.765+01:00',
       },
       {
         statusType: 'Under utredning',
         description: 'Ärendet utreds',
-        dateTime: '2023-12-14T13:51:14.635643+01:00',
+        created: '2023-12-14T13:51:14.635643+01:00',
       },
       {
         statusType: 'Internt komplettering',
         description: 'Internt komplettering',
-        dateTime: '2024-12-14T13:51:14.635643+01:00',
+        created: '2024-12-14T13:51:14.635643+01:00',
       },
     ],
     municipalityId: '2281',

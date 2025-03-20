@@ -20,7 +20,7 @@ export const UiPhaseWrapper = () => {
       <UiPhaseComponent
         number={5}
         phase={UiPhase.slutfor}
-        active={uiPhase === UiPhase.slutfor && errand.status !== ErrandStatus.ArendeAvslutat}
+        active={uiPhase === UiPhase.slutfor && errand.status.statusType !== ErrandStatus.ArendeAvslutat}
       />
     </div>
   );

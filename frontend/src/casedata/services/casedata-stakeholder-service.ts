@@ -96,7 +96,9 @@ export const makeStakeholder: (data: CasedataOwnerOrContact, role: Role) => Crea
       },
     ],
     adAccount: data.adAccount,
-    extraParameters: {},
+    extraParameters: {
+      extraInformation: data.extraInformation,
+    },
   };
 };
 
@@ -240,6 +242,7 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
       })),
     primaryContact: s.extraParameters.primaryContact === 'true',
     messageAllowed: s.extraParameters.messageAllowed === 'true',
+    extraInformation: s.extraParameters.extraInformation,
   };
 };
 

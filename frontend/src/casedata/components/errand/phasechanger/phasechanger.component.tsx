@@ -270,7 +270,7 @@ export const PhaseChanger = () => {
     </>
   ) : uiPhase === UiPhase.beslut ||
     errand.phase === ErrandPhase.verkstalla ||
-    errand.status === ErrandStatus.ArendeAvslutat ? null : (
+    errand.status?.statusType === ErrandStatus.ArendeAvslutat ? null : (
     <>
       <Button
         variant="primary"

@@ -28,7 +28,11 @@ import {
   imageMimeTypes,
   saveSupportAttachments,
 } from '@supportmanagement/services/support-attachment-service';
-import { getSupportErrandById, isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
+import {
+  getSupportErrandById,
+  isSupportErrandLocked,
+  supportErrandIsEmpty,
+} from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -404,7 +408,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
             </Modal>
             <Button
               data-cy="add-attachment-button"
-              disabled={isSupportErrandLocked(supportErrand)}
+              disabled={isSupportErrandLocked(supportErrand) || supportErrandIsEmpty(supportErrand)}
               color="vattjom"
               rightIcon={<LucideIcon name="upload" size={16} />}
               inverted

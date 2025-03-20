@@ -353,6 +353,12 @@ export type Polygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][];
 };
 
+export interface StakeholderParameter {
+  key?: string;
+  displayName?: string;
+  values?: string[];
+}
+
 /** List of stakeholders */
 export interface Stakeholder {
   /**
@@ -398,6 +404,9 @@ export interface Stakeholder {
   emailAddress?: string;
   /** Address for stakeholder */
   address?: Address;
+
+  parameters?: StakeholderParameter[];
+  extraInformation?: string;
 }
 
 /** Term */

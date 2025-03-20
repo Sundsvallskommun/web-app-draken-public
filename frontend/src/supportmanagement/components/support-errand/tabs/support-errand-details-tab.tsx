@@ -1,6 +1,7 @@
 import { useAppContext } from '@contexts/app.context';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
+import { CParameter } from 'src/data-contracts/backend/data-contracts';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const {
@@ -9,21 +10,9 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
     supportErrand: SupportErrand;
   } = useAppContext();
 
-  const [handledParams, setHandledParams] = useState<
-    {
-      key: string;
-      displayName: string;
-      values: string[];
-    }[]
-  >([]);
+  const [handledParams, setHandledParams] = useState<CParameter[]>([]);
 
-  const handleDates = (
-    params: {
-      key: string;
-      displayName: string;
-      values: string[];
-    }[]
-  ) => {
+  const handleDates = (params: CParameter[]) => {
     const handled = [...params];
     if (
       handled.some((param) => param.key === 'sickNoteStartDates') &&

@@ -1,6 +1,6 @@
-import { useFormContext } from 'react-hook-form';
-import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
-import { Chip } from '@sk-web-gui/react';
+import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Priority } from '@casedata/interfaces/priority';
 import {
   assignedStatuses,
   closedStatuses,
@@ -8,14 +8,13 @@ import {
   findStatusKeyForStatusLabel,
   newStatuses,
 } from '@casedata/services/casedata-errand-service';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Priority } from '@casedata/interfaces/priority';
-import dayjs from 'dayjs';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { Admin } from '@common/services/user-service';
-import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@contexts/app.context';
-import { assign } from 'cypress/types/lodash';
+import { Chip } from '@sk-web-gui/react';
+import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
+import dayjs from 'dayjs';
+import { useFormContext } from 'react-hook-form';
+import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
 
 interface CasedataFilterTagsProps {
   administrators: (SupportAdmin | Admin)[];
@@ -36,7 +35,6 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
 
   const hasTags =
     types.length > 0 ||
-    statuses.length > 0 ||
     priorities.length > 0 ||
     startdate ||
     enddate ||

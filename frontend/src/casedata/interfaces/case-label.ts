@@ -6,10 +6,10 @@ export enum PTCaseLabel {
 }
 
 export enum MEXCaseLabel {
-  'MEX_SQUARE_PLACE' = 'Ansökan torgplats',
+  'MEX_SQUARE_PLACE' = 'Torgplats',
   'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' = 'Begäran om allmän handling',
   'MEX_INVOICE' = 'Faktura',
-  'MEX_LEASE_REQUEST' = 'Förfrågan arrende',
+  'MEX_LEASE_REQUEST' = 'Arrende/Nyttjanderätt',
   'MEX_BUY_LAND_FROM_THE_MUNICIPALITY' = 'Köpa kommunal mark',
   'MEX_BUY_SMALL_HOUSE_PLOT' = 'Köpa småhustomt',
   'MEX_LAND_SURVEYING_OFFICE' = 'Lantmäteriförrättning',
@@ -17,11 +17,11 @@ export enum MEXCaseLabel {
   'MEX_UNAUTHORIZED_RESIDENCE' = 'Otillåten bosättning',
   'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE' = 'Remiss/Bygglov/Tidig dialog planbesked',
   'MEX_PROTECTIVE_HUNTING' = 'Skyddsjakt',
-  'MEX_SELL_LAND_TO_THE_MUNICIPALITY' = 'Sälja mark till kommunen',
+  'MEX_SELL_LAND_TO_THE_MUNICIPALITY' = 'Kommunens inköp av mark',
   'MEX_EARLY_DIALOG_PLAN_NOTIFICATION' = 'Tidig dialog planbesked',
   'MEX_LAND_RIGHT' = 'Tomträtt',
-  'MEX_TERMINATION_OF_LEASE' = 'Uppsägning arrende',
-  'MEX_HUNTING_LEASE' = 'Uppsägning jakträtt',
+  'MEX_TERMINATION_OF_LEASE' = 'Arrende/Nyttjanderätt, uppsägning',
+  'MEX_HUNTING_LEASE' = 'Jakträtt',
   'MEX_APPLICATION_FOR_ROAD_ALLOWANCE' = 'Vägbidrag',
   'MEX_FORWARDED_FROM_CONTACTSUNDSVALL' = 'Ärende från Kontakt Sundsvall',
   'MEX_OTHER' = 'Övrigt',
@@ -37,6 +37,8 @@ export enum MEXCaseLabel {
   'MEX_ROAD_ASSOCIATION' = 'Vägförening/Samfällighetsförening',
   'MEX_RETURNED_TO_CONTACT_SUNDSVALL' = 'Ärende åter till Kontakt Sundsvall',
   'MEX_SMALL_BOAT_HARBOR_DOCK_PORT' = 'Småbåtshamn/Kaj/Hamn',
+  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE' = 'Köpa kommunal mark, privatperson',
+  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS' = 'Köpa kommunal mark, företag',
 }
 
 export const CaseLabels = {

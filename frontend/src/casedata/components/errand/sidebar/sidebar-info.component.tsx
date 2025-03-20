@@ -9,6 +9,7 @@ import {
   getErrand,
   isErrandAdmin,
   isErrandLocked,
+  phaseChangeInProgress,
   setSuspendedErrands,
   triggerErrandPhaseChange,
   updateErrandStatus,
@@ -36,7 +37,10 @@ import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { SuspendErrandComponent, SuspendFormProps } from '@casedata/components/suspend-errand';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
+import { isPT } from '@common/services/application-service';
+import { AppealButtonComponent } from '../appeal-button.component';
+import { isAppealEnabled, isSuspendEnabled } from '@common/services/feature-flag-service';
+import { sortBy } from '@common/services/helper-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -82,8 +86,8 @@ export const SidebarInfo: React.FC<{}> = () => {
     } else {
       setValue('admin', 'Välj handläggare');
     }
-    if (errand?.id && errand?.status) {
-      setValue('status', errand.status);
+    if (errand?.id && errand?.status?.statusType) {
+      setValue('status', errand.status?.statusType);
     } else {
       setValue('status', 'Välj status');
     }
@@ -100,8 +104,8 @@ export const SidebarInfo: React.FC<{}> = () => {
     if (errand?.phase === ErrandPhase.beslut) {
       s.push(ErrandStatus.UnderBeslut);
     }
-    if (!s.includes(errand.status as ErrandStatus)) {
-      s.unshift(errand.status as ErrandStatus);
+    if (!s.includes(errand.status?.statusType as ErrandStatus)) {
+      s.unshift(errand.status?.statusType as ErrandStatus);
     }
     setSelectableStatuses(s);
   }, [errand]);
@@ -318,7 +322,14 @@ export const SidebarInfo: React.FC<{}> = () => {
   const activateErrand = () => {
     setIsLoading('suspend');
     setError(false);
-    return setSuspendedErrands(errand.id, municipalityId, ErrandStatus.ArendeInkommit, null, null)
+    const previousStatus = sortBy(errand.statuses, 'created').reverse()[1].statusType;
+    return setSuspendedErrands(
+      errand.id,
+      municipalityId,
+      Object.values(ErrandStatus).find((status) => status === previousStatus),
+      null,
+      null
+    )
       .then((res) => {
         toastMessage({
           position: 'bottom',
@@ -427,7 +438,7 @@ export const SidebarInfo: React.FC<{}> = () => {
             required
             disabled={
               isErrandLocked(errand) ||
-              errand.status === ErrandStatus.Beslutad ||
+              errand.status?.statusType === ErrandStatus.Beslutad ||
               errand.phase === ErrandPhase.uppfoljning ||
               !allowed
             }
@@ -474,18 +485,18 @@ export const SidebarInfo: React.FC<{}> = () => {
 
       <Divider className="my-20"></Divider>
 
-      {errand?.status !== ErrandStatus.Parkerad ? (
+      {errand?.status?.statusType !== ErrandStatus.Parkerad ? (
         <>
           <PhaseChanger />
-          {isSuspendEnabled() && <SuspendErrandComponent disabled={false} />}
+          {<SuspendErrandComponent disabled={false} />}
         </>
       ) : (
-        errand?.status === ErrandStatus.Parkerad && (
+        errand?.status?.statusType === ErrandStatus.Parkerad && (
           <>
             <div className="flex">
               <Label>
                 <LucideIcon size="1.5rem" name="circle-pause" />{' '}
-                {errand?.status === ErrandStatus.Parkerad ? 'Parkerat ' : 'Tilldelat '}
+                {errand?.status?.statusType === ErrandStatus.Parkerad ? 'Parkerat ' : 'Tilldelat '}
               </Label>
               <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
             </div>
@@ -495,12 +506,12 @@ export const SidebarInfo: React.FC<{}> = () => {
               ) : (
                 <span className="mb-24">
                   <strong>{getValues('admin')}</strong>
-                  {errand?.status === ErrandStatus.Parkerad
+                  {errand?.status?.statusType === ErrandStatus.Parkerad
                     ? ' parkerade ärendet med en påminnelse '
                     : ' tilldelades ärendet'}{' '}
                   {errand.suspension.suspendedTo !== null
                     ? dayjs(errand.suspension.suspendedTo).format('DD MMM, HH:mm')
-                    : errand?.status === ErrandStatus.Parkerad && '(datum saknas)'}
+                    : errand?.status?.statusType === ErrandStatus.Parkerad && '(datum saknas)'}
                 </span>
               )}
             </p>
@@ -529,6 +540,9 @@ export const SidebarInfo: React.FC<{}> = () => {
           </>
         )
       )}
+      {isAppealEnabled() ? (
+        <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand)} />
+      ) : null}
 
       {uiPhase !== UiPhase.slutfor &&
         errand.phase !== ErrandPhase.verkstalla &&

@@ -1,10 +1,9 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
 import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
-  ApiSupportErrand,
   SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
@@ -32,6 +31,7 @@ let formSchema = yup
 
 export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const {
@@ -44,7 +44,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (e: ApiSupportErrand) => void;
+    setSupportErrand: (e: any) => void;
     supportAdmins: SupportAdmin[];
     setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
@@ -81,8 +81,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
     getMe().then((user) => {
       setUser(user);
     });
-    const { id } = router.query;
-    if (id) {
+    if (props.id) {
       setIsLoading(true);
       getSupportErrandById(props.id, municipalityId)
         .then((res) => {
@@ -107,12 +106,17 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand)) {
+      if (municipalityId && supportErrandIsEmpty(supportErrand) && !isLoading) {
+        setIsLoading(true);
+        setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)
-          .then((result) => {
-            setSupportErrand(result);
-            methods.reset(result);
-          })
+          .then((result) =>
+            setTimeout(() => {
+              router.push(`/arende/${municipalityId}/${result.id}`, undefined, {
+                shallow: true,
+              });
+            }, 10)
+          )
           .catch((e) => {
             console.error('Error when initiating errand:', e);
             setIsLoading(false);
@@ -125,7 +129,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
       }
     }
-  }, [router, municipalityId]);
+  }, [router, municipalityId, props.id]);
 
   return (
     <FormProvider {...methods}>
@@ -142,7 +146,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
               {isLoading ? (
                 <div className="h-full w-full flex flex-col items-center justify-start p-28">
                   <Spinner size={4} />
-                  <span className="text-gray m-md">Hämtar ärende..</span>
+                  <span className="text-gray m-md">{message}</span>
                 </div>
               ) : (
                 <div className="flex-grow w-full max-w-screen-lg">
@@ -186,10 +190,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
               )}
             </main>
           </div>
-          {/* {!supportErrandIsEmpty(supportErrand) ? <SidebarWrapper /> : null} */}
-          {supportErrand?.id ? (
-            <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
-          ) : null}
+          <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
         </div>
       </div>
     </FormProvider>

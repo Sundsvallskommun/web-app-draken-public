@@ -43,12 +43,12 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('displays the correct table header', () => {
       const headerRow = cy.get('[data-cy="main-casedata-table"] .sk-table-thead-tr').first();
       headerRow.get('th').eq(0).find('span').first().should('have.text', 'Status');
-      headerRow.get('th').eq(1).find('span').first().should('have.text', 'Ärendetyp');
-      headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendenummer');
-      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Prioritet');
-      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Ärendeägare');
-      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Registrerat');
-      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Uppdaterad');
+      headerRow.get('th').eq(1).find('span').first().should('have.text', 'Sebaste aktivitet');
+      headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendetyp');
+      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Ärendenummer');
+      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Prioritet');
+      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Ärendeägare');
+      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Registrerat');
       headerRow.get('th').eq(7).find('span').first().should('have.text', 'Handläggare');
     });
 

@@ -1,6 +1,12 @@
 import LoginGuard from '@common/components/login-guard/login-guard';
 import { AppWrapper } from '@common/contexts/app.context';
-import { ConfirmationDialogContextProvider, GuiProvider, defaultTheme, extendTheme } from '@sk-web-gui/react';
+import {
+  ColorSchemeMode,
+  ConfirmationDialogContextProvider,
+  GuiProvider,
+  defaultTheme,
+  extendTheme,
+} from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
@@ -9,6 +15,7 @@ import type { AppProps } from 'next/app';
 import { useMemo } from 'react';
 import 'react-quill/dist/quill.snow.css';
 import '../styles/tailwind.scss';
+import store from '@supportmanagement/services/storage-service';
 
 dayjs.extend(utc);
 dayjs.locale('se');
@@ -44,8 +51,10 @@ function MyApp({ Component, pageProps }: AppProps) {
     []
   );
 
+  const colorScheme = store.get('colorScheme') as ColorSchemeMode;
+
   return (
-    <GuiProvider theme={theme}>
+    <GuiProvider theme={theme} colorScheme={colorScheme}>
       <ConfirmationDialogContextProvider>
         <AppWrapper>
           <LoginGuard>

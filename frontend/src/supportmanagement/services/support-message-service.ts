@@ -3,9 +3,10 @@ import { isLOP } from '@common/services/application-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
-import { SingleSupportAttachment, SupportAttachment } from './support-attachment-service';
+import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
+import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -26,7 +27,7 @@ export interface MessageRequest {
 }
 
 export interface Message {
-  communicationAttachments: SupportAttachment[] | SingleSupportAttachment[];
+  communicationAttachments: CCommunicationAttachment[];
   communicationID: string;
   communicationType: string;
   direction: string;
@@ -183,21 +184,6 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
   return Promise.all(msgPromises).then((results) => (results.every((r) => r) ? true : false));
 };
 
-export const getSupportMessages: (errandId: string, municipalityId: string) => Promise<Message[]> = (
-  errandId,
-  municipalityId
-) => {
-  return apiService
-    .get<Message[]>(`supportmessage/${municipalityId}/errands/${errandId}/communication`)
-    .then((res) => {
-      return res.data;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching messages');
-      throw e;
-    });
-};
-
 export const fetchSupportMessages: (errandId: string, municipalityId: string) => Promise<MessageNode[]> = (
   errandId,
   municipalityId
@@ -243,7 +229,7 @@ export const getMessageAttachment: (
   errandId: string,
   communicationID: string,
   attachmentId: string
-) => Promise<ApiResponse<SupportAttachment[]>> = (municipalityId, errandId, communicationID, attachmentId) => {
+) => Promise<ApiResponse<string>> = (municipalityId, errandId, communicationID, attachmentId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch.');
   }
@@ -254,13 +240,13 @@ export const getMessageAttachment: (
     console.error('No attachment id found, cannot fetch.');
   }
 
-  const url = `supportmessage/${municipalityId}/errand/${errandId}/communication/${communicationID}/attachments/${attachmentId}/streamed`;
+  const url = `supportmessage/${municipalityId}/errand/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
   return apiService
-    .get<any>(url)
+    .get<ApiResponse<string>>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachment');
-      return { data: [], message: 'error' };
+      return { data: undefined, message: 'error' };
     });
 };
 

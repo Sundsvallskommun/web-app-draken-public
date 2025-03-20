@@ -34,13 +34,13 @@ export const CasedataFilterQuery: React.FC = () => {
   return (
     <SearchField
       value={query}
-      size={isMobile ? 'md' : 'lg'}
+      size="md"
       data-cy="query-filter"
       onChange={(e) => {
         setQuery(e.target.value);
       }}
       showSearchButton={value !== query}
-      className="flex-grow"
+      className="flex-grow max-w-full"
       onSearch={() => setValue('query', query)}
       onReset={() => {
         setQuery('');

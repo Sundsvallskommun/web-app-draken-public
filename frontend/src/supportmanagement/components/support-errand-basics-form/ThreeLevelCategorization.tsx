@@ -84,13 +84,13 @@ export const ThreeLevelCategorization: React.FC<{
 
   const getSelectedLabels = (errandLabels: string[], labelCategories: Label[]): { [key: string]: Label } => {
     const selected: { [key: string]: Label } = {};
-    const labelCategory = labelCategories.find((c) => errandLabels.includes(c.name));
+    const labelCategory = labelCategories.find((c) => errandLabels?.includes(c.name));
     if (labelCategory) {
       selected[LABEL_LEVELS.CATEGORY] = labelCategory;
-      const labelType = labelCategory.labels?.find((c) => errandLabels.includes(c.name));
+      const labelType = labelCategory.labels?.find((c) => errandLabels?.includes(c.name));
       if (labelType) {
         selected[LABEL_LEVELS.TYPE] = labelType;
-        const labelSubtype = labelType.labels?.find((c) => errandLabels.includes(c.name));
+        const labelSubtype = labelType.labels?.find((c) => errandLabels?.includes(c.name));
         if (labelSubtype) {
           selected[LABEL_LEVELS.SUBTYPE] = labelSubtype;
         }

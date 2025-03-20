@@ -40,6 +40,9 @@ export class CAccountInformation implements AccountInformation {
   @IsOptional()
   @IsString()
   counterpart?: string;
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
 }
 
 export class CInvoiceRow implements InvoiceRow {
@@ -62,9 +65,9 @@ export class CInvoiceRow implements InvoiceRow {
   @IsNumber()
   quantity?: number;
   @IsOptional()
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @TypeTransformer(() => CAccountInformation)
-  accountInformation?: AccountInformation;
+  accountInformation?: AccountInformation[];
 }
 
 export class CInvoice implements Invoice {
@@ -75,12 +78,8 @@ export class CInvoice implements Invoice {
   @IsOptional()
   @IsString()
   ourReference?: string;
-  @IsOptional()
   @IsString()
-  customerReference?: string;
-  @IsOptional()
-  @IsString()
-  referenceId?: string;
+  customerReference: string;
   @IsOptional()
   @IsString()
   date?: string;
@@ -135,6 +134,14 @@ export class CRecipient implements Recipient {
   addressDetails: AddressDetails;
 }
 
+class CExtraParameters {
+  @IsString()
+  errandId: string;
+  @IsString()
+  errandNumber: string;
+  @IsString()
+  referenceName: string;
+}
 export class CBillingRecord implements BillingRecord {
   @IsOptional()
   @IsString()
@@ -162,7 +169,13 @@ export class CBillingRecord implements BillingRecord {
   invoice: CInvoice;
   @IsOptional()
   @IsObject()
-  extraParameters?: Record<string, string>;
+  @ValidateNested()
+  @TypeTransformer(() => CExtraParameters)
+  extraParameters?: {
+    errandId: string;
+    errandNumber: string;
+    referenceName: string;
+  };
 }
 export class CSortObject implements SortObject {
   @IsOptional()

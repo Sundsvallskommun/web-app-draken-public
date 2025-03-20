@@ -35,7 +35,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('shows correct buttons and input select fields', () => {
       cy.get('[data-cy="registerErrandHeading"] button').eq(0).contains('Avbryt').should('exist');
       cy.get('[data-cy="registerErrandHeading"] button').eq(1).contains('Registrera').should('exist');
-      cy.get('.sk-menubar .sk-menubar-item button').eq(0).contains('Grunduppgifter').should('exist');
+      cy.get('.sk-tabs .sk-tabs-list-item-button').eq(0).contains('Grunduppgifter').should('exist');
       cy.get('[data-cy="channel-input"]').should('exist').should('be.disabled');
       cy.get('[data-cy="municipality-input"]').should('exist');
       cy.get('[data-cy="casetype-input"]').should('exist');
