@@ -551,8 +551,8 @@ export class SupportErrandController {
           }
         : isKA()
         ? {
-            category: 'URBAN_DEVELOPMENT',
-            type: 'URBAN_DEVELOPMENT.GENERAL_INFORMATION',
+            category: 'CONTACT_CENTER',
+            type: 'CONTACT_CENTER.UNCATEGORIZED',
           }
         : isLOP()
         ? {
@@ -573,7 +573,7 @@ export class SupportErrandController {
         : isIK()
         ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
         : isKA()
-        ? ['URBAN_DEVELOPMENT', 'URBAN_DEVELOPMENT.GENERAL_INFORMATION']
+        ? ['CONTACT_CENTER', 'CONTACT_CENTER.UNCATEGORIZED']
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
