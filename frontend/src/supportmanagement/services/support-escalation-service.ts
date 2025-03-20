@@ -1,7 +1,6 @@
-import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
+import { getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
 import { Channels, ContactChannelType, SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
 
 const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 const maybeList: (s: any) => string[] = (s) => (s?.length > 0 ? s : []);
@@ -39,7 +38,7 @@ export const getEscalationMessage: (
   metadata: SupportMetadata,
   user: string
 ) => Promise<string> = async (e, existingAttachments, metadata, user) => {
-  const department = isLOP() ? 'Lön och pension' : isKC() ? 'Kontakt Sundsvall' : isIK() ? 'Intern kundtjänst' : '';
+  const department = isKC() ? 'Sundsvalls kommun' : getApplicationName();
   const description = maybe(e?.description);
   const files = maybeList(existingAttachments?.map((a) => a.fileName));
   const attachments = maybeList(e?.attachments?.map((a) => a.file?.[0].name));
