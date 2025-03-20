@@ -1,4 +1,4 @@
-import { CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import {
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
@@ -340,7 +340,7 @@ export class SupportErrandController {
       customer.externalId &&
       (customer.externalIdType === ExternalIdType.PRIVATE || customer.externalIdType === ExternalIdType.EMPLOYEE)
     ) {
-      const personNumberUrl = `citizen/2.0/${customer.externalId}/personnumber`;
+      const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${customer.externalId}/personnumber`;
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
@@ -355,7 +355,7 @@ export class SupportErrandController {
         contact.externalId &&
         (contact.externalIdType === ExternalIdType.PRIVATE || contact.externalIdType === ExternalIdType.EMPLOYEE)
       ) {
-        const personNumberUrl = `citizen/2.0/${contact.externalId}/personnumber`;
+        const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${contact.externalId}/personnumber`;
         const getPersonalNumber = () =>
           this.apiService
             .get<string>({ url: personNumberUrl }, req.user)
@@ -430,7 +430,7 @@ export class SupportErrandController {
       let guidRes = null;
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
-        const guidUrl = `citizen/2.0/${query}/guid`;
+        const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${query}/guid`;
         guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
       }
       let queryFilter = `(`;
