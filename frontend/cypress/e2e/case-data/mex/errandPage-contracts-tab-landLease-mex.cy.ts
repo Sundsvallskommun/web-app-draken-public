@@ -40,7 +40,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
       cy.wait('@getContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button').eq(3).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(3).should('have.text', `Avtal`).click({ force: true });
 
       cy.get('[data-cy="apartmentType"]').should('exist').check();
     });
@@ -395,14 +395,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       const buildPermits = [
         {
           key: 'bygglovTerms.condition.permitFees',
-          header: 'Arrendator står för tillståndskostnader',
+          header: 'Arrendator skaffar de tillstånd som krävs',
           conditionText:
             'Arrendatorn är skyldig att skaffa och bekosta de tillstånd som krävs för verksamheten på området. Föreskrifter som meddelas av myndighet eller som följer av lag ska följas.',
         },
         {
           key: 'bygglovTerms.condition.buildingOwnership',
-          header: 'Arrendator äger byggnader som står inom området',
-          conditionText: 'Arrendatorn äger byggnader som står inom området, bygglov beviljat enligt BYGG 20XX – XXXX',
+          header: 'Arrendator äger byggnader inom området',
+          conditionText: 'Arrendatorn äger byggnader som står inom området.',
         },
       ];
 
@@ -439,13 +439,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       const conditionsCare = [
         {
           key: 'skickTerms.condition.nuisance',
-          header: 'Ansvar för undvikande av olägenhet',
+          header: 'Området ska hållas städat',
           conditionText:
             'Området upplåts i befintligt skick. Det åligger arrendatorn att hålla området i städat och vårdat skick och hålla god ordning i sin verksamhet inom området. Arrendatorn ska tillse att den verksamhet han bedriver inom området inte på något vis medför olägenhet för grannar eller någon annan samt för andra verksamheter i anslutning till området.',
         },
         {
           key: 'skickTerms.condition.accessibility',
-          header: 'Skyldighet att upprätthålla framkomlighet för allmänheten',
+          header: 'Allmänhetens framkomlighet får inte hindras',
           conditionText:
             'Arrendatorn är skyldig att bedriva sin verksamhet inom området så den inte hindrar allmänhetens framkomlighet intill arrendeområdet.',
         },
@@ -484,9 +484,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       const costs = [
         {
           key: 'kostnaderTerms.condition.kostnader',
-
-          header: 'Arrendatorn ansvarar för avgifter, drift och övriga kostnader som krävs för områdets nyttjande.',
-          conditionText: '',
+          header: 'Arrendatorn står för kostnader och drift för områdets nyttjande',
+          conditionText:
+            'Arrendatorn ansvarar för avgifter, drift och övriga kostnader som krävs för områdets nyttjande.',
         },
       ];
 
@@ -516,7 +516,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       const soilPollution = [
         {
           key: 'markfororeningarTerms.condition.pollutionAvoidance',
-          header: 'Ansvar för undvikande av föroreningar enligt Miljöbalken',
+          header: 'Schaktmassor får inte innehålla förorening',
           conditionText:
             'Arrendatorn påminns om att som verkamhetsutövare är det dennes ansvar, enligt miljöbalkens bestämmelser, att tillse att ev. schaktmassor eller annat material som tillförs området inte innehåller någon förorening till skada för mark och vatten.',
         },
@@ -528,13 +528,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         },
         {
           key: 'markfororeningarTerms.condition.testDone',
-          header: 'Miljöprovtagning och rapport',
-          conditionText:
-            'Miljöprovtagning av området är utförd [[2024-XX-XX]]. Arrendatorn har tagit del av provtagningsrapporten.',
+          header: 'Miljöprovtagning är utförd',
+          conditionText: `Miljöprovtagning av området är utförd åååå-mm-dd. Arrendatorn har tagit del av provtagningsrapporten.`,
         },
         {
           key: 'markfororeningarTerms.condition.testingAtEnd',
-          header: 'Krav på miljöprovtagning och provtagningplan vid avtalets upphörande',
+          header: 'Arrendator ska återlämna mark utan förorening',
           conditionText:
             'Det är arrendatorns skyldighet att visa att området lämnas fritt från föroreningar. Miljöprovtagning av området ska utföras i samband med att arrendet upphör om fastighetsägaren så kräver. En provtagningsplan ska inlämnas till fastighetsägaren för godkännande innan provtagning sker. Provtagningen bekostas av arrendatorn.',
         },
@@ -592,13 +591,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         },
         {
           key: 'upphorandeTerms.condition.noRefundLeaseFee',
-          header: 'Ingen återbetalning av arrendeavgift vid förtida upphörande',
+          header: 'Avgift återbetalas ej vid förtida upphörande',
           conditionText:
             'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
         },
         {
           key: 'upphorandeTerms.condition.inspectionRequirements',
-          header: 'Besiktningskrav och friskrivning av ersättningsskyldighet',
+          header: 'Besiktning och friskrivning',
           conditionText:
             'När avtalet upphör ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
         },
@@ -645,7 +644,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       const damages = [
         {
           key: 'skadaansvarTerms.condition.begransning',
-          header: 'Begränsning av fastighetsägarens ansvar för skador och krav mot arrendatorn',
+          header: 'Arrendatorn ansvarar för skada inom området',
           conditionText:
             'Fastighetsägaren är inte ansvarig för skada på arrendestället eller arrendatorn tillhörig egendom som orsakas av markens beskaffenhet, grundvattenförändringar, tredje man eller allmänheten. Om krav skulle riktas mot arrendatorns verksamhet ska arrendatorn skyndsamt underrätta fastighetsägaren om detta.',
         },

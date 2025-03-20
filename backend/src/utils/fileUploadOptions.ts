@@ -50,7 +50,7 @@ const fileFilter = (_request: Request, file: Express.Multer.File, callback: Filt
 const uploadOptions = () => ({
   limits: {
     fieldNameSize: 255,
-    fileSize: 1024 * 1024 * 15, // 4mb
+    fileSize: 1024 * 1024 * 50, // 4mb
   },
   storage: multer.memoryStorage(),
   fileFilter,

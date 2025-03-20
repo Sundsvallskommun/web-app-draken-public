@@ -34,7 +34,6 @@ import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
 import sanitized from '@common/services/sanitizer-service';
 import dayjs from 'dayjs';
-import { numberToSwedishWords } from '@common/services/number-service';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -1424,17 +1423,15 @@ export const Lagenhetsarrende: React.FC<{
                   let feebyLease = getValues('arrendeavgiftTerms.feeByLease');
 
                   getValues('arrendeavgiftTerms.yearly') === 'true' &&
-                    (content += `<p>Avgiften per år är: ${yearlyFee} (${numberToSwedishWords(yearlyFee)}) kronor</p>`);
+                    (content += `<p>Avgiften per år är: ${yearlyFee} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byYear') === 'true' &&
                     (content += `<p>Avgiften för år ${getValues(
                       'arrendeavgiftTerms.associatedFeeYear'
-                    )} är ${feeByYear} (${numberToSwedishWords(feeByYear)}) kronor</p>`);
+                    )} är ${feeByYear} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.byLease') === 'true' &&
-                    (content += `<p>Avgiften för upplåtelsetiden är ${feebyLease} (${numberToSwedishWords(
-                      feebyLease
-                    )}) kronor</p>`);
+                    (content += `<p>Avgiften för upplåtelsetiden är ${feebyLease} kronor</p>`);
 
                   getValues('arrendeavgiftTerms.prepaid') === 'true' &&
                     (content += `<p>För perioden ${getValues('arrendeavgiftTerms.prepaidFromDate')} – ${getValues(

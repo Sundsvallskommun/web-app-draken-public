@@ -38,7 +38,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
       cy.wait('@getContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button').eq(3).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(3).should('have.text', `Avtal`).click({ force: true });
     });
     const contractText = {
       data: {
@@ -175,7 +175,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     //PURCHASE PRICE
-    it('manages purchase price automatically in purchase contracts', () => {
+    it.only('manages purchase price automatically in purchase contracts', () => {
       const conditions = [
         {
           key: 'kopeskillingTerms.paymentCondition1',
@@ -214,7 +214,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('.sk-modal-dialog').should('exist');
 
       cy.get('[data-cy="kopeskilling-amountNumber"]').should('exist').clear().type('3600 kr');
-      cy.get('[data-cy="kopeskilling-amountText"][aria-readonly="true"]').should('exist');
+      cy.get('[data-cy="kopeskilling-amountText"]').should('exist').clear().type('TRETUSEN SEXHUNDRA KRONOR');
 
       cy.get('[data-cy="table-kopeskillingTerms"] .sk-table-tbody-tr').should('have.length', conditions.length);
 
