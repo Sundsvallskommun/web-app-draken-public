@@ -264,9 +264,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
           </FormControl>
         </div>
       </div>
-      {!isLOP() && !isIK() && (
+      {(isKC() || isKA()) && (
         <div className="w-full mt-md mb-lg">
-          {/* TO DO: missing data from API. needs implementation */}
           <Checkbox
             id="causecheckbox"
             disabled={isSupportErrandLocked(supportErrand)}
@@ -275,7 +274,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             className="w-full"
             onClick={() => (checked ? setCauseDescriptionIsOpen(false) : setCauseDescriptionIsOpen(true))}
           >
-            Lägg till en orsaksbeskrivning
+            {isKA() ? 'Brist i kunskapsbank' : isKC() ? 'Lägg till en orsaksbeskrivning' : ''}
           </Checkbox>
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">
