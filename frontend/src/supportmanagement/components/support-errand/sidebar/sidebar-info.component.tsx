@@ -262,10 +262,6 @@ export const SidebarInfo: React.FC<{
           label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
         },
         {
-          key: 'SOLVED',
-          label: StatusLabel.SOLVED,
-        },
-        {
           key: 'ASSIGNED',
           label: StatusLabel.ASSIGNED,
         },
