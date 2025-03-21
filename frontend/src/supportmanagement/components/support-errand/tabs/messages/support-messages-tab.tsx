@@ -34,7 +34,7 @@ export const SupportMessagesTab: React.FC<{
       : isKC()
       ? 'Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br>Vi önskar dig en fin dag!<br><br>Med vänlig hälsning<br><br><strong>Sundsvalls kommun</strong><br>Kommunstyrelsekontoret<br>851 85 Sundsvall<br>E-post <a href="mailto:kontakt@sundsvall.se">kontakt@sundsvall.se</a><br>Telefon +46 60 19 10 00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>'
       : isIK()
-      ? 'Hej,<br><br>Tack för att du kontaktar Intern Kundtjänst! Här kommer informationen enligt överenskommelse:<br><br><br><br><br>Ha en fortsatt bra dag!<br><br>Med vänlig hälsning<br><strong>Intern Kundtjänst</strong>'
+      ? 'Hej,<br><br>Tack för att du kontaktar Intern Kundtjänst!<br><br><br>Ha en fortsatt bra dag!<br><br>Med vänlig hälsning<br><strong>Intern Kundtjänst</strong>'
       : ''
   }.`;
   const smsBody = isIK()
