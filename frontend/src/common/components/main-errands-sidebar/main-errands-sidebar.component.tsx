@@ -1,30 +1,23 @@
-import NextLink from 'next/link';
-import {
-  getApplicationEnvironment,
-  getApplicationName,
-  isAnge,
-  isIK,
-  isKC,
-  isLOP,
-} from '@common/services/application-service';
-import { FormProvider, useForm } from 'react-hook-form';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
+import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { NotificationsBell } from '@common/components/notifications/notifications-bell';
+import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
+
+import { getApplicationEnvironment, getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, cx, Divider, Logo } from '@sk-web-gui/react';
-import { NotificationsBell } from '@common/components/notifications/notifications-bell';
-import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
+import NextLink from 'next/link';
 import { useState } from 'react';
-import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
-import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
-import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
-import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
-import Image from 'next/image';
-import Ange_kommun_logo from '../../../styles/Ange_kommun_logo.png';
+import { FormProvider, useForm } from 'react-hook-form';
+import { appConfig } from 'src/config/appconfig';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -47,11 +40,9 @@ export const MainErrandsSidebar: React.FC<{
       }. Gå till startsidan.`}
     >
       <Logo
-        className={cx(open ? '' : isAnge() ? 'w-[4rem]' : 'w-[2.8rem]')}
+        className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
-        symbol={
-          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ånge kommun logo" /> : null
-        }
+        symbol={appConfig.symbol}
         title={'Draken'}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />

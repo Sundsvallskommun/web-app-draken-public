@@ -5,7 +5,6 @@ import { User } from '@common/interfaces/user';
 import {
   getApplicationEnvironment,
   getApplicationName,
-  isAnge,
   isIK,
   isKC,
   isLOP,
@@ -21,10 +20,9 @@ import Head from 'next/head';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { Fragment } from 'react';
-import Image from 'next/image';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import Ange_kommun_logo from '../../../styles/Ange_kommun_logo.png';
+import { appConfig } from 'src/config/appconfig';
 
 export default function Layout({ title, children }) {
   const {
@@ -53,9 +51,7 @@ export default function Layout({ title, children }) {
       <Logo
         variant="service"
         title={'Draken'}
-        symbol={
-          isAnge() ? <Image src={Ange_kommun_logo} className="mt-11 h-[4rem] w-[4rem]" alt="Ånge kommun logo" /> : null
-        }
+        symbol={appConfig.symbol}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
@@ -119,13 +115,7 @@ export default function Layout({ title, children }) {
           applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo
-          variant="symbol"
-          symbol={
-            isAnge() ? <Image src={Ange_kommun_logo} className="h-[4rem] w-[4rem]" alt="Ånge kommun logo" /> : null
-          }
-          className="h-40"
-        />
+        <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
         {isKC() || isIK() || isLOP() ? (
