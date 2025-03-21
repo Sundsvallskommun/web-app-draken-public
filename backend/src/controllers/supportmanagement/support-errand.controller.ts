@@ -506,9 +506,6 @@ export class SupportErrandController {
       const e = toOffsetDateTime(dayjs(end).endOf('day'));
       filterList.push(`created<'${e}'`);
     }
-    // Always filter out errands with category=NONE or type=NONE
-    filterList.push(`not(category:'NONE')`);
-    filterList.push(`not(type:'NONE')`);
 
     const filter = filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
     let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
