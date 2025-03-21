@@ -79,14 +79,14 @@ export const NotificationItem: React.FC<{ notification: SupportNotification | Ca
       </div>
       <span className="whitespace-nowrap">{prettyTime(notification.created)}</span>
       {!notification.acknowledged ? (
-      <div>
-        <span
-          className={cx(
-            notification.acknowledged ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
-            `w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
-          )}
-        ></span>
-      </div>
+        <div>
+          <span
+            className={cx(
+              notification.acknowledged ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
+              `w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
+            )}
+          ></span>
+        </div>
       ) : null}
     </div>
   );
