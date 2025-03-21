@@ -68,7 +68,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
     //FILTER
     it('allows filtering', () => {
-      cy.get('[data-cy="show-filters-button"]').click();
+      cy.get('[data-cy="show-filters-button"]').should('exist');
 
       //Verksamhet
       cy.get('[data-cy="Verksamhet-filter"]').type('1');

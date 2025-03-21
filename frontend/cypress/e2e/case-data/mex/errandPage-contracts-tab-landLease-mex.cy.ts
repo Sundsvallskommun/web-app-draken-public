@@ -40,7 +40,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
       cy.wait('@getContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button').eq(3).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(3).should('have.text', `Avtal`).click({ force: true });
 
       cy.get('[data-cy="apartmentType"]').should('exist').check();
     });

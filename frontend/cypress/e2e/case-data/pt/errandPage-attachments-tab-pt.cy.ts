@@ -19,8 +19,12 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('POST', '**/personid', mockPersonId);
-      cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/pt\/casedata\/\d+\/errand\/errandNumber\/\w+-\d+-\d+$/, mockPTErrand_base).as(
+        'getErrandById'
+      );
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachmentsPT).as('getErrandAttachments');
+      cy.intercept('GET', /\/pt\/casedata\/\d+\/errand\/\d+\/messages$/, mockMessages).as('getMessages');
+      cy.intercept('POST', /\/pt\/casedata\/\d+\/errand\/\d+\/messages$/, mockMessages).as('postMessages');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
       cy.intercept('POST', '**/stakeholders/personNumber', mockPTErrand_base.data.stakeholders);
@@ -32,7 +36,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.visit(`/arende/${mockPTErrand_base.data.municipalityId}/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button')
+      cy.get('.sk-tabs-list button')
         .eq(2)
         .should('have.text', `Bilagor (${mockAttachmentsPT.data.length})`)
         .click({ force: true });
