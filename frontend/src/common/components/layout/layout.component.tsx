@@ -2,17 +2,8 @@ import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wr
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import {
-  getApplicationEnvironment,
-  getApplicationName,
-  isCaseData,
-  isIK,
-  isKC,
-  isLOP,
-  isMEX,
-  isPT,
-  isSupportManagement,
-} from '@common/services/application-service';
+import { getApplicationEnvironment, isIK, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
@@ -24,7 +15,6 @@ import { useRouter } from 'next/router';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { appConfig } from 'src/config/appconfig';
 
 export default function Layout({ title, children }) {
   const {
@@ -33,14 +23,13 @@ export default function Layout({ title, children }) {
     supportErrand,
     supportMetadata,
   }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
-  const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
-  const errandNumber = isCaseData()
+  const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
-    : isSupportManagement()
+    : appConfig.isSupportManagement
     ? supportErrand?.errandNumber
     : undefined;
   const hostName = window.location.hostname;
@@ -50,14 +39,14 @@ export default function Layout({ title, children }) {
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
         variant="service"
         title={'Draken'}
         symbol={appConfig.symbol}
-        subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
   );
@@ -117,13 +106,13 @@ export default function Layout({ title, children }) {
       <a
         href={`${process.env.NEXT_PUBLIC_BASEPATH}`}
         title={`Draken - ${
-          applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+          appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
         <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {isSupportManagement() ? (
+        {appConfig.isSupportManagement ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">
@@ -135,7 +124,7 @@ export default function Layout({ title, children }) {
             <span className="text-small">({errandNumber})</span>
           </>
         ) : null}
-        {isCaseData() ? (
+        {appConfig.isCaseData ? (
           <>
             <span className="font-bold">Ärende: </span>
             {errandNumber}
@@ -149,7 +138,7 @@ export default function Layout({ title, children }) {
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={applicationName} />
+        <meta name="description" content={appConfig.applicationName} />
       </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
@@ -176,10 +165,10 @@ export default function Layout({ title, children }) {
                 data-cy="register-new-errand-button"
               >
                 <Button
-                  color={isCaseData() ? 'primary' : 'vattjom'}
-                  variant={isCaseData() ? 'tertiary' : 'primary'}
+                  color={appConfig.isCaseData ? 'primary' : 'vattjom'}
+                  variant={appConfig.isCaseData ? 'tertiary' : 'primary'}
                   rightIcon={
-                    isCaseData() ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
+                    appConfig.isCaseData ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
                   }
                 >
                   Nytt ärende

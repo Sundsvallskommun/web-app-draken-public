@@ -1,8 +1,8 @@
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isCaseData, isSupportManagement, usesBilling } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -35,20 +35,20 @@ export const Oversikt: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    isSupportManagement() &&
+    appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   return (
     <>
-      {isSupportManagement() ? (
+      {appConfig.isSupportManagement ? (
         <SidebarLayout
-          title={`${getApplicationName()} - Översikt`}
+          title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
         >
-          {usesBilling() && showAttestationTable && user.permissions.canViewAttestations ? (
+          {appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
             <AttestationTab />
           ) : municipalityId ? (
             <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
@@ -56,9 +56,9 @@ export const Oversikt: React.FC = () => {
         </SidebarLayout>
       ) : null}
 
-      {isCaseData() ? (
+      {appConfig.isCaseData ? (
         <SidebarLayout
-          title={`${getApplicationName()} - Översikt`}
+          title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
         >

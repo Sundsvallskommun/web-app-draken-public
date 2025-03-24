@@ -1,5 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { usesFacilites } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
@@ -55,7 +55,7 @@ export const SupportErrandBasicsTab: React.FC<{
       {/* <SupportErrandBasicsOwnerDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
       {/* <SupportErrandBasicsStakeholdersDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
 
-      {usesFacilites() ? (
+      {appConfig.features.useFacilites ? (
         <SupportErrandBasicsRealEstateDisclosure
           setUnsavedFacility={props.setUnsavedFacility}
           supportErrand={supportErrand}

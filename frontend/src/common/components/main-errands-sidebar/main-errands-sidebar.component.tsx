@@ -3,13 +3,9 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
-import {
-  getApplicationEnvironment,
-  getApplicationName,
-  isCaseData,
-  isSupportManagement,
-} from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, cx, Divider, Logo } from '@sk-web-gui/react';
@@ -21,7 +17,6 @@ import {
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { appConfig } from 'src/config/appconfig';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -33,7 +28,6 @@ export const MainErrandsSidebar: React.FC<{
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
-  const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
   const MainTitle = (open: boolean) => (
@@ -41,7 +35,7 @@ export const MainErrandsSidebar: React.FC<{
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
@@ -49,7 +43,7 @@ export const MainErrandsSidebar: React.FC<{
         variant={open ? 'service' : 'symbol'}
         symbol={appConfig.symbol}
         title={'Draken'}
-        subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
   );
@@ -91,7 +85,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {isSupportManagement() ? (
+          {appConfig.isSupportManagement ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
@@ -100,7 +94,7 @@ export const MainErrandsSidebar: React.FC<{
               />
             </FormProvider>
           ) : null}
-          {isCaseData() ? (
+          {appConfig.isCaseData ? (
             <FormProvider {...casedataFilterForm}>
               <CasedataFilterSidebarStatusSelector iconButton={!open} />
             </FormProvider>

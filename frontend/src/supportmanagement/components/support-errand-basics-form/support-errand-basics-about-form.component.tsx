@@ -1,13 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import {
-  usesBusinessCase,
-  usesExplanationOfTheCause,
-  usesReasonForContact,
-  usesThreeLevelCategorization,
-  usesTwoLevelCategorization,
-} from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -85,7 +79,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </FormControl>
       ) : null}
 
-      {usesTwoLevelCategorization() ? (
+      {appConfig.features.useTwoLevelCategorization ? (
         <div className="flex gap-24">
           <div className="flex my-md gap-xl w-1/2">
             <FormControl id="category" className="w-full">
@@ -154,13 +148,13 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {usesThreeLevelCategorization() ? (
+      {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
       ) : null}
 
-      {usesBusinessCase() ? (
+      {appConfig.features.useBusinessCase ? (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
             <Checkbox
@@ -198,7 +192,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {usesReasonForContact() ? (
+        {appConfig.features.useReasonForContact ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
               <FormLabel>Orsak till kontakt</FormLabel>
@@ -274,7 +268,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       </div>
 
-      {usesExplanationOfTheCause() ? (
+      {appConfig.features.useExplanationOfTheCause ? (
         <div className="w-full mt-md mb-lg">
           {/* TO DO: missing data from API. needs implementation */}
           <Checkbox

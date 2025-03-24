@@ -6,8 +6,8 @@ import { Priority } from '@casedata/interfaces/priority';
 import { emptyErrand, getErrandByErrandNumber, getUiPhase } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { usesFacilites } from '@common/services/application-service';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
@@ -215,7 +215,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   </div>
                                 </div>
 
-                                {usesFacilites() ? (
+                                {appConfig.features.useFacilites ? (
                                   <div className="pr-sm w-[40%]">
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>
