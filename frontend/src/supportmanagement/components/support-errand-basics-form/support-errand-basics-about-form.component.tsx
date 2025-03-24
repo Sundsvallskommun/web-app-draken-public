@@ -10,6 +10,7 @@ import {
   usesThreeLevelCategorization,
   usesTwoLevelCategorization,
 } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -87,7 +88,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </FormControl>
       ) : null}
 
-      {usesTwoLevelCategorization() ? (
+      {appConfig.features.useTwoLevelCategorization ? (
         <div className="flex gap-24">
           <div className="flex my-md gap-xl w-1/2">
             <FormControl id="category" className="w-full">
@@ -156,13 +157,13 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {usesThreeLevelCategorization() || isKA() ? (
+      {appConfig.features.useThreeLevelCategorization || isKA() ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
       ) : null}
 
-      {usesBusinessCase() ? (
+      {appConfig.features.useBusinessCase ? (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
             <Checkbox
@@ -200,7 +201,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {usesReasonForContact() || isKA() ? (
+        {appConfig.features.useReasonForContact || isKA() ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
               <FormLabel>{isKA() ? 'Ärendet avsåg' : 'Orsak till kontakt'}</FormLabel>
@@ -276,7 +277,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       </div>
 
-      {usesExplanationOfTheCause() || isKA() ? (
+      {appConfig.features.useExplanationOfTheCause || isKA() ? (
         <div className="w-full mt-md mb-lg">
           <Checkbox
             id="causecheckbox"

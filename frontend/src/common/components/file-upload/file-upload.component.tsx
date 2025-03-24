@@ -1,9 +1,10 @@
 import { AttachmentLabels, MAX_FILE_SIZE_MB, PTAttachmentLabels } from '@casedata/services/casedata-attachment-service';
-import { isCaseData, isIK, isKC, isLOP, isMEX } from '@common/services/application-service';
+import { isIK, isKC, isLOP, isMEX } from '@common/services/application-service';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister } from 'react-hook-form';
 
+import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { UploadCloud } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
@@ -146,7 +147,7 @@ const FileUpload: React.FC<{
   };
 
   const editFields = (index?: number) =>
-    isCaseData() && (
+    appConfig.isCaseData && (
       <>
         {!dragDrop && editing && (
           <FormControl id="name" className="w-full">

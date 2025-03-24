@@ -1,8 +1,9 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isCaseData, isKA, isSupportManagement } from '@common/services/application-service';
+import { isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { default as NextLink } from 'next/link';
 import { useRouter } from 'next/router';
@@ -36,7 +37,7 @@ export const Oversikt: React.FC = () => {
 
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
-      <Layout title={`${getApplicationName()} - Registrera ärende`}>
+      <Layout title={`${appConfig.applicationName} - Registrera ärende`}>
         <NextLink href="#content" passHref legacyBehavior>
           <a
             tabIndex={1}
@@ -46,8 +47,8 @@ export const Oversikt: React.FC = () => {
             Hoppa till innehåll
           </a>
         </NextLink>
-        {isSupportManagement() || isKA() ? <SupportErrandComponent /> : null}
-        {isCaseData() ? <CasedataErrandComponent /> : null}
+        {appConfig.isSupportManagement || isKA() ? <SupportErrandComponent /> : null}
+        {appConfig.isCaseData ? <CasedataErrandComponent /> : null}
       </Layout>
     </div>
   );

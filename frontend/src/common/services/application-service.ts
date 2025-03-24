@@ -16,8 +16,6 @@ export const isSupportManagement = () => isKC() || isIK() || isLOP();
 
 export const isCaseData = () => isPT() || isMEX();
 
-export const getApplicationName = () => process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen';
-
 export const getApplicationEnvironment = () =>
   (isPT() || isKC() || isKA() || isIK() || isLOP() || isMEX()) && process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST'
     ? 'TEST'

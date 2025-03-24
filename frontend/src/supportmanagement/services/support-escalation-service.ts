@@ -1,7 +1,7 @@
 import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Channels, ContactChannelType, SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
-import { appConfig } from '@config/appconfig';
 
 const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 const maybeList: (s: any) => string[] = (s) => (s?.length > 0 ? s : []);

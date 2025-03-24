@@ -10,7 +10,7 @@ import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { usesFacilites } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -409,7 +409,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
-            {usesFacilites() ? (
+            {appConfig.features.useFacilites ? (
               <Facilities
                 facilities={realEstates}
                 setUnsaved={props.setUnsaved}

@@ -1,8 +1,9 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isSupportManagement, isCaseData, isKA } from '@common/services/application-service';
+import { isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
@@ -23,10 +24,10 @@ export default function Arende2() {
   };
 
   useEffect(() => {
-    if (isCaseData()) {
+    if (appConfig.isCaseData) {
       id?.[0] && setMunicipalityId(id[0]);
       id?.[1] && setErrandId(id[1]);
-    } else if (isSupportManagement() || isKA()) {
+    } else if (appConfig.isSupportManagement || isKA()) {
       id?.[0] && setMunicipalityId(id[0]);
       id?.[1] && setErrandId(id[1]);
     }
@@ -40,14 +41,14 @@ export default function Arende2() {
   }, []);
 
   useEffect(() => {
-    (isSupportManagement() || isKA()) &&
+    (appConfig.isSupportManagement || isKA()) &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
-      <Layout title={`${getApplicationName()} - Pågående ärende`}>
+      <Layout title={`${appConfig.applicationName} - Pågående ärende`}>
         <NextLink href="#content" passHref legacyBehavior>
           <a
             tabIndex={1}
@@ -58,9 +59,9 @@ export default function Arende2() {
           </a>
         </NextLink>
 
-        {isCaseData()
+        {appConfig.isCaseData
           ? errandId && <CasedataErrandComponent id={errandId} />
-          : isSupportManagement() || isKA()
+          : appConfig.isSupportManagement || isKA()
           ? errandId && municipalityId && <SupportErrandComponent id={errandId} />
           : null}
       </Layout>

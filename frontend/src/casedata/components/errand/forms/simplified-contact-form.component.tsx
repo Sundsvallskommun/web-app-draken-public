@@ -13,7 +13,7 @@ import {
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
-import { isMEX, isPT, usesExtraInfomrationStakeholders } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -24,6 +24,7 @@ import {
   phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -1010,7 +1011,7 @@ export const SimplifiedContactForm: React.FC<{
                 )}
               </FormControl>
             </div>
-            {usesExtraInfomrationStakeholders() ? (
+            {appConfig.features.useExtraInformationStakeholders ? (
               <div className="flex gap-lg">
                 <FormControl id={`extrainfo`} className="w-[244px]">
                   <FormLabel>Extra Information</FormLabel>

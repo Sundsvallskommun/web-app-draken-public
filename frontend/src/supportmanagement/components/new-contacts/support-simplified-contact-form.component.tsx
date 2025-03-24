@@ -23,7 +23,7 @@ import {
 } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 
-import { isSupportManagement } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -270,7 +270,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [organizationNumber, personNumber]);
 
   useEffect(() => {
-    isSupportManagement() &&
+    appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
