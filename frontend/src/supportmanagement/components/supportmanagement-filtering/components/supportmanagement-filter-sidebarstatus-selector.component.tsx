@@ -12,7 +12,6 @@ import {
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
-import { get } from 'cypress/types/lodash';
 import { useMemo } from 'react';
 
 export interface SupportManagementStatusFilter {
@@ -26,7 +25,8 @@ export const SupportManagementStatusValues = {
 export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
-}> = ({ showAttestationTable, setShowAttestationTable }) => {
+  iconButton: boolean;
+}> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
   const {
     isLoading,
     setSidebarLabel,
@@ -107,25 +107,24 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
             }}
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
-            className={`justify-start ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
+            className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
             leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
+            iconButton={iconButton}
           >
-            <span className="w-full flex justify-between">
-              {button.label}
-              {button.key !== closedStatuses[0] && (
+            {!iconButton && (
+              <span className="w-full flex justify-between">
+                {button.label}
                 <Badge
                   className="min-w-fit px-4"
-                  inverted={!selectedSupportErrandStatuses.includes(button.key as Status) || showAttestationTable}
-                  color={
-                    selectedSupportErrandStatuses.includes(button.key as Status) && !showAttestationTable
-                      ? 'tertiary'
-                      : 'vattjom'
+                  inverted={!buttonIsActive || showAttestationTable}
+                  color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
+                  counter={
+                    isLoading ? '-' : button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands || '0'
                   }
-                  counter={isLoading ? '-' : button.totalStatusErrands || '0'}
                 />
-              )}
-            </span>
+              </span>
+            )}
           </Button>
         );
       })}

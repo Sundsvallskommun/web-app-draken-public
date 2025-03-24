@@ -14,6 +14,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { mock } from 'node:test';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('register page', () => {
@@ -23,6 +24,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('POST', '**/newerrand/2281', mockEmptySupportErrand).as('initiateErrand');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
+      );
+      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
+        'getErrand'
       );
 
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
@@ -38,8 +42,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.visit('/registrera');
-      cy.wait('@initiateErrand');
       cy.get('.sk-cookie-consent-btn-wrapper button').contains('Godkänn alla').click();
+      cy.wait('@initiateErrand');
     });
 
     it('displays the support errand part of the register form', () => {
@@ -57,11 +61,10 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="status-input"]').should('exist');
     });
 
-    it('sends the correct data for ONGOING', () => {
+    it('sends the correct data for new errand', () => {
       const patchFacility = {
         id: 123,
       };
-      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockSupportErrand).as('getErrand');
       cy.intercept(
         'PATCH',
         '**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
@@ -72,15 +75,67 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="category-input"]').select(cat.displayName);
       cy.get('[data-cy="type-input"]').select(typ.displayName);
       cy.get('[data-cy="description-input"]').type('Mock description');
-      cy.contains('Spara ärende').click();
+      cy.get('[data-cy="save-button"]').click();
       cy.wait(`@updateErrand`).should(({ request, response }) => {
-        expect(request.body.classification.category).to.equal(cat.name);
-        expect(request.body.classification.type).to.equal(typ.name);
-        expect(request.body.channel).to.equal('PHONE');
-        expect(request.body.priority).to.equal('MEDIUM');
-        expect(request.body.resolution).to.equal('INFORMED');
-        expect(request.body.description).to.equal('Mock description');
+        expect(request.body).to.deep.equal({
+          assignedUserId: mockEmptySupportErrand.assignedUserId,
+          businessRelated: false,
+          classification: {
+            category: cat.name,
+            type: typ.name,
+          },
+          externalTags: mockEmptySupportErrand.externalTags,
+          labels: [],
+          channel: 'PHONE',
+          priority: 'MEDIUM',
+          resolution: 'INFORMED',
+          stakeholders: [],
+          description: 'Mock description',
+          status: 'ONGOING',
+          suspension: {},
+        });
+        expect([200, 304]).to.include(response && response.statusCode);
+      });
+    });
 
+    it('sends the correct data for new errand. after changes', () => {
+      const patchFacility = {
+        id: 123,
+      };
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        patchFacility
+      ).as('patchfacilities');
+      const cat = mockCategories[2];
+      const typ = cat.types[2];
+      cy.get('[data-cy="category-input"]').select(cat.displayName);
+      cy.get('[data-cy="type-input"]').select(typ.displayName);
+      cy.get('[data-cy="description-input"]').type('Mock description');
+      cy.get('[data-cy="contactReason-input"]').select('E-tjänst saknas');
+      cy.get('[data-cy="show-contactReasonDescription-input"]').should('exist').check({ force: true });
+      cy.get('[data-cy="contactReasonDescription-input"]').should('exist').type('Mock contact reason description');
+      cy.get('[data-cy="save-button"]').click();
+      cy.wait(`@updateErrand`).should(({ request, response }) => {
+        expect(request.body).to.deep.equal({
+          assignedUserId: mockEmptySupportErrand.assignedUserId,
+          businessRelated: false,
+          classification: {
+            category: cat.name,
+            type: typ.name,
+          },
+          externalTags: mockEmptySupportErrand.externalTags,
+          contactReason: 'E-tjänst saknas',
+          contactReasonDescription: 'Mock contact reason description',
+          labels: [],
+          channel: 'PHONE',
+          priority: 'MEDIUM',
+          resolution: 'INFORMED',
+          stakeholders: [],
+          description: 'Mock description',
+          status: 'ONGOING',
+          suspension: {},
+        });
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });

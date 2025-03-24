@@ -17,6 +17,65 @@ export interface OrgNrPayload {
   orgNr: string;
 }
 
+export interface CLegalForm {
+  legalFormCode: string;
+  legalFormDescription: string;
+}
+
+export interface CAddress {
+  city?: string;
+  street?: string;
+  postcode?: string;
+  careOf?: string;
+}
+
+export interface CMunicipality {
+  municipalityCode: string;
+  municipalityName: string;
+}
+
+export interface CCounty {
+  countyCode: string;
+  countyName: string;
+}
+
+export interface CLEPostAddress {
+  coAdress: string;
+  country: string;
+  postalCode: string;
+  city: string;
+  address1: string;
+  address2: string;
+}
+
+export interface CLEAddress {
+  addressArea: string;
+  adressNumber: string;
+  city: string;
+  postalCode: string;
+  municipality: string;
+  county: string;
+}
+
+export interface CLegalEntity2 {
+  legalEntityId: string;
+  organizationNumber: string;
+  name: string;
+  postAddress: CLEPostAddress;
+  address: CLEAddress;
+  phoneNumber: string;
+}
+
+export interface CLegalEntity2WithId {
+  partyId: string;
+  legalEntityId: string;
+  organizationNumber: string;
+  name: string;
+  postAddress: CLEPostAddress;
+  address: CLEAddress;
+  phoneNumber: string;
+}
+
 export interface CAccountInformation {
   costCenter?: string;
   subaccount?: string;
@@ -26,6 +85,7 @@ export interface CAccountInformation {
   article?: string;
   project?: string;
   counterpart?: string;
+  amount?: number;
 }
 
 export interface CInvoiceRow {
@@ -35,15 +95,14 @@ export interface CInvoiceRow {
   vatCode?: string;
   costPerUnit?: number;
   quantity?: number;
-  accountInformation?: CAccountInformation;
+  accountInformation?: CAccountInformation[];
 }
 
 export interface CInvoice {
   customerId: string;
   description: string;
   ourReference?: string;
-  customerReference?: string;
-  referenceId?: string;
+  customerReference: string;
   date?: string;
   dueDate?: string;
   totalAmount?: number;
@@ -67,6 +126,12 @@ export interface CRecipient {
   addressDetails: CAddressDetails;
 }
 
+export interface CExtraParameters {
+  errandId: string;
+  errandNumber: string;
+  referenceName: string;
+}
+
 export interface CBillingRecord {
   id?: string;
   approvedBy?: any;
@@ -78,7 +143,7 @@ export interface CBillingRecord {
   type: CBillingRecordTypeEnum;
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
-  extraParameters?: object;
+  extraParameters?: CExtraParameters;
 }
 
 export interface CSortObject {
@@ -182,7 +247,7 @@ export interface DecisionDTO {
 export interface StatusDTO {
   statusType: string;
   description: string;
-  dateTime: string;
+  created: string;
 }
 
 export interface ContactInfo {
@@ -240,7 +305,7 @@ export interface CreateErrandDto {
   startDate?: string;
   endDate?: string;
   diaryNumber?: string;
-  status?: CreateErrandDtoStatusEnum;
+  status?: object;
   statusDescription?: string;
   statuses?: any[];
   municipalityId?: string;
@@ -248,12 +313,15 @@ export interface CreateErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CPatchErrandDto {
   id?: string;
   externalCaseId?: string;
-  status?: CPatchErrandDtoStatusEnum;
+  status?: object;
+  statuses?: any[];
   statusDescription?: string;
   caseType?: string;
   priority?: string;
@@ -267,6 +335,8 @@ export interface CPatchErrandDto {
   decisions?: string;
   extraParameters?: any[];
   suspension?: object;
+  relatesTo?: any[];
+  applicationReceived?: string;
 }
 
 export interface CreateErrandNoteDto {
@@ -291,6 +361,7 @@ export interface CasedataNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: string;
+  globalAcknowledged?: string;
   errandId: string;
   errandNumber?: string;
 }
@@ -304,6 +375,7 @@ export interface PatchNotificationDto {
   content?: string;
   expires?: string;
   acknowledged?: boolean;
+  globalAcknowledged?: boolean;
 }
 
 export interface MessageDto {
@@ -368,29 +440,86 @@ export interface CExternalTag {
 
 export interface CParameter {
   key: string;
+  displayName?: string;
+  group?: string;
   values?: any[];
 }
 
+export interface CContactChannel {
+  type?: string;
+  value?: string;
+}
+
+export interface CSupportStakeholder {
+  externalId?: string;
+  externalIdType?: string;
+  role?: string;
+  city?: string;
+  organizationName?: string;
+  firstName?: string;
+  lastName?: string;
+  address?: string;
+  careOf?: string;
+  zipCode?: string;
+  country?: string;
+  contactChannels?: CContactChannel[];
+  parameters?: CParameter[];
+}
+
+export interface Classification {
+  category: string;
+  type: string;
+}
+
+export interface CSuspension {
+  suspendedFrom?: string;
+  suspendedTo?: string;
+}
+
+export interface CNotification {
+  id?: string;
+  created?: string;
+  modified?: string;
+  ownerFullName?: string;
+  ownerId: string;
+  createdBy?: string;
+  createdByFullName?: string;
+  type: string;
+  description: string;
+  content?: string;
+  expires?: string;
+  globalAcknowledged?: boolean;
+  acknowledged?: boolean;
+  errandId?: string;
+  errandNumber?: string;
+}
+
 export interface SupportErrandDto {
-  assignedUserId?: string;
-  reporterUserId?: string;
-  classification?: object;
-  labels?: any[];
-  contactReason?: string;
-  contactReasonDescription?: string;
-  businessRelated?: boolean;
-  channel?: string;
-  customer?: object;
-  priority?: string;
-  status?: string;
-  suspension?: object;
-  resolution?: string;
-  escalationEmail?: string;
-  title?: string;
-  description?: string;
-  stakeholders?: any[];
+  id?: string;
+  errandNumber?: string;
+  title: string;
+  stakeholders?: CSupportStakeholder[];
+  priority: string;
   externalTags?: CExternalTag[];
   parameters?: CParameter[];
+  classification: Classification;
+  status: string;
+  resolution?: string;
+  description?: string;
+  channel?: string;
+  reporterUserId: string;
+  assignedUserId?: string;
+  assignedGroupId?: string;
+  escalationEmail?: string;
+  contactReason?: string;
+  contactReasonDescription?: string;
+  suspension?: CSuspension;
+  businessRelated?: boolean;
+  labels?: any[];
+  activeNotifications?: CNotification[];
+  created?: string;
+  modified?: string;
+  touched?: string;
 }
 
 export interface ForwardFormDto {
@@ -416,6 +545,28 @@ export interface SupportMessageDto {
   reply_to: string;
   references: string;
   attachmentIds?: any;
+}
+
+export interface CCommunicationAttachment {
+  id?: string;
+  fileName?: string;
+  mimeType?: string;
+}
+
+export interface CCommunication {
+  communicationID?: string;
+  sender?: string;
+  errandNumber?: string;
+  direction?: CCommunicationDirectionEnum;
+  messageBody?: string;
+  sent?: string;
+  subject?: string;
+  communicationType?: CCommunicationCommunicationTypeEnum;
+  target?: string;
+  internal?: boolean;
+  viewed?: boolean;
+  emailHeaders?: string;
+  communicationAttachments: CCommunicationAttachment[];
 }
 
 export interface SupportNoteDto {
@@ -509,44 +660,13 @@ export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
   N = 'N',
 }
 
-export enum CreateErrandDtoStatusEnum {
-  ValueArendeInkommit = 'Ärende inkommit',
-  UnderGranskning = 'Under granskning',
-  VantarPaKomplettering = 'Väntar på komplettering',
-  KompletteringInkommen = 'Komplettering inkommen',
-  InterntKomplettering = 'Internt komplettering',
-  InterntAterkoppling = 'Internt återkoppling',
-  UnderRemiss = 'Under remiss',
-  ValueAterkopplingRemiss = 'Återkoppling remiss',
-  UnderUtredning = 'Under utredning',
-  UnderBeslut = 'Under beslut',
-  Beslutad = 'Beslutad',
-  BeslutVerkstallt = 'Beslut verkställt',
-  BeslutOverklagat = 'Beslut överklagat',
-  ValueArendeAvslutat = 'Ärende avslutat',
-  Tilldelat = 'Tilldelat',
-  HanterasIAnnatSystem = 'Hanteras i annat system',
-  ValueArendetAvvisas = 'Ärendet avvisas',
-  Parkerad = 'Parkerad',
+export enum CCommunicationDirectionEnum {
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
 }
 
-export enum CPatchErrandDtoStatusEnum {
-  ValueArendeInkommit = 'Ärende inkommit',
-  UnderGranskning = 'Under granskning',
-  VantarPaKomplettering = 'Väntar på komplettering',
-  KompletteringInkommen = 'Komplettering inkommen',
-  InterntKomplettering = 'Internt komplettering',
-  InterntAterkoppling = 'Internt återkoppling',
-  UnderRemiss = 'Under remiss',
-  ValueAterkopplingRemiss = 'Återkoppling remiss',
-  UnderUtredning = 'Under utredning',
-  UnderBeslut = 'Under beslut',
-  Beslutad = 'Beslutad',
-  BeslutVerkstallt = 'Beslut verkställt',
-  BeslutOverklagat = 'Beslut överklagat',
-  ValueArendeAvslutat = 'Ärende avslutat',
-  Tilldelat = 'Tilldelat',
-  HanterasIAnnatSystem = 'Hanteras i annat system',
-  ValueArendetAvvisas = 'Ärendet avvisas',
-  Parkerad = 'Parkerad',
+export enum CCommunicationCommunicationTypeEnum {
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }

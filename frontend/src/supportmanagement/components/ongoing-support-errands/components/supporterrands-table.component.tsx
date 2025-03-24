@@ -1,11 +1,11 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
-import { prettyTime } from '@common/services/helper-service';
+import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
+import { Callout, Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
@@ -14,7 +14,6 @@ import {
   Status,
   StatusLabel,
   SupportErrand,
-  SupportErrandsData,
   getLabelCategory,
   getLabelSubType,
   getLabelType,
@@ -26,6 +25,7 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -64,12 +64,12 @@ export const SupportErrandsTable: React.FC = () => {
 
   const serverSideSortableColsKC: { [key: number]: string } = {
     0: 'status',
-    1: 'category',
-    2: 'type',
-    3: 'created',
-    4: 'touched',
-    5: 'priority',
-    6: 'channel',
+    1: 'touched',
+    2: 'category',
+    3: 'type',
+    4: 'channel',
+    5: 'created',
+    6: 'priority',
     7: 'assignedUserId',
   };
 
@@ -77,23 +77,24 @@ export const SupportErrandsTable: React.FC = () => {
     data.errands && (data.errands[0]?.status === Status.SUSPENDED || data.errands[0]?.status === Status.ASSIGNED)
       ? {
           0: 'status',
-          1: 'category',
-          2: 'type',
-          3: 'subType',
-          4: 'channel',
-          5: 'created',
-          6: 'touched',
-          7: 'suspendedTo',
-          8: 'assignedUserId',
+          1: 'touched',
+          2: 'category',
+          3: 'type',
+          4: 'subType',
+          5: 'channel',
+          6: 'created',
+          7: 'priority',
+          8: 'suspendedTo',
+          9: 'assignedUserId',
         }
       : {
           0: 'status',
-          1: 'category',
-          2: 'type',
-          3: 'subType',
-          4: 'channel',
-          5: 'created',
-          6: 'touched',
+          1: 'touched',
+          2: 'category',
+          3: 'type',
+          4: 'subType',
+          5: 'channel',
+          6: 'created',
           7: 'priority',
           8: 'assignedUserId',
         };
@@ -114,8 +115,13 @@ export const SupportErrandsTable: React.FC = () => {
     }
   };
 
-  const openErrandeInNewWindow = (errandId: string) => {
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errandId}`, '_blank');
+  const openErrandeInNewWindow = async (errand: SupportErrand) => {
+    if (errand.activeNotifications && errand.activeNotifications.length > 0) {
+      await globalAcknowledgeSupportNotification(errand, municipalityId).catch(() => {
+        throw new Error('Failed to acknowledge notification');
+      });
+    }
+    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
   };
 
   const headers = getOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
@@ -212,18 +218,37 @@ export const SupportErrandsTable: React.FC = () => {
     return '';
   };
 
+  const findLatestNotification = (errand: SupportErrand) => {
+    return sortBy(errand?.activeNotifications, 'created').reverse()[0];
+  };
+
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
+    const notification = findLatestNotification(errand);
     return (
       <Table.Row
         tabIndex={0}
         role="button"
         key={`row-${index}`}
         aria-label={`Ärende ${errand.errandNumber}, öppna ärende i ny flik`}
-        onKeyDown={(e) => (e.key === 'Enter' ? openErrandeInNewWindow(errand.id) : null)}
-        onClick={() => openErrandeInNewWindow(errand.id)}
+        onKeyDown={(e) => (e.key === 'Enter' ? openErrandeInNewWindow(errand) : null)}
+        onClick={() => openErrandeInNewWindow(errand)}
         className="cursor-pointer"
       >
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
+        <Table.Column>
+          {!!notification ? (
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+              <div>
+                <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
+                  {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
+                </time>
+              </div>
+              <div className="italic">{notification?.description ? notification?.description : ''}</div>
+            </div>
+          ) : (
+            dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
+          )}
+        </Table.Column>
         <Table.HeaderColumn
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
@@ -265,9 +290,6 @@ export const SupportErrandsTable: React.FC = () => {
               <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
             </div>
           ) : null}
-        </Table.Column>
-        <Table.Column>
-          <time dateTime={errand.touched}>{prettyTime(errand.touched)}</time>
         </Table.Column>
         <Table.Column>{Priority[errand.priority]}</Table.Column>
         {errand.status === Status.SUSPENDED ? (

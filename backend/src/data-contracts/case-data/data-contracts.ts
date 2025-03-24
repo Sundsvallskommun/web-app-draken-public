@@ -276,7 +276,7 @@ export interface Stakeholder {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -357,6 +357,109 @@ export interface Stakeholder {
   updated?: string;
 }
 
+export interface Problem {
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+  title?: string;
+  detail?: string;
+}
+
+export interface StatusType {
+  /** @format int32 */
+  statusCode?: number;
+  reasonPhrase?: string;
+}
+
+export interface ConstraintViolationProblem {
+  cause?: ThrowableProblem;
+  stackTrace?: {
+    classLoaderName?: string;
+    moduleName?: string;
+    moduleVersion?: string;
+    methodName?: string;
+    fileName?: string;
+    /** @format int32 */
+    lineNumber?: number;
+    className?: string;
+    nativeMethod?: boolean;
+  }[];
+  /** @format uri */
+  type?: string;
+  status?: StatusType;
+  violations?: Violation[];
+  title?: string;
+  message?: string;
+  /** @format uri */
+  instance?: string;
+  parameters?: Record<string, object>;
+  detail?: string;
+  suppressed?: {
+    stackTrace?: {
+      classLoaderName?: string;
+      moduleName?: string;
+      moduleVersion?: string;
+      methodName?: string;
+      fileName?: string;
+      /** @format int32 */
+      lineNumber?: number;
+      className?: string;
+      nativeMethod?: boolean;
+    }[];
+    message?: string;
+    localizedMessage?: string;
+  }[];
+  localizedMessage?: string;
+}
+
+export interface ThrowableProblem {
+  cause?: ThrowableProblem;
+  stackTrace?: {
+    classLoaderName?: string;
+    moduleName?: string;
+    moduleVersion?: string;
+    methodName?: string;
+    fileName?: string;
+    /** @format int32 */
+    lineNumber?: number;
+    className?: string;
+    nativeMethod?: boolean;
+  }[];
+  message?: string;
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+  title?: string;
+  detail?: string;
+  suppressed?: {
+    stackTrace?: {
+      classLoaderName?: string;
+      moduleName?: string;
+      moduleVersion?: string;
+      methodName?: string;
+      fileName?: string;
+      /** @format int32 */
+      lineNumber?: number;
+      className?: string;
+      nativeMethod?: boolean;
+    }[];
+    message?: string;
+    localizedMessage?: string;
+  }[];
+  localizedMessage?: string;
+}
+
+export interface Violation {
+  field?: string;
+  message?: string;
+}
+
 export interface Facility {
   /**
    * The id of the facility
@@ -377,7 +480,7 @@ export interface Facility {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -452,7 +555,7 @@ export interface Attachment {
   errandId?: number;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -524,7 +627,7 @@ export interface Decision {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -643,7 +746,7 @@ export interface Errand {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -696,6 +799,8 @@ export interface Errand {
    */
   phase?: string;
   /** The statuses connected to the errand */
+  status?: Status;
+  /** The statuses connected to the errand */
   statuses?: Status[];
   /**
    * Start date for the business
@@ -724,6 +829,8 @@ export interface Errand {
   stakeholders?: Stakeholder[];
   /** The facilities connected to the errand */
   facilities?: Facility[];
+  /** List of notifications connected to this errand */
+  notifications?: Notification[];
   /** The decisions connected to the errand */
   decisions?: Decision[];
   /** The notes connected to the errand */
@@ -794,7 +901,7 @@ export interface Note {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -852,42 +959,7 @@ export enum NoteType {
   PUBLIC = 'PUBLIC',
 }
 
-/** Related errand for errand */
-export interface RelatedErrand {
-  /**
-   * Errand id
-   * @format int64
-   * @example 123
-   */
-  errandId?: number;
-  /**
-   * Errand number
-   * @example "PRH-2022-000001"
-   */
-  errandNumber: string;
-  /**
-   * Relation reason
-   * @example "Related because of appealed decision on errand"
-   */
-  relationReason?: string;
-}
-
-/** Suspension information */
-export interface Suspension {
-  /**
-   * Timestamp when the suspension wears off
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  suspendedTo?: string;
-  /**
-   * Timestamp when the suspension started
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  suspendedFrom?: string;
-}
-
+/** List of notifications connected to this errand */
 export interface Notification {
   /**
    * Unique identifier for the notification
@@ -901,7 +973,7 @@ export interface Notification {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -963,16 +1035,57 @@ export interface Notification {
    */
   acknowledged?: boolean;
   /**
+   * Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone.
+   * @example true
+   */
+  globalAcknowledged?: boolean;
+  /**
    * Errand id of the notification
    * @format int64
    * @example 1234
    */
-  errandId: number;
+  errandId?: number;
   /**
    * Errand number of the notification
    * @example "PRH-2022-000001"
    */
   errandNumber?: string;
+}
+
+/** Related errand for errand */
+export interface RelatedErrand {
+  /**
+   * Errand id
+   * @format int64
+   * @example 123
+   */
+  errandId?: number;
+  /**
+   * Errand number
+   * @example "PRH-2022-000001"
+   */
+  errandNumber: string;
+  /**
+   * Relation reason
+   * @example "Related because of appealed decision on errand"
+   */
+  relationReason?: string;
+}
+
+/** Suspension information */
+export interface Suspension {
+  /**
+   * Timestamp when the suspension wears off
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  suspendedTo?: string;
+  /**
+   * Timestamp when the suspension started
+   * @format date-time
+   * @example "2000-10-31T01:30:00+02:00"
+   */
+  suspendedFrom?: string;
 }
 
 /** Message classification */
@@ -1119,7 +1232,7 @@ export interface PatchNotification {
    * @format int64
    * @example 123
    */
-  errandId?: number;
+  errandId: number;
   /**
    * Owner id of the notification
    * @example "AD01"
@@ -1151,6 +1264,11 @@ export interface PatchNotification {
    * @example true
    */
   acknowledged?: boolean;
+  /**
+   * Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone.
+   * @example true
+   */
+  globalAcknowledged?: boolean;
 }
 
 export interface PatchErrand {
@@ -1228,6 +1346,8 @@ export interface PatchErrand {
    * @example ["label1","label2"]
    */
   labels?: string[];
+  /** The statuses connected to the errand */
+  status?: Status;
 }
 
 export interface PatchDecision {
@@ -1278,17 +1398,17 @@ export interface PageErrand {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  first?: boolean;
-  last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1297,10 +1417,6 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
-  /** @format int32 */
-  pageNumber?: number;
-  /** @format int32 */
-  pageSize?: number;
   unpaged?: boolean;
 }
 
@@ -1397,7 +1513,7 @@ export interface MessageResponse {
   municipalityId?: string;
   /**
    * Namespace
-   * @example "my.namespace"
+   * @example "MY_NAMESPACE"
    */
   namespace?: string;
   /**
@@ -1604,6 +1720,8 @@ export enum PatchErrandCaseTypeEnum {
   MEX_ROAD_ASSOCIATION = 'MEX_ROAD_ASSOCIATION',
   MEX_RETURNED_TO_CONTACT_SUNDSVALL = 'MEX_RETURNED_TO_CONTACT_SUNDSVALL',
   MEX_SMALL_BOAT_HARBOR_DOCK_PORT = 'MEX_SMALL_BOAT_HARBOR_DOCK_PORT',
+  MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE',
+  MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS',
   APPEAL = 'APPEAL',
 }
 

@@ -41,6 +41,7 @@ import { Message, MessageRequest, sendMessage } from '@supportmanagement/service
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { isKC } from '@common/services/application-service';
 
 const PREFILL_VALUE = '+46';
 
@@ -172,7 +173,7 @@ export const SupportMessageForm: React.FC<{
     defaultValues: {
       id: props.supportErrandId,
       messageContact: true,
-      contactMeans: 'email',
+      contactMeans: '',
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -279,6 +280,9 @@ export const SupportMessageForm: React.FC<{
       ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
       ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
     };
+    if (isKC()) {
+      messageData.senderName = 'Kontakt Sundsvall';
+    }
     sendMessage(messageData)
       .then(async (success) => {
         if (!success) {
@@ -394,10 +398,15 @@ export const SupportMessageForm: React.FC<{
             name="useEmail"
             id="useEmail"
             value={'email'}
-            defaultChecked={true}
+            defaultChecked={
+              !(
+                Channels[supportErrand.channel] === Channels.ESERVICE ||
+                Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+              )
+            }
             {...register('contactMeans')}
           >
-            Epost
+            E-post
           </RadioButton>
           <RadioButton
             disabled={props.locked}
@@ -420,10 +429,15 @@ export const SupportMessageForm: React.FC<{
               name="useWebmessage"
               id="useWebmessage"
               value={'webmessage'}
-              defaultChecked={false}
+              defaultChecked={
+                !!(
+                  Channels[supportErrand.channel] === Channels.ESERVICE ||
+                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+                )
+              }
               {...register('contactMeans')}
             >
-              OpenE
+              E-tjänst
             </RadioButton>
           ) : null}
         </RadioButton.Group>

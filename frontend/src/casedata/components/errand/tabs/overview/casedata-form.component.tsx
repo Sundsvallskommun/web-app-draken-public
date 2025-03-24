@@ -11,7 +11,6 @@ import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
-
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -178,6 +177,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               >
                 <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
                 {Object.entries(getCaseLabels())
+                  .filter(([key, label]) => label !== 'Överklagan')
                   .sort((a, b) => a[1].localeCompare(b[1]))
                   .map(([key, label]: [string, string], index) => {
                     return (

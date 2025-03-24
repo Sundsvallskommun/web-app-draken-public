@@ -1,10 +1,8 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
-import { isMEX, isPT } from '@common/services/application-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Disclosure } from '@headlessui/react';
-import { Button, Link } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
@@ -17,7 +15,6 @@ import {
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { SupportManagementFilterQuery } from '../supportmanagement-filtering/components/supportmanagement-filter-query.component';
 import SupportManagementFiltering, {
   SupportManagementFilter,
   SupportManagementValues,
@@ -61,12 +58,13 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     supportMetadata,
     setSupportErrand,
     setSupportAdmins,
-    setAvatar,
     supportAdmins,
     municipalityId,
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
+    sidebarLabel,
+    solvedSupportErrands,
     setBillingRecords,
   } = useAppContext();
 
@@ -329,25 +327,30 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     setOwnerFilter(e);
   };
 
+  const numberOfFilters =
+    getValues().category.length +
+    getValues().channel.length +
+    getValues().admins.length +
+    getValues().labelCategory.length +
+    getValues().labelSubType.length +
+    getValues().labelType.length +
+    (getValues().enddate !== '' ? 1 : 0) +
+    (getValues().startdate !== '' ? 1 : 0) +
+    getValues().priority.length +
+    (ownerFilter ? 1 : 0);
+
   return (
     <div className="w-full">
       <div className="box-border py-10 px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
-        <div className="container px-0 flex flex-wrap gap-16 items-center">
+        <div className="w-full container px-0">
           <FormProvider {...filterForm}>
-            <SupportManagementFilterQuery />
+            <SupportManagementFiltering
+              numberOfFilters={numberOfFilters}
+              ownerFilterHandler={ownerFilteringHandler}
+              ownerFilter={ownerFilter}
+              administrators={supportAdmins}
+            />
           </FormProvider>
-          <Link
-            href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-            target="_blank"
-            data-cy="register-new-errand-button"
-          >
-            <Button
-              color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-              variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
-            >
-              Nytt ärende
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -355,15 +358,13 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
             <div>
-              <FormProvider {...filterForm}>
-                <SupportManagementFiltering
-                  ownerFilterHandler={ownerFilteringHandler}
-                  ownerFilter={ownerFilter}
-                  administrators={supportAdmins}
-                />
-              </FormProvider>
+              <h1 className="p-0 m-0">
+                {sidebarLabel || 'Ärenden'}
+                {sidebarLabel === 'Avslutade ärenden'
+                  ? ' : ' + (solvedSupportErrands.totalElements ? solvedSupportErrands.totalElements : '')
+                  : null}
+              </h1>
             </div>
-
             <Disclosure.Panel static>
               <FormProvider {...tableForm}>
                 <SupportErrandsTable />

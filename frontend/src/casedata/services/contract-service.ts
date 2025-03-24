@@ -440,6 +440,7 @@ export const renderContractPdf: (
         careof: s.address.careOf,
         zip: s.address.postalCode + ' ' + s.address.town,
         role: s.roles.map((r) => PrettyRole[r]).join(', '),
+        extraInformation: s.parameters?.find((p) => p.key === 'extraInformation')?.values[0],
       })),
       sections: contract.indexTerms
         .filter((t) => t.terms.some((term) => term.term !== '' && typeof term.term !== 'undefined'))
@@ -508,6 +509,7 @@ export const contractStakeholderToKopeavtalStakeholder = (s: ContractStakeholder
     careof: s.address.careOf,
     // TODO Cannot stor partOwnership in stakeholder yet, API is lacking
     partOwnership: '',
+    extraInformation: s.extraInformation || s.parameters?.find((p) => p.key === 'extraInformation')?.values[0],
   } as KopeavtalStakeholder;
 };
 
@@ -554,6 +556,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
     ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
     ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
     ...(stakeholder.personId && { partyId: stakeholder.personId }),
+    ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
     ...(phone && { phone }),
     ...(email && { email }),
     ...(address && { address }),
@@ -581,6 +584,12 @@ export const kopeavtalStakeholderToContractStakeholder = (stakeholder: Kopeavtal
     ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
     ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
     ...(stakeholder.partyId && { partyId: stakeholder.partyId }),
+    parameters: [
+      {
+        key: 'extraInformation',
+        values: [stakeholder.extraInformation],
+      },
+    ],
     ...(phone && { phone }),
     ...(email && { email }),
     ...(address && { address }),

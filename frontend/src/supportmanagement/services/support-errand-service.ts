@@ -1,4 +1,8 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  Label,
+  Notification,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
@@ -17,6 +21,7 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 export interface Customer {
   id: string;
@@ -53,60 +58,20 @@ export enum SupportStakeholderTypeEnum {
 export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
 
 export type ExternalTags = Array<{ key: string; value: string }>;
-export interface SupportErrandDto {
-  id?: string;
-  title?: string;
-  description?: string;
-  priority: Priority;
-  classification: {
-    category: string;
-    type: string;
-  };
-  labels: string[];
-  contactReason?: string;
-  contactReasonDescription?: string;
-  businessRelated?: boolean;
-  errandNumber: string;
-  status: Status;
-  suspension: {
-    suspendedFrom: string;
-    suspendedTo: string;
-  };
-  resolution?: string;
-  escalationEmail?: string;
-  channel: string;
-  reporterUserId?: string;
-  assignedUserId: string;
-  assignedGroupId?: string;
-  stakeholders: SupportStakeholder[];
-  externalTags: ExternalTags;
-}
 
 export interface ApiSupportErrand extends SupportErrandDto {
-  id: string;
-  created: string;
-  modified: string;
-  touched: string;
+  id?: string;
+  created?: string;
+  modified?: string;
+  touched?: string;
 }
 
 export interface SupportErrand extends ApiSupportErrand {
   caseId?: string;
-  channel: string;
   category: string;
   type: string;
-  labels: string[];
-  contactReason?: string;
-  contactReasonDescription?: string;
-  businessRelated?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
-  parameters?: [
-    {
-      key: string;
-      displayName: string;
-      values: [string];
-    }
-  ];
 }
 
 export interface PagedApiSupportErrands extends ApiPagingData {
@@ -195,7 +160,7 @@ export const getStatusLabel = (statuses: Status[]) => {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
-      return 'Öppnade ärenden';
+      return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
     } else if (statuses.some((s) => assignedStatuses.includes(s))) {
@@ -317,11 +282,11 @@ export enum ResolutionLabelKS {
 
 export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
@@ -334,12 +299,12 @@ export const ongoingSupportErrandLabelsKC = [
 
 export const ongoingSupportErrandLabelsLoP = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
     label: 'Prioritet',
     screenReaderOnly: false,
@@ -405,14 +370,14 @@ export const emptySupportErrandList: SupportErrandsData = {
 export const defaultSupportErrandInformation: SupportErrand | any = {
   id: '',
   title: '',
-  priority: Priority.MEDIUM,
-  category: 'NONE',
-  type: 'NONE',
+  priority: 'MEDIUM',
+  category: '',
+  type: '',
   labels: [],
   contactReason: '',
-  contactReasonDescription: '',
+  contactReasonDescription: undefined,
   businessRelated: false,
-  status: Status.NEW,
+  status: 'NEW',
   suspension: {
     suspendedFrom: undefined,
     suspendedTo: undefined,
@@ -421,7 +386,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedGroupId: undefined,
   resolution: 'INFORMED',
   channel: ContactChannelType.PHONE,
-  municipalityId: '2281',
+  municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',
   contactMeans: 'useEmail',
@@ -731,7 +696,9 @@ export const getSupportErrands: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | SupportErrand> = (municipalityId) => {
+export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
+  municipalityId
+) => {
   return apiService
     .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
     .then((res) => {
@@ -791,7 +758,7 @@ export const updateSupportErrand: (
   const data: Partial<SupportErrandDto> = {
     ...(formdata.title && { title: formdata.title }),
     ...(formdata.priority && {
-      priority: Object.keys(Priority).find((key) => Priority[key] === formdata.priority) as Priority,
+      priority: formdata.priority,
     }),
     classification: {
       ...(formdata.category && { category: formdata.category }),
@@ -799,10 +766,13 @@ export const updateSupportErrand: (
     },
     labels: formdata.labels,
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(formdata.contactReasonDescription && { contactReasonDescription: formdata.contactReasonDescription }),
+    ...(formdata.contactReason &&
+      typeof formdata.contactReasonDescription !== 'undefined' && {
+        contactReasonDescription: formdata.contactReasonDescription,
+      }),
     businessRelated: !!formdata.businessRelated,
+    ...(formdata.status && { status: formdata.status }),
     ...(formdata.status && {
-      status: Object.keys(Status).find((key) => StatusLabel[key] === formdata.status) as Status,
       suspension: {
         suspendedFrom: undefined,
         suspendedTo: undefined,
@@ -835,7 +805,7 @@ export const updateSupportErrand: (
     });
 };
 
-export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status;
+export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status as Status;
 
 export const validateAction: (errand: SupportErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;
@@ -913,6 +883,7 @@ export const setSupportErrandStatus: (
   municipalityId: string,
   status: Status
 ) => Promise<boolean> = async (errandId, municipalityId, status) => {
+  console.log('setSupportErrandStatus', errandId, municipalityId, status);
   const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
 
   return apiService
@@ -1021,10 +992,10 @@ export const forwardSupportErrand: (
       municipalityId: municipalityId,
       errandId: errand.id,
       contactMeans: 'email',
-      recipientEmail: data.email,
+      recipientEmail: '',
       headerReplyTo: '',
       headerReferences: '',
-      emails: [{ value: data.email }],
+      emails: data.emails,
       subject: 'Vidarebefordran av ärende',
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,
@@ -1034,6 +1005,9 @@ export const forwardSupportErrand: (
       existingAttachments: [],
       attachmentIds: attachmentId,
     };
+    if (isKC()) {
+      message.senderName = 'Kontakt  Sundsvall';
+    }
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {

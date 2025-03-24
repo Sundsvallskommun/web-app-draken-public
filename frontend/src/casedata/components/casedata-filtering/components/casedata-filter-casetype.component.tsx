@@ -28,7 +28,7 @@ export const CasedataFilterCaseType: React.FC = () => {
       >
         Ärendetyp
       </PopupMenu.Button>
-      <PopupMenu.Panel className="max-md:w-full">
+      <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-hidden overflow-y-scroll">
         <SearchField
           size="md"
           autoFocus

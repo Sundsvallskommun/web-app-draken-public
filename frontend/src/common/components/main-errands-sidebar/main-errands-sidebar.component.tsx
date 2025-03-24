@@ -1,17 +1,9 @@
 import NextLink from 'next/link';
-import {
-  getApplicationEnvironment,
-  getApplicationName,
-  isIK,
-  isKC,
-  isLOP,
-  isMEX,
-  isPT,
-} from '@common/services/application-service';
+import { getApplicationEnvironment, getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
 import { FormProvider, useForm } from 'react-hook-form';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Badge, Button, Divider, Logo } from '@sk-web-gui/react';
+import { Avatar, Badge, Button, cx, Divider, Logo } from '@sk-web-gui/react';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
@@ -20,24 +12,25 @@ import {
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 import { useState } from 'react';
-import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
-}> = ({ showAttestationTable, setShowAttestationTable }) => {
+  open;
+  setOpen;
+}> = ({ showAttestationTable, setShowAttestationTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user, billingRecords }: AppContextInterface = useAppContext();
+  const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
-
   const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
-  const MainTitle = () => (
+  const MainTitle = (open: boolean) => (
     <NextLink
       href="/"
       className="no-underline"
@@ -46,7 +39,8 @@ export const MainErrandsSidebar: React.FC<{
       }. Gå till startsidan.`}
     >
       <Logo
-        variant="service"
+        className={cx(open ? '' : 'w-[2.8rem]')}
+        variant={open ? 'service' : 'symbol'}
         title={'Draken'}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
@@ -55,68 +49,102 @@ export const MainErrandsSidebar: React.FC<{
   return (
     <aside
       data-cy="overview-aside"
-      className="flex-none absolute z-10 bg-vattjom-background-200 h-full min-h-screen max-w-full w-full sm:w-[32rem] sm:min-w-[32rem]"
+      className={cx(
+        'fixed left-0 transition-all ease-in-out duration-150 flex grow z-10 bg-vattjom-background-200 min-h-screen',
+        open ? 'max-lg:shadow-100 sm:w-[32rem] sm:min-w-[32rem]' : 'w-[5.6rem]'
+      )}
     >
-      <div className="h-full w-full p-24">
-        <div>
-          <MainTitle />
+      <div className={cx('h-full w-full', open ? 'p-24' : '')}>
+        <div className={cx('mb-24', open ? '' : 'flex flex-col items-center justify-center pt-[1rem]')}>
+          {MainTitle(open)}
         </div>
-        <div className="py-24 h-fit flex gap-12 items-center justify-between">
-          <div className="flex gap-12 justify-between items-center">
-            <Avatar
-              data-cy="avatar-aside"
-              className="flex-none"
-              size="md"
-              initials={`${user.firstName.charAt(0).toUpperCase()}${user.lastName.charAt(0).toUpperCase()}`}
-              color="vattjom"
-            />
-            <span className="leading-tight h-fit font-bold mb-0" data-cy="userinfo">
-              {user.firstName} {user.lastName}
-            </span>
-          </div>
+        <div
+          className={cx(
+            'h-fit items-center',
+            open ? 'pb-24 flex gap-12 justify-between' : 'pb-15 flex flex-col items-center justify-center'
+          )}
+        >
+          {open && (
+            <div className="flex gap-12 justify-between items-center">
+              <Avatar
+                data-cy="avatar-aside"
+                className="flex-none"
+                size="md"
+                initials={`${user.firstName.charAt(0).toUpperCase()}${user.lastName.charAt(0).toUpperCase()}`}
+                color="vattjom"
+              />
+              <span className="leading-tight h-fit font-bold mb-0" data-cy="userinfo">
+                {user.firstName} {user.lastName}
+              </span>
+            </div>
+          )}
           {isNotificicationEnabled() && (
             <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
           )}
         </div>
-        <Divider />
-        <div className="flex flex-col gap-8 py-24">
+        <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+        <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
           {isLOP() || isKC() || isIK() ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
                 setShowAttestationTable={setShowAttestationTable}
+                iconButton={!open}
               />
             </FormProvider>
           ) : (
             <FormProvider {...casedataFilterForm}>
-              <CasedataFilterSidebarStatusSelector />
+              <CasedataFilterSidebarStatusSelector iconButton={!open} />
             </FormProvider>
           )}
         </div>
         {attestationEnabled(user) && (
           <>
-            <Divider />
-            <div className="flex flex-col gap-8 py-24">
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
               <Button
                 onClick={() => setShowAttestationTable(true)}
                 leftIcon={<LucideIcon name="square-pen" />}
-                className={`justify-start ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
+                className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
+                iconButton={!open}
               >
-                <span className="w-full flex justify-between">
-                  Attestering
-                  <Badge
-                    className="min-w-fit px-4"
-                    inverted={!showAttestationTable}
-                    color={showAttestationTable ? 'tertiary' : 'vattjom'}
-                    counter={billingRecords.totalElements || '0'}
-                  />
-                </span>
+                {open && (
+                  <span className="w-full flex justify-between">
+                    Godkänn fakturor
+                    <Badge
+                      className="min-w-fit px-4"
+                      inverted={!showAttestationTable}
+                      color={showAttestationTable ? 'tertiary' : 'vattjom'}
+                      counter={
+                        isLoading
+                          ? '-'
+                          : billingRecords.totalElements > 999
+                          ? '999+'
+                          : billingRecords.totalElements || '0'
+                      }
+                    />
+                  </span>
+                )}
               </Button>
             </div>
           </>
         )}
+        <div
+          className={cx('absolute bottom-[2.4rem]', open ? 'right-[2.4rem]' : 'left-1/2 transform -translate-x-1/2')}
+        >
+          <Button
+            color="primary"
+            size={'md'}
+            variant="tertiary"
+            aria-label={open ? 'Stäng sidomeny' : 'Öppna sidomeny'}
+            iconButton
+            leftIcon={open ? <LucideIcon name="chevrons-left" /> : <LucideIcon name="chevrons-right" />}
+            onClick={() => setOpen(!open)}
+          />
+        </div>
       </div>
+
       {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
     </aside>
   );

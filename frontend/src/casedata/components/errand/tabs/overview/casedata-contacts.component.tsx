@@ -39,7 +39,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
   useEffect(() => {
     setAddApplicant(false);
-    setAddContact(errand.status !== 'Ärende avslutat');
+    setAddContact(errand.status?.statusType !== 'Ärende avslutat');
     setSelectedContact(undefined);
   }, [errand]);
 

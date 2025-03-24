@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 export default function Arende2() {
   const router = useRouter();
   const { id } = router.query;
-  const [errandId, setMeaErrandId] = useState<string>();
+  const [errandId, setErrandId] = useState<string>();
   const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
 
   const initialFocus = useRef(null);
@@ -25,10 +25,10 @@ export default function Arende2() {
   useEffect(() => {
     if (isPT() || isMEX()) {
       id?.[0] && setMunicipalityId(id[0]);
-      id?.[1] && setMeaErrandId(id[1]);
+      id?.[1] && setErrandId(id[1]);
     } else if (isKC() || isIK() || isLOP()) {
       id?.[0] && setMunicipalityId(id[0]);
-      id?.[1] && setMeaErrandId(id[1]);
+      id?.[1] && setErrandId(id[1]);
     }
   }, [id]);
 

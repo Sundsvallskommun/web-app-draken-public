@@ -79,7 +79,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
 
   return (
     <>
-      {!(errand?.status === ErrandStatus.Parkerad) ? (
+      {!(errand?.status?.statusType === ErrandStatus.Parkerad) ? (
         <>
           <Button
             className="mt-16"
@@ -87,7 +87,9 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             data-cy="suspend-button"
             leftIcon={<LucideIcon name="circle-pause" />}
             variant="secondary"
-            disabled={disabled || phaseChangeInProgress(errand) || errand?.status === ErrandStatus.ArendeAvslutat}
+            disabled={
+              disabled || phaseChangeInProgress(errand) || errand?.status?.statusType === ErrandStatus.ArendeAvslutat
+            }
             onClick={() => setShowModal(true)}
           >
             Parkera ärende

@@ -34,7 +34,7 @@ export const CasedataFilterAdmins: React.FC<CasedataFilterAdminsProps> = ({ admi
         >
           Handläggare
         </PopupMenu.Button>
-        <PopupMenu.Panel className="max-md:w-full">
+        <PopupMenu.Panel className="max-md:w-full max-h-[70vh] overflow-hidden overflow-y-scroll">
           <SearchField
             size="md"
             autoFocus

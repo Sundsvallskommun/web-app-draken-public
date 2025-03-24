@@ -139,20 +139,29 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('[data-cy="stakeholder-name"]').contains('Kim Svensson').should('exist');
-      cy.get('[data-cy="stakeholder-email"]').contains('a@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('070000000').should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 4').should('exist');
+      cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[0].firstName).should('exist');
+      cy.get('[data-cy="stakeholder-email"]')
+        .contains(mockSupportErrand.stakeholders[0].contactChannels.find((k) => k.type === 'Email').value)
+        .should('exist');
+      cy.get('[data-cy="stakeholder-phone"]')
+        .contains(mockSupportErrand.stakeholders[0].contactChannels.find((k) => k.type === 'Phone').value)
+        .should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[1].address).should('exist');
 
-      cy.get('[data-cy="stakeholder-name"]').contains('Mormor Svensson').should('exist');
-      cy.get('[data-cy="stakeholder-email"]').contains('b@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('Lägg till telefonnummer').should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 5').should('exist');
+      cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[1].firstName).should('exist');
+      cy.get('[data-cy="stakeholder-email"]')
+        .contains(mockSupportErrand.stakeholders[1].contactChannels.find((k) => k.type === 'Email').value)
+        .should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[1].address).should('exist');
 
-      cy.get('[data-cy="stakeholder-name"]').contains('Kompis Svensson').should('exist');
-      cy.get('[data-cy="stakeholder-email"]').contains('c@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('070111111').should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 6').should('exist');
+      cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[2].firstName).should('exist');
+      cy.get('[data-cy="stakeholder-email"]')
+        .contains(mockSupportErrand.stakeholders[2].contactChannels.find((k) => k.type === 'Email').value)
+        .should('exist');
+      cy.get('[data-cy="stakeholder-phone"]')
+        .contains(mockSupportErrand.stakeholders[2].contactChannels.find((k) => k.type === 'Phone').value)
+        .should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[2].address).should('exist');
 
       cy.get('[data-cy="add-customer-button"]').should('not.exist');
       cy.get('[data-cy="add-manually-button-person"]').should('exist');
@@ -621,7 +630,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       );
       cy.get('[data-cy="stakeholder-phone"]').should('exist');
       cy.get('[data-cy="new-email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
-      cy.get('[data-cy="add-email-button"]').should('exist').contains('Lägg till').click();
+      cy.get('[data-cy="add-new-email-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="newPhoneNumber"]').should('exist').type('70000000');
       cy.get('[data-cy="newPhoneNumber-button"]').should('exist').contains('Lägg till').click();
       cy.get('[data-cy="submit-contact-person-button"]').should('exist').contains('Lägg till ärendeägare').click();

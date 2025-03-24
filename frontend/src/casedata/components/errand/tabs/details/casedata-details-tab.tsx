@@ -1,4 +1,4 @@
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { appealErrand, getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   UppgiftField,
   extraParametersToUppgiftMapper,
@@ -10,10 +10,13 @@ import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { isMEX } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
+  Disclosure,
+  Divider,
   FormControl,
   FormLabel,
   Input,
@@ -23,6 +26,7 @@ import {
   cx,
   useSnackbar,
 } from '@sk-web-gui/react';
+import dayjs from 'dayjs';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -104,6 +108,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     //   await saveFacilities(municipalityId, errand.id, getValues().facilities);
     // }
 
+    if (isPT()) {
+      await appealErrand(errand);
+    }
+
     saveExtraParameters(municipalityId, extraParams, errand)
       .then((res) => {
         setIsLoading(undefined);
@@ -154,6 +162,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         detail.field === `account.number` ? null : (
           <FormLabel className="mt-lg">{detail.label}</FormLabel>
         )}
+
         {detail.formField.type === 'text' ||
         detail.formField.type === 'date' ||
         detail.formField.type === 'datetime-local' ? (
@@ -161,8 +170,18 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Input
               type={detail.formField.type}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
-              className={cx(detail.formField.type === 'date' ? `w-1/2` : 'w-full')}
+              value={
+                errand.caseType === 'APPEAL' && detail.formField.type === 'text'
+                  ? errand.relatesTo[0]?.errandNumber
+                  : null
+              }
+              readOnly={errand.caseType === 'APPEAL' && detail.formField.type === 'text'}
+              className={cx(
+                errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? `w-1/2` : 'w-full'
+              )}
               data-cy={`${detail.field}-input`}
+              max={detail.formField.type === 'date' ? dayjs().format('YYYY-MM-DD').toString() : undefined}
+              placeholder={detail.formField.type === 'text' ? detail.formField.options?.placeholder : undefined}
             />
           ) : (
             <>
@@ -214,16 +233,21 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           </Select>
         ) : detail.formField.type === 'textarea' ? (
           <>
-            <textarea
+            <Textarea
               rows={3}
-              className="w-full rounded-12 p-md rows={3}-medium text-base"
+              className={cx(errand.caseType === 'APPEAL' ? 'w-2/3' : 'w-full')}
+              value={detail.value}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
               data-cy={`${detail.field}-textarea`}
             />
           </>
         ) : detail.formField.type === 'radio' ? (
           <>
-            <RadioButton.Group defaultValue={getValues(detail.field)} data-cy={`${detail.field}-radio-button-group`}>
+            <RadioButton.Group
+              defaultValue={getValues(detail.field)}
+              data-cy={`${detail.field}-radio-button-group`}
+              inline={!!detail.formField.inline}
+            >
               {detail.formField.options.map((option, index) => (
                 <RadioButton
                   value={option.value}
@@ -324,38 +348,48 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const renderSection = (fields: UppgiftField[], label: string) => {
     return (
       <div className="my-lg">
-        {fields?.map(renderFormControl)}
-        <Button
-          key={`section-${label}`}
-          variant="primary"
-          disabled={isErrandLocked(errand)}
-          onClick={() => {
-            try {
-              const data: ExtraParameter[] = [];
-              fields.forEach((f) => {
-                data.push({
-                  key: f.field,
-                  values: [getValues()[f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)]],
+        {errand.caseType === 'APPEAL' ? (
+          <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
+            <div className="flex gap-sm items-center">
+              <LucideIcon name="clipboard-signature"></LucideIcon>
+              <h2 className="text-h4-sm md:text-h4-md">Överklagan</h2>
+            </div>
+          </Divider.Section>
+        ) : null}
+        <div className="px-0 md:px-24 lg:px-40">
+          {fields?.map(renderFormControl)}
+          <Button
+            key={`section-${label}`}
+            variant="primary"
+            disabled={isErrandLocked(errand)}
+            onClick={() => {
+              try {
+                const data: ExtraParameter[] = [];
+                fields.forEach((f) => {
+                  data.push({
+                    key: f.field,
+                    values: [getValues()[f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)]],
+                  });
                 });
-              });
-              data.push({
-                key: 'propertyDesignation',
-                values: [getValues('propertyDesignation')],
-              });
+                data.push({
+                  key: 'propertyDesignation',
+                  values: [getValues('propertyDesignation')],
+                });
 
-              setIsLoading(label);
-              onSave(data);
-            } catch (error) {
-              console.error('Error: ', error);
-            }
-          }}
-          loading={loading === label}
-          loadingText="Sparar"
-          className="mt-lg"
-          data-cy="save-errand-information-button"
-        >
-          Spara
-        </Button>
+                setIsLoading(label);
+                onSave(data);
+              } catch (error) {
+                console.error('Error: ', error);
+              }
+            }}
+            loading={loading === label}
+            loadingText="Sparar"
+            className="mt-lg"
+            data-cy="save-errand-information-button"
+          >
+            Spara
+          </Button>
+        </div>
       </div>
     );
   };
@@ -374,6 +408,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="w-full py-24 px-32">
         <div className="flex">
           <div className="w-full">
+            <h2 className="text-h2-md">Ärendeuppgifter</h2>
             {errand?.externalCaseId ? (
               <>
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
