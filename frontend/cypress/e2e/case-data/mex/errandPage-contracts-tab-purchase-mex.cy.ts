@@ -175,7 +175,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     //PURCHASE PRICE
-    it.only('manages purchase price automatically in purchase contracts', () => {
+    it('manages purchase price automatically in purchase contracts', () => {
       const conditions = [
         {
           key: 'kopeskillingTerms.paymentCondition1',
