@@ -22,17 +22,17 @@ interface AppConfigFeatures {
 export const appConfig: AppConfig = {
   symbol: symbolByMunicipalityId(),
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
-  isCaseData: process.env.IS_CASEDATA === 'true',
-  isSupportManagement: process.env.IS_SUPPORTMANAGMENT === 'true',
+  isCaseData: process.env.NEXT_PUBLIC_IS_CASEDATA === 'true',
+  isSupportManagement: process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT === 'true',
   features: {
-    useThreeLevelCategorization: process.env.USE_THREE_LEVEL_CATEGORIZATION === 'true',
-    useTwoLevelCategorization: process.env.USE_TWO_LEVEL_CATEGORIZATION === 'true',
-    useExplanationOfTheCause: process.env.USE_EXPLANATION_OF_THE_CAUSE === 'true',
-    useReasonForContact: process.env.USE_REASON_FOR_CONTACT === 'true',
-    useBusinessCase: process.env.USE_BUSINESS_CASE === 'true',
-    useBilling: process.env.USE_BILLING === 'true',
-    useFacilites: process.env.USE_FACILITES === 'true',
-    useExtraInformationStakeholders: process.env.USE_EXTRA_INFORMATION_STAKEHOLDERS === 'true',
+    useThreeLevelCategorization: process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION === 'true',
+    useTwoLevelCategorization: process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION === 'true',
+    useExplanationOfTheCause: process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE === 'true',
+    useReasonForContact: process.env.NEXT_PUBLIC_USE_REASON_FOR_CONTACT === 'true',
+    useBusinessCase: process.env.NEXT_PUBLIC_USE_BUSINESS_CASE === 'true',
+    useBilling: process.env.NEXT_PUBLIC_USE_BILLING === 'true',
+    useFacilites: process.env.NEXT_PUBLIC_USE_FACILITES === 'true',
+    useExtraInformationStakeholders: process.env.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS === 'true',
   },
 };
 
