@@ -227,23 +227,6 @@ export const mockMexErrand_base = {
         },
       },
     ],
-    // notifications: [
-    //   {
-    //     id: '27e796c1-d9d6-44b6-bfe6-ce9730164c29',
-    //     municipalityId: '2281',
-    //     namespace: 'SBK_MEX',
-    //     created: '2025-03-18T15:56:33.704+01:00',
-    //     modified: '2025-03-18T15:59:44.41+01:00',
-    //     createdBy: 'UNKNOWN',
-    //     type: 'UPDATE',
-    //     description: 'Mock description,.',
-    //     expires: '2025-04-17T14:56:33.694468Z',
-    //     acknowledged: false,
-    //     globalAcknowledged: true,
-    //     errandId: 101,
-    //     errandNumber: 'MEX-2024-000280',
-    //   },
-    // ],
     decisions: [
       {
         id: 1,
