@@ -1,6 +1,9 @@
 import { useAppContext } from '@common/contexts/app.context';
+import { getApplicationEnvironment, isIK, isLOP } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
+import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
+import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import {
   countAttachment,
   getSupportAttachments,
@@ -18,8 +21,6 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
-import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
-import { getApplicationEnvironment, isIK, isLOP } from '@common/services/application-service';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
 export const SupportTabsWrapper: React.FC<{
@@ -136,7 +137,7 @@ export const SupportTabsWrapper: React.FC<{
               <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
             ),
             disabled: false,
-            visibleFor: isLOP(),
+            visibleFor: appConfig.features.useBilling,
           },
         ]
       : []),

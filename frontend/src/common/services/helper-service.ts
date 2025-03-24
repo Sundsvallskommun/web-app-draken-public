@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { buffer } from 'stream/consumers';
 
 export const newNumberPhonePattern = /^$|^\+46$|^(\+?[0-9]{7,11})$/gi;
 export const phonePattern = /^$|^(\+?[0-9]{7,11})$/gi;

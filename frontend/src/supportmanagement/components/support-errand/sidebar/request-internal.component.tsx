@@ -1,8 +1,9 @@
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
-import { getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -126,8 +127,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
   const handleRequestInternal = (data: RequestInternalFormProps) => {
     setIsLoading(true);
     setError(false);
-    const applicationName = getApplicationName();
-    return requestInternal(user, supportErrand, municipalityId, data, addedAttachment, applicationName)
+    return requestInternal(user, supportErrand, municipalityId, data, addedAttachment, appConfig.applicationName)
       .then(() => {
         toastMessage({
           position: 'bottom',

@@ -1,6 +1,6 @@
 import { getCasedataNotifications } from '@casedata/services/casedata-notification-service';
-import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, cx } from '@sk-web-gui/react';
@@ -12,10 +12,10 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
   show,
   setShow,
 }) => {
-  const { user, supportErrand, municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
+  const { municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
 
   useEffect(() => {
-    const getNotifications = isPT() || isMEX() ? getCasedataNotifications : getSupportNotifications;
+    const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
 
     municipalityId &&
       getNotifications(municipalityId)

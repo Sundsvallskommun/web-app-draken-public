@@ -1,12 +1,13 @@
-import { isIK, isKC, isLOP, isPT } from '@common/services/application-service';
+import { isPT } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, useGui } from '@sk-web-gui/react';
+import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-import { useAppContext } from '@contexts/app.context';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -105,7 +106,7 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={isKC() || isLOP() || isIK() ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
+                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}

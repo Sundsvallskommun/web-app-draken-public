@@ -162,7 +162,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
       cy.get('.sk-modal-dialog [data-cy="resolution-input"]').should('exist').select(0);
       cy.get('.sk-modal-dialog [type="radio"]').eq(1).should('have.value', 'EMAIL').check();
-      cy.get('.sk-modal-dialog [data-cy="email-input"]').should('exist').type('test@test.se');
+      cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
+      cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
 

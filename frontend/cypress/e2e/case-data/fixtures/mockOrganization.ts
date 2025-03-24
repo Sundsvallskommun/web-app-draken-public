@@ -1,14 +1,14 @@
 export const mockOrganization = {
   data: {
-    companyName: 'Test company AB',
+    name: 'Test company AB',
     legalForm: {
       legalFormDescription: 'Övriga aktiebolag',
       legalFormCode: '49',
     },
     address: {
       city: 'TEST 4',
-      street: 'Test Street',
-      careOf: 'c/o Test',
+      addressArea: 'Test Street',
+      postalCode: '12345',
     },
     phoneNumber: '00000000',
     municipality: {

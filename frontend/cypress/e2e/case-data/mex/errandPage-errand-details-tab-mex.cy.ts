@@ -113,7 +113,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       ).as('getErrand');
       goToErrandInformationTab();
 
-      cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall');
+      cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall 3:109', { delay: 100 });
 
       checkEstateInfo();
     });

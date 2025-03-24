@@ -43,7 +43,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('displays the correct table header', () => {
       const headerRow = cy.get('[data-cy="main-casedata-table"] .sk-table-thead-tr').first();
       headerRow.get('th').eq(0).find('span').first().should('have.text', 'Status');
-      headerRow.get('th').eq(1).find('span').first().should('have.text', 'Sebaste aktivitet');
+      headerRow.get('th').eq(1).find('span').first().should('have.text', 'Senaste aktivitet');
       headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendetyp');
       headerRow.get('th').eq(3).find('span').first().should('have.text', 'Ärendenummer');
       headerRow.get('th').eq(4).find('span').first().should('have.text', 'Prioritet');
@@ -54,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('displays the filters', () => {
       cy.get('[aria-label="status-button-Under granskning"]').click();
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Status-filter"]').should('exist');
       cy.get('[data-cy="Ärendetyp-filter"]').should('exist');
       cy.get('[data-cy="Prioritet-filter"]').should('exist');
@@ -67,7 +67,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('allows filtering by a single caseType', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       const entries = Object.entries(CaseLabels.PT);
       cy.get('[data-cy="Ärendetyp-filter"]').click();
       cy.intercept('GET', '**/errands*').as(`${entries[0][0]}-filterSearch`);
@@ -82,7 +82,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('allows filtering by multiple caseTypes', () => {
       const entries = Object.entries(CaseLabels.PT);
       const selected = [];
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get(`[data-cy="Ärendetyp-filter"]`).click();
       entries.forEach((entry, idx, ary) => {
         cy.intercept('GET', '**/errands*').as(`multiple-filterSearch-${idx}`);
@@ -97,7 +97,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('allows filtering by priority', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       const labels = ['HIGH', 'MEDIUM', 'LOW'];
       cy.get('[data-cy="Prioritet-filter"]').click();
       cy.intercept('GET', '**/errands*').as(`${labels[0]}-filterSearch`);
@@ -110,7 +110,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('allows filtering by date', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Tidsperiod-filter"]').click();
       cy.get(`[data-cy="casedata-validFrom-input"]`).should('exist').type('2024-05-22');
       cy.get(`[data-cy="casedata-validTo-input"]`).should('exist').type('2024-05-27');
@@ -123,7 +123,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('allows filtering by administrator', () => {
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       mockAdmins.data.forEach((a) => {
         cy.get('[data-cy="Handläggare-filter"]').click();
         cy.get(`[data-cy="admin-${a.guid}"]`).should('exist').click();
@@ -140,7 +140,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('allows filtering by single status', () => {
       const labels = Object.entries(ErrandStatus);
       cy.get('[aria-label="status-button-Under granskning"]').click();
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Status-filter"]').click();
       if (labels[0][0] !== 'ArendeInkommit') {
         cy.get(`[data-cy="Status-filter-${labels[0][0]}"]`).should('exist').click();
@@ -156,7 +156,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('allows filtering by multiple statuses', () => {
       const labels = Object.entries(ErrandStatus);
       cy.get('[aria-label="status-button-Under granskning"]').click();
-      cy.get('[data-cy="Show-filters-button"]').click();
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
       cy.get('[data-cy="Status-filter"]').click();
       labels.forEach((label) => {
         if (label[0] !== 'ArendeInkommit' && label[0] !== 'ArendeAvslutat' && label[0] !== 'Tilldelat') {
@@ -168,7 +168,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         }
       });
       cy.get('[data-cy="Status-filter"]').click();
-      cy.get('[data-cy="tag-clearAll"]').should('exist').contains('Rensa alla').click();
     });
 
     it('allows filtering only my errands', () => {

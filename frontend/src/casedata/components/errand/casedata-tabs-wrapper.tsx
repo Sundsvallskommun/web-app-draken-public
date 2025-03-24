@@ -2,10 +2,12 @@ import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/c
 import { CasedataOverviewTab } from '@casedata/components/errand/tabs/overview/casedata-overview-tab';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
+import { Role } from '@casedata/interfaces/role';
+import { getAssets } from '@casedata/services/asset-service';
 import { getErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
 import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
+import { getApplicationEnvironment, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
@@ -17,9 +19,6 @@ import { CasedataDecisionTab } from './tabs/decision/casedata-decision-tab';
 import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
-import { getAssets } from '@casedata/services/asset-service';
-import { Role } from '@casedata/interfaces/role';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
