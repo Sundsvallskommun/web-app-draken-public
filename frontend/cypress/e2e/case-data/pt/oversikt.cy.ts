@@ -153,7 +153,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       }
     });
 
-    it.only('allows filtering by multiple statuses', () => {
+    it('allows filtering by multiple statuses', () => {
       const labels = Object.entries(ErrandStatus);
       cy.get('[aria-label="status-button-Under granskning"]').click();
       cy.get('[data-cy="Show-filters-button"]').should('exist');
