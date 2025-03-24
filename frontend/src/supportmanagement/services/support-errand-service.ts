@@ -302,7 +302,6 @@ export const ongoingSupportErrandLabelsLoP = [
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
