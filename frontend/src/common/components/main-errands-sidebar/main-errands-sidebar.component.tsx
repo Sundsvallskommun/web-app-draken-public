@@ -1,5 +1,12 @@
 import NextLink from 'next/link';
-import { getApplicationEnvironment, getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import {
+  getApplicationEnvironment,
+  getApplicationName,
+  isIK,
+  isKA,
+  isKC,
+  isLOP,
+} from '@common/services/application-service';
 import { FormProvider, useForm } from 'react-hook-form';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -84,7 +91,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {isLOP() || isKC() || isIK() ? (
+          {isLOP() || isKC() || isKA() || isIK() ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
