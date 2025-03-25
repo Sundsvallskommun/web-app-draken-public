@@ -25,7 +25,7 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
         <meta name="description" content={applicationName} />
       </Head>
       <div className="min-h-screen w-full">
-        <div className="flex grow overflow-hidden w-full">
+        <div className="flex grow w-full">
           <MainErrandsSidebar
             open={open}
             setOpen={setOpen}
