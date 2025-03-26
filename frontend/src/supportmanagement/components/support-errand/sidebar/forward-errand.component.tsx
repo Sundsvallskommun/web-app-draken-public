@@ -41,9 +41,9 @@ const yupForwardForm = yup.object().shape(
     newEmail: yup
       .string()
       .email('E-postadress har fel format')
-      .when(['emails', 'contactMeans'], {
-        is: (emails: [], means: string) => {
-          return !emails.length && means === 'email';
+      .when(['emails', 'recipient'], {
+        is: (emails: [], recipient: string) => {
+          return !emails.length && recipient === 'EMAIL';
         },
         then: yup.string().min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
       }),
@@ -51,7 +51,7 @@ const yupForwardForm = yup.object().shape(
     message: yup.string().required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
   },
-  [['email', 'recipient']]
+  [['emails', 'recipient']]
 );
 
 export type RECIPIENT = 'DEPARTMENT' | 'EMAIL';
@@ -305,23 +305,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           </FormControl>
         </Modal.Content>
         <Modal.Footer className="flex flex-col">
-          {/* Not decided yet */}
-          {/* <FormControl id="closingmessage" className="w-full mb-sm px-2">
-            <Checkbox
-              id="closingmessagecheckbox"
-              disabled={!applicantHasContactChannel(supportErrand)}
-              data-cy="show-contactReasonDescription-input"
-              className="w-full"
-              checked={applicantHasContactChannel(supportErrand) && closingMessage}
-              onChange={() => setClosingMessage(!sendClosingMessage)}
-            >
-              Skicka meddelande till ärendeägare
-            </Checkbox>
-          </FormControl> */}
           <Button
             variant="primary"
             color="vattjom"
-            disabled={isLoading || !formState.isValid || getValues('emails').length === 0 || disabled}
+            disabled={
+              isLoading || !formState.isValid || (recipient === 'EMAIL' && getValues('emails').length === 0) || disabled
+            }
             className="w-full"
             loading={isLoading}
             loadingText="Vidarebefordrar ärende"
