@@ -23,6 +23,7 @@ import { useRouter } from 'next/router';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { appConfig } from 'src/config/appconfig';
 
 export default function Layout({ title, children }) {
   const {
@@ -55,6 +56,7 @@ export default function Layout({ title, children }) {
       <Logo
         variant="service"
         title={'Draken'}
+        symbol={appConfig.symbol}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
@@ -118,7 +120,7 @@ export default function Layout({ title, children }) {
           applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo variant="symbol" className="h-40" />
+        <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
         {isKC() || isIK() || isLOP() || isKA() ? (
