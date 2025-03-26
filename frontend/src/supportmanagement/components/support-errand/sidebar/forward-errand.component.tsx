@@ -62,6 +62,8 @@ export interface ForwardFormProps {
   department: 'MEX';
   message: string;
   messageBodyPlaintext: string;
+  existingEmail?: string;
+  newEmail?: string;
 }
 
 export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {

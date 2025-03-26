@@ -1030,6 +1030,8 @@ export const forwardSupportErrand: (
         throw new Error('MISSING_NAME');
       }
     });
+    delete data.existingEmail;
+    delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
       .then((res) => {
