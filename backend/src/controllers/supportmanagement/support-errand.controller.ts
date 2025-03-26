@@ -252,8 +252,9 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsObject()
   @IsOptional()
   classification?: Classification;
+  @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
   @IsOptional()
   @IsString()
   resolution?: string;
