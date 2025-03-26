@@ -28,6 +28,7 @@ const validateEnv = () => {
       DEVELOPER_GROUP: str(),
       APPLICATION: str(),
       MUNICIPALITY_ID: str(),
+      DOMAIN: str(),
       CASEDATA_SENDER_EMAIL: str(),
       CASEDATA_REPLY_TO: str(),
       CASEDATA_SENDER: str(),
@@ -59,6 +60,8 @@ const validateEnv = () => {
       DEVELOPER_GROUP: str(),
       SUPERADMIN_GROUP: str(),
       APPLICATION: str(),
+      MUNICIPALITY_ID: str(),
+      DOMAIN: str(),
 
       SUPPORTMANAGEMENT_NAMESPACE: str(),
       SUPPORTMANAGEMENT_TEST_EMAIL: str(),

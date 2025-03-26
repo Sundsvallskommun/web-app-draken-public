@@ -64,17 +64,16 @@ const CaseDataFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
-  const [show, setShow] = useState<boolean>(false);
+  const [show, setShow] = useState<boolean>(true);
   const { selectedErrandStatuses } = useAppContext();
 
   return (
     <>
       <div className="flex flex-col w-full gap-16 py-19">
-        <div className="w-full flex items-start md:items-center justify-between md:flex-row gap-16">
+        <div className="w-full flex flex-wrap items-start md:items-center justify-between md:flex-row gap-16">
           <CasedataFilterQuery />
           <div className="flex gap-16">
             <Button
-              className="w-full md:w-auto"
               onClick={() => setShow(!show)}
               data-cy="Show-filters-button"
               color="vattjom"

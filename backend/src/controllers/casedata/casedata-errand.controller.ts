@@ -22,6 +22,7 @@ import {
   PatchErrand as PatchErrandDTO,
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
+import { MUNICIPALITY_ID } from '@/config';
 
 interface SingleErrandResponseData {
   data: ErrandDTO;
@@ -42,7 +43,7 @@ export class CaseDataErrandController {
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
     const applicant: StakeholderDTO & { personalNumber?: string } = errandData.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
     if (applicant && applicant.personId) {
-      const personNumberUrl = `citizen/2.0/${applicant.personId}/personnumber`;
+      const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${applicant.personId}/personnumber`;
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
@@ -53,7 +54,7 @@ export class CaseDataErrandController {
       errandData.stakeholders?.filter(s => s.roles.includes(Role.FELLOW_APPLICANT) || s.roles.includes(Role.CONTACT_PERSON)) || [];
     const fellowApplicantsPromises = fellowApplicants.map(fa => {
       if (fa && fa.personId) {
-        const personNumberUrl = `citizen/2.0/${fa.personId}/personnumber`;
+        const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${fa.personId}/personnumber`;
         const getPersonalNumber = () =>
           this.apiService
             .get<string>({ url: personNumberUrl }, req.user)
@@ -133,7 +134,7 @@ export class CaseDataErrandController {
       let guidRes = null;
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
-        const guidUrl = `citizen/2.0/${query}/guid`;
+        const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${query}/guid`;
         guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
       }
       let queryFilter = `(`;

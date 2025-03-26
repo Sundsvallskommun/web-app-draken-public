@@ -35,7 +35,7 @@ import hpp from 'hpp';
 import createMemoryStore from 'memorystore';
 import morgan from 'morgan';
 import passport from 'passport';
-import { Strategy, VerifiedCallback } from 'passport-saml';
+import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import 'reflect-metadata';
 import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
@@ -78,7 +78,7 @@ const samlStrategy = new Strategy(
     //decryptionPvk: SAML_PRIVATE_KEY,
     privateKey: SAML_PRIVATE_KEY,
     // Identity Provider's public key
-    cert: SAML_IDP_PUBLIC_CERT,
+    idpCert: SAML_IDP_PUBLIC_CERT,
     issuer: SAML_ISSUER,
     wantAssertionsSigned: false,
     signatureAlgorithm: 'sha256',
@@ -88,6 +88,8 @@ const samlStrategy = new Strategy(
     //logoutUrl: 'http://194.71.24.30/sso',
     logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL,
     acceptedClockSkewMs: -1,
+    wantAuthnResponseSigned: false,
+    audience: false,
   },
   async function (profile: Profile, done: VerifiedCallback) {
     if (!profile) {
@@ -96,7 +98,6 @@ const samlStrategy = new Strategy(
         message: 'Missing SAML profile',
       });
     }
-    logger.info({ profile });
     // Depending on using Onegate or ADFS for federation the profile data looks a bit different
     // Here we use the null coalescing operator (??) to handle both cases.
     // (A switch from Onegate to ADFS was done on august 6 2023 due to problems in MobilityGuard.)
@@ -165,6 +166,9 @@ const samlStrategy = new Strategy(
       }
       done(err);
     }
+  },
+  async function (profile: Profile, done: VerifiedCallback) {
+    return done(null, {});
   },
 );
 

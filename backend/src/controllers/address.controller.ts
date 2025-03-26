@@ -212,10 +212,10 @@ export class AddressController {
   @OpenAPI({ summary: 'Return adress for given person number' })
   @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
   async cases(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<ResponseData> {
-    const guidUrl = `citizen/2.0/${ssnPayload.ssn}/guid`;
+    const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `citizen/2.0/${guidRes.data}`;
+    const url = `citizen/3.0/${MUNICIPALITY_ID}/${guidRes.data}`;
     const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
 
     return { data: res.data, message: 'success' } as ResponseData;
@@ -225,10 +225,10 @@ export class AddressController {
   @OpenAPI({ summary: 'Return personId for given person number' })
   @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
   async personId(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<PersonIdResponseData> {
-    const guidUrl = `citizen/2.0/${ssnPayload.ssn}/guid`;
+    const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `citizen/2.0/citizen/${guidRes.data}`;
+    const url = `citizen/3.0/${MUNICIPALITY_ID}/citizen/${guidRes.data}`;
     const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
 
     return { data: { personId: res.data.personId }, message: 'success' } as PersonIdResponseData;
@@ -260,7 +260,7 @@ export class AddressController {
     @Param('loginName') loginName: string,
     @Res() response: any,
   ): Promise<{ data: EmployeeAddress; message: string }> {
-    const url = `employee/1.0/portalpersondata/PERSONAL/${loginName}`;
+    const url = `employee/2.0/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
     const res = await this.apiService.get<EmployeeAddress>({ url }, req.user).catch(e => {
       logger.error('Error when fetching user information');
       throw e;
@@ -276,7 +276,7 @@ export class AddressController {
     @Param('personalNumber') personalNumber: string,
     @Res() response: any,
   ): Promise<{ data: EmployedPersonData; message: string }> {
-    const url = `employee/1.0/employed/${personalNumber}/loginname`;
+    const url = `employee/2.0/${MUNICIPALITY_ID}/employed/${personalNumber}/loginname`;
     const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
       logger.error('Error when fetching employed user information');
       throw e;

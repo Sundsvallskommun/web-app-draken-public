@@ -5,7 +5,7 @@ import {
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { getApplicationName, isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -20,7 +20,11 @@ import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './s
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
-import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import {
+  buildStakeholdersList,
+  getApplicantName,
+  mapExternalIdTypeToStakeholderType,
+} from './support-stakeholder-service';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 export interface Customer {
@@ -272,6 +276,16 @@ export enum ResolutionLabelIK {
 
 export enum ResolutionLabelKS {
   SOLVED = 'Löst av Kontakt Sundsvall',
+  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
+  CONNECTED = 'Kopplat samtal',
+  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
+  SELF_SERVICE = 'Hänvisat till självservice',
+  INTERNAL_SERVICE = 'Hänvisat till intern service',
+  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+}
+
+export enum ResolutionLabelKA {
+  SOLVED = 'Löst av Kontakt Ånge',
   REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
   CONNECTED = 'Kopplat samtal',
   REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
@@ -1016,6 +1030,8 @@ export const forwardSupportErrand: (
         throw new Error('MISSING_NAME');
       }
     });
+    delete data.existingEmail;
+    delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
       .then((res) => {

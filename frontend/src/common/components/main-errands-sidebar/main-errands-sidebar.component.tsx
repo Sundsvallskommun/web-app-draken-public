@@ -4,7 +4,14 @@ import { CaseStatusValues } from '@casedata/components/casedata-filtering/compon
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 
-import { getApplicationEnvironment, getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import {
+  getApplicationEnvironment,
+  getApplicationName,
+  isIK,
+  isKA,
+  isKC,
+  isLOP,
+} from '@common/services/application-service';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -22,12 +29,13 @@ import { appConfig } from 'src/config/appconfig';
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
-}> = ({ showAttestationTable, setShowAttestationTable }) => {
+  open;
+  setOpen;
+}> = ({ showAttestationTable, setShowAttestationTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [open, setOpen] = useState(true);
   const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
@@ -52,7 +60,7 @@ export const MainErrandsSidebar: React.FC<{
     <aside
       data-cy="overview-aside"
       className={cx(
-        'transition-all ease-in-out duration-150 flex grow z-10 bg-vattjom-background-200 min-h-screen relative',
+        'fixed left-0 transition-all ease-in-out duration-150 flex grow z-10 bg-vattjom-background-200 min-h-screen',
         open ? 'max-lg:shadow-100 sm:w-[32rem] sm:min-w-[32rem]' : 'w-[5.6rem]'
       )}
     >
@@ -86,7 +94,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {isLOP() || isKC() || isIK() ? (
+          {isLOP() || isKC() || isKA() || isIK() ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
@@ -121,8 +129,8 @@ export const MainErrandsSidebar: React.FC<{
                       counter={
                         isLoading
                           ? '-'
-                          : billingRecords.totalElements > 99
-                          ? '99+'
+                          : billingRecords.totalElements > 999
+                          ? '999+'
                           : billingRecords.totalElements || '0'
                       }
                     />

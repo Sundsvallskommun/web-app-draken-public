@@ -28,7 +28,7 @@ import {
   SupportManagementQueryValues,
 } from './components/supportmanagement-filter-query.component';
 
-import { isIK, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   ChannelFilter,
@@ -92,18 +92,15 @@ const SupportManagementFiltering: React.FC<{
   administrators?: (SupportAdmin | Admin)[];
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
-  const [show, setShow] = useState<boolean>(false);
+  const [show, setShow] = useState<boolean>(true);
 
   return (
     <>
       <div className="flex flex-col w-full gap-16 py-19">
-        <div className="w-full flex items-start md:items-center justify-between md:flex-row gap-16">
-          <div className="w-full">
-            <SupportManagementFilterQuery />
-          </div>
+        <div className="w-full flex flex-wrap items-start md:items-center justify-between md:flex-row gap-16">
+          <SupportManagementFilterQuery />
           <div className="flex gap-16">
             <Button
-              className="w-full md:w-auto"
               onClick={() => setShow(!show)}
               data-cy="show-filters-button"
               color="vattjom"
@@ -127,8 +124,8 @@ const SupportManagementFiltering: React.FC<{
 
         <div className={cx(show ? 'visible' : 'hidden')}>
           <div className="flex gap-16 items-center">
-            <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
-              {isLOP() || isIK() ? (
+            <div className="flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
+              {isLOP() || isIK() || isKA() ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />

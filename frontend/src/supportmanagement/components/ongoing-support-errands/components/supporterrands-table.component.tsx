@@ -1,6 +1,6 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
@@ -67,9 +67,9 @@ export const SupportErrandsTable: React.FC = () => {
     1: 'touched',
     2: 'category',
     3: 'type',
-    4: 'created',
-    5: 'priority',
-    6: 'channel',
+    4: 'channel',
+    5: 'created',
+    6: 'priority',
     7: 'assignedUserId',
   };
 
@@ -83,8 +83,9 @@ export const SupportErrandsTable: React.FC = () => {
           4: 'subType',
           5: 'channel',
           6: 'created',
-          7: 'suspendedTo',
-          8: 'assignedUserId',
+          7: 'priority',
+          8: 'suspendedTo',
+          9: 'assignedUserId',
         }
       : {
           0: 'status',
@@ -236,24 +237,14 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
         <Table.Column>
           {!!notification ? (
-            <>
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
               <div>
-                {notification?.globalAcknowledged === false ? (
-                  <>
-                    <Callout color="vattjom"></Callout>
-                    <span className="sr-only">Ny händelse på ärendet</span>
-                  </>
-                ) : null}
+                <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
+                  {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
+                </time>
               </div>
-              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-                <div>
-                  <time dateTime={notification?.created}>
-                    {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
-                  </time>
-                </div>
-                <div className="italic">{notification?.description ? notification?.description : ''}</div>
-              </div>
-            </>
+              <div className="italic">{notification?.description ? notification?.description : ''}</div>
+            </div>
           ) : (
             dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
           )}
@@ -264,7 +255,7 @@ export const SupportErrandsTable: React.FC = () => {
         >
           {isKC() || errand.labels.length < 1 ? (
             <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() || isIK() ? (
+          ) : isLOP() || isIK() || isKA() ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
           <div className="font-normal">{errand.errandNumber}</div>
@@ -276,13 +267,13 @@ export const SupportErrandsTable: React.FC = () => {
                 {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
                   ?.displayName || errand.type}
               </p>
-            ) : isLOP() || isIK() ? (
+            ) : isLOP() || isIK() || isKA() ? (
               <p className="m-0">{getLabelType(errand, supportMetadata)?.displayName || ''}</p>
             ) : null}
             <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
           </div>
         </Table.Column>
-        {(isLOP() || isIK()) && (
+        {(isLOP() || isIK() || isKA()) && (
           <Table.Column>
             <div className="max-w-[280px]">
               <p className="m-0">{getLabelSubType(errand, supportMetadata)?.displayName || ''}</p>
@@ -294,7 +285,7 @@ export const SupportErrandsTable: React.FC = () => {
           <div>
             <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
           </div>
-          {isLOP() ? (
+          {isLOP() || isKA() ? (
             <div>
               <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
             </div>
