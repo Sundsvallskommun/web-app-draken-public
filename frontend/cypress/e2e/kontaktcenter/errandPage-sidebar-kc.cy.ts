@@ -43,6 +43,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
       );
+      cy.intercept('POST', `**/supporterrands/2281/${mockEmptySupportErrand.id}/forward`, mockEmptySupportErrand).as(
+        'forwardErrand'
+      );
     });
 
     it('shows the correct base errand and sidebar main buttons', () => {
@@ -138,6 +141,78 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       });
     });
 
+    it('Can forward department errand', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        mockSetAdminResponse
+      ).as('setAdmin');
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
+        'postMessage'
+      );
+      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Vidarebefordra ärendet').click();
+
+      cy.get(`article.sk-modal-dialog`).should('exist');
+
+      cy.get('.sk-modal-dialog [type="radio"]').eq(1).should('have.value', 'EMAIL').check();
+      cy.get('.sk-modal-dialog [data-cy="email-tag-0"]').should('not.exist');
+
+      cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
+      cy.get('.sk-modal-dialog [data-cy="resolution-input"]').should('exist').select(0);
+
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
+
+      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Vidarebefordra ärende').click();
+
+      cy.get('.sk-dialog').should('exist').contains('Vill du vidarebefordra ärendet?');
+      cy.get('.sk-dialog .sk-btn-secondary').contains('Nej').should('exist');
+      cy.get('.sk-dialog .sk-btn-primary').contains('Ja').should('exist').click();
+      cy.wait('@forwardErrand');
+    });
+
+    it('Can forward email errand', () => {
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept(
+        'PATCH',
+        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        mockSetAdminResponse
+      ).as('setAdmin');
+      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
+        'postMessage'
+      );
+      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Vidarebefordra ärendet').click();
+
+      cy.get(`article.sk-modal-dialog`).should('exist');
+
+      cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
+      cy.get('.sk-modal-dialog [data-cy="resolution-input"]').should('exist').select(0);
+      cy.get('.sk-modal-dialog [type="radio"]').eq(1).should('have.value', 'EMAIL').check();
+      cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
+      cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
+
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
+
+      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Vidarebefordra ärende').click();
+
+      cy.get('.sk-dialog').should('exist').contains('Vill du vidarebefordra ärendet?');
+      cy.get('.sk-dialog .sk-btn-secondary').contains('Nej').should('exist');
+      cy.get('.sk-dialog .sk-btn-primary').contains('Ja').should('exist').click();
+      cy.wait('@postMessage');
+    });
+
     it('Can manage forwarding, suspending and solving errand', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
@@ -162,7 +237,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
       cy.get('.sk-modal-dialog [data-cy="resolution-input"]').should('exist').select(0);
       cy.get('.sk-modal-dialog [type="radio"]').eq(1).should('have.value', 'EMAIL').check();
-      cy.get('.sk-modal-dialog [data-cy="email-input"]').should('exist').type('test@test.se');
+      cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
+      cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
 
