@@ -326,7 +326,7 @@ export const CasedataAttachments: React.FC = () => {
                       remove={removeAttachment}
                       editing={selectedAttachment ? true : false}
                       accept={ACCEPTED_UPLOAD_FILETYPES}
-                      helperText="Maximal filstorlek: 10 MB"
+                      helperText="Maximal filstorlek: 50 MB"
                       allowMultiple={true}
                     />
                   </FormControl>

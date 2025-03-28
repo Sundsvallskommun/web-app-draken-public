@@ -9,6 +9,7 @@ import { SupportAdmin } from '@supportmanagement/services/support-admin-service'
 import {
   Channels,
   ResolutionLabelIK,
+  ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
   StatusLabel,
@@ -64,6 +65,7 @@ export const SidebarHistory: React.FC<{}> = () => {
     });
     [
       ...Object.entries(ResolutionLabelKS),
+      ...Object.entries(ResolutionLabelKA),
       ...Object.entries(ResolutionLabelLOP),
       ...Object.entries(ResolutionLabelIK),
     ].forEach((e) => {

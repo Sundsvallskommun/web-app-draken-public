@@ -276,6 +276,16 @@ export enum ResolutionLabelKS {
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
 }
 
+export enum ResolutionLabelKA {
+  SOLVED = 'Löst av Kontakt Ånge',
+  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
+  CONNECTED = 'Kopplat samtal',
+  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
+  SELF_SERVICE = 'Hänvisat till självservice',
+  INTERNAL_SERVICE = 'Hänvisat till intern service',
+  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+}
+
 export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },

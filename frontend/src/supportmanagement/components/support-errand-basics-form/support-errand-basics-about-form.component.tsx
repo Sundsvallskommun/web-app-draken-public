@@ -15,6 +15,7 @@ import {
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { isKA, isKC } from '@common/services/application-service';
 
 export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
@@ -148,7 +149,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {appConfig.features.useThreeLevelCategorization ? (
+      {appConfig.features.useThreeLevelCategorization || isKA() ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
@@ -268,9 +269,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       </div>
 
-      {appConfig.features.useExplanationOfTheCause ? (
+      {appConfig.features.useExplanationOfTheCause || isKA() ? (
         <div className="w-full mt-md mb-lg">
-          {/* TO DO: missing data from API. needs implementation */}
           <Checkbox
             id="causecheckbox"
             disabled={isSupportErrandLocked(supportErrand)}
@@ -279,7 +279,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             className="w-full"
             onClick={() => (checked ? setCauseDescriptionIsOpen(false) : setCauseDescriptionIsOpen(true))}
           >
-            Lägg till en orsaksbeskrivning
+            {isKA() ? 'Brist i kunskapsbank' : isKC() ? 'Lägg till en orsaksbeskrivning' : ''}
           </Checkbox>
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">

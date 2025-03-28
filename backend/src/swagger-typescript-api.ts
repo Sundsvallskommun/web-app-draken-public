@@ -42,7 +42,7 @@ const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '10.0',
+    version: '10.1',
   },
   {
     name: 'businessengagements',

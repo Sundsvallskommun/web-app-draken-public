@@ -2,7 +2,7 @@ import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wr
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, isIK, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
+import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -29,7 +29,7 @@ export default function Layout({ title, children }) {
   const router = useRouter();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
-    : appConfig.isSupportManagement
+    : appConfig.isSupportManagement || isKA()
     ? supportErrand?.errandNumber
     : undefined;
   const hostName = window.location.hostname;
@@ -112,7 +112,7 @@ export default function Layout({ title, children }) {
         <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {appConfig.isSupportManagement ? (
+        {appConfig.isSupportManagement || isKA() ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">
@@ -187,7 +187,7 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIK() || isLOP() || isMEX() ? (
+                    {isKC() || isIK() || isKA() || isLOP() || isMEX() ? (
                       <PopupMenu.Item>
                         <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
                           <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt

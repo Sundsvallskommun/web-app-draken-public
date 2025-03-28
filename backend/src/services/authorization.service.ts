@@ -4,8 +4,8 @@ import { roleADMapping } from './ad-role.service';
 import { logger } from '@/utils/logger';
 
 export function authorizeGroups(groups) {
-  logger.info('authorizing groups', groups);
-  logger.info('against', AUTHORIZED_GROUPS);
+  logger.info(`authorizing groups ${groups}`);
+  logger.info(`against ${AUTHORIZED_GROUPS}`);
   const authorizedGroupsList = AUTHORIZED_GROUPS.split(',');
   const groupsList = groups.split(',').map((g: string) => g.toLowerCase());
   return authorizedGroupsList.some(authorizedGroup => groupsList.includes(authorizedGroup.toLowerCase()));
@@ -70,6 +70,12 @@ const roles = new Map<InternalRole, Partial<Permissions>>([
   ],
   [
     'draken_ks_admin',
+    {
+      canEditSupportManagement: true,
+    },
+  ],
+  [
+    'draken_ka_admin',
     {
       canEditSupportManagement: true,
     },

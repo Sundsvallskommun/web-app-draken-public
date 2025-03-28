@@ -1,6 +1,7 @@
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
@@ -35,14 +36,14 @@ export const Oversikt: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    appConfig.isSupportManagement &&
+    (appConfig.isSupportManagement || isKA()) &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   return (
     <>
-      {appConfig.isSupportManagement ? (
+      {appConfig.isSupportManagement || isKA() ? (
         <SidebarLayout
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}

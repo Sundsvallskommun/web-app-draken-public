@@ -84,7 +84,7 @@ class ApiService {
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response.data)}`);
-        logger.error(`Error url: ${error.response.config.url}`);
+        logger.error(`Error url: ${error.response.config.baseURL || ''}/${error.response.config.url}`);
         logger.error(`Error data: ${error.response.config.data?.slice(0, 1500)}`);
         logger.error(`Error method: ${error.response.config.method}`);
         logger.error(`Error headers: ${error.response.config.headers}`);
@@ -92,7 +92,7 @@ class ApiService {
       } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response.data)}`);
-        logger.error(`Error url: ${error.response.config.url}`);
+        logger.error(`Error url: ${error.response.config.baseURL || ''}/${error.response.config.url}`);
         logger.error(`Error data: ${error.response.config.data?.slice(0, 1500)}`);
         logger.error(`Error method: ${error.response.config.method}`);
         logger.error(`Error headers: ${error.response.config.headers}`);

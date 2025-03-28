@@ -60,6 +60,7 @@ import {
   TypeFilter,
   TypeValues,
 } from './components/supportmanagement-filter-type.component';
+import { isKA } from '@common/services/application-service';
 
 export type SupportManagementFilter = CategoryFilter &
   LabelCategoryFilter &
@@ -136,7 +137,7 @@ const SupportManagementFiltering: React.FC<{
                 </>
               ) : null}
 
-              {appConfig.features.useThreeLevelCategorization ? (
+              {appConfig.features.useThreeLevelCategorization || isKA() ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />
