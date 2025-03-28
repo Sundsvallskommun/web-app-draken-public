@@ -1,7 +1,7 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -119,7 +119,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   });
 
   useEffect(() => {
-    if (isLOP() || isIK()) {
+    if (isLOP() || isIK() || isKA()) {
       setValue('recipient', 'EMAIL');
     }
   }, []);
