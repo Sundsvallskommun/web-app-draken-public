@@ -550,7 +550,7 @@ export class SupportErrandController {
         : isKA()
         ? {
             category: 'ADMINISTRATION',
-            type: 'CONTACT_CENTER.GENERAL',
+            type: 'ADMINISTRATION.CONTACT_CENTER',
           }
         : isLOP()
         ? {
