@@ -190,10 +190,10 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {!isLOP() && !isIK() && (
+        {isKC() || isKC() || isKA() ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
-              <FormLabel>Orsak till kontakt</FormLabel>
+              <FormLabel>{isKA() ? 'Ärendet avsåg' : 'Orsak till kontakt'}</FormLabel>
               <Select
                 {...register('contactReason')}
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -225,7 +225,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
               )}
             </FormControl>
           </div>
-        )}
+        ) : null}
         <div className="flex gap-xl w-1/2">
           <FormControl id="channel" className="w-full">
             <FormLabel>Inkom via*</FormLabel>
