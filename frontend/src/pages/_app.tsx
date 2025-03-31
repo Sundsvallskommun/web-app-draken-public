@@ -16,6 +16,8 @@ import { useMemo } from 'react';
 import 'react-quill/dist/quill.snow.css';
 import '../styles/tailwind.scss';
 import store from '@supportmanagement/services/storage-service';
+import { appWithTranslation } from 'next-i18next';
+import nextI18NextConfig from '../../next-i18next.config';
 
 dayjs.extend(utc);
 dayjs.locale('se');
@@ -66,4 +68,4 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 }
 
-export default MyApp;
+export default appWithTranslation(MyApp, nextI18NextConfig);

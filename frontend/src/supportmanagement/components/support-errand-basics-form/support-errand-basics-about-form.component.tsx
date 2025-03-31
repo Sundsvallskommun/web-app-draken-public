@@ -15,6 +15,7 @@ import {
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { useTranslation } from 'next-i18next';
 
 export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
@@ -31,6 +32,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     user: User;
   } = useAppContext();
   const { supportErrand } = props;
+  const { t } = useTranslation();
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();
 
@@ -274,11 +276,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             className="w-full"
             onClick={() => (checked ? setCauseDescriptionIsOpen(false) : setCauseDescriptionIsOpen(true))}
           >
-            {isKA() ? 'Brist i kunskapsbank' : isKC() ? 'Lägg till en orsaksbeskrivning' : ''}
+            {t(`common:basics_tab.cause_description.description_${process.env.NEXT_PUBLIC_APPLICATION}`)}
           </Checkbox>
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">
-              <FormLabel>Orsaksbeskrivning</FormLabel>
+              <FormLabel>{t('common:basics_tab.cause_description.title')}</FormLabel>
               <Textarea
                 data-cy="contactReasonDescription-input"
                 disabled={isSupportErrandLocked(supportErrand)}

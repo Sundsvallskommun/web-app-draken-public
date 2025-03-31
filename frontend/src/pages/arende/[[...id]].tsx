@@ -8,6 +8,7 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import { default as NextLink } from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export default function Arende2() {
   const router = useRouter();
@@ -67,3 +68,9 @@ export default function Arende2() {
     </div>
   );
 }
+
+export const getServerSideProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale, ['common', 'messages'])),
+  },
+});
