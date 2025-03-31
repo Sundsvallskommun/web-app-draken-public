@@ -1,4 +1,4 @@
-import { CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import {
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
@@ -42,7 +42,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Type as TypeTransformer } from 'class-transformer';
-import { isIK, isKC, isLOP } from '@/services/application.service';
+import { isIK, isKA, isKC, isLOP } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -252,8 +252,9 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsObject()
   @IsOptional()
   classification?: Classification;
+  @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
   @IsOptional()
   @IsString()
   resolution?: string;
@@ -331,7 +332,7 @@ export enum SupportStakeholderRole {
 export class SupportErrandController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.0`;
+  SERVICE = `supportmanagement/10.1`;
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
@@ -340,7 +341,7 @@ export class SupportErrandController {
       customer.externalId &&
       (customer.externalIdType === ExternalIdType.PRIVATE || customer.externalIdType === ExternalIdType.EMPLOYEE)
     ) {
-      const personNumberUrl = `citizen/2.0/${customer.externalId}/personnumber`;
+      const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${customer.externalId}/personnumber`;
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
@@ -355,7 +356,7 @@ export class SupportErrandController {
         contact.externalId &&
         (contact.externalIdType === ExternalIdType.PRIVATE || contact.externalIdType === ExternalIdType.EMPLOYEE)
       ) {
-        const personNumberUrl = `citizen/2.0/${contact.externalId}/personnumber`;
+        const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${contact.externalId}/personnumber`;
         const getPersonalNumber = () =>
           this.apiService
             .get<string>({ url: personNumberUrl }, req.user)
@@ -430,7 +431,7 @@ export class SupportErrandController {
       let guidRes = null;
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
-        const guidUrl = `citizen/2.0/${query}/guid`;
+        const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${query}/guid`;
         guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
       }
       let queryFilter = `(`;
@@ -506,9 +507,6 @@ export class SupportErrandController {
       const e = toOffsetDateTime(dayjs(end).endOf('day'));
       filterList.push(`created<'${e}'`);
     }
-    // Always filter out errands with category=NONE or type=NONE
-    filterList.push(`not(category:'NONE')`);
-    filterList.push(`not(type:'NONE')`);
 
     const filter = filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
     let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
@@ -549,6 +547,11 @@ export class SupportErrandController {
             category: 'CONTACT_SUNDSVALL',
             type: 'UNCATEGORIZED',
           }
+        : isKA()
+        ? {
+            category: 'ADMINISTRATION',
+            type: 'ADMINISTRATION.CONTACT_CENTER',
+          }
         : isLOP()
         ? {
             category: 'SALARY',
@@ -567,6 +570,8 @@ export class SupportErrandController {
         ? ['SALARY', 'SALARY.UNCATEGORIZED', 'SALARY.UNCATEGORIZED.UNCATEGORIZED']
         : isIK()
         ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
+        : isKA()
+        ? ['ADMINISTRATION', 'ADMINISTRATION.CONTACT_CENTER', 'ADMINISTRATION.CONTACT_CENTER.GENERAL']
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,

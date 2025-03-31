@@ -1,4 +1,4 @@
-import { CASEDATA_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -105,7 +105,7 @@ export class CasedataStakeholderController {
     @Param('municipalityId') municipalityId: string,
     @Body() body: { personId: string },
   ): Promise<{ data: string; message: string }> {
-    const url = `citizen/2.0/${body.personId}/personnumber`;
+    const url = `citizen/3.0/${MUNICIPALITY_ID}/${body.personId}/personnumber`;
     const personalNumber = await this.apiService
       .get<string>({ url }, req.user)
       .then(res => {

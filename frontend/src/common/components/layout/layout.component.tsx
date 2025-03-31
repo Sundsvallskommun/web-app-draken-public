@@ -6,6 +6,7 @@ import {
   getApplicationEnvironment,
   getApplicationName,
   isIK,
+  isKA,
   isKC,
   isLOP,
   isMEX,
@@ -22,6 +23,7 @@ import { useRouter } from 'next/router';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { appConfig } from 'src/config/appconfig';
 
 export default function Layout({ title, children }) {
   const {
@@ -36,7 +38,11 @@ export default function Layout({ title, children }) {
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
   const errandNumber =
-    isMEX() || isPT() ? errand?.errandNumber : isKC() || isIK() || isLOP() ? supportErrand?.errandNumber : undefined;
+    isMEX() || isPT()
+      ? errand?.errandNumber
+      : isKC() || isKA() || isIK() || isLOP()
+      ? supportErrand?.errandNumber
+      : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
@@ -50,6 +56,7 @@ export default function Layout({ title, children }) {
       <Logo
         variant="service"
         title={'Draken'}
+        symbol={appConfig.symbol}
         subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
@@ -113,10 +120,10 @@ export default function Layout({ title, children }) {
           applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo variant="symbol" className="h-40" />
+        <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {isKC() || isIK() || isLOP() ? (
+        {isKC() || isIK() || isLOP() || isKA() ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">
@@ -190,7 +197,7 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIK() || isLOP() || isMEX() ? (
+                    {isKC() || isIK() || isKA() || isLOP() || isMEX() ? (
                       <PopupMenu.Item>
                         <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
                           <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt

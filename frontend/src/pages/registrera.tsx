@@ -1,7 +1,7 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import { getApplicationName, isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -56,7 +56,7 @@ export const Oversikt: React.FC = () => {
             Hoppa till innehåll
           </a>
         </NextLink>
-        {isKC() || isIK() || isLOP() ? <SupportErrandComponent /> : <CasedataErrandComponent />}
+        {isKC() || isIK() || isLOP() || isKA() ? <SupportErrandComponent /> : <CasedataErrandComponent />}
       </Layout>
     </div>
   );

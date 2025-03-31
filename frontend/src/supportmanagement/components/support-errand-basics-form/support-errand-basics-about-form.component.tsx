@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -146,7 +146,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             </FormControl>
           </div>
         </div>
-      ) : isLOP() || isIK() ? (
+      ) : isLOP() || isIK() || isKA() ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
@@ -190,10 +190,10 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {!isLOP() && !isIK() && (
+        {isKC() || isKC() || isKA() ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
-              <FormLabel>Orsak till kontakt</FormLabel>
+              <FormLabel>{isKA() ? 'Ärendet avsåg' : 'Orsak till kontakt'}</FormLabel>
               <Select
                 {...register('contactReason')}
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -225,7 +225,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
               )}
             </FormControl>
           </div>
-        )}
+        ) : null}
         <div className="flex gap-xl w-1/2">
           <FormControl id="channel" className="w-full">
             <FormLabel>Inkom via*</FormLabel>
@@ -264,9 +264,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
           </FormControl>
         </div>
       </div>
-      {!isLOP() && !isIK() && (
+      {(isKC() || isKA()) && (
         <div className="w-full mt-md mb-lg">
-          {/* TO DO: missing data from API. needs implementation */}
           <Checkbox
             id="causecheckbox"
             disabled={isSupportErrandLocked(supportErrand)}
@@ -275,7 +274,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             className="w-full"
             onClick={() => (checked ? setCauseDescriptionIsOpen(false) : setCauseDescriptionIsOpen(true))}
           >
-            Lägg till en orsaksbeskrivning
+            {isKA() ? 'Brist i kunskapsbank' : isKC() ? 'Lägg till en orsaksbeskrivning' : ''}
           </Checkbox>
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">

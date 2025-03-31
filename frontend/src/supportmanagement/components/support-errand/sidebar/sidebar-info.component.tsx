@@ -262,10 +262,6 @@ export const SidebarInfo: React.FC<{
           label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
         },
         {
-          key: 'SOLVED',
-          label: StatusLabel.SOLVED,
-        },
-        {
           key: 'ASSIGNED',
           label: StatusLabel.ASSIGNED,
         },
@@ -610,9 +606,7 @@ export const SidebarInfo: React.FC<{
                 />
                 <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <Divider className="mt-8 mb-16" />
-                {(isKC() || isLOP() || isIK()) && (
-                  <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
-                )}
+                <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
               </div>
             )}

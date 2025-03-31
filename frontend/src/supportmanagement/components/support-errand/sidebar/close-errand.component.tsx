@@ -1,5 +1,5 @@
 import { User } from '@common/interfaces/user';
-import { isIK, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -8,6 +8,7 @@ import { SupportAdmin } from '@supportmanagement/services/support-admin-service'
 import {
   Resolution,
   ResolutionLabelIK,
+  ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
   SupportErrand,
@@ -129,7 +130,15 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               <p className="text-content font-semibold">Välj en lösning</p>
               <FormControl id="resolution" className="w-full" required>
                 <RadioButton.Group data-cy="solve-radiolist">
-                  {Object.entries(isLOP() ? ResolutionLabelLOP : isIK() ? ResolutionLabelIK : ResolutionLabelKS)
+                  {Object.entries(
+                    isLOP()
+                      ? ResolutionLabelLOP
+                      : isIK()
+                      ? ResolutionLabelIK
+                      : isKA()
+                      ? ResolutionLabelKA
+                      : ResolutionLabelKS
+                  )
                     .filter(([_key, _label]) => _label !== 'Vidarebefordrat via växelprogrammet')
                     .sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([_key, _label], idx) => (

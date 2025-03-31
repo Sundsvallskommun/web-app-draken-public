@@ -10,7 +10,7 @@ const PATH_TO_OUTPUT_DIR = path.resolve(process.cwd(), './src/data-contracts');
 const APIS = [
   {
     name: 'activedirectory',
-    version: '1.0',
+    version: '2.0',
   },
   {
     name: 'contract',
@@ -18,11 +18,11 @@ const APIS = [
   },
   {
     name: 'citizen',
-    version: '2.0',
+    version: '3.0',
   },
   {
     name: 'employee',
-    version: '1.0',
+    version: '2.0',
   },
   {
     name: 'estateinfo',
@@ -42,7 +42,7 @@ const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '10.0',
+    version: '10.1',
   },
   {
     name: 'businessengagements',
