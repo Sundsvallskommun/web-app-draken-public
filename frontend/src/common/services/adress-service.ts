@@ -111,7 +111,9 @@ interface OrgInfo extends Data {
 
 interface EmployedPersonData {
   domain: string;
-  loginName: string;
+  loginname: string;
+  emailAddress: string;
+  companyId: number;
 }
 
 export const isValidPersonalNumber: (ssn: string) => boolean = (ssn) =>
@@ -211,10 +213,10 @@ export const searchADUserByPersonNumber: (personalNumber: string) => Promise<Add
         .then((res) => res.data.data)
         .then((res) => {
           if (res.length > 1) {
-            const promises = res.map((user) => searchADUser(user.loginName, user.domain));
+            const promises = res.map((user) => searchADUser(user.loginname, user.domain));
             return Promise.all(promises).then((results) => results);
           } else {
-            return searchADUser(res[0].loginName, res[0].domain);
+            return searchADUser(res[0].loginname, res[0].domain);
           }
         });
 };
