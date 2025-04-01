@@ -276,7 +276,12 @@ export class AddressController {
     @Param('personalNumber') personalNumber: string,
     @Res() response: any,
   ): Promise<{ data: EmployedPersonData; message: string }> {
-    const url = `employee/2.0/${MUNICIPALITY_ID}/employed/${personalNumber}/loginname`;
+    const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${personalNumber}/guid`;
+    const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
+    if (!guidRes.data) {
+      throw new Error('No data found for the given personal number');
+    }
+    const url = `employee/2.0/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
     const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
       logger.error('Error when fetching employed user information');
       throw e;
