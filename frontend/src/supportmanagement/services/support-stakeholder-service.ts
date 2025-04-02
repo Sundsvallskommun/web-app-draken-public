@@ -71,7 +71,7 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
       parameters.push({ key: 'administrationName', values: [c.administrationName], displayName: 'Förvaltningsnamn' });
     }
     const stakeholder: SupportStakeholder = {
-      externalId: c.externalId || c.organizationNumber,
+      externalId: c.externalId || c.organizationNumber || undefined,
       externalIdType: c.externalIdType,
       role,
       organizationName: c.organizationName,
