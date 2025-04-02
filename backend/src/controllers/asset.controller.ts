@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import { Asset } from '@interfaces/parking-permit.interface';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -23,7 +24,7 @@ export class AssetController {
     @QueryParam('type') type: string,
   ): Promise<ResponseData<Asset[]>> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const url = `/partyassets/2.0/2281/assets?partyId=${partyId}&type=${type}`;
+    const url = `/partyassets/2.0/${MUNICIPALITY_ID}/assets?partyId=${partyId}&type=${type}`;
 
     const res = await this.apiService.get<Asset[]>(
       {

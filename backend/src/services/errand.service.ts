@@ -8,6 +8,7 @@ import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
 import { Errand as ErrandDTO, PatchErrandCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
 import { CASEDATA_NAMESPACE } from '@/config';
+import { isPTAnge } from './application.service';
 
 const SERVICE = `case-data/11.0`;
 
@@ -50,6 +51,19 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
     ...(errandData.relatesTo && { relatesTo: errandData.relatesTo }),
     ...(errandData.applicationReceived && { applicationReceived: errandData.applicationReceived }),
   };
+  if (isPTAnge()) {
+    const extraParameters = newErrand.extraParameters || [];
+    const phaseAction = extraParameters?.find(p => p.key === 'process.phaseAction');
+    if (phaseAction) {
+      phaseAction.values = ['AUTOMATIC'];
+    } else {
+      extraParameters.push({
+        key: 'process.phaseAction',
+        values: ['AUTOMATIC'],
+      });
+    }
+    newErrand.extraParameters = extraParameters;
+  }
   return newErrand;
 };
 

@@ -245,6 +245,7 @@ export class CaseDataErrandController {
   ): Promise<{ data: ErrandDTO; message: string }> {
     const { user } = req;
     const data = makeErrandApiData(errandData, undefined);
+    logger.info(`Data to be sent to case-data: ${JSON.stringify(data)}`);
 
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands`;
     const baseURL = apiURL(this.SERVICE);
