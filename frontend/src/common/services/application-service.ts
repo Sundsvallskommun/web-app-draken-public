@@ -12,8 +12,6 @@ export const isPT = () => process.env.NEXT_PUBLIC_APPLICATION === 'PT';
 
 export const isMEX = () => process.env.NEXT_PUBLIC_APPLICATION === 'MEX';
 
-export const getApplicationName = () => appConfig.applicationName;
-
 export const getApplicationEnvironment = () =>
   (isPT() || isKC() || isKA() || isIK() || isLOP() || isMEX()) && process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST'
     ? 'TEST'
