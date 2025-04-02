@@ -248,6 +248,16 @@ const template: ExtraParametersObject = {
       },
       section: 'Övergripande',
     },
+    {
+      field: 'yNumber',
+      value: '',
+      label: 'Y-nummer',
+
+      formField: {
+        type: 'text',
+      },
+      section: 'Övergripande',
+    },
   ],
 
   MEX_LAND_RIGHT: [
