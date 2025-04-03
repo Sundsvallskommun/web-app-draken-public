@@ -128,18 +128,14 @@ export const SupportTabsWrapper: React.FC<{
       disabled: false,
       visibleFor: true,
     },
-    ...(getApplicationEnvironment() === 'TEST'
-      ? [
-          {
-            label: 'Fakturering',
-            content: supportErrand && (
-              <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
-            ),
-            disabled: false,
-            visibleFor: isLOP(),
-          },
-        ]
-      : []),
+    {
+      label: 'Fakturering',
+      content: supportErrand && (
+        <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
+      ),
+      disabled: false,
+      visibleFor: isLOP(),
+    },
   ];
 
   const modalFocus = useRef(null);
