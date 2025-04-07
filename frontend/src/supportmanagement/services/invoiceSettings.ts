@@ -95,7 +95,7 @@ export const invoiceSettings: {
             description: 'Utvecklingskostnad 2%',
             visible: false,
             main: false,
-            accountInformationRows: [{ amountFromParent: true }],
+            accountInformationRows: [{ amountFromParent: true, project: '11041' }],
           },
         ],
         accountInformation: {
@@ -113,15 +113,8 @@ export const invoiceSettings: {
             visible: true,
             main: true,
             accountInformationRows: [
-              {
-                amountFromParent: false,
-                amount: 300,
-              },
-              {
-                amountFromParent: false,
-                amount: 6,
-                project: '11041',
-              },
+              { amountFromParent: false, amount: 300 },
+              { amountFromParent: false, amount: 6, project: '11041' },
             ],
           },
         ],
@@ -150,7 +143,7 @@ export const invoiceSettings: {
             description: 'Utvecklingskostnad 2%',
             visible: false,
             main: false,
-            accountInformationRows: [{ amountFromParent: true }],
+            accountInformationRows: [{ amountFromParent: true, project: '11041' }],
           },
         ],
         accountInformation: {
@@ -168,15 +161,8 @@ export const invoiceSettings: {
             visible: true,
             main: true,
             accountInformationRows: [
-              {
-                amountFromParent: false,
-                amount: 1500,
-              },
-              {
-                amountFromParent: false,
-                amount: 30,
-                project: '11041',
-              },
+              { amountFromParent: false, amount: 1500 },
+              { amountFromParent: false, amount: 30, project: '11041' },
             ],
           },
         ],
@@ -205,7 +191,7 @@ export const invoiceSettings: {
             description: 'Utvecklingskostnad 2%',
             visible: false,
             main: false,
-            accountInformationRows: [{ amountFromParent: true }],
+            accountInformationRows: [{ amountFromParent: true, project: '11041' }],
           },
         ],
         accountInformation: {
@@ -223,15 +209,8 @@ export const invoiceSettings: {
             visible: true,
             main: true,
             accountInformationRows: [
-              {
-                amountFromParent: false,
-                amount: 350,
-              },
-              {
-                amountFromParent: false,
-                amount: 7,
-                project: '11041',
-              },
+              { amountFromParent: false, amount: 350 },
+              { amountFromParent: false, amount: 7, project: '11041' },
             ],
           },
         ],
