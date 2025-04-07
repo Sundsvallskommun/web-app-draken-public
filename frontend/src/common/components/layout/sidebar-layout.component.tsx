@@ -1,18 +1,18 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, getApplicationName } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { CookieConsent, Link } from '@sk-web-gui/react';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
-import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 import { useState } from 'react';
+import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
 export default function SidebarLayout({ title, children, showAttestationTable, setShowAttestationTable }) {
   const { user, errand, supportErrand }: { user: User; errand: IErrand; supportErrand: SupportErrand } =
     useAppContext();
-  const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
   const hostName = window.location.hostname;
 
@@ -22,10 +22,10 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={applicationName} />
+        <meta name="description" content={appConfig.applicationName} />
       </Head>
       <div className="min-h-screen w-full">
-        <div className="flex grow overflow-hidden w-full">
+        <div className="flex grow w-full">
           <MainErrandsSidebar
             open={open}
             setOpen={setOpen}

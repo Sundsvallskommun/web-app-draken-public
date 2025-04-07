@@ -1,4 +1,4 @@
-import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
@@ -33,13 +33,13 @@ export default function Start() {
 
   return (
     <>
-      <EmptyLayout title={`${getApplicationName()} - Logga In`}>
+      <EmptyLayout title={`${appConfig.applicationName} - Logga In`}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="max-w-5xl w-full flex flex-col bg-background-content p-20 shadow-lg text-left">
             <div className="text-center">
               <h3 className="mb-20">
                 Logga in till <br aria-hidden />
-                {isKC() || isIK() || isLOP() || isMEX() || isPT() ? getApplicationName() : 'appen'}
+                {appConfig.applicationName}
               </h3>
               {message && (
                 <FormErrorMessage>

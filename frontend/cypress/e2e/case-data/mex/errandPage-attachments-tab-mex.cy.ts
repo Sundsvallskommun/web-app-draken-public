@@ -34,7 +34,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button')
+      cy.get('.sk-tabs-list button')
         .eq(2)
         .should('have.text', `Bilagor (${mockAttachments.data.length})`)
         .click({ force: true });

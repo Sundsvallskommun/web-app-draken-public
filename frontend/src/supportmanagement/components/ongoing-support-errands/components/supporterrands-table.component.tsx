@@ -1,6 +1,6 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
@@ -252,7 +252,7 @@ export const SupportErrandsTable: React.FC = () => {
         >
           {isKC() || errand.labels.length < 1 ? (
             <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() || isIK() ? (
+          ) : isLOP() || isIK() || isKA() ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
           <div className="font-normal">{errand.errandNumber}</div>
@@ -264,7 +264,7 @@ export const SupportErrandsTable: React.FC = () => {
                 {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
                   ?.displayName || errand.type}
               </p>
-            ) : isLOP() || isIK() ? (
+            ) : isLOP() || isIK() || isKA() ? (
               <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
                 <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
                 <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
@@ -277,7 +277,7 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
-            {isLOP() || isIK() ? (
+            {isLOP() || isIK() || isKA() ? (
               <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
             ) : null}
           </div>
@@ -286,7 +286,7 @@ export const SupportErrandsTable: React.FC = () => {
           <div>
             <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
           </div>
-          {isLOP() ? (
+          {isLOP() || isKA() ? (
             <div>
               <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
             </div>

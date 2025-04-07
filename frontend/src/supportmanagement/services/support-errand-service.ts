@@ -1,11 +1,7 @@
-import {
-  Label,
-  Notification,
-  Stakeholder as SupportStakeholder,
-} from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isKC } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -15,13 +11,13 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 export interface Customer {
   id: string;
@@ -280,6 +276,16 @@ export enum ResolutionLabelKS {
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
 }
 
+export enum ResolutionLabelKA {
+  SOLVED = 'Löst av Kontakt Ånge',
+  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
+  CONNECTED = 'Kopplat samtal',
+  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
+  SELF_SERVICE = 'Hänvisat till självservice',
+  INTERNAL_SERVICE = 'Hänvisat till intern service',
+  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+}
+
 export const ongoingSupportErrandLabelsKC = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -348,7 +354,7 @@ export const emptyContact: SupportStakeholderFormModel = {
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
-  externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  externalIdType: isKC() ? ExternalIdType.PRIVATE : ExternalIdType.EMPLOYEE,
   username: '',
   firstName: '',
   lastName: '',
@@ -1015,6 +1021,8 @@ export const forwardSupportErrand: (
         throw new Error('MISSING_NAME');
       }
     });
+    delete data.existingEmail;
+    delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
       .then((res) => {

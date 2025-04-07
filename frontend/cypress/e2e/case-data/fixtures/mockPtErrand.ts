@@ -26,8 +26,8 @@ export const mockPTErrand_base: { data: ApiErrand; message: string } = {
     caseTitleAddition: 'Nytt parkeringstillstånd',
     phase: ErrandPhase.beslut,
     status: {
-      statusType: 'Ärende inkommit',
-      description: '',
+      statusType: 'Under utredning',
+      description: 'Ärendet utreds',
       created: '2023-12-14T13:50:45.765+01:00',
     },
     statuses: [

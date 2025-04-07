@@ -1480,7 +1480,7 @@ export const mockSupportErrandCommunication = [
     communicationAttachments: [
       {
         attachmentID: 'aGVsbG8gd29ybGQK',
-        name: 'test.txt',
+        fileName: 'test.txt',
         contentType: 'text/plain',
       },
     ],
@@ -1503,7 +1503,7 @@ export const mockSupportErrandCommunication = [
     communicationAttachments: [
       {
         attachmentID: 'aGVsbG8gd29ybGQK',
-        name: 'test.txt',
+        fileName: 'test.txt',
         contentType: 'text/plain',
       },
     ],
