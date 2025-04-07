@@ -42,7 +42,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Type as TypeTransformer } from 'class-transformer';
-import { isIK, isKA, isKC, isLOP } from '@/services/application.service';
+import { isIK, isKA, isKC, isLOP, isMSVA } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -561,6 +561,11 @@ export class SupportErrandController {
         ? {
             category: 'KSK_SERVICE_CENTER',
             type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
+          }
+        : isMSVA()
+        ? {
+            category: 'MSVA',
+            type: 'MSVA.UNCATEGORIZED',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
