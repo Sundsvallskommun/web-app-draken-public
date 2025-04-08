@@ -235,12 +235,14 @@ export const SupportMessageForm: React.FC<{
   });
 
   const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('messageBody', sanitized(length > 1 ? val : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
-    trigger('messageBody');
+    if (quillRef.current?.getEditor()) {
+      const editor = quillRef.current.getEditor();
+      const length = editor?.getLength();
+      setRichText(val);
+      setValue('messageBody', sanitized(length > 1 ? val : undefined));
+      setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
+      trigger('messageBody');
+    }
   };
 
   const clearParameters = () => {

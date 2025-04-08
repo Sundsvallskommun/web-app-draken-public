@@ -1,15 +1,18 @@
+'useClient';
+
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationName, isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
-import { useRouter } from 'next/router';
-import { useEffect, useRef } from 'react';
+import { useParams, usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
-export const Oversikt: React.FC = () => {
+export const RegistreraView = () => {
   const router = useRouter();
 
   const {
@@ -62,4 +65,4 @@ export const Oversikt: React.FC = () => {
   );
 };
 
-export default Oversikt;
+export default RegistreraView;

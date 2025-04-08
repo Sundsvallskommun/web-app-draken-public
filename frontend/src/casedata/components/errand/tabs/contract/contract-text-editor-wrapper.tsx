@@ -26,15 +26,18 @@ export const ContractTextEditorWrapper: React.FC<ContractTextEditorWrapperProps>
         if (source === 'user') {
           setDirty(true);
         }
-        const editor = editorRef.current.getEditor();
-        const length = editor.getLength();
-        // Amazing fix for newline removal bug
-        if (value && value.substring(value.length - 11) == '<p><br></p>') {
-          value = value.substring(0, value.length - 11) + '<p>&#8205;</p>';
+        if (editorRef.current?.getEditor()) {
+          const editor = editorRef.current.getEditor();
+          const length = editor?.getLength();
+          // Amazing fix for newline removal bug
+          if (value && value.substring(value.length - 11) == '<p><br></p>') {
+            value = value.substring(0, value.length - 11) + '<p>&#8205;</p>';
+          }
+          setState(value);
+          setValue(label, sanitized(length > 1 ? value : undefined));
+          trigger(label);
         }
-        setState(value);
-        setValue(label, sanitized(length > 1 ? value : undefined));
-        trigger(label);
+
         return;
       }}
     />

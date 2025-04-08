@@ -1,3 +1,4 @@
+'use client';
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
@@ -12,7 +13,7 @@ import {
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import SupportManagementFiltering, {

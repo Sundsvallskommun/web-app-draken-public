@@ -1,33 +1,28 @@
+'use client';
+
 import { getMe } from '@common/services/user-service';
 import { useEffect, useState } from 'react';
 import { useAppContext } from '@common/contexts/app.context';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname } from 'next/navigation';
 import { Spinner } from '@sk-web-gui/react';
 
 export const LoginGuard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, setUser } = useAppContext();
   const router = useRouter();
+  const pathName = usePathname();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     getMe()
       .then(setUser)
-      .catch((message) => {
-        router.push(
-          {
-            pathname: '/login',
-            query: {
-              failMessage: message,
-            },
-          },
-          '/login'
-        );
+      .catch((message: string) => {
+        router.push(`/login${message ? `?failMessage=${message}` : ''}`);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!mounted || (!user.name && router.pathname !== '/login')) {
+  if (!mounted || (!user.name && pathName !== '/login')) {
     return (
       <main>
         <div className="w-screen h-screen flex place-items-center place-content-center">

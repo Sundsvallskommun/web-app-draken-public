@@ -186,11 +186,13 @@ export const CasedataInvestigationTab: React.FC<{
   };
 
   const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
-    trigger('description');
+    if (quillRef.current?.getEditor()) {
+      const editor = quillRef.current.getEditor();
+      const length = editor?.getLength();
+      setRichText(val);
+      setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
+      trigger('description');
+    }
   };
 
   const appendPhrases = async () => {

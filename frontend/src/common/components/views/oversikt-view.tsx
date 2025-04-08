@@ -1,3 +1,5 @@
+'use client';
+
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import Layout from '@common/components/layout/layout.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
@@ -6,11 +8,11 @@ import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK, isKA } from '@commo
 import { getAdminUsers } from '@common/services/user-service';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 
-export const Oversikt: React.FC = () => {
+export const OversiktView: React.FC = () => {
   const router = useRouter();
 
   const { user, isLoggedIn, administrators, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } =
@@ -72,4 +74,4 @@ export const Oversikt: React.FC = () => {
   );
 };
 
-export default Oversikt;
+export default OversiktView;

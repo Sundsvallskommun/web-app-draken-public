@@ -1,9 +1,11 @@
-const ReactQuill = typeof window === 'object' ? require('react-quill') : () => false;
+const ReactQuillType = typeof window === 'object' ? require('react-quill-new') : () => false;
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { cx, useForkRef } from '@sk-web-gui/react';
-import { DeltaStatic, Sources } from 'quill';
 import React, { useEffect, useRef } from 'react';
-import { UnprivilegedEditor, Value } from 'react-quill';
+import UnprivilegedEditor, { DeltaStatic, EmitterSource } from 'react-quill-new';
+import ReactQuill from 'react-quill-new';
+import Sources from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 // FOR CUSTOM TOOLBAR LOOK AT:
 // https://medium.com/@mircea.calugaru/react-quill-editor-with-full-toolbar-options-and-custom-buttons-undo-redo-176d79f8d375
@@ -11,8 +13,15 @@ import { UnprivilegedEditor, Value } from 'react-quill';
 export const RichTextEditor = React.forwardRef<
   UnprivilegedEditor,
   {
-    value: Value;
-    onChange: ((value: string, delta?: DeltaStatic, source?: Sources, editor?: UnprivilegedEditor) => void) | undefined;
+    value: ReactQuill.Value;
+    onChange:
+      | ((
+          value: string,
+          delta?: DeltaStatic,
+          source?: Sources | EmitterSource,
+          editor?: ReactQuill.UnprivilegedEditor
+        ) => void)
+      | undefined;
     toggleModal?: () => void;
     isMaximizable?: boolean;
     readOnly?: boolean;
@@ -60,7 +69,7 @@ export const RichTextEditor = React.forwardRef<
       ['clean'], // remove formatting button
     ];
 
-    const internalRef = useRef<typeof ReactQuill>();
+    const internalRef = useRef<typeof ReactQuillType>();
 
     useEffect(() => {
       if (internalRef.current) {
@@ -124,13 +133,13 @@ export const RichTextEditor = React.forwardRef<
         )}
 
         <ReactQuill
-          role="textbox"
+          theme="snow"
           preserveWhitespace={true}
           ref={useForkRef(ref, internalRef)}
           readOnly={readOnly}
           className={cx(`mb-md h-[80%]`)}
           value={value}
-          onChange={(val, delta, source, editor, ev) => {
+          onChange={(val, delta, source, editor) => {
             return onChange(val, delta, source, editor);
           }}
           modules={modules}

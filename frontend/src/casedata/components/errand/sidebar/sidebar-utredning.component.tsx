@@ -198,11 +198,13 @@ export const SidebarUtredning: React.FC = () => {
   };
 
   const onRichTextChange = (val) => {
-    const editor = quillRefUtredning.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined));
-    trigger('description');
+    if (quillRefUtredning.current?.getEditor()) {
+      const editor = quillRefUtredning.current.getEditor();
+      const length = editor?.getLength();
+      setRichText(val);
+      setValue('description', sanitized(length > 1 ? val : undefined));
+      trigger('description');
+    }
   };
 
   useEffect(() => {

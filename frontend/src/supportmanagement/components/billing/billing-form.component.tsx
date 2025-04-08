@@ -126,11 +126,11 @@ const BillingForm: React.FC<{
         <div className="flex w-1/2">
           <FormControl id="supervisor" className="w-full">
             <FormLabel>Chef</FormLabel>
-            <Input.Group readOnly={getValues().status !== 'NEW'}>
+            <Input.Group readOnly={getValues().status !== 'NEW' ? true : undefined}>
               <Input
                 data-cy="manager-input"
                 className="w-full text-dark-primary"
-                readOnly={getValues().status !== 'NEW'}
+                readOnly={getValues().status !== 'NEW' ? true : undefined}
                 {...register('extraParameters.referenceName')}
                 size="md"
               />

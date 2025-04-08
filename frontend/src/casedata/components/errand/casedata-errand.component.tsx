@@ -11,7 +11,7 @@ import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -67,6 +67,8 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     });
   };
   const router = useRouter();
+  const { id } = useParams();
+  const params = useParams();
   const { setUser } = useAppContext();
 
   useEffect(() => {
@@ -80,7 +82,6 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     getMe().then((user) => {
       setUser(user);
     });
-    const { id } = router.query;
     if (id) {
       // Existing errand, load it and show it
       setIsLoading(true);
@@ -219,11 +220,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>
                                       {errand.facilities.map((estate, index) => (
-                                        <>
+                                        <div key={`estate-${index}`}>
                                           {index === 0
                                             ? estateToText(estate?.address?.propertyDesignation)
                                             : ', ' + estateToText(estate?.address?.propertyDesignation)}
-                                        </>
+                                        </div>
                                       ))}
                                       {errand.facilities.length === 0 ? '(Saknas)' : null}
                                     </div>

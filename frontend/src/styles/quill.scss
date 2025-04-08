@@ -13,11 +13,6 @@
       button {
         @apply text-dark-secondary;
         @apply rounded-button-sm;
-        @apply h-32 w-32;
-        @apply flex justify-center items-center;
-        svg {
-          @apply w-20 h-20;
-        }
         .ql-fill {
           fill: currentColor;
         }

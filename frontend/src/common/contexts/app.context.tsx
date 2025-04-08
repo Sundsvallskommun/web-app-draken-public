@@ -1,3 +1,5 @@
+'use client';
+
 import { Asset } from '@casedata/interfaces/asset';
 import { ErrandsData, IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';

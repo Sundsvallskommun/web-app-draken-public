@@ -413,12 +413,14 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
-    setValue('descriptionPlaintext', quillRef.current.getEditor().getText());
-    trigger('description');
+    if (quillRef.current?.getEditor()) {
+      const editor = quillRef.current.getEditor();
+      const length = editor?.getLength();
+      setRichText(val);
+      setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
+      setValue('descriptionPlaintext', quillRef.current.getEditor().getText());
+      trigger('description');
+    }
   };
 
   const sortedDec = errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());

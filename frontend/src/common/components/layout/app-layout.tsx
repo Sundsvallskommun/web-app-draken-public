@@ -1,26 +1,28 @@
-import LoginGuard from '@common/components/login-guard/login-guard';
-import { AppWrapper } from '@common/contexts/app.context';
+'use client';
+
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import 'dayjs/locale/sv';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import updateLocale from 'dayjs/plugin/updateLocale';
 import {
   ColorSchemeMode,
   ConfirmationDialogContextProvider,
-  GuiProvider,
   defaultTheme,
   extendTheme,
+  GuiProvider,
+  Spinner,
 } from '@sk-web-gui/react';
-import dayjs from 'dayjs';
-import 'dayjs/locale/se';
-import updateLocale from 'dayjs/plugin/updateLocale';
-import utc from 'dayjs/plugin/utc';
-import type { AppProps } from 'next/app';
-import { useMemo } from 'react';
-import 'react-quill/dist/quill.snow.css';
-import '../styles/tailwind.scss';
+import { getMe } from '@common/services/user-service';
+
 import store from '@supportmanagement/services/storage-service';
+import { AppWrapper } from '@contexts/app.context';
+import LoginGuard from '../login-guard/login-guard';
 
 dayjs.extend(utc);
-dayjs.locale('se');
+dayjs.locale('sv');
 dayjs.extend(updateLocale);
-dayjs.updateLocale('se', {
+dayjs.updateLocale('sv', {
   months: [
     'Januari',
     'Februari',
@@ -38,7 +40,11 @@ dayjs.updateLocale('se', {
   monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'],
 });
 
-function MyApp({ Component, pageProps }: AppProps) {
+interface ClientApplicationProps {
+  children: ReactNode;
+}
+
+const AppLayout = ({ children }: ClientApplicationProps) => {
   const theme = useMemo(
     () =>
       extendTheme({
@@ -52,18 +58,26 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 
   const colorScheme = store.get('colorScheme') as ColorSchemeMode;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    getMe();
+    setMounted(true);
+  }, [getMe, setMounted]);
+
+  if (!mounted) {
+    return <Spinner size={10} />;
+  }
 
   return (
-    <GuiProvider theme={theme} colorScheme={colorScheme}>
+    <GuiProvider colorScheme={colorScheme}>
       <ConfirmationDialogContextProvider>
         <AppWrapper>
-          <LoginGuard>
-            <Component {...pageProps} />
-          </LoginGuard>
+          <LoginGuard>{children}</LoginGuard>
         </AppWrapper>
       </ConfirmationDialogContextProvider>
     </GuiProvider>
   );
-}
+};
 
-export default MyApp;
+export default AppLayout;

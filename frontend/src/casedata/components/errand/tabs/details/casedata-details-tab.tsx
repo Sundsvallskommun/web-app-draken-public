@@ -15,7 +15,6 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
-  Disclosure,
   Divider,
   FormControl,
   FormLabel,
@@ -168,12 +167,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         detail.formField.type === 'datetime-local' ? (
           errand.caseType !== 'MEX_APPLICATION_FOR_ROAD_ALLOWANCE' ? (
             <Input
-              type={detail.formField.type}
+              type={detail?.formField?.type}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
               value={
                 errand.caseType === 'APPEAL' && detail.formField.type === 'text'
                   ? errand.relatesTo[0]?.errandNumber
-                  : null
+                  : undefined
               }
               readOnly={errand.caseType === 'APPEAL' && detail.formField.type === 'text'}
               className={cx(
