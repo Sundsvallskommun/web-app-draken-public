@@ -11,7 +11,7 @@ import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-f
 import { ErrandsTable } from './components/errands-table.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { ExportButton } from '@common/components/export-button/export-button.component';
-import { isMEX } from '@common/services/application-service';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -263,7 +263,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
                   ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
                   : null}
               </h1>
-              {isMEX() ? <ExportButton errands={errands} municipalityId={municipalityId} /> : null}
+              {isExportEnabled() && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
 
             <Disclosure.Panel static>
