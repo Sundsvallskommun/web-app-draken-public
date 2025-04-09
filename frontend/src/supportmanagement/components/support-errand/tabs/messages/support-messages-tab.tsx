@@ -29,13 +29,21 @@ export const SupportMessagesTab: React.FC<{
   const [sortedMessages, setSortedMessages] = useState(props.messages);
   const { t } = useTranslation();
 
-  const emailBody = t(`messages:templates.email.${process.env.NEXT_PUBLIC_APPLICATION}`, {
-    user: `${user.firstName} ${user.lastName}`,
-  });
+  const emailBody = t(
+    `messages:templates.email.${process.env.NEXT_PUBLIC_APPLICATION}`,
+    t(`messages:templates.email.default`),
+    {
+      user: `${user.firstName} ${user.lastName}`,
+    }
+  );
 
-  const smsBody = t(`messages:templates.sms.${process.env.NEXT_PUBLIC_APPLICATION}`, {
-    user: `${user.firstName}`,
-  });
+  const smsBody = t(
+    `messages:templates.sms.${process.env.NEXT_PUBLIC_APPLICATION}`,
+    t(`messages:templates.sms.default`),
+    {
+      user: `${user.firstName}`,
+    }
+  );
 
   useEffect(() => {
     setRichText(smsBody);
