@@ -1,4 +1,5 @@
-import { getApplicationName, isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Channels, ContactChannelType, SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
 
@@ -38,7 +39,7 @@ export const getEscalationMessage: (
   metadata: SupportMetadata,
   user: string
 ) => Promise<string> = async (e, existingAttachments, metadata, user) => {
-  const department = isKC() ? 'Sundsvalls kommun' : getApplicationName();
+  const department = isKC() ? 'Sundsvalls kommun' : appConfig.applicationName;
   const description = maybe(e?.description);
   const files = maybeList(existingAttachments?.map((a) => a.fileName));
   const attachments = maybeList(e?.attachments?.map((a) => a.file?.[0].name));

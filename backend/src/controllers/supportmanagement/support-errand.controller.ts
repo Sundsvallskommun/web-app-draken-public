@@ -252,8 +252,9 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsObject()
   @IsOptional()
   classification?: Classification;
+  @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
   @IsOptional()
   @IsString()
   resolution?: string;
@@ -548,8 +549,8 @@ export class SupportErrandController {
           }
         : isKA()
         ? {
-            category: 'CONTACT_CENTER',
-            type: 'CONTACT_CENTER.UNCATEGORIZED',
+            category: 'ADMINISTRATION',
+            type: 'ADMINISTRATION.CONTACT_CENTER',
           }
         : isLOP()
         ? {
@@ -570,7 +571,7 @@ export class SupportErrandController {
         : isIK()
         ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
         : isKA()
-        ? ['CONTACT_CENTER', 'CONTACT_CENTER.UNCATEGORIZED']
+        ? ['ADMINISTRATION', 'ADMINISTRATION.CONTACT_CENTER', 'ADMINISTRATION.CONTACT_CENTER.GENERAL']
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,

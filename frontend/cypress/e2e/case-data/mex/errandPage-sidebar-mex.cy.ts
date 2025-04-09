@@ -183,7 +183,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="history-wrapper"]').should('exist');
       events.forEach((event, index) => {
-        cy.get(`[data-cy="history-event-label-${index}"]`).should('exist').should('have.text', event).click();
+        cy.get(`[data-cy="history-event-label-${index}"]`)
+          .should('exist')
+          .should('have.text', event)
+          .click({ force: true });
         cy.get('[data-cy="history-details-title"]').should('not.be.empty');
         cy.get('[data-cy="history-details-type"]').should('not.be.empty');
         cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();

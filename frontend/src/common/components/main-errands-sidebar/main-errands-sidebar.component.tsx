@@ -1,28 +1,22 @@
-import NextLink from 'next/link';
-import {
-  getApplicationEnvironment,
-  getApplicationName,
-  isIK,
-  isKA,
-  isKC,
-  isLOP,
-} from '@common/services/application-service';
-import { FormProvider, useForm } from 'react-hook-form';
+import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
+import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { NotificationsBell } from '@common/components/notifications/notifications-bell';
+import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
+import { getApplicationEnvironment, isKA } from '@common/services/application-service';
+import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Badge, Button, cx, Divider, Logo } from '@sk-web-gui/react';
-import { NotificationsBell } from '@common/components/notifications/notifications-bell';
-import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
+import NextLink from 'next/link';
 import { useState } from 'react';
-import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
-import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
-import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
-import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
+import { FormProvider, useForm } from 'react-hook-form';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -34,7 +28,6 @@ export const MainErrandsSidebar: React.FC<{
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
-  const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
 
   const MainTitle = (open: boolean) => (
@@ -42,14 +35,15 @@ export const MainErrandsSidebar: React.FC<{
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
         className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
+        symbol={appConfig.symbol}
         title={'Draken'}
-        subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
   );
@@ -91,7 +85,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {isLOP() || isKC() || isKA() || isIK() ? (
+          {appConfig.isSupportManagement || isKA() ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
@@ -99,11 +93,12 @@ export const MainErrandsSidebar: React.FC<{
                 iconButton={!open}
               />
             </FormProvider>
-          ) : (
+          ) : null}
+          {appConfig.isCaseData ? (
             <FormProvider {...casedataFilterForm}>
               <CasedataFilterSidebarStatusSelector iconButton={!open} />
             </FormProvider>
-          )}
+          ) : null}
         </div>
         {attestationEnabled(user) && (
           <>

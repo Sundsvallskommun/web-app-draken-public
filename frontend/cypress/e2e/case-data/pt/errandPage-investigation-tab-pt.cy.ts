@@ -39,7 +39,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.visit(`/arende/${mockPTErrand_base.data.municipalityId}/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs .sk-menubar button').eq(5).should('have.text', 'Utredning').click({ force: true });
+      cy.get('.sk-tabs-list button').eq(5).should('have.text', 'Utredning').click({ force: true });
     });
 
     it('displays the correct data', () => {
@@ -75,7 +75,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       delete decidedBy.id;
 
       cy.wait('@updateDecision').should(({ request }) => {
-        expect(request.body.id).to.equal(29);
+        expect(request.body.id).to.equal(String(29));
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('PROPOSED');
         expect(request.body.decisionOutcome).to.equal('REJECTION');
