@@ -40,6 +40,7 @@ import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
 import { Role } from '@casedata/interfaces/role';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
+import { useTranslation } from 'next-i18next';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
@@ -163,6 +164,7 @@ export const MessageComposer: React.FC<{
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
+  const { t } = useTranslation();
   useEffect(() => {
     const _a = validateAction(errand, user) && !!errand.administrator;
     setAllowed(_a);
@@ -311,22 +313,14 @@ export const MessageComposer: React.FC<{
   }, [contactMeans]);
 
   const defaultSignature = () => {
-    let content =
-      `<br><br>Med vänlig hälsning<br><br><b>` + errand.administratorName + `</b><br><br><b>Sundsvalls kommun</b>`;
-    content += isMEX()
-      ? `<p>Stadsbyggnadskontoret</p>
-       <p>Mark- och exploateringsavdelningen</p>`
-      : isPT()
-      ? `
-       <p>Gatuavdelningen, Trafiksektionen</p>`
-      : null;
-    content += `<p>851 85 Sundsvall</p><p>Besöksadress: Norrmalmsgatan 4</p><p>Telefon: +46 60 19 10 00</p><a href="http://www.sundsvall.se/" target="_blank">www.sundsvall.se</a><br><br>`;
-
-    content += `<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>`;
-    content += `<p>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR).</p><br>`;
-    content += `<p>Läs mer på <a href="http://www.sundsvall.se/personuppgifter" target="_blank">www.sundsvall.se/personuppgifter</a>.</p>`;
-
-    return content;
+    return t('messages:templates.case_data_default_signature', {
+      user: errand.administratorName,
+      department: isMEX()
+        ? 'Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen'
+        : isPT()
+        ? 'Gatuavdelningen, Trafiksektionen'
+        : null,
+    });
   };
 
   useEffect(() => {
@@ -351,37 +345,30 @@ export const MessageComposer: React.FC<{
     }
   }, [props.message, errand]);
 
-  const changeTemplate = (inTemplateValue) => {
-    let content = 'Hej,<br><br>';
+  const changeTemplate = (inTemplateValue: string) => {
     if (inTemplateValue === 'mex-feedbackPrio') {
-      content +=
-        'Tack för att du kontaktar oss med visat intresse för Sundsvall!<br><br>Vi har tagit emot din förfrågan gällande xx, som kräver utredning av handläggare. Vi har hög inströmning av ärenden just nu med anledning av att många vill använda och utveckla kommunens mark. <br><br>Vi prioriterar förfrågningar från företag och föreningar. <br><br>En preliminär bedömning är att ditt ärende kommer tilldelas en handläggare om ca fyra månader. När du står på tur kontaktar handläggaren dig för mer information.';
+      setRichText(
+        t('messages:templates.email.MEX.priority') +
+          defaultSignature() +
+          t('messages:templates.email.MEX.public_documents')
+      );
     } else if (inTemplateValue === 'mex-feedbackNormal') {
-      content +=
-        'Tack för att du kontaktar oss.<br><br>Vi har tagit emot din förfrågan gällande xx, som kräver utredning av handläggare. Vi har hög inströmning av ärenden just nu med anledning av att många vill använda och utveckla kommunens mark. Vi prioriterar förfrågningar från företag och föreningar och handlägger övriga förfrågningar i turordning.<br><br>En preliminär bedömning är att ditt ärende kommer tilldelas en handläggare om ca sex månader. När det är din tur kontaktar handläggaren dig för mer information.<br><br>Vi hörs vidare!';
+      setRichText(
+        t('messages:templates.email.MEX.normal') +
+          defaultSignature() +
+          t('messages:templates.email.MEX.public_documents')
+      );
     } else if (inTemplateValue === 'mex-additionalInformation') {
-      content +=
-        'Vi behöver få mer information från er om vad er förfrågan gäller samt vilket område det handlar om innan vi kan ta ärendet vidare. Det är viktigt för oss att veta eftersom det avgör hur vi ska prioritera ärendet för vidare handläggning och även för att bedöma vem eller vilka som ska hantera det. När det handlar om kommunägd mark är det flera förvaltningar inom kommunen som har olika ansvar, det gör att flera förvaltningar kan blir inblandade i handläggningen av ärendet.<br><br>För att kunna hjälpa er på bästa sätt måste ni inkomma med en beskrivning av er förfrågan, område och ändamål/syfte.';
+      setRichText(t('messages:templates.email.MEX.additional_information') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralBuildingPermit') {
-      content +=
-        'Vi önskar yttrande från er i denna fråga då den berör mark där ni har ett förvaltningsansvar. Det gäller ett bygglov, se bifogade handlingar.<br><br>Vänligen skicka skriftligt yttrande till oss senast inom 5 arbetsdagar.<br>Vid uteblivet svar kommer vi yttra oss enligt vårt kompetensområde.';
+      setRichText(t('messages:templates.email.MEX.internal_referral_building_permit') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralWire') {
-      content +=
-        'Vi önskar yttrande från er i denna fråga då den berör mark där ni har ett förvaltningsansvar. Det gäller en ny ledningssträcka, se bifogade handlingar. Kartan visar den föreslagna sträckan men det kan också finnas annat att ta hänsyn till, som exempelvis nya kabelskåp, transformatorstationer mm. Vi vill att ni svarar oss utifrån er kompetens om ni tycker sträckan är lämplig eller om ni önskar att något justeras. Det är sedan vi som undertecknar avtalet.<br><br>Skriftligt yttrande ska vara skickat till mig via e-post senast inom 7 dagar. Vid uteblivet svar kommer vi handlägga frågan utifrån vårt kompetensområde.';
+      setRichText(t('messages:templates.email.MEX.internal_referral_wire') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralWireCheck') {
-      content +=
-        'Tack för din förfrågan.<br><br>Vi på mark- och exploateringsavdelningen kan tyvärr inte svara på frågor om ledningar i kommunens mark. Du ska istället att vända dig till respektive ledningsägare för att få informationen du söker. Här nedan följer kontaktuppgifter till de kommunala bolagen och för kommunal gatubelysning.<br><br>MittSverige Vatten & Avfall lämnar upplysningar om va-ledningsnätet.<br>Tel kundservice: 020-120 25 00<br>E-post: kundservice@msva.se<br><br>Sundsvall Energi AB lämnar uppgifter om fjärrvärmeledningsnätet<br>Tel växel: 060-19 20 80<br>E-post: info@sundsvallenergi.se<br><br>Sundsvalls Elnät lämnar uppgifter om elkraft.<br>Tel: 060-600 50 20<br>E-post: info@sundsvallelnat.se<br><br>ServaNet lämnar uppgifter om bredband<br>Tel kundcenter: 0200-12 00 35<br><br>Gatuavdelningen belysningsingenjör lämnar upplysningar om kommunens ledningar för gatubelysning.<br>E-post: gatuavdelningen@sundsvall.se';
+      setRichText(t('messages:templates.email.MEX.internal_referral_wire_check') + defaultSignature());
+    } else {
+      setRichText(t('messages:templates.email.default') + defaultSignature());
     }
-
-    content += defaultSignature();
-
-    // lägger till enbart för mex-feedbackPrio och mex-feedbackNormal
-    if (inTemplateValue === 'mex-feedbackPrio' || inTemplateValue === 'mex-feedbackNormal') {
-      content +=
-        '<br><br><a href="http://www.sundsvall.se/allmanhandling" target="_blank">Läs mer om allmänna handlingar, Allmän och offentlig handling, Sundsvalls kommun</a>';
-    }
-
-    setRichText(content);
   };
 
   return (

@@ -1,0 +1,8 @@
+{
+  "basics_tab" : {
+    "cause_description" : {
+      "title": "Orsaksbeskrivning",
+      "description_KC": "Lägg till orsaksbeskrivning",
+      "description_KA" : "Brist i kunskapsbank"
+    }
+}}
