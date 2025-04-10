@@ -215,7 +215,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   </div>
                                 </div>
 
-                                {appConfig.features.useFacilites ? (
+                                {appConfig.features.useFacilities ? (
                                   <div className="pr-sm w-[40%]">
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>

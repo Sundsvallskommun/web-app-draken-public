@@ -409,7 +409,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
-            {appConfig.features.useFacilites ? (
+            {appConfig.features.useFacilities ? (
               <Facilities
                 facilities={realEstates}
                 setUnsaved={props.setUnsaved}
