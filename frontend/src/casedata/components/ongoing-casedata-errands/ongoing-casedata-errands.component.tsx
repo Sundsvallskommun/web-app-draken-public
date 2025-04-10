@@ -10,6 +10,8 @@ import { FormProvider, useForm } from 'react-hook-form';
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ExportButton } from '@common/components/export-button/export-button.component';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -254,13 +256,14 @@ export const OngoingCaseDataErrands: React.FC = () => {
       <main className="px-24 md:px-40 pb-40 w-full h-full">
         <div className="container mx-auto p-0 w-full">
           <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
-            <div>
+            <div className="flex justify-between">
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
                 {sidebarLabel === 'Avslutade ärenden'
                   ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
                   : null}
               </h1>
+              {isExportEnabled() && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
 
             <Disclosure.Panel static>

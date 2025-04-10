@@ -5,3 +5,4 @@ export const isSuspendEnabled = () => isKC() || isLOP();
 export const isAppealEnabled = () => isPT() && getApplicationEnvironment() === 'TEST';
 export const isNotificicationEnabled = () => true;
 export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;
+export const isExportEnabled = () => false;
