@@ -55,7 +55,7 @@ export const SupportErrandBasicsTab: React.FC<{
       {/* <SupportErrandBasicsOwnerDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
       {/* <SupportErrandBasicsStakeholdersDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
 
-      {appConfig.features.useFacilites ? (
+      {appConfig.features.useFacilities ? (
         <SupportErrandBasicsRealEstateDisclosure
           setUnsavedFacility={props.setUnsavedFacility}
           supportErrand={supportErrand}
