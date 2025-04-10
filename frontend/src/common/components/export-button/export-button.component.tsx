@@ -40,6 +40,7 @@ export const ExportButton: React.FC<ExportButtonProps> = (props) => {
           handleExportErrands();
         }
       }}
+      data-cy="export-button"
     >
       Exportera listan
     </Button>

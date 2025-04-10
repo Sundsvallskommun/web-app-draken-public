@@ -28,4 +28,8 @@ export const mockSidebarButtons: {
     label: 'Ärendelogg',
     key: 'history',
   },
+  {
+    label: 'Exportera ärende',
+    key: 'export',
+  },
 ];

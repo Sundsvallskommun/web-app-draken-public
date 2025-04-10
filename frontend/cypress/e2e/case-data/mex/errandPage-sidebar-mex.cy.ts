@@ -12,6 +12,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockContract } from '../fixtures/mockContract';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -199,6 +200,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Nytt värde:');
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Under beslut');
       cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
+    });
+
+    it('manages Exports', () => {
+      if (isExportEnabled()) {
+        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
+        cy.get('[data-cy="basicInformation"]').should('exist');
+      } else {
+        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('not.exist');
+      }
     });
   });
 });

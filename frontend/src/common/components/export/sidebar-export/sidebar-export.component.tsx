@@ -46,22 +46,22 @@ export const SidebarExport: React.FC = () => {
       </div>
 
       <FormControl className="w-full">
-        <Checkbox {...register('basicInformation')} key={'basicInformation'}>
+        <Checkbox {...register('basicInformation')} key="basicInformation" data-cy="basicInformation">
           Inkludera grundinformation
         </Checkbox>
-        <Checkbox {...register('errandInformation')} key={'errandInformation'}>
+        <Checkbox {...register('errandInformation')} key="errandInformation" data-cy="errandInformation">
           Inkludera ärendeuppgifter
         </Checkbox>
-        <Checkbox {...register('attachments')} key={'attachments'}>
+        <Checkbox {...register('attachments')} key="attachments" data-cy="attachments">
           Inkludera bilagor
         </Checkbox>
-        <Checkbox {...register('messages')} key={'messages'}>
+        <Checkbox {...register('messages')} key="messages" data-cy="messages">
           Inkludera meddelanden
         </Checkbox>
-        <Checkbox {...register('notes')} key={'notes'}>
+        <Checkbox {...register('notes')} key="notes" data-cy="notes">
           Inkludera tjänsteanteckningar
         </Checkbox>
-        <Checkbox {...register('investigationText')} key={'investigationText'}>
+        <Checkbox {...register('investigationText')} key="investigationText" data-cy="investigationText">
           Inkludera utredningstext
         </Checkbox>
 
