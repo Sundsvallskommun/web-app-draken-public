@@ -19,7 +19,7 @@ export const ExportButton: React.FC<ExportButtonProps> = (props) => {
   };
 
   const handleExportErrands = () => {
-    exportErrands(municipalityId, errands).then(() => {});
+    exportErrands(municipalityId, errands.errands).then(() => {});
   };
 
   return (
