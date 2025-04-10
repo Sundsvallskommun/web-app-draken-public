@@ -15,7 +15,7 @@ interface AppConfigFeatures {
   useReasonForContact: boolean;
   useBusinessCase: boolean;
   useBilling: boolean;
-  useFacilites: boolean;
+  useFacilities: boolean;
   useExtraInformationStakeholders: boolean;
 }
 
@@ -31,7 +31,7 @@ export const appConfig: AppConfig = {
     useReasonForContact: process.env.NEXT_PUBLIC_USE_REASON_FOR_CONTACT === 'true',
     useBusinessCase: process.env.NEXT_PUBLIC_USE_BUSINESS_CASE === 'true',
     useBilling: process.env.NEXT_PUBLIC_USE_BILLING === 'true',
-    useFacilites: process.env.NEXT_PUBLIC_USE_FACILITES === 'true',
+    useFacilities: process.env.NEXT_PUBLIC_USE_FACILITIES === 'true',
     useExtraInformationStakeholders: process.env.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS === 'true',
   },
 };
