@@ -356,7 +356,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             </div>
           </Divider.Section>
         ) : null}
-        <div className="px-0 md:px-24 lg:px-40">
+        <div className="px-0">
           {fields?.map(renderFormControl)}
           <Button
             key={`section-${label}`}
