@@ -206,6 +206,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       if (isExportEnabled()) {
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
         cy.get('[data-cy="basicInformation"]').should('exist');
+        cy.get('[data-cy="export-button"]').should('exist').click();
+        cy.get('p')
+          .should('exist')
+          .contains('Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.');
       } else {
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('not.exist');
       }
