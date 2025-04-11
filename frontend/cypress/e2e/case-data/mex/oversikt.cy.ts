@@ -11,7 +11,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
-import { mockErrand_base } from '../fixtures/mockErrand';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Overview page', () => {
@@ -220,6 +220,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'have.length',
         mockErrands_base.data.content.length
       );
+    });
+
+    it('Can use export', () => {
+      if (isExportEnabled()) {
+        cy.get('[data-cy="export-button"]').should('exist').click();
+        cy.get('p').should('exist').contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?');
+      } else {
+        cy.get('[data-cy="export-button"]').should('not.exist');
+      }
     });
   });
 });

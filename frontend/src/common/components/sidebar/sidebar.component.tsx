@@ -8,6 +8,7 @@ import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -17,6 +18,7 @@ export type SidebarButtonKey =
   | 'guides'
   | 'todo'
   | 'investigation'
+  | 'export'
   | undefined;
 
 export const Sidebar: React.FC<{
@@ -78,7 +80,7 @@ export const Sidebar: React.FC<{
         style={{ marginTop: `-${scrolled}px` }}
       >
         {buttons.map((b, idx) =>
-          isPT() && b.key === 'guides' ? null : (
+          (isPT() && b.key === 'guides') || (!isExportEnabled() && b.key === 'export') ? null : (
             <SidebarTooltip key={`sidebartooltip-${idx}`} open={hover === b.key}>
               {b.label}
             </SidebarTooltip>
@@ -94,7 +96,8 @@ export const Sidebar: React.FC<{
       >
         <div role="none" className="flex flex-col pt-18 lg:pt-32 gap-12 pb-12 items-center w-full px-8">
           {buttons.map((b, idx) =>
-            isPT() && (b.key === 'guides' || b.key === 'investigation') ? null : (
+            (isPT() && (b.key === 'guides' || b.key === 'investigation')) ||
+            (!isExportEnabled() && b.key === 'export') ? null : (
               <div key={`sidebarkey-${idx}`} className="relative w-full flex justify-center" role="none">
                 <Button
                   role="menuitem"
