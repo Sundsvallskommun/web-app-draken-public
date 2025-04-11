@@ -12,6 +12,7 @@ import {
 import { getSupportMetadata, SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'next-i18next';
 
 const LABEL_LEVELS = {
   CATEGORY: 'CATEGORY',
@@ -24,7 +25,6 @@ export const ThreeLevelCategorization: React.FC<{
 }> = (props) => {
   const {
     supportMetadata,
-    user,
   }: {
     supportMetadata: SupportMetadata;
     supportAttachments: SupportAttachment[];
@@ -33,12 +33,13 @@ export const ThreeLevelCategorization: React.FC<{
   } = useAppContext();
 
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
-  const { watch, setValue, trigger, register, formState, getValues } = formControls;
+  const { watch, setValue, trigger, register, formState } = formControls;
   const { errors } = formState;
   const { category, type, labels } = watch();
   const { supportErrand } = props;
   const [categoriesList, setCategoriesList] = useState<Label[]>();
   const [typesList, setTypesList] = useState<Label[]>();
+  const { t } = useTranslation();
 
   // Needed until labels and old categories have identical names
   const [oldCategoriesList, setOldCategoriesList] = useState<Category[]>();
@@ -139,7 +140,12 @@ export const ThreeLevelCategorization: React.FC<{
       </div>
       <div className="flex my-md gap-xl w-1/2">
         <FormControl id="labelType" className="w-full">
-          <FormLabel>Ärendetyp*</FormLabel>
+          <FormLabel>
+            {t(
+              `common:basics_tab.errandType.${process.env.NEXT_PUBLIC_APPLICATION}`,
+              t(`common:basics_tab.errandType.default`)
+            )}
+          </FormLabel>
           <Combobox
             {...register('type')}
             disabled={isSupportErrandLocked(supportErrand)}
@@ -174,7 +180,7 @@ export const ThreeLevelCategorization: React.FC<{
               setValue('type', oldType?.name, { shouldDirty: true });
               trigger('type');
             }}
-            onChange={(e) => {}}
+            onChange={() => {}}
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />
             <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">

@@ -1,5 +1,9 @@
 {
   "basics_tab" : {
+    "errandType" : {
+      "KA" : "Ärendekategori*",
+      "default" : "Ärendetyp*"
+    },
     "cause_description" : {
       "title": "Orsaksbeskrivning",
       "description_KC": "Lägg till orsaksbeskrivning",

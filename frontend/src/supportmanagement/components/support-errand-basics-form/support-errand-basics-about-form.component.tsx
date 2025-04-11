@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isKA, isKC } from '@common/services/application-service';
+import { isKA } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
@@ -25,7 +25,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 }> = (props) => {
   const {
     supportMetadata,
-    user,
   }: {
     supportMetadata: SupportMetadata;
     supportAttachments: SupportAttachment[];
@@ -48,7 +47,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     setValue,
     getValues,
     trigger,
-    formState,
     formState: { errors },
   } = props.formControls;
 
@@ -151,7 +149,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {appConfig.features.useThreeLevelCategorization || isKA() ? (
+      {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
@@ -164,7 +162,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
               disabled={isSupportErrandLocked(supportErrand)}
               {...register('businessRelated')}
               checked={businessRelated ? true : false}
-              onChange={(e) => {
+              onChange={() => {
                 businessRelated === 'true' || businessRelated
                   ? setValue('businessRelated', false, { shouldDirty: true })
                   : setValue('businessRelated', true, { shouldDirty: true });
