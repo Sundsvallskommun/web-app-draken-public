@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, FormControl } from '@sk-web-gui/react';
+import { Button, Checkbox, FormControl, useConfirm } from '@sk-web-gui/react';
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@contexts/app.context';
 import { useForm } from 'react-hook-form';
 import { exportErrands } from '@common/services/export-service';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 
 interface ExportParameters {
   basicInformation: boolean;
@@ -17,6 +18,7 @@ interface ExportParameters {
 export const SidebarExport: React.FC = () => {
   const { municipalityId, errand }: { municipalityId: string; errand: IErrand } = useAppContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const exportConfirm = useConfirm();
 
   const { register, getValues } = useForm<ExportParameters>({
     defaultValues: {
@@ -28,6 +30,10 @@ export const SidebarExport: React.FC = () => {
       investigationText: true,
     },
   });
+
+  const isErrandNotClosed = () => {
+    return errand.status.statusType !== ErrandStatus.ArendeAvslutat;
+  };
 
   const handleSubmit = () => {
     setIsLoading(true);
@@ -65,7 +71,28 @@ export const SidebarExport: React.FC = () => {
           Inkludera utredningstext
         </Checkbox>
 
-        <Button onClick={handleSubmit} className="mt-24" color="vattjom" loading={isLoading}>
+        <Button
+          onClick={async () => {
+            const confirmed = await exportConfirm.showConfirmation(
+              'Exportera ärende?',
+              `${
+                isErrandNotClosed()
+                  ? 'Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.'
+                  : 'Vill du exportera ärendet?'
+              }`,
+              'Ja',
+              'Nej',
+              'info'
+            );
+            if (confirmed) {
+              handleSubmit();
+            }
+          }}
+          className="mt-24"
+          color="vattjom"
+          loading={isLoading}
+          data-cy="export-button"
+        >
           Exportera ärende
         </Button>
       </FormControl>
