@@ -29,7 +29,7 @@ export default function Layout({ title, children }) {
   const router = useRouter();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
-    : appConfig.isSupportManagement || isKA()
+    : appConfig.isSupportManagement
     ? supportErrand?.errandNumber
     : undefined;
   const hostName = window.location.hostname;
@@ -112,7 +112,7 @@ export default function Layout({ title, children }) {
         <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {appConfig.isSupportManagement || isKA() ? (
+        {appConfig.isSupportManagement ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">

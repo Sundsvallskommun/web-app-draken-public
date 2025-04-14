@@ -1,7 +1,6 @@
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
@@ -13,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 export const Oversikt: React.FC = () => {
   const router = useRouter();
 
-  const { user, isLoggedIn, administrators, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } =
+  const { user, isLoggedIn, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } =
     useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
@@ -36,14 +35,14 @@ export const Oversikt: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    (appConfig.isSupportManagement || isKA()) &&
+    appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   return (
     <>
-      {appConfig.isSupportManagement || isKA() ? (
+      {appConfig.isSupportManagement ? (
         <SidebarLayout
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}

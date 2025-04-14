@@ -1,7 +1,6 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
@@ -28,7 +27,7 @@ export default function Arende2() {
     if (appConfig.isCaseData) {
       id?.[0] && setMunicipalityId(id[0]);
       id?.[1] && setErrandId(id[1]);
-    } else if (appConfig.isSupportManagement || isKA()) {
+    } else if (appConfig.isSupportManagement) {
       id?.[0] && setMunicipalityId(id[0]);
       id?.[1] && setErrandId(id[1]);
     }
@@ -42,7 +41,7 @@ export default function Arende2() {
   }, []);
 
   useEffect(() => {
-    (appConfig.isSupportManagement || isKA()) &&
+    appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
@@ -62,7 +61,7 @@ export default function Arende2() {
 
         {appConfig.isCaseData
           ? errandId && <CasedataErrandComponent id={errandId} />
-          : appConfig.isSupportManagement || isKA()
+          : appConfig.isSupportManagement
           ? errandId && municipalityId && <SupportErrandComponent id={errandId} />
           : null}
       </Layout>

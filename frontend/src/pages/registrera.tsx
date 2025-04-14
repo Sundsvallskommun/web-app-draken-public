@@ -1,7 +1,6 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
@@ -47,7 +46,7 @@ export const Oversikt: React.FC = () => {
             Hoppa till innehåll
           </a>
         </NextLink>
-        {appConfig.isSupportManagement || isKA() ? <SupportErrandComponent /> : null}
+        {appConfig.isSupportManagement ? <SupportErrandComponent /> : null}
         {appConfig.isCaseData ? <CasedataErrandComponent /> : null}
       </Layout>
     </div>

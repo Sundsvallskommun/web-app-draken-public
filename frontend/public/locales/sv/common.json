@@ -4,6 +4,10 @@
       "KA" : "Ärendekategori*",
       "default" : "Ärendetyp*"
     },
+    "contactReason" : {
+      "KA" : "Ärendet avsåg",
+      "default": "Orsak till kontakt"
+    },
     "cause_description" : {
       "title": "Orsaksbeskrivning",
       "description_KC": "Lägg till orsaksbeskrivning",

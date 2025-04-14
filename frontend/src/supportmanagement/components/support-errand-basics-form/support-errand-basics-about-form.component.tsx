@@ -1,7 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isKA } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
@@ -193,10 +192,15 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {appConfig.features.useReasonForContact || isKA() ? (
+        {appConfig.features.useReasonForContact ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
-              <FormLabel>{isKA() ? 'Ärendet avsåg' : 'Orsak till kontakt'}</FormLabel>
+              <FormLabel>
+                {t(
+                  `common:basics_tab.contactReason.${process.env.NEXT_PUBLIC_APPLICATION}`,
+                  t('common:basics_tab.contactReason.default')
+                )}
+              </FormLabel>
               <Select
                 {...register('contactReason')}
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -269,7 +273,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       </div>
 
-      {appConfig.features.useExplanationOfTheCause || isKA() ? (
+      {appConfig.features.useExplanationOfTheCause ? (
         <div className="w-full mt-md mb-lg">
           <Checkbox
             id="causecheckbox"
