@@ -90,7 +90,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const quillRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [recipient, setRecipient] = useState<RECIPIENT>('DEPARTMENT');
+  const [recipient, setRecipient] = useState<RECIPIENT>(undefined);
   const [richText, setRichText] = useState<string>('');
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
@@ -216,7 +216,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         leftIcon={<LucideIcon name="forward" />}
         variant="secondary"
         disabled={disabled}
-        onClick={() => setShowModal(true)}
+        onClick={() => {
+          setRecipient(undefined);
+          setValue('recipient', undefined);
+          setValue('emails', []);
+          setShowModal(true);
+        }}
       >
         Överlämna ärendet
       </Button>
@@ -235,7 +240,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                       setValue('recipient', (e.target as HTMLInputElement).value as RECIPIENT);
                     }}
                   >
-                    Verksamhet
+                    Draken
                   </RadioButton>
                   <RadioButton
                     value={'EMAIL'}
