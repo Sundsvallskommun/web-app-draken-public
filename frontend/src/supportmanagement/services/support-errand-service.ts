@@ -31,12 +31,8 @@ export enum ExternalIdType {
   COMPANY = 'COMPANY',
 }
 
-// Keeping both enums for now, as the backend uses the uppercase version
-// but existing stakeholders use the lowercase version
 export enum ContactChannelType {
-  Email = 'Email',
   EMAIL = 'EMAIL',
-  Phone = 'Phone',
   PHONE = 'PHONE',
 }
 
@@ -626,10 +622,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             newRole: 'PRIMARY',
             internalId: uuidv4(),
             emails: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
+              .filter((c) => c.type === ContactChannelType.EMAIL)
               .map((c) => ({ value: c.value })),
             phoneNumbers: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
+              .filter((c) => c.type === ContactChannelType.PHONE)
               .map((c) => ({ value: c.value })),
           })) || [],
       contacts:
@@ -646,10 +642,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             newRole: s.role as string,
             internalId: uuidv4(),
             emails: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
+              .filter((c) => c.type === ContactChannelType.EMAIL)
               .map((c) => ({ value: c.value })),
             phoneNumbers: s.contactChannels
-              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
+              .filter((c) => c.type === ContactChannelType.PHONE)
               .map((c) => ({ value: c.value })),
           })) || [],
     };

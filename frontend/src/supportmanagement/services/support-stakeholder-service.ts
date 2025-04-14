@@ -31,8 +31,8 @@ export const applicantContactChannel = (errand: SupportErrand) => {
   }
 
   const contactChannel =
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email) ||
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone);
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL) ||
+    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE);
 
   if (!contactChannel) {
     return { contactMeans: ContactChannelType.EMAIL, values: [] };
