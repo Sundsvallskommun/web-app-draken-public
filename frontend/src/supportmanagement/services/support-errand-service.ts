@@ -277,13 +277,8 @@ export enum ResolutionLabelKS {
 }
 
 export enum ResolutionLabelKA {
-  SOLVED = 'Löst av Kontakt Ånge',
-  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
-  CONNECTED = 'Kopplat samtal',
-  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
-  SELF_SERVICE = 'Hänvisat till självservice',
-  INTERNAL_SERVICE = 'Hänvisat till intern service',
-  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+  SOLVED = 'Löst av Kontaktcenter',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
 }
 
 export const ongoingSupportErrandLabelsKC = [
