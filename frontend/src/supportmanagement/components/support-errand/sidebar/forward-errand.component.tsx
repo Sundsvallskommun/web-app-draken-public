@@ -218,9 +218,9 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         disabled={disabled}
         onClick={() => setShowModal(true)}
       >
-        Vidarebefordra ärendet
+        Överlämna ärendet
       </Button>
-      <Modal show={showModal} label="Vidarebefordra ärende" className="w-[52rem]" onClose={() => setShowModal(false)}>
+      <Modal show={showModal} label="Överlämna ärendet" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
           {isKC() && (
             <>
@@ -318,14 +318,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             loadingText="Vidarebefordrar ärende"
             onClick={() => {
               confirm
-                .showConfirmation(
-                  'Vidarebefordra ärende',
-                  'Vill du vidarebefordra ärendet?',
-                  'Ja',
-                  'Nej',
-                  'info',
-                  'info'
-                )
+                .showConfirmation('Överlämna ärendet', 'Vill du överlämna ärendet?', 'Ja', 'Nej', 'info', 'info')
                 .then((confirmed) => {
                   if (confirmed) {
                     handleForwardErrand(getValues(), closingMessage);
@@ -333,7 +326,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                 });
             }}
           >
-            Vidarebefordra ärende
+            Överlämna ärendet
           </Button>
         </Modal.Footer>
       </Modal>
