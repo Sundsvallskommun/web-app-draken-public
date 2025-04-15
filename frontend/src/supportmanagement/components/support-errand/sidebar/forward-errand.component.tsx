@@ -3,6 +3,7 @@ import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-ed
 import { User } from '@common/interfaces/user';
 import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
+import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -90,7 +91,9 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const quillRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [recipient, setRecipient] = useState<RECIPIENT>(undefined);
+  const [recipient, setRecipient] = useState<RECIPIENT>(
+    appConfig.features.useDepartmentEscalation ? undefined : 'EMAIL'
+  );
   const [richText, setRichText] = useState<string>('');
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
@@ -119,7 +122,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   });
 
   useEffect(() => {
-    if (isLOP() || isIK() || isKA()) {
+    if (!appConfig.features.useDepartmentEscalation) {
       setValue('recipient', 'EMAIL');
     }
   }, []);
@@ -217,8 +220,10 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         variant="secondary"
         disabled={disabled}
         onClick={() => {
-          setRecipient(undefined);
-          setValue('recipient', undefined);
+          if (appConfig.features.useDepartmentEscalation) {
+            setRecipient(undefined);
+            setValue('recipient', undefined);
+          }
           setValue('emails', []);
           setShowModal(true);
         }}
@@ -227,7 +232,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       </Button>
       <Modal show={showModal} label="Överlämna ärendet" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
-          {isKC() && (
+          {appConfig.features.useDepartmentEscalation && (
             <>
               <p className="text-content font-semibold">Överlämna via:</p>
               <small>

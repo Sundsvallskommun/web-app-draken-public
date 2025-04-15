@@ -1,3 +1,4 @@
+import { isKC } from '@common/services/application-service';
 import { AngeSymbol } from 'src/styles/ange-symbol';
 
 export interface AppConfig {
@@ -15,6 +16,7 @@ interface AppConfigFeatures {
   useBilling: boolean;
   useFacilites: boolean;
   useExtraInformationStakeholders: boolean;
+  useDepartmentEscalation: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -29,6 +31,7 @@ export const appConfig: AppConfig = {
     useBilling: process.env.USE_BILLING === 'true',
     useFacilites: process.env.USE_FACILITES === 'true',
     useExtraInformationStakeholders: process.env.USE_EXTRA_INFORMATION_STAKEHOLDERS === 'true',
+    useDepartmentEscalation: process.env.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION === 'true',
   },
 };
 
