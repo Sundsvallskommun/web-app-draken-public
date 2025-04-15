@@ -3,6 +3,7 @@ import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-ed
 import { User } from '@common/interfaces/user';
 import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
+import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -90,7 +91,9 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const quillRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [recipient, setRecipient] = useState<RECIPIENT>('DEPARTMENT');
+  const [recipient, setRecipient] = useState<RECIPIENT>(
+    appConfig.features.useDepartmentEscalation ? undefined : 'EMAIL'
+  );
   const [richText, setRichText] = useState<string>('');
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
@@ -119,7 +122,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   });
 
   useEffect(() => {
-    if (isLOP() || isIK() || isKA()) {
+    if (!appConfig.features.useDepartmentEscalation) {
       setValue('recipient', 'EMAIL');
     }
   }, []);
@@ -216,16 +219,26 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         leftIcon={<LucideIcon name="forward" />}
         variant="secondary"
         disabled={disabled}
-        onClick={() => setShowModal(true)}
+        onClick={() => {
+          if (appConfig.features.useDepartmentEscalation) {
+            setRecipient(undefined);
+            setValue('recipient', undefined);
+          }
+          setValue('emails', []);
+          setShowModal(true);
+        }}
       >
-        Vidarebefordra ärendet
+        Överlämna ärendet
       </Button>
-      <Modal show={showModal} label="Vidarebefordra ärende" className="w-[52rem]" onClose={() => setShowModal(false)}>
+      <Modal show={showModal} label="Överlämna ärendet" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
-          {isKC() && (
+          {appConfig.features.useDepartmentEscalation && (
             <>
-              <p className="text-content font-semibold">Mottagare</p>
-              <FormControl id="resolution" className="w-full" required>
+              <p className="text-content font-semibold">Överlämna via:</p>
+              <small>
+                Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa fall.
+              </small>
+              <FormControl id="resolution" className="w-full mb-md" required>
                 <RadioButton.Group inline>
                   <RadioButton
                     value={'DEPARTMENT'}
@@ -235,7 +248,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                       setValue('recipient', (e.target as HTMLInputElement).value as RECIPIENT);
                     }}
                   >
-                    Verksamhet
+                    Draken
                   </RadioButton>
                   <RadioButton
                     value={'EMAIL'}
@@ -245,14 +258,14 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                       setValue('recipient', (e.target as HTMLInputElement).value as RECIPIENT);
                     }}
                   >
-                    E-postadress
+                    E-post
                   </RadioButton>
                 </RadioButton.Group>
               </FormControl>
             </>
           )}
           {getValues().recipient === 'EMAIL' ? (
-            <FormControl id="email" className="w-full">
+            <FormControl id="email" className="w-full mb-md">
               <CommonNestedEmailArrayV2
                 errand={supportErrand}
                 data-cy="email-input"
@@ -266,8 +279,8 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
               )}
             </FormControl>
           ) : getValues().recipient === 'DEPARTMENT' ? (
-            <FormControl id="resolution" className="w-full" required={getValues().recipient === 'EMAIL'}>
-              <FormLabel className="text-content font-semibold">Välj verksamhet</FormLabel>
+            <FormControl id="resolution" className="w-full mb-md" required={getValues().recipient === 'EMAIL'}>
+              <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
               <Select
                 className="w-full"
                 size="md"
@@ -318,14 +331,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             loadingText="Vidarebefordrar ärende"
             onClick={() => {
               confirm
-                .showConfirmation(
-                  'Vidarebefordra ärende',
-                  'Vill du vidarebefordra ärendet?',
-                  'Ja',
-                  'Nej',
-                  'info',
-                  'info'
-                )
+                .showConfirmation('Överlämna ärendet', 'Vill du överlämna ärendet?', 'Ja', 'Nej', 'info', 'info')
                 .then((confirmed) => {
                   if (confirmed) {
                     handleForwardErrand(getValues(), closingMessage);
@@ -333,7 +339,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                 });
             }}
           >
-            Vidarebefordra ärende
+            Överlämna ärendet
           </Button>
         </Modal.Footer>
       </Modal>
