@@ -229,8 +229,11 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         <Modal.Content>
           {isKC() && (
             <>
-              <p className="text-content font-semibold">Mottagare</p>
-              <FormControl id="resolution" className="w-full" required>
+              <p className="text-content font-semibold">Överlämna via:</p>
+              <small>
+                Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa fall.
+              </small>
+              <FormControl id="resolution" className="w-full mb-md" required>
                 <RadioButton.Group inline>
                   <RadioButton
                     value={'DEPARTMENT'}
@@ -250,14 +253,14 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                       setValue('recipient', (e.target as HTMLInputElement).value as RECIPIENT);
                     }}
                   >
-                    E-postadress
+                    E-post
                   </RadioButton>
                 </RadioButton.Group>
               </FormControl>
             </>
           )}
           {getValues().recipient === 'EMAIL' ? (
-            <FormControl id="email" className="w-full">
+            <FormControl id="email" className="w-full mb-md">
               <CommonNestedEmailArrayV2
                 errand={supportErrand}
                 data-cy="email-input"
@@ -271,8 +274,8 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
               )}
             </FormControl>
           ) : getValues().recipient === 'DEPARTMENT' ? (
-            <FormControl id="resolution" className="w-full" required={getValues().recipient === 'EMAIL'}>
-              <FormLabel className="text-content font-semibold">Välj verksamhet</FormLabel>
+            <FormControl id="resolution" className="w-full mb-md" required={getValues().recipient === 'EMAIL'}>
+              <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
               <Select
                 className="w-full"
                 size="md"
