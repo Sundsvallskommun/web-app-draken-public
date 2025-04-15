@@ -46,7 +46,7 @@ const CommonNestedEmailArrayV2 = ({
       errand?.stakeholders?.map((stakeholder) => {
         if (stakeholder?.contactChannels?.length) {
           stakeholder?.contactChannels?.map((channel) => {
-            if (channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email) {
+            if (channel.type === ContactChannelType.EMAIL) {
               const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
               stakeholders.push({
                 email: channel?.value ?? [],
