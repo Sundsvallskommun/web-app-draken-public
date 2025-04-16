@@ -311,6 +311,10 @@ export const mockMexErrand_base = {
     updatedBy: 'UNKNOWN',
     extraParameters: [
       {
+        key: 'caseMeaning',
+        values: [''],
+      },
+      {
         key: 'dummyItem',
         values: ['dummyValue1', 'dummyValue2'],
       },
