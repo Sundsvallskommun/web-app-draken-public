@@ -1,7 +1,6 @@
 import { MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
-// import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { apiService } from '@common/services/api-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
@@ -45,6 +44,7 @@ export interface ExtraParametersObject {
   LOST_PARKING_PERMIT?: UppgiftField[];
   PARKING_PERMIT_RENEWAL?: UppgiftField[];
   APPEAL?: UppgiftField[];
+  MEX_GENERAL?: UppgiftField[];
 }
 
 const baseParkingPermitDetails: UppgiftField[] = [
@@ -1041,9 +1041,21 @@ const template: ExtraParametersObject = {
     {
       field: 'application.appeal.extra',
       value: '',
-      label: 'Övrig infomration',
+      label: 'Övrig information',
       formField: {
         type: 'textarea',
+      },
+      section: 'Övergripande',
+    },
+  ],
+  // MEX_GENERAL is used to render extra parameters that will be visible on all case types
+  MEX_GENERAL: [
+    {
+      field: 'caseMeaning',
+      value: '',
+      label: 'Ärendemening',
+      formField: {
+        type: 'text',
       },
       section: 'Övergripande',
     },
@@ -1059,7 +1071,12 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
     const value = param?.values[0] || '';
 
     if (caseType in MEXCaseType || caseType in PTCaseType) {
-      const templateField = (template[caseType] as UppgiftField[])?.find((f) => f.field === field);
+      const caseTypeTemplate =
+        caseType in MEXCaseType
+          ? (template[caseType].concat(template['MEX_GENERAL']) as UppgiftField[])
+          : (template[caseType] as UppgiftField[]);
+      const templateField = caseTypeTemplate?.find((f) => f.field === field);
+
       if (caseType && field && templateField) {
         const { label, formField, section, dependsOn } = templateField;
         obj[caseType] = obj[caseType] || [];

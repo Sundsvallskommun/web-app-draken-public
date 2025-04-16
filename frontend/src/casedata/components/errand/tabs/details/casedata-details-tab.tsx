@@ -26,7 +26,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface CasedataDetailsProps {
@@ -42,33 +42,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    formState,
-    getValues,
-    clearErrors,
-    trigger,
-    reset,
-    formState: { errors },
-  } = useForm<any>({
+  const { register, setValue, getValues, trigger } = useForm<any>({
     // TODO - Correct default values?
     // defaultValues: errand.extraParameters,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
-    return saveFacilities(municipalityId, errand.id, estates).then((res) => {
+    return saveFacilities(municipalityId, errand.id, estates).then(() => {
       setIsLoading(undefined);
       props.setUnsaved(false);
       return getErrand(municipalityId, errand.id.toString())
@@ -82,7 +69,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           });
           setIsLoading(undefined);
         })
-        .catch((e) => {
+        .catch(() => {
           setIsLoading(undefined);
           toastMessage({
             position: 'bottom',
@@ -108,7 +95,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     // }
 
     saveExtraParameters(municipalityId, extraParams, errand)
-      .then((res) => {
+      .then(() => {
         setIsLoading(undefined);
         props.setUnsaved(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => {
@@ -122,7 +109,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           setIsLoading(undefined);
         });
       })
-      .catch((e) => {
+      .catch(() => {
         setIsLoading(undefined);
         toastMessage({
           position: 'bottom',
@@ -351,6 +338,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             </div>
           </Divider.Section>
         ) : null}
+
         <div className="px-0">
           {fields?.map(renderFormControl)}
           <Button
@@ -409,6 +397,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
+
             {appConfig.features.useFacilities ? (
               <Facilities
                 facilities={realEstates}
@@ -417,6 +406,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
               />
             ) : null}
+
             {[
               {
                 label: 'Övergripande',
