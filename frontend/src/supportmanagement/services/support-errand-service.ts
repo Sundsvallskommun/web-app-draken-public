@@ -18,6 +18,7 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import store from '@supportmanagement/services/storage-service';
 
 export interface Customer {
   id: string;
@@ -429,6 +430,10 @@ export const useSupportErrands = (
     setSolvedSupportErrands,
     solvedSupportErrands,
   } = useAppContext();
+
+  const unparsedStoredFilter = store.get('filter');
+  const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
@@ -436,7 +441,7 @@ export const useSupportErrands = (
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
         })
-        .catch((err) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -446,11 +451,17 @@ export const useSupportErrands = (
         });
 
       const fetchPromises = [
-        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
+        getSupportErrands(
+          municipalityId,
+          page,
+          storedFilter.status === 'NEW' ? size : 1,
+          { ...filter, status: Status.NEW },
+          sort
+        )
           .then((res) => {
             setNewSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -462,14 +473,14 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          size,
+          storedFilter.status === 'ONGOING,PENDING,AWAITING_INTERNAL_RESPONSE' ? size : 1,
           { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
           sort
         )
           .then((res) => {
             setOngoingSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -478,14 +489,20 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.SUSPENDED}` }, sort)
+        getSupportErrands(
+          municipalityId,
+          page,
+          storedFilter.status === 'SUSPENDED' ? size : 1,
+          { ...filter, status: `${Status.SUSPENDED}` },
+          sort
+        )
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
             }
             setSuspendedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -494,14 +511,20 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+        getSupportErrands(
+          municipalityId,
+          page,
+          storedFilter.status === 'ASSIGNED' ? size : 1,
+          { ...filter, status: `${Status.ASSIGNED}` },
+          sort
+        )
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
             }
             setAssignedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -510,11 +533,17 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
+        getSupportErrands(
+          municipalityId,
+          page,
+          storedFilter.status === 'SOLVED' ? size : 1,
+          { ...filter, status: Status.SOLVED },
+          sort
+        )
           .then((res) => {
             setSolvedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
