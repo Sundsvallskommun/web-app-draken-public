@@ -1,5 +1,5 @@
-import { isKC } from '@common/services/application-service';
 import { AngeSymbol } from 'src/styles/ange-symbol';
+import React from 'react';
 
 export interface AppConfig {
   symbol: React.ReactNode | null;
@@ -19,6 +19,7 @@ interface AppConfigFeatures {
   useFacilities: boolean;
   useExtraInformationStakeholders: boolean;
   useDepartmentEscalation: boolean;
+  useEmployeeSearch: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -36,6 +37,7 @@ export const appConfig: AppConfig = {
     useFacilities: process.env.NEXT_PUBLIC_USE_FACILITIES === 'true',
     useExtraInformationStakeholders: process.env.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS === 'true',
     useDepartmentEscalation: process.env.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION === 'true',
+    useEmployeeSearch: process.env.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH === 'true',
   },
 };
 

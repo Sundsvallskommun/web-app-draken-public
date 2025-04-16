@@ -46,7 +46,7 @@ import {
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
@@ -189,7 +189,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     watch,
     setValue,
     formState,
-    getValues,
     clearErrors,
     trigger,
     reset,
@@ -360,7 +359,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             setSearchResultArray(res as AddressResult[]);
           }
         })
-        .catch((e) => {
+        .catch(() => {
           setSearching(false);
           setNotFound(true);
           setSearchResult(false);
@@ -376,7 +375,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       <legend className="text-md my-sm contents"></legend>
       <Input type="hidden" {...register(`stakeholderType`)} />
 
-      {!allowOrganization ? (
+      {appConfig.features.useEmployeeSearch ? (
         <RadioButton
           data-cy={`search-employee-${inName}-${contact.role}`}
           size="lg"
@@ -385,7 +384,7 @@ export const SupportSimplifiedContactForm: React.FC<{
           id={`searchEmployee-${id}-${inName}`}
           value={'EMPLOYEE'}
           checked={searchMode === 'employee'}
-          onChange={(e) => {
+          onChange={() => {
             setSearchMode('employee');
             replacePhonenumbers([]);
             setValue('city', '');
@@ -416,7 +415,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         id={`searchPerson-${id}-${inName}`}
         value={'PERSON'}
         checked={searchMode === 'person'}
-        onChange={(e) => {
+        onChange={() => {
           setSearchMode('person');
           replacePhonenumbers([]);
           setValue('city', '');
@@ -449,7 +448,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             id={`searchEnterprise-${id}-${inName}`}
             value={'ENTERPRISE'}
             checked={searchMode === 'enterprise'}
-            onChange={(e) => {
+            onChange={() => {
               setSearchMode('enterprise');
               setValue('city', '');
               setValue('zipCode', '');
@@ -483,7 +482,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             id={`searchOrganization-${id}-${inName}`}
             value={'ORGANIZATION'}
             checked={searchMode === 'organization'}
-            onChange={(e) => {
+            onChange={() => {
               setSearchMode('organization');
               setValue('city', '');
               setValue('zipCode', '');
