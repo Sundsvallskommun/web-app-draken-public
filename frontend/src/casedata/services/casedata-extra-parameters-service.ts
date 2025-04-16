@@ -1031,18 +1031,6 @@ const template: ExtraParametersObject = {
       },
       section: 'Övergripande',
     },
-    // {
-    //   field: 'application.appeal.relatesto',
-    //   value: '',
-    //   label: 'Ärende som överklagas',
-    //   formField: {
-    //     type: 'text',
-    //     options: {
-    //       placeholder: 't.ex. PRH-2024-000275',
-    //     },
-    //   },
-    //   section: 'Övergripande',
-    // },
     {
       field: 'application.appeal.date',
       value: '',
