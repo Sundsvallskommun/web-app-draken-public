@@ -122,7 +122,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
-    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType];
+    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || [];
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);
@@ -152,12 +152,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Input
               type={detail.formField.type}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
-              value={
-                errand.caseType === 'APPEAL' && detail.formField.type === 'text'
-                  ? errand.relatesTo[0]?.errandNumber
-                  : null
-              }
-              readOnly={errand.caseType === 'APPEAL' && detail.formField.type === 'text'}
               className={cx(
                 errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? `w-1/2` : 'w-full'
               )}
@@ -331,12 +325,29 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     return (
       <div className="my-lg">
         {errand.caseType === 'APPEAL' ? (
-          <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
-            <div className="flex gap-sm items-center">
-              <LucideIcon name="clipboard-signature"></LucideIcon>
-              <h2 className="text-h4-sm md:text-h4-md">Överklagan</h2>
-            </div>
-          </Divider.Section>
+          <>
+            <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
+              <div className="flex gap-sm items-center">
+                <LucideIcon name="clipboard-signature"></LucideIcon>
+                <h2 className="text-h4-sm md:text-h4-md">Överklagan</h2>
+              </div>
+            </Divider.Section>
+            <p className="px-0">
+              {errand.caseType === 'APPEAL' ? (
+                <FormControl className="w-full" key={`relatesTo`} disabled={isErrandLocked(errand)}>
+                  <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
+                  <Input
+                    type="text"
+                    value={errand.relatesTo[0]?.errandNumber}
+                    readOnly={true}
+                    className={cx('w-3/5')}
+                    data-cy={`relatesTo-input`}
+                    placeholder="t.ex. PRH-2024-000275"
+                  />
+                </FormControl>
+              ) : null}
+            </p>
+          </>
         ) : null}
 
         <div className="px-0">
@@ -397,7 +408,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
-
             {appConfig.features.useFacilities ? (
               <Facilities
                 facilities={realEstates}
