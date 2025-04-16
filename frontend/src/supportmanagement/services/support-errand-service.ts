@@ -824,7 +824,7 @@ export const updateSupportErrand: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
-    .then((res) => {
+    .then(() => {
       responseObj.errand = true;
       return responseObj;
     })
@@ -898,7 +898,7 @@ export const setSupportErrandAdmin: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -917,7 +917,7 @@ export const setSupportErrandStatus: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -935,7 +935,7 @@ export const closeSupportErrand: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -964,7 +964,7 @@ export const setSuspension: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(async (res) => {
+    .then(async () => {
       if (status === Status.SUSPENDED && comment) {
         const note = await saveSupportNote(errandId, municipalityId, comment);
       }
@@ -985,7 +985,7 @@ export const setSupportErrandPriority: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -1049,7 +1049,7 @@ export const forwardSupportErrand: (
     delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
-      .then((res) => {
+      .then(() => {
         return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {
