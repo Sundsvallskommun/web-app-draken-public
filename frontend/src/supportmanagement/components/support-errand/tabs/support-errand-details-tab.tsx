@@ -61,7 +61,12 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   }, [supportErrand]);
 
   /* First Group - General Parameters */
-  const firstErrands = handledParams.slice(0, 5);
+  const firstErrands = handledParams.filter((p) => {
+    return (
+      !p.key.includes('sickNoteDates-') &&
+      !['sickNoteStartDates', 'sickNoteEndDates', 'sickNotePercentages', 'timeCare', 'currentSchedule'].includes(p.key)
+    );
+  });
 
   const groupedSickPeriods = useMemo(
     () => handledParams.filter((param) => param.key.startsWith('sickNoteDates-')),
@@ -106,7 +111,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       firstErrands
         .filter((param) => param.values?.length > 0)
         .map((param, idx) => (
-          <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md">
+          <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
             <div className="font-bold">{param.displayName}</div>
             <div>{param.values.join(', ')}</div>
           </div>
