@@ -134,9 +134,15 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       contact.administrationName ||
       contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
       null;
+    const title = contact.title || contact.parameters?.find((param) => param.key === 'title')?.values[0] || null;
+    const referenceNumber =
+      contact.referenceNumber ||
+      contact.parameters?.find((param) => param.key === 'referenceNumber')?.values[0] ||
+      null;
+    const department =
+      contact.department || contact.parameters?.find((param) => param.key === 'department')?.values[0] || null;
     const username =
       contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -289,7 +295,10 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                         {username}
                       </p>
                     ) : null}
+                    <p className={`my-xs mt-0 flex flex-col text-small`}>{title}</p>
                     <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`}>{department}</p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`}>{referenceNumber}</p>
                   </>
                 )}
               </div>

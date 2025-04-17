@@ -133,6 +133,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       username: yup.string(),
       administrationCode: yup.string(),
       administrationName: yup.string(),
+      department: yup.string(),
+      referencenumber: yup.string(),
+      title: yup.string(),
       newPhoneNumber: yup
         .string()
         .trim()
@@ -216,6 +219,9 @@ export const SupportSimplifiedContactForm: React.FC<{
   const personNumber = watch(`personNumber`);
   const organizationNumber = watch(`organizationNumber`);
   const stakeholderType = watch(`stakeholderType`);
+  const title = watch(`title`);
+  const department = watch(`department`);
+  const referenceNumber = watch(`referenceNumber`);
 
   const { append: appendPhonenumber, replace: replacePhonenumbers } = useFieldArray({
     control,
@@ -343,6 +349,9 @@ export const SupportSimplifiedContactForm: React.FC<{
             }
             setValue('administrationCode', res.administrationCode);
             setValue('administrationName', res.administrationName);
+            setValue('department', res.department);
+            setValue('title', res.title);
+            setValue('referenceNumber', res.referenceNumber);
 
             if (searchMode === 'enterprise') {
               setValue(`organizationName`, res.organizationName);
@@ -535,6 +544,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       setValue(`city`, selectedUser.city, { shouldDirty: true });
       setValue(`administrationCode`, selectedUser.administrationCode, { shouldDirty: true });
       setValue(`administrationName`, selectedUser.administrationName, { shouldDirty: true });
+      setValue(`department`, selectedUser.department, { shouldDirty: true });
+      setValue(`title`, selectedUser.title, { shouldDirty: true });
+      setValue(`referenceNumber`, selectedUser.referenceNumber, { shouldDirty: true });
       if (selectedUser.phone) {
         appendPhonenumber({ value: selectedUser.phone });
       }
@@ -790,9 +802,24 @@ export const SupportSimplifiedContactForm: React.FC<{
                 <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
                   {personNumber || '(personnummer saknas)'}
                 </p>
+                {title ? (
+                  <p className="my-xs mt-0" data-cy={`stakeholder-title`}>
+                    {title}
+                  </p>
+                ) : null}
                 {administrationName ? (
                   <p className="my-xs mt-0" data-cy={`stakeholder-administrationName`}>
                     {administrationName}
+                  </p>
+                ) : null}
+                {department ? (
+                  <p className="my-xs mt-0" data-cy={`stakeholder-department`}>
+                    {department}
+                  </p>
+                ) : null}
+                {referenceNumber ? (
+                  <p className="my-xs mt-0" data-cy={`stakeholder-referencenumber`}>
+                    {referenceNumber}
                   </p>
                 ) : null}
                 {username ? (
