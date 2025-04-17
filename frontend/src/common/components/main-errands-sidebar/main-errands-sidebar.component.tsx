@@ -3,7 +3,7 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
-import { getApplicationEnvironment, isKA } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
@@ -85,7 +85,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {appConfig.isSupportManagement || isKA() ? (
+          {appConfig.isSupportManagement ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}

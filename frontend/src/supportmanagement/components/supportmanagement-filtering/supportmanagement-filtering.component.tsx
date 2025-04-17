@@ -27,8 +27,6 @@ import {
   SupportManagementQueryFilter,
   SupportManagementQueryValues,
 } from './components/supportmanagement-filter-query.component';
-
-import { isKA } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -137,7 +135,7 @@ const SupportManagementFiltering: React.FC<{
                 </>
               ) : null}
 
-              {appConfig.features.useThreeLevelCategorization || isKA() ? (
+              {appConfig.features.useThreeLevelCategorization ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />
