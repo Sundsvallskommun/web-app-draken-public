@@ -789,6 +789,7 @@ export const SupportSimplifiedContactForm: React.FC<{
           </FormControl>
         </div>
       ) : null}
+
       {searchResult ? (
         <>
           <div data-cy={`search-result`} className="bg-content-main border rounded-16 p-16 my-sm relative">
@@ -818,7 +819,7 @@ export const SupportSimplifiedContactForm: React.FC<{
                   </p>
                 ) : null}
                 {referenceNumber ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-referencenumber`}>
+                  <p className="my-xs mt-0" data-cy={`stakeholder-referenceNumber`}>
                     {referenceNumber}
                   </p>
                 ) : null}

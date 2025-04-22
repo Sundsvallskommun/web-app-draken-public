@@ -295,10 +295,18 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                         {username}
                       </p>
                     ) : null}
-                    <p className={`my-xs mt-0 flex flex-col text-small`}>{title}</p>
-                    <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
-                    <p className={`my-xs mt-0 flex flex-col text-small`}>{department}</p>
-                    <p className={`my-xs mt-0 flex flex-col text-small`}>{referenceNumber}</p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-title`}>
+                      {title}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-administrationName`}>
+                      {administrationName}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-department`}>
+                      {department}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-referenceNumber`}>
+                      {referenceNumber}
+                    </p>
                   </>
                 )}
               </div>
