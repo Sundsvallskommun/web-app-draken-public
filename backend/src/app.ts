@@ -9,7 +9,7 @@ import {
   SAML_ENTRY_SSO,
   SAML_FAILURE_REDIRECT,
   SAML_FAILURE_REDIRECT_MESSAGE,
-  SAML_IDP_PUBLIC_CERT,
+  SAML_IDP_METADATA_URL,
   SAML_ISSUER,
   SAML_LOGOUT_CALLBACK_URL,
   SAML_LOGOUT_REDIRECT,
@@ -48,6 +48,7 @@ import { authorizeGroups, getPermissions, getRole } from './services/authorizati
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { additionalConverters } from './utils/custom-validation-classes';
+import { toPassportConfig, fetch } from 'passport-saml-metadata';
 
 const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
 const sessionTTL = 4 * 24 * 60 * 60;
@@ -65,118 +66,121 @@ passport.deserializeUser(function (user, done) {
   done(null, user);
 });
 
-const samlStrategy = new Strategy(
-  {
-    disableRequestedAuthnContext: true,
-    //attributeConsumingServiceIndex: '2',
-    //xmlSignatureTransforms: ['test'],
-    //authnContext: ['urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified'],
-    // identifierFormat: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-    identifierFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
-    callbackUrl: SAML_CALLBACK_URL,
-    entryPoint: SAML_ENTRY_SSO,
-    //decryptionPvk: SAML_PRIVATE_KEY,
-    privateKey: SAML_PRIVATE_KEY,
-    // Identity Provider's public key
-    idpCert: SAML_IDP_PUBLIC_CERT,
-    issuer: SAML_ISSUER,
-    wantAssertionsSigned: false,
-    signatureAlgorithm: 'sha256',
-    digestAlgorithm: 'sha256',
-    // maxAssertionAgeMs: 2592000000,
-    // authnRequestBinding: 'HTTP-POST',
-    //logoutUrl: 'http://194.71.24.30/sso',
-    logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL,
-    acceptedClockSkewMs: -1,
-    wantAuthnResponseSigned: false,
-    audience: false,
-  },
-  async function (profile: Profile, done: VerifiedCallback) {
-    if (!profile) {
-      return done({
-        name: 'SAML_MISSING_PROFILE',
-        message: 'Missing SAML profile',
-      });
-    }
-    // Depending on using Onegate or ADFS for federation the profile data looks a bit different
-    // Here we use the null coalescing operator (??) to handle both cases.
-    // (A switch from Onegate to ADFS was done on august 6 2023 due to problems in MobilityGuard.)
-    //
-    // const { givenName, sn, email, groups } = profile;
-    const givenName = profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] ?? profile['givenName'];
-    const sn = profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'] ?? profile['sn'];
-    const email = profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ?? profile['email'];
-    const groups = profile['http://schemas.xmlsoap.org/claims/Group']?.join(',') ?? profile['groups'];
-    const username = profile['urn:oid:0.9.2342.19200300.100.1.1'];
+const makeSamlStrategy = (idpCert: string) =>
+  new Strategy(
+    {
+      disableRequestedAuthnContext: true,
+      //attributeConsumingServiceIndex: '2',
+      //xmlSignatureTransforms: ['test'],
+      //authnContext: ['urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified'],
+      // identifierFormat: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+      identifierFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
+      callbackUrl: SAML_CALLBACK_URL,
+      entryPoint: SAML_ENTRY_SSO,
+      //decryptionPvk: SAML_PRIVATE_KEY,
+      privateKey: SAML_PRIVATE_KEY,
+      // Identity Provider's public key
+      // idpCert: SAML_IDP_PUBLIC_CERT,
+      idpCert,
+      issuer: SAML_ISSUER,
+      wantAssertionsSigned: false,
+      signatureAlgorithm: 'sha256',
+      digestAlgorithm: 'sha256',
+      // maxAssertionAgeMs: 2592000000,
+      // authnRequestBinding: 'HTTP-POST',
+      //logoutUrl: 'http://194.71.24.30/sso',
+      logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL,
+      acceptedClockSkewMs: -1,
+      wantAuthnResponseSigned: false,
+      audience: false,
+    },
+    async function (profile: Profile, done: VerifiedCallback) {
+      if (!profile) {
+        return done({
+          name: 'SAML_MISSING_PROFILE',
+          message: 'Missing SAML profile',
+        });
+      }
+      // Depending on using Onegate or ADFS for federation the profile data looks a bit different
+      // Here we use the null coalescing operator (??) to handle both cases.
+      // (A switch from Onegate to ADFS was done on august 6 2023 due to problems in MobilityGuard.)
+      //
+      // const { givenName, sn, email, groups } = profile;
+      const givenName = profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] ?? profile['givenName'];
+      const sn = profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'] ?? profile['sn'];
+      const email = profile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ?? profile['email'];
+      const groups = profile['http://schemas.xmlsoap.org/claims/Group']?.join(',') ?? profile['groups'];
+      const username = profile['urn:oid:0.9.2342.19200300.100.1.1'];
 
-    if (!givenName || !sn || !email || !groups || !username) {
-      logger.error(
-        'Could not extract necessary profile data fields from the IDP profile. Does the Profile interface match the IDP profile response? The profile response may differ, for example Onegate vs ADFS.',
-      );
-      return done(null, null, {
-        name: 'SAML_MISSING_ATTRIBUTES',
-        message: 'Missing profile attributes',
-      });
-    }
-
-    if (!authorizeGroups(groups)) {
-      logger.error('Group authorization failed. Is the user a member of the authorized groups?');
-      return done(null, null, {
-        name: 'SAML_MISSING_GROUP',
-        message: 'SAML_MISSING_GROUP',
-      });
-    }
-
-    const groupList: string[] = groups !== undefined ? (groups.split(',').map(x => x.toLowerCase()) as string[]) : [];
-
-    const appGroups: string[] = groupList.length > 0 ? groupList : [];
-
-    try {
-      const findUser = {
-        name: `${givenName} ${sn}`,
-        firstName: givenName,
-        lastName: sn,
-        username: username,
-        email: email,
-        groups: appGroups,
-        role: getRole(appGroups),
-        permissions: getPermissions(appGroups),
-      };
-
-      logger.info('Found user:', findUser);
-
-      const userSettings = await prisma.userSettings.findFirst({ where: { username: findUser.username } });
-      // Create user settings for new users
-      const data = {
-        username: findUser.username,
-        readNotificationsClearedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-      if (!userSettings) {
-        await prisma.userSettings.create({
-          data,
+      if (!givenName || !sn || !email || !groups || !username) {
+        logger.error(
+          'Could not extract necessary profile data fields from the IDP profile. Does the Profile interface match the IDP profile response? The profile response may differ, for example Onegate vs ADFS.',
+        );
+        return done(null, null, {
+          name: 'SAML_MISSING_ATTRIBUTES',
+          message: 'Missing profile attributes',
         });
       }
 
-      done(null, findUser);
-    } catch (err) {
-      if (err instanceof HttpException && err?.status === 404) {
-        // TODO: Handle missing person form Citizen?
-        logger.error('Error when calling Citizen:');
-        logger.error(err);
+      if (!authorizeGroups(groups)) {
+        logger.error('Group authorization failed. Is the user a member of the authorized groups?');
+        return done(null, null, {
+          name: 'SAML_MISSING_GROUP',
+          message: 'SAML_MISSING_GROUP',
+        });
       }
-      done(err);
-    }
-  },
-  async function (profile: Profile, done: VerifiedCallback) {
-    return done(null, {});
-  },
-);
+
+      const groupList: string[] = groups !== undefined ? (groups.split(',').map(x => x.toLowerCase()) as string[]) : [];
+
+      const appGroups: string[] = groupList.length > 0 ? groupList : [];
+
+      try {
+        const findUser = {
+          name: `${givenName} ${sn}`,
+          firstName: givenName,
+          lastName: sn,
+          username: username,
+          email: email,
+          groups: appGroups,
+          role: getRole(appGroups),
+          permissions: getPermissions(appGroups),
+        };
+
+        logger.info('Found user:', findUser);
+
+        const userSettings = await prisma.userSettings.findFirst({ where: { username: findUser.username } });
+        // Create user settings for new users
+        const data = {
+          username: findUser.username,
+          readNotificationsClearedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+        };
+        if (!userSettings) {
+          await prisma.userSettings.create({
+            data,
+          });
+        }
+
+        done(null, findUser);
+      } catch (err) {
+        if (err instanceof HttpException && err?.status === 404) {
+          // TODO: Handle missing person form Citizen?
+          logger.error('Error when calling Citizen:');
+          logger.error(err);
+        }
+        done(err);
+      }
+    },
+    async function (profile: Profile, done: VerifiedCallback) {
+      return done(null, {});
+    },
+  );
 
 class App {
   public app: express.Application;
   public env: string;
   public port: string | number;
   public swaggerEnabled: boolean;
+  public samlStrategy: Strategy;
 
   constructor(Controllers: Function[]) {
     this.app = express();
@@ -207,7 +211,7 @@ class App {
     return this.app;
   }
 
-  private initializeMiddlewares() {
+  private async initializeMiddlewares() {
     this.app.use(morgan(LOG_FORMAT, { stream }));
     this.app.use(hpp());
     this.app.use(helmet());
@@ -230,7 +234,14 @@ class App {
 
     this.app.use(passport.initialize());
     this.app.use(passport.session());
-    passport.use('saml', samlStrategy);
+
+    const idpCert = await fetch({ url: SAML_IDP_METADATA_URL }).then(reader => {
+      const config = toPassportConfig(reader);
+      return config.idpCert;
+    });
+
+    this.samlStrategy = makeSamlStrategy(idpCert);
+    passport.use('saml', this.samlStrategy);
 
     this.app.get(
       `${BASE_URL_PREFIX}/saml/login`,
@@ -249,12 +260,12 @@ class App {
 
     this.app.get(`${BASE_URL_PREFIX}/saml/metadata`, (req, res) => {
       res.type('application/xml');
-      const metadata = samlStrategy.generateServiceProviderMetadata(SAML_PUBLIC_KEY, SAML_PUBLIC_KEY);
+      const metadata = this.samlStrategy.generateServiceProviderMetadata(SAML_PUBLIC_KEY, SAML_PUBLIC_KEY);
       res.status(200).send(metadata);
     });
 
     this.app.get(`${BASE_URL_PREFIX}/saml/logout`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
-      samlStrategy.logout(req as any, () => {
+      this.samlStrategy.logout(req as any, () => {
         req.logout(err => {
           if (err) {
             return next(err);
