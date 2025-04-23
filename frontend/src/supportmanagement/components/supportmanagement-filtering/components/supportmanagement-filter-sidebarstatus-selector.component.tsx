@@ -9,10 +9,12 @@ import {
   getStatusLabel,
   newStatuses,
   ongoingStatuses,
+  ongoingStatusesROB,
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
+import { isROB } from '@common/services/application-service';
 
 export interface SupportManagementStatusFilter {
   status: Status[];
@@ -63,9 +65,9 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
         totalStatusErrands: newSupportErrands.totalElements,
       },
       {
-        label: getStatusLabel(ongoingStatuses),
-        key: ongoingStatuses[0],
-        statuses: ongoingStatuses,
+        label: isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses),
+        key: isROB() ? ongoingStatusesROB[0] : ongoingStatuses[0],
+        statuses: isROB() ? ongoingStatusesROB : ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands.totalElements,
       },
