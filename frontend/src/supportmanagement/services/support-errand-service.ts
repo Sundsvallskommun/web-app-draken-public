@@ -450,11 +450,12 @@ export const useSupportErrands = (
           });
         });
 
-      const fetchPromises = [
+      const sidebarUpdatePromises = [
         getSupportErrands(
           municipalityId,
           page,
-          storedFilter.status === 'NEW' ? size : 1,
+          // storedFilter.status === 'NEW' ? size : 1,
+          1,
           { ...filter, status: Status.NEW },
           sort
         )
@@ -473,7 +474,8 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          storedFilter.status === 'ONGOING,PENDING,AWAITING_INTERNAL_RESPONSE' ? size : 1,
+          // storedFilter.status === 'ONGOING,PENDING,AWAITING_INTERNAL_RESPONSE' ? size : 1,
+          1,
           { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
           sort
         )
@@ -492,7 +494,8 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          storedFilter.status === 'SUSPENDED' ? size : 1,
+          // storedFilter.status === 'SUSPENDED' ? size : 1,
+          1,
           { ...filter, status: `${Status.SUSPENDED}` },
           sort
         )
@@ -514,7 +517,8 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          storedFilter.status === 'ASSIGNED' ? size : 1,
+          // storedFilter.status === 'ASSIGNED' ? size : 1,
+          1,
           { ...filter, status: `${Status.ASSIGNED}` },
           sort
         )
@@ -536,7 +540,8 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          storedFilter.status === 'SOLVED' ? size : 1,
+          // storedFilter.status === 'SOLVED' ? size : 1,
+          1,
           { ...filter, status: Status.SOLVED },
           sort
         )
@@ -552,7 +557,7 @@ export const useSupportErrands = (
             });
           }),
       ];
-      return Promise.allSettled(fetchPromises);
+      return Promise.allSettled(sidebarUpdatePromises);
     },
     [
       setSupportErrands,
@@ -575,7 +580,7 @@ export const useSupportErrands = (
   );
 
   useEffect(() => {
-    if (size && size > 0) {
+    if (typeof page !== 'undefined' && size && size > 0) {
       fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
