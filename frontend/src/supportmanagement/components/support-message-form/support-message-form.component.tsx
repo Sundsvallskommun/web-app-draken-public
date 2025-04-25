@@ -161,6 +161,7 @@ export const SupportMessageForm: React.FC<{
   const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
 
   const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
@@ -701,10 +702,15 @@ export const SupportMessageForm: React.FC<{
               variant="primary"
               color="primary"
               type="button"
-              onClick={handleSubmit(onSubmit)}
+              loading={isLoading}
+              loadingText="Skickar meddelande"
+              onClick={() => {
+                setIsLoading(true);
+                handleSubmit(onSubmit);
+              }}
               data-cy="send-message-button"
             >
-              {isSending ? 'Skickar meddelande' : 'Skicka meddelande'}
+              Skicka meddelande
             </Button>
           </>
         )}

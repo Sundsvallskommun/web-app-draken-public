@@ -675,25 +675,31 @@ export const MessageComposer: React.FC<{
               tabIndex={props.show ? 0 : -1}
               data-cy="send-message-button"
               type="button"
+              loading={isLoading}
+              loadingText="Skickar meddelande"
               onClick={handleSubmit(
-                () => {
-                  return submitConfirm
-                    .showConfirmation('Skicka', 'Vill du skicka meddelandet?', 'Ja', 'Nej', 'info', 'info')
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        onSubmit(getValues());
-                      }
-                      return confirmed ? () => true : () => {};
-                    });
+                async () => {
+                  setIsLoading(true);
+                  const confirmed = await submitConfirm.showConfirmation(
+                    'Skicka',
+                    'Vill du skicka meddelandet?',
+                    'Ja',
+                    'Nej',
+                    'info',
+                    'info'
+                  );
+                  if (confirmed) {
+                    onSubmit(getValues());
+                  }
+                  setIsLoading(false);
                 },
                 () => {}
               )}
               variant="primary"
               color="primary"
               disabled={isLoading || !formState.isValid || !allowed}
-              leftIcon={isLoading ? <Spinner size={2} className="mr-sm" /> : null}
             >
-              {isLoading ? 'Skickar meddelande' : 'Skicka meddelande'}
+              Skicka meddelande
             </Button>
           </div>
           {error && <FormErrorMessage>Något gick fel när meddelandet sparades.</FormErrorMessage>}
