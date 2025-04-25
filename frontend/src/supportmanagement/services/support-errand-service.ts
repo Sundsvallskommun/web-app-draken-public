@@ -451,14 +451,7 @@ export const useSupportErrands = (
         });
 
       const sidebarUpdatePromises = [
-        getSupportErrands(
-          municipalityId,
-          page,
-          // storedFilter.status === 'NEW' ? size : 1,
-          1,
-          { ...filter, status: Status.NEW },
-          sort
-        )
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW }, sort)
           .then((res) => {
             setNewSupportErrands(res);
           })
@@ -474,7 +467,6 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          // storedFilter.status === 'ONGOING,PENDING,AWAITING_INTERNAL_RESPONSE' ? size : 1,
           1,
           { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
           sort
@@ -491,14 +483,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(
-          municipalityId,
-          page,
-          // storedFilter.status === 'SUSPENDED' ? size : 1,
-          1,
-          { ...filter, status: `${Status.SUSPENDED}` },
-          sort
-        )
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.SUSPENDED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
@@ -514,14 +499,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(
-          municipalityId,
-          page,
-          // storedFilter.status === 'ASSIGNED' ? size : 1,
-          1,
-          { ...filter, status: `${Status.ASSIGNED}` },
-          sort
-        )
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.ASSIGNED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
@@ -537,14 +515,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(
-          municipalityId,
-          page,
-          // storedFilter.status === 'SOLVED' ? size : 1,
-          1,
-          { ...filter, status: Status.SOLVED },
-          sort
-        )
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.SOLVED }, sort)
           .then((res) => {
             setSolvedSupportErrands(res);
           })
