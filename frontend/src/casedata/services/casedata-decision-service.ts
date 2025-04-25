@@ -72,7 +72,7 @@ export const saveDecision: (
   };
 
   const obj: Decision = {
-    ...(formData.id && { id: formData.id }),
+    ...(formData.id && { id: parseInt(formData.id, 10) }),
     decisionType,
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,

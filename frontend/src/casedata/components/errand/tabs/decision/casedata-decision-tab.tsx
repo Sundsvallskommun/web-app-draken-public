@@ -62,7 +62,7 @@ import { CasedataMessageTabFormModel } from '../messages/message-composer.compon
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
 export interface DecisionFormModel {
-  id?: number;
+  id?: string;
   errandId?: number;
   errandNumber?: string;
   description: string;
@@ -249,7 +249,6 @@ export const CasedataDecisionTab: React.FC<{
 
   const saveAndSend = async (data: DecisionFormModel) => {
     try {
-      data.outcome = DecisionOutcomeKey[data.outcome];
       data.decidedBy = {
         type: 'PERSON',
         roles: [Role.ADMINISTRATOR],
@@ -357,7 +356,7 @@ export const CasedataDecisionTab: React.FC<{
     try {
       setIsPreviewLoading(true);
       const data = getValues();
-      data.outcome = DecisionOutcomeKey[data.outcome];
+      data.outcome = data.outcome;
       let pdfData: {
         pdfBase64: string;
         error?: string;
@@ -401,7 +400,6 @@ export const CasedataDecisionTab: React.FC<{
       .then((confirmed) => {
         if (confirmed) {
           const data = getValues();
-          data.outcome = DecisionOutcomeKey[data.outcome];
           save(data);
           return Promise.resolve(true);
         }
@@ -429,11 +427,11 @@ export const CasedataDecisionTab: React.FC<{
     setValue('errandId', errand.id);
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
-      setValue('id', existingDecision.id);
+      setValue('id', existingDecision.id.toString());
       setValue('description', existingDecision.description);
       setRichText(existingDecision.description);
-      setLawHeading(existingDecision.law[0].heading);
-      setValue('outcome', DecisionOutcomeLabel[existingDecision.decisionOutcome]);
+      setLawHeading(existingDecision.law?.[0]?.heading);
+      setValue('outcome', existingDecision.decisionOutcome);
       setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
       setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
     } else {
@@ -498,7 +496,7 @@ export const CasedataDecisionTab: React.FC<{
             <FormLabel>Beslut</FormLabel>
             <Input data-cy="decision-outcome-input" type="hidden" {...register('outcome')} />
             <Select
-              className="w-full"
+              className={cx(`w-full`, errors.outcome ? 'border-error' : '')}
               data-cy="decision-outcome-select"
               size="sm"
               onChange={(e) => {
@@ -507,18 +505,18 @@ export const CasedataDecisionTab: React.FC<{
               }}
               placeholder="Välj beslut"
               disabled={isErrandLocked(errand) || isSent()}
-              value={getValues('outcome')}
+              value={getValues('outcome') ? getValues('outcome') : ''}
             >
-              <Select.Option data-cy="outcome-input-item" value={'Välj beslut'}>
-                Välj beslut
+              <Select.Option data-cy="outcome-input-item" value={''}>
+                Välj utfall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'Bifall'}>
+              <Select.Option data-cy="outcome-input-item" value={'APPROVAL'}>
                 Bifall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'Avslag'}>
+              <Select.Option data-cy="outcome-input-item" value={'REJECTION'}>
                 Avslag
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'Ärendet avskrivs'}>
+              <Select.Option data-cy="outcome-input-item" value={'CANCELLATION'}>
                 Ärendet avskrivs
               </Select.Option>
             </Select>
