@@ -13,13 +13,13 @@ export const SupportErrandRecruitmentTab: React.FC<{
 
   const parameters = getRecruitmentParameters();
 
-  const { register, getValues } = useForm<Parameter[]>();
+  const { register, getValues } = useForm<{ [key: string]: Parameter[] }>({
+    defaultValues: parameters,
+  });
 
   const handleSubmit = () => {
     const saved = saveParameters(getValues());
   };
-
-  console.log(getValues());
 
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col">
@@ -28,32 +28,32 @@ export const SupportErrandRecruitmentTab: React.FC<{
         <p>Här hanterar du uppgifterna för rekryteringsprocessen.</p>
 
         <FormControl onSubmit={handleSubmit} className="w-full">
-          {Object.entries(parameters).map(([key, value]: [string, Parameter[]], index) => {
+          {Object.entries(parameters).map(([key, params]: [string, Parameter[]], index) => {
             return (
               <Disclosure
                 key={`disclosure-${key}`}
-                header={value[0].displayName}
+                header={params[0].displayName}
                 variant="alt"
                 icon={<LucideIcon name="text" />}
                 label="Komplett"
               >
-                {value.map((val, index) => {
+                {params.map((val, index) => {
                   return (
                     <div key={`${val.key}-${index}`} className="pb-16">
-                      <Input {...register(`${index}.key`)} value={val.key} hidden />
-                      <Input {...register(`${index}.group`)} value={val.group} hidden />
-                      <Input {...register(`${index}.displayName`)} value={val.displayName} hidden />
-                      <FormLabel className="pb-16" {...register(`${index}.values.0`)}>
+                      <Input {...register(`${key}.${index}.key`)} hidden />
+                      <Input {...register(`${key}.${index}.group`)} value={val.group} hidden />
+                      <Input {...register(`${key}.${index}.displayName`)} value={val.displayName} hidden />
+                      <FormLabel className="pb-16" {...register(`${key}.${index}.values.0`)}>
                         {val.group}
                       </FormLabel>
-                      <Checkbox className="block py-16" {...register(`${index}.values.1`)}>
+                      <Checkbox className="block py-16" {...register(`${key}.${index}.values.1`)}>
                         {val.values[0]}
                       </Checkbox>
 
-                      <Textarea
+                      <textarea
                         className="w-full"
                         rows={3}
-                        {...register(`${index}.values.2`)}
+                        {...register(`${key}.${index}.values.2`)}
                         placeholder="Anteckningar..."
                       />
                     </div>
