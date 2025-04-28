@@ -277,9 +277,7 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
-            {isLOP() || isIK() || isKA() ? (
-              <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
-            ) : null}
+            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
           </div>
         </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
