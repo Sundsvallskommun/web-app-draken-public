@@ -21,6 +21,7 @@ interface AppConfigFeatures {
   useDepartmentEscalation: boolean;
   useEmployeeSearch: boolean;
   useOrganizationStakeholders: boolean;
+  useRecruitment: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -40,6 +41,7 @@ export const appConfig: AppConfig = {
     useDepartmentEscalation: process.env.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION === 'true',
     useEmployeeSearch: process.env.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH === 'true',
     useOrganizationStakeholders: process.env.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER === 'true',
+    useRecruitment: process.env.NEXT_PUBLIC_USE_RECRUITMENT === 'true',
   },
 };
 
