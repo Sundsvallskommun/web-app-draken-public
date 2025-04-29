@@ -1,6 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { isIK, isLOP } from '@common/services/application-service';
+import { isKC, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -16,6 +16,7 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
+import { appConfig } from '@config/appconfig';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -100,8 +101,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     update: updateContactItem,
   } = contactsFieldArray;
 
-  const allowsOrganization = !isLOP() && !isIK();
-
   const onRemove = async (c: SupportStakeholderFormModel) => {
     const customer = stakeholderCustomers.filter((cus) => cus.internalId !== c.internalId);
     const contacts = stakeholderContacts.filter((con) => con.internalId !== c.internalId);
@@ -167,7 +166,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               }
             }}
             onClose={() => setSelectedContact(undefined)}
-            allowOrganization={allowsOrganization}
+            allowOrganization={appConfig.features.useOrganizationStakeholders}
             allowRelation={isLOP()}
             id="edit"
           />
@@ -369,7 +368,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 <SupportSimplifiedContactForm
                   disabled={isSupportErrandLocked(supportErrand)}
                   allowRelation={isLOP()}
-                  allowOrganization={allowsOrganization}
+                  allowOrganization={appConfig.features.useOrganizationStakeholders}
                   setUnsaved={props.setUnsaved}
                   onSave={(contact) => addStakeholder(contact)}
                   contact={{ ...emptyContact, role: 'PRIMARY' }}
@@ -389,7 +388,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <SupportSimplifiedContactForm
                 disabled={isSupportErrandLocked(supportErrand)}
                 allowRelation={isLOP()}
-                allowOrganization={allowsOrganization}
+                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, role: 'CONTACT' }}
                 editing={false}

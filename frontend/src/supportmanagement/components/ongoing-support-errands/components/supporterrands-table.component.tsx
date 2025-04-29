@@ -5,7 +5,7 @@ import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Callout, Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
+import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
@@ -19,13 +19,12 @@ import {
   getLabelType,
   getOngoingSupportErrandLabels,
 } from '@supportmanagement/services/support-errand-service';
+import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -80,23 +79,21 @@ export const SupportErrandsTable: React.FC = () => {
           1: 'touched',
           2: 'category',
           3: 'type',
-          4: 'subType',
-          5: 'channel',
-          6: 'created',
-          7: 'priority',
-          8: 'suspendedTo',
-          9: 'assignedUserId',
+          4: 'channel',
+          5: 'created',
+          6: 'priority',
+          7: 'suspendedTo',
+          8: 'assignedUserId',
         }
       : {
           0: 'status',
           1: 'touched',
           2: 'category',
           3: 'type',
-          4: 'subType',
-          5: 'channel',
-          6: 'created',
-          7: 'priority',
-          8: 'assignedUserId',
+          4: 'channel',
+          5: 'created',
+          6: 'priority',
+          7: 'assignedUserId',
         };
 
   const handleSort = (index: number) => {
@@ -268,19 +265,21 @@ export const SupportErrandsTable: React.FC = () => {
                   ?.displayName || errand.type}
               </p>
             ) : isLOP() || isIK() || isKA() ? (
-              <p className="m-0">{getLabelType(errand, supportMetadata)?.displayName || ''}</p>
-            ) : null}
-            <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
+              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+                <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
+                <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
+              </div>
+            ) : (
+              <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
+            )}
           </div>
         </Table.Column>
-        {(isLOP() || isIK() || isKA()) && (
-          <Table.Column>
-            <div className="max-w-[280px]">
-              <p className="m-0">{getLabelSubType(errand, supportMetadata)?.displayName || ''}</p>
-            </div>
-          </Table.Column>
-        )}
-        <Table.Column>{Channels[errand?.channel]}</Table.Column>
+        <Table.Column>
+          <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+            <div>{Channels[errand?.channel]}</div>
+            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
+          </div>
+        </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
           <div>
             <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>

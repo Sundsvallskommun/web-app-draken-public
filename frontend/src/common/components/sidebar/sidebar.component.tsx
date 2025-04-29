@@ -1,12 +1,14 @@
-import { isIK, isKC, isLOP, isPT } from '@common/services/application-service';
+import { isPT } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, useGui } from '@sk-web-gui/react';
+import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-import { useAppContext } from '@contexts/app.context';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -16,6 +18,7 @@ export type SidebarButtonKey =
   | 'guides'
   | 'todo'
   | 'investigation'
+  | 'export'
   | undefined;
 
 export const Sidebar: React.FC<{
@@ -77,7 +80,7 @@ export const Sidebar: React.FC<{
         style={{ marginTop: `-${scrolled}px` }}
       >
         {buttons.map((b, idx) =>
-          isPT() && b.key === 'guides' ? null : (
+          (isPT() && b.key === 'guides') || (!isExportEnabled() && b.key === 'export') ? null : (
             <SidebarTooltip key={`sidebartooltip-${idx}`} open={hover === b.key}>
               {b.label}
             </SidebarTooltip>
@@ -93,7 +96,8 @@ export const Sidebar: React.FC<{
       >
         <div role="none" className="flex flex-col pt-18 lg:pt-32 gap-12 pb-12 items-center w-full px-8">
           {buttons.map((b, idx) =>
-            isPT() && (b.key === 'guides' || b.key === 'investigation') ? null : (
+            (isPT() && (b.key === 'guides' || b.key === 'investigation')) ||
+            (!isExportEnabled() && b.key === 'export') ? null : (
               <div key={`sidebarkey-${idx}`} className="relative w-full flex justify-center" role="none">
                 <Button
                   role="menuitem"
@@ -105,7 +109,7 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={isKC() || isLOP() || isIK() ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
+                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}

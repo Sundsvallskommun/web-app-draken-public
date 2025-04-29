@@ -5,6 +5,7 @@ import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
 import { SidebarNotes } from './sidebar-notes.component';
 import { SidebarUtredning } from './sidebar-utredning.component';
+import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
 
 export const SidebarWrapper = () => {
   const buttons: {
@@ -48,6 +49,12 @@ export const SidebarWrapper = () => {
       key: 'history',
       icon: 'history',
       component: <SidebarHistory />,
+    },
+    {
+      label: 'Exportera ärende',
+      key: 'export',
+      icon: 'file-output',
+      component: <SidebarExport />,
     },
   ];
 

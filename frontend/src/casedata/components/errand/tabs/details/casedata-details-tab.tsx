@@ -1,21 +1,20 @@
-import { appealErrand, getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
+  EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
   extraParametersToUppgiftMapper,
   saveExtraParameters,
-  EXTRAPARAMETER_SEPARATOR,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { isMEX, isPT } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
-  Disclosure,
   Divider,
   FormControl,
   FormLabel,
@@ -27,7 +26,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface CasedataDetailsProps {
@@ -43,33 +42,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    formState,
-    getValues,
-    clearErrors,
-    trigger,
-    reset,
-    formState: { errors },
-  } = useForm<any>({
+  const { register, setValue, getValues, trigger } = useForm<any>({
     // TODO - Correct default values?
     // defaultValues: errand.extraParameters,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
-    return saveFacilities(municipalityId, errand.id, estates).then((res) => {
+    return saveFacilities(municipalityId, errand.id, estates).then(() => {
       setIsLoading(undefined);
       props.setUnsaved(false);
       return getErrand(municipalityId, errand.id.toString())
@@ -83,7 +69,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           });
           setIsLoading(undefined);
         })
-        .catch((e) => {
+        .catch(() => {
           setIsLoading(undefined);
           toastMessage({
             position: 'bottom',
@@ -108,12 +94,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     //   await saveFacilities(municipalityId, errand.id, getValues().facilities);
     // }
 
-    if (isPT()) {
-      await appealErrand(errand);
-    }
-
     saveExtraParameters(municipalityId, extraParams, errand)
-      .then((res) => {
+      .then(() => {
         setIsLoading(undefined);
         props.setUnsaved(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => {
@@ -127,7 +109,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           setIsLoading(undefined);
         });
       })
-      .catch((e) => {
+      .catch(() => {
         setIsLoading(undefined);
         toastMessage({
           position: 'bottom',
@@ -140,7 +122,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
-    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType];
+    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || [];
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);
@@ -170,12 +152,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Input
               type={detail.formField.type}
               {...register(detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR))}
-              value={
-                errand.caseType === 'APPEAL' && detail.formField.type === 'text'
-                  ? errand.relatesTo[0]?.errandNumber
-                  : null
-              }
-              readOnly={errand.caseType === 'APPEAL' && detail.formField.type === 'text'}
               className={cx(
                 errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? `w-1/2` : 'w-full'
               )}
@@ -349,14 +325,32 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     return (
       <div className="my-lg">
         {errand.caseType === 'APPEAL' ? (
-          <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
-            <div className="flex gap-sm items-center">
-              <LucideIcon name="clipboard-signature"></LucideIcon>
-              <h2 className="text-h4-sm md:text-h4-md">Överklagan</h2>
-            </div>
-          </Divider.Section>
+          <>
+            <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
+              <div className="flex gap-sm items-center">
+                <LucideIcon name="clipboard-signature"></LucideIcon>
+                <h2 className="text-h4-sm md:text-h4-md">Överklagan</h2>
+              </div>
+            </Divider.Section>
+            <p className="px-0">
+              {errand.caseType === 'APPEAL' ? (
+                <FormControl className="w-full" key={`relatesTo`} disabled={isErrandLocked(errand)}>
+                  <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
+                  <Input
+                    type="text"
+                    value={errand.relatesTo[0]?.errandNumber}
+                    readOnly={true}
+                    className={cx('w-3/5')}
+                    data-cy={`relatesTo-input`}
+                    placeholder="t.ex. PRH-2024-000275"
+                  />
+                </FormControl>
+              ) : null}
+            </p>
+          </>
         ) : null}
-        <div className="px-0 md:px-24 lg:px-40">
+
+        <div className="px-0">
           {fields?.map(renderFormControl)}
           <Button
             key={`section-${label}`}
@@ -414,7 +408,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
-            {isMEX() ? (
+            {appConfig.features.useFacilities ? (
               <Facilities
                 facilities={realEstates}
                 setUnsaved={props.setUnsaved}
@@ -422,6 +416,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
               />
             ) : null}
+
             {[
               {
                 label: 'Övergripande',

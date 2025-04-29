@@ -1,20 +1,9 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  Divider,
-  FormControl,
-  FormLabel,
-  Icon,
-  Label,
-  Select,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -23,9 +12,6 @@ import {
   StatusLabel,
   SupportErrand,
   defaultSupportErrandInformation,
-  findPriorityLabelForPriorityKey,
-  findStatusKeyForStatusLabel,
-  findStatusLabelForStatusKey,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandAdmin,
@@ -37,7 +23,6 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
-import router from 'next/router';
 import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
@@ -45,7 +30,6 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { ArrowRight } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;

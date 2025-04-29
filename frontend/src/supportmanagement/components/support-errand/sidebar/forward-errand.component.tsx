@@ -161,9 +161,9 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           message: 'Ärendet vidarebefordrades',
           status: 'success',
         });
-        setTimeout(() => {
-          window.close();
-        }, 2000);
+        // setTimeout(() => {
+        //   window.close();
+        // }, 2000);
         setIsLoading(false);
         setShowModal(false);
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));

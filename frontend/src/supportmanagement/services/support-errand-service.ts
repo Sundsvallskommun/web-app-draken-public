@@ -1,11 +1,7 @@
-import {
-  Label,
-  Notification,
-  Stakeholder as SupportStakeholder,
-} from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { getApplicationName, isIK, isKA, isKC, isLOP } from '@common/services/application-service';
+import { isKC } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -15,17 +11,14 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
-import {
-  buildStakeholdersList,
-  getApplicantName,
-  mapExternalIdTypeToStakeholderType,
-} from './support-stakeholder-service';
-import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import store from '@supportmanagement/services/storage-service';
 
 export interface Customer {
   id: string;
@@ -285,13 +278,8 @@ export enum ResolutionLabelKS {
 }
 
 export enum ResolutionLabelKA {
-  SOLVED = 'Löst av Kontakt Ånge',
-  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
-  CONNECTED = 'Kopplat samtal',
-  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
-  SELF_SERVICE = 'Hänvisat till självservice',
-  INTERNAL_SERVICE = 'Hänvisat till intern service',
-  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+  SOLVED = 'Löst av Kontaktcenter',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
 }
 
 export const ongoingSupportErrandLabelsKC = [
@@ -316,7 +304,6 @@ export const ongoingSupportErrandLabelsLoP = [
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
@@ -363,7 +350,7 @@ export const emptyContact: SupportStakeholderFormModel = {
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
-  externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  externalIdType: isKC() ? ExternalIdType.PRIVATE : ExternalIdType.EMPLOYEE,
   username: '',
   firstName: '',
   lastName: '',
@@ -443,6 +430,10 @@ export const useSupportErrands = (
     setSolvedSupportErrands,
     solvedSupportErrands,
   } = useAppContext();
+
+  const unparsedStoredFilter = store.get('filter');
+  const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
@@ -450,7 +441,7 @@ export const useSupportErrands = (
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
         })
-        .catch((err) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -459,12 +450,12 @@ export const useSupportErrands = (
           });
         });
 
-      const fetchPromises = [
-        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
+      const sidebarUpdatePromises = [
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW }, sort)
           .then((res) => {
             setNewSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -476,14 +467,14 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          size,
+          1,
           { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
           sort
         )
           .then((res) => {
             setOngoingSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -492,14 +483,14 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.SUSPENDED}` }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.SUSPENDED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
             }
             setSuspendedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -508,14 +499,14 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.ASSIGNED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
             }
             setAssignedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -524,11 +515,11 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.SOLVED }, sort)
           .then((res) => {
             setSolvedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -537,7 +528,7 @@ export const useSupportErrands = (
             });
           }),
       ];
-      return Promise.allSettled(fetchPromises);
+      return Promise.allSettled(sidebarUpdatePromises);
     },
     [
       setSupportErrands,
@@ -560,7 +551,7 @@ export const useSupportErrands = (
   );
 
   useEffect(() => {
-    if (size && size > 0) {
+    if (typeof page !== 'undefined' && size && size > 0) {
       fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
@@ -809,7 +800,7 @@ export const updateSupportErrand: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
-    .then((res) => {
+    .then(() => {
       responseObj.errand = true;
       return responseObj;
     })
@@ -883,7 +874,7 @@ export const setSupportErrandAdmin: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -902,7 +893,7 @@ export const setSupportErrandStatus: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -920,7 +911,7 @@ export const closeSupportErrand: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -949,7 +940,7 @@ export const setSuspension: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(async (res) => {
+    .then(async () => {
       if (status === Status.SUSPENDED && comment) {
         const note = await saveSupportNote(errandId, municipalityId, comment);
       }
@@ -970,7 +961,7 @@ export const setSupportErrandPriority: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -1034,7 +1025,7 @@ export const forwardSupportErrand: (
     delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
-      .then((res) => {
+      .then(() => {
         return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {

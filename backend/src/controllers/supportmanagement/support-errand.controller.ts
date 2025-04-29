@@ -42,7 +42,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Type as TypeTransformer } from 'class-transformer';
-import { isIK, isKA, isKC, isLOP } from '@/services/application.service';
+import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -442,10 +442,10 @@ export class SupportErrandController {
       queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and (stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}' or stakeholders.contactChannels.type~'${ContactChannelType.Email}'))`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and (stakeholders.contactChannels.type~'${
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}')`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and stakeholders.contactChannels.type~'${
         ContactChannelType.PHONE
-      }' or stakeholders.contactChannels.type~'${ContactChannelType.Phone}'))`;
+      }')`;
       queryFilter += ` or exists(stakeholders.organizationName ~ '*${query}*')`;
       queryFilter += ` or exists(stakeholders.externalId ~ '*${query}*')`;
       queryFilter += ` or exists(parameters.values~'*${query}*')`;
@@ -561,6 +561,16 @@ export class SupportErrandController {
         ? {
             category: 'KSK_SERVICE_CENTER',
             type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
+          }
+        : isMSVA()
+        ? {
+            category: 'MSVA',
+            type: 'MSVA.UNCATEGORIZED',
+          }
+        : isROB()
+        ? {
+            category: 'ROB',
+            type: 'ROB.UNCATEGORIZED',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
@@ -720,12 +730,12 @@ export class SupportErrandController {
           contactInformation:
             s.contactChannels?.length > 0
               ? s.contactChannels.map(c =>
-                  c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone
+                  c.type === ContactChannelType.PHONE
                     ? {
                         contactType: ContactInformationContactTypeEnum.PHONE,
                         value: c.value,
                       }
-                    : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email
+                    : c.type === ContactChannelType.EMAIL
                     ? {
                         contactType: ContactInformationContactTypeEnum.EMAIL,
                         value: c.value,
@@ -761,7 +771,7 @@ export class SupportErrandController {
                         contactType: ContactInformationContactTypeEnum.PHONE,
                         value: c.value,
                       }
-                    : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email
+                    : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.EMAIL
                     ? {
                         contactType: ContactInformationContactTypeEnum.EMAIL,
                         value: c.value,

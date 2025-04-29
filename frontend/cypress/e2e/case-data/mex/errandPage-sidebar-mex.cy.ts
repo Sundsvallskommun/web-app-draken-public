@@ -12,6 +12,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockContract } from '../fixtures/mockContract';
+import { isExportEnabled } from '@common/services/feature-flag-service';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -183,7 +184,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="history-wrapper"]').should('exist');
       events.forEach((event, index) => {
-        cy.get(`[data-cy="history-event-label-${index}"]`).should('exist').should('have.text', event).click();
+        cy.get(`[data-cy="history-event-label-${index}"]`)
+          .should('exist')
+          .should('have.text', event)
+          .click({ force: true });
         cy.get('[data-cy="history-details-title"]').should('not.be.empty');
         cy.get('[data-cy="history-details-type"]').should('not.be.empty');
         cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
@@ -196,6 +200,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Nytt värde:');
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Under beslut');
       cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
+    });
+
+    it('manages Exports', () => {
+      if (isExportEnabled()) {
+        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
+        cy.get('[data-cy="basicInformation"]').should('exist');
+        cy.get('[data-cy="export-button"]').should('exist').click();
+        cy.get('p')
+          .should('exist')
+          .contains('Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.');
+      } else {
+        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('not.exist');
+      }
     });
   });
 });

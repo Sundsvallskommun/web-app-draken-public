@@ -1,6 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
-
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -25,6 +24,7 @@ import {
   phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -1011,7 +1011,7 @@ export const SimplifiedContactForm: React.FC<{
                 )}
               </FormControl>
             </div>
-            {isMEX() ? (
+            {appConfig.features.useExtraInformationStakeholders ? (
               <div className="flex gap-lg">
                 <FormControl id={`extrainfo`} className="w-[244px]">
                   <FormLabel>Extra Information</FormLabel>

@@ -124,10 +124,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       secondErrands.map((errand, idx) => {
         const periodIndex = Number(errand.index);
         return (
-          <div
-            key={`period-${periodIndex}`}
-            className="flex flex-col gap-md p-16 mb-24 bg-primitives-gray-50 rounded-lg"
-          >
+          <div key={`period-${periodIndex}`} className="flex flex-col gap-md p-16 mb-24 rounded-lg">
             <h3 className="text-h3-md">Sjukskrivningsperiod {periodIndex + 1}</h3>
 
             {/* Sick Period */}
@@ -158,7 +155,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
         {/* First Group - General Parameters */}
-        <div className="bg-primitives-gray-50 rounded-lg gap-md p-16">
+        <div className="rounded-lg gap-md p-16">
           <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
           {supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value ? (
             <div className="flex flex-row gap-md">

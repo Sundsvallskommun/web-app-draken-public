@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -15,6 +15,7 @@ import {
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { useTranslation } from 'next-i18next';
 
 export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
@@ -23,7 +24,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 }> = (props) => {
   const {
     supportMetadata,
-    user,
   }: {
     supportMetadata: SupportMetadata;
     supportAttachments: SupportAttachment[];
@@ -31,6 +31,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     user: User;
   } = useAppContext();
   const { supportErrand } = props;
+  const { t } = useTranslation();
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();
 
@@ -45,7 +46,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     setValue,
     getValues,
     trigger,
-    formState,
     formState: { errors },
   } = props.formControls;
 
@@ -79,11 +79,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </FormControl>
       ) : null}
 
-      {isKC() ? (
+      {appConfig.features.useTwoLevelCategorization ? (
         <div className="flex gap-24">
           <div className="flex my-md gap-xl w-1/2">
             <FormControl id="category" className="w-full">
-              <FormLabel>{isKC() ? 'Verksamhet' : 'Ärendekategori'}*</FormLabel>
+              <FormLabel>Verksamhet*</FormLabel>
               <Select
                 {...register('category')}
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -146,20 +146,22 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             </FormControl>
           </div>
         </div>
-      ) : isLOP() || isIK() || isKA() ? (
+      ) : null}
+
+      {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
       ) : null}
 
-      {isKC() && (
+      {appConfig.features.useBusinessCase ? (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
             <Checkbox
               disabled={isSupportErrandLocked(supportErrand)}
               {...register('businessRelated')}
               checked={businessRelated ? true : false}
-              onChange={(e) => {
+              onChange={() => {
                 businessRelated === 'true' || businessRelated
                   ? setValue('businessRelated', false, { shouldDirty: true })
                   : setValue('businessRelated', true, { shouldDirty: true });
@@ -170,7 +172,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             </Checkbox>
           </FormControl>
         </div>
-      )}
+      ) : null}
 
       <div className="flex my-24 gap-xl">
         <FormControl id="description" className="w-full">
@@ -190,10 +192,15 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {isKC() || isKC() || isKA() ? (
+        {appConfig.features.useReasonForContact ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
-              <FormLabel>{isKA() ? 'Ärendet avsåg' : 'Orsak till kontakt'}</FormLabel>
+              <FormLabel>
+                {t(
+                  `common:basics_tab.contactReason.${process.env.NEXT_PUBLIC_APPLICATION}`,
+                  t('common:basics_tab.contactReason.default')
+                )}
+              </FormLabel>
               <Select
                 {...register('contactReason')}
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -226,6 +233,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             </FormControl>
           </div>
         ) : null}
+
         <div className="flex gap-xl w-1/2">
           <FormControl id="channel" className="w-full">
             <FormLabel>Inkom via*</FormLabel>
@@ -264,7 +272,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
           </FormControl>
         </div>
       </div>
-      {(isKC() || isKA()) && (
+
+      {appConfig.features.useExplanationOfTheCause ? (
         <div className="w-full mt-md mb-lg">
           <Checkbox
             id="causecheckbox"
@@ -274,11 +283,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             className="w-full"
             onClick={() => (checked ? setCauseDescriptionIsOpen(false) : setCauseDescriptionIsOpen(true))}
           >
-            {isKA() ? 'Brist i kunskapsbank' : isKC() ? 'Lägg till en orsaksbeskrivning' : ''}
+            {t(`common:basics_tab.cause_description.description_${process.env.NEXT_PUBLIC_APPLICATION}`)}
           </Checkbox>
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">
-              <FormLabel>Orsaksbeskrivning</FormLabel>
+              <FormLabel>{t('common:basics_tab.cause_description.title')}</FormLabel>
               <Textarea
                 data-cy="contactReasonDescription-input"
                 disabled={isSupportErrandLocked(supportErrand)}
@@ -294,7 +303,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             <></>
           )}
         </div>
-      )}
+      ) : null}
     </>
   );
 };

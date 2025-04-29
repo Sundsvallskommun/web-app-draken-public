@@ -1,10 +1,10 @@
-import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { PrettyRole } from '@casedata/interfaces/role';
+import { appConfig } from '@config/appconfig';
+import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { Button, Chip, cx, FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { PrettyRole } from '@casedata/interfaces/role';
-import { isMEX, isPT } from '@common/services/application-service';
-import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
 
 const CommonNestedEmailArrayV2 = ({
   errand,
@@ -31,7 +31,7 @@ const CommonNestedEmailArrayV2 = ({
   useEffect(() => {
     const stakeholders: { email: string; role: string[] }[] = [];
 
-    if (isMEX() || isPT()) {
+    if (appConfig.isCaseData) {
       errand?.stakeholders?.map((stakeholder) => {
         if (stakeholder?.emails?.length) {
           stakeholder?.emails?.map((email) => {

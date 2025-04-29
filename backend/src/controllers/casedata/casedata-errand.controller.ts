@@ -1,10 +1,16 @@
+import {
+  Errand as ErrandDTO,
+  PageErrand as PageErrandDTO,
+  PatchErrand as PatchErrandDTO,
+  Stakeholder as StakeholderDTO,
+} from '@/data-contracts/case-data/data-contracts';
 import { CaseTypes } from '@/interfaces/case-type.interface';
-import { isPT, isMEX } from '@/services/application.service';
+import { isMEX, isPT } from '@/services/application.service';
 import { RequestWithUser } from '@interfaces/auth.interface';
-import { ErrandStatus, StatusDTO } from '@interfaces/errand-status.interface';
-import { CreateErrandDto, CPatchErrandDto } from '@interfaces/errand.interface';
+import { ErrandPhase } from '@interfaces/errand-phase.interface';
+import { ErrandStatus } from '@interfaces/errand-status.interface';
+import { CPatchErrandDto, CreateErrandDto } from '@interfaces/errand.interface';
 import { Role } from '@interfaces/role';
-import { CreateStakeholderDto } from '@interfaces/stakeholder.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { hasPermissions } from '@middlewares/permissions.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
@@ -15,13 +21,6 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
-import { ErrandPhase } from '@interfaces/errand-phase.interface';
-import {
-  Errand as ErrandDTO,
-  PageErrand as PageErrandDTO,
-  PatchErrand as PatchErrandDTO,
-  Stakeholder as StakeholderDTO,
-} from '@/data-contracts/case-data/data-contracts';
 import { MUNICIPALITY_ID } from '@/config';
 
 interface SingleErrandResponseData {
