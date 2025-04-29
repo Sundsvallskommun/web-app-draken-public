@@ -263,25 +263,24 @@ export const SupportErrandsTable: React.FC = () => {
         {/* Category Type column */}
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {isKC() || errand.labels.length < 2 ? (
-              <p className="m-0">
-                {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
-                  ?.displayName || errand.type}
-              </p>
-            ) : isLOP() || isIK() || isKA() ? (
+            {isLOP() || isIK() || isKA() ? (
               <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
                 <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
                 <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
               </div>
-            ) : (
-              <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
-            )}
+            ) : errand.labels.length < 2 ? (
+              <p className="m-0">
+                {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
+                  ?.displayName || errand.type}
+              </p>
+            ) : null}
           </div>
         </Table.Column>
         {/* Channel column */}
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
+            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
           </div>
         </Table.Column>
         {/* Created column */}
