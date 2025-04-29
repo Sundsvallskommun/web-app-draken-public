@@ -243,7 +243,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             </div>
           )}
         </div>
-
+        {/* Left side of errand Disclosure */}
         <div className="md:flex md:gap-24 px-16 py-12">
           <div className={`md:w-1/3 flex gap-8 break-all ${administrationName ? `items-start` : `items-center`}`}>
             <Avatar
@@ -283,18 +283,13 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
-                    {username ? (
-                      <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-username`}>
-                        {username}
-                      </p>
-                    ) : null}
                     <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
                   </>
                 )}
               </div>
             </div>
           </div>
-
+          {/* Middle of errand Disclosure */}
           <div className="md:w-1/3 md:mt-0 mt-md break-all">
             <p
               className={`my-xs mt-0 flex flex-col text-small ${
@@ -307,6 +302,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 : '(adress saknas)'}
             </p>
           </div>
+          {/* Right side of errand Disclosure */}
           <div className="md:w-1/3 md:mt-0 mt-md">
             <div data-cy={`stakeholder-phone`} className="text-small">
               {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
@@ -322,23 +318,26 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 </Button>
               )}
             </div>
-
-            <div>
-              <div data-cy={`stakeholder-email`} className="text-small">
-                {contact.emails?.map((n) => n.value).join(', ') || (
-                  <Button
-                    disabled={isSupportErrandLocked(supportErrand)}
-                    color="vattjom"
-                    variant="link"
-                    onClick={() => {
-                      setSelectedContact(contact);
-                    }}
-                  >
-                    Lägg till e-post
-                  </Button>
-                )}
-              </div>
+            <div data-cy={`stakeholder-email`} className="text-small">
+              {contact.emails?.map((n) => n.value).join(', ') || (
+                <Button
+                  disabled={isSupportErrandLocked(supportErrand)}
+                  color="vattjom"
+                  variant="link"
+                  onClick={() => {
+                    setSelectedContact(contact);
+                  }}
+                >
+                  Lägg till e-post
+                </Button>
+              )}
             </div>
+            {username ? (
+              <div className="text-small my-xs mt-0" data-cy={`stakeholder-username`}>
+                <p className="flex flex-col">{username}</p>
+              </div>
+            ) : null}
+            <div></div>
           </div>
         </div>
       </div>
