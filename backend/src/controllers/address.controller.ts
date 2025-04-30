@@ -2,7 +2,7 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import authMiddleware from '@middlewares/auth.middleware';
-import { isObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type as TypeTransformer } from 'class-transformer';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
@@ -268,7 +268,6 @@ export class AddressController {
       throw e;
     });
     const personId = res.data?.personid;
-    let parameters: Record<string, string> = {};
 
     if (personId) {
       const empUrl = `employee/2.0/${MUNICIPALITY_ID}/employments?personId=${personId}`;
@@ -279,21 +278,16 @@ export class AddressController {
       const data = empRes?.data?.[0];
       const employment = data?.employments?.[0];
       if (data && employment) {
-        parameters = {
-          title: employment.title || '',
-          referenceNumber: data.referenceNumbers?.[0]?.referenceNumber || '',
-          department: employment.orgName || '',
-        };
+        res.data.title = employment?.title || '';
+        res.data.referenceNumber = data?.referenceNumbers?.[0]?.referenceNumber || '';
+        res.data.department = employment?.orgName || '';
       }
-    }
-    res.data.title = parameters.title || '';
-    res.data.referenceNumber = parameters.referenceNumber || '';
-    res.data.department = parameters.department || '';
 
-    return {
-      data: res.data,
-      message: 'success',
-    };
+      return {
+        data: res.data,
+        message: 'success',
+      };
+    }
   }
 
   @Get('/employed/:personalNumber/loginname')
@@ -306,43 +300,14 @@ export class AddressController {
   ): Promise<{ data: EmployedPersonData; message: string }> {
     const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${personalNumber}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
-
     if (!guidRes.data) {
       throw new Error('No data found for the given personal number');
     }
-
-    const personId = guidRes.data;
-
-    const accountsUrl = `employee/2.0/${MUNICIPALITY_ID}/employed/${personId}/accounts`;
-    const accountsRes = await this.apiService.get<any>({ url: accountsUrl }, req.user).catch(e => {
+    const url = `employee/2.0/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
+    const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
       logger.error('Error when fetching employed user information');
       throw e;
     });
-
-    const employmentUrl = `employee/2.0/${MUNICIPALITY_ID}/employments?personId=${encodeURIComponent(personId)}`;
-    const employmentRes = await this.apiService.get<any[]>({ url: employmentUrl }, req.user).catch(e => {
-      logger.error('Error when fetching employment data');
-      return { data: [] };
-    });
-
-    const data = employmentRes?.data?.[0];
-    const employment = data?.employments?.[0];
-
-    const parameters = {
-      title: employment?.title || '',
-      referenceNumber: data?.referenceNumbers?.[0]?.referenceNumber || '',
-      department: employment?.orgName || '',
-    };
-
-    const combinedData = {
-      ...accountsRes.data,
-      ...parameters,
-      guid: guidRes.data,
-    };
-
-    return {
-      data: combinedData,
-      message: 'success',
-    };
+    return { data: res.data, message: 'success' };
   }
 }
