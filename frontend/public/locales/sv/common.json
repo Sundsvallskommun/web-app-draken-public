@@ -1,16 +1,27 @@
 {
-  "basics_tab" : {
-    "errandType" : {
-      "KA" : "Ärendekategori*",
-      "default" : "Ärendetyp*"
+  "basics_tab": {
+    "errandType": {
+      "KA": "Ärendekategori*",
+      "default": "Ärendetyp*"
     },
-    "contactReason" : {
-      "KA" : "Ärendet avsåg",
+    "contactReason": {
+      "KA": "Ärendet avsåg",
       "default": "Orsak till kontakt"
     },
-    "cause_description" : {
+    "cause_description": {
       "title": "Orsaksbeskrivning",
       "description_KC": "Lägg till orsaksbeskrivning",
-      "description_KA" : "Brist i kunskapsbank"
+      "description_KA": "Brist i kunskapsbank"
+    },
+    "orderType": {
+      "ROB": "Beställningstyp*",
+      "default": "Verksamhet*"
     }
-}}
+  },
+  "overview": {
+    "orderType": {
+      "ROB": "Beställningstyp",
+      "default": "Verksamhet*"
+    }
+  }
+}
