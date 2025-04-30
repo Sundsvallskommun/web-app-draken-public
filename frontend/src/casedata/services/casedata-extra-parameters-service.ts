@@ -1,7 +1,6 @@
 import { MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
-// import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { apiService } from '@common/services/api-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
@@ -225,8 +224,21 @@ const baseParkingPermitDetails: UppgiftField[] = [
   },
 ];
 
+const baseDetails: UppgiftField[] = [
+  {
+    field: 'caseMeaning',
+    value: '',
+    label: 'Ärendemening',
+    formField: {
+      type: 'text',
+    },
+    section: 'Övergripande',
+  },
+];
+
 const template: ExtraParametersObject = {
   MEX_OTHER: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -239,6 +251,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_LAND_SURVEYING_OFFICE: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -261,6 +274,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_LAND_RIGHT: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -273,6 +287,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_PROTECTIVE_HUNTING: [
+    ...baseDetails,
     {
       field: 'sightingLocation',
       value: '',
@@ -316,6 +331,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_LAND_INSTRUCTION: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -328,6 +344,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_REQUEST_FOR_PUBLIC_DOCUMENT: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -340,6 +357,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -352,6 +370,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_INVOICE: [
+    ...baseDetails,
     {
       field: 'invoiceNumber',
       value: '',
@@ -382,6 +401,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_LEASE_REQUEST: [
+    ...baseDetails,
     {
       field: 'reason',
       value: '',
@@ -421,6 +441,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_TERMINATION_OF_LEASE: [
+    ...baseDetails,
     {
       field: 'reason',
       value: '',
@@ -468,6 +489,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_BUY_LAND_FROM_THE_MUNICIPALITY: [
+    ...baseDetails,
     {
       field: 'errandInformation',
       value: '',
@@ -543,6 +565,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_SELL_LAND_TO_THE_MUNICIPALITY: [
+    ...baseDetails,
     {
       field: 'reason',
       value: '',
@@ -564,6 +587,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_APPLICATION_SQUARE_PLACE: [
+    ...baseDetails,
     {
       field: 'taxBill_request',
       value: '',
@@ -747,6 +771,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_TERMINATION_OF_HUNTING_LEASE: [
+    ...baseDetails,
     {
       field: 'reason',
       value: '',
@@ -777,6 +802,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_BUY_SMALL_HOUSE_PLOT: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -789,6 +815,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_APPLICATION_FOR_ROAD_ALLOWANCE: [
+    ...baseDetails,
     {
       field: 'applicantType',
       value: '',
@@ -914,6 +941,7 @@ const template: ExtraParametersObject = {
   ],
 
   MEX_UNAUTHORIZED_RESIDENCE: [
+    ...baseDetails,
     {
       field: 'otherInformation',
       value: '',
@@ -925,8 +953,9 @@ const template: ExtraParametersObject = {
     },
   ],
 
-  PARKING_PERMIT: baseParkingPermitDetails,
+  PARKING_PERMIT: [...baseDetails, ...baseParkingPermitDetails],
   LOST_PARKING_PERMIT: [
+    ...baseDetails,
     ...baseParkingPermitDetails,
     {
       field: 'application.lostPermit.policeReportNumber',
@@ -939,6 +968,7 @@ const template: ExtraParametersObject = {
     },
   ],
   PARKING_PERMIT_RENEWAL: [
+    ...baseDetails,
     ...baseParkingPermitDetails,
     {
       field: 'application.renewal.changedCircumstances',
@@ -983,6 +1013,7 @@ const template: ExtraParametersObject = {
     },
   ],
   APPEAL: [
+    ...baseDetails,
     {
       field: 'application.appeal.type',
       value: '',
@@ -997,18 +1028,6 @@ const template: ExtraParametersObject = {
           { label: 'Överklagar rättidsprövning', value: 'appeal_time' },
           { label: 'Kommunen överklagar', value: 'appeal_municipality' },
         ],
-      },
-      section: 'Övergripande',
-    },
-    {
-      field: 'application.appeal.relatesto',
-      value: '',
-      label: 'Ärende som överklagas',
-      formField: {
-        type: 'text',
-        options: {
-          placeholder: 't.ex. PRH-2024-000275',
-        },
       },
       section: 'Övergripande',
     },
@@ -1041,7 +1060,7 @@ const template: ExtraParametersObject = {
     {
       field: 'application.appeal.extra',
       value: '',
-      label: 'Övrig infomration',
+      label: 'Övrig information',
       formField: {
         type: 'textarea',
       },
@@ -1051,7 +1070,15 @@ const template: ExtraParametersObject = {
 };
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
+  // Create base template encompassing all case types
   const obj: Partial<ExtraParametersObject> = { ...template };
+
+  // For this particular errand, populate the fields with values from extraParameters
+  // Loop through all extraParameters and find the corresponding template field
+  // and populate the value.
+  // If the field is not found in the errand extraparameters, the default value
+  // from the template will be used.
+
   errand.extraParameters.forEach((param) => {
     const caseType = errand.caseType;
     const field = param['key'];
@@ -1059,7 +1086,9 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
     const value = param?.values[0] || '';
 
     if (caseType in MEXCaseType || caseType in PTCaseType) {
-      const templateField = (template[caseType] as UppgiftField[])?.find((f) => f.field === field);
+      const caseTypeTemplate = template[caseType] as UppgiftField[];
+      const templateField = caseTypeTemplate?.find((f) => f.field === field);
+
       if (caseType && field && templateField) {
         const { label, formField, section, dependsOn } = templateField;
         obj[caseType] = obj[caseType] || [];
