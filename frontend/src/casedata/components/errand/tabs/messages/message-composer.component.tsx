@@ -678,26 +678,22 @@ export const MessageComposer: React.FC<{
               loading={isLoading}
               loadingText="Skickar meddelande"
               onClick={handleSubmit(
-                async () => {
-                  setIsLoading(true);
-                  const confirmed = await submitConfirm.showConfirmation(
-                    'Skicka',
-                    'Vill du skicka meddelandet?',
-                    'Ja',
-                    'Nej',
-                    'info',
-                    'info'
-                  );
-                  if (confirmed) {
-                    onSubmit(getValues());
-                  }
-                  setIsLoading(false);
+                () => {
+                  return submitConfirm
+                    .showConfirmation('Skicka', 'Vill du skicka meddelandet?', 'Ja', 'Nej', 'info', 'info')
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        onSubmit(getValues());
+                      }
+                      return confirmed ? () => true : () => {};
+                    });
                 },
                 () => {}
               )}
               variant="primary"
               color="primary"
               disabled={isLoading || !formState.isValid || !allowed}
+              leftIcon={isLoading ? <Spinner size={2} className="mr-sm" /> : null}
             >
               Skicka meddelande
             </Button>
