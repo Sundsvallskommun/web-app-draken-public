@@ -56,8 +56,8 @@ const emptyaddress: AddressResult = {
   administrationCode: '',
   administrationName: '',
   department: '',
-  title: undefined,
-  referenceNumber: undefined,
+  title: '',
+  referenceNumber: '',
 };
 
 interface OrgInfo extends Data {
