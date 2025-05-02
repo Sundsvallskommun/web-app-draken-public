@@ -835,10 +835,9 @@ export const updateSupportErrand: (
     },
     labels: formdata.labels,
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(formdata.contactReason &&
-      typeof formdata.contactReasonDescription !== 'undefined' && {
-        contactReasonDescription: formdata.contactReasonDescription,
-      }),
+    ...(typeof formdata.contactReasonDescription !== 'undefined' && {
+      contactReasonDescription: formdata.contactReasonDescription,
+    }),
     businessRelated: !!formdata.businessRelated,
     ...(formdata.status && { status: formdata.status }),
     ...(formdata.status && {
