@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, Disclosure, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -10,15 +10,25 @@ export const SupportErrandRecruitmentTab: React.FC<{
   update: () => void;
 }> = () => {
   const { supportErrand } = useAppContext();
+  const [parameters, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
+  const [loading, setLoading] = React.useState(false);
 
-  const parameters = getRecruitmentParameters();
-
-  const { register, getValues } = useForm<{ [key: string]: Parameter[] }>({
+  const { register, getValues, watch, setValue, reset } = useForm<{ [key: string]: Parameter[] }>({
     defaultValues: parameters,
   });
 
-  const handleSubmit = () => {
-    const saved = saveParameters(getValues());
+  useEffect(() => {
+    const ps = getRecruitmentParameters(supportErrand);
+    setParameters(ps);
+    reset(structuredClone(ps));
+  }, [supportErrand, reset]);
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    await saveParameters(supportErrand.id, '2281', getValues()).then((res) => {
+      setLoading(false);
+      return res;
+    });
   };
 
   return (
@@ -46,15 +56,23 @@ export const SupportErrandRecruitmentTab: React.FC<{
                       <FormLabel className="pb-16" {...register(`${key}.${index}.values.0`)}>
                         {val.group}
                       </FormLabel>
-                      <Checkbox className="block py-16" {...register(`${key}.${index}.values.1`)}>
+                      <Input type="hidden" {...register(`${key}.${index}.values.1`)} />
+                      <Checkbox
+                        defaultChecked={getValues(`${key}.${index}.values.1`) === 'true'}
+                        onChange={(e) => {
+                          setValue(`${key}.${index}.values.1`, e.currentTarget.checked === true ? 'true' : 'false');
+                        }}
+                        className="block py-16"
+                      >
                         {val.values[0]}
                       </Checkbox>
 
-                      <textarea
+                      <Textarea
                         className="w-full"
                         rows={3}
                         {...register(`${key}.${index}.values.2`)}
                         placeholder="Anteckningar..."
+                        value={getValues(`${key}.${index}.values.2`)}
                       />
                     </div>
                   );
@@ -62,7 +80,9 @@ export const SupportErrandRecruitmentTab: React.FC<{
               </Disclosure>
             );
           })}
-          <Button onClick={handleSubmit}>Spara</Button>
+          <Button loading={loading} loadingText="Sparar.." onClick={handleSubmit}>
+            Spara
+          </Button>
         </FormControl>
       </div>
     </div>
