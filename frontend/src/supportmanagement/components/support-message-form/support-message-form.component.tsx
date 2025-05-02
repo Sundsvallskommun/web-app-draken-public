@@ -392,35 +392,39 @@ export const SupportMessageForm: React.FC<{
       <div className="w-full pt-16">
         <strong className="text-md">Kontaktväg</strong>
         <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
-          <RadioButton
-            disabled={props.locked}
-            data-cy="useEmail-radiobutton-true"
-            className="mr-sm mt-4"
-            name="useEmail"
-            id="useEmail"
-            value={'email'}
-            defaultChecked={
-              !(
-                Channels[supportErrand.channel] === Channels.ESERVICE ||
-                Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-              )
-            }
-            {...register('contactMeans')}
-          >
-            E-post
-          </RadioButton>
-          <RadioButton
-            disabled={props.locked}
-            data-cy="useSms-radiobutton-true"
-            className="mr-sm mt-4"
-            name="useSms"
-            id="useSms"
-            value={'sms'}
-            defaultChecked={false}
-            {...register('contactMeans')}
-          >
-            SMS
-          </RadioButton>
+          {appConfig.features.useEmailContactChannel && (
+            <RadioButton
+              disabled={props.locked}
+              data-cy="useEmail-radiobutton-true"
+              className="mr-sm mt-4"
+              name="useEmail"
+              id="useEmail"
+              value={'email'}
+              defaultChecked={
+                !(
+                  Channels[supportErrand.channel] === Channels.ESERVICE ||
+                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+                )
+              }
+              {...register('contactMeans')}
+            >
+              E-post
+            </RadioButton>
+          )}
+          {appConfig.features.useSmsContactChannel && (
+            <RadioButton
+              disabled={props.locked}
+              data-cy="useSms-radiobutton-true"
+              className="mr-sm mt-4"
+              name="useSms"
+              id="useSms"
+              value={'sms'}
+              defaultChecked={false}
+              {...register('contactMeans')}
+            >
+              SMS
+            </RadioButton>
+          )}
           {Channels[supportErrand.channel] === Channels.ESERVICE ||
           Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
             <RadioButton
@@ -701,6 +705,7 @@ export const SupportMessageForm: React.FC<{
               variant="primary"
               color="primary"
               type="button"
+              disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
               onClick={handleSubmit(onSubmit)}
               data-cy="send-message-button"
             >
