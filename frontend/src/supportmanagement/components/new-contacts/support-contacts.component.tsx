@@ -133,9 +133,15 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       contact.administrationName ||
       contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
       null;
+    const title = contact.title || contact.parameters?.find((param) => param.key === 'title')?.values[0] || null;
+    const referenceNumber =
+      contact.referenceNumber ||
+      contact.parameters?.find((param) => param.key === 'referenceNumber')?.values[0] ||
+      null;
+    const department =
+      contact.department || contact.parameters?.find((param) => param.key === 'department')?.values[0] || null;
     const username =
       contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -243,7 +249,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             </div>
           )}
         </div>
-
+        {/* Left side of errand Disclosure */}
         <div className="md:flex md:gap-24 px-16 py-12">
           <div className={`md:w-1/3 flex gap-8 break-all ${administrationName ? `items-start` : `items-center`}`}>
             <Avatar
@@ -283,18 +289,24 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
-                    {username ? (
-                      <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-username`}>
-                        {username}
-                      </p>
-                    ) : null}
-                    <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-title`}>
+                      {title}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-administrationName`}>
+                      {administrationName}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-department`}>
+                      {department}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-referenceNumber`}>
+                      {referenceNumber}
+                    </p>
                   </>
                 )}
               </div>
             </div>
           </div>
-
+          {/* Middle of errand Disclosure */}
           <div className="md:w-1/3 md:mt-0 mt-md break-all">
             <p
               className={`my-xs mt-0 flex flex-col text-small ${
@@ -307,6 +319,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 : '(adress saknas)'}
             </p>
           </div>
+          {/* Right side of errand Disclosure */}
           <div className="md:w-1/3 md:mt-0 mt-md">
             <div data-cy={`stakeholder-phone`} className="text-small">
               {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
@@ -338,6 +351,12 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                   </Button>
                 )}
               </div>
+              {username ? (
+                <div className="text-small my-xs mt-0" data-cy={`stakeholder-username`}>
+                  <p className="flex flex-col">{username}</p>
+                </div>
+              ) : null}
+              <div></div>
             </div>
           </div>
         </div>
