@@ -83,7 +83,12 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         <div className="flex gap-24">
           <div className="flex my-md gap-xl w-1/2">
             <FormControl id="category" className="w-full">
-              <FormLabel>Verksamhet*</FormLabel>
+              <FormLabel>
+                {t(
+                  `common:basics_tab.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`,
+                  t('common:basics_tab.orderType.default')
+                )}
+              </FormLabel>
               <Select
                 {...register('category')}
                 disabled={isSupportErrandLocked(supportErrand)}
