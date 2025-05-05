@@ -19,6 +19,7 @@ import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 import store from '@supportmanagement/services/storage-service';
+import { UseOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
 
 export interface Customer {
   id: string;
@@ -82,7 +83,13 @@ export interface SupportErrandsData extends Data {
   size?: number;
   totalPages?: number;
   totalElements?: number;
-  labels: { label: string; screenReaderOnly: boolean; sortable: boolean; sticky?: boolean; shownForStatus: All }[];
+  labels: (statuses: Status[]) => {
+    label: string;
+    screenReaderOnly: boolean;
+    sortable: boolean;
+    sticky?: boolean;
+    shownForStatus: All | Status[];
+  }[];
 }
 
 export interface ResolutionUpdate {
@@ -317,81 +324,11 @@ export enum ResolutionLabelKA {
   REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
 }
 
-export const ongoingSupportErrandLabelsKC = [
-  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  {
-    label: 'Prioritet',
-    screenReaderOnly: false,
-    sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
-  },
-  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: [Status.SUSPENDED] },
-  { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-];
+const statuses = [] as Status[];
 
-export const ongoingSupportErrandLabelsROB = [
-  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Beställningstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  {
-    label: 'Prioritet',
-    screenReaderOnly: false,
-    sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
-  },
-  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: [Status.SUSPENDED] },
-  { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-];
-
-export const ongoingSupportErrandLabelsLoP = [
-  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  {
-    label: 'Prioritet',
-    screenReaderOnly: false,
-    sortable: true,
-    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
-  },
-  {
-    label: 'Påminnelse',
-    screenReaderOnly: false,
-    sortable: true,
-    shownForStatus: [Status.SUSPENDED],
-  },
-  {
-    label: 'Ansvarig',
-    screenReaderOnly: false,
-    sortable: true,
-    shownForStatus: All.ALL,
-  },
-];
-
-export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
-  let ongoingSupportErrandLabels;
-
-  if (isKC()) {
-    ongoingSupportErrandLabels = ongoingSupportErrandLabelsKC;
-  } else if (isROB()) {
-    ongoingSupportErrandLabels = ongoingSupportErrandLabelsROB;
-  } else {
-    ongoingSupportErrandLabels = ongoingSupportErrandLabelsLoP;
-  }
-
-  return ongoingSupportErrandLabels.filter(
-    (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
-  );
+export const getSupportErrandLabels = () => {
+  const supportErrandLabels = UseOngoingSupportErrandLabels(statuses);
+  return supportErrandLabels;
 };
 
 export interface SupportStakeholderFormModel extends SupportStakeholder {
@@ -426,7 +363,7 @@ export const emptyContact: SupportStakeholderFormModel = {
 
 export const emptySupportErrandList: SupportErrandsData = {
   errands: [],
-  labels: [],
+  labels: (statuses: Status[]) => [],
 };
 
 export const defaultSupportErrandInformation: SupportErrand | any = {
@@ -756,12 +693,12 @@ export const getSupportErrands: (
         size: res.data.pageable.pageSize,
         totalPages: res.data.totalPages,
         totalElements: res.data.totalElements,
-        labels: isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP,
+        labels: getSupportErrandLabels,
       } as SupportErrandsData;
       return response;
     })
     .catch((e) => {
-      return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
+      return { errands: [], labels: () => [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };
 

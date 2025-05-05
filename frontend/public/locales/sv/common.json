@@ -19,9 +19,17 @@
     }
   },
   "overview": {
+    "status": "Status",
+    "lastActivity": "Senaste aktivitet",
     "orderType": {
       "ROB": "Beställningstyp",
-      "default": "Verksamhet*"
-    }
+      "default": "Verksamhet"
+    },
+    "errandType": "Ärendetyp",
+    "incomingVia": "Inkom via",
+    "registered": "Registrerades",
+    "priority": "Prioritet",
+    "reminder": "Påminnelse",
+    "responsible": "Ansvarig"
   }
 }
