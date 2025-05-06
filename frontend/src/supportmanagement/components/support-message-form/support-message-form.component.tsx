@@ -701,12 +701,13 @@ export const SupportMessageForm: React.FC<{
             >
               Avbryt
             </Button>
-              <Button
+            <Button
               variant="primary"
               color="primary"
               type="button"
               loading={isSending}
               loadingText="Skickar meddelande"
+              disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
               onClick={handleSubmit(onSubmit)}
               data-cy="send-message-button"
             >
