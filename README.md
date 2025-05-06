@@ -11,7 +11,7 @@ För MEX (Mark och exploatering):
 | ActiveDirectory     |     2.0 |
 | Citizen             |     3.0 |
 | CaseData            |    11.0 |
-| Messaging           |     7.0 |
+| Messaging           |     6.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     2.0 |
@@ -42,7 +42,7 @@ För PT (Parkeringstillstånd):
 | ActiveDirectory     |     2.0 |
 | Citizen             |     3.0 |
 | CaseData            |    11.0 |
-| Messaging           |     7.0 |
+| Messaging           |     6.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     2.0 |
