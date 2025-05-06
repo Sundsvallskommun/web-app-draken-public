@@ -141,7 +141,9 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     const department =
       contact.department || contact.parameters?.find((param) => param.key === 'department')?.values[0] || null;
     const username =
-      contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+      contact.username ||
+      contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values[0] ||
+      null;
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
