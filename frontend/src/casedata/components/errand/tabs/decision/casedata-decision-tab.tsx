@@ -659,8 +659,8 @@ export const CasedataDecisionTab: React.FC<{
             disabled={
               isLoading ||
               !formState.isValid ||
-              !getValues('validFrom') ||
-              !getValues('validTo') ||
+              (isPT() && !getValues('validFrom')) ||
+              (isPT() && !getValues('validTo')) ||
               isErrandLocked(errand) ||
               !allowed ||
               isSent()
