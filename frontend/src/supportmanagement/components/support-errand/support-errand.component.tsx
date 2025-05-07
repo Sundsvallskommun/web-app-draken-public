@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
+import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   SupportErrand,
@@ -32,6 +32,7 @@ let formSchema = yup
 export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('Hämtar ärende..');
+  const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const {
@@ -183,14 +184,24 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
 
                   <section className="bg-transparent pb-4">
                     <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
-                      {supportErrand && <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />}
+                      {supportErrand && (
+                        <SupportTabsWrapper
+                          setUnsavedFacility={setUnsavedFacility}
+                          showMessageForm={showMessageForm}
+                          setShowMessageForm={setShowMessageForm}
+                        />
+                      )}
                     </div>
                   </section>
                 </div>
               )}
             </main>
           </div>
-          <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
+          <SidebarWrapper
+            setUnsavedFacility={setUnsavedFacility}
+            unsavedFacility={unsavedFacility}
+            setShowMessageForm={setShowMessageForm}
+          />
         </div>
       </div>
     </FormProvider>

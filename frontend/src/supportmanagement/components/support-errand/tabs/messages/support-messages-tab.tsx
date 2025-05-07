@@ -16,14 +16,15 @@ export const SupportMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   municipalityId: string;
+  showMessageForm: boolean;
+  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
 }> = (props) => {
   const { supportErrand, municipalityId, user } = useAppContext();
-  const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [selected, setSelected] = useState<string>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
   const [showSelectedMessage, setShowSelectedMessage] = useState<boolean>();
-  const [allowed, setAllowed] = useState(false);
   const [richText, setRichText] = useState<string>('');
+  const [allowed, setAllowed] = useState(false);
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const [sortedMessages, setSortedMessages] = useState(props.messages);
@@ -155,7 +156,6 @@ export const SupportMessagesTab: React.FC<{
       }
     }
   }, [props.messages, props.messageTree, sortChannelMessages, sortSendingTypeMessages]);
-
   return (
     <>
       <div className="w-full py-40 px-48 gap-32">
@@ -175,7 +175,7 @@ export const SupportMessagesTab: React.FC<{
             onClick={() => {
               setSelectedMessage(undefined);
               setShowSelectedMessage(false);
-              setShowMessageForm(true);
+              props.setShowMessageForm(true);
               setRichText(emailBody);
             }}
           >
@@ -218,7 +218,7 @@ export const SupportMessagesTab: React.FC<{
             <MessageTreeComponent
               update={props.update}
               setRichText={setRichText}
-              setShowMessageForm={setShowMessageForm}
+              setShowMessageForm={props.setShowMessageForm}
               richText={richText}
               emailBody={emailBody}
               nodes={sortedMessages}
@@ -236,18 +236,18 @@ export const SupportMessagesTab: React.FC<{
         )}
 
         <MessageWrapper
-          show={showMessageForm}
+          show={props.showMessageForm}
           label="Nytt meddelande"
           closeHandler={() => {
             setSelectedMessage(undefined);
-            setShowMessageForm(false);
+            props.setShowMessageForm(false);
           }}
         >
           <SupportMessageForm
             locked={isSupportErrandLocked(supportErrand)}
-            showMessageForm={showMessageForm}
+            showMessageForm={props.showMessageForm}
             showSelectedMessage={showSelectedMessage}
-            setShowMessageForm={setShowMessageForm}
+            setShowMessageForm={props.setShowMessageForm}
             prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
             prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
             supportErrandId={supportErrand.id}
