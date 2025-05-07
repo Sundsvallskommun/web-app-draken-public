@@ -248,6 +248,11 @@ export const SupportErrandsTable: React.FC = () => {
     return sortBy(errand?.activeNotifications, 'created').reverse()[0];
   };
 
+  const truncate = (text: string | null | undefined, maxLength: number): string => {
+    if (!text) return '';
+    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  };
+
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
     const notification = findLatestNotification(errand);
     return (
@@ -306,7 +311,9 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
-            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
+            <div className="m-0 italic truncate">
+              {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
+            </div>
           </div>
         </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
