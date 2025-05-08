@@ -21,7 +21,7 @@
   "overview": {
     "orderType": {
       "ROB": "Beställningstyp",
-      "default": "Verksamhet*"
+      "default": "Verksamhet"
     }
   }
 }
