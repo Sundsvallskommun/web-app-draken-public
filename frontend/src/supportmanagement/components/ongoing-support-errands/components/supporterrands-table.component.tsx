@@ -1,7 +1,7 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
-import { prettyTime, sortBy } from '@common/services/helper-service';
+import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -246,11 +246,6 @@ export const SupportErrandsTable: React.FC = () => {
 
   const findLatestNotification = (errand: SupportErrand) => {
     return sortBy(errand?.activeNotifications, 'created').reverse()[0];
-  };
-
-  const truncate = (text: string | null | undefined, maxLength: number): string => {
-    if (!text) return '';
-    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
   };
 
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
