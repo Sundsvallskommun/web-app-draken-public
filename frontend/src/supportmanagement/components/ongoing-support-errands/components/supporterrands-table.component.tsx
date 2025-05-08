@@ -1,7 +1,7 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
-import { prettyTime, sortBy } from '@common/services/helper-service';
+import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -306,7 +306,9 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
-            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
+            <div className="m-0 italic truncate">
+              {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
+            </div>
           </div>
         </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
