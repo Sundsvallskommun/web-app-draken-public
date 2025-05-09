@@ -231,9 +231,7 @@ export const SupportErrandsTable: React.FC = () => {
         onClick={() => openErrandeInNewWindow(errand)}
         className="cursor-pointer"
       >
-        {/* Status column */}
         <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
-        {/* Activity column */}
         <Table.Column>
           {!!notification ? (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
@@ -248,7 +246,6 @@ export const SupportErrandsTable: React.FC = () => {
             dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
           )}
         </Table.Column>
-        {/* Category column */}
         <Table.HeaderColumn
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
@@ -260,7 +257,6 @@ export const SupportErrandsTable: React.FC = () => {
           ) : null}
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
-        {/* Category Type column */}
         <Table.Column scope="row">
           <div className="max-w-[280px]">
             {isLOP() || isIK() || isKA() ? (
@@ -276,14 +272,12 @@ export const SupportErrandsTable: React.FC = () => {
             ) : null}
           </div>
         </Table.Column>
-        {/* Channel column */}
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
             <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
           </div>
         </Table.Column>
-        {/* Created column */}
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
           <div>
             <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
@@ -294,14 +288,12 @@ export const SupportErrandsTable: React.FC = () => {
             </div>
           ) : null}
         </Table.Column>
-        {/* Priority column */}
         <Table.Column>{Priority[errand.priority]}</Table.Column>
         {errand.status === Status.SUSPENDED ? (
           <Table.Column>
             <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
           </Table.Column>
         ) : null}
-        {/* Assigned User column */}
         <Table.Column>
           {getAdminName(
             supportAdmins?.find((a: SupportAdmin) =>
