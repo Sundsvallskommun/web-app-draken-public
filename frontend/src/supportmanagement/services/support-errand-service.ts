@@ -19,8 +19,6 @@ import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 import store from '@supportmanagement/services/storage-service';
-import { UseOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
-
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -83,7 +81,7 @@ export interface SupportErrandsData extends Data {
   size?: number;
   totalPages?: number;
   totalElements?: number;
-  labels: (statuses: Status[]) => {
+  labels: {
     label: string;
     screenReaderOnly: boolean;
     sortable: boolean;
@@ -323,14 +321,6 @@ export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
   REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
 }
-
-const statuses = [] as Status[];
-
-export const getSupportErrandLabels = () => {
-  const supportErrandLabels = UseOngoingSupportErrandLabels(statuses);
-  return supportErrandLabels;
-};
-
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
   internalId: string;
@@ -363,7 +353,7 @@ export const emptyContact: SupportStakeholderFormModel = {
 
 export const emptySupportErrandList: SupportErrandsData = {
   errands: [],
-  labels: (statuses: Status[]) => [],
+  labels: [],
 };
 
 export const defaultSupportErrandInformation: SupportErrand | any = {
@@ -693,12 +683,12 @@ export const getSupportErrands: (
         size: res.data.pageable.pageSize,
         totalPages: res.data.totalPages,
         totalElements: res.data.totalElements,
-        labels: getSupportErrandLabels,
+        labels: [],
       } as SupportErrandsData;
       return response;
     })
     .catch((e) => {
-      return { errands: [], labels: () => [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
+      return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };
 

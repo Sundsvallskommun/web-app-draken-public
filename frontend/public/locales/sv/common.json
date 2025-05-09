@@ -25,7 +25,10 @@
       "ROB": "Beställningstyp",
       "default": "Verksamhet"
     },
-    "errandType": "Ärendetyp",
+    "errandType": {
+      "LOP": "Ärendekategori",
+      "default": "Ärendetyp"
+    },
     "incomingVia": "Inkom via",
     "registered": "Registrerades",
     "priority": "Prioritet",

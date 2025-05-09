@@ -25,7 +25,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-import { UseOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
+import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -122,7 +122,7 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
   };
 
-  const headers = UseOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
+  const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>

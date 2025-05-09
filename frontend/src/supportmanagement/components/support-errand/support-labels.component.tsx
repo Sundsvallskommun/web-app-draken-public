@@ -2,7 +2,7 @@ import { All } from '@supportmanagement/interfaces/priority';
 import { Status } from '@supportmanagement/services/support-errand-service';
 import { useTranslation } from 'react-i18next';
 
-export const UseOngoingSupportErrandLabels = (statuses: Status[]) => {
+export const useOngoingSupportErrandLabels = (statuses: Status[]) => {
   const { t } = useTranslation();
 
   const labels = [
@@ -17,7 +17,15 @@ export const UseOngoingSupportErrandLabels = (statuses: Status[]) => {
       sortable: true,
       shownForStatus: All.ALL,
     },
-    { label: t('common:overview.errandType'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+    {
+      label: t(
+        `common:overview.errandType.${process.env.NEXT_PUBLIC_APPLICATION}`,
+        t(`common:overview.errandType.default`)
+      ),
+      screenReaderOnly: false,
+      sortable: true,
+      shownForStatus: All.ALL,
+    },
     { label: t('common:overview.incomingVia'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
     { label: t('common:overview.registered'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
     {
