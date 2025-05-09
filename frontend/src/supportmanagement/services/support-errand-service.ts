@@ -284,6 +284,7 @@ export enum Resolution {
   REFER_TO_PHONE = 'REFER_TO_PHONE',
   REGISTERED = 'REGISTERED',
   SENT_MESSAGE = 'SENT_MESSAGE',
+  RECRUITED = 'RECRUITED',
 }
 
 export enum ResolutionLabelLOP {
@@ -315,6 +316,12 @@ export enum ResolutionLabelKS {
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
   REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
+}
+
+export enum ResolutionLabelROB {
+  RECRUITED = 'Rekryterad',
+  ABORTED = 'Avbruten',
+  PARTLY = 'Delvis',
 }
 
 export const ongoingSupportErrandLabelsKC = [

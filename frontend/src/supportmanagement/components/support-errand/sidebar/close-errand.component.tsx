@@ -1,5 +1,5 @@
 import { User } from '@common/interfaces/user';
-import { isIK, isKA, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -11,6 +11,7 @@ import {
   ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
+  ResolutionLabelROB,
   SupportErrand,
   closeSupportErrand,
   getSupportErrandById,
@@ -40,8 +41,9 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedResolution, setSelectedResolution] = useState<Resolution>(
-    isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
+    isROB() ? Resolution.RECRUITED : isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
   );
+
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
@@ -58,6 +60,8 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
             ? ResolutionLabelLOP[resolution]
             : isIK()
             ? ResolutionLabelLOP[resolution] //ResolutionLabelIK[resolution]?
+            : isROB()
+            ? ResolutionLabelROB[resolution]
             : ResolutionLabelKS[resolution];
           return sendClosingMessage(adminName, supportErrand, resolutionLabel, municipalityId);
         }
@@ -137,6 +141,8 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                       ? ResolutionLabelIK
                       : isKA()
                       ? ResolutionLabelKA
+                      : isROB()
+                      ? ResolutionLabelROB
                       : ResolutionLabelKS
                   )
                     .filter(([_key, _label]) => _label !== 'Vidarebefordrat via växelprogrammet')
