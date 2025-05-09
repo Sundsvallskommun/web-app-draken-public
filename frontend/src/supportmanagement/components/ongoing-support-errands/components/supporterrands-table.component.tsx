@@ -25,6 +25,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
+import { appConfig } from '@config/appconfig';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -250,25 +251,23 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {isKC() || errand.labels.length < 1 ? (
-            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() || isIK() || isKA() ? (
+          {appConfig.features.useTwoLevelCategorization ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
+          ) : null}
+          {appConfig.features.useThreeLevelCategorization ? (
+            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
           ) : null}
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {isLOP() || isIK() || isKA() ? (
-              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-                <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
-                <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
-              </div>
-            ) : errand.labels.length < 2 ? (
-              <p className="m-0">
-                {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
-                  ?.displayName || errand.type}
-              </p>
+            {appConfig.features.useThreeLevelCategorization ? (
+              <>
+                <p className="m-0">
+                  {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
+                    ?.displayName || errand.type}
+                </p>
+              </>
             ) : null}
           </div>
         </Table.Column>
