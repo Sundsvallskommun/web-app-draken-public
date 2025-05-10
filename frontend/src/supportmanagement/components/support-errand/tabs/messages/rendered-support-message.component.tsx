@@ -7,6 +7,7 @@ import { isSupportErrandLocked, validateAction } from '@supportmanagement/servic
 import {
   getMessageAttachment,
   Message,
+  MessageNode,
   setMessageViewStatus,
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
@@ -38,7 +39,7 @@ export const RenderedSupportMessage: React.FC<{
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
   richText: string;
   emailBody: string;
-  message: Message;
+  message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;
   root?: boolean;
@@ -195,8 +196,11 @@ export const RenderedSupportMessage: React.FC<{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {message?.direction === 'INBOUND' &&
-          (message.communicationType === 'EMAIL' || message.communicationType === 'WEB_MESSAGE') ? (
+          {((message.children?.length === 0 ||
+            (message.children.every((m) => m.children?.length === 0) &&
+              message.children.every((m) => m.direction !== message.direction))) &&
+            message?.communicationType === 'EMAIL') ||
+          message?.communicationType === 'WEB_MESSAGE' ? (
             <Button
               type="button"
               className="self-start"
@@ -205,13 +209,15 @@ export const RenderedSupportMessage: React.FC<{
               size="sm"
               variant="primary"
               onClick={async () => {
-                await onSelect(message);
+                const m = { ...message };
+                m.sender = m.direction === 'OUTBOUND' ? m.target : m.sender;
+                await onSelect(m);
                 setTimeout(() => {
                   setShowMessageForm(true);
                 }, 0);
               }}
             >
-              Svara
+              {message?.direction === 'INBOUND' ? 'Svara' : 'Följ upp'}
             </Button>
           ) : null}
         </div>
