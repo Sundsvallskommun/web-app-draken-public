@@ -3,11 +3,9 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
-import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -15,16 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 export const RegistreraView = () => {
   const router = useRouter();
 
-  const {
-    isLoggedIn,
-    errands,
-    administrators,
-    municipalityId,
-    setSupportMetadata,
-    setAdministrators,
-    setSubPage,
-    setMunicipalityId,
-  } = useAppContext();
+  const { isLoggedIn, setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -49,7 +38,7 @@ export const RegistreraView = () => {
 
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
-      <Layout title={`${getApplicationName()} - Registrera ärende`}>
+      <Layout title={`${appConfig.applicationName} - Registrera ärende`}>
         <NextLink href="#content" passHref legacyBehavior>
           <a
             tabIndex={1}
@@ -59,7 +48,8 @@ export const RegistreraView = () => {
             Hoppa till innehåll
           </a>
         </NextLink>
-        {isKC() || isIK() || isLOP() || isKA() ? <SupportErrandComponent /> : <CasedataErrandComponent />}
+        {appConfig.isSupportManagement ? <SupportErrandComponent /> : null}
+        {appConfig.isCaseData ? <CasedataErrandComponent /> : null}
       </Layout>
     </div>
   );

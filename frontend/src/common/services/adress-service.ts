@@ -37,6 +37,9 @@ export interface AddressResult {
   company: string;
   administrationCode: string;
   administrationName: string;
+  department: string;
+  title?: string;
+  referenceNumber?: string;
 }
 
 const emptyaddress: AddressResult = {
@@ -52,6 +55,9 @@ const emptyaddress: AddressResult = {
   company: '',
   administrationCode: '',
   administrationName: '',
+  department: '',
+  title: '',
+  referenceNumber: '',
 };
 
 interface OrgInfo extends Data {
@@ -191,8 +197,11 @@ export const searchADUser: (username: string, domain?: string) => Promise<Addres
         careof: res.data.data.careof,
         loginName: username,
         company: res.data.data.company,
+        title: res.data.data.title,
+        referenceNumber: res.data.data.referenceNumber,
         administrationCode: parseAdministrationInfo(res.data.data.orgTree).administrationCode,
         administrationName: parseAdministrationInfo(res.data.data.orgTree).administrationName,
+        department: res.data.data.department,
         // metadata: parseAdministrationInfo(res.data.data.orgTree),
       } as AddressResult;
     })

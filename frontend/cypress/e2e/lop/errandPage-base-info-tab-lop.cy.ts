@@ -16,8 +16,6 @@ import {
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
-import cypress from 'cypress';
-import { mockAddress } from '../case-data/fixtures/mockAddress';
 import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 import { mockEmployee } from './fixtures/mockEmployee';
 
@@ -139,30 +137,40 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      //Errand owner
       cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[0].firstName).should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[0].address).should('exist');
       cy.get('[data-cy="stakeholder-email"]')
         .contains(mockSupportErrand.stakeholders[0].contactChannels.find((k) => k.type === 'Email').value)
         .should('exist');
       cy.get('[data-cy="stakeholder-phone"]')
         .contains(mockSupportErrand.stakeholders[0].contactChannels.find((k) => k.type === 'Phone').value)
         .should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[1].address).should('exist');
+      cy.get('[data-cy="stakeholder-title"]')
+        .contains(mockSupportErrand.stakeholders[0].parameters.find((p) => p.key === 'title').values[0])
+        .should('exist');
+      cy.get('[data-cy="stakeholder-department"]')
+        .contains(mockSupportErrand.stakeholders[0].parameters.find((p) => p.key === 'department').values[0])
+        .should('exist');
+      cy.get('[data-cy="stakeholder-referenceNumber"]')
+        .contains(mockSupportErrand.stakeholders[0].parameters.find((p) => p.key === 'referenceNumber').values[0])
+        .should('exist');
 
+      // Contact person #1
       cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[1].firstName).should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[1].address).should('exist');
       cy.get('[data-cy="stakeholder-email"]')
         .contains(mockSupportErrand.stakeholders[1].contactChannels.find((k) => k.type === 'Email').value)
         .should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[1].address).should('exist');
-
+      // Contact person #2
       cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[2].firstName).should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[2].address).should('exist');
       cy.get('[data-cy="stakeholder-email"]')
         .contains(mockSupportErrand.stakeholders[2].contactChannels.find((k) => k.type === 'Email').value)
         .should('exist');
       cy.get('[data-cy="stakeholder-phone"]')
         .contains(mockSupportErrand.stakeholders[2].contactChannels.find((k) => k.type === 'Phone').value)
         .should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[2].address).should('exist');
-
       cy.get('[data-cy="add-customer-button"]').should('not.exist');
       cy.get('[data-cy="add-manually-button-person"]').should('exist');
     });

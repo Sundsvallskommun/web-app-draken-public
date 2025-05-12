@@ -1,20 +1,9 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  Divider,
-  FormControl,
-  FormLabel,
-  Icon,
-  Label,
-  Select,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -23,9 +12,6 @@ import {
   StatusLabel,
   SupportErrand,
   defaultSupportErrandInformation,
-  findPriorityLabelForPriorityKey,
-  findStatusKeyForStatusLabel,
-  findStatusLabelForStatusKey,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandAdmin,
@@ -34,10 +20,10 @@ import {
   supportErrandIsEmpty,
   updateSupportErrand,
   validateAction,
+  StatusLabelROB,
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
-import router from 'next/router';
 import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
@@ -45,7 +31,7 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { ArrowRight } from 'lucide-react';
+import { isROB } from '@common/services/application-service';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -146,7 +132,7 @@ export const SidebarInfo: React.FC<{
               props.setUnsavedFacility(false);
               setIsLoading(false);
             })
-            .catch((e) => {
+            .catch(() => {
               setIsLoading(false);
               toastMessage({
                 position: 'bottom',
@@ -244,36 +230,14 @@ export const SidebarInfo: React.FC<{
 
   useEffect(() => {
     if (supportErrand?.priority && supportErrand?.status) {
-      const statuses = [
-        {
-          key: 'NEW',
-          label: StatusLabel.NEW,
-        },
-        {
-          key: 'ONGOING',
-          label: StatusLabel.ONGOING,
-        },
-        {
-          key: 'PENDING',
-          label: StatusLabel.PENDING,
-        },
-        {
-          key: 'AWAITING_INTERNAL_RESPONSE',
-          label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
-        },
-        {
-          key: 'ASSIGNED',
-          label: StatusLabel.ASSIGNED,
-        },
-        {
-          key: 'SUSPENDED',
-          label: StatusLabel.SUSPENDED,
-        },
-        {
-          key: 'SOLVED',
-          label: StatusLabel.SOLVED,
-        },
-      ];
+      const statusLabel = isROB() ? StatusLabelROB : StatusLabel;
+      const statuses = Object.keys(statusLabel).map((key) => {
+        return {
+          key: key,
+          label: statusLabel[key],
+        };
+      });
+
       setSelectableStatuses(statuses);
 
       const prio = [

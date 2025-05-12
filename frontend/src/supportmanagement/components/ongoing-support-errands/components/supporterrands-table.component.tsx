@@ -1,11 +1,11 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
 import { prettyTime, sortBy } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Callout, Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
+import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
@@ -13,19 +13,19 @@ import {
   Resolution,
   Status,
   StatusLabel,
+  StatusLabelROB,
   SupportErrand,
   getLabelCategory,
   getLabelSubType,
   getLabelType,
   getOngoingSupportErrandLabels,
 } from '@supportmanagement/services/support-errand-service';
+import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -80,23 +80,21 @@ export const SupportErrandsTable: React.FC = () => {
           1: 'touched',
           2: 'category',
           3: 'type',
-          4: 'subType',
-          5: 'channel',
-          6: 'created',
-          7: 'priority',
-          8: 'suspendedTo',
-          9: 'assignedUserId',
+          4: 'channel',
+          5: 'created',
+          6: 'priority',
+          7: 'suspendedTo',
+          8: 'assignedUserId',
         }
       : {
           0: 'status',
           1: 'touched',
           2: 'category',
           3: 'type',
-          4: 'subType',
-          5: 'channel',
-          6: 'created',
-          7: 'priority',
-          8: 'assignedUserId',
+          4: 'channel',
+          5: 'created',
+          6: 'priority',
+          7: 'assignedUserId',
         };
 
   const handleSort = (index: number) => {
@@ -187,6 +185,34 @@ export const SupportErrandsTable: React.FC = () => {
         inverted = false;
         icon = 'circle-pause';
         break;
+      case 'UPSTART':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'PUBLISH_SELECTION':
+        color = 'vattjom';
+        inverted = true;
+        break;
+      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'REFERENCE_CHECK':
+        color = 'juniskar';
+        inverted = true;
+        break;
+      case 'REVIEW':
+        color = 'warning';
+        inverted = true;
+        break;
+      case 'SECURITY_CLEARENCE':
+        color = 'bjornstigen';
+        inverted = true;
+        break;
+      case 'FEEDBACK_CLOSURE':
+        color = 'error';
+        inverted = true;
+        break;
       default:
         color = 'tertiary';
         break;
@@ -197,7 +223,7 @@ export const SupportErrandsTable: React.FC = () => {
       else if (resolution === Resolution.CLOSED && status === Status.SOLVED) return 'Avslutat';
       else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
       else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';
-      else return StatusLabel[status];
+      else return isROB() ? StatusLabelROB[status] : StatusLabel[status];
     };
     return (
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
@@ -268,19 +294,21 @@ export const SupportErrandsTable: React.FC = () => {
                   ?.displayName || errand.type}
               </p>
             ) : isLOP() || isIK() || isKA() ? (
-              <p className="m-0">{getLabelType(errand, supportMetadata)?.displayName || ''}</p>
-            ) : null}
-            <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
+              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+                <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
+                <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
+              </div>
+            ) : (
+              <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
+            )}
           </div>
         </Table.Column>
-        {(isLOP() || isIK() || isKA()) && (
-          <Table.Column>
-            <div className="max-w-[280px]">
-              <p className="m-0">{getLabelSubType(errand, supportMetadata)?.displayName || ''}</p>
-            </div>
-          </Table.Column>
-        )}
-        <Table.Column>{Channels[errand?.channel]}</Table.Column>
+        <Table.Column>
+          <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+            <div>{Channels[errand?.channel]}</div>
+            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
+          </div>
+        </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
           <div>
             <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>

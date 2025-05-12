@@ -16,6 +16,8 @@ import {
 import { getMe } from '@common/services/user-service';
 
 import store from '@supportmanagement/services/storage-service';
+import { appWithTranslation } from 'next-i18next';
+import nextI18NextConfig from '../../next-i18next.config';
 import { AppWrapper } from '@contexts/app.context';
 import LoginGuard from '../login-guard/login-guard';
 
@@ -80,4 +82,4 @@ const AppLayout = ({ children }: ClientApplicationProps) => {
   );
 };
 
-export default AppLayout;
+export default appWithTranslation(MyApp, nextI18NextConfig);

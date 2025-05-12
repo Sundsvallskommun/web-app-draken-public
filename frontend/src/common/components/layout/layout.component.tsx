@@ -4,18 +4,25 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import {
   getApplicationEnvironment,
-  getApplicationName,
   isIK,
   isKA,
   isKC,
   isLOP,
   isMEX,
   isPT,
+  isROB,
 } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
-import { Resolution, Status, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  Resolution,
+  Status,
+  StatusLabel,
+  StatusLabelROB,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
@@ -23,7 +30,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { appConfig } from 'src/config/appconfig';
 
 export default function Layout({ title, children }) {
   const {
@@ -32,18 +38,16 @@ export default function Layout({ title, children }) {
     supportErrand,
     supportMetadata,
   }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
-  const applicationName = getApplicationName();
   const applicationEnvironment = getApplicationEnvironment();
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
   const router = useRouter();
   const pathName = usePathname();
-  const errandNumber =
-    isMEX() || isPT()
-      ? errand?.errandNumber
-      : isKC() || isKA() || isIK() || isLOP()
-      ? supportErrand?.errandNumber
-      : undefined;
+  const errandNumber = appConfig.isCaseData
+    ? errand?.errandNumber
+    : appConfig.isSupportManagement
+    ? supportErrand?.errandNumber
+    : undefined;
   const hostName = window.location.hostname;
 
   const MainTitle = () => (
@@ -51,14 +55,14 @@ export default function Layout({ title, children }) {
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
         variant="service"
         title={'Draken'}
         symbol={appConfig.symbol}
-        subtitle={applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
   );
@@ -99,6 +103,44 @@ export default function Layout({ title, children }) {
         inverted = true;
         icon = 'clock-10';
         break;
+      case 'SUSPENDED':
+        color = 'warning';
+        inverted = true;
+        icon = 'circle-pause';
+        break;
+      case 'ASSIGNED':
+        color = 'warning';
+        inverted = false;
+        icon = 'circle-pause';
+        break;
+      case 'UPSTART':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'PUBLISH_SELECTION':
+        color = 'vattjom';
+        inverted = true;
+        break;
+      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'REFERENCE_CHECK':
+        color = 'juniskar';
+        inverted = true;
+        break;
+      case 'REVIEW':
+        color = 'warning';
+        inverted = true;
+        break;
+      case 'SECURITY_CLEARENCE':
+        color = 'bjornstigen';
+        inverted = true;
+        break;
+      case 'FEEDBACK_CLOSURE':
+        color = 'error';
+        inverted = true;
+        break;
       default:
         color = 'tertiary';
         break;
@@ -108,6 +150,8 @@ export default function Layout({ title, children }) {
         {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
         {resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED
           ? 'Eskalerat'
+          : isROB()
+          ? StatusLabelROB[status]
           : StatusLabel[status]}
       </Label>
     );
@@ -118,13 +162,13 @@ export default function Layout({ title, children }) {
       <a
         href={`${process.env.NEXT_PUBLIC_BASEPATH}`}
         title={`Draken - ${
-          applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+          appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
         <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {isKC() || isIK() || isLOP() || isKA() ? (
+        {appConfig.isSupportManagement ? (
           <>
             {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
             <span className="font-bold">
@@ -135,12 +179,13 @@ export default function Layout({ title, children }) {
             </span>
             <span className="text-small">({errandNumber})</span>
           </>
-        ) : (
+        ) : null}
+        {appConfig.isCaseData ? (
           <>
             <span className="font-bold">Ärende: </span>
             {errandNumber}
           </>
-        )}
+        ) : null}
       </span>
     </div>
   );
@@ -149,7 +194,7 @@ export default function Layout({ title, children }) {
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={applicationName} />
+        <meta name="description" content={appConfig.applicationName} />
       </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
@@ -174,10 +219,10 @@ export default function Layout({ title, children }) {
                 data-cy="register-new-errand-button"
               >
                 <Button
-                  color={isMEX() || isPT() ? 'primary' : 'vattjom'}
-                  variant={isMEX() || isPT() ? 'tertiary' : 'primary'}
+                  color={appConfig.isCaseData ? 'primary' : 'vattjom'}
+                  variant={appConfig.isCaseData ? 'tertiary' : 'primary'}
                   rightIcon={
-                    isMEX() || isPT() ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
+                    appConfig.isCaseData ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
                   }
                 >
                   Nytt ärende

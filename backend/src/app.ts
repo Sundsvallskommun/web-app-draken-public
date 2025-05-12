@@ -143,7 +143,7 @@ const samlStrategy = new Strategy(
         permissions: getPermissions(appGroups),
       };
 
-      logger.info('Found user:', findUser);
+      logger.info(`Found user: ${JSON.stringify(findUser)}`);
 
       const userSettings = await prisma.userSettings.findFirst({ where: { username: findUser.username } });
       // Create user settings for new users

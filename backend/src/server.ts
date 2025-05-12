@@ -27,6 +27,7 @@ import { SupportNoteController } from './controllers/supportmanagement/support-n
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
+import { ExportController } from '@controllers/export.controller';
 
 validateEnv();
 
@@ -45,6 +46,7 @@ const app = new App([
   CasedataNotificationController,
   CasedataStakeholderController,
   EstateInfoController,
+  ExportController,
   HealthController,
   IndexController,
   MessageController,

@@ -3,13 +3,14 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationName, isKC, isPT, isMEX, isLOP, isIK, isKA } from '@common/services/application-service';
 import { getAdminUsers } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export default function ArendeView() {
   const router = useRouter();
@@ -25,10 +26,10 @@ export default function ArendeView() {
   };
 
   useEffect(() => {
-    if (isPT() || isMEX()) {
+    if (appConfig.isCaseData) {
       id?.[0] && setMunicipalityId(id[0]);
       id?.[1] && setErrandId(id[1]);
-    } else if (isKC() || isKA() || isIK() || isLOP()) {
+    } else if (appConfig.isSupportManagement) {
       id?.[0] && setMunicipalityId(id[0]);
       id?.[1] && setErrandId(id[1]);
     }
@@ -42,14 +43,14 @@ export default function ArendeView() {
   }, []);
 
   useEffect(() => {
-    (isKC() || isKA() || isIK() || isLOP()) &&
+    appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
   }, [municipalityId]);
 
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
-      <Layout title={`${getApplicationName()} - Pågående ärende`}>
+      <Layout title={`${appConfig.applicationName} - Pågående ärende`}>
         <NextLink href="#content" passHref legacyBehavior>
           <a
             tabIndex={1}
@@ -60,12 +61,18 @@ export default function ArendeView() {
           </a>
         </NextLink>
 
-        {isPT() || isMEX()
+        {appConfig.isCaseData
           ? errandId && <CasedataErrandComponent id={errandId} />
-          : isKC() || isKA() || isIK() || isLOP()
+          : appConfig.isSupportManagement
           ? errandId && municipalityId && <SupportErrandComponent id={errandId} />
           : null}
       </Layout>
     </div>
   );
 }
+
+export const getServerSideProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale, ['common', 'messages'])),
+  },
+});

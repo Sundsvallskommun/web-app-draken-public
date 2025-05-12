@@ -24,6 +24,7 @@ export enum Role {
   PERSON = 'PERSON',
   ORGANIZATION = 'ORGANIZATION',
   RIGHTS_HOLDER = 'RIGHTS_HOLDER',
+  REPORTER = 'REPORTER',
 }
 
 export enum MEXRelation {
@@ -49,6 +50,7 @@ export enum PTRelation {
   DRIVER = 'Förare',
   PASSENGER = 'Passagerare',
   DOCTOR = 'Läkare',
+  REPORTER = 'Anmälare',
 }
 
 export enum PrettyRole {
@@ -78,4 +80,5 @@ export enum PrettyRole {
   SECTION_HEAD = 'Sektionschef',
   ALTERNATE = 'Suppleant',
   SECRETARY = 'Sekreterare',
+  REPORTER = 'Anmälare',
 }

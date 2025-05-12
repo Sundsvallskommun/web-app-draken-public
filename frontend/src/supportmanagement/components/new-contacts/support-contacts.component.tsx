@@ -1,6 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { isIK, isLOP } from '@common/services/application-service';
+import { isKC, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -16,6 +16,7 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
+import { appConfig } from '@config/appconfig';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -100,8 +101,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     update: updateContactItem,
   } = contactsFieldArray;
 
-  const allowsOrganization = !isLOP() && !isIK();
-
   const onRemove = async (c: SupportStakeholderFormModel) => {
     const customer = stakeholderCustomers.filter((cus) => cus.internalId !== c.internalId);
     const contacts = stakeholderContacts.filter((con) => con.internalId !== c.internalId);
@@ -134,9 +133,17 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       contact.administrationName ||
       contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
       null;
+    const title = contact.title || contact.parameters?.find((param) => param.key === 'title')?.values[0] || null;
+    const referenceNumber =
+      contact.referenceNumber ||
+      contact.parameters?.find((param) => param.key === 'referenceNumber')?.values[0] ||
+      null;
+    const department =
+      contact.department || contact.parameters?.find((param) => param.key === 'department')?.values[0] || null;
     const username =
-      contact.username || contact.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-
+      contact.username ||
+      contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values[0] ||
+      null;
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -167,7 +174,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               }
             }}
             onClose={() => setSelectedContact(undefined)}
-            allowOrganization={allowsOrganization}
+            allowOrganization={appConfig.features.useOrganizationStakeholders}
             allowRelation={isLOP()}
             id="edit"
           />
@@ -244,7 +251,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             </div>
           )}
         </div>
-
+        {/* Left side of errand Disclosure */}
         <div className="md:flex md:gap-24 px-16 py-12">
           <div className={`md:w-1/3 flex gap-8 break-all ${administrationName ? `items-start` : `items-center`}`}>
             <Avatar
@@ -284,18 +291,24 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                     >
                       {contact.personNumber || '(personnummer saknas)'}
                     </p>
-                    {username ? (
-                      <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-username`}>
-                        {username}
-                      </p>
-                    ) : null}
-                    <p className={`my-xs mt-0 flex flex-col text-small`}>{administrationName}</p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-title`}>
+                      {title}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-administrationName`}>
+                      {administrationName}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-department`}>
+                      {department}
+                    </p>
+                    <p className={`my-xs mt-0 flex flex-col text-small`} data-cy={`stakeholder-referenceNumber`}>
+                      {referenceNumber}
+                    </p>
                   </>
                 )}
               </div>
             </div>
           </div>
-
+          {/* Middle of errand Disclosure */}
           <div className="md:w-1/3 md:mt-0 mt-md break-all">
             <p
               className={`my-xs mt-0 flex flex-col text-small ${
@@ -308,6 +321,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 : '(adress saknas)'}
             </p>
           </div>
+          {/* Right side of errand Disclosure */}
           <div className="md:w-1/3 md:mt-0 mt-md">
             <div data-cy={`stakeholder-phone`} className="text-small">
               {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
@@ -339,6 +353,12 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                   </Button>
                 )}
               </div>
+              {username ? (
+                <div className="text-small my-xs mt-0" data-cy={`stakeholder-username`}>
+                  <p className="flex flex-col">{username}</p>
+                </div>
+              ) : null}
+              <div></div>
             </div>
           </div>
         </div>
@@ -369,7 +389,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                 <SupportSimplifiedContactForm
                   disabled={isSupportErrandLocked(supportErrand)}
                   allowRelation={isLOP()}
-                  allowOrganization={allowsOrganization}
+                  allowOrganization={appConfig.features.useOrganizationStakeholders}
                   setUnsaved={props.setUnsaved}
                   onSave={(contact) => addStakeholder(contact)}
                   contact={{ ...emptyContact, role: 'PRIMARY' }}
@@ -389,7 +409,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <SupportSimplifiedContactForm
                 disabled={isSupportErrandLocked(supportErrand)}
                 allowRelation={isLOP()}
-                allowOrganization={allowsOrganization}
+                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, role: 'CONTACT' }}
                 editing={false}

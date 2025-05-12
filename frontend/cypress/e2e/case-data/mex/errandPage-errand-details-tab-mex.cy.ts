@@ -56,6 +56,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.visit('/arende/2281/MEX-2024-000280');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();
+
+      // Should exist on all MEX case types
+      cy.get('[data-cy="caseMeaning-input"]').should('exist');
     };
 
     const checkEstateInfo = () => {
@@ -113,7 +116,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       ).as('getErrand');
       goToErrandInformationTab();
 
-      cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall');
+      cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall 3:109', { delay: 100 });
 
       checkEstateInfo();
     });
@@ -141,12 +144,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       checkEstateInfo();
     });
 
-    it('case MEX_EARLY_DIALOG_PLAN_NOTIFICATION', () => {
+    it('case MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE', () => {
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
-          caseType: 'MEX_EARLY_DIALOG_PLAN_NOTIFICATION',
+          caseType: 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
         })
       ).as('getErrand');
 
@@ -372,7 +375,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="account.bank-input"]').should('exist').type('Testbank');
       cy.get('[data-cy="account.owner-input"]').should('exist').type('Test Testarsson');
-      cy.get('[data-cy="account.ownerIdentifier-input"]').should('exist').type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="account.number-input"]').should('exist').type('1234567890');
 
       cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
@@ -385,7 +387,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
         checkExtraParameter(request.body.extraParameters, 'account.bank', 'Testbank');
         checkExtraParameter(request.body.extraParameters, 'account.owner', 'Test Testarsson');
-        checkExtraParameter(request.body.extraParameters, 'account.ownerIdentifier', Cypress.env('mockPersonNumber'));
         checkExtraParameter(request.body.extraParameters, 'account.type', 'Bankkonto');
       });
     });

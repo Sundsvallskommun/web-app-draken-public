@@ -73,7 +73,7 @@ class ApiService {
       ...config,
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
-      headers: { ...config.headers, sentbyuser: user.username },
+      headers: { ...config.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
       params: { ...defaultParams, ...config.params },
       url: config.baseURL ? config.url : apiURL(config.url),
     };

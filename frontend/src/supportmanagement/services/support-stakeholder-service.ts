@@ -70,8 +70,17 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
     if (c.administrationName) {
       parameters.push({ key: 'administrationName', values: [c.administrationName], displayName: 'Förvaltningsnamn' });
     }
+    if (c.department) {
+      parameters.push({ key: 'department', values: [c.department], displayName: 'Avdelning' });
+    }
+    if (c.title) {
+      parameters.push({ key: 'title', values: [c.title], displayName: 'Titel' });
+    }
+    if (c.referenceNumber) {
+      parameters.push({ key: 'referenceNumber', values: [c.referenceNumber], displayName: 'Referensnummer' });
+    }
     const stakeholder: SupportStakeholder = {
-      externalId: c.externalId || c.organizationNumber,
+      externalId: c.externalId || c.organizationNumber || undefined,
       externalIdType: c.externalIdType,
       role,
       organizationName: c.organizationName,

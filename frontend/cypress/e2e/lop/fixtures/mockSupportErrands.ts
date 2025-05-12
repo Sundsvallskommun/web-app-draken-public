@@ -44,6 +44,20 @@ export const mockSupportErrand = {
         { type: 'Email', value: 'a@example.com' },
         { type: 'Phone', value: '070000000' },
       ],
+      parameters: [
+        {
+          key: 'title',
+          values: ['Projektledare'],
+        },
+        {
+          key: 'department',
+          values: ['Projektledning'],
+        },
+        {
+          key: 'referenceNumber',
+          values: ['123456789'],
+        },
+      ],
     },
     {
       externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
@@ -1516,7 +1530,7 @@ export const mockSupportErrandCommunication = [
     communicationAttachments: [
       {
         attachmentID: 'aGVsbG8gd29ybGQK',
-        name: 'test.txt',
+        fileName: 'test.txt',
         contentType: 'text/plain',
       },
     ],
@@ -1539,7 +1553,7 @@ export const mockSupportErrandCommunication = [
     communicationAttachments: [
       {
         attachmentID: 'aGVsbG8gd29ybGQK',
-        name: 'test.txt',
+        fileName: 'test.txt',
         contentType: 'text/plain',
       },
     ],
@@ -1565,7 +1579,7 @@ export const mockMissingRootMessage = [
     communicationAttachments: [
       {
         attachmentID: 'aGVsbG8gd29ybGQK',
-        name: 'test.txt',
+        fileName: 'test.txt',
         contentType: 'text/plain',
       },
     ],

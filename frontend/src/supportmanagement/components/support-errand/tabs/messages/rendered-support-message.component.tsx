@@ -54,9 +54,13 @@ export const RenderedSupportMessage: React.FC<{
   }, [user, supportErrand]);
 
   const toastMessage = useSnackbar();
-  const AnswerMessage =
+
+  // We truncate reply messages at the first occurence of "Från: " and
+  // the first "-----Ursprungligt meddelande-----" line, so that only the
+  // last message body is shown.
+  const answerMessage =
     Array.isArray(message.emailHeaders.IN_REPLY_TO) &&
-    message.messageBody.split('Från')[0].split('<br><br><br>-----Ursprungligt')[0];
+    message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
 
   const messageAvatar = (message: Message) => (
     <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
@@ -267,7 +271,7 @@ export const RenderedSupportMessage: React.FC<{
               <p
                 className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
                 dangerouslySetInnerHTML={{
-                  __html: sanitized(AnswerMessage.toString() || ''),
+                  __html: sanitized(answerMessage.toString() || ''),
                 }}
               ></p>
             ) : (

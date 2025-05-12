@@ -25,7 +25,7 @@ För KS (Kontakt Sundsvall):
 | API                 | Version |
 | ------------------- | ------: |
 | CaseData            |    11.0 |
-| SupportManagement   |    10.1 |
+| SupportManagement   |    10.2 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
@@ -54,7 +54,7 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    10.1 |
+| SupportManagement   |    10.2 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
@@ -64,11 +64,25 @@ För LOP (Lön och pension):
 | BillingPreprocessor |     4.0 |
 | SimulatorServer     |     2.0 |
 
+För ROB (Rekrytering och bemanning):
+
+| API                 | Version |
+| ------------------- | ------: |
+| ActiveDirectory     |     2.0 |
+| BillingPreprocessor |     4.0 |
+| BusinessEngagements |     2.0 |
+| Citizen             |     3.0 |
+| Employee            |     2.0 |
+| LegalEntity         |     2.0 |
+| SimulatorServer     |     2.0 |
+| SupportManagement   |    10.2 |
+| Templating          |     2.0 |
+
 För KA (Kontakt Ånge):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    10.1 |
+| SupportManagement   |    10.2 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
@@ -133,6 +147,13 @@ cd frontend
 cp .env.lop-example .env.lop
 ```
 
+För ROB:
+
+```
+cd frontend
+cp .env.rob-example .env.rob
+```
+
 Redigera `.env` för behov, för utveckling bör exempelvärdet fungera.
 
 4. Skapa .env-filer för `backend`
@@ -167,6 +188,14 @@ För LOP:
 cd backend
 cp .env.lop.example.local .env.lop.development.local
 cp .env.lop.example.local .env.lop.test.local
+```
+
+För ROB:
+
+```
+cd backend
+cp .env.rob.example.local .env.rob.development.local
+cp .env.rob.example.local .env.rob.test.local
 ```
 
 redigera env-filer efter behov. URLer, nycklar och cert behöver fyllas i korrekt.

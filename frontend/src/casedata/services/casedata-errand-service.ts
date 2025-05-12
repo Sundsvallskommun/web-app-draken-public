@@ -11,8 +11,8 @@ import {
   RegisterErrandData,
   RelatedErrand,
 } from '@casedata/interfaces/errand';
-import { ErrandPhase, ErrandPhasePT, UiPhase } from '@casedata/interfaces/errand-phase';
-import { ApiErrandStatus, ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import {
   MAX_FILE_SIZE_MB,
@@ -25,19 +25,18 @@ import {
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
 
+import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { Role } from '@casedata/interfaces/role';
-import { Errand, ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
-import { replaceExtraParameter } from './casedata-extra-parameters-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
-import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
-import { data } from 'node_modules/cypress/types/jquery';
+import { replaceExtraParameter } from './casedata-extra-parameters-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -136,11 +135,19 @@ export const findCaseLabelForCaseType = (caseType: string) =>
   Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === caseType)?.[1];
 
 export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return errand?.status === ErrandStatus.ArendeAvslutat;
+  if (errand?.status && typeof errand?.status === 'object') {
+    return errand?.status?.statusType === ErrandStatus.ArendeAvslutat;
+  } else {
+    return errand?.status === ErrandStatus.ArendeAvslutat;
+  }
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  return errand?.status === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
+  if (errand?.status && typeof errand?.status === 'object') {
+    return errand?.status?.statusType === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
+  } else {
+    return errand?.status === ErrandStatus.ArendeAvslutat;
+  }
 };
 
 export const getPriorityColor = (priority: Priority) => {
@@ -292,25 +299,15 @@ export const getErrands: (
     .get<ApiResponse<PagedApiErrandsResponse>>(url)
     .then((res: any) => {
       let response = {} as ErrandsData;
-      if (isPT()) {
-        response = {
-          errands: handleErrandResponse(res.data.data.content, municipalityId),
-          page: res.data.data.pageable.pageNumber,
-          size: res.data.data.pageable.pageSize,
-          totalPages: res.data.data.totalPages,
-          totalElements: res.data.data.totalElements,
-          labels: ongoingCaseDataPTErrandLabels,
-        } as ErrandsData;
-      } else {
-        response = {
-          errands: handleErrandResponse(res.data.data.content, municipalityId),
-          page: res.data.data.pageable.pageNumber,
-          size: res.data.data.pageable.pageSize,
-          totalPages: res.data.data.totalPages,
-          totalElements: res.data.data.totalElements,
-          labels: ongoingCaseDataErrandLabels,
-        } as ErrandsData;
-      }
+      const labels = isPT() ? ongoingCaseDataPTErrandLabels : ongoingCaseDataErrandLabels;
+      response = {
+        errands: handleErrandResponse(res.data.data.content, municipalityId),
+        page: res.data.data.pageable.pageNumber,
+        size: res.data.data.pageable.pageSize,
+        totalPages: res.data.data.totalPages,
+        totalElements: res.data.data.totalElements,
+        labels: labels,
+      } as ErrandsData;
       return response;
     })
     .catch((e) => {

@@ -1,11 +1,7 @@
-import {
-  Label,
-  Notification,
-  Stakeholder as SupportStakeholder,
-} from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { getApplicationName, isIK, isKA, isKC, isLOP } from '@common/services/application-service';
+import { isKC, isROB } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -15,17 +11,14 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
-import {
-  buildStakeholdersList,
-  getApplicantName,
-  mapExternalIdTypeToStakeholderType,
-} from './support-stakeholder-service';
-import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import store from '@supportmanagement/services/storage-service';
 
 export interface Customer {
   id: string;
@@ -126,11 +119,35 @@ export enum Status {
   ASSIGNED = 'ASSIGNED',
   SOLVED = 'SOLVED',
   AWAITING_INTERNAL_RESPONSE = 'AWAITING_INTERNAL_RESPONSE',
+  UPSTART = 'UPSTART',
+  PUBLISH_SELECTION = 'PUBLISH_SELECTION',
+  INTERNAL_CONTROL_AND_INTERVIEWS = 'INTERNAL_CONTROL_AND_INTERVIEWS',
+  REFERENCE_CHECK = 'REFERENCE_CHECK',
+  REVIEW = 'REVIEW',
+  SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
+  FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
 }
 
 export enum StatusLabel {
   NEW = 'Inkommet',
   ONGOING = 'Pågående',
+  PENDING = 'Komplettering',
+  SUSPENDED = 'Parkerat',
+  ASSIGNED = 'Tilldelat',
+  SOLVED = 'Löst',
+  AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
+}
+
+export enum StatusLabelROB {
+  NEW = 'Inkommet',
+  ONGOING = 'Pågående',
+  UPSTART = 'Uppstart',
+  PUBLISH_SELECTION = 'Publicera och urval',
+  INTERNAL_CONTROL_AND_INTERVIEWS = 'Intern kontroll och intervjuer',
+  REFERENCE_CHECK = 'Referenstagning',
+  REVIEW = 'Avstämning',
+  SECURITY_CLEARENCE = 'Säkerhetsprövning',
+  FEEDBACK_CLOSURE = 'Återkoppling och avslut',
   PENDING = 'Komplettering',
   SUSPENDED = 'Parkerat',
   ASSIGNED = 'Tilldelat',
@@ -154,6 +171,17 @@ export const newStatuses = [Status.NEW];
 
 export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
 
+export const ongoingStatusesROB = [
+  ...ongoingStatuses,
+  Status.UPSTART,
+  Status.PUBLISH_SELECTION,
+  Status.INTERNAL_CONTROL_AND_INTERVIEWS,
+  Status.REFERENCE_CHECK,
+  Status.REVIEW,
+  Status.SECURITY_CLEARENCE,
+  Status.FEEDBACK_CLOSURE,
+];
+
 export const suspendedStatuses = [Status.SUSPENDED];
 export const assignedStatuses = [Status.ASSIGNED];
 
@@ -163,7 +191,7 @@ export const getStatusLabel = (statuses: Status[]) => {
   if (statuses.length > 0) {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
-    } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
+    } else if (statuses.some((s) => (isROB() ? ongoingStatusesROB.includes(s) : ongoingStatuses.includes(s)))) {
       return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
@@ -285,13 +313,8 @@ export enum ResolutionLabelKS {
 }
 
 export enum ResolutionLabelKA {
-  SOLVED = 'Löst av Kontakt Ånge',
-  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
-  CONNECTED = 'Kopplat samtal',
-  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
-  SELF_SERVICE = 'Hänvisat till självservice',
-  INTERNAL_SERVICE = 'Hänvisat till intern service',
-  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+  SOLVED = 'Löst av Kontaktcenter',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
 }
 
 export const ongoingSupportErrandLabelsKC = [
@@ -311,12 +334,28 @@ export const ongoingSupportErrandLabelsKC = [
   { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
 ];
 
+export const ongoingSupportErrandLabelsROB = [
+  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Beställningstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  {
+    label: 'Prioritet',
+    screenReaderOnly: false,
+    sortable: true,
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
+  },
+  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: [Status.SUSPENDED] },
+  { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+];
+
 export const ongoingSupportErrandLabelsLoP = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendekategori', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   {
@@ -340,7 +379,16 @@ export const ongoingSupportErrandLabelsLoP = [
 ];
 
 export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
-  const ongoingSupportErrandLabels = isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
+  let ongoingSupportErrandLabels;
+
+  if (isKC()) {
+    ongoingSupportErrandLabels = ongoingSupportErrandLabelsKC;
+  } else if (isROB()) {
+    ongoingSupportErrandLabels = ongoingSupportErrandLabelsROB;
+  } else {
+    ongoingSupportErrandLabels = ongoingSupportErrandLabelsLoP;
+  }
+
   return ongoingSupportErrandLabels.filter(
     (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
   );
@@ -352,18 +400,22 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
   organizationNumber?: string;
   personId?: string;
   personNumber?: string;
+  title?: string;
+  referenceNumber?: string;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
   username?: string;
   administrationCode?: string;
   administrationName?: string;
+  department?: string;
+  orgName?: string;
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
-  externalIdType: isLOP() || isIK() ? ExternalIdType.EMPLOYEE : ExternalIdType.PRIVATE,
+  externalIdType: isKC() ? ExternalIdType.PRIVATE : ExternalIdType.EMPLOYEE,
   username: '',
   firstName: '',
   lastName: '',
@@ -443,6 +495,10 @@ export const useSupportErrands = (
     setSolvedSupportErrands,
     solvedSupportErrands,
   } = useAppContext();
+
+  const unparsedStoredFilter = store.get('filter');
+  const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
@@ -450,7 +506,7 @@ export const useSupportErrands = (
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
         })
-        .catch((err) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -459,12 +515,12 @@ export const useSupportErrands = (
           });
         });
 
-      const fetchPromises = [
-        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.NEW }, sort)
+      const sidebarUpdatePromises = [
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW }, sort)
           .then((res) => {
             setNewSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -476,14 +532,17 @@ export const useSupportErrands = (
         getSupportErrands(
           municipalityId,
           page,
-          size,
-          { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
+          1,
+          {
+            ...filter,
+            status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
+          },
           sort
         )
           .then((res) => {
             setOngoingSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -492,14 +551,14 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.SUSPENDED}` }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.SUSPENDED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
             }
             setSuspendedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -508,14 +567,14 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.ASSIGNED}` }, sort)
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
             }
             setAssignedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -524,11 +583,11 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, size, { ...filter, status: Status.SOLVED }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.SOLVED }, sort)
           .then((res) => {
             setSolvedSupportErrands(res);
           })
-          .catch((err) => {
+          .catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -537,7 +596,7 @@ export const useSupportErrands = (
             });
           }),
       ];
-      return Promise.allSettled(fetchPromises);
+      return Promise.allSettled(sidebarUpdatePromises);
     },
     [
       setSupportErrands,
@@ -560,7 +619,7 @@ export const useSupportErrands = (
   );
 
   useEffect(() => {
-    if (size && size > 0) {
+    if (typeof page !== 'undefined' && size && size > 0) {
       fetchErrands().then(() => setIsLoading(false));
     }
   }, [filter, size, sort]);
@@ -632,6 +691,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
             newRole: 'PRIMARY',
             internalId: uuidv4(),
             emails: s.contactChannels
@@ -652,6 +714,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
             newRole: s.role as string,
             internalId: uuidv4(),
             emails: s.contactChannels
@@ -780,10 +845,9 @@ export const updateSupportErrand: (
     },
     labels: formdata.labels,
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(formdata.contactReason &&
-      typeof formdata.contactReasonDescription !== 'undefined' && {
-        contactReasonDescription: formdata.contactReasonDescription,
-      }),
+    ...(typeof formdata.contactReasonDescription !== 'undefined' && {
+      contactReasonDescription: formdata.contactReasonDescription,
+    }),
     businessRelated: !!formdata.businessRelated,
     ...(formdata.status && { status: formdata.status }),
     ...(formdata.status && {
@@ -809,7 +873,7 @@ export const updateSupportErrand: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
-    .then((res) => {
+    .then(() => {
       responseObj.errand = true;
       return responseObj;
     })
@@ -883,7 +947,7 @@ export const setSupportErrandAdmin: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -897,12 +961,11 @@ export const setSupportErrandStatus: (
   municipalityId: string,
   status: Status
 ) => Promise<boolean> = async (errandId, municipalityId, status) => {
-  console.log('setSupportErrandStatus', errandId, municipalityId, status);
   const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -920,7 +983,7 @@ export const closeSupportErrand: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -949,7 +1012,7 @@ export const setSuspension: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(async (res) => {
+    .then(async () => {
       if (status === Status.SUSPENDED && comment) {
         const note = await saveSupportNote(errandId, municipalityId, comment);
       }
@@ -970,7 +1033,7 @@ export const setSupportErrandPriority: (
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then((res) => {
+    .then(() => {
       return true;
     })
     .catch((e) => {
@@ -1034,7 +1097,7 @@ export const forwardSupportErrand: (
     delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
-      .then((res) => {
+      .then(() => {
         return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {

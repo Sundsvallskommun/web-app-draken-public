@@ -56,7 +56,7 @@ export class SupportNotificationDto {
 export class SupportNotificationController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.1`;
+  SERVICE = `supportmanagement/10.2`;
 
   @Get('/supportnotifications/:municipalityId')
   @OpenAPI({ summary: 'Get support notifications' })
@@ -111,7 +111,7 @@ export class SupportNotificationController {
   @Patch('/supportnotifications/:municipalityId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a support notification' })
-  @UseBefore(authMiddleware, validationMiddleware(SupportNotificationDto, 'body'))
+  @UseBefore(authMiddleware)
   async updateSupportNotification(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
@@ -145,6 +145,7 @@ export class SupportNotificationController {
   @Put('/supportnotifications/:municipalityId/:errandId/global-acknowledged')
   @HttpCode(201)
   @OpenAPI({ summary: 'Global-acknowledged all support notification for errand' })
+  @UseBefore(authMiddleware)
   async globalAcknowledgedSupportNotification(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,

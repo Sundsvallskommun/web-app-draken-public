@@ -1,5 +1,4 @@
 import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { Mail } from 'lucide-react';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
@@ -9,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
+import { useTranslation } from 'next-i18next';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -27,23 +27,23 @@ export const SupportMessagesTab: React.FC<{
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const [sortedMessages, setSortedMessages] = useState(props.messages);
+  const { t } = useTranslation();
 
-  const emailBody = `${
-    isLOP()
-      ? `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br>Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
-      : isKC()
-      ? 'Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br>Vi önskar dig en fin dag!<br><br>Med vänlig hälsning<br><br><strong>Sundsvalls kommun</strong><br>Kommunstyrelsekontoret<br>851 85 Sundsvall<br>E-post <a href="mailto:kontakt@sundsvall.se">kontakt@sundsvall.se</a><br>Telefon +46 60 19 10 00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>'
-      : isIK()
-      ? 'Hej,<br><br>Tack för att du kontaktar Intern Kundtjänst!<br><br><br>Ha en fortsatt bra dag!<br><br>Med vänlig hälsning<br><strong>Intern Kundtjänst</strong>'
-      : ''
-  }.`;
-  const smsBody = isIK()
-    ? `Hej,<br><br>Här kommer informationen vi pratade om:<br><br><br>Med vänliga hälsningar ${user.firstName}<br><strong>Intern Kundtjänst</strong>`
-    : isKC()
-    ? `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Kontakt Sundsvall</strong>`
-    : isLOP()
-    ? `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Lön och pension</strong>`
-    : '';
+  const emailBody = t(
+    `messages:templates.email.${process.env.NEXT_PUBLIC_APPLICATION}`,
+    t(`messages:templates.email.default`),
+    {
+      user: `${user.firstName} ${user.lastName}`,
+    }
+  );
+
+  const smsBody = t(
+    `messages:templates.sms.${process.env.NEXT_PUBLIC_APPLICATION}`,
+    t(`messages:templates.sms.default`),
+    {
+      user: `${user.firstName}`,
+    }
+  );
 
   useEffect(() => {
     setRichText(smsBody);

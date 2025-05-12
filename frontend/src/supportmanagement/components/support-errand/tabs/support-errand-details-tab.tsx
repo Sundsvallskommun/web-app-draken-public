@@ -61,7 +61,12 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   }, [supportErrand]);
 
   /* First Group - General Parameters */
-  const firstErrands = handledParams.slice(0, 5);
+  const firstErrands = handledParams.filter((p) => {
+    return (
+      !p.key.includes('sickNoteDates-') &&
+      !['sickNoteStartDates', 'sickNoteEndDates', 'sickNotePercentages', 'timeCare', 'currentSchedule'].includes(p.key)
+    );
+  });
 
   const groupedSickPeriods = useMemo(
     () => handledParams.filter((param) => param.key.startsWith('sickNoteDates-')),
@@ -106,7 +111,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       firstErrands
         .filter((param) => param.values?.length > 0)
         .map((param, idx) => (
-          <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md">
+          <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
             <div className="font-bold">{param.displayName}</div>
             <div>{param.values.join(', ')}</div>
           </div>
@@ -119,10 +124,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       secondErrands.map((errand, idx) => {
         const periodIndex = Number(errand.index);
         return (
-          <div
-            key={`period-${periodIndex}`}
-            className="flex flex-col gap-md p-16 mb-24 bg-primitives-gray-50 rounded-lg"
-          >
+          <div key={`period-${periodIndex}`} className="flex flex-col gap-md p-16 mb-24 rounded-lg">
             <h3 className="text-h3-md">Sjukskrivningsperiod {periodIndex + 1}</h3>
 
             {/* Sick Period */}
@@ -153,7 +155,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
         {/* First Group - General Parameters */}
-        <div className="bg-primitives-gray-50 rounded-lg gap-md p-16">
+        <div className="rounded-lg gap-md p-16">
           <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
           {supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value ? (
             <div className="flex flex-row gap-md">

@@ -41,7 +41,8 @@ import { Message, MessageRequest, sendMessage } from '@supportmanagement/service
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { getApplicationName, isKA, isKC } from '@common/services/application-service';
+import { isKA, isKC } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 
 const PREFILL_VALUE = '+46';
 
@@ -283,7 +284,7 @@ export const SupportMessageForm: React.FC<{
       ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
     };
     if (isKC() || isKA()) {
-      messageData.senderName = getApplicationName();
+      messageData.senderName = appConfig.applicationName;
     }
     sendMessage(messageData)
       .then(async (success) => {
@@ -393,35 +394,39 @@ export const SupportMessageForm: React.FC<{
       <div className="w-full pt-16">
         <strong className="text-md">Kontaktväg</strong>
         <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
-          <RadioButton
-            disabled={props.locked}
-            data-cy="useEmail-radiobutton-true"
-            className="mr-sm mt-4"
-            name="useEmail"
-            id="useEmail"
-            value={'email'}
-            defaultChecked={
-              !(
-                Channels[supportErrand.channel] === Channels.ESERVICE ||
-                Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-              )
-            }
-            {...register('contactMeans')}
-          >
-            E-post
-          </RadioButton>
-          <RadioButton
-            disabled={props.locked}
-            data-cy="useSms-radiobutton-true"
-            className="mr-sm mt-4"
-            name="useSms"
-            id="useSms"
-            value={'sms'}
-            defaultChecked={false}
-            {...register('contactMeans')}
-          >
-            SMS
-          </RadioButton>
+          {appConfig.features.useEmailContactChannel && (
+            <RadioButton
+              disabled={props.locked}
+              data-cy="useEmail-radiobutton-true"
+              className="mr-sm mt-4"
+              name="useEmail"
+              id="useEmail"
+              value={'email'}
+              defaultChecked={
+                !(
+                  Channels[supportErrand.channel] === Channels.ESERVICE ||
+                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+                )
+              }
+              {...register('contactMeans')}
+            >
+              E-post
+            </RadioButton>
+          )}
+          {appConfig.features.useSmsContactChannel && (
+            <RadioButton
+              disabled={props.locked}
+              data-cy="useSms-radiobutton-true"
+              className="mr-sm mt-4"
+              name="useSms"
+              id="useSms"
+              value={'sms'}
+              defaultChecked={false}
+              {...register('contactMeans')}
+            >
+              SMS
+            </RadioButton>
+          )}
           {Channels[supportErrand.channel] === Channels.ESERVICE ||
           Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
             <RadioButton
@@ -702,10 +707,13 @@ export const SupportMessageForm: React.FC<{
               variant="primary"
               color="primary"
               type="button"
+              loading={isSending}
+              loadingText="Skickar meddelande"
+              disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
               onClick={handleSubmit(onSubmit)}
               data-cy="send-message-button"
             >
-              {isSending ? 'Skickar meddelande' : 'Skicka meddelande'}
+              Skicka meddelande
             </Button>
           </>
         )}
