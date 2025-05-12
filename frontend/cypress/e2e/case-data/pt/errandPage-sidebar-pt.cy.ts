@@ -83,8 +83,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       });
 
       cy.get('[data-cy="status-input"]').should('exist').select('Under utredning');
-      // cy.intercept('GET', '**/errand/*', mockPTErrand_base_afterStatusChange).as('getErrandById_afterStatusChange');
-      // cy.get('[data-cy="status-input"]').should('exist').contains('Ärende inkommit');
     });
 
     it('manages Notes', () => {
