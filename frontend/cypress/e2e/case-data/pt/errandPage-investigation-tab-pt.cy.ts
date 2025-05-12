@@ -75,7 +75,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       delete decidedBy.id;
 
       cy.wait('@updateDecision').should(({ request }) => {
-        expect(request.body.id).to.equal(String(29));
+        expect(request.body.id).to.equal(29);
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('PROPOSED');
         expect(request.body.decisionOutcome).to.equal('REJECTION');

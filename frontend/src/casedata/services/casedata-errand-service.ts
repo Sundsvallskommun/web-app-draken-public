@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
-import { CaseLabels, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
+import { CaseTypes, FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -124,8 +124,15 @@ export const findStatusKeyForStatusLabel = (statusKey: string) =>
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1];
 
-export const getCaseTypes = () => (isPT() ? PTCaseType : isMEX() ? MEXCaseType : CaseTypes.ALL);
-export const getCaseLabels = () => (isPT() ? PTCaseLabel : isMEX() ? MEXCaseLabel : CaseLabels.ALL);
+export const getCaseTypes = () =>
+  isPT() ? { ...PTCaseType, ...FTCaseType } :
+  isMEX() ? MEXCaseType :
+  CaseTypes.ALL;
+
+export const getCaseLabels = () =>
+  isPT() ? { ...PTCaseLabel, ...FTCaseLabel } :
+  isMEX() ? MEXCaseLabel :
+  CaseLabels.ALL;
 
 export const findCaseTypeForCaseLabel = (caseLabel: string) => {
   return Object.entries(getCaseLabels()).find((e: [string, string]) => e[1] === caseLabel)?.[0];
