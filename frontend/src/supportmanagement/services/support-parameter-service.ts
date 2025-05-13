@@ -13,13 +13,13 @@ const template: ParametersObject = {
       key: 'recruitment@upstart_0',
       displayName: 'Uppstart',
       group: 'Uppstartsmöte',
-      values: ['Uppstartsmöte genomfört', 'true', 'defaulttext'],
+      values: ['Uppstartsmöte genomfört', 'false', ''],
     },
     {
       key: 'recruitment@upstart_1',
       displayName: 'Uppstart',
       group: 'Kravprofil',
-      values: ['Kravprofil upprättad', 'false', 'mer defaulttext'],
+      values: ['Kravprofil upprättad', 'false', ''],
     },
     {
       key: 'recruitment@upstart_2',
@@ -70,7 +70,7 @@ const template: ParametersObject = {
       values: ['Tester skapade och skickade', 'false', ''],
     },
     {
-      key: 'recruitment@references_7',
+      key: 'recruitment@references_0',
       displayName: 'Referenstagning',
       group: 'Dokumentation',
       values: ['All befintlig dokumentation är skapad och dokumenterad', 'false'],

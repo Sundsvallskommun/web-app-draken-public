@@ -1,31 +1,34 @@
-import React, { useEffect } from 'react';
-import { useAppContext } from '@contexts/app.context';
-import { Button, Checkbox, Disclosure, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { useForm } from 'react-hook-form';
-import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
+import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Checkbox, Disclosure, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
+import React, { useEffect } from 'react';
+import { useForm, useFormContext } from 'react-hook-form';
 
 export const SupportErrandRecruitmentTab: React.FC<{
   update: () => void;
-}> = () => {
+  setUnsaved: (unsaved: boolean) => void;
+}> = (props) => {
   const { supportErrand } = useAppContext();
-  const [parameters, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
+  const [recruitmentParameterGroups, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
   const [loading, setLoading] = React.useState(false);
 
-  const { register, getValues, watch, setValue, reset } = useForm<{ [key: string]: Parameter[] }>({
-    defaultValues: parameters,
+  const recruitmentForm = useForm<{ [key: string]: Parameter[] }>({
+    defaultValues: recruitmentParameterGroups,
   });
+
+  const errandForm = useFormContext<{ [key: string]: Parameter[] }>();
 
   useEffect(() => {
     const ps = getRecruitmentParameters(supportErrand);
     setParameters(ps);
-    reset(structuredClone(ps));
-  }, [supportErrand, reset]);
+    recruitmentForm.reset(structuredClone(ps));
+  }, [supportErrand, recruitmentForm.reset]);
 
   const handleSubmit = async () => {
     setLoading(true);
-    await saveParameters(supportErrand.id, '2281', getValues()).then((res) => {
+    await saveParameters(supportErrand.id, '2281', recruitmentForm.getValues()).then((res) => {
       setLoading(false);
       return res;
     });
@@ -37,30 +40,67 @@ export const SupportErrandRecruitmentTab: React.FC<{
         <h2 className="text-h2-md">Rekryteringsprocess</h2>
         <p>Här hanterar du uppgifterna för rekryteringsprocessen.</p>
 
-        <FormControl onSubmit={handleSubmit} className="w-full">
-          {Object.entries(parameters).map(([key, params]: [string, Parameter[]], index) => {
+        <FormControl
+          onSubmit={handleSubmit}
+          onChange={() => {
+            // Collect values from the form on this tab and set them in the errand form.
+            // If a corresponding value already exists in the errand form, remove it and
+            // then add the new values.
+            let toParams = errandForm.getValues('parameters') || [];
+            Object.entries(recruitmentParameterGroups).forEach(([key, params]: [string, Parameter[]], index) => {
+              params.forEach((val, index) => {
+                const v = {
+                  key: val.key,
+                  displayName: val.displayName,
+                  group: val.group,
+                  values: recruitmentForm.getValues(`${key}.${index}.values`),
+                };
+                if (toParams.find((p) => p.key === v.key)) {
+                  toParams = toParams.filter((p) => p.key !== v.key);
+                }
+                toParams.push(v);
+              });
+            });
+            errandForm.setValue('parameters', toParams, { shouldDirty: true });
+            console.log('toParams2', toParams);
+            props.setUnsaved(true);
+          }}
+          className="w-full"
+        >
+          {Object.entries(recruitmentParameterGroups).map(([key, param]: [string, Parameter[]], index) => {
             return (
               <Disclosure
                 key={`disclosure-${key}`}
-                header={params[0].displayName}
+                header={param[0].displayName}
                 variant="alt"
                 icon={<LucideIcon name="text" />}
-                label="Komplett"
+                label={
+                  param.every((p, p_idx) => recruitmentForm.getValues(`${key}.${p_idx}.values.1`) === 'true')
+                    ? 'Komplett'
+                    : null
+                }
               >
-                {params.map((val, index) => {
+                {param.map((val, index) => {
                   return (
                     <div key={`${val.key}-${index}`} className="pb-16">
-                      <Input {...register(`${key}.${index}.key`)} hidden />
-                      <Input {...register(`${key}.${index}.group`)} value={val.group} hidden />
-                      <Input {...register(`${key}.${index}.displayName`)} value={val.displayName} hidden />
-                      <FormLabel className="pb-16" {...register(`${key}.${index}.values.0`)}>
+                      <Input {...recruitmentForm.register(`${key}.${index}.key`)} hidden />
+                      <Input {...recruitmentForm.register(`${key}.${index}.group`)} value={val.group} hidden />
+                      <Input
+                        {...recruitmentForm.register(`${key}.${index}.displayName`)}
+                        value={val.displayName}
+                        hidden
+                      />
+                      <FormLabel className="pb-16" {...recruitmentForm.register(`${key}.${index}.values.0`)}>
                         {val.group}
                       </FormLabel>
-                      <Input type="hidden" {...register(`${key}.${index}.values.1`)} />
+                      <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
                       <Checkbox
-                        defaultChecked={getValues(`${key}.${index}.values.1`) === 'true'}
+                        defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
                         onChange={(e) => {
-                          setValue(`${key}.${index}.values.1`, e.currentTarget.checked === true ? 'true' : 'false');
+                          recruitmentForm.setValue(
+                            `${key}.${index}.values.1`,
+                            e.currentTarget.checked === true ? 'true' : 'false'
+                          );
                         }}
                         className="block py-16"
                       >
@@ -70,9 +110,9 @@ export const SupportErrandRecruitmentTab: React.FC<{
                       <Textarea
                         className="w-full"
                         rows={3}
-                        {...register(`${key}.${index}.values.2`)}
+                        {...recruitmentForm.register(`${key}.${index}.values.2`)}
                         placeholder="Anteckningar..."
-                        value={getValues(`${key}.${index}.values.2`)}
+                        value={recruitmentForm.getValues(`${key}.${index}.values.2`)}
                       />
                     </div>
                   );
@@ -80,9 +120,6 @@ export const SupportErrandRecruitmentTab: React.FC<{
               </Disclosure>
             );
           })}
-          <Button loading={loading} loadingText="Sparar.." onClick={handleSubmit}>
-            Spara
-          </Button>
         </FormControl>
       </div>
     </div>

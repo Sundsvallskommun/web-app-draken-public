@@ -132,7 +132,7 @@ export const SupportTabsWrapper: React.FC<{
     },
     {
       label: 'Rekryteringsprocess',
-      content: supportErrand && <SupportErrandRecruitmentTab update={update} />,
+      content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
       disabled: false,
       visibleFor: appConfig.features.useRecruitment,
     },
