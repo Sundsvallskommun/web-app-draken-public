@@ -6,7 +6,7 @@ import { SupportMetadata } from '@supportmanagement/services/support-metadata-se
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-
+import { useTranslation } from 'next-i18next';
 export interface CategoryFilter {
   category: string[];
 }
@@ -22,7 +22,7 @@ export const SupportManagementFilterCategory: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   const [allCategories, setAllCategories] = useState<Category[]>();
   const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
-
+  const { t } = useTranslation();
   useEffect(() => {
     setAllCategories(supportMetadata?.categories);
   }, [supportMetadata]);
@@ -37,7 +37,7 @@ export const SupportManagementFilterCategory: React.FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Verksamhet
+        {t(`common:overview.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`, t('common:overview.orderType.default'))}
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] overflow-y-auto">
         <SearchField

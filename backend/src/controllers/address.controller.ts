@@ -2,7 +2,7 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import authMiddleware from '@middlewares/auth.middleware';
-import { isObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type as TypeTransformer } from 'class-transformer';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
@@ -65,10 +65,12 @@ interface EmployeeAddress {
   mailNickname: string;
   company: string;
   companyId: number;
+  title: string;
   orgTree: string;
   referenceNumber: string;
   isManager: boolean;
   loginName: string;
+  department: string;
 }
 
 interface EmployedPersonData {
@@ -260,12 +262,32 @@ export class AddressController {
     @Param('loginName') loginName: string,
     @Res() response: any,
   ): Promise<{ data: EmployeeAddress; message: string }> {
-    const url = `employee/2.0/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
-    const res = await this.apiService.get<EmployeeAddress>({ url }, req.user).catch(e => {
+    const baseUrl = `employee/2.0/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
+    const res = await this.apiService.get<EmployeeAddress>({ url: baseUrl }, req.user).catch(e => {
       logger.error('Error when fetching user information');
       throw e;
     });
-    return { data: res.data, message: 'success' };
+    const personId = res.data?.personid;
+
+    if (personId) {
+      const empUrl = `employee/2.0/${MUNICIPALITY_ID}/employments?personId=${personId}`;
+      const empRes = await this.apiService.get<any[]>({ url: empUrl }, req.user).catch(e => {
+        logger.error('Error when fetching employment data');
+        return { data: [] };
+      });
+      const data = empRes?.data?.[0];
+      const employment = data?.employments?.[0];
+      if (data && employment) {
+        res.data.title = employment?.title || '';
+        res.data.referenceNumber = data?.referenceNumbers?.[0]?.referenceNumber || '';
+        res.data.department = employment?.orgName || '';
+      }
+
+      return {
+        data: res.data,
+        message: 'success',
+      };
+    }
   }
 
   @Get('/employed/:personalNumber/loginname')

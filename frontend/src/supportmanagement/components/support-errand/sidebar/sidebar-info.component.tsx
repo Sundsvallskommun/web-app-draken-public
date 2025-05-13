@@ -20,6 +20,7 @@ import {
   supportErrandIsEmpty,
   updateSupportErrand,
   validateAction,
+  StatusLabelROB,
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
@@ -30,6 +31,7 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { RequestInfoComponent } from './request-info.component';
 import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
+import { isROB } from '@common/services/application-service';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -130,7 +132,7 @@ export const SidebarInfo: React.FC<{
               props.setUnsavedFacility(false);
               setIsLoading(false);
             })
-            .catch((e) => {
+            .catch(() => {
               setIsLoading(false);
               toastMessage({
                 position: 'bottom',
@@ -228,36 +230,14 @@ export const SidebarInfo: React.FC<{
 
   useEffect(() => {
     if (supportErrand?.priority && supportErrand?.status) {
-      const statuses = [
-        {
-          key: 'NEW',
-          label: StatusLabel.NEW,
-        },
-        {
-          key: 'ONGOING',
-          label: StatusLabel.ONGOING,
-        },
-        {
-          key: 'PENDING',
-          label: StatusLabel.PENDING,
-        },
-        {
-          key: 'AWAITING_INTERNAL_RESPONSE',
-          label: StatusLabel.AWAITING_INTERNAL_RESPONSE,
-        },
-        {
-          key: 'ASSIGNED',
-          label: StatusLabel.ASSIGNED,
-        },
-        {
-          key: 'SUSPENDED',
-          label: StatusLabel.SUSPENDED,
-        },
-        {
-          key: 'SOLVED',
-          label: StatusLabel.SOLVED,
-        },
-      ];
+      const statusLabel = isROB() ? StatusLabelROB : StatusLabel;
+      const statuses = Object.keys(statusLabel).map((key) => {
+        return {
+          key: key,
+          label: statusLabel[key],
+        };
+      });
+
       setSelectableStatuses(statuses);
 
       const prio = [

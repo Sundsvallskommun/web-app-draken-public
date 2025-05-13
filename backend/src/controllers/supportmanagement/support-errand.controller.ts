@@ -332,7 +332,7 @@ export enum SupportStakeholderRole {
 export class SupportErrandController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.1`;
+  SERVICE = `supportmanagement/10.2`;
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
@@ -569,8 +569,8 @@ export class SupportErrandController {
           }
         : isROB()
         ? {
-            category: 'ROB',
-            type: 'ROB.UNCATEGORIZED',
+            category: 'COMPLETE_RECRUITMENT',
+            type: 'COMPLETE_RECRUITMENT.RETAKE',
           }
         : {
             category: 'CONTACT_SUNDSVALL',

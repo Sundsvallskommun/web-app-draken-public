@@ -19,7 +19,7 @@ type Parameters = {
 export class SupportFacilitiesController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.1`;
+  SERVICE = `supportmanagement/10.2`;
 
   @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
   @OpenAPI({ summary: 'Save facilities by errand' })

@@ -44,6 +44,20 @@ export const mockSupportErrand = {
         { type: 'Email', value: 'a@example.com' },
         { type: 'Phone', value: '070000000' },
       ],
+      parameters: [
+        {
+          key: 'title',
+          values: ['Projektledare'],
+        },
+        {
+          key: 'department',
+          values: ['Projektledning'],
+        },
+        {
+          key: 'referenceNumber',
+          values: ['123456789'],
+        },
+      ],
     },
     {
       externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
