@@ -123,7 +123,7 @@ export class CaseDataErrandController {
     @QueryParam('start') start: string,
     @QueryParam('end') end: string,
     @QueryParam('sort') sort: string,
-    @QueryParam('propertyDesignation') propertyDesignation: string, //Added
+    @QueryParam('propertyDesignation') propertyDesignation: string,
     @Res() response: any,
   ): Promise<ResponseData> {
     let url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands?page=${page || 0}&size=${size || 8}`;
@@ -150,6 +150,7 @@ export class CaseDataErrandController {
       }
       queryFilter += ` or errandNumber~'*${query}*'`;
       queryFilter += ` or exists(facilities.address.propertyDesignation~'*${query}*')`;
+      queryFilter += ` or exists(extraParameters.values~'*${query}*')`;
       queryFilter += ')';
       filterList.push(queryFilter);
     }

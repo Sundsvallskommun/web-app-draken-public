@@ -2,12 +2,27 @@ import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wr
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
+import {
+  getApplicationEnvironment,
+  isIK,
+  isKA,
+  isKC,
+  isLOP,
+  isMEX,
+  isPT,
+  isROB,
+} from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
-import { Resolution, Status, StatusLabel, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  Resolution,
+  Status,
+  StatusLabel,
+  StatusLabelROB,
+  SupportErrand,
+} from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
@@ -87,6 +102,44 @@ export default function Layout({ title, children }) {
         inverted = true;
         icon = 'clock-10';
         break;
+      case 'SUSPENDED':
+        color = 'warning';
+        inverted = true;
+        icon = 'circle-pause';
+        break;
+      case 'ASSIGNED':
+        color = 'warning';
+        inverted = false;
+        icon = 'circle-pause';
+        break;
+      case 'UPSTART':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'PUBLISH_SELECTION':
+        color = 'vattjom';
+        inverted = true;
+        break;
+      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'REFERENCE_CHECK':
+        color = 'juniskar';
+        inverted = true;
+        break;
+      case 'REVIEW':
+        color = 'warning';
+        inverted = true;
+        break;
+      case 'SECURITY_CLEARENCE':
+        color = 'bjornstigen';
+        inverted = true;
+        break;
+      case 'FEEDBACK_CLOSURE':
+        color = 'error';
+        inverted = true;
+        break;
       default:
         color = 'tertiary';
         break;
@@ -96,6 +149,8 @@ export default function Layout({ title, children }) {
         {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
         {resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED
           ? 'Eskalerat'
+          : isROB()
+          ? StatusLabelROB[status]
           : StatusLabel[status]}
       </Label>
     );

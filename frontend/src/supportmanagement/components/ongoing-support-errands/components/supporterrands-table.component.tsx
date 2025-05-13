@@ -1,7 +1,7 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
-import { prettyTime, sortBy } from '@common/services/helper-service';
+import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
+import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -13,6 +13,7 @@ import {
   Resolution,
   Status,
   StatusLabel,
+  StatusLabelROB,
   SupportErrand,
   getLabelCategory,
   getLabelSubType,
@@ -184,6 +185,34 @@ export const SupportErrandsTable: React.FC = () => {
         inverted = false;
         icon = 'circle-pause';
         break;
+      case 'UPSTART':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'PUBLISH_SELECTION':
+        color = 'vattjom';
+        inverted = true;
+        break;
+      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
+        color = 'tertiary';
+        inverted = true;
+        break;
+      case 'REFERENCE_CHECK':
+        color = 'juniskar';
+        inverted = true;
+        break;
+      case 'REVIEW':
+        color = 'warning';
+        inverted = true;
+        break;
+      case 'SECURITY_CLEARENCE':
+        color = 'bjornstigen';
+        inverted = true;
+        break;
+      case 'FEEDBACK_CLOSURE':
+        color = 'error';
+        inverted = true;
+        break;
       default:
         color = 'tertiary';
         break;
@@ -194,7 +223,7 @@ export const SupportErrandsTable: React.FC = () => {
       else if (resolution === Resolution.CLOSED && status === Status.SOLVED) return 'Avslutat';
       else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
       else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';
-      else return StatusLabel[status];
+      else return isROB() ? StatusLabelROB[status] : StatusLabel[status];
     };
     return (
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
@@ -277,7 +306,9 @@ export const SupportErrandsTable: React.FC = () => {
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
-            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
+            <div className="m-0 italic truncate">
+              {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
+            </div>
           </div>
         </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">

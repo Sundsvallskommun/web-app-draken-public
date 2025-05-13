@@ -35,7 +35,7 @@ import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
 export interface UtredningFormModel {
-  id?: number;
+  id?: string;
   errandNumber?: string;
   description: string;
   descriptionPlaintext: string;
@@ -212,7 +212,7 @@ export const CasedataInvestigationTab: React.FC<{
     if (decision) {
       setValue('law', decision.law);
       if (decision?.decisionType === 'PROPOSED') {
-        setValue('id', decision?.id);
+        setValue('id', decision?.id.toString());
       }
       if (decision.decisionType === 'PROPOSED' || decision?.decisionOutcome === 'APPROVAL') {
         setValue('description', decision.description);

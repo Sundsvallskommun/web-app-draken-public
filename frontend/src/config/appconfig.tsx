@@ -21,6 +21,8 @@ interface AppConfigFeatures {
   useDepartmentEscalation: boolean;
   useEmployeeSearch: boolean;
   useOrganizationStakeholders: boolean;
+  useEmailContactChannel: boolean;
+  useSmsContactChannel: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -40,6 +42,8 @@ export const appConfig: AppConfig = {
     useDepartmentEscalation: process.env.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION === 'true',
     useEmployeeSearch: process.env.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH === 'true',
     useOrganizationStakeholders: process.env.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER === 'true',
+    useEmailContactChannel: process.env.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL === 'true',
+    useSmsContactChannel: process.env.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL === 'true',
   },
 };
 

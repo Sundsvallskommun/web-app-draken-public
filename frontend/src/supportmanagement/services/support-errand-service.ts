@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC } from '@common/services/application-service';
+import { isKC, isROB } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -119,11 +119,35 @@ export enum Status {
   ASSIGNED = 'ASSIGNED',
   SOLVED = 'SOLVED',
   AWAITING_INTERNAL_RESPONSE = 'AWAITING_INTERNAL_RESPONSE',
+  UPSTART = 'UPSTART',
+  PUBLISH_SELECTION = 'PUBLISH_SELECTION',
+  INTERNAL_CONTROL_AND_INTERVIEWS = 'INTERNAL_CONTROL_AND_INTERVIEWS',
+  REFERENCE_CHECK = 'REFERENCE_CHECK',
+  REVIEW = 'REVIEW',
+  SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
+  FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
 }
 
 export enum StatusLabel {
   NEW = 'Inkommet',
   ONGOING = 'Pågående',
+  PENDING = 'Komplettering',
+  SUSPENDED = 'Parkerat',
+  ASSIGNED = 'Tilldelat',
+  SOLVED = 'Löst',
+  AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
+}
+
+export enum StatusLabelROB {
+  NEW = 'Inkommet',
+  ONGOING = 'Pågående',
+  UPSTART = 'Uppstart',
+  PUBLISH_SELECTION = 'Publicera och urval',
+  INTERNAL_CONTROL_AND_INTERVIEWS = 'Intern kontroll och intervjuer',
+  REFERENCE_CHECK = 'Referenstagning',
+  REVIEW = 'Avstämning',
+  SECURITY_CLEARENCE = 'Säkerhetsprövning',
+  FEEDBACK_CLOSURE = 'Återkoppling och avslut',
   PENDING = 'Komplettering',
   SUSPENDED = 'Parkerat',
   ASSIGNED = 'Tilldelat',
@@ -147,6 +171,17 @@ export const newStatuses = [Status.NEW];
 
 export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
 
+export const ongoingStatusesROB = [
+  ...ongoingStatuses,
+  Status.UPSTART,
+  Status.PUBLISH_SELECTION,
+  Status.INTERNAL_CONTROL_AND_INTERVIEWS,
+  Status.REFERENCE_CHECK,
+  Status.REVIEW,
+  Status.SECURITY_CLEARENCE,
+  Status.FEEDBACK_CLOSURE,
+];
+
 export const suspendedStatuses = [Status.SUSPENDED];
 export const assignedStatuses = [Status.ASSIGNED];
 
@@ -156,7 +191,7 @@ export const getStatusLabel = (statuses: Status[]) => {
   if (statuses.length > 0) {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
-    } else if (statuses.some((s) => ongoingStatuses.includes(s))) {
+    } else if (statuses.some((s) => (isROB() ? ongoingStatusesROB.includes(s) : ongoingStatuses.includes(s)))) {
       return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
@@ -299,6 +334,23 @@ export const ongoingSupportErrandLabelsKC = [
   { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
 ];
 
+export const ongoingSupportErrandLabelsROB = [
+  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Beställningstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Inkom via', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Registrerades', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  {
+    label: 'Prioritet',
+    screenReaderOnly: false,
+    sortable: true,
+    shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
+  },
+  { label: 'Påminnelse', screenReaderOnly: false, sortable: true, shownForStatus: [Status.SUSPENDED] },
+  { label: 'Ansvarig', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+];
+
 export const ongoingSupportErrandLabelsLoP = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -327,7 +379,16 @@ export const ongoingSupportErrandLabelsLoP = [
 ];
 
 export const getOngoingSupportErrandLabels = (statuses: Status[]) => {
-  const ongoingSupportErrandLabels = isKC() ? ongoingSupportErrandLabelsKC : ongoingSupportErrandLabelsLoP;
+  let ongoingSupportErrandLabels;
+
+  if (isKC()) {
+    ongoingSupportErrandLabels = ongoingSupportErrandLabelsKC;
+  } else if (isROB()) {
+    ongoingSupportErrandLabels = ongoingSupportErrandLabelsROB;
+  } else {
+    ongoingSupportErrandLabels = ongoingSupportErrandLabelsLoP;
+  }
+
   return ongoingSupportErrandLabels.filter(
     (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
   );
@@ -339,11 +400,15 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
   organizationNumber?: string;
   personId?: string;
   personNumber?: string;
+  title?: string;
+  referenceNumber?: string;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
   username?: string;
   administrationCode?: string;
   administrationName?: string;
+  department?: string;
+  orgName?: string;
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
@@ -468,7 +533,10 @@ export const useSupportErrands = (
           municipalityId,
           page,
           1,
-          { ...filter, status: `${Status.ONGOING},${Status.PENDING},${Status.AWAITING_INTERNAL_RESPONSE}` },
+          {
+            ...filter,
+            status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
+          },
           sort
         )
           .then((res) => {
@@ -623,6 +691,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
             newRole: 'PRIMARY',
             internalId: uuidv4(),
             emails: s.contactChannels
@@ -643,6 +714,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
             newRole: s.role as string,
             internalId: uuidv4(),
             emails: s.contactChannels
@@ -887,7 +961,6 @@ export const setSupportErrandStatus: (
   municipalityId: string,
   status: Status
 ) => Promise<boolean> = async (errandId, municipalityId, status) => {
-  console.log('setSupportErrandStatus', errandId, municipalityId, status);
   const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
 
   return apiService
