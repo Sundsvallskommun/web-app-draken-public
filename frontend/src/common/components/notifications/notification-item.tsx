@@ -22,16 +22,23 @@ const getNotificationKey = (notification: Notification): string | undefined => {
   return (notification as any).subType?.toUpperCase() ?? (notification as any).subtype?.toUpperCase();
 };
 
-const iconConfig: Record<string, { icon?: string; avatar?: boolean; defaultColor: string; label?: string }> = {
-  ATTACHMENT: { icon: 'file', defaultColor: 'vattjom', label: 'Ny bilaga' },
-  DECISION: { icon: 'bell-ring', defaultColor: 'juniskar', label: 'Nytt beslut' },
-  ERRAND: { icon: 'bell-ring', defaultColor: 'juniskar', label: 'Ärende uppdaterat' },
-  MESSAGE: { icon: 'message-circle', defaultColor: 'gronsta', label: 'Nytt meddelande' },
-  NOTE: { avatar: true, defaultColor: 'juniskar', label: 'Ny kommentar/anteckning' },
-  SYSTEM: { icon: 'bell', defaultColor: 'vattjom', label: 'Fasbyte' },
-  SUSPENSION: { icon: 'bell-ring', defaultColor: 'juniskar', label: 'Parkering upphört' },
+const iconConfig = {
+  'Meddelande mottaget': { icon: 'message-circle', defaultColor: 'gronsta' },
+  'Parkering av ärendet har upphört': { icon: 'bell-ring', defaultColor: 'juniskar' },
+  'Ärende uppdaterat': { icon: 'bell-ring', defaultColor: 'juniskar' },
+  'En bilaga har lagts till i ärendet.': { icon: 'file', defaultColor: 'vattjom' },
+  'Notering skapad': { avatar: true, defaultColor: 'juniskar' },
+  default: { icon: 'bell', defaultColor: 'vattjom' },
+};
 
-  default: { icon: 'bell', defaultColor: 'vattjom', label: 'Notis' },
+const labelBySubType: Record<string, string> = {
+  ATTACHMENT: 'Ny bilaga',
+  DECISION: 'Nytt beslut',
+  ERRAND: 'Ärende uppdaterat',
+  MESSAGE: 'Nytt meddelande',
+  NOTE: 'Ny kommentar/anteckning',
+  SYSTEM: 'Fasbyte',
+  SUSPENSION: 'Parkering upphört',
 };
 
 const senderFallback = (name?: string): string => {
@@ -40,18 +47,22 @@ const senderFallback = (name?: string): string => {
 };
 
 const renderIcon = (notification: Notification) => {
-  const key = getNotificationKey(notification) ?? notification.description?.toUpperCase();
-  const config = iconConfig[key as keyof typeof iconConfig] ?? iconConfig.default;
-  const color = notification.acknowledged ? 'tertiary' : config.defaultColor;
+  const config = iconConfig[notification.description as keyof typeof iconConfig] ?? iconConfig.default;
+  const color = notification.acknowledged ? 'primary' : config.defaultColor;
 
-  if (config.avatar) {
-    const initials = `${notification.createdByFullName?.split(' ')[1]?.charAt(0)?.toUpperCase() ?? ''}${
-      notification.createdByFullName?.split(' ')[0]?.charAt(0)?.toUpperCase() ?? ''
-    }`;
-
+  if ('avatar' in config && config.avatar) {
     return (
       <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center bg-${color}-surface-accent`)}>
-        <Avatar size="md" initials={initials} color={color} />
+        <Avatar
+          data-cy="avatar-aside"
+          className="flex-none"
+          size="md"
+          initials={`${notification.createdByFullName
+            ?.split(' ')[1]
+            ?.charAt(0)
+            .toUpperCase()}${notification.createdByFullName?.split(' ')[0]?.charAt(0).toUpperCase()}`}
+          color={color}
+        />
       </div>
     );
   }
@@ -64,7 +75,7 @@ const renderIcon = (notification: Notification) => {
         }`
       )}
     >
-      {config.icon && (
+      {'icon' in config && (
         <LucideIcon
           name={config.icon as 'message-circle' | 'bell-ring' | 'file' | 'bell'}
           color={
@@ -113,6 +124,8 @@ export const NotificationItem: React.FC<{ notification: Notification }> = ({ not
     }
   };
 
+  const subTypeLabel = getNotificationKey(notification) && labelBySubType[getNotificationKey(notification)];
+
   return (
     <div className="p-16 flex gap-12 items-start justify-between text-small">
       <div className="flex items-center my-xs">{renderIcon(notification)}</div>
@@ -133,11 +146,7 @@ export const NotificationItem: React.FC<{ notification: Notification }> = ({ not
           </NextLink>
         </div>
         <div>Från: {senderFallback(notification.createdByFullName || notification.createdBy)}</div>
-        {(() => {
-          const key = getNotificationKey(notification);
-          const config = iconConfig[key as keyof typeof iconConfig];
-          return config?.label ? <div>Händelse: {config.label}</div> : null;
-        })()}
+        {subTypeLabel ? <div>Händelse: {subTypeLabel}</div> : null}
       </div>
       <span className="whitespace-nowrap">{prettyTime(notification.created)}</span>
       {!notification.acknowledged && (
