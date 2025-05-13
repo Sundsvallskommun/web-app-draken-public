@@ -3,7 +3,18 @@ import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Mail } from 'lucide-react';
+import {
+  Button,
+  Divider,
+  FormControl,
+  FormLabel,
+  Icon,
+  Label,
+  Select,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -25,17 +36,17 @@ import {
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
 import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
-import { RequestInfoComponent } from './request-info.component';
-import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 import { isROB } from '@common/services/application-service';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
+  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
 }> = (props) => {
   const {
     user,
@@ -374,12 +385,12 @@ export const SidebarInfo: React.FC<{
   };
 
   return (
-    <div className="relative h-full flex flex-col justify-start">
+    <div className="relative h-full flex flex-col justify-start gap-20">
       <div className="px-0 flex justify-between items-center">
         <span className="text-base md:text-large xl:text-lead font-semibold">Handläggning</span>
       </div>
 
-      <div className="w-full mt-md flex flex-col gap-12">
+      <div className="w-full flex flex-col gap-20">
         <>
           <FormControl id="administrator" className="w-full">
             <FormLabel className="flex justify-between text-small">
@@ -468,114 +479,119 @@ export const SidebarInfo: React.FC<{
           )}
         </>
 
-        <div className="w-full">
-          <Button
-            className="w-full my-8"
-            data-cy="save-button"
-            type="button"
-            disabled={
-              isSupportErrandLocked(supportErrand) ||
-              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
-              formIsNotValid
-            }
-            onClick={handleSubmit(() => {
-              return onSubmit();
-            }, onError)}
-            variant="primary"
-            color="primary"
-            loading={isLoading === true}
-            loadingText="Sparar"
-          >
-            Spara ärende
-          </Button>
-          <>
-            <Divider className="mt-16 mb-24" />
-
-            {supportErrand?.status === Status.SOLVED ? (
-              <>
-                {renderLabelSwitch(supportErrand.resolution)}
+        <Button
+          className="w-full my-8"
+          data-cy="save-button"
+          type="button"
+          disabled={
+            isSupportErrandLocked(supportErrand) ||
+            !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
+            formIsNotValid
+          }
+          onClick={handleSubmit(() => {
+            return onSubmit();
+          }, onError)}
+          variant="primary"
+          color="primary"
+          loading={isLoading === true}
+          loadingText="Sparar"
+        >
+          Spara ärende
+        </Button>
+        <Divider />
+        <>
+          {supportErrand?.status === Status.SOLVED ? (
+            <>
+              {renderLabelSwitch(supportErrand.resolution)}
+              <Button
+                className="w-full mt-20"
+                color="vattjom"
+                leftIcon={<LucideIcon name="undo-2" />}
+                variant="secondary"
+                onClick={() => {
+                  confirm
+                    .showConfirmation('Återöppna ärende', 'Vill du återöppna ärendet?', 'Ja', 'Nej', 'info', 'info')
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        updateSupportErrandStatus(Status.ONGOING);
+                      }
+                    });
+                }}
+                disabled={hasClosedErrandPassedLimit()}
+              >
+                Återöppna ärende
+              </Button>
+            </>
+          ) : supportErrand?.status === Status.SUSPENDED || supportErrand?.status === Status.ASSIGNED ? (
+            <>
+              <div className="flex">
+                <Label>
+                  <LucideIcon size="1.5rem" name="circle-pause" />{' '}
+                  {supportErrand?.status === Status.SUSPENDED ? 'Parkerat ' : 'Tilldelat '}
+                </Label>
+                <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
+              </div>
+              <p className="text-small">
+                {getValues('admin') === 'Välj handläggare' ? (
+                  <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
+                ) : (
+                  <span className="mb-24">
+                    <strong>{getValues('admin')}</strong>
+                    {supportErrand?.status === Status.SUSPENDED
+                      ? ' parkerade ärendet med en påminnelse '
+                      : ' tilldelades ärendet'}{' '}
+                    {supportErrand.suspension?.suspendedTo
+                      ? dayjs(supportErrand.suspension?.suspendedTo).format('DD MMM, HH:mm')
+                      : supportErrand?.status === Status.SUSPENDED && '(datum saknas)'}
+                  </span>
+                )}
+              </p>
+              <Button
+                className="w-full"
+                color="vattjom"
+                data-cy="suspend-button"
+                leftIcon={<LucideIcon name="circle-play" />}
+                variant="secondary"
+                disabled={!allowed}
+                loading={isLoading === 'status'}
+                loadingText="Återupptar"
+                onClick={() => {
+                  confirm
+                    .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        activateErrand();
+                      }
+                    });
+                }}
+              >
+                Återuppta ärende
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-12">
+              <div className="w-full flex flex-col gap-12">
                 <Button
-                  className="w-full mt-20"
+                  data-cy="new-message-button"
+                  type="button"
+                  disabled={isSupportErrandLocked(supportErrand) || !allowed || supportErrand.status === Status.NEW}
                   color="vattjom"
-                  leftIcon={<LucideIcon name="undo-2" />}
+                  leftIcon={<Icon icon={<Mail />} />}
                   variant="secondary"
-                  onClick={() => {
-                    confirm
-                      .showConfirmation('Återöppna ärende', 'Vill du återöppna ärendet?', 'Ja', 'Nej', 'info', 'info')
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          updateSupportErrandStatus(Status.ONGOING);
-                        }
-                      });
-                  }}
-                  disabled={hasClosedErrandPassedLimit()}
+                  onClick={() => props.setShowMessageForm(true)}
                 >
-                  Återöppna ärende
+                  Nytt meddelande
                 </Button>
-              </>
-            ) : supportErrand?.status === Status.SUSPENDED || supportErrand?.status === Status.ASSIGNED ? (
-              <>
-                <div className="flex">
-                  <Label>
-                    <LucideIcon size="1.5rem" name="circle-pause" />{' '}
-                    {supportErrand?.status === Status.SUSPENDED ? 'Parkerat ' : 'Tilldelat '}
-                  </Label>
-                  <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
-                </div>
-                <p className="text-small">
-                  {getValues('admin') === 'Välj handläggare' ? (
-                    <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
-                  ) : (
-                    <span className="mb-24">
-                      <strong>{getValues('admin')}</strong>
-                      {supportErrand?.status === Status.SUSPENDED
-                        ? ' parkerade ärendet med en påminnelse '
-                        : ' tilldelades ärendet'}{' '}
-                      {supportErrand.suspension?.suspendedTo
-                        ? dayjs(supportErrand.suspension?.suspendedTo).format('DD MMM, HH:mm')
-                        : supportErrand?.status === Status.SUSPENDED && '(datum saknas)'}
-                    </span>
-                  )}
-                </p>
-
-                <Button
-                  className="w-full"
-                  color="vattjom"
-                  data-cy="suspend-button"
-                  leftIcon={<LucideIcon name="circle-play" />}
-                  variant="secondary"
-                  disabled={!allowed}
-                  loading={isLoading === 'status'}
-                  loadingText="Återupptar"
-                  onClick={() => {
-                    confirm
-                      .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          activateErrand();
-                        }
-                      });
-                  }}
-                >
-                  Återuppta ärende
-                </Button>
-              </>
-            ) : (
-              <div className="flex flex-col gap-8">
-                <RequestInfoComponent
-                  disabled={!validateAction(supportErrand, user) || supportErrandIsEmpty(supportErrand)}
-                />
-                <RequestInternalComponent
-                  disabled={!validateAction(supportErrand, user) || supportErrandIsEmpty(supportErrand)}
-                />
                 <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
-                <Divider className="mt-8 mb-16" />
+              </div>
+              <Divider className="mb-10" />
+              <div className="w-full flex flex-col gap-6">
                 <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
               </div>
-            )}
-          </>
-        </div>
+            </div>
+          )}
+        </>
       </div>
     </div>
   );
