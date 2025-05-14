@@ -26,6 +26,7 @@
       "default": "Verksamhet"
     },
     "errandType": {
+      "MSVA": "Ärendekategori",
       "LOP": "Ärendekategori",
       "default": "Ärendetyp"
     },
