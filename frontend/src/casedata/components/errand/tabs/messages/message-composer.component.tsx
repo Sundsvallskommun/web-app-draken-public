@@ -675,6 +675,8 @@ export const MessageComposer: React.FC<{
               tabIndex={props.show ? 0 : -1}
               data-cy="send-message-button"
               type="button"
+              loading={isLoading}
+              loadingText="Skickar meddelande"
               onClick={handleSubmit(
                 () => {
                   return submitConfirm
@@ -693,7 +695,7 @@ export const MessageComposer: React.FC<{
               disabled={isLoading || !formState.isValid || !allowed}
               leftIcon={isLoading ? <Spinner size={2} className="mr-sm" /> : null}
             >
-              {isLoading ? 'Skickar meddelande' : 'Skicka meddelande'}
+              Skicka meddelande
             </Button>
           </div>
           {error && <FormErrorMessage>Något gick fel när meddelandet sparades.</FormErrorMessage>}

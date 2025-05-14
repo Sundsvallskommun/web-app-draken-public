@@ -21,7 +21,7 @@ import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 export interface UtredningFormModel {
-  id?: number;
+  id?: string;
   errandNumber?: string;
   description: string;
   law: Law;
@@ -142,7 +142,7 @@ export const SidebarUtredning: React.FC = () => {
       if (isSigned) {
         const decision = getProposedOrRecommendedDecision(errand.decisions);
         data = {
-          id: decision.id,
+          id: decision.id.toString(),
           description: decision.description,
           law: decision.law[0],
           outcome: DecisionOutcomeKey.Bifall,
@@ -210,10 +210,9 @@ export const SidebarUtredning: React.FC = () => {
     setValue('errandNumber', errand.errandNumber);
     setValue('outcome', DecisionOutcomeKey.Bifall);
     if (existingUtredning) {
-      setValue('id', existingUtredning.id);
+      setValue('id', existingUtredning.id.toString());
       setValue('description', existingUtredning.description);
       setRichText(existingUtredning.description);
-      // setValue('law', existingUtredning.law[0].)
       setValue('outcome', existingUtredning.decisionOutcome);
     }
   }, [errand]);

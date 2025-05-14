@@ -14,7 +14,7 @@ function useDisplayPhasePoller() {
       } else {
         getErrand(municipalityId, errand.id.toString()).then((res) => {
           setErrand(res.errand);
-          displayPhase = res.errand.extraParameters.find((p) => p.key === 'process.displayPhase')
+          displayPhase = res.errand?.extraParameters.find((p) => p.key === 'process.displayPhase')
             ?.values?.[0] as UiPhase;
         });
       }

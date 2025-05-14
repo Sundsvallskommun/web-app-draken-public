@@ -327,11 +327,15 @@ export interface SupportStakeholderFormModel extends SupportStakeholder {
   organizationNumber?: string;
   personId?: string;
   personNumber?: string;
+  title?: string;
+  referenceNumber?: string;
   emails: { value: string }[];
   phoneNumbers: { value: string }[];
   username?: string;
   administrationCode?: string;
   administrationName?: string;
+  department?: string;
+  orgName?: string;
 }
 
 export const emptyContact: SupportStakeholderFormModel = {
@@ -614,6 +618,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
             newRole: 'PRIMARY',
             internalId: uuidv4(),
             emails: s.contactChannels
@@ -634,6 +641,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
             username: s.parameters?.find((p) => p.key === 'username')?.values[0],
             administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
             administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
             newRole: s.role as string,
             internalId: uuidv4(),
             emails: s.contactChannels
