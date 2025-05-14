@@ -251,17 +251,24 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {appConfig.features.useTwoLevelCategorization ? (
+          {appConfig.features.useThreeLevelCategorization ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
-          {appConfig.features.useThreeLevelCategorization ? (
+          {appConfig.features.useTwoLevelCategorization ? (
             <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
           ) : null}
+
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
             {appConfig.features.useThreeLevelCategorization ? (
+              <div>
+                <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
+                <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
+              </div>
+            ) : null}
+            {appConfig.features.useTwoLevelCategorization ? (
               <>
                 <p className="m-0">
                   {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
