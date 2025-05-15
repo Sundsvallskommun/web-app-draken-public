@@ -1,7 +1,7 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
-import { prettyTime, sortBy } from '@common/services/helper-service';
+import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -18,7 +18,6 @@ import {
   getLabelCategory,
   getLabelSubType,
   getLabelType,
-  getOngoingSupportErrandLabels,
 } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
@@ -26,6 +25,8 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
+import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
+import { appConfig } from '@config/appconfig';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -122,7 +123,7 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
   };
 
-  const headers = getOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
+  const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>
@@ -279,34 +280,39 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {isKC() || errand.labels.length < 1 ? (
-            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() || isIK() || isKA() ? (
+          {appConfig.features.useThreeLevelCategorization ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
+          {appConfig.features.useTwoLevelCategorization ? (
+            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
+          ) : null}
+
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {isKC() || errand.labels.length < 2 ? (
-              <p className="m-0">
-                {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
-                  ?.displayName || errand.type}
-              </p>
-            ) : isLOP() || isIK() || isKA() ? (
-              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+            {appConfig.features.useThreeLevelCategorization ? (
+              <div>
                 <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
                 <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
               </div>
-            ) : (
-              <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
-            )}
+            ) : null}
+            {appConfig.features.useTwoLevelCategorization ? (
+              <>
+                <p className="m-0">
+                  {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
+                    ?.displayName || errand.type}
+                </p>
+              </>
+            ) : null}
           </div>
         </Table.Column>
         <Table.Column>
           <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
             <div>{Channels[errand?.channel]}</div>
-            <div className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</div>
+            <div className="m-0 italic truncate">
+              {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
+            </div>
           </div>
         </Table.Column>
         <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">

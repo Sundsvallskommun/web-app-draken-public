@@ -27,6 +27,11 @@ export function promiseRejectTimeout<T>(time): (result: any) => Promise<T> {
   return (result) => new Promise((resolve, reject) => setTimeout(reject, time, result));
 }
 
+export const truncate = (text: string | null | undefined, maxLength: number): string => {
+  if (!text) return '';
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+};
+
 export const luhnCheck = (str = ''): boolean => {
   str = str?.replace('-', '');
   if (!str) {
