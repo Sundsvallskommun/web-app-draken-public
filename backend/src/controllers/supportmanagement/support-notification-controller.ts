@@ -50,13 +50,15 @@ export class SupportNotificationDto {
   errandId?: string;
   @IsString()
   errandNumber?: string;
+  @IsString()
+  subtype?: string;
 }
 
 @Controller()
 export class SupportNotificationController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.2`;
+  SERVICE = `supportmanagement/10.3`;
 
   @Get('/supportnotifications/:municipalityId')
   @OpenAPI({ summary: 'Get support notifications' })

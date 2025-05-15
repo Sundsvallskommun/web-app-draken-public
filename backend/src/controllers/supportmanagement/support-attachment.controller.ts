@@ -35,7 +35,7 @@ class SupportAttachmentDto {
 export class SupportAttachmentController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.2`;
+  private SERVICE = `supportmanagement/10.3`;
 
   @Get('/supportattachments/:municipalityId/errands/:id/attachments/:attachmentId')
   @OpenAPI({ summary: 'Get an attachment' })
