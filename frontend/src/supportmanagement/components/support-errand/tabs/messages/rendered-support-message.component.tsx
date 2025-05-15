@@ -60,7 +60,8 @@ export const RenderedSupportMessage: React.FC<{
   // last message body is shown.
   const answerMessage =
     Array.isArray(message.emailHeaders.IN_REPLY_TO) &&
-    message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
+    // message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
+    message.messageBody.replace(/\<br\>\<br\>\<br\>\<br\>/g, '<p><br></p>');
 
   const messageAvatar = (message: Message) => (
     <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
