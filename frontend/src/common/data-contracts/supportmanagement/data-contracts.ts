@@ -729,6 +729,11 @@ export interface Notification {
    * @example "PRH-2022-000001"
    */
   errandNumber?: string;
+  /**
+   * Subtype of the notification
+   * @example "ATTACHMENT"
+   */
+  subType?: string;
 }
 
 /** CreateErrandNoteRequest model */

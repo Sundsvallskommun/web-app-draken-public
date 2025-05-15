@@ -75,7 +75,7 @@ export interface SupportNoteData {
 export class SupportNoteController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.2`;
+  private SERVICE = `supportmanagement/10.3`;
 
   @Get('/supportnotes/:municipalityId/:id')
   @OpenAPI({ summary: 'Get notes for errand' })
