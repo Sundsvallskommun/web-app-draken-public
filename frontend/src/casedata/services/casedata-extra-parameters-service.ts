@@ -1,4 +1,4 @@
-import { MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import { FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
@@ -1085,7 +1085,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
 
     const value = param?.values[0] || '';
 
-    if (caseType in MEXCaseType || caseType in PTCaseType) {
+    if (caseType in MEXCaseType || caseType in PTCaseType || caseType in FTCaseType) {
       const caseTypeTemplate = template[caseType] as UppgiftField[];
       const templateField = caseTypeTemplate?.find((f) => f.field === field);
 

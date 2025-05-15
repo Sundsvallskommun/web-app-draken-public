@@ -5,6 +5,23 @@ export enum PTCaseLabel {
   APPEAL = 'Överklagan',
 }
 
+export enum FTCaseLabel {
+  PARATRANSIT = 'Ansökan av färdtjänst',
+  PARATRANSIT_RENEWAL = 'Ansökan om fortsatt färdtjänst',
+  PARATRANSIT_CHANGE = 'Ansökan om förändring av insatser',
+  PARATRANSIT_NATIONAL = 'Ansökan om riksfärdtjänst',
+  PARATRANSIT_NATIONAL_RENEWAL = 'Ansökan om fortsatt riksfärdtjänst',
+  PARATRANSIT_RIAK = 'Ansökan om RIAK',
+  PARATRANSIT_BUS_CARD = 'Ansökan om busskort',
+  PARATRANSIT_NOTIFICATION = 'Anmälan av färdtjänst',
+  PARATRANSIT_NOTIFICATION_CHANGE = 'Anmälan om förändring av insatser',
+  PARATRANSIT_NOTIFICATION_RENEWAL = 'Anmälan om fortsatt färdtjänst',
+  PARATRANSIT_NOTIFICATION_NATIONAL = 'Anmälan om riksfärdtjänst',
+  PARATRANSIT_NOTIFICATION_NATIONAL_RENEWAL = 'Anmälan om fortsatt riksfärdtjänst',
+  PARATRANSIT_NOTIFICATION_RIAK = 'Anmälan om RIAK',
+  PARATRANSIT_NOTIFICATION_BUS_CARD = 'Anmälan om busskort',
+}
+
 export enum MEXCaseLabel {
   'MEX_SQUARE_PLACE' = 'Torgplats',
   'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' = 'Begäran om allmän handling',
@@ -43,6 +60,7 @@ export enum MEXCaseLabel {
 
 export const CaseLabels = {
   PT: PTCaseLabel,
+  FT: FTCaseLabel,
   MEX: MEXCaseLabel,
-  ALL: { ...PTCaseLabel, ...MEXCaseLabel },
+  ALL: { ...PTCaseLabel, ...MEXCaseLabel, ...FTCaseLabel },
 };

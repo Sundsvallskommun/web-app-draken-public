@@ -135,7 +135,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('disables save button if no decision is selected', () => {
-      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj beslut');
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
       cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-07-11');
       cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');

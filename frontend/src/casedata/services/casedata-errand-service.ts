@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
-import { CaseLabels, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
+import { CaseTypes, FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -29,7 +29,7 @@ import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { Role } from '@casedata/interfaces/role';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
-import { isMEX, isPT } from '@common/services/application-service';
+import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -124,8 +124,43 @@ export const findStatusKeyForStatusLabel = (statusKey: string) =>
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1];
 
-export const getCaseTypes = () => (isPT() ? PTCaseType : isMEX() ? MEXCaseType : CaseTypes.ALL);
-export const getCaseLabels = () => (isPT() ? PTCaseLabel : isMEX() ? MEXCaseLabel : CaseLabels.ALL);
+export const getCaseTypes = () => {
+  const isTest = getApplicationEnvironment() === 'TEST';
+
+  if (isPT()) {
+    return isTest ? { ...PTCaseType, ...FTCaseType } : { ...PTCaseType };
+  }
+
+  if (isMEX()) {
+    return MEXCaseType;
+  }
+
+  //Temporarily added to show all case types in test environment, this can later be changed to CaseTypes.ALL
+  if (isTest) {
+    return { ...PTCaseType, ...MEXCaseType, ...FTCaseType };
+  }
+
+  return { ...PTCaseType, ...MEXCaseType };
+};
+
+export const getCaseLabels = () => {
+  const isTest = getApplicationEnvironment() === 'TEST';
+
+  if (isPT()) {
+    return isTest ? { ...PTCaseLabel, ...FTCaseLabel } : { ...PTCaseLabel };
+  }
+
+  if (isMEX()) {
+    return MEXCaseLabel;
+  }
+
+  //Temporarily added to show all case lables in test environment, this can later be changed to CaseLables.ALL
+  if (isTest) {
+    return { ...PTCaseLabel, ...MEXCaseLabel, ...FTCaseLabel };
+  }
+
+  return { ...PTCaseLabel, ...MEXCaseLabel };
+};
 
 export const findCaseTypeForCaseLabel = (caseLabel: string) => {
   return Object.entries(getCaseLabels()).find((e: [string, string]) => e[1] === caseLabel)?.[0];
