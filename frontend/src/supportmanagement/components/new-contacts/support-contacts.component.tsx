@@ -175,7 +175,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             }}
             onClose={() => setSelectedContact(undefined)}
             allowOrganization={appConfig.features.useOrganizationStakeholders}
-            allowRelation={isLOP()}
+            allowRelation={appConfig.features.useRolesForStakeholders}
             id="edit"
           />
         ) : null}
@@ -388,7 +388,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               {stakeholderCustomers.length === 0 ? (
                 <SupportSimplifiedContactForm
                   disabled={isSupportErrandLocked(supportErrand)}
-                  allowRelation={isLOP()}
+                  allowRelation={appConfig.features.useRolesForStakeholders}
                   allowOrganization={appConfig.features.useOrganizationStakeholders}
                   setUnsaved={props.setUnsaved}
                   onSave={(contact) => addStakeholder(contact)}
@@ -408,7 +408,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             <div className="w-full mt-md">
               <SupportSimplifiedContactForm
                 disabled={isSupportErrandLocked(supportErrand)}
-                allowRelation={isLOP()}
+                allowRelation={appConfig.features.useRolesForStakeholders}
                 allowOrganization={appConfig.features.useOrganizationStakeholders}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, role: 'CONTACT' }}
