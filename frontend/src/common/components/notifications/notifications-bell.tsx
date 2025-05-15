@@ -27,7 +27,11 @@ export const NotificationsBell = (props: { toggleShow: () => void }) => {
           className="absolute -top-10 -right-10 text-white"
           rounded
           color="vattjom"
-          counter={notifications.filter((n) => !n.acknowledged).length}
+          counter={
+            notifications.filter((n) => !n.acknowledged).length > 99
+              ? '99+'
+              : notifications.filter((n) => !n.acknowledged).length
+          }
         />
       ) : null}
     </Button>
