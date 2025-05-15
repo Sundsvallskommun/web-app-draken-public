@@ -63,8 +63,6 @@ export const RenderedSupportMessage: React.FC<{
     // message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
     message.messageBody.replace(/\<br\>\<br\>\<br\>\<br\>/g, '<p><br></p>');
 
-  console.log(answerMessage);
-
   const messageAvatar = (message: Message) => (
     <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
   );
