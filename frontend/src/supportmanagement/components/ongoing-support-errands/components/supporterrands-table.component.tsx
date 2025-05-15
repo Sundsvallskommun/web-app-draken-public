@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
+import { appConfig } from '@config/appconfig';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -279,28 +280,31 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {isKC() || errand.labels.length < 1 ? (
-            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : isLOP() || isIK() || isKA() ? (
+          {appConfig.features.useThreeLevelCategorization ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
+          {appConfig.features.useTwoLevelCategorization ? (
+            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
+          ) : null}
+
           <div className="font-normal">{errand.errandNumber}</div>
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {isKC() || errand.labels.length < 2 ? (
-              <p className="m-0">
-                {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
-                  ?.displayName || errand.type}
-              </p>
-            ) : isLOP() || isIK() || isKA() ? (
-              <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+            {appConfig.features.useThreeLevelCategorization ? (
+              <div>
                 <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
                 <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
               </div>
-            ) : (
-              <p className="m-0 italic truncate">{errand?.title !== 'Empty errand' ? errand?.title : null}</p>
-            )}
+            ) : null}
+            {appConfig.features.useTwoLevelCategorization ? (
+              <>
+                <p className="m-0">
+                  {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
+                    ?.displayName || errand.type}
+                </p>
+              </>
+            ) : null}
           </div>
         </Table.Column>
         <Table.Column>
