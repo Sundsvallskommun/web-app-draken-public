@@ -18,7 +18,6 @@ import {
   getLabelCategory,
   getLabelSubType,
   getLabelType,
-  getOngoingSupportErrandLabels,
 } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
@@ -26,6 +25,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
+import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
 import { appConfig } from '@config/appconfig';
 
 export const SupportErrandsTable: React.FC = () => {
@@ -123,7 +123,7 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
   };
 
-  const headers = getOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
+  const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>
