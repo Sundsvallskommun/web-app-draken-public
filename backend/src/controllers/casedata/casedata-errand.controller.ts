@@ -183,17 +183,6 @@ export class CaseDataErrandController {
     if (caseType) {
       const ss = caseType.split(',').map(s => `caseType:'${s}'`);
       filterList.push(`(${ss.join(' or ')})`);
-    } else {
-      let applicationCaseTypes;
-      if (isPT()) {
-        applicationCaseTypes = Object.values(CaseTypes.PT);
-      } else if (isMEX()) {
-        applicationCaseTypes = Object.values(CaseTypes.MEX);
-      } else {
-        applicationCaseTypes = [];
-      }
-      const ss = applicationCaseTypes.map(s => `'${s}'`);
-      filterList.push(`(caseType in [${ss.join(',')}])`);
     }
     if (sort) {
       url += `&sort=${sort}`;

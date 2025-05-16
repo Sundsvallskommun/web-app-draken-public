@@ -26,7 +26,7 @@ export interface ExtraParametersObject {
   MEX_LEASE_REQUEST?: UppgiftField[];
   MEX_BUY_LAND_FROM_THE_MUNICIPALITY?: UppgiftField[];
   MEX_SELL_LAND_TO_THE_MUNICIPALITY?: UppgiftField[];
-  MEX_APPLICATION_SQUARE_PLACE?: UppgiftField[];
+  MEX_SQUARE_PLACE?: UppgiftField[];
   MEX_BUY_SMALL_HOUSE_PLOT?: UppgiftField[];
   MEX_APPLICATION_FOR_ROAD_ALLOWANCE?: UppgiftField[];
   MEX_UNAUTHORIZED_RESIDENCE?: UppgiftField[];
@@ -586,7 +586,7 @@ const template: ExtraParametersObject = {
     },
   ],
 
-  MEX_APPLICATION_SQUARE_PLACE: [
+  MEX_SQUARE_PLACE: [
     ...baseDetails,
     {
       field: 'taxBill_request',
