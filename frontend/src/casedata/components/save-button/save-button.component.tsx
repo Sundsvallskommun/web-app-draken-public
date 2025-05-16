@@ -9,6 +9,8 @@ import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { stakeholder2Contact } from '@casedata/services/casedata-stakeholder-service';
+import { Role } from '@casedata/interfaces/role';
 
 export const SaveButtonComponent: React.FC<{
   errand: IErrand;
@@ -101,20 +103,39 @@ export const SaveButtonComponent: React.FC<{
     if (formState.dirtyFields['administratorName']) {
       data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
     }
+
+    if (data.administrator && data.administrator.adAccount) {
+      const adAccount = data.administrator.adAccount.toLowerCase();
+
+      data.stakeholders =
+        data.stakeholders?.filter(
+          (s) => !s.roles?.includes(Role.ADMINISTRATOR) && s.adAccount?.toLowerCase() !== adAccount
+        ) || [];
+
+      const mappedAdmin = {
+        ...stakeholder2Contact(data.administrator),
+        newRole: Role.ADMINISTRATOR,
+      };
+
+      data.stakeholders.push(mappedAdmin);
+    }
+
     let dataToSave: Partial<IErrand> & { municipalityId: string };
+
     if (registeringNewErrand) {
-      dataToSave = data;
+      const { administrator, ...rest } = data;
+      dataToSave = rest;
     } else {
-      let dirtyData = {
+      const dirtyData = {
         id: data.id,
         municipalityId: data.municipalityId,
-        ...(data.administrator && { administrator: data.administrator }),
+        ...Object.entries(formState.dirtyFields).reduce((acc, [field, dirty]) => {
+          if (dirty) acc[field] = data[field];
+          return acc;
+        }, {} as any),
       };
-      Object.entries(formState.dirtyFields).forEach(([field, dirty]) => {
-        if (dirty) {
-          dirtyData[field] = data[field];
-        }
-      });
+
+      delete dirtyData.administrator;
 
       dataToSave = dirtyData;
     }

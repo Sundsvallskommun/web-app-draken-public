@@ -184,13 +184,24 @@ export const setAdministrator = async (municipalityId: string, errand: IErrand, 
     lastName: admin.lastName,
     adAccount: admin.adAccount,
   };
-  const currentErrande = await getErrand(errand.municipalityId, errand.id.toString());
-  const existingAdministrator = currentErrande.errand.administrator;
-  const url = existingAdministrator?.id
-    ? `casedata/${municipalityId}/errands/${errand.id}/stakeholders/${existingAdministrator.id}`
+
+  const currentErrande = await getErrand(municipalityId, errand.id.toString());
+  const existingAdmins = currentErrande.errand.stakeholders.filter((s) => s.roles.includes(Role.ADMINISTRATOR));
+
+  await Promise.all(
+    existingAdmins
+      .filter((s) => s.adAccount?.toLowerCase() !== admin.adAccount.toLowerCase())
+      .map((s) => removeStakeholder(municipalityId, errand.id.toString(), s.id))
+  );
+
+  const existingAdmin = existingAdmins.find((s) => s.adAccount?.toLowerCase() === admin.adAccount.toLowerCase());
+
+  const url = existingAdmin?.id
+    ? `casedata/${municipalityId}/errands/${errand.id}/stakeholders/${existingAdmin.id}`
     : `casedata/${municipalityId}/errands/${errand.id}/stakeholders`;
+
   return apiService.patch<boolean, Partial<CreateStakeholderDto>>(url, stakeholder).catch((e) => {
-    console.error('Something went wrong when setting stakeholder ', stakeholder);
+    console.error('Something went wrong when setting administrator', stakeholder);
     throw e;
   });
 };
