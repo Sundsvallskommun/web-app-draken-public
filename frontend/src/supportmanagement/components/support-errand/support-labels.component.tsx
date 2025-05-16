@@ -2,9 +2,8 @@ import { All } from '@supportmanagement/interfaces/priority';
 import { Status } from '@supportmanagement/services/support-errand-service';
 import { useTranslation } from 'react-i18next';
 
-export const useOngoingSupportErrandLabels = (statuses: Status[]) => {
+export const useOngoingSupportErrandLabels = (statuses: Status[], overrideResponsibleLabel: boolean = false) => {
   const { t } = useTranslation();
-
   const labels = [
     { label: t('common:overview.status'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
     { label: t('common:overview.lastActivity'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -40,7 +39,12 @@ export const useOngoingSupportErrandLabels = (statuses: Status[]) => {
       sortable: true,
       shownForStatus: [Status.SUSPENDED],
     },
-    { label: t('common:overview.responsible'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+    {
+      label: overrideResponsibleLabel ? t('common:overview.registeredBy') : t('common:overview.responsible'),
+      screenReaderOnly: false,
+      sortable: true,
+      shownForStatus: All.ALL,
+    },
   ];
 
   return labels.filter(

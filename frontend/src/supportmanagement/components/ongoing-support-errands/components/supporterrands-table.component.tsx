@@ -123,25 +123,29 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
   };
 
-  const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
-    <Table.HeaderColumn key={`header-${index}`} sticky={true}>
-      {header.screenReaderOnly ? (
-        <span className="sr-only">{header.label}</span>
-      ) : header.sortable ? (
-        <Table.SortButton
-          isActive={
-            isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
-          }
-          sortOrder={sortOrders[sortOrder] as SortMode}
-          onClick={() => handleSort(index)}
-        >
-          {header.label}
-        </Table.SortButton>
-      ) : (
-        header.label
-      )}
-    </Table.HeaderColumn>
-  ));
+  const overrideResponsibleLabel =
+    selectedSupportErrandStatuses.length === 1 && selectedSupportErrandStatuses[0] === Status.NEW;
+  const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses, overrideResponsibleLabel).map(
+    (header, index) => (
+      <Table.HeaderColumn key={`header-${index}`} sticky={true}>
+        {header.screenReaderOnly ? (
+          <span className="sr-only">{header.label}</span>
+        ) : header.sortable ? (
+          <Table.SortButton
+            isActive={
+              isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
+            }
+            sortOrder={sortOrders[sortOrder] as SortMode}
+            onClick={() => handleSort(index)}
+          >
+            {header.label}
+          </Table.SortButton>
+        ) : (
+          header.label
+        )}
+      </Table.HeaderColumn>
+    )
+  );
 
   const StatusLabelComponent = (status: string, resolution: string) => {
     const solvedErrandIcon = () => {
