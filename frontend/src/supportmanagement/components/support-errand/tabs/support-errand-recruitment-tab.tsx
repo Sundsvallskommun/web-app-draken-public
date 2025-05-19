@@ -6,6 +6,12 @@ import { getRecruitmentParameters, saveParameters } from '@supportmanagement/ser
 import React, { useEffect } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 
+import { default as JsonForm } from '@rjsf/core';
+import { RegistryWidgetsType, RJSFSchema, UiSchema, WidgetProps } from '@rjsf/utils';
+import validator from '@rjsf/validator-ajv8';
+import { group } from 'console';
+import { title } from 'process';
+
 export const SupportErrandRecruitmentTab: React.FC<{
   update: () => void;
   setUnsaved: (unsaved: boolean) => void;
@@ -32,6 +38,46 @@ export const SupportErrandRecruitmentTab: React.FC<{
       setLoading(false);
       return res;
     });
+  };
+
+  const schemaField = {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        key: { type: 'string', title: 'Key' },
+        displayName: { type: 'string', title: 'Display Name' },
+        group: { type: 'string', title: 'Group' },
+        values: {
+          type: 'array',
+          items: {
+            type: 'string',
+            title: 'Values',
+          },
+        },
+      },
+    },
+  };
+
+  const schema: RJSFSchema = {
+    type: 'object',
+    title: 'recruitment@upstart',
+    properties: {
+      'recruitment@upstart': schemaField,
+      'recruitment@advertisement': schemaField,
+    },
+  };
+
+  // const uiSchema: UiSchema = {
+  //   'ui:widget': 'text',
+  // };
+
+  const CustomTextfield = function (props: WidgetProps) {
+    return <Input id="custom" onChange={() => props.onChange(!props.value)} value={String(props.value)} />;
+  };
+
+  const widgets: RegistryWidgetsType = {
+    TextWidget: CustomTextfield,
   };
 
   return (
@@ -121,6 +167,9 @@ export const SupportErrandRecruitmentTab: React.FC<{
             );
           })}
         </FormControl>
+        <h2>React json schema form</h2>
+        {JSON.stringify(recruitmentParameterGroups)}
+        <JsonForm formData={recruitmentParameterGroups} schema={schema} validator={validator} widgets={widgets} />
       </div>
     </div>
   );
