@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 export const useOngoingSupportErrandLabels = (statuses: Status[]) => {
   const { t } = useTranslation();
-
   const labels = [
     { label: t('common:overview.status'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
     { label: t('common:overview.lastActivity'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -40,7 +39,18 @@ export const useOngoingSupportErrandLabels = (statuses: Status[]) => {
       sortable: true,
       shownForStatus: [Status.SUSPENDED],
     },
-    { label: t('common:overview.responsible'), screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+    {
+      label: t('common:overview.responsible'),
+      screenReaderOnly: false,
+      sortable: true,
+      shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
+    },
+    {
+      label: t('common:overview.registeredBy'),
+      screenReaderOnly: false,
+      sortable: true,
+      shownForStatus: [Status.NEW],
+    },
   ];
 
   return labels.filter(
