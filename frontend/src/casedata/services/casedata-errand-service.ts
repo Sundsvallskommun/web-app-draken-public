@@ -122,7 +122,7 @@ export const findStatusKeyForStatusLabel = (statusKey: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusKey)?.[0];
 
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
-  Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1];
+  Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1] || statusLabel;
 
 export const getCaseTypes = () => {
   const isTest = getApplicationEnvironment() === 'TEST';

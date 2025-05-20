@@ -135,6 +135,12 @@ export interface NamespaceConfig {
    */
   shortCode: string;
   /**
+   * Time to live (in days) for notifications created in this namespace
+   * @format int32
+   * @example 40
+   */
+  notificationTTLInDays?: number;
+  /**
    * Timestamp when the configuration was created
    * @format date-time
    * @example "2000-10-31T01:30:00+02:00"
@@ -152,6 +158,7 @@ export interface NamespaceConfig {
 export interface Label {
   /**
    * Label classification
+   * @minLength 1
    * @example "subtype"
    */
   classification: string;
@@ -162,6 +169,7 @@ export interface Label {
   displayName?: string;
   /**
    * Name for the label
+   * @minLength 1
    * @example "keyCard"
    */
   name: string;
@@ -251,6 +259,7 @@ export interface EmailIntegration {
 export interface Status {
   /**
    * Name for the status
+   * @minLength 1
    * @example "statusName"
    */
   name: string;
@@ -272,6 +281,7 @@ export interface Status {
 export interface Role {
   /**
    * Name for the role. Used as key
+   * @minLength 1
    * @example "roleName"
    */
   name: string;
@@ -298,6 +308,7 @@ export interface Role {
 export interface ExternalIdType {
   /**
    * Name for the external id type
+   * @minLength 1
    * @example "PRIVATE"
    */
   name: string;
@@ -325,6 +336,7 @@ export interface ContactReason {
   id?: number;
   /**
    * Reason for contact
+   * @minLength 1
    * @example "Segt internet"
    */
   reason: string;
@@ -348,7 +360,7 @@ export interface Category {
    * Name for the category
    * @example "Category name"
    */
-  name: string;
+  name?: string;
   /**
    * Display name for the category
    * @example "Displayed name"
@@ -374,6 +386,7 @@ export interface Category {
 export interface Type {
   /**
    * Name for the type
+   * @minLength 1
    * @example "typename"
    */
   name: string;
@@ -407,12 +420,12 @@ export interface Classification {
    * Category for the errand
    * @example "SUPPORT_CASE"
    */
-  category: string;
+  category?: string;
   /**
    * Type of errand
    * @example "OTHER_ISSUES"
    */
-  type: string;
+  type?: string;
 }
 
 /** Contact channel model */
@@ -445,21 +458,21 @@ export interface Errand {
    * Title for the errand
    * @example "Title for the errand"
    */
-  title: string;
+  title?: string;
   /** Priority model */
-  priority: Priority;
+  priority?: Priority;
   stakeholders?: Stakeholder[];
   /** @uniqueItems true */
   externalTags?: ExternalTag[];
   /** Parameters for the errand */
   parameters?: Parameter[];
   /** Classification model */
-  classification: Classification;
+  classification?: Classification;
   /**
    * Status for the errand
    * @example "NEW_CASE"
    */
-  status: string;
+  status?: string;
   /**
    * Resolution status for closed errands. Value can be set to anything
    * @example "FIXED"
@@ -481,7 +494,7 @@ export interface Errand {
    * User id for the person which has created the errand
    * @example "joe01doe"
    */
-  reporterUserId: string;
+  reporterUserId?: string;
   /**
    * Id for the user which currently is assigned to the errand if a user is assigned
    * @example "joe01doe"
@@ -547,11 +560,13 @@ export interface Errand {
 export interface ExternalTag {
   /**
    * Key for external tag
+   * @minLength 1
    * @example "caseId"
    */
   key: string;
   /**
    * Value for external tag
+   * @minLength 1
    * @example "8849-2848"
    */
   value: string;
@@ -585,7 +600,7 @@ export interface Notification {
    * Owner id of the notification
    * @example "AD01"
    */
-  ownerId: string;
+  ownerId?: string;
   /**
    * User who created the notification
    * @example "TestUser"
@@ -600,12 +615,17 @@ export interface Notification {
    * Type of the notification
    * @example "CREATE"
    */
-  type: string;
+  type?: string;
+  /**
+   * Subtype of the notification
+   * @example "ATTACHMENT"
+   */
+  subtype?: string;
   /**
    * Description of the notification
    * @example "Some description of the notification"
    */
-  description: string;
+  description?: string;
   /**
    * Content of the notification
    * @example "Some content of the notification"
@@ -641,7 +661,10 @@ export interface Notification {
 
 /** Parameter model */
 export interface Parameter {
-  /** Parameter key */
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
@@ -773,6 +796,7 @@ export interface CreateErrandNoteRequest {
   body: string;
   /**
    * Created by
+   * @minLength 1
    * @example "John Doe"
    */
   createdBy: string;
@@ -782,11 +806,12 @@ export interface CreateErrandNoteRequest {
 export interface WebMessageAttachment {
   /**
    * The attachment file name
+   * @minLength 1
    * @example "test.txt"
    */
   fileName: string;
   /**
-   * The attachment (file) content as a BASE64-encoded string, max size 10 MB
+   * The attachment (file) content as a BASE64-encoded string, max size 50 MB
    * @format base64
    * @example "aGVsbG8gd29ybGQK"
    */
@@ -801,7 +826,14 @@ export interface WebMessageRequest {
    */
   internal?: boolean;
   /**
+   * Indicates if the message should be dispatched with messaging or not
+   * @default true
+   * @example true
+   */
+  dispatch?: boolean;
+  /**
    * Message in plain text
+   * @minLength 1
    * @example "Message in plain text"
    */
   message: string;
@@ -823,7 +855,10 @@ export interface SmsRequest {
    * @example "+46761234567"
    */
   recipient: string;
-  /** Message */
+  /**
+   * Message
+   * @minLength 1
+   */
   message: string;
   /**
    * Indicates if the message is internal
@@ -836,11 +871,12 @@ export interface SmsRequest {
 export interface EmailAttachment {
   /**
    * The attachment file name
+   * @minLength 1
    * @example "test.txt"
    */
   fileName: string;
   /**
-   * The attachment (file) content as a BASE64-encoded string, max size 10 MB
+   * The attachment (file) content as a BASE64-encoded string, max size 50 MB
    * @format base64
    * @example "aGVsbG8gd29ybGQK"
    */
@@ -866,16 +902,19 @@ export interface EmailRequest {
   recipient: string;
   /**
    * Subject
+   * @minLength 1
    * @example "Subject"
    */
   subject: string;
   /**
    * Message in html (optionally in BASE64 encoded format)
+   * @minLength 1
    * @example "<html>HTML-formatted message</html>"
    */
   htmlMessage: string;
   /**
    * Message in plain text
+   * @minLength 1
    * @example "Message in plain text"
    */
   message: string;
@@ -911,6 +950,7 @@ export interface UpdateErrandNoteRequest {
   body: string;
   /**
    * Modified by
+   * @minLength 1
    * @example "John Doe"
    */
   modifiedBy: string;
@@ -1009,12 +1049,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  first?: boolean;
-  last?: boolean;
+  /** @format int64 */
+  totalElements?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1022,6 +1060,8 @@ export interface PageErrand {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   empty?: boolean;
@@ -1040,8 +1080,8 @@ export interface PageableObject {
 }
 
 export interface SortObject {
-  empty?: boolean;
   sorted?: boolean;
+  empty?: boolean;
   unsorted?: boolean;
 }
 
@@ -1238,12 +1278,10 @@ export enum EventType {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  first?: boolean;
-  last?: boolean;
+  /** @format int64 */
+  totalElements?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1251,6 +1289,8 @@ export interface PageEvent {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   empty?: boolean;
@@ -1351,9 +1391,15 @@ export interface ErrandAttachment {
    * Name of the file
    * @example "my-file.txt"
    */
-  fileName: string;
+  fileName?: string;
   /** Mime type of the file */
   mimeType?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   * @example "2023-01-01T00:00:00Z"
+   */
+  created?: string;
 }
 
 /**
