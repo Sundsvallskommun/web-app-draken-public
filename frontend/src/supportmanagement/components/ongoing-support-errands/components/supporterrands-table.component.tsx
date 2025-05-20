@@ -224,21 +224,12 @@ export const SupportErrandsTable: React.FC = () => {
     }
 
     const solvedErrandText = () => {
-      if (status === Status.SOLVED) {
-        return isKC()
-          ? StatusLabel[status]
-          : isLOP()
-          ? ResolutionLabelLOP[resolution]
-          : isIK()
-          ? ResolutionLabelIK[resolution]
-          : isKA()
-          ? ResolutionLabelKA[resolution]
-          : isROB()
-          ? ResolutionLabelROB[resolution]
-          : 'StatusLabel[status]';
-      } else {
-        return isROB() ? StatusLabelROB[status] : StatusLabel[status];
-      }
+      if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED) return 'Eskalerat';
+      else if (resolution === Resolution.CLOSED && status === Status.SOLVED) return 'Avslutat';
+      else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
+      else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';
+      else return isROB() ? StatusLabelROB[status] : StatusLabel[status];
+
     };
     return (
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
