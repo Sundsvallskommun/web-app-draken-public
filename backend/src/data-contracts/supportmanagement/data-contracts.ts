@@ -657,6 +657,11 @@ export interface Notification {
    * @example "PRH-2022-000001"
    */
   errandNumber?: string;
+    /**
+   * Sub type of the notification
+   * @example "PHASE_CHANGE"
+   */
+  subtype?: string;
 }
 
 /** Parameter model */

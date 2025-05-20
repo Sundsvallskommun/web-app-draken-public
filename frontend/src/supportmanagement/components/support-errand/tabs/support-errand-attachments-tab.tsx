@@ -459,6 +459,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       <p>
                         <strong>{attachment.fileName}</strong>{' '}
                       </p>
+                      <p>Uppladdad den {dayjs(attachment.created).format('YYYY-MM-DD HH:mm')}</p>
                     </div>
                   </div>
 
