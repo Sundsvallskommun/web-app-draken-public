@@ -12,6 +12,7 @@ import {
   ResolutionLabelKS,
   ResolutionLabelLOP,
   ResolutionLabelROB,
+  Status,
   SupportErrand,
   closeSupportErrand,
   getSupportErrandById,
@@ -99,7 +100,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         color="vattjom"
         data-cy="solved-button"
         leftIcon={<LucideIcon name="check" />}
-        variant="primary"
+        variant={!supportErrand || supportErrand.status !== Status.NEW ? 'primary' : 'secondary'}
         disabled={disabled}
         onClick={() => {
           setShowModal(true);

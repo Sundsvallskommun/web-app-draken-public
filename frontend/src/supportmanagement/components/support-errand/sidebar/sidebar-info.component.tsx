@@ -28,10 +28,9 @@ import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'r
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
-import { RequestInfoComponent } from './request-info.component';
-import { RequestInternalComponent } from './request-internal.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 import { isROB } from '@common/services/application-service';
+import { StartProcessComponent } from './start-process-component.component';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -372,6 +371,12 @@ export const SidebarInfo: React.FC<{
     }
   };
 
+  const messageSidebarIsDisabled =
+    !supportErrand ||
+    isSupportErrandLocked(supportErrand) ||
+    !allowed ||
+    [Status.NEW, Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
+
   const onError = () => {
     console.error('Something went wrong when saving');
   };
@@ -571,13 +576,23 @@ export const SidebarInfo: React.FC<{
               </>
             ) : (
               <div className="flex flex-col gap-8">
-                <RequestInfoComponent
-                  disabled={!validateAction(supportErrand, user) || supportErrandIsEmpty(supportErrand)}
-                />
-                <RequestInternalComponent
-                  disabled={!validateAction(supportErrand, user) || supportErrandIsEmpty(supportErrand)}
-                />
+                <Button
+                  leftIcon={<LucideIcon name="mail" />}
+                  className="w-full"
+                  color="vattjom"
+                  data-cy="suspend-button"
+                  variant="secondary"
+                  disabled={messageSidebarIsDisabled}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
+                >
+                  Skicka meddelande
+                </Button>
                 <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                <StartProcessComponent
+                  disabled={!allowed || supportErrandIsEmpty(supportErrand)}
+                  onSubmit={onSubmit}
+                  onError={onError}
+                />
                 <Divider className="mt-8 mb-16" />
                 <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
