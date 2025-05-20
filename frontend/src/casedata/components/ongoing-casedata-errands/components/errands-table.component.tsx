@@ -143,7 +143,7 @@ export const ErrandsTable: React.FC = () => {
             <>{getShortLabel(errand.caseType)}</>
           ) : (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-              <div>{CaseLabels.ALL[errand.caseType] ?? 'Okänd ärendetyp'}</div>
+              <div>{CaseLabels.ALL[errand.caseType] ?? ''}</div>
               <div>{errand.errandNumber}</div>
             </div>
           )}
