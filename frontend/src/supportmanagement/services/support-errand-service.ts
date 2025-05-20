@@ -452,7 +452,7 @@ export const useSupportErrands = (
         });
 
       const sidebarUpdatePromises = [
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW })
           .then((res) => {
             setNewSupportErrands(res);
           })
@@ -465,16 +465,10 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(
-          municipalityId,
-          page,
-          1,
-          {
-            ...filter,
-            status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
-          },
-          sort
-        )
+        getSupportErrands(municipalityId, page, 1, {
+          ...filter,
+          status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
+        })
           .then((res) => {
             setOngoingSupportErrands(res);
           })
@@ -487,7 +481,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.SUSPENDED}` }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.SUSPENDED}` })
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
@@ -503,7 +497,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.ASSIGNED}` }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.ASSIGNED}` })
           .then((res) => {
             if (res.error) {
               throw new Error('Error occurred when fetching errands');
@@ -519,7 +513,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.SOLVED }, sort)
+        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.SOLVED })
           .then((res) => {
             setSolvedSupportErrands(res);
           })
@@ -534,6 +528,7 @@ export const useSupportErrands = (
       ];
       return Promise.allSettled(sidebarUpdatePromises);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       setSupportErrands,
       setNewSupportErrands,
