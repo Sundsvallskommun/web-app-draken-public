@@ -4,7 +4,7 @@ import { appealErrand, getErrand } from '@casedata/services/casedata-errand-serv
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import router from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -16,6 +16,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
 
+  const router = useRouter();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const saveConfirm = useConfirm();

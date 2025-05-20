@@ -1,3 +1,5 @@
+'use client';
+
 import LoginGuard from '@common/components/login-guard/login-guard';
 import { AppWrapper } from '@common/contexts/app.context';
 import {
@@ -12,12 +14,10 @@ import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import type { AppProps } from 'next/app';
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import 'react-quill/dist/quill.snow.css';
-import '../styles/tailwind.scss';
+import '../../../../styles/tailwind.scss';
 import store from '@supportmanagement/services/storage-service';
-import { appWithTranslation } from 'next-i18next';
-import nextI18NextConfig from '../../next-i18next.config';
 
 dayjs.extend(utc);
 dayjs.locale('se');
@@ -40,7 +40,11 @@ dayjs.updateLocale('se', {
   monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'],
 });
 
-function MyApp({ Component, pageProps }: AppProps) {
+interface ClientApplicationProps {
+  children: ReactNode;
+}
+
+const AppLayout = ({ children }: ClientApplicationProps) => {
   const theme = useMemo(
     () =>
       extendTheme({
@@ -59,13 +63,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     <GuiProvider theme={theme} colorScheme={colorScheme}>
       <ConfirmationDialogContextProvider>
         <AppWrapper>
-          <LoginGuard>
-            <Component {...pageProps} />
-          </LoginGuard>
+          <LoginGuard>{children}</LoginGuard>
         </AppWrapper>
       </ConfirmationDialogContextProvider>
     </GuiProvider>
   );
-}
+};
 
-export default appWithTranslation(MyApp, nextI18NextConfig);
+export default AppLayout;

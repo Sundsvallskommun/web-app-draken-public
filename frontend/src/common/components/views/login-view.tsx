@@ -1,11 +1,15 @@
-import { appConfig } from '@config/appconfig';
-import { Button, FormErrorMessage } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
-import { useEffect, useRef, useState } from 'react';
-import EmptyLayout from '../common/components/empty-layout/empty-layout.component';
+'use client';
 
-export default function Start() {
+import { appConfig } from '@config/appconfig';
+
+import EmptyLayout from '@common/components/empty-layout/empty-layout.component';
+import { Button, FormErrorMessage } from '@sk-web-gui/react';
+import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+
+export default function LoginView() {
   const router = useRouter();
+  const params = useParams();
   const [message, setMessage] = useState<string>();
 
   const initalFocus = useRef(null);
@@ -22,14 +26,14 @@ export default function Start() {
 
   useEffect(() => {
     setInitalFocus();
-    if (router.query?.failMessage === 'SAML_MISSING_GROUP') {
+    if (params?.failMessage === 'SAML_MISSING_GROUP') {
       setMessage('Användaren saknar rätt grupper');
-    } else if (router.query?.failMessage === 'SAML_MISSING_ATTRIBUTES') {
+    } else if (params?.failMessage === 'SAML_MISSING_ATTRIBUTES') {
       setMessage('Användaren saknar attribut');
-    } else if (router.query?.failMessage === 'Missing profile attributes') {
+    } else if (params?.failMessage === 'Missing profile attributes') {
       setMessage('Användaren saknar rätt attribut');
     }
-  }, [router]);
+  }, [params]);
 
   return (
     <>

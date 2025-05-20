@@ -6,13 +6,13 @@ import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
-import { useRouter } from 'next/router';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
-export default function Arende2() {
+export default function ArendeView() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id } = useParams();
   const [errandId, setErrandId] = useState<string>();
   const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
 
@@ -69,8 +69,8 @@ export default function Arende2() {
   );
 }
 
-export const getServerSideProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale, ['common', 'messages'])),
-  },
-});
+// export const getServerSideProps = async ({ locale }) => ({
+//   props: {
+//     ...(await serverSideTranslations(locale, ['common', 'messages'])),
+//   },
+// });

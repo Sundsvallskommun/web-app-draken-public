@@ -19,7 +19,7 @@ import {
   getBillingRecords,
   useBillingRecords,
 } from '@supportmanagement/services/support-billing-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 

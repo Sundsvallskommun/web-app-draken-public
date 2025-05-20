@@ -26,10 +26,6 @@ module.exports = withBundleAnalyzer({
   basePath: process.env.NEXT_PUBLIC_BASEPATH || '',
   experimental: {},
   output: 'standalone',
-  i18n: {
-    locales: ['sv'],
-    defaultLocale: 'sv',
-  },
   sassOptions: {
     prependData: `$basePath: '${process.env.NEXT_PUBLIC_BASEPATH || ''}';`,
   },

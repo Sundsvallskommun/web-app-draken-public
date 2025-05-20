@@ -11,7 +11,7 @@ import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -66,6 +66,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
+  const params = useParams();
   const router = useRouter();
   const { setUser } = useAppContext();
 
@@ -80,7 +81,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     getMe().then((user) => {
       setUser(user);
     });
-    const { id } = router.query;
+    const { id } = params;
     if (id) {
       // Existing errand, load it and show it
       setIsLoading(true);

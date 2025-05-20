@@ -6,7 +6,10 @@
       "dom.iterable",
       "esnext"
     ],
-    "types": ["cypress", "node"],
+    "types": [
+      "cypress",
+      "node"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -31,7 +34,7 @@
       //   "src/utils/*"
       // ],
       "@pages/*": [
-        "src/pages/*"
+        "src/app/*"
       ],
       "@public/*": [
         "src/public/*"
@@ -54,14 +57,22 @@
       "@common/*": [
         "src/common/*"
       ],
-      "@jestRoot/*": [".jest/*"]
+      "@jestRoot/*": [
+        ".jest/*"
+      ]
     },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
+    "**/*.ts",
+    "**/*.tsx",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
-    "**/*.ts",
-    "**/*.tsx"
+    ".next-KC/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
