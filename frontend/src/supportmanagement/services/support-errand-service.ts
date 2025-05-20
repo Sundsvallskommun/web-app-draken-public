@@ -290,12 +290,15 @@ export enum Resolution {
   REGISTERED = 'REGISTERED',
   SENT_MESSAGE = 'SENT_MESSAGE',
   RECRUITED = 'RECRUITED',
+  ABORTED = 'ABORTED',
+  PARTLY = 'PARTLY',
 }
 
 export enum ResolutionLabelLOP {
   CLOSED = 'Avslutat',
   BACK_TO_MANAGER = 'Åter till chef',
   BACK_TO_HR = 'Åter till HR',
+  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
 }
 
 export enum ResolutionLabelIK {
