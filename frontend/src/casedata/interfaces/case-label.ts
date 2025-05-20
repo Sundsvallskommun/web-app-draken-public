@@ -23,7 +23,7 @@ export enum FTCaseLabel {
 }
 
 export enum MEXCaseLabel {
-  'MEX_SQUARE_PLACE' = 'Torgplats',
+  'MEX_SQUARE_PLACE' = 'Ansökan torgplats',
   'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' = 'Begäran om allmän handling',
   'MEX_INVOICE' = 'Faktura',
   'MEX_LEASE_REQUEST' = 'Arrende/Nyttjanderätt',
@@ -35,6 +35,8 @@ export enum MEXCaseLabel {
   'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE' = 'Remiss/Bygglov/Tidig dialog planbesked',
   'MEX_PROTECTIVE_HUNTING' = 'Skyddsjakt',
   'MEX_SELL_LAND_TO_THE_MUNICIPALITY' = 'Kommunens inköp av mark',
+  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE' = 'Köpa kommunal mark, privatperson',
+  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS' = 'Köpa kommunal mark, företag',
   'MEX_EARLY_DIALOG_PLAN_NOTIFICATION' = 'Tidig dialog planbesked',
   'MEX_LAND_RIGHT' = 'Tomträtt',
   'MEX_TERMINATION_OF_LEASE' = 'Arrende/Nyttjanderätt, uppsägning',
@@ -42,10 +44,10 @@ export enum MEXCaseLabel {
   'MEX_APPLICATION_FOR_ROAD_ALLOWANCE' = 'Vägbidrag',
   'MEX_FORWARDED_FROM_CONTACTSUNDSVALL' = 'Ärende från Kontakt Sundsvall',
   'MEX_OTHER' = 'Övrigt',
-  'MEX_BUILDING_PERMIT' = 'Bygglov ',
-  'MEX_STORMWATER' = 'Dagvatten ',
+  'MEX_BUILDING_PERMIT' = 'Bygglov',
+  'MEX_STORMWATER' = 'Dagvatten',
   'MEX_INVASIVE_SPECIES' = 'Invasiva arter',
-  'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL' = 'Markupplåtelseavtal /Värderingsprotokoll ',
+  'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL' = 'Markupplåtelseavtal /Värderingsprotokoll',
   'MEX_LITTERING' = 'Nedskräpning',
   'MEX_REFERRAL_CONSULTATION' = 'Remiss/Samråd',
   'MEX_PUBLIC_SPACE_LEASE' = 'Upplåtelse av allmän/offentlig plats',
@@ -54,8 +56,6 @@ export enum MEXCaseLabel {
   'MEX_ROAD_ASSOCIATION' = 'Vägförening/Samfällighetsförening',
   'MEX_RETURNED_TO_CONTACT_SUNDSVALL' = 'Ärende åter till Kontakt Sundsvall',
   'MEX_SMALL_BOAT_HARBOR_DOCK_PORT' = 'Småbåtshamn/Kaj/Hamn',
-  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE' = 'Köpa kommunal mark, privatperson',
-  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS' = 'Köpa kommunal mark, företag',
 }
 
 export const CaseLabels = {
