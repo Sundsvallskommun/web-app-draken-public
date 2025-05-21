@@ -11,7 +11,7 @@ import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
-import { FTNotificationCaseType } from '@casedata/interfaces/case-type';
+import { CaseTypesHiddenFromRegistration, FTNotificationCaseType } from '@casedata/interfaces/case-type';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -76,7 +76,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   }, [formState]);
 
   const { caseType, priority } = watch();
-  const notificationKeys = Object.keys(FTNotificationCaseType);
+  const caseTypesHiddenFromRegistation = Object.keys(CaseTypesHiddenFromRegistration);
 
   return (
     <div className="w-full py-24 px-32">
@@ -179,7 +179,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               >
                 <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
                 {Object.entries(getCaseLabels())
-                  .filter(([key]) => !notificationKeys.includes(key) && key !== 'APPEAL')
+                  .filter(([key]) => !caseTypesHiddenFromRegistation.includes(key))
+                  // .filter(([key]) => !notificationKeys.includes(key) && key !== 'APPEAL')
                   .sort((a, b) => a[1].localeCompare(b[1]))
                   .map(([key, label]: [string, string], index) => {
                     return (

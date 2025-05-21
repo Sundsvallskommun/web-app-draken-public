@@ -56,6 +56,8 @@ export enum MEXCaseLabel {
   'MEX_ROAD_ASSOCIATION' = 'Vägförening/Samfällighetsförening',
   'MEX_RETURNED_TO_CONTACT_SUNDSVALL' = 'Ärende åter till Kontakt Sundsvall',
   'MEX_SMALL_BOAT_HARBOR_DOCK_PORT' = 'Småbåtshamn/Kaj/Hamn',
+  'MEX_TRAINING_SEMINAR' = 'Utbildning/seminarium',
+  'MEX_LAND_RESERVATION' = 'Markreservation',
 }
 
 export const CaseLabels = {
