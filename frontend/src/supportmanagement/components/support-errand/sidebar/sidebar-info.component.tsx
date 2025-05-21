@@ -30,7 +30,7 @@ import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 import { isROB } from '@common/services/application-service';
-import { StartProcessComponent } from './start-process-component.component';
+import { StartProcessComponent } from './start-process.component';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
