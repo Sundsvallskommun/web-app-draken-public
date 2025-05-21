@@ -213,7 +213,13 @@ export const approveBillingRecord: (municipalityId: string, record: CBillingReco
   municipalityId,
   record,
   user
-) => setBillingRecordStatus(municipalityId, record, CBillingRecordStatusEnum.APPROVED, user);
+) => {
+  let data: CBillingRecord = {
+    ...record,
+    invoice: { ...record.invoice, ourReference: `${user.firstName} ${user.lastName}` },
+  };
+  return setBillingRecordStatus(municipalityId, data, CBillingRecordStatusEnum.APPROVED, user);
+};
 
 export const rejectBillingRecord: (municipalityId: string, record: CBillingRecord, user: User) => Promise<boolean> = (
   municipalityId,
