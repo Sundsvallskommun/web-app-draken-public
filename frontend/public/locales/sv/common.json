@@ -19,9 +19,22 @@
     }
   },
   "overview": {
+    "status": "Status",
+    "lastActivity": "Senaste aktivitet",
     "orderType": {
       "ROB": "Beställningstyp",
       "default": "Verksamhet"
-    }
+    },
+    "errandType": {
+      "MSVA": "Ärendekategori",
+      "LOP": "Ärendekategori",
+      "default": "Ärendetyp"
+    },
+    "incomingVia": "Inkom via",
+    "registered": "Registrerades",
+    "registeredBy": "Registrerad av",
+    "priority": "Prioritet",
+    "reminder": "Påminnelse",
+    "responsible": "Ansvarig"
   }
 }

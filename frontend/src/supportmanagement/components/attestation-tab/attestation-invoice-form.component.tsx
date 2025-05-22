@@ -131,7 +131,6 @@ export const AttestationInvoiceForm: React.FC<{
           <Select.Option value={CBillingRecordStatusEnum.NEW}>Inget beslut</Select.Option>
           <Select.Option value={CBillingRecordStatusEnum.APPROVED}>Godkänn</Select.Option>
           <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avslå</Select.Option>
-          <Select.Option value={CBillingRecordStatusEnum.INVOICED}>Fakturerad</Select.Option>
         </Select>
         <Button
           variant="secondary"

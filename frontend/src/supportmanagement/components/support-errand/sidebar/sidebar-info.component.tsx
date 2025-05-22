@@ -360,6 +360,15 @@ export const SidebarInfo: React.FC<{
       case Resolution.SENT_MESSAGE: {
         return solutionComponent('Meddelande', 'skickade ett meddelande.', 'check');
       }
+      case Resolution.RECRUITED: {
+        return solutionComponent('Rekryterad', 'avslutade ärendet.', 'check');
+      }
+      case Resolution.ABORTED: {
+        return solutionComponent('Avbrutet', 'avslutade ärendet.', 'check');
+      }
+      case Resolution.PARTLY: {
+        return solutionComponent('Delvis', 'avslutade ärendet.', 'check');
+      }
     }
   };
 

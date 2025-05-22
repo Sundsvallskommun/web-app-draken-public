@@ -1,10 +1,9 @@
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Channels, ContactChannelType, SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
 
 const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
-const maybeList: (s: any) => string[] = (s) => (s?.length > 0 ? s : []);
 
 const extractContactInfo = (c: SupportStakeholderFormModel) => {
   const name = maybe(c && `${c?.firstName || ''} ${c?.lastName || ''}`);
@@ -41,10 +40,6 @@ export const getEscalationMessage: (
 ) => Promise<string> = async (e, existingAttachments, metadata, user) => {
   const department = isKC() ? 'Sundsvalls kommun' : appConfig.applicationName;
   const description = maybe(e?.description);
-  const files = maybeList(existingAttachments?.map((a) => a.fileName));
-  const attachments = maybeList(e?.attachments?.map((a) => a.file?.[0].name));
-  const allFiles = [...files, ...attachments].join(', ');
-  const caseId = maybe(e?.externalTags?.find((t) => t.key === 'caseId')?.value || e?.caseId);
   const channel = maybe(e?.channel && Channels[e?.channel]);
   const categories = metadata.categories;
   const categoryObject = categories.find((t) => t.name === e?.category);
@@ -120,7 +115,7 @@ Med vänliga hälsningar
 <br>
 <b>${department}</b>
 ${isLOP() ? 'Handläggare' : isKC() ? 'Kommunvägledare' : isIK() ? 'Kundtjänstmedarbetare' : ''} ${user}
-Telefon: +46 60 19 10 00
+Telefon: ${isKA() ? '0690-25 01 00 (växel)' : '+46 60 19 10 00'}
 `;
 };
 
