@@ -1,3 +1,4 @@
+import { Relation } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
@@ -19,11 +20,10 @@ export class RelationsController {
   async createRelation(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() relationbody: any,
+    @Body() relationbody: Relation,
   ): Promise<{ data: any; message: string }> {
     const url = `${municipalityId}/relations`;
     const baseURL = apiURL(this.SERVICE);
-    console.log('relationbody', relationbody);
     const response = await this.apiService.post<any, any>({ url, baseURL, data: relationbody }, req.user).catch(e => {
       console.log('Something went wrong when creating relation: ' + e);
       throw e;
@@ -42,7 +42,7 @@ export class RelationsController {
   ): Promise<{ data: boolean; message: string }> {
     const baseURL = apiURL(this.SERVICE);
     if (!id) {
-      throw 'Id not found. Cannot delete relation without id.';
+      console.log('Id not found. Cannot delete relation without id.');
     }
     const url = `${municipalityId}/relations/${id}`;
     const response = await this.apiService.delete<boolean>({ url, baseURL }, req.user).catch(e => {
