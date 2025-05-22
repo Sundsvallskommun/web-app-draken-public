@@ -26,6 +26,7 @@ let formSchema = yup
     type: yup.string().required('Välj ärendetyp'),
     channel: yup.string().required('Välj kanal'),
     description: yup.string(),
+    parameters: yup.array(),
   })
   .required();
 
