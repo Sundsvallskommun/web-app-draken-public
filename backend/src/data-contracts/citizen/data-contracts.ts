@@ -70,10 +70,6 @@ export interface CustodyChildrenPupil {
   unRegDate?: string | null;
 }
 
-export interface ModelPostPerson {
-  personalNumber?: string | null;
-}
-
 export interface PersonGuidBatch {
   personNumber?: string | null;
   /** @format uuid */

@@ -1,8 +1,10 @@
 import { useAppContext } from '@common/contexts/app.context';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
+import { SupportErrandBasicsRelationsDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-relations-disclosure/support-errand-basics-relations-disclosure.component';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { ApiSupportErrand, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, SetStateAction } from 'react';
@@ -52,14 +54,15 @@ export const SupportErrandBasicsTab: React.FC<{
         />
       ) : null}
 
-      {/* <SupportErrandBasicsOwnerDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
-      {/* <SupportErrandBasicsStakeholdersDisclosure setUnsaved={props.setUnsaved} update={props.update} /> */}
-
       {appConfig.features.useFacilities ? (
         <SupportErrandBasicsRealEstateDisclosure
           setUnsavedFacility={props.setUnsavedFacility}
           supportErrand={supportErrand}
         />
+      ) : null}
+
+      {getApplicationEnvironment() === 'TEST' && appConfig.features.useRelations ? (
+        <SupportErrandBasicsRelationsDisclosure supportErrand={supportErrand} />
       ) : null}
     </div>
   );

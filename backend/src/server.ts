@@ -28,6 +28,8 @@ import { SupportNotificationController } from './controllers/supportmanagement/s
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 import { ExportController } from '@controllers/export.controller';
+import { RelationsController } from './controllers/relations.controller';
+import { CaseStatusController } from './controllers/casestatus.controller';
 
 validateEnv();
 
@@ -60,6 +62,8 @@ const app = new App([
   SupportNotificationController,
   TemplateController,
   UserController,
+  RelationsController,
+  CaseStatusController,
 ]);
 
 app.listen();

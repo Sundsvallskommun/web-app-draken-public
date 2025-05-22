@@ -9,6 +9,22 @@
  * ---------------------------------------------------------------
  */
 
+export interface ErrorResponse {
+  /** The error message. */
+  error?: Error[];
+}
+
+export interface Error {
+  /** The path of the error. */
+  path?: string;
+  /** The error code. */
+  errorCode?: string;
+  /** A clearification on the error. */
+  message?: string;
+  /** The location of the error. */
+  location?: string;
+}
+
 export interface EstateDesignationResponse {
   /** The designation of the estate. */
   designation?: string;
