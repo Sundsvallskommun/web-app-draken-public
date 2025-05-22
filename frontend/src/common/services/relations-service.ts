@@ -64,7 +64,7 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     .deleteRequest<ApiResponse<boolean>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      console.error('Something went wrong when deleting relation: ' + e);
       throw e;
     });
 };
@@ -76,7 +76,7 @@ export const getRelations = (municipalityId: string, sourceId: string) => {
     .get<ApiResponse<any>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      console.error('Something went wrong when getting relation: ' + e);
       throw e;
     });
 };
