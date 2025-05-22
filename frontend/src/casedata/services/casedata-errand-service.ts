@@ -115,6 +115,10 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
   }
 };
 
+export const isFTErrand = (errand: IErrand) => {
+  return Object.values(FTCaseType).includes(errand.caseType as FTCaseType);
+};
+
 export const findPriorityKeyForPriorityLabel = (key: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
 
