@@ -127,7 +127,6 @@ export const CasedataInvestigationTab: React.FC<{
 
   const save = async (data: UtredningFormModel) => {
     try {
-      console.log('save', data);
       setIsLoading(true);
       if (isFTErrand(props.errand)) {
         data.outcome = 'APPROVAL';
