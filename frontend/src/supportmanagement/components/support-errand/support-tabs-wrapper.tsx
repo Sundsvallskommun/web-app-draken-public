@@ -1,5 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment, isIK, isLOP } from '@common/services/application-service';
+import { isIK, isLOP } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
@@ -25,6 +25,8 @@ import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
 export const SupportTabsWrapper: React.FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
+  showMessageForm: boolean;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
   const [messageTree, setMessageTree] = useState([]);
@@ -43,10 +45,8 @@ export const SupportTabsWrapper: React.FC<{
     setSupportAttachments: (e: SupportAttachment[]) => void;
   } = useAppContext();
 
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -118,6 +118,8 @@ export const SupportTabsWrapper: React.FC<{
           setUnsaved={setUnsavedChanges}
           update={update}
           municipalityId={municipalityId}
+          showMessageForm={props.showMessageForm}
+          setShowMessageForm={props.setShowMessageForm}
         />
       ),
       disabled: false,
