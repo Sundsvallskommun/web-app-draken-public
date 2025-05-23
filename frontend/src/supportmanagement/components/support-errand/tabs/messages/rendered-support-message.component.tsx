@@ -219,7 +219,7 @@ export const RenderedSupportMessage: React.FC<{
 
         <div
           className={`message-${message.communicationID} px-xl ${
-            expanded ? 'max-h-[400vh]' : 'max-h-0 overflow-hidden'
+            expanded ? '' : 'max-h-0 overflow-hidden'
           } transition-[max-height] ease-in-out`}
         >
           {message?.communicationAttachments.length > 0 ? (
