@@ -519,6 +519,7 @@ export const useErrands = (
       ];
       return Promise.allSettled(fetchPromises);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       setErrands,
       setNewErrands,
@@ -540,6 +541,7 @@ export const useErrands = (
     if (size && size > 0) {
       fetchErrands().then(() => setIsLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, size, sort]);
 
   useEffect(() => {

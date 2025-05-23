@@ -256,14 +256,17 @@ export const CasedataInvestigationTab: React.FC<{
     setValue('errandNumber', props.errand.errandNumber);
     props.setUnsaved(false);
     trigger();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.errand]);
 
   useEffect(() => {
     props.setUnsaved(textIsDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textIsDirty]);
 
   useEffect(() => {
     props.setUnsaved(formState.isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState.isDirty]);
 
   useEffect(() => {
@@ -275,6 +278,7 @@ export const CasedataInvestigationTab: React.FC<{
         props.setUnsaved(textIsDirty);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description]);
 
   return (
