@@ -1,9 +1,10 @@
-import { DecisionOutcome, DecisionOutcomeKey, DecisionOutcomeLabel } from '@casedata/interfaces/decision';
+import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
+  getLawMapping,
   lawMapping,
   renderBeslutPdf,
   renderHtml,
@@ -118,28 +119,15 @@ export const CasedataDecisionTab: React.FC<{
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
-  const [selectedBeslut, setselectedBeslut] = useState<number>(1);
-  const [textIsDirty, setTextIsDirty] = useState(false);
+  const selectedBeslut = 1;
   const [richText, setRichText] = useState<string>('');
   const [error, setError] = useState<string>();
   const quillRef = useRef(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
-  const [lawHeading, setLawHeading] = useState<string>('');
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (lawHeading) {
-      setValue(
-        'law',
-        lawMapping.filter((law) => {
-          return law.heading === lawHeading;
-        })
-      );
-    }
-  }, [lawHeading]);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -148,10 +136,8 @@ export const CasedataDecisionTab: React.FC<{
 
   const {
     register,
-    control,
     handleSubmit,
     watch,
-    reset,
     trigger,
     formState,
     setValue,
@@ -164,7 +150,7 @@ export const CasedataDecisionTab: React.FC<{
       description: '',
       errandId: errand.id,
       errandNumber: errand.errandNumber,
-      law: [lawMapping[0]],
+      law: getLawMapping(errand),
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
       outcome: 'Välj beslut',
       validFrom: '',
@@ -192,6 +178,7 @@ export const CasedataDecisionTab: React.FC<{
 
   useEffect(() => {
     props.setUnsaved(formState.isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {
@@ -430,7 +417,6 @@ export const CasedataDecisionTab: React.FC<{
       setValue('id', existingDecision.id.toString());
       setValue('description', existingDecision.description);
       setRichText(existingDecision.description);
-      setLawHeading(existingDecision.law?.[0]?.heading);
       setValue('outcome', existingDecision.decisionOutcome);
       setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
       setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
@@ -438,6 +424,7 @@ export const CasedataDecisionTab: React.FC<{
       setValue('id', undefined);
     }
     trigger();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const changeTemplate = (InTemplate) => {
@@ -541,9 +528,7 @@ export const CasedataDecisionTab: React.FC<{
                   onChange={(e) => {
                     setValue(
                       'law',
-                      lawMapping.filter((law) => {
-                        return law.heading === e.target.value;
-                      }),
+                      getLawMapping(errand).filter((law) => law.heading === e.target.value),
                       { shouldDirty: true }
                     );
                     props.setUnsaved(true);
@@ -553,13 +538,11 @@ export const CasedataDecisionTab: React.FC<{
                   value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                 >
                   <Select.Option value={''}>Välj lagrum</Select.Option>
-                  {lawMapping.map((law, index) => {
-                    return (
-                      <Select.Option key={index} value={law.heading}>
-                        {law.heading}
-                      </Select.Option>
-                    );
-                  })}
+                  {getLawMapping(errand).map((law, index) => (
+                    <Select.Option key={index} value={law.heading}>
+                      {law.heading}
+                    </Select.Option>
+                  ))}
                 </Select>
                 <div className="my-sm text-error">
                   {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
@@ -635,10 +618,7 @@ export const CasedataDecisionTab: React.FC<{
             toggleModal={() => {
               setIsEditorModalOpen(!isEditorModalOpen);
             }}
-            onChange={(value, delta, source, editor) => {
-              if (source === 'user') {
-                setTextIsDirty(true);
-              }
+            onChange={(value) => {
               return onRichTextChange(value);
             }}
           />
