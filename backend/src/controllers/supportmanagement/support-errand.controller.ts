@@ -475,10 +475,10 @@ export class SupportErrandController {
       const labelTypeList = labelType?.split(',');
       let labels = labelSubType ? labelSubType.split(',') : labelType ? labelType.split(',') : labelCategory.split(',');
       if (labelCategory) {
-        labels = labels.filter(l => labelCategoryList.some(c => l.includes(c)));
+        labels = labels.filter(l => labelCategoryList.some(c => l.split('.')[0] === c));
       }
       if (labelType) {
-        labels = labels.filter(l => labelTypeList.some(c => l.includes(c)));
+        labels = labels.filter(l => labelTypeList.some(c => l.split('.')[0] === c));
       }
       const ss = labels
         .join(',')
