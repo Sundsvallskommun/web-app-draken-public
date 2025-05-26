@@ -4,7 +4,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { Role } from '@casedata/interfaces/role';
 import { getAssets } from '@casedata/services/asset-service';
-import { getErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
+import { getErrand, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
 import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isPT } from '@common/services/application-service';
@@ -19,6 +19,7 @@ import { CasedataDecisionTab } from './tabs/decision/casedata-decision-tab';
 import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
+import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
@@ -85,6 +86,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           });
       }, 2000);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     const _ = Object.keys(methods.formState.dirtyFields).length;
     const __ = methods.formState.isDirty;
     setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [methods.getValues()]);
 
   const tabs: {
@@ -250,6 +253,24 @@ export const CasedataTabsWrapper: React.FC = () => {
       visibleFor:
         isPT() && errand?.id
           ? [
+              ErrandPhase.utredning,
+              ErrandPhase.beslut,
+              ErrandPhase.hantera,
+              ErrandPhase.verkstalla,
+              ErrandPhase.uppfoljning,
+              ErrandPhase.canceled,
+              ErrandPhase.overklagad,
+            ]
+          : [],
+    },
+    {
+      label: 'Insatser',
+      content: errand?.id && <CasedataServicesTab />,
+      disabled: !errand?.id,
+      visibleFor:
+        isFTErrand(errand) && errand?.id
+          ? [
+              ErrandPhase.aktualisering,
               ErrandPhase.utredning,
               ErrandPhase.beslut,
               ErrandPhase.hantera,
