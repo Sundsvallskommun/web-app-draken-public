@@ -1,6 +1,6 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { createAndClickPdfLink, exportErrands } from '@common/services/export-service';
+import { downloadPdf, exportErrands } from '@common/services/export-service';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
@@ -24,7 +24,7 @@ export const ExportButton: React.FC<ExportButtonProps> = (props) => {
   const handleExportErrands = () => {
     setIsExportLoading(true);
     exportErrands(municipalityId, errands.errands).then((pdf) => {
-      createAndClickPdfLink(
+      downloadPdf(
         pdf,
         `Arendelista-${dayjs().format('YYYY-MM-DD')}.pdf`,
         () => setIsExportLoading(false),

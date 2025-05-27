@@ -1,6 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { createAndClickPdfLink, downloadAttachment, exportSingleErrand } from '@common/services/export-service';
+import { downloadPdf, downloadAttachment, exportSingleErrand } from '@common/services/export-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
@@ -44,7 +44,7 @@ export const SidebarExport: React.FC = () => {
 
     exportSingleErrand(municipalityId, errand, excludeParameters)
       .then((pdf) => {
-        createAndClickPdfLink(
+        downloadPdf(
           pdf,
           `${errand.errandNumber}.pdf`,
           () => setIsExportLoading(false),

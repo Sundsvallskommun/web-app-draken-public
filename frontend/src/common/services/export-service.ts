@@ -4,6 +4,18 @@ import { getExtraParametersLabels } from '@casedata/services/casedata-extra-para
 import { Render } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 
+const renderPdf = (url, data, exportParameters) =>
+  apiService
+    .post<ApiResponse<Render>, (IErrand & { caseLabel: string })[]>(url, data, exportParameters)
+    .then((res) => {
+      const pdfBase64 = res.data.data.output;
+
+      return { pdfBase64 };
+    })
+    .catch((e) => {
+      throw new Error('Något gick fel när ärendelistan skulle exporteras');
+    });
+
 export const exportErrands: (
   municipalityId: string,
   errandsData: IErrand[],
@@ -19,16 +31,7 @@ export const exportErrands: (
     caseLabel: MEXCaseLabel[errand.caseType],
   }));
 
-  return apiService
-    .post<ApiResponse<Render>, (IErrand & { caseLabel: string })[]>(url, preparedErrands, exportParameters)
-    .then((res) => {
-      const pdfBase64 = res.data.data.output;
-
-      return { pdfBase64 };
-    })
-    .catch((e) => {
-      throw new Error('Något gick fel när ärendelistan skulle exporteras');
-    });
+  return renderPdf(url, preparedErrands, exportParameters);
 };
 
 export const exportSingleErrand: (
@@ -50,19 +53,20 @@ export const exportSingleErrand: (
     })),
   };
 
-  return apiService
-    .post<ApiResponse<Render>, IErrand & { caseLabel: string }>(url, preparedErrand, exportParameters)
-    .then((res) => {
-      const pdfBase64 = res.data.data.output;
-
-      return { pdfBase64 };
-    })
-    .catch((e) => {
-      throw new Error('Något gick fel när ärendelistan skulle exporteras');
-    });
+  return renderPdf(url, preparedErrand, exportParameters);
 };
 
-export const createAndClickPdfLink = (d: { pdfBase64: string; error?: string }, name, successHandler, errorHandler) => {
+const downloadFile = (name: string, url: string) => {
+  const link = document.createElement('a');
+  link.setAttribute('download', name);
+  link.href = url;
+  link.setAttribute('target', '_blank');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+export const downloadPdf = (d: { pdfBase64: string; error?: string }, name, successHandler, errorHandler) => {
   if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
     const byteCharacters = atob(d.pdfBase64);
     const byteNumbers = new Array(byteCharacters.length);
@@ -73,13 +77,7 @@ export const createAndClickPdfLink = (d: { pdfBase64: string; error?: string }, 
     const blob = new Blob([byteArray], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
 
-    const link = document.createElement('a');
-    link.setAttribute('download', name);
-    link.href = url;
-    link.setAttribute('target', '_blank');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(name, url);
     URL.revokeObjectURL(url);
     successHandler();
   } else {
@@ -89,11 +87,6 @@ export const createAndClickPdfLink = (d: { pdfBase64: string; error?: string }, 
 
 export const downloadAttachment = (attachment, errand) => {
   const uri = `data:${attachment.mimeType};base64,${attachment.file}`;
-  const link = document.createElement('a');
   const filename = attachment.name;
-  link.href = uri;
-  link.setAttribute('download', `${errand.errandNumber}-${filename}`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  downloadFile(filename, uri);
 };
