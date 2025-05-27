@@ -250,6 +250,7 @@ export const SimplifiedContactForm: React.FC<{
     if (manual && !editing) {
       resetPersonNumber();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manual]);
 
   useEffect(() => {
@@ -258,6 +259,7 @@ export const SimplifiedContactForm: React.FC<{
       setValue(`stakeholderType`, contact.stakeholderType);
     }
     setValue(`newRole`, contact.roles[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, contact]);
 
   const validEmailOrPhonenumberExists = () =>
@@ -267,6 +269,7 @@ export const SimplifiedContactForm: React.FC<{
     if (!validEmailOrPhonenumberExists()) {
       // setValue(`messageAllowed`, false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emails, phoneNumbers]);
 
   useEffect(() => {
@@ -276,6 +279,7 @@ export const SimplifiedContactForm: React.FC<{
     ) {
       resetPersonNumber();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstName, lastName, organizationName]);
 
   const onSubmit = () => {

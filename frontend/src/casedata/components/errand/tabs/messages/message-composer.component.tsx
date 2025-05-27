@@ -366,6 +366,8 @@ export const MessageComposer: React.FC<{
       setRichText(t('messages:templates.email.MEX.internal_referral_wire') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralWireCheck') {
       setRichText(t('messages:templates.email.MEX.internal_referral_wire_check') + defaultSignature());
+    } else if (inTemplateValue === 'mex-treeRemovalRequestRejection') {
+      setRichText(t('messages:templates.email.MEX.tree_removal_request_rejection') + defaultSignature());
     } else {
       setRichText(t('messages:templates.email.default') + defaultSignature());
     }
@@ -449,6 +451,7 @@ export const MessageComposer: React.FC<{
                   <Select.Option value="mex-internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
                   <Select.Option value="mex-internalReferralWire">Internremiss ledningar</Select.Option>
                   <Select.Option value="mex-internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
+                  <Select.Option value="mex-treeRemovalRequestRejection">Träd - nekande svar</Select.Option>
                 </>
               ) : isPT() ? (
                 <>
