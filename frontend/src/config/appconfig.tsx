@@ -10,6 +10,7 @@ export interface AppConfig {
 }
 
 interface AppConfigFeatures {
+  useErrandExport: boolean;
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
   useExplanationOfTheCause: boolean;
@@ -32,6 +33,7 @@ export const appConfig: AppConfig = {
   isCaseData: process.env.NEXT_PUBLIC_IS_CASEDATA === 'true',
   isSupportManagement: process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT === 'true',
   features: {
+    useErrandExport: process.env.NEXT_PUBLIC_USE_ERRAND_EXPORT === 'true',
     useThreeLevelCategorization: process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION === 'true',
     useTwoLevelCategorization: process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION === 'true',
     useExplanationOfTheCause: process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE === 'true',

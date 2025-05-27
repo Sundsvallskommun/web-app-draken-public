@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Button, Checkbox, FormControl, useConfirm } from '@sk-web-gui/react';
 import { IErrand } from '@casedata/interfaces/errand';
-import { useAppContext } from '@contexts/app.context';
-import { useForm } from 'react-hook-form';
-import { exportErrands } from '@common/services/export-service';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { createAndClickPdfLink, downloadAttachment, exportSingleErrand } from '@common/services/export-service';
+import { useAppContext } from '@contexts/app.context';
+import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 interface ExportParameters {
   basicInformation: boolean;
@@ -17,8 +17,9 @@ interface ExportParameters {
 
 export const SidebarExport: React.FC = () => {
   const { municipalityId, errand }: { municipalityId: string; errand: IErrand } = useAppContext();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const exportConfirm = useConfirm();
+  const toastMessage = useSnackbar();
 
   const { register, getValues } = useForm<ExportParameters>({
     defaultValues: {
@@ -36,13 +37,42 @@ export const SidebarExport: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    setIsLoading(true);
+    setIsExportLoading(true);
     const excludeParameters = Object.entries(getValues())
       .map(([key, value]) => !value && key)
       .filter(Boolean);
 
-    exportErrands(municipalityId, [errand], excludeParameters).then(() => {});
-    setIsLoading(false);
+    exportSingleErrand(municipalityId, errand, excludeParameters)
+      .then((pdf) => {
+        createAndClickPdfLink(
+          pdf,
+          `${errand.errandNumber}.pdf`,
+          () => setIsExportLoading(false),
+          () => {
+            setIsExportLoading(false);
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Något gick fel när ärendeexporten genererades',
+              status: 'error',
+            });
+          }
+        );
+      })
+      .then(() => {
+        if (!excludeParameters.includes('attachments')) {
+          errand.attachments.forEach((a) => downloadAttachment(a, errand));
+        }
+      })
+      .catch((error) => {
+        setIsExportLoading(false);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när ärendet skulle exporteras',
+          status: 'error',
+        });
+      });
   };
 
   return (
@@ -90,7 +120,7 @@ export const SidebarExport: React.FC = () => {
           }}
           className="mt-24"
           color="vattjom"
-          loading={isLoading}
+          loading={isExportLoading}
           data-cy="export-button"
         >
           Exportera ärende
