@@ -340,7 +340,9 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'email') {
-      setValue('emails', [{ value: props.prefillEmail }]);
+      if (props.prefillEmail !== undefined) {
+        setValue('emails', [{ value: props.prefillEmail }]);
+      }
       setRichText(emailBody);
     } else if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
