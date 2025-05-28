@@ -100,21 +100,15 @@ export const getRecruitmentParameters = (errand: SupportErrandDto) => {
   const templateParameters = [...template['RECRUITMENT']];
   const errandParameters = errand.parameters.filter((p) => p.key.startsWith('recruitment@'));
 
-  // Kombinera template och ärendets sparade värden
-
-  const reducedTemplate = templateParameters.reduce(function (r, a) {
+  const reducer = function (r, a) {
     const groupKey = a.key.split('_')[0];
-    r[groupKey] = r[groupKey] || [];
+    r[groupKey] = r[groupKey] ?? [];
     r[groupKey].push(a);
     return r;
-  }, Object.create(null));
+  };
 
-  const reducedErrand = errandParameters.reduce(function (r, a) {
-    const groupKey = a.key.split('_')[0];
-    r[groupKey] = r[groupKey] || [];
-    r[groupKey].push(a);
-    return r;
-  }, Object.create(null));
+  const reducedTemplate = templateParameters.reduce(reducer, Object.create(null));
+  const reducedErrand = errandParameters.reduce(reducer, Object.create(null));
 
   const combined = { ...reducedTemplate, ...reducedErrand };
 
@@ -122,7 +116,6 @@ export const getRecruitmentParameters = (errand: SupportErrandDto) => {
 };
 
 export const saveParameters = (errandId, municipalityId, parameters: { [key: string]: Parameter[] }) => {
-  // Platta ut alla värden i parameters-objektet eftersom det är en lista med listor
   const paramsList = Object.values(parameters).flat(1);
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
