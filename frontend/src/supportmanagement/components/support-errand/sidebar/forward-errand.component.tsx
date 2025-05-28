@@ -160,12 +160,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         if (msg) {
           const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
           const adminName = getAdminName(admin, supportErrand);
-          return sendClosingMessage(
-            adminName,
-            supportErrand,
-            ResolutionLabelKS.REGISTERED_EXTERNAL_SYSTEM,
-            municipalityId
-          );
+          return sendClosingMessage(adminName, supportErrand, municipalityId);
         }
       })
       .then(() => {
