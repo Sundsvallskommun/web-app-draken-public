@@ -401,6 +401,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   newAttachment: undefined,
   attachments: [],
   externalTags: [],
+  parameters: [],
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
@@ -804,6 +805,7 @@ export const updateSupportErrand: (
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
     externalTags: formdata.externalTags || [],
+    parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {
     data.externalTags.push({

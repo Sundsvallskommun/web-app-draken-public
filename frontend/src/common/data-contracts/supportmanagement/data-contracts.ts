@@ -563,6 +563,8 @@ export interface Parameter {
   displayName?: string;
   /** Parameter values */
   values?: string[];
+  /** Parameter group */
+  group?: string;
 }
 
 /** Priority model */
