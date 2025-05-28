@@ -9,8 +9,10 @@ import { SupportMessageForm } from '../../../support-message-form/support-messag
 import MessageTreeComponent from './support-messages-tree.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useTranslation } from 'next-i18next';
-import { User } from '@common/interfaces/user';
-import { isKA } from '@common/services/application-service';
+import {
+  getDefaultEmailBody,
+  getDefaultSmsBody,
+} from '@supportmanagement/components/templates/default-message-template';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -31,35 +33,6 @@ export const SupportMessagesTab: React.FC<{
   const [sortedMessages, setSortedMessages] = useState(props.messages);
   const { t } = useTranslation();
 
-  function getDefaultEmailBody(user: User, t): string {
-    if (isKA()) {
-      return t('messages:templates.email.KA.normal', {
-        user: `${user.firstName} ${user.lastName}`,
-        defaultValue: t('messages:templates.email.default'),
-      });
-    }
-
-    const app = process.env.NEXT_PUBLIC_APPLICATION;
-    return t(`messages:templates.email.${app}`, {
-      user: `${user.firstName} ${user.lastName}`,
-      defaultValue: t('messages:templates.email.default'),
-    });
-  }
-
-  function getDefaultSmsBody(user: User, t): string {
-    if (isKA()) {
-      return t('messages:templates.sms.KA.normal', {
-        user: user.firstName,
-        defaultValue: t('messages:templates.sms.default'),
-      });
-    }
-
-    const app = process.env.NEXT_PUBLIC_APPLICATION;
-    return t(`messages:templates.sms.${app}`, {
-      user: user.firstName,
-      defaultValue: t('messages:templates.sms.default'),
-    });
-  }
   const emailBody = getDefaultEmailBody(user, t);
   const smsBody = getDefaultSmsBody(user, t);
 
