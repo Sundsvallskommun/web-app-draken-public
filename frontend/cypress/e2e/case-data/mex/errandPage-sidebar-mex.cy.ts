@@ -12,7 +12,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockContract } from '../fixtures/mockContract';
-import { isExportEnabled } from '@common/services/feature-flag-service';
+import { appConfig } from '@config/appconfig';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -203,7 +203,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('manages Exports', () => {
-      if (isExportEnabled()) {
+      if (appConfig.features.useErrandExport) {
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
         cy.get('[data-cy="basicInformation"]').should('exist');
         cy.get('[data-cy="export-button"]').should('exist').click();
