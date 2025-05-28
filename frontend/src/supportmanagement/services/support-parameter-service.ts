@@ -93,6 +93,12 @@ const template: ParametersObject = {
       group: 'Återkoppling',
       values: ['Återkoppling till övriga kandidater', 'false', ''],
     },
+    {
+      key: 'recruitment@other_0',
+      displayName: 'Antal rekryterade',
+      group: 'Antal rekryterade',
+      values: ['Antal rekryterade', undefined, '', 'number'],
+    },
   ],
 };
 

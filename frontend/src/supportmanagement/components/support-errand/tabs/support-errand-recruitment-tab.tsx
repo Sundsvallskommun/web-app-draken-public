@@ -62,7 +62,6 @@ export const SupportErrandRecruitmentTab: React.FC<{
               });
             });
             errandForm.setValue('parameters', toParams, { shouldDirty: true });
-            console.log('toParams2', toParams);
             props.setUnsaved(true);
           }}
           className="w-full"
@@ -94,26 +93,39 @@ export const SupportErrandRecruitmentTab: React.FC<{
                         {val.group}
                       </FormLabel>
                       <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
-                      <Checkbox
-                        defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
-                        onChange={(e) => {
-                          recruitmentForm.setValue(
-                            `${key}.${index}.values.1`,
-                            e.currentTarget.checked === true ? 'true' : 'false'
-                          );
-                        }}
-                        className="block py-16"
-                      >
-                        {val.values[0]}
-                      </Checkbox>
+                      {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`)) ? (
+                        <Checkbox
+                          defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
+                          onChange={(e) => {
+                            recruitmentForm.setValue(
+                              `${key}.${index}.values.1`,
+                              e.currentTarget.checked === true ? 'true' : 'false'
+                            );
+                          }}
+                          className="block py-16"
+                        >
+                          {val.values[0]}
+                        </Checkbox>
+                      ) : null}
 
-                      <Textarea
-                        className="w-full"
-                        rows={3}
-                        {...recruitmentForm.register(`${key}.${index}.values.2`)}
-                        placeholder="Anteckningar..."
-                        value={recruitmentForm.getValues(`${key}.${index}.values.2`)}
-                      />
+                      {recruitmentForm.getValues(`${key}.${index}.values.3`) === 'number' ? (
+                        <div>
+                          <Input
+                            {...recruitmentForm.register(`${key}.${index}.values.2`)}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="\d*"
+                          />
+                        </div>
+                      ) : (
+                        <Textarea
+                          className="w-full"
+                          rows={3}
+                          {...recruitmentForm.register(`${key}.${index}.values.2`)}
+                          placeholder="Anteckningar..."
+                          value={recruitmentForm.getValues(`${key}.${index}.values.2`)}
+                        />
+                      )}
                     </div>
                   );
                 })}
