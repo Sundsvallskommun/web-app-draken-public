@@ -24,7 +24,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
     const ps = getRecruitmentParameters(supportErrand);
     setParameters(ps);
     recruitmentForm.reset(structuredClone(ps));
-  }, [supportErrand, recruitmentForm.reset]);
+  }, [supportErrand, recruitmentForm]);
 
   const handleSubmit = async () => {
     setLoading(true);
