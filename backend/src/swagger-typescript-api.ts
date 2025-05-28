@@ -34,7 +34,7 @@ const APIS = [
   },
   {
     name: 'messaging',
-    version: '5.1',
+    version: '7.0',
   },
   {
     name: 'case-data',
@@ -46,7 +46,7 @@ const APIS = [
   },
   {
     name: 'businessengagements',
-    version: '2.0',
+    version: '3.0',
   },
   {
     name: 'billingpreprocessor',
@@ -55,6 +55,14 @@ const APIS = [
   {
     name: 'legalentity',
     version: '2.0',
+  },
+  {
+    name: 'relations',
+    version: '1.0',
+  },
+  {
+    name: 'casestatus',
+    version: '4.0',
   },
 ];
 

@@ -11,11 +11,11 @@ För MEX (Mark och exploatering):
 | ActiveDirectory     |     2.0 |
 | Citizen             |     3.0 |
 | CaseData            |    11.0 |
-| Messaging           |     6.0 |
+| Messaging           |     7.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     2.0 |
-| BusinessEngagements |     2.0 |
+| BusinessEngagements |     3.0 |
 | Party               |     2.0 |
 | SimulatorServer     |     2.0 |
 | LegalEntity         |     2.0 |
@@ -30,10 +30,12 @@ För KS (Kontakt Sundsvall):
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
 | Estateinfo          |     1.0 |
-| BusinessEngagements |     2.0 |
+| BusinessEngagements |     3.0 |
 | Party               |     2.0 |
 | SimulatorServer     |     2.0 |
 | LegalEntity         |     2.0 |
+| Relations           |     1.0 |
+| CaseStatus          |     4.0 |
 
 För PT (Parkeringstillstånd):
 
@@ -42,11 +44,11 @@ För PT (Parkeringstillstånd):
 | ActiveDirectory     |     2.0 |
 | Citizen             |     3.0 |
 | CaseData            |    11.0 |
-| Messaging           |     6.0 |
+| Messaging           |     7.0 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     2.0 |
-| BusinessEngagements |     2.0 |
+| BusinessEngagements |     3.0 |
 | SimulatorServer     |     2.0 |
 | LegalEntity         |     2.0 |
 
@@ -58,7 +60,7 @@ För LOP (Lön och pension):
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
-| BusinessEngagements |     2.0 |
+| BusinessEngagements |     3.0 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
 | BillingPreprocessor |     4.0 |
@@ -70,7 +72,7 @@ För ROB (Rekrytering och bemanning):
 | ------------------- | ------: |
 | ActiveDirectory     |     2.0 |
 | BillingPreprocessor |     4.0 |
-| BusinessEngagements |     2.0 |
+| BusinessEngagements |     3.0 |
 | Citizen             |     3.0 |
 | Employee            |     2.0 |
 | LegalEntity         |     2.0 |
@@ -86,7 +88,7 @@ För KA (Kontakt Ånge):
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
-| BusinessEngagements |     2.0 |
+| BusinessEngagements |     3.0 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
 | BillingPreprocessor |     4.0 |

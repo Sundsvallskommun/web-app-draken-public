@@ -338,7 +338,10 @@ export type MultiPolygon = GeoJsonObject & {
 
 /** Parameter model */
 export interface Parameter {
-  /** Parameter key */
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
