@@ -174,7 +174,11 @@ export const SupportMessageForm: React.FC<{
     defaultValues: {
       id: props.supportErrandId,
       messageContact: true,
-      contactMeans: '',
+      contactMeans:
+        Channels[supportErrand.channel] === Channels.ESERVICE ||
+        Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+          ? 'webmessage'
+          : 'email',
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -397,16 +401,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useEmail-radiobutton-true"
               className="mr-sm mt-4"
-              name="useEmail"
+              name="contactMeans"
               id="useEmail"
-              value={'email'}
-              defaultChecked={
-                !(
-                  Channels[supportErrand.channel] === Channels.ESERVICE ||
-                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-                )
-              }
-              {...register('contactMeans')}
+              value="email"
+              checked={contactMeans === 'email'}
+              onChange={() => setValue('contactMeans', 'email')}
             >
               E-post
             </RadioButton>
@@ -416,11 +415,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useSms-radiobutton-true"
               className="mr-sm mt-4"
-              name="useSms"
+              name="contactMeans"
               id="useSms"
-              value={'sms'}
-              defaultChecked={false}
-              {...register('contactMeans')}
+              value="sms"
+              checked={contactMeans === 'sms'}
+              onChange={() => setValue('contactMeans', 'sms')}
             >
               SMS
             </RadioButton>
@@ -431,16 +430,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useWebmessage-radiobutton-true"
               className="mr-sm mt-4"
-              name="useWebmessage"
+              name="contactMeans"
               id="useWebmessage"
-              value={'webmessage'}
-              defaultChecked={
-                !!(
-                  Channels[supportErrand.channel] === Channels.ESERVICE ||
-                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-                )
-              }
-              {...register('contactMeans')}
+              value="webmessage"
+              checked={contactMeans === 'webmessage'}
+              onChange={() => setValue('contactMeans', 'webmessage')}
             >
               E-tjänst
             </RadioButton>
@@ -453,31 +447,31 @@ export const SupportMessageForm: React.FC<{
         <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="newMessage"
-            value={'email'}
-            defaultChecked={true}
-            onClick={() => setTypeOfMessage('newMessage')}
+            name="useNewMessage"
+            id="useNewMessage"
+            value="newMessage"
+            checked={typeOfMessage === 'newMessage'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Nytt meddelande
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="infoCompletion"
-            value={'infoCompletion'}
-            defaultChecked={false}
-            onClick={() => setTypeOfMessage('infoCompletion')}
+            name="useInfoCompletion"
+            id="useInfoCompletion"
+            value="infoCompletion"
+            checked={typeOfMessage === 'infoCompletion'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Begär komplettering
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="internalCompletion"
-            value={'internalCompletion'}
-            defaultChecked={false}
-            onClick={() => setTypeOfMessage('internalCompletion')}
+            name="useInternalCompletion"
+            id="useInternalCompletion"
+            value="internalCompletion"
+            checked={typeOfMessage === 'internalCompletion'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Begär intern återkoppling
           </RadioButton>
