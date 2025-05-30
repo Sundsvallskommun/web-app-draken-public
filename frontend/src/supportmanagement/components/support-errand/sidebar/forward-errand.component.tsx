@@ -25,7 +25,6 @@ import { SupportAttachment } from '@supportmanagement/services/support-attachmen
 import {
   forwardSupportErrand,
   getSupportErrandById,
-  ResolutionLabelKS,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';

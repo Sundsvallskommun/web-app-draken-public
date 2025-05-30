@@ -7,6 +7,7 @@ import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
+import sanitized from '@common/services/sanitizer-service';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -80,7 +81,7 @@ const getClosingMessageBody = (): string => {
 };
 
 const getPlaintextMessageBody = (htmlMessage: string): string => {
-  return htmlMessage
+  const transformed = htmlMessage
     .replace(/<br\s*\/?>/gi, '\n') // <br> till \n
     .replace(/<\/p>/gi, '\n') // </p> till \n
     .replace(/<[^>]+>/g, '') // Ta bort övriga taggar
@@ -88,6 +89,8 @@ const getPlaintextMessageBody = (htmlMessage: string): string => {
     .replace(/\n[ \t]+/g, '\n') // Ta bort indrag i början av rad
     .replace(/\n{2,}/g, '\n') // Extra radbrytningar
     .trim();
+
+  return sanitized(transformed).trim();
 };
 
 export const sendClosingMessage = (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
