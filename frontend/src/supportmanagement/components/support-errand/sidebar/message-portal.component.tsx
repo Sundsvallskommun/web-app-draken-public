@@ -4,24 +4,19 @@ import { SupportMessageForm } from '@supportmanagement/components/support-messag
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
+import {
+  getDefaultEmailBody,
+  getDefaultSmsBody,
+} from '@supportmanagement/components/templates/default-message-template';
 
 export const MessagePortal: React.FC = () => {
-  const { supportErrand, municipalityId, user, setSupportErrand } = useAppContext();
+  const { supportErrand, user, setSupportErrand } = useAppContext();
   const [show, setShow] = useState(false);
   const [richText, setRichText] = useState('');
   const { t } = useTranslation();
 
-  const emailBody = t(
-    `messages:templates.email.${process.env.NEXT_PUBLIC_APPLICATION}`,
-    t(`messages:templates.email.default`),
-    { user: `${user.firstName} ${user.lastName}` }
-  );
-
-  const smsBody = t(
-    `messages:templates.sms.${process.env.NEXT_PUBLIC_APPLICATION}`,
-    t(`messages:templates.sms.default`),
-    { user: `${user.firstName}` }
-  );
+  const emailBody = getDefaultEmailBody(user, t);
+  const smsBody = getDefaultSmsBody(user, t);
 
   const close = () => setShow(false);
 

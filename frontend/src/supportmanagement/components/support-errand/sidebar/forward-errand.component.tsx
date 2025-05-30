@@ -25,7 +25,6 @@ import { SupportAttachment } from '@supportmanagement/services/support-attachmen
 import {
   forwardSupportErrand,
   getSupportErrandById,
-  ResolutionLabelKS,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
@@ -97,6 +96,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const [richText, setRichText] = useState<string>('');
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
+  const [latestErrand, setLatestErrand] = useState<SupportErrand>(supportErrand);
 
   const {
     register,
@@ -112,7 +112,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
     resolver: yupResolver(yupForwardForm),
     defaultValues: {
-      recipient: 'DEPARTMENT',
+      recipient: isKA() ? 'EMAIL' : 'DEPARTMENT',
       emails: [],
       department: 'MEX',
       message: '',
@@ -122,10 +122,22 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   });
 
   useEffect(() => {
-    if (!appConfig.features.useDepartmentEscalation) {
-      setValue('recipient', 'EMAIL');
+    if (showModal) {
+      if (isKA()) {
+        setRecipient('EMAIL');
+        setValue('recipient', 'EMAIL');
+      } else if (!appConfig.features.useDepartmentEscalation) {
+        setRecipient('EMAIL');
+        setValue('recipient', 'EMAIL');
+      } else {
+        setRecipient(undefined);
+        setValue('recipient', undefined);
+      }
+
+      setValue('emails', []);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showModal]);
 
   const onRichTextChange = (val) => {
     if (quillRef.current) {
@@ -141,17 +153,13 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleForwardErrand = (data: ForwardFormProps, msg: boolean) => {
     setIsLoading(true);
     setError(false);
+
     return forwardSupportErrand(user, supportErrand, municipalityId, data, supportAttachments)
       .then(() => {
         if (msg) {
           const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
           const adminName = getAdminName(admin, supportErrand);
-          return sendClosingMessage(
-            adminName,
-            supportErrand,
-            ResolutionLabelKS.REGISTERED_EXTERNAL_SYSTEM,
-            municipalityId
-          );
+          return sendClosingMessage(adminName, supportErrand, municipalityId);
         }
       })
       .then(() => {
@@ -191,24 +199,26 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   };
 
   useEffect(() => {
-    if (supportErrand && supportAttachments && supportMetadata && showModal) {
-      getEscalationEmails(supportErrand, supportMetadata).then((emails) => {
+    if (!showModal || !supportErrand?.id) return;
+
+    getSupportErrandById(supportErrand.id, municipalityId)
+      .then(({ errand }) => setLatestErrand(errand))
+      .catch(console.error);
+  }, [showModal, supportErrand?.id, municipalityId]);
+
+  useEffect(() => {
+    if (latestErrand && supportAttachments && supportMetadata && showModal) {
+      getEscalationEmails(latestErrand, supportMetadata).then((emails) => {
         if (emails.length > 0) {
           setValue('emails', [{ value: emails[0].value }]);
         }
       });
-      getEscalationMessage(
-        supportErrand,
-        supportAttachments,
-        supportMetadata,
-        user.firstName + ' ' + user.lastName
-      ).then((text) => {
-        setTimeout(() => {
-          setRichText(text);
-        }, 0);
+
+      getEscalationMessage(latestErrand, `${user.firstName} ${user.lastName}`).then((text) => {
+        setRichText(text);
       });
     }
-  }, [supportErrand, supportAttachments, supportMetadata, showModal]);
+  }, [latestErrand, supportAttachments, supportMetadata, showModal, user.firstName, user.lastName, setValue]);
 
   return (
     <>
@@ -232,38 +242,42 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       </Button>
       <Modal show={showModal} label="Överlämna ärendet" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
-          {appConfig.features.useDepartmentEscalation && (
-            <>
-              <p className="text-content font-semibold">Överlämna via:</p>
-              <small>
-                Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa fall.
-              </small>
-              <FormControl id="resolution" className="w-full mb-md" required>
-                <RadioButton.Group inline>
-                  <RadioButton
-                    value={'DEPARTMENT'}
-                    defaultChecked={recipient === ('DEPARTMENT' as RECIPIENT)}
-                    onClick={(e) => {
-                      setRecipient((e.target as HTMLInputElement).value as RECIPIENT);
-                      setValue('recipient', (e.target as HTMLInputElement).value as RECIPIENT);
-                    }}
-                  >
-                    Draken
-                  </RadioButton>
-                  <RadioButton
-                    value={'EMAIL'}
-                    defaultChecked={recipient === ('EMAIL' as RECIPIENT)}
-                    onClick={(e) => {
-                      setRecipient((e.target as HTMLInputElement).value as RECIPIENT);
-                      setValue('recipient', (e.target as HTMLInputElement).value as RECIPIENT);
-                    }}
-                  >
-                    E-post
-                  </RadioButton>
-                </RadioButton.Group>
-              </FormControl>
-            </>
-          )}
+          {appConfig.features.useDepartmentEscalation &&
+            (isKA() ? (
+              <Input type="hidden" {...register('recipient')} value="EMAIL" />
+            ) : (
+              <>
+                <p className="text-content font-semibold">Överlämna via:</p>
+                <small>
+                  Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa
+                  fall.
+                </small>
+                <FormControl id="resolution" className="w-full mb-md" required>
+                  <RadioButton.Group inline>
+                    <RadioButton
+                      value="DEPARTMENT"
+                      defaultChecked={recipient === 'DEPARTMENT'}
+                      onClick={(e) => {
+                        setRecipient('DEPARTMENT');
+                        setValue('recipient', 'DEPARTMENT');
+                      }}
+                    >
+                      Draken
+                    </RadioButton>
+                    <RadioButton
+                      value="EMAIL"
+                      defaultChecked={recipient === 'EMAIL'}
+                      onClick={(e) => {
+                        setRecipient('EMAIL');
+                        setValue('recipient', 'EMAIL');
+                      }}
+                    >
+                      E-post
+                    </RadioButton>
+                  </RadioButton.Group>
+                </FormControl>
+              </>
+            ))}
           {getValues().recipient === 'EMAIL' ? (
             <FormControl id="email" className="w-full mb-md">
               <CommonNestedEmailArrayV2

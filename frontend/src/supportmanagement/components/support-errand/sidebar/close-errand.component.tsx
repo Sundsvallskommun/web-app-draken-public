@@ -57,14 +57,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         if (msg) {
           const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
           const adminName = getAdminName(admin, supportErrand);
-          const resolutionLabel = isLOP()
-            ? ResolutionLabelLOP[resolution]
-            : isIK()
-            ? ResolutionLabelLOP[resolution] //ResolutionLabelIK[resolution]?
-            : isROB()
-            ? ResolutionLabelROB[resolution]
-            : ResolutionLabelKS[resolution];
-          return sendClosingMessage(adminName, supportErrand, resolutionLabel, municipalityId);
+          return sendClosingMessage(adminName, supportErrand, municipalityId);
         }
       })
       .then(() => {
@@ -162,7 +155,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               </FormControl>
             </Modal.Content>
             <Modal.Footer className="flex flex-col">
-              {(isLOP() || isIK()) && (
+              {(isLOP() || isIK() || isKA()) && (
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"
