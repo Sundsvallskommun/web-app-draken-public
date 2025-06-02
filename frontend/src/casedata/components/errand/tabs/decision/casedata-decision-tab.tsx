@@ -47,6 +47,7 @@ import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
+  Combobox,
   Dialog,
   FormControl,
   FormErrorMessage,
@@ -128,7 +129,7 @@ export const CasedataDecisionTab: React.FC<{
   const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-
+  const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   useEffect(() => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
@@ -180,6 +181,12 @@ export const CasedataDecisionTab: React.FC<{
     props.setUnsaved(formState.isDirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
+
+  useEffect(() => {
+    const laws = getValues('law')?.map((law) => law.heading) ?? [];
+    setSelectedLaws(laws);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const triggerPhaseChange = () => {
     return triggerErrandPhaseChange(municipalityId, errand)
@@ -519,31 +526,33 @@ export const CasedataDecisionTab: React.FC<{
               <FormControl className="w-full">
                 <FormLabel>Lagrum</FormLabel>
                 <Input type="hidden" {...register('law')} />
-                <Select
-                  className={cx(`w-full`, errors.law ? 'border-error' : '')}
-                  data-cy="law-select"
-                  name="law"
-                  size="sm"
-                  disabled={isSent()}
-                  onChange={(e) => {
-                    setValue(
-                      'law',
-                      getLawMapping(errand).filter((law) => law.heading === e.target.value),
-                      { shouldDirty: true }
-                    );
-                    props.setUnsaved(true);
-                    trigger();
-                  }}
+                <Combobox
+                  multiple
                   placeholder="Välj lagrum"
-                  value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
+                  value={selectedLaws}
+                  size="sm"
+                  onChange={(e) => {
+                    const newValue = e.target.value as string[];
+                    setSelectedLaws(newValue);
+                    const newLaws = getLawMapping(errand).filter((law) => newValue.includes(law.heading));
+                    setValue('law', newLaws, { shouldDirty: true });
+                    props.setUnsaved(true);
+                    trigger('law');
+                  }}
+                  onSelect={(e) => {
+                    const selected = e.target.value as string[];
+                    setSelectedLaws(selected);
+                  }}
                 >
-                  <Select.Option value={''}>Välj lagrum</Select.Option>
-                  {getLawMapping(errand).map((law, index) => (
-                    <Select.Option key={index} value={law.heading}>
-                      {law.heading}
-                    </Select.Option>
-                  ))}
-                </Select>
+                  <Combobox.Input />
+                  <Combobox.List>
+                    {getLawMapping(errand).map((law, index) => (
+                      <Combobox.Option key={index} value={law.heading}>
+                        {law.heading}
+                      </Combobox.Option>
+                    ))}
+                  </Combobox.List>
+                </Combobox>
                 <div className="my-sm text-error">
                   {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
                 </div>
