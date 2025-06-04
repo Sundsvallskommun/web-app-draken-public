@@ -47,23 +47,6 @@ export interface TemplateRequest {
   changeLog?: string;
 }
 
-export interface Problem {
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
-}
-
-export interface StatusType {
-  /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
-}
-
 /** Template */
 export interface TemplateResponse {
   /** Identifier */
@@ -88,14 +71,14 @@ export interface TemplateResponse {
 }
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -112,7 +95,9 @@ export type Expression = object;
 
 /** Template metadata */
 export interface KeyValue {
+  /** @minLength 1 */
   key: string;
+  /** @minLength 1 */
   value: string;
 }
 
@@ -137,7 +122,10 @@ export interface RenderResponse {
 
 /** Request to render a template directly */
 export interface DirectRenderRequest {
-  /** The template content, as a BASE64-encoded string */
+  /**
+   * The template content, as a BASE64-encoded string
+   * @minLength 1
+   */
   content: string;
   /**
    * Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>")

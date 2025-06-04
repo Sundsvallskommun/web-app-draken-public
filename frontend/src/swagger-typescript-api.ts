@@ -1,10 +1,13 @@
 import { exec } from 'child_process';
-import path from 'path';
-import fs from 'node:fs';
 import { config } from 'dotenv';
+import fs from 'node:fs';
+import path from 'path';
+import { promisify } from 'util';
 config();
+const execAsync = promisify(exec);
 
 const PATH_TO_OUTPUT_DIR = path.resolve(process.cwd(), './src/data-contracts');
+const SWAGGER_PATH = path.join(PATH_TO_OUTPUT_DIR, 'backend', 'swagger.json');
 
 const stdout = (error, stdout, stderr) => {
   if (error) {
@@ -23,11 +26,14 @@ const main = async () => {
     fs.mkdirSync(`${PATH_TO_OUTPUT_DIR}/backend`, { recursive: true });
   }
   console.log('Downloading and generating api-docs for backend');
-  await exec(`curl -o ${PATH_TO_OUTPUT_DIR}/backend/swagger.json ${process.env.NEXT_PUBLIC_API_URL}/swagger.json`);
-  await exec(
-    `npx swagger-typescript-api --modular -p ${PATH_TO_OUTPUT_DIR}/backend/swagger.json -o ${PATH_TO_OUTPUT_DIR}/backend --no-client --clean-output --extract-enums`,
-    stdout
+
+  await execAsync(`curl -o "${SWAGGER_PATH}" ${process.env.NEXT_PUBLIC_API_URL}/swagger.json`);
+
+  await execAsync(
+    `npx swagger-typescript-api generate --path "${SWAGGER_PATH}" --output "${PATH_TO_OUTPUT_DIR}/backend" --modular --no-client --extract-enums`
   );
+
+  fs.unlinkSync(SWAGGER_PATH);
 };
 
 main();
