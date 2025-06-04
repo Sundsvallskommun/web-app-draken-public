@@ -1,14 +1,4 @@
-import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import {
-  AddressResult,
-  fetchPersonId,
-  isValidOrgNumber,
-  searchADUser,
-  searchADUserByPersonNumber,
-  searchOrganization,
-  searchPerson,
-} from '@common/services/adress-service';
+import { AddressResult, isValidOrgNumber } from '@common/services/adress-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -21,24 +11,10 @@ import {
   ssnPattern,
   usernamePattern,
 } from '@common/services/helper-service';
-import { yupResolver } from '@hookform/resolvers/yup';
-
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  cx,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  isArray,
-  Modal,
-  RadioButton,
-  SearchField,
-  Select,
-} from '@sk-web-gui/react';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { Button, FormControl, Input } from '@sk-web-gui/react';
 import {
   emptyContact,
   ExternalIdType,
@@ -50,10 +26,12 @@ import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
+import { SupportContactModal } from './support-contact-modal.component';
+import { SupportContactSearchField } from './support-contact-search-field.component';
+import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
+import { SupportSearchResult } from './support-search-result.component';
 
 export const SupportSimplifiedContactForm: React.FC<{
-  allowOrganization?: boolean;
-  allowRelation?: boolean;
   contact: SupportStakeholderFormModel;
   editing: boolean;
   setUnsaved: (unsaved: boolean) => void;
@@ -64,8 +42,6 @@ export const SupportSimplifiedContactForm: React.FC<{
   id: string;
 }> = (props) => {
   const {
-    allowOrganization = false,
-    allowRelation = false,
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
@@ -77,7 +53,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   const yupContact = yup.object().shape(
     {
       id: yup.string(),
-      personNumber: allowOrganization
+      personNumber: appConfig.features.useOrganizationStakeholders
         ? yup.string().when('stakeholderType', {
             is: (type: string) => type === 'PERSON',
             then: yup
@@ -167,60 +143,52 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { supportErrand, supportMetadata, municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
+  const { municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [manual, setManual] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const [searchResult, setSearchResult] = useState(false);
   const [loading, setIsLoading] = useState(false);
   const [searchResultArray, setSearchResultArray] = useState<AddressResult[]>([]);
   const [selectedUser, setSelectedUser] = useState<AddressResult>();
   const [query, setQuery] = useState('');
 
+  const searchProps = {
+    searchResult,
+    setSearchResult,
+    searchResultArray,
+    setSearchResultArray,
+    searching,
+    setSearching,
+    query,
+    setQuery,
+    notFound,
+    setNotFound,
+    setSelectedUser,
+    searchMode,
+    setUnsaved,
+    setSearchMode,
+  };
+
+  const form = useForm<SupportStakeholderFormModel>({
+    defaultValues: contact,
+    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    resolver: yupResolver(yupContact),
+  });
+
+  const { register, control, handleSubmit, watch, setValue, formState, reset } = form;
+
+  const firstName = watch(`firstName`);
+  const lastName = watch(`lastName`);
+  const organizationName = watch(`organizationName`);
+  const personNumber = watch(`personNumber`);
+  const organizationNumber = watch(`organizationNumber`);
+
   const closeHandler = () => {
-    setModalOpen(false);
     setManual(false);
     onClose();
   };
-
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    formState,
-    clearErrors,
-    trigger,
-    reset,
-    formState: { errors },
-  } = useForm<SupportStakeholderFormModel>({
-    resolver: yupResolver(yupContact),
-    defaultValues: contact,
-    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-  });
-
-  const externalId = watch(`externalId`);
-  const externalIdType = watch(`externalIdType`);
-  const username = watch('username');
-  const administrationName = watch('administrationName');
-  const firstName = watch(`firstName`);
-  const lastName = watch(`lastName`);
-  const address = watch(`address`);
-  const careOf = watch(`careOf`);
-  const zipCode = watch(`zipCode`);
-  const city = watch(`city`);
-  const organizationName = watch(`organizationName`);
-  const emails = watch(`emails`);
-  const phoneNumbers = watch(`phoneNumbers`);
-  const personNumber = watch(`personNumber`);
-  const organizationNumber = watch(`organizationNumber`);
-  const stakeholderType = watch(`stakeholderType`);
-  const title = watch(`title`);
-  const department = watch(`department`);
-  const referenceNumber = watch(`referenceNumber`);
 
   const { append: appendPhonenumber, replace: replacePhonenumbers } = useFieldArray({
     control,
@@ -229,10 +197,7 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const { append: appendEmail, replace: replaceEmails } = useFieldArray({ control, name: 'emails' });
 
-  // Restricted editing means that personNumber, firstName, lastName,
-  // organizationName and orgName cannot be changed.
   const editing = props.editing;
-  const restrictedEditing = editing;
 
   const resetPersonNumber = () => {
     setValue(`personNumber`, '', { shouldDirty: false });
@@ -242,10 +207,11 @@ export const SupportSimplifiedContactForm: React.FC<{
     if (manual && !editing) {
       resetPersonNumber();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manual]);
 
   useEffect(() => {
-    if (allowOrganization) {
+    if (appConfig.features.useOrganizationStakeholders) {
       setSearchMode(contact.stakeholderType === SupportStakeholderTypeEnum.PERSON ? 'person' : 'enterprise');
     } else {
       setSearchMode('employee');
@@ -253,10 +219,8 @@ export const SupportSimplifiedContactForm: React.FC<{
     if (!contact.internalId) {
       setValue(`stakeholderType`, contact.stakeholderType);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const validEmailOrPhonenumberExists = () =>
-    (emails && emails.length > 0 && !errors.emails) || (phoneNumbers && phoneNumbers.length > 0);
 
   useEffect(() => {
     if (
@@ -265,6 +229,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ) {
       resetPersonNumber();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstName, lastName, organizationName]);
 
   useEffect(() => {
@@ -272,12 +237,14 @@ export const SupportSimplifiedContactForm: React.FC<{
       setSearchResult(false);
       reset({}, { keepErrors: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationNumber, personNumber]);
 
   useEffect(() => {
     appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
@@ -286,10 +253,9 @@ export const SupportSimplifiedContactForm: React.FC<{
     }
     setIsLoading(true);
     onSave(e);
-    setModalOpen(false);
     setManual(false);
     setSearchResult(false);
-    if (allowOrganization) {
+    if (appConfig.features.useOrganizationStakeholders) {
       setSearchMode('person');
     } else {
       setSearchMode('employee');
@@ -298,235 +264,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     setIsLoading(false);
     reset();
     resetPersonNumber();
-  };
-
-  const onError = () => {};
-
-  const doSearch = (val: string) => {
-    setSearchResult(false);
-    let search: (val: string) => Promise<AddressResult | AddressResult[]>;
-
-    if (searchMode === 'person') {
-      setValue('personNumber', val);
-      search = searchPerson;
-    } else if (searchMode === 'employee') {
-      if (!luhnCheck(val)) {
-        search = searchADUser;
-      } else {
-        search = searchADUserByPersonNumber;
-      }
-    } else if (searchMode === 'enterprise' || searchMode === 'organization') {
-      search = () => searchOrganization(val);
-    }
-    setSearching(true);
-    setNotFound(false);
-    search &&
-      search(val)
-        .then((res) => {
-          if (!isArray(res)) {
-            setValue(`externalId`, res.personId, { shouldDirty: true });
-            setValue(`firstName`, res.firstName, { shouldDirty: true });
-            setValue(`lastName`, res.lastName, { shouldDirty: true });
-            setValue(`organizationName`, res.organizationName, {
-              shouldDirty: true,
-            });
-            setValue(`address`, res.street, { shouldDirty: true });
-            setValue(`careOf`, res.careof, { shouldDirty: true });
-            setValue(`zipCode`, res.zip, { shouldDirty: true });
-            setValue(`city`, res.city, { shouldDirty: true });
-            if (res.phone) {
-              appendPhonenumber({ value: res.phone });
-            }
-            if (res.workPhone) {
-              appendPhonenumber({ value: res.workPhone });
-            }
-            if (res.email) {
-              appendEmail({ value: res.email });
-            }
-            if (res.loginName) {
-              setValue('username', res.loginName);
-            }
-            setValue('administrationCode', res.administrationCode);
-            setValue('administrationName', res.administrationName);
-            setValue('department', res.department);
-            setValue('title', res.title);
-            setValue('referenceNumber', res.referenceNumber);
-
-            if (searchMode === 'enterprise') {
-              setValue(`organizationName`, res.organizationName);
-            }
-
-            //moved to here so it doesnt select when empty (giving empty card, false email and phone data)
-            clearErrors([`firstName`, `lastName`, `organizationName`]);
-            setUnsaved(true);
-            setSearching(false);
-            setSearchResult(true);
-          } else {
-            clearErrors([`firstName`, `lastName`, `organizationName`]);
-            setUnsaved(true);
-            setSearching(false);
-            setSearchResultArray(res as AddressResult[]);
-          }
-        })
-        .catch(() => {
-          setSearching(false);
-          setNotFound(true);
-          setSearchResult(false);
-        });
-  };
-
-  const searchModeSelector = (inName) => (
-    <fieldset
-      className="flex mx-md mt-ms mb-md gap-lg justify-start"
-      data-cy={`searchmode-selector-${inName}`}
-      disabled={props.disabled}
-    >
-      <legend className="text-md my-sm contents"></legend>
-      <Input type="hidden" {...register(`stakeholderType`)} />
-
-      {appConfig.features.useEmployeeSearch ? (
-        <RadioButton
-          data-cy={`search-employee-${inName}-${contact.role}`}
-          size="lg"
-          className="mr-sm"
-          name={`stakeholderType-${id}`}
-          id={`searchEmployee-${id}-${inName}`}
-          value={'EMPLOYEE'}
-          checked={searchMode === 'employee'}
-          onChange={() => {
-            setSearchMode('employee');
-            replacePhonenumbers([]);
-            setValue('city', '');
-            setValue('zipCode', '');
-            setValue('careOf', '');
-            setValue('address', '');
-            clearErrors(['organizationNumber']);
-            setSearchResult(undefined);
-            setSelectedUser(undefined);
-            setValue(`externalIdType`, ExternalIdType.EMPLOYEE);
-            setTimeout(() => {
-              setValue(`organizationName`, '', { shouldDirty: false });
-              setValue(`organizationNumber`, '', { shouldDirty: false });
-              setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
-              clearErrors(['phoneNumbers']);
-            }, 0);
-          }}
-        >
-          Anställd
-        </RadioButton>
-      ) : null}
-
-      <RadioButton
-        data-cy={`search-person-${inName}-${contact.role}`}
-        size="lg"
-        className="mr-sm"
-        name={`stakeholderType-${id}`}
-        id={`searchPerson-${id}-${inName}`}
-        value={'PERSON'}
-        checked={searchMode === 'person'}
-        onChange={() => {
-          setSearchMode('person');
-          replacePhonenumbers([]);
-          setValue('city', '');
-          setValue('zipCode', '');
-          setValue('careOf', '');
-          setValue('address', '');
-          clearErrors(['organizationNumber']);
-          setSearchResult(undefined);
-          setSearchResultArray([]);
-          setSelectedUser(undefined);
-          setValue(`externalIdType`, ExternalIdType.PRIVATE);
-          setTimeout(() => {
-            setValue(`organizationName`, '', { shouldDirty: false });
-            setValue(`organizationNumber`, '', { shouldDirty: false });
-            setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
-            clearErrors(['phoneNumbers']);
-          }, 0);
-        }}
-      >
-        Privat
-      </RadioButton>
-
-      {allowOrganization ? (
-        <>
-          <RadioButton
-            data-cy={`search-enterprise-${inName}-${contact.role}`}
-            size="lg"
-            className="mr-sm"
-            name={`stakeholderType-${id}`}
-            id={`searchEnterprise-${id}-${inName}`}
-            value={'ENTERPRISE'}
-            checked={searchMode === 'enterprise'}
-            onChange={() => {
-              setSearchMode('enterprise');
-              setValue('city', '');
-              setValue('zipCode', '');
-              setValue('careOf', '');
-              setValue('address', '');
-              replacePhonenumbers([]);
-              setSearchResult(undefined);
-              setSearchResultArray([]);
-              setSelectedUser(undefined);
-              setValue(`externalIdType`, ExternalIdType.COMPANY);
-              if (stakeholderType === 'PERSON') {
-                clearErrors(['personNumber']);
-                setTimeout(() => {
-                  setValue(`personNumber`, '', { shouldDirty: false });
-                  setValue(`personId`, '', { shouldDirty: false });
-                  setValue(`firstName`, '', { shouldDirty: false });
-                  setValue(`lastName`, '', { shouldDirty: false });
-                  setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
-                  clearErrors(['phoneNumbers']);
-                }, 0);
-              }
-            }}
-          >
-            Företag
-          </RadioButton>
-          <RadioButton
-            data-cy={`search-organization-${inName}-${contact.role}`}
-            size="lg"
-            className="mr-sm"
-            name={`stakeholderType-${id}`}
-            id={`searchOrganization-${id}-${inName}`}
-            value={'ORGANIZATION'}
-            checked={searchMode === 'organization'}
-            onChange={() => {
-              setSearchMode('organization');
-              setValue('city', '');
-              setValue('zipCode', '');
-              setValue('careOf', '');
-              setValue('address', '');
-              replacePhonenumbers([]);
-              clearErrors(['personNumber']);
-              setSearchResult(undefined);
-              setSearchResultArray([]);
-              setSelectedUser(undefined);
-              setValue(`externalIdType`, ExternalIdType.COMPANY);
-              if (stakeholderType === 'PERSON') {
-                setTimeout(() => {
-                  setValue(`personNumber`, '', { shouldDirty: false });
-                  setValue(`personId`, '', { shouldDirty: false });
-                  setValue(`firstName`, '', { shouldDirty: false });
-                  setValue(`lastName`, '', { shouldDirty: false });
-                  setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
-                  clearErrors(['phoneNumbers']);
-                }, 0);
-              }
-            }}
-          >
-            Förening
-          </RadioButton>
-        </>
-      ) : null}
-    </fieldset>
-  );
-
-  const onSelectUserHandler = (e) => {
-    const user = searchResultArray?.find((data) => `${data.firstName} ${data.lastName}` === e.target.value);
-    setSelectedUser(user);
-    setSearchResultArray([]);
-    setQuery('');
   };
 
   useEffect(() => {
@@ -561,6 +298,7 @@ export const SupportSimplifiedContactForm: React.FC<{
 
       setSearchResult(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser]);
 
   return (
@@ -574,322 +312,39 @@ export const SupportSimplifiedContactForm: React.FC<{
         </FormControl>
       </div>
 
-      {!editing ? searchModeSelector('form') : null}
-
-      {!restrictedEditing ? (
-        <div className="flex gap-lg">
-          <FormControl className="w-full">
-            {allowOrganization ? (
-              <FormLabel>
-                Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
-              </FormLabel>
-            ) : (
-              <FormLabel>
-                Sök på{' '}
-                {searchMode === 'person'
-                  ? 'personnummer (ååååmmddxxxx)'
-                  : 'personnummer (ååååmmddxxxx) eller användarnamn'}
-              </FormLabel>
-            )}
-
-            <div>
-              <Input
-                data-cy={`contact-personId`}
-                {...register(`personId`)}
-                type="hidden"
-                readOnly
-                className="w-full my-sm"
-              />
-              {searchMode === 'person' ? (
-                <>
-                  <Input.Group size="md" className="rounded-12" disabled={props.disabled || manual}>
-                    <Input.LeftAddin icon>
-                      <LucideIcon name="search" />
-                    </Input.LeftAddin>
-                    <Input
-                      disabled={props.disabled}
-                      aria-disabled={props.disabled}
-                      readOnly={manual}
-                      className="read-only:cursor-not-allowed"
-                      onChange={() => setUnsaved(true)}
-                      data-cy={`contact-personNumber-${id}`}
-                      onBlur={() => {
-                        personNumber &&
-                          personNumber !== '' &&
-                          fetchPersonId(personNumber).then((res) => {
-                            setValue(`personId`, res.personId, { shouldDirty: true });
-                            trigger(`personNumber`);
-                          });
-                      }}
-                      {...register(`personNumber`)}
-                    />
-                    <Input.RightAddin icon>
-                      {searchResult ? (
-                        <Button
-                          iconButton
-                          variant="primary"
-                          disabled={props.disabled || manual}
-                          inverted
-                          onClick={() => {
-                            reset();
-                            setValue('personNumber', '');
-                            setSearchResultArray([]);
-                            setSearchResult(false);
-                            setValue('stakeholderType', 'PERSON');
-                          }}
-                        >
-                          <LucideIcon name="x" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          disabled={
-                            props.disabled ||
-                            (searchMode === 'person' && manual) ||
-                            !!formState.errors?.personNumber ||
-                            personNumber === ''
-                          }
-                          data-cy={`search-button-${id}`}
-                          onClick={() => doSearch(personNumber)}
-                          loading={searching}
-                          loadingText="Söker"
-                        >
-                          Sök
-                        </Button>
-                      )}
-                    </Input.RightAddin>
-                  </Input.Group>
-                </>
-              ) : searchMode === 'employee' ? (
-                <>
-                  <SearchField
-                    data-cy={`contact-personNumber-${id}`}
-                    {...register('personNumber')}
-                    size={'md'}
-                    value={query}
-                    onBlur={() => {
-                      trigger(`personNumber`);
-                    }}
-                    onSearch={(e) => {
-                      setSearching(true);
-                      doSearch(e);
-                    }}
-                    onReset={() => {
-                      reset();
-                      setQuery('');
-                      setSelectedUser(undefined);
-                      setValue('personNumber', '');
-                      setSearchResultArray([]);
-                      setSearchResult(false);
-                      setValue('stakeholderType', 'PERSON');
-                    }}
-                    searchLabel={searching ? 'Söker' : 'Sök'}
-                  />
-
-                  {searchResultArray.length ? (
-                    <div className="mt-8 flex w-full">
-                      <Select onChange={(e) => onSelectUserHandler(e)} className="w-full">
-                        <Select.Option>Välj person</Select.Option>
-                        {searchResultArray.map((data, index) => (
-                          <Select.Option
-                            className={cx('w-full')}
-                            key={index}
-                            value={`${data.firstName} ${data.lastName}`}
-                          >
-                            {[`${data.firstName} ${data.lastName}`, data.company, data.email]
-                              .filter((s) => s && s !== '')
-                              .join(', ')}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <Input.Group size="md" disabled={props.disabled || manual}>
-                    <Input.LeftAddin icon>
-                      <LucideIcon name="search" />
-                    </Input.LeftAddin>
-                    <Input
-                      disabled={props.disabled}
-                      aria-disabled={props.disabled}
-                      readOnly={manual}
-                      className="read-only:cursor-not-allowed"
-                      onChange={() => {
-                        setUnsaved(true);
-                      }}
-                      data-cy={`contact-orgNumber-${id}`}
-                      {...register(`organizationNumber`)}
-                    />
-                    <Input.RightAddin icon>
-                      {searchResult ? (
-                        <Button
-                          iconButton
-                          variant="primary"
-                          disabled={props.disabled || manual}
-                          inverted
-                          onClick={() => {
-                            reset();
-                            setValue('organizationNumber', '');
-                            setSearchResult(false);
-                            setValue('stakeholderType', 'ORGANIZATION');
-                          }}
-                        >
-                          <LucideIcon name="x" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          disabled={
-                            props.disabled ||
-                            manual ||
-                            !!formState.errors?.organizationNumber ||
-                            organizationNumber === ''
-                          }
-                          data-cy={`search-button-${id}`}
-                          onClick={() => doSearch(organizationNumber)}
-                          loading={searching}
-                          loadingText="Söker"
-                        >
-                          Sök
-                        </Button>
-                      )}
-                    </Input.RightAddin>
-                  </Input.Group>
-                </>
-              )}
-            </div>
-
-            {notFound || formState.errors.personNumber || formState.errors.organizationNumber ? (
-              <div className="my-sm text-error">
-                {notFound ? (
-                  <FormErrorMessage className="text-error" data-cy="not-found-error-message">
-                    Sökningen gav ingen träff
-                  </FormErrorMessage>
-                ) : (
-                  <>
-                    {formState.errors.personNumber && (
-                      <FormErrorMessage className="text-error" data-cy="personal-number-error-message">
-                        {formState.errors.personNumber?.message as string}
-                      </FormErrorMessage>
-                    )}
-                    {formState.errors.organizationNumber && (
-                      <FormErrorMessage className="text-error" data-cy="org-number-error-message">
-                        {formState.errors.organizationNumber?.message as string}
-                      </FormErrorMessage>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : null}
-          </FormControl>
-        </div>
+      {!editing ? (
+        <>
+          <SupportContactSearchModeSelector
+            inName={'form'}
+            disabled={props.disabled}
+            form={form}
+            contact={contact}
+            id={id}
+            replacePhonenumbers={replacePhonenumbers}
+            {...searchProps}
+          />
+          <SupportContactSearchField
+            disabled={props.disabled}
+            form={form}
+            manual={manual}
+            id={id}
+            appendPhonenumber={appendPhonenumber}
+            appendEmail={appendEmail}
+            {...searchProps}
+          />
+        </>
       ) : null}
 
       {searchResult ? (
-        <>
-          <div data-cy={`search-result`} className="bg-content-main border rounded-16 p-16 my-sm relative">
-            {(searchMode === 'person' || 'employee') && (firstName || lastName) ? (
-              <>
-                {firstName || lastName ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-name`}>
-                    {`${firstName} ${lastName}`}
-                  </p>
-                ) : null}
-                <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
-                  {personNumber || '(personnummer saknas)'}
-                </p>
-                {title ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-title`}>
-                    {title}
-                  </p>
-                ) : null}
-                {administrationName ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-administrationName`}>
-                    {administrationName}
-                  </p>
-                ) : null}
-                {department ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-department`}>
-                    {department}
-                  </p>
-                ) : null}
-                {referenceNumber ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-referenceNumber`}>
-                    {referenceNumber}
-                  </p>
-                ) : null}
-                {username ? (
-                  <p className="my-xs mt-0" data-cy={`stakeholder-username`}>
-                    {username}
-                  </p>
-                ) : null}
-
-                <p className="my-xs mt-0" data-cy={`stakeholder-adress`}>
-                  {address || zipCode ? `${address} ${zipCode} ${city}` : '(adress saknas)'}
-                </p>
-                <p className="my-xs w-1/2" data-cy={`stakeholder-phone`}>
-                  {phoneNumbers?.length === 0 ? <em>Telefonnummer saknas</em> : null}
-                </p>
-              </>
-            ) : (searchMode === 'organization' || searchMode === 'enterprise') && organizationName && !selectedUser ? (
-              <>
-                <p className="my-xs mt-0">{organizationName}</p>
-                <p className="my-xs mt-0" data-cy={`stakeholder-ssn`}>
-                  {organizationNumber || '(orgnummer saknas)'}
-                </p>
-                <p className="my-xs mt-0">
-                  {address}, {zipCode} {city}
-                </p>
-              </>
-            ) : null}
-
-            <>
-              <div className="my-md">
-                <CommonNestedEmailArrayV2
-                  required={false}
-                  errand={supportErrand}
-                  addingStakeholder={true}
-                  disabled={props.disabled}
-                  error={!!formState.errors.emails}
-                  key={`nested-email-array`}
-                  {...{ control, register, errors, watch, setValue, trigger }}
-                />
-              </div>
-              <div className="my-md">
-                <CommonNestedPhoneArrayV2
-                  disabled={props.disabled}
-                  error={!!formState.errors.phoneNumbers}
-                  key={`nested-phone-array`}
-                  {...{ control, register, errors, watch, setValue, trigger }}
-                />
-              </div>
-              {(formState.errors.emails || formState.errors.phoneNumbers) && (
-                <div className="flex gap-lg my-sm text-error">
-                  <FormErrorMessage>
-                    {formState.errors.emails?.message || formState.errors.phoneNumbers?.message}
-                  </FormErrorMessage>
-                </div>
-              )}
-
-              <Button
-                variant="primary"
-                size="sm"
-                loading={loading}
-                loadingText="Sparar"
-                className="mt-20"
-                disabled={!formState.isValid}
-                onClick={handleSubmit(onSubmit, onError)}
-                data-cy="submit-contact-person-button"
-              >
-                Lägg till {label.toLowerCase()}
-              </Button>
-            </>
-          </div>
-        </>
+        <SupportSearchResult
+          searchMode={searchMode}
+          disabled={props.disabled}
+          form={form}
+          selectedUser={selectedUser}
+          loading={loading}
+          onSubmit={handleSubmit(onSubmit)}
+          label={label}
+        />
       ) : null}
 
       {editing || searchResult ? null : (
@@ -915,286 +370,20 @@ export const SupportSimplifiedContactForm: React.FC<{
         </div>
       )}
 
-      <Modal
-        show={manual || editing}
-        className="w-[56rem]"
-        onClose={closeHandler}
-        label={manual ? `Lägg till ${label.toLowerCase()}` : `Redigera ${label.toLowerCase()}`}
-      >
-        <Modal.Content className="p-0">
-          <>
-            {allowOrganization && !editing ? searchModeSelector('modal') : null}
-            {searchMode === 'person' || searchMode === 'employee' ? (
-              <>
-                <div className="flex gap-lg">
-                  <FormControl id={`contact-personnumber`} className="w-1/2">
-                    <FormLabel>Personnummer</FormLabel>
-                    <Input
-                      size="sm"
-                      disabled={props.disabled}
-                      readOnly
-                      data-cy={`contact-personNumber`}
-                      className={cx(
-                        formState.errors.personNumber ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      {...register(`personNumber`)}
-                    />
-
-                    {errors && formState.errors.personNumber && (
-                      <div className="my-sm text-error">
-                        <FormErrorMessage>{formState.errors.personNumber?.message}</FormErrorMessage>
-                      </div>
-                    )}
-                  </FormControl>
-                  {allowRelation ? (
-                    <FormControl id={`contact-relation`} size="sm" className="w-1/2">
-                      <FormLabel>Roll</FormLabel>
-                      <Select
-                        data-cy={`role-select`}
-                        disabled={props.disabled}
-                        {...register(`role`)}
-                        className={cx(formState.errors.role ? 'border-2 border-error' : null, 'w-full')}
-                      >
-                        <Select.Option key="" value="">
-                          Välj roll
-                        </Select.Option>
-                        {supportMetadata &&
-                          Object.entries(supportMetadata.roles)
-                            .filter(
-                              ([, relation]) => !(contact.role === 'CONTACT' && ['PRIMARY'].includes(relation.name))
-                            )
-                            .sort((a, b) => (a[1].displayName > b[1].displayName ? 1 : -1))
-                            .map(([key, relation]) => (
-                              <Select.Option key={key} value={relation.name}>
-                                {relation.displayName}
-                              </Select.Option>
-                            ))}
-                      </Select>
-
-                      {errors && formState.errors.role && (
-                        <div className="my-sm text-error">
-                          <FormErrorMessage>{formState.errors.role?.message}</FormErrorMessage>
-                        </div>
-                      )}
-                    </FormControl>
-                  ) : (
-                    <div className="w-1/2"></div>
-                  )}
-                </div>
-                <div className="flex gap-lg">
-                  <FormControl id={`firstName`} className="w-1/2">
-                    <FormLabel>
-                      Förnamn<span aria-hidden="true">*</span>
-                    </FormLabel>
-                    <Input
-                      size="sm"
-                      disabled={props.disabled}
-                      className={cx(
-                        formState.errors.firstName ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      data-cy={`contact-firstName`}
-                      {...register(`firstName`)}
-                    />
-
-                    {errors?.firstName && (
-                      <div className="my-sm text-error">
-                        <FormErrorMessage>{errors.firstName?.message}</FormErrorMessage>
-                      </div>
-                    )}
-                  </FormControl>
-
-                  <FormControl id={`lastName`} className="w-1/2">
-                    <FormLabel>
-                      Efternamn{' '}
-                      {contact.externalIdType !== ExternalIdType.COMPANY ? <span aria-hidden="true">*</span> : null}
-                    </FormLabel>
-                    <Input
-                      size="sm"
-                      disabled={props.disabled}
-                      className={cx(
-                        formState.errors.lastName ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      data-cy={`contact-lastName`}
-                      {...register(`lastName`)}
-                    />
-
-                    {formState.errors.lastName && (
-                      <div className="my-sm text-error">
-                        <FormErrorMessage>{formState.errors.lastName?.message}</FormErrorMessage>
-                      </div>
-                    )}
-                  </FormControl>
-                </div>
-              </>
-            ) : (
-              <div className="flex gap-lg">
-                <FormControl id={`contact-organizationNumber`} className="w-1/2">
-                  <FormLabel>Organisationsnummer</FormLabel>
-                  <Input
-                    size="sm"
-                    disabled={props.disabled}
-                    readOnly
-                    data-cy={`contact-organizationNumber`}
-                    className={cx(
-                      formState.errors.personNumber ? 'border-2 border-error' : null,
-                      'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                    )}
-                    {...register(`externalId`)}
-                  />
-
-                  {errors && formState.errors.personNumber && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{formState.errors.personNumber?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-
-                <FormControl id={`organizationName`} className="w-1/2">
-                  <FormLabel>
-                    Organisationsnamn<span aria-hidden="true">*</span>
-                  </FormLabel>
-                  <Input
-                    size="sm"
-                    disabled={props.disabled}
-                    className={cx(
-                      formState.errors.firstName ? 'border-2 border-error' : null,
-                      'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                    )}
-                    data-cy={`contact-organizationName`}
-                    {...register(`organizationName`)}
-                  />
-
-                  {errors?.organizationName && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{errors.organizationName?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
-            )}
-          </>
-          <>
-            <div className="flex gap-lg">
-              <FormControl id={`street`} className="w-1/2">
-                <FormLabel>Adress</FormLabel>
-                <Input
-                  size="sm"
-                  disabled={props.disabled}
-                  aria-disabled={props.disabled}
-                  className={cx(`readonly:bg-gray-lighter readonly:cursor-not-allowed`)}
-                  data-cy={`contact-address`}
-                  {...register(`address`)}
-                />
-
-                {formState.errors.address && (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>{formState.errors.address?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-              <FormControl id={`careOf`} className="w-1/2">
-                <FormLabel>C/o-adress</FormLabel>
-                <Input
-                  size="sm"
-                  disabled={props.disabled}
-                  aria-disabled={props.disabled}
-                  className={cx(`readonly:bg-gray-lighter readonly:cursor-not-allowed`)}
-                  data-cy={`contact-careOf`}
-                  {...register(`careOf`)}
-                />
-                {formState.errors.careOf && (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>{formState.errors.careOf?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
-            <div className="flex gap-lg">
-              <FormControl id={`zip`} className="w-1/2">
-                <FormLabel>Postnummer</FormLabel>
-                <Input
-                  size="sm"
-                  disabled={props.disabled}
-                  aria-disabled={props.disabled}
-                  className={cx(`readonly:bg-gray-lighter readonly:cursor-not-allowed`)}
-                  data-cy={`contact-zipCode`}
-                  {...register(`zipCode`)}
-                />
-
-                {formState.errors.zipCode && (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>{formState.errors.zipCode?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-              <FormControl id={`zip`} className="w-1/2">
-                <FormLabel>Stad</FormLabel>
-                <Input
-                  size="sm"
-                  disabled={props.disabled}
-                  aria-disabled={props.disabled}
-                  className={cx(`readonly:bg-gray-lighter readonly:cursor-not-allowed`)}
-                  data-cy={`contact-city`}
-                  {...register(`city`)}
-                />
-
-                {formState.errors.city && (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>{formState.errors.city?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
-            </div>
-          </>
-          <CommonNestedEmailArrayV2
-            required={false}
-            errand={supportErrand}
-            addingStakeholder={true}
-            disabled={props.disabled}
-            error={!!formState.errors.emails}
-            key={`nested-email-array`}
-            {...{ control, register, errors, watch, setValue, trigger }}
-          />
-          <CommonNestedPhoneArrayV2
-            disabled={props.disabled}
-            error={!!formState.errors.phoneNumbers}
-            key={`nested-phone-array`}
-            {...{ control, register, errors, watch, setValue, trigger }}
-          />
-          {(formState.errors.emails || formState.errors.phoneNumbers) && (
-            <div className="flex gap-lg my-sm text-error">
-              <FormErrorMessage>
-                {formState.errors.emails?.message || formState.errors.phoneNumbers?.message}
-              </FormErrorMessage>
-            </div>
-          )}
-          <div className="mt-md flex gap-lg justify-start">
-            <div>
-              <Button type="button" className="w-full" variant="secondary" color="primary" onClick={closeHandler}>
-                Avbryt
-              </Button>
-            </div>
-            <div>
-              <Button
-                type="button"
-                data-cy="submit-contact-button"
-                loading={loading}
-                loadingText="Sparar"
-                className="w-full"
-                disabled={!formState.isValid}
-                variant="primary"
-                color="primary"
-                onClick={handleSubmit(onSubmit, onError)}
-              >
-                {editing ? 'Ändra uppgifter' : 'Lägg till uppgifter'}
-              </Button>
-            </div>
-          </div>
-        </Modal.Content>
-      </Modal>
+      <SupportContactModal
+        manual={manual}
+        editing={editing}
+        closeHandler={closeHandler}
+        onSubmit={handleSubmit(onSubmit)}
+        label={label}
+        disabled={props.disabled}
+        loading={loading}
+        contact={contact}
+        form={form}
+        id={id}
+        replacePhonenumbers={replacePhonenumbers}
+        {...searchProps}
+      />
     </div>
   );
 };

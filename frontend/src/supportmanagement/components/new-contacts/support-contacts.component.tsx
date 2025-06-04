@@ -1,6 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { isKC, isLOP } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
@@ -16,7 +15,6 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
-import { appConfig } from '@config/appconfig';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -25,13 +23,9 @@ interface SupportContactsProps {
 }
 
 export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
-  const [addContact, setAddContact] = useState(false);
-  const [addApplicant, setAddApplicant] = useState(false);
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
   const {
     supportErrand,
-    setSupportErrand,
-    municipalityId,
     user,
     supportMetadata,
   }: {
@@ -51,27 +45,21 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
   useEffect(() => {
-    setAddApplicant(false);
-    setAddContact(false);
     setSelectedContact(undefined);
     reset(supportErrand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
   useEffect(() => {
     setStakeholderContacts(supportErrand.contacts);
     setStakeholderCustomers(supportErrand.customer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const {
-    register,
     control,
-    handleSubmit,
-    watch,
     setValue,
-    trigger,
     reset,
-    getValues,
-    formState,
     formState: { errors },
   }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -174,8 +162,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               }
             }}
             onClose={() => setSelectedContact(undefined)}
-            allowOrganization={appConfig.features.useOrganizationStakeholders}
-            allowRelation={appConfig.features.useRolesForStakeholders}
             id="edit"
           />
         ) : null}
@@ -388,8 +374,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               {stakeholderCustomers.length === 0 ? (
                 <SupportSimplifiedContactForm
                   disabled={isSupportErrandLocked(supportErrand)}
-                  allowRelation={appConfig.features.useRolesForStakeholders}
-                  allowOrganization={appConfig.features.useOrganizationStakeholders}
                   setUnsaved={props.setUnsaved}
                   onSave={(contact) => addStakeholder(contact)}
                   contact={{ ...emptyContact, role: 'PRIMARY' }}
@@ -408,8 +392,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             <div className="w-full mt-md">
               <SupportSimplifiedContactForm
                 disabled={isSupportErrandLocked(supportErrand)}
-                allowRelation={appConfig.features.useRolesForStakeholders}
-                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, role: 'CONTACT' }}
                 editing={false}
