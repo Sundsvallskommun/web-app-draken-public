@@ -576,23 +576,24 @@ export const SidebarInfo: React.FC<{
               </>
             ) : (
               <div className="flex flex-col gap-8">
-                <Button
-                  leftIcon={<LucideIcon name="mail" />}
-                  className="w-full"
-                  color="vattjom"
-                  data-cy="suspend-button"
-                  variant="secondary"
-                  disabled={messageSidebarIsDisabled}
-                  onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
-                >
-                  Skicka meddelande
-                </Button>
-                <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <StartProcessComponent
                   disabled={!allowed || supportErrandIsEmpty(supportErrand)}
                   onSubmit={onSubmit}
                   onError={onError}
                 />
+                {!messageSidebarIsDisabled && (
+                  <Button
+                    leftIcon={<LucideIcon name="mail" />}
+                    className="w-full"
+                    color="vattjom"
+                    data-cy="suspend-button"
+                    variant="secondary"
+                    onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
+                  >
+                    Skicka meddelande
+                  </Button>
+                )}
+                <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <Divider className="mt-8 mb-16" />
                 <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                 <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
