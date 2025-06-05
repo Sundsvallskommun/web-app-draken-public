@@ -170,6 +170,7 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
     } else if (contactMeans === 'sms') {
       setValue('phone', _phone || '+46');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, contactMeans]);
 
   useEffect(() => {
@@ -187,6 +188,7 @@ export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled
         setRichText(emailBody);
       }, 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, supportAttachments, supportMetadata, showModal]);
 
   const toast = (kind, label) =>
