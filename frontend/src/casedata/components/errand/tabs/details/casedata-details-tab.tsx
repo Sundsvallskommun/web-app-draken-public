@@ -402,7 +402,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="w-full py-24 px-32">
         <div className="flex">
           <div className="w-full">
-            <h2 className="text-h2-md">Ärendeuppgifter</h2>
+            <h2 className="text-h4-sm md:text-h4-md">Ärendeuppgifter</h2>
             {errand?.externalCaseId ? (
               <>
                 <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}

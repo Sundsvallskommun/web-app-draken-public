@@ -30,6 +30,7 @@ export const SidebarHistory: React.FC<{}> = () => {
         setIsLoading(false);
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export const SidebarHistory: React.FC<{}> = () => {
           setSelectedIndex(undefined);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex]);
 
   return (

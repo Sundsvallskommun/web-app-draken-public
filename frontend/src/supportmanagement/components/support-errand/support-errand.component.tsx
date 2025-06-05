@@ -18,6 +18,7 @@ import * as yup from 'yup';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
+import { MessagePortal } from './sidebar/message-portal.component';
 
 let formSchema = yup
   .object({
@@ -26,6 +27,7 @@ let formSchema = yup
     type: yup.string().required('Välj ärendetyp'),
     channel: yup.string().required('Välj kanal'),
     description: yup.string(),
+    parameters: yup.array(),
   })
   .required();
 
@@ -183,7 +185,12 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
 
                   <section className="bg-transparent pb-4">
                     <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
-                      {supportErrand && <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />}
+                      {supportErrand && (
+                        <>
+                          <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />
+                          <MessagePortal />
+                        </>
+                      )}
                     </div>
                   </section>
                 </div>

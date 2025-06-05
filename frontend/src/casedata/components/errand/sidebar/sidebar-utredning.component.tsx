@@ -215,6 +215,7 @@ export const SidebarUtredning: React.FC = () => {
       setRichText(existingUtredning.description);
       setValue('outcome', existingUtredning.decisionOutcome);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   return (

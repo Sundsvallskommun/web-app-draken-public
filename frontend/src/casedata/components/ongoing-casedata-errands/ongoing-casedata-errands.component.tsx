@@ -1,7 +1,10 @@
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
+import { ExportButton } from '@common/components/export-button/export-button.component';
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
+import { appConfig } from '@config/appconfig';
 import { Disclosure } from '@headlessui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useRouter } from 'next/router';
@@ -9,9 +12,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { ExportButton } from '@common/components/export-button/export-button.component';
-import { isExportEnabled } from '@common/services/feature-flag-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -263,7 +263,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
                   ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
                   : null}
               </h1>
-              {isExportEnabled() && <ExportButton errands={errands} municipalityId={municipalityId} />}
+              {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
 
             <Disclosure.Panel static>

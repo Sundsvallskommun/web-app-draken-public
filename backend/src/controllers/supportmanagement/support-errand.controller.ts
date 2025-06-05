@@ -412,7 +412,6 @@ export class SupportErrandController {
     @QueryParam('labelType') labelType: string,
     @QueryParam('labelSubType') labelSubType: string,
     @QueryParam('channel') channel: string,
-    @QueryParam('ongoing') ongoing: string,
     @QueryParam('status') status: string,
     @QueryParam('resolution') resolution: string,
     @QueryParam('start') start: string,
@@ -488,9 +487,6 @@ export class SupportErrandController {
     }
     if (channel) {
       filterList.push(`channel:'${channel}'`);
-    }
-    if (ongoing) {
-      filterList.push(`not(status:'SOLVED')`);
     }
     if (status) {
       const ss = status.split(',').map(s => `status:'${s}'`);

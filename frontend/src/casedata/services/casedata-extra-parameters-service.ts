@@ -1069,6 +1069,13 @@ const template: ExtraParametersObject = {
   ],
 };
 
+export const getExtraParametersLabels = (caseType: string): { [key: string]: string } => {
+  return template[caseType]?.reduce((acc, field) => {
+    acc[field.field] = field.label;
+    return acc;
+  }, {});
+};
+
 export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
   // Create base template encompassing all case types
   const obj: Partial<ExtraParametersObject> = { ...template };

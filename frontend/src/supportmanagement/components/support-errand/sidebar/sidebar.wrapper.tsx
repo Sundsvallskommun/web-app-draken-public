@@ -1,6 +1,4 @@
-import { useGui } from '@sk-web-gui/react';
 import { Dispatch, KeyboardEvent, SetStateAction, useRef, useState } from 'react';
-import { useMediaQuery } from 'usehooks-ts';
 import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';

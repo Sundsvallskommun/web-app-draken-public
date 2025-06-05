@@ -43,6 +43,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { isKA, isKC } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
+import { useTranslation } from 'react-i18next';
 
 const PREFILL_VALUE = '+46';
 
@@ -62,8 +63,8 @@ export interface SupportMessageFormModel {
   headerReferences: string;
   addExisting: string;
   existingAttachments: SingleSupportAttachment[];
+  messageTemplate?: string;
 }
-
 let formSchema = yup
   .object({
     id: yup.string(),
@@ -118,6 +119,7 @@ let formSchema = yup
     headerReplyTo: yup.string(),
     headerReferences: yup.string(),
     existingAttachments: yup.array(),
+    messageTemplate: yup.string(),
   })
   .required();
 
@@ -150,7 +152,7 @@ export const SupportMessageForm: React.FC<{
   } = useAppContext();
 
   const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
-
+  const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [isSending, setIsSending] = useState(false);
@@ -340,7 +342,9 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'email') {
-      setValue('emails', [{ value: props.prefillEmail }]);
+      if (props.prefillEmail !== undefined) {
+        setValue('emails', [{ value: props.prefillEmail }]);
+      }
       setRichText(emailBody);
     } else if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
@@ -483,7 +487,48 @@ export const SupportMessageForm: React.FC<{
           </RadioButton>
         </RadioButton.Group>
       </div>
+      {isKA() && (
+        <FormControl className="w-full my-12" size="sm" id="messageTemplate">
+          <FormLabel>Välj meddelandemall</FormLabel>
+          <Select
+            {...register('messageTemplate')}
+            className="w-full text-dark-primary"
+            variant="tertiary"
+            size="sm"
+            onChange={(e) => {
+              const template = e.currentTarget.value;
+              setValue('messageTemplate', template);
 
+              if (template === 'ka-email-normal') {
+                setRichText(t('messages:templates.email.KA.normal'));
+              } else if (template === 'ka-email-request_completion') {
+                setRichText(t('messages:templates.email.KA.request_completion'));
+              } else if (template === 'ka-sms-normal') {
+                setRichText(t('messages:templates.sms.KA.normal'));
+              } else if (template === 'ka-sms-request_completion') {
+                setRichText(t('messages:templates.sms.KA.request_completion'));
+              } else {
+                setRichText(emailBody);
+              }
+            }}
+          >
+            <Select.Option value="">Välj mall</Select.Option>
+            {contactMeans === 'email' && isKA() && (
+              <>
+                <Select.Option value="ka-email-normal">Grundmall (e-post)</Select.Option>
+                <Select.Option value="ka-email-request_completion">Begär komplettering (e-post)</Select.Option>
+              </>
+            )}
+
+            {contactMeans === 'sms' && isKA() && (
+              <>
+                <Select.Option value="ka-sms-normal">Grundmall (sms)</Select.Option>
+                <Select.Option value="ka-sms-request_completion">Begär komplettering (sms)</Select.Option>
+              </>
+            )}
+          </Select>
+        </FormControl>
+      )}
       <div className="flex mt-24">
         <div className="w-full">
           <strong>Ditt meddelande</strong>
