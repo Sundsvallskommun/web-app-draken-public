@@ -14,7 +14,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const simpleParams = useMemo(
     () =>
       supportErrand.parameters.filter((p) => {
-        return !p.displayName.includes('|');
+        return typeof p.displayName === 'string' && !p.displayName.includes('|');
       }),
     [supportErrand.parameters]
   );
@@ -22,7 +22,10 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const tableParams = useMemo(
     () =>
       supportErrand?.parameters?.filter(
-        (param) => param.displayName.includes('|') && param.displayName.split('|').length > 1
+        (param) =>
+          typeof param.displayName === 'string' &&
+          param.displayName.includes('|') &&
+          param.displayName.split('|').length > 1
       ) || [],
     [supportErrand.parameters]
   );
