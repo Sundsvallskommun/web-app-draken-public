@@ -34,7 +34,7 @@ export const buildDefaultEscalationEmailContent = (e: SupportErrand, user: strin
   <p><b>Inkom via:</b> ${channel}</p>
   <p>${e.channel === 'EMAIL' ? `<b>Ämnesrad:</b> ${e.title}` : ''}</p>
   <p><b>Ärendet registrerades:</b> ${dayjs(e.created).format('YYYY-MM-DD HH:mm')}</p>
-  <p><b>Ärendenummer:</b> ${e.errandNumber}</p>
+  <p><b>Ärendenummer i Draken:</b> ${e.errandNumber}</p>
   
   ${description ? `<b>Ärendebeskrivning</b><p>${description}</p>` : ''}
 
