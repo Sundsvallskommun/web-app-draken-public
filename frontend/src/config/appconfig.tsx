@@ -26,6 +26,7 @@ interface AppConfigFeatures {
   useEmailContactChannel: boolean;
   useSmsContactChannel: boolean;
   useRolesForStakeholders: boolean;
+  useDetailsTab: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -50,6 +51,7 @@ export const appConfig: AppConfig = {
     useEmailContactChannel: process.env.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL === 'true',
     useSmsContactChannel: process.env.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL === 'true',
     useRolesForStakeholders: process.env.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS === 'true',
+    useDetailsTab: process.env.NEXT_PUBLIC_USE_DETAILS_TAB === 'true',
   },
 };
 
