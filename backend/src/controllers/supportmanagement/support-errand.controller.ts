@@ -473,18 +473,35 @@ export class SupportErrandController {
     if (labelCategory || labelType || labelSubType) {
       const labelCategoryList = labelCategory?.split(',');
       const labelTypeList = labelType?.split(',');
-      let labels = labelSubType ? labelSubType.split(',') : labelType ? labelType.split(',') : labelCategory.split(',');
+      const labelSubTypeList = labelSubType?.split(',');
       if (labelCategory) {
-        labels = labels.filter(l => labelCategoryList.some(c => l.split('.')[0] === c));
+        if (labelCategoryList.length > 0) {
+          const ss = labelCategoryList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
       }
       if (labelType) {
-        labels = labels.filter(l => labelTypeList.some(c => l.split('.')[0] === c));
+        if (labelTypeList.length > 0) {
+          const ss = labelTypeList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
       }
-      const ss = labels
-        .join(',')
-        .split(',')
-        .map(s => `labels:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
+      if (labelSubType) {
+        if (labelSubTypeList.length > 0) {
+          const ss = labelSubTypeList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
+      }
+      console.log('filterList', filterList);
     }
     if (channel) {
       filterList.push(`channel:'${channel}'`);
