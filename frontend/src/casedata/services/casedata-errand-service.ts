@@ -33,10 +33,11 @@ import { getApplicationEnvironment, isMEX, isPT } from '@common/services/applica
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { replaceExtraParameter } from './casedata-extra-parameters-service';
+import { v4 as uuidv4 } from 'uuid';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -113,6 +114,10 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
       return 'Ärenden';
     }
   }
+};
+
+export const isFTErrand = (errand: IErrand) => {
+  return Object.values(FTCaseType).includes(errand.caseType as FTCaseType);
 };
 
 export const findPriorityKeyForPriorityLabel = (key: string) =>
@@ -378,22 +383,29 @@ export const useErrands = (
     suspendedErrands,
   } = useAppContext();
 
+  //Fix for slow loading of errands, can be removed when backend is fixed
+  const currentRequestId = useRef<string | null>(null);
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      const requestId = uuidv4();
+      currentRequestId.current = requestId;
       setIsLoading(true);
       if (!filter) {
         return;
       }
       await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
-          setErrands({ ...res, isLoading: false });
-          if (res.error && res.error !== '404') {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Ärenden kunde inte hämtas',
-              status: 'error',
-            });
+          if (currentRequestId.current === requestId) {
+            setErrands({ ...res, isLoading: false });
+            if (res.error && res.error !== '404') {
+              toastMessage({
+                position: 'bottom',
+                closeable: false,
+                message: 'Ärenden kunde inte hämtas',
+                status: 'error',
+              });
+            }
           }
         })
         .catch(() => {
@@ -513,8 +525,11 @@ export const useErrands = (
             });
           }),
       ];
-      return Promise.allSettled(fetchPromises);
+      if (currentRequestId.current == requestId) {
+        return Promise.allSettled(fetchPromises);
+      }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       setErrands,
       setNewErrands,
@@ -536,6 +551,7 @@ export const useErrands = (
     if (size && size > 0) {
       fetchErrands().then(() => setIsLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, size, sort]);
 
   useEffect(() => {

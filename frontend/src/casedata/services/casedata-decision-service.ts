@@ -11,6 +11,7 @@ import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
+import { isFTErrand } from './casedata-errand-service';
 
 export const lawMapping: Law[] = [
   {
@@ -77,7 +78,7 @@ export const saveDecision: (
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,
     law: [
-      isPT()
+      isPT() && !isFTErrand(errand)
         ? {
             heading: formData.law[0].heading,
             sfs: formData.law[0].sfs,
