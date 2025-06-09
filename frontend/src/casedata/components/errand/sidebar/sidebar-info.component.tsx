@@ -90,6 +90,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     } else {
       setValue('status', 'Välj status');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, administrators]);
 
   useEffect(() => {
@@ -208,6 +209,7 @@ export const SidebarInfo: React.FC<{}> = () => {
 
   const { admin } = watch();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const status = useMemo(() => getValues().status, [getValues()]);
 
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
