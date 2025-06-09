@@ -34,6 +34,7 @@ import {
   Channels,
   Status,
   SupportErrand,
+  getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -164,7 +165,7 @@ export const SupportMessageForm: React.FC<{
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
-
+  const { setSupportErrand } = useAppContext();
   const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
 
@@ -308,15 +309,15 @@ export const SupportMessageForm: React.FC<{
           clearErrors();
           props.setShowMessageForm(false);
         }, 0);
-        setTimeout(() => {
-          props.update();
-        }, 500);
 
         if (typeOfMessage === 'infoCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
         } else if (typeOfMessage === 'internalCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
         }
+
+        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+        setSupportErrand(updated.errand);
 
         toastMessage({
           position: 'bottom',
@@ -355,10 +356,12 @@ export const SupportMessageForm: React.FC<{
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.prefillEmail, props.prefillPhone]);
 
   useEffect(() => {
     setValue('id', props.supportErrandId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.supportErrandId]);
 
   const { fields, remove, append } = useFieldArray({
@@ -387,6 +390,7 @@ export const SupportMessageForm: React.FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message]);
 
   return (
