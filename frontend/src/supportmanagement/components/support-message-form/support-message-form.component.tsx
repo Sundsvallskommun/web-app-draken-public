@@ -34,6 +34,7 @@ import {
   Channels,
   Status,
   SupportErrand,
+  getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -43,6 +44,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { isKA, isKC } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
+import { useTranslation } from 'react-i18next';
 
 const PREFILL_VALUE = '+46';
 
@@ -62,8 +64,8 @@ export interface SupportMessageFormModel {
   headerReferences: string;
   addExisting: string;
   existingAttachments: SingleSupportAttachment[];
+  messageTemplate?: string;
 }
-
 let formSchema = yup
   .object({
     id: yup.string(),
@@ -118,6 +120,7 @@ let formSchema = yup
     headerReplyTo: yup.string(),
     headerReferences: yup.string(),
     existingAttachments: yup.array(),
+    messageTemplate: yup.string(),
   })
   .required();
 
@@ -150,7 +153,7 @@ export const SupportMessageForm: React.FC<{
   } = useAppContext();
 
   const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
-
+  const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [isSending, setIsSending] = useState(false);
@@ -162,7 +165,7 @@ export const SupportMessageForm: React.FC<{
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
-
+  const { setSupportErrand } = useAppContext();
   const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
 
@@ -174,7 +177,11 @@ export const SupportMessageForm: React.FC<{
     defaultValues: {
       id: props.supportErrandId,
       messageContact: true,
-      contactMeans: '',
+      contactMeans:
+        Channels[supportErrand.channel] === Channels.ESERVICE ||
+        Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+          ? 'webmessage'
+          : 'email',
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -306,15 +313,15 @@ export const SupportMessageForm: React.FC<{
           clearErrors();
           props.setShowMessageForm(false);
         }, 0);
-        setTimeout(() => {
-          props.update();
-        }, 500);
 
         if (typeOfMessage === 'infoCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
         } else if (typeOfMessage === 'internalCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
         }
+
+        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+        setSupportErrand(updated.errand);
 
         toastMessage({
           position: 'bottom',
@@ -340,7 +347,9 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'email') {
-      setValue('emails', [{ value: props.prefillEmail }]);
+      if (props.prefillEmail !== undefined) {
+        setValue('emails', [{ value: props.prefillEmail }]);
+      }
       setRichText(emailBody);
     } else if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
@@ -351,10 +360,12 @@ export const SupportMessageForm: React.FC<{
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.prefillEmail, props.prefillPhone]);
 
   useEffect(() => {
     setValue('id', props.supportErrandId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.supportErrandId]);
 
   const { fields, remove, append } = useFieldArray({
@@ -383,6 +394,7 @@ export const SupportMessageForm: React.FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message]);
 
   return (
@@ -397,16 +409,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useEmail-radiobutton-true"
               className="mr-sm mt-4"
-              name="useEmail"
+              name="contactMeans"
               id="useEmail"
-              value={'email'}
-              defaultChecked={
-                !(
-                  Channels[supportErrand.channel] === Channels.ESERVICE ||
-                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-                )
-              }
-              {...register('contactMeans')}
+              value="email"
+              checked={contactMeans === 'email'}
+              onChange={() => setValue('contactMeans', 'email')}
             >
               E-post
             </RadioButton>
@@ -416,11 +423,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useSms-radiobutton-true"
               className="mr-sm mt-4"
-              name="useSms"
+              name="contactMeans"
               id="useSms"
-              value={'sms'}
-              defaultChecked={false}
-              {...register('contactMeans')}
+              value="sms"
+              checked={contactMeans === 'sms'}
+              onChange={() => setValue('contactMeans', 'sms')}
             >
               SMS
             </RadioButton>
@@ -431,16 +438,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useWebmessage-radiobutton-true"
               className="mr-sm mt-4"
-              name="useWebmessage"
+              name="contactMeans"
               id="useWebmessage"
-              value={'webmessage'}
-              defaultChecked={
-                !!(
-                  Channels[supportErrand.channel] === Channels.ESERVICE ||
-                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-                )
-              }
-              {...register('contactMeans')}
+              value="webmessage"
+              checked={contactMeans === 'webmessage'}
+              onChange={() => setValue('contactMeans', 'webmessage')}
             >
               E-tjänst
             </RadioButton>
@@ -453,37 +455,78 @@ export const SupportMessageForm: React.FC<{
         <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="newMessage"
-            value={'email'}
-            defaultChecked={true}
-            onClick={() => setTypeOfMessage('newMessage')}
+            name="useNewMessage"
+            id="useNewMessage"
+            value="newMessage"
+            checked={typeOfMessage === 'newMessage'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Nytt meddelande
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="infoCompletion"
-            value={'infoCompletion'}
-            defaultChecked={false}
-            onClick={() => setTypeOfMessage('infoCompletion')}
+            name="useInfoCompletion"
+            id="useInfoCompletion"
+            value="infoCompletion"
+            checked={typeOfMessage === 'infoCompletion'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Begär komplettering
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="internalCompletion"
-            value={'internalCompletion'}
-            defaultChecked={false}
-            onClick={() => setTypeOfMessage('internalCompletion')}
+            name="useInternalCompletion"
+            id="useInternalCompletion"
+            value="internalCompletion"
+            checked={typeOfMessage === 'internalCompletion'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Begär intern återkoppling
           </RadioButton>
         </RadioButton.Group>
       </div>
+      {isKA() && (
+        <FormControl className="w-full my-12" size="sm" id="messageTemplate">
+          <FormLabel>Välj meddelandemall</FormLabel>
+          <Select
+            {...register('messageTemplate')}
+            className="w-full text-dark-primary"
+            variant="tertiary"
+            size="sm"
+            onChange={(e) => {
+              const template = e.currentTarget.value;
+              setValue('messageTemplate', template);
 
+              if (template === 'ka-email-normal') {
+                setRichText(t('messages:templates.email.KA.normal'));
+              } else if (template === 'ka-email-request_completion') {
+                setRichText(t('messages:templates.email.KA.request_completion'));
+              } else if (template === 'ka-sms-normal') {
+                setRichText(t('messages:templates.sms.KA.normal'));
+              } else if (template === 'ka-sms-request_completion') {
+                setRichText(t('messages:templates.sms.KA.request_completion'));
+              } else {
+                setRichText(emailBody);
+              }
+            }}
+          >
+            <Select.Option value="">Välj mall</Select.Option>
+            {contactMeans === 'email' && isKA() && (
+              <>
+                <Select.Option value="ka-email-normal">Grundmall (e-post)</Select.Option>
+                <Select.Option value="ka-email-request_completion">Begär komplettering (e-post)</Select.Option>
+              </>
+            )}
+
+            {contactMeans === 'sms' && isKA() && (
+              <>
+                <Select.Option value="ka-sms-normal">Grundmall (sms)</Select.Option>
+                <Select.Option value="ka-sms-request_completion">Begär komplettering (sms)</Select.Option>
+              </>
+            )}
+          </Select>
+        </FormControl>
+      )}
       <div className="flex mt-24">
         <div className="w-full">
           <strong>Ditt meddelande</strong>

@@ -9,6 +9,10 @@ import { SupportMessageForm } from '../../../support-message-form/support-messag
 import MessageTreeComponent from './support-messages-tree.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useTranslation } from 'next-i18next';
+import {
+  getDefaultEmailBody,
+  getDefaultSmsBody,
+} from '@supportmanagement/components/templates/default-message-template';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -29,25 +33,14 @@ export const SupportMessagesTab: React.FC<{
   const [sortedMessages, setSortedMessages] = useState(props.messages);
   const { t } = useTranslation();
 
-  const emailBody = t(
-    `messages:templates.email.${process.env.NEXT_PUBLIC_APPLICATION}`,
-    t(`messages:templates.email.default`),
-    {
-      user: `${user.firstName} ${user.lastName}`,
-    }
-  );
-
-  const smsBody = t(
-    `messages:templates.sms.${process.env.NEXT_PUBLIC_APPLICATION}`,
-    t(`messages:templates.sms.default`),
-    {
-      user: `${user.firstName}`,
-    }
-  );
+  const emailBody = getDefaultEmailBody(user, t);
+  const smsBody = getDefaultSmsBody(user, t);
 
   useEffect(() => {
     setRichText(smsBody);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   useEffect(() => {
     const _a = validateAction(supportErrand, user);
     setAllowed(_a);

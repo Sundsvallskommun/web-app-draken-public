@@ -10,7 +10,7 @@ import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagemen
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
@@ -401,6 +401,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   newAttachment: undefined,
   attachments: [],
   externalTags: [],
+  parameters: [],
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
@@ -435,21 +436,28 @@ export const useSupportErrands = (
   const unparsedStoredFilter = store.get('filter');
   const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
 
+  //Fix for slow loading of errands, can be removed when backend is fixed
+  const currentRequestId = useRef<string | null>(null);
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      const requestId = uuidv4();
+      currentRequestId.current = requestId;
       setIsLoading(true);
-      await getSupportErrands(municipalityId, page, size, filter, sort)
-        .then((res) => {
-          setSupportErrands({ ...res, isLoading: false });
-        })
-        .catch(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ärenden kunde inte hämtas',
-            status: 'error',
+      if (currentRequestId.current === requestId) {
+        await getSupportErrands(municipalityId, page, size, filter, sort)
+          .then((res) => {
+            setSupportErrands({ ...res, isLoading: false });
+          })
+          .catch(() => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Ärenden kunde inte hämtas',
+              status: 'error',
+            });
           });
-        });
+      }
 
       const sidebarUpdatePromises = [
         getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW })
@@ -526,7 +534,9 @@ export const useSupportErrands = (
             });
           }),
       ];
-      return Promise.allSettled(sidebarUpdatePromises);
+      if (currentRequestId.current == requestId) {
+        return Promise.allSettled(sidebarUpdatePromises);
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -553,6 +563,7 @@ export const useSupportErrands = (
     if (typeof page !== 'undefined' && size && size > 0) {
       fetchErrands().then(() => setIsLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, size, sort]);
 
   useEffect(() => {
@@ -794,6 +805,7 @@ export const updateSupportErrand: (
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
     externalTags: formdata.externalTags || [],
+    parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {
     data.externalTags.push({
@@ -1004,7 +1016,7 @@ export const forwardSupportErrand: (
       headerReplyTo: '',
       headerReferences: '',
       emails: data.emails,
-      subject: 'Vidarebefordran av ärende',
+      subject: `Överlämnat ärende (#${errand.errandNumber}) ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,
       senderName: user.name,
