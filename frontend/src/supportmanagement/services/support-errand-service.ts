@@ -1016,7 +1016,7 @@ export const forwardSupportErrand: (
       headerReplyTo: '',
       headerReferences: '',
       emails: data.emails,
-      subject: `Överlämnat ärende (#${errand.errandNumber}) ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
+      subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,
       senderName: user.name,
