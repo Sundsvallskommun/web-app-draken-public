@@ -27,7 +27,7 @@ export const buildKAEscalationEmailContent = (e: SupportErrand, user: string): s
 
   return `
 <p>Hej,</p>
-<p><strong>Subjekt i mailet:</strong> Överlämnat ärende ${e.errandNumber || ''} ${subject}</p>
+
 <p>Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.</p>
 <p><strong>Inkom via:</strong> ${channel}</p>
 

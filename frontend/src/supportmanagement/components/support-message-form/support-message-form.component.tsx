@@ -34,6 +34,7 @@ import {
   Channels,
   Status,
   SupportErrand,
+  getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
@@ -164,7 +165,7 @@ export const SupportMessageForm: React.FC<{
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
-
+  const { setSupportErrand } = useAppContext();
   const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
 
@@ -176,7 +177,11 @@ export const SupportMessageForm: React.FC<{
     defaultValues: {
       id: props.supportErrandId,
       messageContact: true,
-      contactMeans: '',
+      contactMeans:
+        Channels[supportErrand.channel] === Channels.ESERVICE ||
+        Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+          ? 'webmessage'
+          : 'email',
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -308,15 +313,15 @@ export const SupportMessageForm: React.FC<{
           clearErrors();
           props.setShowMessageForm(false);
         }, 0);
-        setTimeout(() => {
-          props.update();
-        }, 500);
 
         if (typeOfMessage === 'infoCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
         } else if (typeOfMessage === 'internalCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
         }
+
+        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+        setSupportErrand(updated.errand);
 
         toastMessage({
           position: 'bottom',
@@ -342,7 +347,9 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'email') {
-      setValue('emails', [{ value: props.prefillEmail }]);
+      if (props.prefillEmail !== undefined) {
+        setValue('emails', [{ value: props.prefillEmail }]);
+      }
       setRichText(emailBody);
     } else if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
@@ -353,10 +360,12 @@ export const SupportMessageForm: React.FC<{
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.prefillEmail, props.prefillPhone]);
 
   useEffect(() => {
     setValue('id', props.supportErrandId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.supportErrandId]);
 
   const { fields, remove, append } = useFieldArray({
@@ -385,6 +394,7 @@ export const SupportMessageForm: React.FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message]);
 
   return (
@@ -399,16 +409,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useEmail-radiobutton-true"
               className="mr-sm mt-4"
-              name="useEmail"
+              name="contactMeans"
               id="useEmail"
-              value={'email'}
-              defaultChecked={
-                !(
-                  Channels[supportErrand.channel] === Channels.ESERVICE ||
-                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-                )
-              }
-              {...register('contactMeans')}
+              value="email"
+              checked={contactMeans === 'email'}
+              onChange={() => setValue('contactMeans', 'email')}
             >
               E-post
             </RadioButton>
@@ -418,11 +423,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useSms-radiobutton-true"
               className="mr-sm mt-4"
-              name="useSms"
+              name="contactMeans"
               id="useSms"
-              value={'sms'}
-              defaultChecked={false}
-              {...register('contactMeans')}
+              value="sms"
+              checked={contactMeans === 'sms'}
+              onChange={() => setValue('contactMeans', 'sms')}
             >
               SMS
             </RadioButton>
@@ -433,16 +438,11 @@ export const SupportMessageForm: React.FC<{
               disabled={props.locked}
               data-cy="useWebmessage-radiobutton-true"
               className="mr-sm mt-4"
-              name="useWebmessage"
+              name="contactMeans"
               id="useWebmessage"
-              value={'webmessage'}
-              defaultChecked={
-                !!(
-                  Channels[supportErrand.channel] === Channels.ESERVICE ||
-                  Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
-                )
-              }
-              {...register('contactMeans')}
+              value="webmessage"
+              checked={contactMeans === 'webmessage'}
+              onChange={() => setValue('contactMeans', 'webmessage')}
             >
               E-tjänst
             </RadioButton>
@@ -455,31 +455,31 @@ export const SupportMessageForm: React.FC<{
         <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="newMessage"
-            value={'email'}
-            defaultChecked={true}
-            onClick={() => setTypeOfMessage('newMessage')}
+            name="useNewMessage"
+            id="useNewMessage"
+            value="newMessage"
+            checked={typeOfMessage === 'newMessage'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Nytt meddelande
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="infoCompletion"
-            value={'infoCompletion'}
-            defaultChecked={false}
-            onClick={() => setTypeOfMessage('infoCompletion')}
+            name="useInfoCompletion"
+            id="useInfoCompletion"
+            value="infoCompletion"
+            checked={typeOfMessage === 'infoCompletion'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Begär komplettering
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="typeOfMessage"
-            id="internalCompletion"
-            value={'internalCompletion'}
-            defaultChecked={false}
-            onClick={() => setTypeOfMessage('internalCompletion')}
+            name="useInternalCompletion"
+            id="useInternalCompletion"
+            value="internalCompletion"
+            checked={typeOfMessage === 'internalCompletion'}
+            onChange={(e) => setTypeOfMessage(e.target.value)}
           >
             Begär intern återkoppling
           </RadioButton>

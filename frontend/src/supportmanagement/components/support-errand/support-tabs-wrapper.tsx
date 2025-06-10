@@ -1,5 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment, isIK, isLOP } from '@common/services/application-service';
+import { getApplicationEnvironment, isIK, isLOP, isROB } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
@@ -108,7 +108,7 @@ export const SupportTabsWrapper: React.FC<{
       label: 'Ärendeuppgifter',
       content: supportErrand && <SupportErrandDetailsTab />,
       disabled: false,
-      visibleFor: isLOP() || isIK(),
+      visibleFor: appConfig.features.useDetailsTab,
     },
     {
       label: `Meddelanden (${countUnreadMessages(messages)})`,
