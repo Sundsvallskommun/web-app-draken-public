@@ -68,7 +68,7 @@ const getClosingMessageBody = (): string => {
   }
 
   if (isIK()) {
-    `Hej,<br><br>
+    return `Hej,<br><br>
     Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
     Med vänliga hälsningar<br>
     Intern Kundtjänst<br>
