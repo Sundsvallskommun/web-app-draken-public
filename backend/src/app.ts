@@ -21,7 +21,6 @@ import {
   SWAGGER_ENABLED,
 } from '@config';
 import errorMiddleware from '@middlewares/error.middleware';
-import { PrismaClient } from '@prisma/client';
 import { logger, stream } from '@utils/logger';
 import bodyParser from 'body-parser';
 import { defaultMetadataStorage } from 'class-transformer/cjs/storage';
@@ -43,7 +42,6 @@ import createFileStore from 'session-file-store';
 import swaggerUi from 'swagger-ui-express';
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
-import ApiService from '@services/api.service';
 import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -54,10 +52,6 @@ const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createF
 const sessionTTL = 4 * 24 * 60 * 60;
 // NOTE: memory uses ms while file uses seconds
 const sessionStore = new SessionStoreCreate(SESSION_MEMORY ? { checkPeriod: sessionTTL * 1000 } : { ttl: sessionTTL, path: './data/sessions' });
-
-const prisma = new PrismaClient();
-
-const apiService = new ApiService();
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -145,18 +139,6 @@ const samlStrategy = new Strategy(
       };
 
       logger.info(`Found user: ${JSON.stringify(findUser)}`);
-
-      const userSettings = await prisma.userSettings.findFirst({ where: { username: findUser.username } });
-      // Create user settings for new users
-      const data = {
-        username: findUser.username,
-        readNotificationsClearedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-      if (!userSettings) {
-        await prisma.userSettings.create({
-          data,
-        });
-      }
 
       done(null, findUser);
     } catch (err) {

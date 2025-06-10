@@ -21,7 +21,12 @@ export const MessagePortal: React.FC = () => {
   const close = () => setShow(false);
 
   useEffect(() => {
-    setRichText(emailBody);
+    const handler = () => {
+      setRichText(emailBody);
+      setShow(true);
+    };
+    window.addEventListener('openMessage', handler);
+    return () => window.removeEventListener('openMessage', handler);
   }, [emailBody]);
 
   useEffect(() => {
