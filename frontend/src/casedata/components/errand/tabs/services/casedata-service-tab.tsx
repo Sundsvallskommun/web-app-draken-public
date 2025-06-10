@@ -1,9 +1,10 @@
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+// import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { FormControl, FormLabel, Button, Select, RadioButton, Checkbox, DatePicker, Combobox } from '@sk-web-gui/react';
 import { useRef, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
 import { serviceAddons, serviceAids, serviceModeOfTransportation, serviceTravelTypes } from './service';
+import TextEditor from '@sk-web-gui/text-editor';
 
 export const CasedataServicesTab: React.FC = () => {
   const [serviceText, setServiceText] = useState('');
@@ -243,12 +244,12 @@ export const CasedataServicesTab: React.FC = () => {
       </div>
 
       <div className="mt-24 h-[19rem]">
-        <RichTextEditor
-          ref={quillRef}
-          value={serviceText}
-          onChange={onRichTextChange}
-          isMaximizable={false}
-          containerLabel="service"
+        <TextEditor
+        // ref={quillRef}
+        // value={serviceText}
+        // onChange={onRichTextChange}
+        // isMaximizable={false}
+        // containerLabel="service"
         />
       </div>
 

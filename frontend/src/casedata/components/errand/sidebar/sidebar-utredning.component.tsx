@@ -9,12 +9,10 @@ import {
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
@@ -34,14 +32,14 @@ export interface UtredningFormModel {
 
 let formSchema = yup
   .object({
-    id: yup.number(),
+    id: yup.string(),
     errandNumber: yup.string(),
     description: yup.string().required('Text måste anges'),
-    law: yup.string(),
+    law: yup.object(),
     outcome: yup.string(),
     validFrom: yup.string(),
     validTo: yup.string(),
-    decidedBy: yup.string(),
+    decidedBy: yup.object(),
     extraParameters: yup.object(),
   })
   .required();
@@ -81,7 +79,7 @@ export const SidebarUtredning: React.FC = () => {
     getValues,
     formState: { errors },
   }: UseFormReturn<UtredningFormModel, any, undefined> = useForm({
-    resolver: yupResolver(formSchema),
+    //resolver: yupResolver(formSchema),
     mode: 'onChange',
   });
 
@@ -231,7 +229,7 @@ export const SidebarUtredning: React.FC = () => {
         <FormControl id="description" className="w-full">
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
           <div className="h-[42rem] -mb-48" data-cy="utredning-richtext-wrapper">
-            <RichTextEditor
+            {/* <TextEditor
               ref={quillRefUtredning}
               containerLabel="utredning"
               value={richText}
@@ -246,7 +244,7 @@ export const SidebarUtredning: React.FC = () => {
                 }
                 return onRichTextChange(value);
               }}
-            />
+            /> */}
           </div>
           <div className="my-sm">
             {errors.description && formState.isDirty && (

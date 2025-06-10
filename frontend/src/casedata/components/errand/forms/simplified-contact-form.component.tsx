@@ -90,37 +90,42 @@ export const SimplifiedContactForm: React.FC<{
   const yupContact = yup.object().shape(
     {
       id: yup.string(),
-      personalNumber: yup.string().when('stakeholderType', {
+      personalNumber: yup.string().when(['stakeholderType'], {
         is: (type: string) => type === 'PERSON',
-        then: yup
-          .string()
-          .trim()
-          .matches(ssnPattern, invalidSsnMessage)
-          .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+        then: (schema) =>
+          schema
+            .trim()
+            .matches(ssnPattern, invalidSsnMessage)
+            .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+        otherwise: (schema) => schema,
       }),
       personId: yup.string(),
       stakeholderType: yup.string(),
-      organizationName: yup.string().when(['stakeholderType', 'lastName'], {
-        is: (sType: string, lastName: string) =>
-          sType === 'ORGANIZATION' && (searchMode === 'organization' || searchMode === 'enterprise'),
-        then: yup.string().required('Organisationsnamn måste anges'),
+      organizationName: yup.string().when(['stakeholderType', 'lastName'], ([sType, lastName], schema) => {
+        if (sType === 'ORGANIZATION' && (searchMode === 'organization' || searchMode === 'enterprise')) {
+          return schema.required('Organisationsnamn måste anges');
+        }
+        return schema;
       }),
-      organizationNumber: yup.string().when('stakeholderType', {
+      organizationNumber: yup.string().when(['stakeholderType'], {
         is: (type: string) => type === 'ORGANIZATION',
-        then: yup
-          .string()
-          .trim()
-          .matches(orgNumberPattern, invalidOrgNumberMessage)
-          .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+        then: (schema) =>
+          schema
+            .trim()
+            .matches(orgNumberPattern, invalidOrgNumberMessage)
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+        otherwise: (schema) => schema,
       }),
 
-      firstName: yup.string().when('organizationName', {
+      firstName: yup.string().when(['organizationName'], {
         is: (_: string) => searchMode === 'person',
-        then: yup.string().required('Förnamn måste anges'),
+        then: (schema) => schema.required('Förnamn måste anges'),
+        otherwise: (schema) => schema,
       }),
-      lastName: yup.string().when('organizationName', {
+      lastName: yup.string().when(['organizationName'], {
         is: (_: string) => searchMode === 'person',
-        then: yup.string().required('Efternamn måste anges'),
+        then: (schema) => schema.required('Efternamn måste anges'),
+        otherwise: (schema) => schema,
       }),
       relation: yup.string(),
 
@@ -171,8 +176,8 @@ export const SimplifiedContactForm: React.FC<{
               })
             )
             .min(1, 'Ange minst en e-postadress och ett telefonnummer'),
-      primaryContact: yup.boolean(),
-      messageAllowed: yup.boolean(),
+      // primaryContact: yup.boolean(),
+      // messageAllowed: yup.boolean(),
       roles: yup.array().of(yup.string()),
     },
     [
@@ -210,7 +215,7 @@ export const SimplifiedContactForm: React.FC<{
     reset,
     formState: { errors },
   } = useForm<CasedataOwnerOrContact>({
-    resolver: yupResolver(yupContact),
+    //resolver: yupResolver(yupContact),
     defaultValues: contact,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });

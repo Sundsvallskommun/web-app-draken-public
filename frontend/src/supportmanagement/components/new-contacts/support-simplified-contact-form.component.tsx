@@ -47,7 +47,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import React, { useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 
@@ -79,24 +79,22 @@ export const SupportSimplifiedContactForm: React.FC<{
       id: yup.string(),
       personNumber: allowOrganization
         ? yup.string().when('stakeholderType', {
-            is: (type: string) => type === 'PERSON',
-            then: yup
-              .string()
-              .trim()
-              .matches(ssnPattern, invalidSsnMessage)
-              .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+            is: (stakeholderType: string) => stakeholderType === 'PERSON',
+            then: (schema: yup.StringSchema) =>
+              schema
+                .trim()
+                .matches(ssnPattern, invalidSsnMessage)
+                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+            otherwise: (schema: yup.StringSchema) => schema,
           })
-        : yup.string().when('stakeholderType', {
-            is: (type: string) => {
-              return (
-                type === 'PERSON' &&
-                searchMode === 'employee' &&
-                !personNumber?.toString().startsWith('1') &&
-                !personNumber?.toString().startsWith('2')
-              );
-            },
-            then: (schema) => schema.matches(usernamePattern, invalidUsernameMessage),
-            otherwise: (schema) =>
+        : yup.string().when(['stakeholderType', 'personNumber'], {
+            is: (stakeholderType: string, personNumber: string) =>
+              stakeholderType === 'PERSON' &&
+              searchMode === 'employee' &&
+              !personNumber?.toString().startsWith('1') &&
+              !personNumber?.toString().startsWith('2'),
+            then: (schema: yup.StringSchema) => schema.matches(usernamePattern, invalidUsernameMessage),
+            otherwise: (schema: yup.StringSchema) =>
               schema
                 .trim()
                 .matches(ssnPattern, invalidSsnMessage)
@@ -108,23 +106,23 @@ export const SupportSimplifiedContactForm: React.FC<{
       organizationName: yup.string().when(['stakeholderType', 'lastName'], {
         is: (sType: string, lastName: string) =>
           sType === 'ORGANIZATION' && (searchMode === 'organization' || searchMode === 'enterprise'),
-        then: yup.string().required('Organisationsnamn måste anges'),
+        then: (schema: yup.StringSchema) => schema.required('Organisationsnamn måste anges'),
       }),
       organizationNumber: yup.string().when('stakeholderType', {
         is: (type: string) => type === 'ORGANIZATION',
-        then: yup
-          .string()
-          .trim()
-          .matches(orgNumberPattern, invalidOrgNumberMessage)
-          .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+        then: (schema: yup.StringSchema) =>
+          schema
+            .trim()
+            .matches(orgNumberPattern, invalidOrgNumberMessage)
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
       }),
       firstName: yup.string().when('organizationName', {
         is: (_: string) => searchMode === 'person' || searchMode === 'employee',
-        then: yup.string().required('Förnamn måste anges'),
+        then: (schema: yup.StringSchema) => schema.required('Förnamn måste anges'),
       }),
       lastName: yup.string().when('organizationName', {
         is: (sType: string) => searchMode === 'person' || searchMode === 'employee',
-        then: yup.string().required('Efternamn måste anges'),
+        then: (schema: yup.StringSchema) => schema.required('Efternamn måste anges'),
       }),
       address: yup.string(),
       careOf: yup.string(),
@@ -197,7 +195,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     reset,
     formState: { errors },
   } = useForm<SupportStakeholderFormModel>({
-    resolver: yupResolver(yupContact),
+    resolver: yupResolver(yupContact) as unknown as Resolver<SupportStakeholderFormModel>,
     defaultValues: contact,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });

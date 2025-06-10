@@ -20,7 +20,7 @@ import { AppContextInterface, useAppContext } from '@common/contexts/app.context
 import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -37,7 +37,7 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+// import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -58,6 +58,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import TextEditor from '@sk-web-gui/text-editor';
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -90,10 +91,8 @@ let formSchema = yup
         return outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup.string().when('outcome', {
-          is: (outcome: string) => outcome === 'Bifall',
-          then: yup.string().required('Giltig från måste anges'),
-          otherwise: yup.string().notRequired(),
+      ? yup.string().when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+          return outcome === 'Bifall' ? schema.required('Giltig från måste anges') : schema.notRequired();
         })
       : yup.string(),
 
@@ -158,7 +157,7 @@ export const CasedataDecisionTab: React.FC<{
     getValues,
     formState: { errors },
   } = useForm<DecisionFormModel>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<DecisionFormModel>,
     defaultValues: {
       id: undefined,
       description: '',
@@ -626,21 +625,21 @@ export const CasedataDecisionTab: React.FC<{
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
-          <RichTextEditor
-            ref={quillRef}
-            containerLabel="decision"
-            value={richText}
-            isMaximizable={true}
-            readOnly={isErrandLocked(errand) || isSent()}
-            toggleModal={() => {
-              setIsEditorModalOpen(!isEditorModalOpen);
-            }}
-            onChange={(value, delta, source, editor) => {
-              if (source === 'user') {
-                setTextIsDirty(true);
-              }
-              return onRichTextChange(value);
-            }}
+          <TextEditor
+          // ref={quillRef}
+          // containerLabel="decision"
+          // value={richText}
+          // isMaximizable={true}
+          // readOnly={isErrandLocked(errand) || isSent()}
+          // toggleModal={() => {
+          //   setIsEditorModalOpen(!isEditorModalOpen);
+          // }}
+          // onChange={(value, delta, source, editor) => {
+          //   if (source === 'user') {
+          //     setTextIsDirty(true);
+          //   }
+          //   return onRichTextChange(value);
+          // }}
           />
         </div>
         <div className="my-sm text-error">

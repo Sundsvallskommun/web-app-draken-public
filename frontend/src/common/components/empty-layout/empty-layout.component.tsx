@@ -1,15 +1,13 @@
-import Head from "next/head";
+import Head from 'next/head';
 
-export default function EmptyLayout({ title, children }) {
-    return (
-        <>
-            <Head>
+export default function EmptyLayout({ children }) {
+  return (
+    <>
+      {/* <Head>
                 <title>{title}</title>
-            </Head>
+            </Head> */}
 
-            <div className="bg-background-200 min-h-screen">
-                {children}
-            </div>
-        </>
-    )
+      <div className="bg-background-200 min-h-screen">{children}</div>
+    </>
+  );
 }

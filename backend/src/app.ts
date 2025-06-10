@@ -48,6 +48,7 @@ import { authorizeGroups, getPermissions, getRole } from './services/authorizati
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { additionalConverters } from './utils/custom-validation-classes';
+import { isValidUrl } from './utils/util';
 
 const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
 const sessionTTL = 4 * 24 * 60 * 60;
@@ -232,11 +233,33 @@ class App {
     this.app.use(passport.session());
     passport.use('saml', samlStrategy);
 
+    // this.app.use(
+    //   cors({
+    //     credentials: CREDENTIALS,
+    //     origin: function (origin, callback) {
+    //       if (origin === undefined || corsWhitelist.indexOf(origin) !== -1 || corsWhitelist.indexOf('*') !== -1) {
+    //         callback(null, true);
+    //       } else {
+    //         if (NODE_ENV == 'development') {
+    //           callback(null, true);
+    //         } else {
+    //           callback(new Error('Not allowed by CORS'));
+    //         }
+    //       }
+    //     },
+    //   }),
+    // );
+
     this.app.get(
       `${BASE_URL_PREFIX}/saml/login`,
       (req, res, next) => {
         if (req.session.returnTo) {
           req.query.RelayState = req.session.returnTo;
+        } else if (req.query.successRedirect) {
+          req.query.RelayState = req.query.successRedirect;
+        }
+        if (req.query.failureRedirect) {
+          req.query.RelayState = `${req.query.RelayState},${req.query.failureRedirect}`;
         }
         next();
       },
@@ -253,48 +276,105 @@ class App {
       res.status(200).send(metadata);
     });
 
-    this.app.get(`${BASE_URL_PREFIX}/saml/logout`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
-      samlStrategy.logout(req as any, () => {
-        req.logout(err => {
-          if (err) {
-            return next(err);
-          }
-          // FIXME: should we redirect here or should client do it?
-          res.redirect(SAML_LOGOUT_REDIRECT);
+    this.app.get(
+      `${BASE_URL_PREFIX}/saml/logout`,
+      (req, res, next) => {
+        if (req.session.returnTo) {
+          req.query.RelayState = req.session.returnTo;
+        } else if (req.query.successRedirect) {
+          req.query.RelayState = req.query.successRedirect;
+        }
+        next();
+      },
+      (req, res, next) => {
+        const successRedirect = req.query.successRedirect;
+        samlStrategy.logout(req as any, () => {
+          req.logout(err => {
+            if (err) {
+              return next(err);
+            }
+            res.redirect(successRedirect as string);
+          });
         });
-      });
-    });
+      },
+    );
 
     this.app.get(`${BASE_URL_PREFIX}/saml/logout/callback`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
-      // FIXME: is this enough or do we need to do something more?
       req.logout(err => {
         if (err) {
           return next(err);
         }
-        // FIXME: should we redirect here or should client do it?
-        res.redirect(SAML_LOGOUT_REDIRECT);
+
+        let successRedirect: URL, failureRedirect: URL;
+        const urls = req?.body?.RelayState.split(',');
+
+        if (isValidUrl(urls[0])) {
+          successRedirect = new URL(urls[0]);
+        }
+        if (isValidUrl(urls[1])) {
+          failureRedirect = new URL(urls[1]);
+        } else {
+          failureRedirect = successRedirect;
+        }
+
+        const queries = new URLSearchParams(failureRedirect.searchParams);
+
+        if (req.session.messages?.length > 0) {
+          queries.append('failMessage', req.session.messages[0]);
+        } else {
+          queries.append('failMessage', 'SAML_UNKNOWN_ERROR');
+        }
+
+        if (failureRedirect) {
+          res.redirect(failureRedirect.toString());
+        } else {
+          res.redirect(successRedirect.toString());
+        }
       });
     });
 
-    // To handle failure on backend, failureRedirect here
-    // this.app.get(`${BASE_URL_PREFIX}/saml/login/failure`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
-    //   res.redirect(SAML_FAILURE_REDIRECT_MESSAGE);
-    // });
+    this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
+      let successRedirect: URL, failureRedirect: URL;
 
-    this.app.post(
-      `${BASE_URL_PREFIX}/saml/login/callback`,
-      bodyParser.urlencoded({ extended: false }),
-      (req, res, next) => {
-        passport.authenticate('saml', {
-          successReturnToOrRedirect: SAML_SUCCESS_REDIRECT,
-          failureRedirect: SAML_FAILURE_REDIRECT_MESSAGE,
-          failureMessage: true,
-        })(req, res, next);
-      },
-      (req, res) => {
-        res.redirect(SAML_SUCCESS_REDIRECT);
-      },
-    );
+      const urls = req?.body?.RelayState.split(',');
+
+      if (isValidUrl(urls[0])) {
+        successRedirect = new URL(urls[0]);
+      }
+      if (isValidUrl(urls[1])) {
+        failureRedirect = new URL(urls[1]);
+      } else {
+        failureRedirect = successRedirect;
+      }
+
+      passport.authenticate('saml', (err, user) => {
+        if (err) {
+          const queries = new URLSearchParams(failureRedirect.searchParams);
+          if (err?.name) {
+            queries.append('failMessage', err.name);
+          } else {
+            queries.append('failMessage', 'SAML_UNKNOWN_ERROR');
+          }
+          failureRedirect.search = queries.toString();
+          res.redirect(failureRedirect.toString());
+        } else if (!user) {
+          const failMessage = new URLSearchParams(failureRedirect.searchParams);
+          failMessage.append('failMessage', 'NO_USER');
+          failureRedirect.search = failMessage.toString();
+          res.redirect(failureRedirect.toString());
+        } else {
+          req.login(user, loginErr => {
+            if (loginErr) {
+              const failMessage = new URLSearchParams(failureRedirect.searchParams);
+              failMessage.append('failMessage', 'SAML_UNKNOWN_ERROR');
+              failureRedirect.search = failMessage.toString();
+              res.redirect(failureRedirect.toString());
+            }
+            return res.redirect(successRedirect.toString());
+          });
+        }
+      })(req, res, next);
+    });
   }
 
   private initializeRoutes(controllers: Function[]) {

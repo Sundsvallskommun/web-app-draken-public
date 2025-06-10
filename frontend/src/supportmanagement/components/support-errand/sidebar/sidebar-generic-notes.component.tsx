@@ -40,8 +40,8 @@ interface ErrandNotesTabFormModel {
 
 let formSchema = yup
   .object({
-    id: yup.string(),
-    partyId: yup.string(),
+    id: yup.string().optional(),
+    partyId: yup.string().optional(),
     text: yup.string().required('Text måste anges'),
   })
   .required();
@@ -78,7 +78,9 @@ export const SidebarGenericNotes: React.FC<{
     trigger,
     formState,
     formState: { errors },
-  }: UseFormReturn<ErrandNotesTabFormModel, any, undefined> = useForm({ resolver: yupResolver(formSchema) });
+  }: UseFormReturn<ErrandNotesTabFormModel, any, undefined> = useForm({
+    // resolver: yupResolver(formSchema)
+  });
 
   const onSubmit = (note: ErrandNotesTabFormModel) => {
     setIsLoading(true);

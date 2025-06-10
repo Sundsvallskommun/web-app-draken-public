@@ -1,4 +1,4 @@
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+// import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
@@ -32,23 +32,26 @@ import { SupportMetadata } from '@supportmanagement/services/support-metadata-se
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import TextEditor from '@sk-web-gui/text-editor';
 
 const yupRequestFeedbackForm = yup.object().shape(
   {
     contactMeans: yup.string().required('Kontaktsätt är obligatoriskt'),
     email: yup.string().when('contactMeans', {
-      is: (contactMeans: string) => contactMeans === 'email',
-      then: yup.string().trim().email('E-postadress har fel format').required('E-postadress måste anges'),
+      is: 'email',
+      then: (schema) => schema.trim().email('E-postadress har fel format').required('E-postadress måste anges'),
+      otherwise: (schema) => schema,
     }),
     phone: yup.string().when('contactMeans', {
-      is: (contactMeans: string) => contactMeans === 'sms',
-      then: yup
-        .string()
-        .test('empty-check', 'Telefonnummer måste anges för sms-meddelande', (phone) => phone.length >= 4)
-        .required('Telefonnummer måste anges för sms-meddelande')
-        .trim()
-        .transform((val) => val && val.replace('-', ''))
-        .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+      is: 'sms',
+      then: (schema) =>
+        schema
+          .test('empty-check', 'Telefonnummer måste anges för sms-meddelande', (phone) => phone.length >= 4)
+          .required('Telefonnummer måste anges för sms-meddelande')
+          .trim()
+          .transform((val) => val && val.replace('-', ''))
+          .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+      otherwise: (schema) => schema,
     }),
     message: yup.string().required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
@@ -98,16 +101,13 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
   const [addedAttachment, setAddedAttachment] = useState<SupportAttachment[]>([]);
   const {
     register,
-    control,
-    handleSubmit,
-    watch,
     reset,
     setValue,
     getValues,
     formState,
     trigger,
     formState: { errors },
-  }: UseFormReturn<RequestInternalFormProps, any, undefined> = useForm({
+  }: UseFormReturn<RequestInternalFormProps> = useForm<RequestInternalFormProps>({
     resolver: yupResolver(yupRequestFeedbackForm),
     defaultValues: { contactMeans: 'email', email: '', phone: '', message: '', messageBodyPlaintext: '' },
     mode: 'onChange',
@@ -271,18 +271,18 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
             <FormLabel className="text-content font-semibold">Meddelande</FormLabel>
             <Input data-cy="message-body-input" type="hidden" {...register('message')} />
             <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
-              <RichTextEditor
-                ref={quillRef}
-                value={richText}
-                errors={!!errors.message}
-                isMaximizable={false}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(value);
-                }}
+              <TextEditor
+              // ref={quillRef}
+              // value={richText}
+              // errors={!!errors.message}
+              // isMaximizable={false}
+              // toggleModal={() => {}}
+              // onChange={(value, delta, source, editor) => {
+              //   if (source === 'user') {
+              //     setTextIsDirty(true);
+              //   }
+              //   return onRichTextChange(value);
+              // }}
               />
             </div>
           </FormControl>

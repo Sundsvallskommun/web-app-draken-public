@@ -23,7 +23,7 @@ import {
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import {
   CBillingRecord,
   CBillingRecordStatusEnum,
@@ -121,7 +121,7 @@ export const SupportErrandInvoiceTab: React.FC<{
 
   const formControls = useForm<CBillingRecord>({
     defaultValues: record,
-    resolver: yupResolver(billingFormSchema),
+    resolver: yupResolver(billingFormSchema) as unknown as Resolver<CBillingRecord>,
     mode: 'onSubmit',
   });
 

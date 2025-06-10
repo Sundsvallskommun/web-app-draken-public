@@ -11,7 +11,7 @@ import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -55,7 +55,6 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   const { theme } = useGui();
 
   const methods = useForm<IErrand>({
-    resolver: yupResolver(formSchema),
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -67,6 +66,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     });
   };
   const router = useRouter();
+  const pathName = usePathname();
   const { setUser } = useAppContext();
 
   useEffect(() => {
@@ -80,8 +80,8 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     getMe().then((user) => {
       setUser(user);
     });
-    const { id } = router.query;
-    if (id) {
+    const errandNumber = pathName.split('/')[3];
+    if (errandNumber) {
       // Existing errand, load it and show it
       setIsLoading(true);
       getErrandByErrandNumber(municipalityId, props.id)

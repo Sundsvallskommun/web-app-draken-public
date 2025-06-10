@@ -14,7 +14,8 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
   const { user, errand, supportErrand }: { user: User; errand: IErrand; supportErrand: SupportErrand } =
     useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
-  const hostName = window.location.hostname;
+  // const hostName = window.location.hostname;
+  const hostName = 'TEST';
 
   const [open, setOpen] = useState(true);
 
@@ -42,7 +43,7 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
           <p>
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
-            <NextLink href="/kakor" passHref legacyBehavior>
+            <NextLink href="/kakor" passHref>
               <Link>Läs mer om hur vi använder kakor</Link>
             </NextLink>
           </p>

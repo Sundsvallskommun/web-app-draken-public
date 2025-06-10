@@ -1,5 +1,5 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+// import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
 import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -34,6 +34,7 @@ import { getAdminName } from '@supportmanagement/services/support-stakeholder-se
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import TextEditor from '@sk-web-gui/text-editor';
 
 const yupForwardForm = yup.object().shape(
   {
@@ -45,11 +46,21 @@ const yupForwardForm = yup.object().shape(
         is: (emails: [], recipient: string) => {
           return !emails.length && recipient === 'EMAIL';
         },
-        then: yup.string().min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+        then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
       }),
     department: yup.string().required('Verksamhet är obligatoriskt'),
     message: yup.string().required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
+    emails: yup
+      .array()
+      .of(
+        yup
+          .object({
+            value: yup.string().email('Ogiltig e-postadress').required('E-postadress krävs'),
+          })
+          .required()
+      )
+      .required('Minst en e-postadress krävs'),
   },
   [['emails', 'recipient']]
 );
@@ -110,7 +121,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     trigger,
     formState: { errors },
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
-    resolver: yupResolver(yupForwardForm),
+    // resolver: yupResolver(yupForwardForm),
     defaultValues: {
       recipient: isKA() ? 'EMAIL' : 'DEPARTMENT',
       emails: [],
@@ -311,18 +322,18 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             <FormLabel className="text-content font-semibold">Meddelande</FormLabel>
             <Input data-cy="message-body-input" type="hidden" {...register('message')} />
             <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
-              <RichTextEditor
-                ref={quillRef}
-                value={richText}
-                errors={!!errors.message}
-                isMaximizable={false}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(value);
-                }}
+              <TextEditor
+              // ref={quillRef}
+              // value={richText}
+              // errors={!!errors.message}
+              // isMaximizable={false}
+              // toggleModal={() => {}}
+              // onChange={(value, delta, source, editor) => {
+              //   if (source === 'user') {
+              //     setTextIsDirty(true);
+              //   }
+              //   return onRichTextChange(value);
+              // }}
               />
             </div>
 
