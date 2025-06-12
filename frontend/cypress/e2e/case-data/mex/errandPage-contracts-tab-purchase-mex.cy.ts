@@ -88,8 +88,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="seller-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
-          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('SELLER')).firstName} ${
-            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('SELLER')).lastName
+          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('SELLER'))?.firstName} ${
+            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('SELLER'))?.lastName
           }`
         );
       cy.get('[data-cy="seller-table"] .sk-table-tbody-tr input[type="text"]').should('exist').type('Andel 123');
@@ -97,8 +97,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="buyer-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
-          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('BUYER')).firstName} ${
-            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('BUYER')).lastName
+          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('BUYER'))?.firstName} ${
+            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('BUYER'))?.lastName
           }`
         );
       cy.get('[data-cy="buyer-table"] .sk-table-tbody-tr input[type="text"]').should('exist').type('Andel 123');

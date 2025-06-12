@@ -12,7 +12,7 @@ import {
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import SupportManagementFiltering, {

@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcome, DecisionOutcomeKey, DecisionOutcomeLabel } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
@@ -20,7 +22,7 @@ import { AppContextInterface, useAppContext } from '@common/contexts/app.context
 import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -37,7 +39,6 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -58,6 +59,8 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -90,10 +93,8 @@ let formSchema = yup
         return outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup.string().when('outcome', {
-          is: (outcome: string) => outcome === 'Bifall',
-          then: yup.string().required('Giltig från måste anges'),
-          otherwise: yup.string().notRequired(),
+      ? yup.string().when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+          return outcome === 'Bifall' ? schema.required('Giltig från måste anges') : schema.notRequired();
         })
       : yup.string(),
 
@@ -158,7 +159,7 @@ export const CasedataDecisionTab: React.FC<{
     getValues,
     formState: { errors },
   } = useForm<DecisionFormModel>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<DecisionFormModel>,
     defaultValues: {
       id: undefined,
       description: '',
@@ -410,12 +411,12 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
-    setValue('descriptionPlaintext', quillRef.current.getEditor().getText());
+  const onRichTextChange = (delta?, oldDelta?, source?) => {
+    setRichText(quillRef.current.getText());
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
+      shouldDirty: true,
+    });
+    setValue('descriptionPlaintext', quillRef.current.getText());
     trigger('description');
   };
 
@@ -461,7 +462,7 @@ export const CasedataDecisionTab: React.FC<{
     if (InTemplate === '') {
       content = '';
     }
-    onRichTextChange(content);
+    onRichTextChange();
   };
 
   const isSent = () => {
@@ -626,20 +627,16 @@ export const CasedataDecisionTab: React.FC<{
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
-          <RichTextEditor
+          <TextEditor
+            className={cx(`mb-md h-[80%]`)}
+            key={richText}
             ref={quillRef}
-            containerLabel="decision"
-            value={richText}
-            isMaximizable={true}
-            readOnly={isErrandLocked(errand) || isSent()}
-            toggleModal={() => {
-              setIsEditorModalOpen(!isEditorModalOpen);
-            }}
-            onChange={(value, delta, source, editor) => {
+            defaultValue={richText}
+            onTextChange={(delta, oldDelta, source) => {
               if (source === 'user') {
                 setTextIsDirty(true);
               }
-              return onRichTextChange(value);
+              return onRichTextChange(delta, oldDelta, source);
             }}
           />
         </div>

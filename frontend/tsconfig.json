@@ -6,10 +6,15 @@
       "dom.iterable",
       "esnext"
     ],
-    "types": ["cypress", "node"],
     "allowJs": true,
     "skipLibCheck": true,
+    //TODO: ENABLE STRICT MODE
     "strict": false,
+    "strictNullChecks": false,
+    // "noFallthroughCasesInSwitch": false,
+    // "noImplicitAny": false,
+    // "strictFunctionTypes": false,
+    // "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -21,47 +26,33 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      // "@common/components/*": [
-      //   "src/components/*"
-      // ],
-      // "@interfaces/*": [
-      //   "src/interfaces/*"
-      // ],
-      // "@utils/*": [
-      //   "src/utils/*"
-      // ],
-      "@pages/*": [
-        "src/pages/*"
-      ],
-      "@public/*": [
-        "src/public/*"
-      ],
-      // "@services/*": [
-      //   "src/services/*"
-      // ],
-      "@config/*": [
-        "src/config/*"
-      ],
-      "@contexts/*": [
-        "src/common/contexts/*"
-      ],
-      "@supportmanagement/*": [
-        "src/supportmanagement/*"
-      ],
-      "@casedata/*": [
-        "src/casedata/*"
-      ],
-      "@common/*": [
-        "src/common/*"
-      ],
-      "@jestRoot/*": [".jest/*"]
+      "@pages/*": ["src/pages/*"],
+      "@public/*": ["src/public/*"],
+      "@config/*": ["src/config/*"],
+      "@contexts/*": ["src/common/contexts/*"],
+      "@supportmanagement/*": ["src/supportmanagement/*"],
+      "@casedata/*": ["src/casedata/*"],
+      "@common/*": ["src/common/*"],
+      "@jestRoot/*": [".jest/*"],
+      "@styles/*": ["src/styles/*"],
+      // "@services/*": ["src/services/*"],
+      // "@common/components/*": ["src/components/*"],
+      // "@interfaces/*": ["src/interfaces/*"],
+      // "@utils/*": ["src/utils/*"],
     },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
   },
   "include": [
+    "**/*.ts",
+    "**/*.tsx",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
-    "**/*.ts",
-    "**/*.tsx"
+    "src/common/components/localization-provider",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -1,9 +1,9 @@
+'use client';
+
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { EditorModal } from '@common/components/rich-text-editor/editor-modal.component';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
@@ -40,11 +40,13 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { useEffect, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { isKA, isKC } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useTranslation } from 'react-i18next';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
 
@@ -75,22 +77,22 @@ let formSchema = yup
       .string()
       .email('E-postadress har fel format')
       .when(['emails', 'contactMeans'], {
-        is: (emails: [], means: string) => {
-          return !emails.length && means === 'email';
-        },
-        then: yup.string().min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+        is: (emails: any[], means: string) => (!emails || emails.length === 0) && means === 'email',
+        then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+        otherwise: (schema) => schema,
       }),
     emails: yup.array().when('contactMeans', {
       is: (means: string) => means === 'email',
-      then: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup.string().email('E-postadress har fel format'),
-          })
-        )
-        .min(1, 'Ange minst en e-postadress')
-        .required('Ange minst en e-postadress'),
+      then: (schema) =>
+        schema
+          .of(
+            yup.object().shape({
+              value: yup.string().email('E-postadress har fel format'),
+            })
+          )
+          .min(1, 'Ange minst en e-postadress')
+          .required('Ange minst en e-postadress'),
+      otherwise: (schema) => schema,
     }),
     newPhoneNumber: yup.string(),
     // .trim()
@@ -98,20 +100,21 @@ let formSchema = yup
     // .matches(supportManagementPhonePattern, invalidPhoneMessage),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
-      then: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup
-              .string()
-              .required('Telefonnummer måste anges för sms-meddelande')
-              .trim()
-              .transform((val) => val && val.replace('-', ''))
-              .matches(supportManagementPhonePattern, invalidPhoneMessage),
-          })
-        )
-        .min(1, 'Ange minst ett telefonnummer')
-        .required('Ange minst ett telefonnummer'),
+      then: (schema) =>
+        schema
+          .of(
+            yup.object().shape({
+              value: yup
+                .string()
+                .required('Telefonnummer måste anges för sms-meddelande')
+                .trim()
+                .transform((val) => val && val.replace('-', ''))
+                .matches(supportManagementPhonePattern, invalidPhoneMessage),
+            })
+          )
+          .min(1, 'Ange minst ett telefonnummer')
+          .required('Ange minst ett telefonnummer'),
+      otherwise: (schema) => schema,
     }),
     messageBody: yup.string().required('Meddelandetext måste anges'),
     messageBodyPlaintext: yup.string(),
@@ -155,18 +158,14 @@ export const SupportMessageForm: React.FC<{
   const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
   const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
-  const confirm = useConfirm();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
   const quillRef = useRef(null);
   const [textIsDirty, setTextIsDirty] = useState(false);
-  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
-  const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const { setSupportErrand } = useAppContext();
-  const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
 
   const closeAttachmentModal = () => {
@@ -195,7 +194,7 @@ export const SupportMessageForm: React.FC<{
       addExisting: '',
       existingAttachments: [],
     },
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<SupportMessageFormModel>,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -242,12 +241,9 @@ export const SupportMessageForm: React.FC<{
     name: 'existingAttachments',
   });
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('messageBody', sanitized(length > 1 ? val : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('messageBodyPlaintext', quillRef.current.getText());
     trigger('messageBody');
   };
 
@@ -535,21 +531,18 @@ export const SupportMessageForm: React.FC<{
           <Input data-cy="message-body-input" type="hidden" {...register('messageBody')} />
           <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
           <div className={cx(`h-[26rem] mb-16`)} data-cy="decision-richtext-wrapper">
-            <RichTextEditor
+            <TextEditor
+              key={richText}
+              className={cx(`mb-md h-[80%]`)}
               readOnly={props.locked}
               ref={quillRef}
-              value={richText}
-              isMaximizable={true}
-              errors={!!errors.messageBody}
-              toggleModal={() => {
-                setIsEditorModalOpen(!isEditorModalOpen);
-              }}
-              onChange={(value, delta, source, editor) => {
+              defaultValue={richText}
+              onTextChange={(delta, oldDelta, source) => {
                 props.setUnsaved(true);
                 if (source === 'user') {
                   setTextIsDirty(true);
                 }
-                return onRichTextChange(value);
+                return onRichTextChange(delta, oldDelta, source);
               }}
             />
           </div>
@@ -764,25 +757,6 @@ export const SupportMessageForm: React.FC<{
           <FormErrorMessage className="text-error">Något gick fel när meddelandet skulle skickas</FormErrorMessage>
         )}
       </div>
-      {isEditorModalOpen && (
-        <EditorModal
-          isOpen={isEditorModalOpen}
-          readOnly={props.locked}
-          modalHeader="Ditt meddelande"
-          modalBody={quillRef.current.getEditor().getContents()}
-          onChange={(delta) => {
-            setTextIsDirty(true);
-            return onRichTextChange(delta);
-          }}
-          onClose={() => {
-            setIsEditorModalOpen(false);
-          }}
-          onCancel={() => {
-            setIsEditorModalOpen(false);
-          }}
-          onContinue={modalAction}
-        />
-      )}
 
       <Modal show={isAttachmentModalOpen} onClose={closeAttachmentModal} label="Ladda upp bilaga" className="w-[40rem]">
         <Modal.Content>

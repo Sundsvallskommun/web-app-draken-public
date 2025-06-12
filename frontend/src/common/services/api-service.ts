@@ -1,36 +1,23 @@
-import axios from 'axios';
-import Router from 'next/router';
+'use client';
+
+import { appURL } from '@common/utils/app-url';
+import axios, { AxiosError } from 'axios';
 
 export interface Data {
   error?: string;
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = unknown> {
   data: T;
   message: string;
 }
 
-const handleError = (error) => {
-  let s = '';
-  if (error?.response) {
-    // The request was made and the server responded with a status code
-    // that falls out of the range of 2xx
-    s += `Server responded with ${error?.response?.status} ${error?.response?.data?.message}`;
-  } else if (error?.request) {
-    // The request was made but no response was received
-    // `error?.request` is an instance of XMLHttpRequest in the browser and an instance of
-    // http.ClientRequest in node.js
-    s += `Server did not respond`;
-  } else {
-    // Something happened in setting up the request that triggered an Error
-    s += `Unknown error: ${error?.message}`;
-  }
-  s += ` for url ${error?.config?.url}`;
-  console.error(s);
-
-  if (error?.response?.status === 401 && Router.pathname !== '/login') {
-    // isRedirectingToLogin = true;
-    Router.push('/login');
+export const handleError = (error: AxiosError<ApiResponse>) => {
+  //TODO: Refactor to be more compliant with NextJS routing standards
+  if (error?.response?.status === 401 && !window?.location.pathname.includes('login')) {
+    window.location.href = `${appURL()}/login?path=${window.location.pathname}&failMessage=${
+      error.response.data.message
+    }`;
   }
 
   throw error;

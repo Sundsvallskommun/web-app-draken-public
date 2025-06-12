@@ -52,7 +52,7 @@ export const formatOrgNr = (orgNr: string, format: OrgNumberFormat = OrgNumberFo
   if (!orgNr) {
     return null;
   }
-  let orgNumber = orgNr?.replace(/\D/g, '');
+  const orgNumber = orgNr?.replace(/\D/g, '');
   if (!orgNumber || orgNumber.length !== 10 || !luhnCheck(orgNumber)) {
     return null;
   }
@@ -94,3 +94,13 @@ export const base64Decode = (base64: string) => {
 };
 
 export const toOffsetDateTime = (date: Dayjs) => encodeURIComponent(date.format('YYYY-MM-DDTHH:mm:ss.SSSZ'));
+
+export const isValidUrl = (string: string) => {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+  return url.protocol === 'http:' || url.protocol === 'https:';
+};

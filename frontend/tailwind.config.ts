@@ -5,12 +5,10 @@ export default {
   mode: 'jit',
   content: [
     './node_modules/@sk-web-gui/*/dist/**/*.js',
-    './src/layouts/**/*.{js,ts,jsx,tsx}',
-    './src/services/**/*.{js,ts,jsx,tsx}',
-    './src/pages/**/*.{js,ts,jsx,tsx}',
-    './src/casedata/components/**/*.{js,ts,jsx,tsx}',
-    './src/common/**/*.{js,ts,jsx,tsx}',
-    './src/supportmanagement/components/**/*.{js,ts,jsx,tsx}',
+    './src/pages/**/*.{ts,tsx}',
+    './src/common/**/*.tsx',
+    './src/casedata/components/**/*.tsx',
+    './src/supportmanagement/components/**/*.tsx',
   ],
   safelist: ['text-error-surface-primary', 'text-vattjom-surface-primary', 'text-warning-surface-primary'],
   darkMode: 'class', // or 'media' or 'class'

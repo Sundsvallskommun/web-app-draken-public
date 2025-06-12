@@ -547,7 +547,11 @@ Referenser till hur området skrafferat och märkt i bilagan/or: ${
 Ska byggnader belägna på området ingå i överlåtelsen? ${
                     getValues().overlatelseforklaringTerms.includeBuildingsInArea === 'true' ? 'Ja' : 'Nej'
                   }`;
-                  setOverlatelseforklaring(content);
+                  const delta = quillRefOverlatelse.current.clipboard.convert({ html: content });
+                  quillRefOverlatelse.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOverlatelse.current.getSemanticHTML();
+                  setOverlatelseforklaring(semanticText);
+                  setValue('overlatelseforklaring', semanticText);
                   setShowOverlatelse(false);
                 }}
               >
@@ -694,7 +698,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
 <br /><br /><p>${getValues().kopeskillingTerms.condition?.conditionText || '(saknas)'}</p>
                     
                     `;
-                  setKopeskilling(content);
+                  const delta = quillRefKopeskilling.current.clipboard.convert({ html: content });
+                  quillRefKopeskilling.current.setContents(delta, 'silent');
+                  const semanticText = quillRefKopeskilling.current.getSemanticHTML();
+                  setKopeskilling(semanticText);
+                  setValue('kopeskilling', semanticText);
                   setShowKopeskilling(false);
                 }}
               >
@@ -815,7 +823,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       ? 'på datum: ' + getValues().tilltradeTerms?.accessDate
                       : 'när köpeskillingen erlagts'
                   }</p>`;
-                  setTilltrade(content);
+                  const delta = quillRefTilltrade.current.clipboard.convert({ html: content });
+                  quillRefTilltrade.current.setContents(delta, 'silent');
+                  const semanticText = quillRefTilltrade.current.getSemanticHTML();
+                  setTilltrade(semanticText);
+                  setValue('tilltrade', semanticText);
                   setShowTilltrade(false);
                 }}
               >
@@ -954,7 +966,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                   }
                   `;
 
-                  setMarkfororeningar(content);
+                  const delta = quillRefMarkfororeningar.current.clipboard.convert({ html: content });
+                  quillRefMarkfororeningar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefMarkfororeningar.current.getSemanticHTML();
+                  setMarkfororeningar(semanticText);
+                  setValue('markfororeningar', semanticText);
                   setShowMarkfororeningar(false);
                 }}
               >
@@ -1096,7 +1112,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  setSkog(content);
+                  const delta = quillRefSkog.current.clipboard.convert({ html: content });
+                  quillRefSkog.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSkog.current.getSemanticHTML();
+                  setSkog(semanticText);
+                  setValue('skog', semanticText);
                   setShowSkog(false);
                 }}
               >
@@ -1211,7 +1231,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  setForpliktelser(content);
+                  const delta = quillRefForpliktelser.current.clipboard.convert({ html: content });
+                  quillRefForpliktelser.current.setContents(delta, 'silent');
+                  const semanticText = quillRefForpliktelser.current.getSemanticHTML();
+                  setForpliktelser(semanticText);
+                  setValue('forpliktelser', semanticText);
                   setShowForpliktelser(false);
                 }}
               >
@@ -1343,7 +1367,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  setUtgifter(content);
+                  const delta = quillRefUtgifter.current.clipboard.convert({ html: content });
+                  quillRefUtgifter.current.setContents(delta, 'silent');
+                  const semanticText = quillRefUtgifter.current.getSemanticHTML();
+                  setUtgifter(semanticText);
+                  setValue('utgifter', semanticText);
                   setShowUtgifter(false);
                 }}
               >
@@ -1467,7 +1495,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                                     }</p><br />`
                                   : ''
                               }`;
-                  setFastighetsbildning(content);
+                  const delta = quillRefFastighetsbildning.current.clipboard.convert({ html: content });
+                  quillRefFastighetsbildning.current.setContents(delta, 'silent');
+                  const semanticText = quillRefFastighetsbildning.current.getSemanticHTML();
+                  setFastighetsbildning(semanticText);
+                  setValue('fastighetsbildning', semanticText);
                   setShowFastighetsbildning(false);
                 }}
               >
@@ -1605,7 +1637,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                         }</p><br />`
                       : ''
                   }`;
-                  setOther(content);
+                  const delta = quillRefOther.current.clipboard.convert({ html: content });
+                  quillRefOther.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOther.current.getSemanticHTML();
+                  setOther(semanticText);
+                  setValue('other', semanticText);
                   setShowOther(false);
                 }}
               >

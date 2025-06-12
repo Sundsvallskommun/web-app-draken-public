@@ -6,7 +6,7 @@ import { User } from '@common/interfaces/user';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { stakeholder2Contact } from '@casedata/services/casedata-stakeholder-service';
@@ -63,11 +63,7 @@ export const SaveButtonComponent: React.FC<{
   const [doneSaving, setDoneSaving] = useState(false);
   useEffect(() => {
     if (errand?.id && doneSaving) {
-      router.push(
-        `/arende/${municipalityId}/${errand.errandNumber}`,
-        `/arende/${municipalityId}/${errand.errandNumber}`,
-        { shallow: true }
-      );
+      router.push(`/arende/${municipalityId}/${errand.errandNumber}`);
     }
   }, [doneSaving, errand?.id, errand?.errandNumber, municipalityId, router]);
 

@@ -11,7 +11,7 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -54,7 +54,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     defaultValues: defaultSupportErrandInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -114,9 +114,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
         initiateSupportErrand(municipalityId)
           .then((result) =>
             setTimeout(() => {
-              router.push(`/arende/${municipalityId}/${result.id}`, undefined, {
-                shallow: true,
-              });
+              router.push(`/arende/${municipalityId}/${result.id}`);
             }, 10)
           )
           .catch((e) => {

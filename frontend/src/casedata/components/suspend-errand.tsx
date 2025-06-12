@@ -42,7 +42,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     getValues,
     formState,
     formState: { errors },
-  }: UseFormReturn<SuspendFormProps, any, undefined> = useForm({
+  } = useForm<SuspendFormProps>({
     resolver: yupResolver(yupSuspendForm),
     defaultValues: { date: dayjs().add(30, 'day').format('YYYY-MM-DD'), comment: '' },
     mode: 'onChange',

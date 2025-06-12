@@ -229,7 +229,6 @@ export const SupportErrandsTable: React.FC = () => {
       else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
       else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';
       else return isROB() ? StatusLabelROB[status] : StatusLabel[status];
-
     };
     return (
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>

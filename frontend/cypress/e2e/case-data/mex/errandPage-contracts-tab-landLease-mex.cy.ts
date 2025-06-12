@@ -126,16 +126,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="grantor-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
-          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('PROPERTY_OWNER')).firstName} ${
-            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('PROPERTY_OWNER')).lastName
+          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('PROPERTY_OWNER'))?.firstName ?? ''} ${
+            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('PROPERTY_OWNER'))?.lastName ?? ''
           }`
         );
 
       cy.get('[data-cy="leaseholder-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
-          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('LEASEHOLDER')).firstName} ${
-            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('LEASEHOLDER')).lastName
+          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('LEASEHOLDER'))?.firstName ?? ''} ${
+            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('LEASEHOLDER'))?.lastName ?? ''
           }`
         );
       cy.get('[data-cy="parties-disclosure"] button.sk-btn-tertiary[aria-expanded="true"]').should('exist').click();
