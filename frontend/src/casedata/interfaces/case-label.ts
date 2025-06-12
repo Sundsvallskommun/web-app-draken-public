@@ -4,6 +4,12 @@ export enum PTCaseLabel {
   LOST_PARKING_PERMIT = 'Borttappat parkeringstillstånd',
   APPEAL = 'Överklagan',
 }
+export const PTCaseShortLabel: Partial<Record<keyof typeof PTCaseLabel, string>> = {
+  PARKING_PERMIT: 'Nytt p-tillstånd',
+  PARKING_PERMIT_RENEWAL: 'Förnyelse p-tillstånd',
+  LOST_PARKING_PERMIT: 'Borttappat p-tillstånd',
+  APPEAL: 'Överklagan p-tillstånd',
+};
 
 export enum FTCaseLabel {
   PARATRANSIT = 'Ansökan av färdtjänst',
@@ -21,6 +27,24 @@ export enum FTCaseLabel {
   PARATRANSIT_NOTIFICATION_RIAK = 'Anmälan om RIAK',
   PARATRANSIT_NOTIFICATION_BUS_CARD = 'Anmälan om busskort',
 }
+
+export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>> = {
+  PARATRANSIT: 'Ansökan färdtjänst',
+  PARATRANSIT_RENEWAL: 'Ansökan forts. färdtjänst',
+  PARATRANSIT_CHANGE: 'Ansökan ändring insats',
+  PARATRANSIT_NATIONAL: 'Ansökan riksfärdtjänst',
+  PARATRANSIT_NATIONAL_RENEWAL: 'Ansökan forts. riksfärdtjänst',
+  PARATRANSIT_RIAK: 'Ansökan RIAK',
+  PARATRANSIT_BUS_CARD: 'Ansökan busskort',
+
+  PARATRANSIT_NOTIFICATION: 'Anmälan färdtjänst',
+  PARATRANSIT_NOTIFICATION_CHANGE: 'Anmälan ändring insats',
+  PARATRANSIT_NOTIFICATION_RENEWAL: 'Anmälan forts. färdtjänst',
+  PARATRANSIT_NOTIFICATION_NATIONAL: 'Anmälan riksfärdtjänst',
+  PARATRANSIT_NOTIFICATION_NATIONAL_RENEWAL: 'Anmälan forts. riksfärdtjänst',
+  PARATRANSIT_NOTIFICATION_RIAK: 'Anmälan RIAK',
+  PARATRANSIT_NOTIFICATION_BUS_CARD: 'Anmälan busskort',
+};
 
 export enum MEXCaseLabel {
   'MEX_SQUARE_PLACE' = 'Ansökan torgplats',
@@ -56,6 +80,8 @@ export enum MEXCaseLabel {
   'MEX_ROAD_ASSOCIATION' = 'Vägförening/Samfällighetsförening',
   'MEX_RETURNED_TO_CONTACT_SUNDSVALL' = 'Ärende åter till Kontakt Sundsvall',
   'MEX_SMALL_BOAT_HARBOR_DOCK_PORT' = 'Småbåtshamn/Kaj/Hamn',
+  'MEX_TRAINING_SEMINAR' = 'Utbildning/seminarium',
+  'MEX_LAND_RESERVATION' = 'Markreservation',
 }
 
 export const CaseLabels = {
@@ -63,4 +89,13 @@ export const CaseLabels = {
   FT: FTCaseLabel,
   MEX: MEXCaseLabel,
   ALL: { ...PTCaseLabel, ...MEXCaseLabel, ...FTCaseLabel },
+};
+
+export const getShortLabel = (caseType: string): string => {
+  return (
+    PTCaseShortLabel[caseType as keyof typeof PTCaseShortLabel] ??
+    FTCaseShortLabel[caseType as keyof typeof FTCaseShortLabel] ??
+    CaseLabels.ALL[caseType] ??
+    ''
+  );
 };

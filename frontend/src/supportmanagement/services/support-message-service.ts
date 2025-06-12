@@ -1,5 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { isLOP } from '@common/services/application-service';
+import { isIK, isKA, isLOP } from '@common/services/application-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,6 +7,7 @@ import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
+import sanitized from '@common/services/sanitizer-service';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -41,45 +42,65 @@ export interface Message {
   emailHeaders: Record<string, string[]>;
 }
 
-export const sendClosingMessage = (
-  adminName: string,
-  supportErrand: SupportErrand,
-  resolutionLabel: string,
-  municipalityId: string
-) => {
-  const contactChannels = applicantContactChannel(supportErrand);
-  const messageBody = isLOP()
-    ? `Hej,<br><br>
-    
+const getClosingMessageBody = (): string => {
+  if (isKA()) {
+    return `Hej,<br><br>
+      Ditt ärende är löst och har nu avslutats av handläggare.<br><br>
+      Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>
+      Med vänlig hälsning,<br><br>
+      <strong>Kontaktcenter</strong><br>
+      Ånge kommun<br>
+      Torggatan 10<br>
+      841 81 Ånge<br>
+      <a href="mailto:ange@ange.se">ange@ange.se</a><br>
+      0690-25 01 00<br>
+      <a href="https://www.ange.se">www.ange.se</a><br>`;
+  }
+
+  if (isLOP()) {
+    return `Hej,<br><br>
     Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
-    
     Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>
     Servicecenter Lön och pension<br>
     Sundsvalls kommun<br>
     <a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>
-    060-19 26 00, telefontid 9:00-12:00<br>`
-    : `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
+    060-19 26 00, telefontid 9:00-12:00<br>`;
+  }
 
+  if (isIK()) {
+    return `Hej,<br><br>
+    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
     Med vänliga hälsningar<br>
     Intern Kundtjänst<br>
     <a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a><br>
     060-191565<br>`;
+  }
 
-  let plaintextMessageBody = messageBody.replace(
-    '<a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a>',
-    'lonochpension@sundsvall.se'
-  );
+  return `Hej,<br><br>
+    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>`;
+};
 
-  plaintextMessageBody = messageBody.replace(
-    '<a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a>',
-    'internkundtjanst@sundsvall.se'
-  );
+const getPlaintextMessageBody = (htmlMessage: string): string => {
+  const transformed = htmlMessage
+    .replace(/<br\s*\/?>/gi, '\n') // <br> till \n
+    .replace(/<\/p>/gi, '\n') // </p> till \n
+    .replace(/<[^>]+>/g, '') // Ta bort övriga taggar
+    .replace(/&nbsp;/g, ' ') // HTML-space till vanlig space
+    .replace(/\n[ \t]+/g, '\n') // Ta bort indrag i början av rad
+    .replace(/\n{2,}/g, '\n') // Extra radbrytningar
+    .trim();
+
+  return sanitized(transformed).trim();
+};
+
+export const sendClosingMessage = (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
+  const contactChannels = applicantContactChannel(supportErrand);
+  const messageBody = getClosingMessageBody();
+  const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
   return sendMessage({
     municipalityId: municipalityId,
     errandId: supportErrand.id,
-    // TODO FIX WEBMESSAGE
     contactMeans:
       Channels[supportErrand.channel] === Channels.ESERVICE ||
       Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL

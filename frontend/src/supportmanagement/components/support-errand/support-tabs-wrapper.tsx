@@ -1,5 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment, isIK, isLOP } from '@common/services/application-service';
+import { getApplicationEnvironment, isIK, isLOP, isROB } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
@@ -22,6 +22,7 @@ import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
+import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 
 export const SupportTabsWrapper: React.FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
@@ -107,7 +108,7 @@ export const SupportTabsWrapper: React.FC<{
       label: 'Ärendeuppgifter',
       content: supportErrand && <SupportErrandDetailsTab />,
       disabled: false,
-      visibleFor: isLOP() || isIK(),
+      visibleFor: appConfig.features.useDetailsTab,
     },
     {
       label: `Meddelanden (${countUnreadMessages(messages)})`,
@@ -128,6 +129,12 @@ export const SupportTabsWrapper: React.FC<{
       content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
       disabled: false,
       visibleFor: true,
+    },
+    {
+      label: 'Rekryteringsprocess',
+      content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
+      disabled: false,
+      visibleFor: appConfig.features.useRecruitment,
     },
     {
       label: 'Fakturering',

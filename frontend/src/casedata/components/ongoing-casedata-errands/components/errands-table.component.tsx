@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
+import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -139,24 +140,10 @@ export const ErrandsTable: React.FC = () => {
         </Table.Column>
         <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
           {isPT() ? (
-            <>
-              {Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
-              'Nytt parkeringstillstånd'
-                ? 'Nytt p-tillstånd'
-                : Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
-                  'Borttappat parkeringstillstånd'
-                ? 'Borttappat p-tillstånd'
-                : Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
-                  'Förnyat parkeringstillstånd'
-                ? 'Förnyelse av p-tillstånd'
-                : Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1] ===
-                  'Överklagan'
-                ? 'Överklagan av p-tillstånd'
-                : ''}
-            </>
+            <>{getShortLabel(errand.caseType)}</>
           ) : (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-              <div>{Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === errand.caseType)?.[1]}</div>
+              <div>{CaseLabels.ALL[errand.caseType] ?? ''}</div>
               <div>{errand.errandNumber}</div>
             </div>
           )}

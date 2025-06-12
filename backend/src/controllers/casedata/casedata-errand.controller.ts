@@ -1,11 +1,10 @@
+import { MUNICIPALITY_ID } from '@/config';
 import {
   Errand as ErrandDTO,
   PageErrand as PageErrandDTO,
   PatchErrand as PatchErrandDTO,
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
-import { CaseTypes } from '@/interfaces/case-type.interface';
-import { isMEX, isPT } from '@/services/application.service';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import { ErrandPhase } from '@interfaces/errand-phase.interface';
 import { ErrandStatus } from '@interfaces/errand-status.interface';
@@ -21,7 +20,6 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
-import { MUNICIPALITY_ID } from '@/config';
 
 interface SingleErrandResponseData {
   data: ErrandDTO;
@@ -117,7 +115,6 @@ export class CaseDataErrandController {
     @QueryParam('query') query: string,
     @QueryParam('caseType') caseType: string,
     @QueryParam('status') status: string,
-    @QueryParam('ongoing') ongoing: string,
     @QueryParam('stakeholders') stakeholders: string,
     @QueryParam('errandNumber') errandNumber: string,
     @QueryParam('start') start: string,
@@ -153,9 +150,6 @@ export class CaseDataErrandController {
       queryFilter += ` or exists(extraParameters.values~'*${query}*')`;
       queryFilter += ')';
       filterList.push(queryFilter);
-    }
-    if (ongoing) {
-      filterList.push(`not(status.statusType:'Beslutad' or status.statusType:'Beslut verkställt' or status.statusType:'Ärendet avvisas')`);
     }
     if (priority) {
       const priorityQuery = [];

@@ -1,5 +1,3 @@
-import { appConfig } from '@config/appconfig';
-
 export const isKC = () => process.env.NEXT_PUBLIC_APPLICATION === 'KC';
 
 export const isKA = () => process.env.NEXT_PUBLIC_APPLICATION === 'KA';

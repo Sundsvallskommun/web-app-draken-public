@@ -412,7 +412,6 @@ export class SupportErrandController {
     @QueryParam('labelType') labelType: string,
     @QueryParam('labelSubType') labelSubType: string,
     @QueryParam('channel') channel: string,
-    @QueryParam('ongoing') ongoing: string,
     @QueryParam('status') status: string,
     @QueryParam('resolution') resolution: string,
     @QueryParam('start') start: string,
@@ -473,24 +472,38 @@ export class SupportErrandController {
     if (labelCategory || labelType || labelSubType) {
       const labelCategoryList = labelCategory?.split(',');
       const labelTypeList = labelType?.split(',');
-      let labels = labelSubType ? labelSubType.split(',') : labelType ? labelType.split(',') : labelCategory.split(',');
+      const labelSubTypeList = labelSubType?.split(',');
       if (labelCategory) {
-        labels = labels.filter(l => labelCategoryList.some(c => l.includes(c)));
+        if (labelCategoryList.length > 0) {
+          const ss = labelCategoryList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
       }
       if (labelType) {
-        labels = labels.filter(l => labelTypeList.some(c => l.includes(c)));
+        if (labelTypeList.length > 0) {
+          const ss = labelTypeList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
       }
-      const ss = labels
-        .join(',')
-        .split(',')
-        .map(s => `labels:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
+      if (labelSubType) {
+        if (labelSubTypeList.length > 0) {
+          const ss = labelSubTypeList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
+      }
+      console.log('filterList', filterList);
     }
     if (channel) {
       filterList.push(`channel:'${channel}'`);
-    }
-    if (ongoing) {
-      filterList.push(`not(status:'SOLVED')`);
     }
     if (status) {
       const ss = status.split(',').map(s => `status:'${s}'`);

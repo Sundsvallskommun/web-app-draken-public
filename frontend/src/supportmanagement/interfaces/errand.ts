@@ -1,6 +1,7 @@
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { Status, SupportStakeholderFormModel, ExternalTags } from '@supportmanagement/services/support-errand-service';
 import { Priority } from './priority';
+import { CParameter } from 'src/data-contracts/backend/data-contracts';
 
 export interface ApiPagingData {
   pageable: {
@@ -61,6 +62,7 @@ export interface RegisterSupportErrandFormModel {
   addExisting: string;
   externalTags?: ExternalTags;
   facilities?: [];
+  parameters?: CParameter[];
 }
 
 export interface UpdateSupportErrandFormModel {
