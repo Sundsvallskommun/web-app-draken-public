@@ -1,3 +1,5 @@
+'use client';
+
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
@@ -43,7 +45,8 @@ import * as yup from 'yup';
 import { isKA, isKC } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useTranslation } from 'react-i18next';
-import TextEditor from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
 

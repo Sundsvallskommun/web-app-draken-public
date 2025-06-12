@@ -1,3 +1,5 @@
+'use client';
+
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   FormControl,
@@ -13,7 +15,8 @@ import {
 import { useRef, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
 import { serviceAddons, serviceAids, serviceModeOfTransportation, serviceTravelTypes } from './service';
-import TextEditor from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const CasedataServicesTab: React.FC = () => {
   const [serviceText, setServiceText] = useState('');

@@ -341,7 +341,6 @@ export const Lagenhetsarrende: React.FC<{
               onClick={() => {
                 setIsLoading(true);
                 onSave({ ...getValues(), signature }).then(() => {
-                  console.log(getValues());
                   setIsLoading(undefined);
                   setTextIsDirty(false);
                 });

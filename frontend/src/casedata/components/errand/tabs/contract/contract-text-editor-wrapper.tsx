@@ -1,7 +1,10 @@
+'use client';
+
 import sanitized from '@common/services/sanitizer-service';
 import { MutableRefObject } from 'react';
 import { UseFormTrigger } from 'react-hook-form';
-import TextEditor from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 import { cx } from '@sk-web-gui/react';
 
 export interface ContractTextEditorWrapperProps {
@@ -28,7 +31,6 @@ export const ContractTextEditorWrapper: React.FC<ContractTextEditorWrapperProps>
           setDirty(true);
         }
         const text = editorRef.current.getSemanticHTML();
-        console.log('text', editorRef.current.root.innerHTML);
         setState(text);
         setValue(label, sanitized((delta.ops[0].retain as any) > 1 ? editorRef.current.getSemanticHTML() : undefined));
         trigger(label);

@@ -1,3 +1,5 @@
+'use client';
+
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import { User } from '@common/interfaces/user';
 import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
@@ -33,7 +35,8 @@ import { getAdminName } from '@supportmanagement/services/support-stakeholder-se
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import TextEditor from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
   {

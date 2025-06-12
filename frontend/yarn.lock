@@ -1828,10 +1828,10 @@
     "@sk-web-gui/utils" "2.2.2"
     lucide-react "^0.471.1"
 
-"@sk-web-gui/react@1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@sk-web-gui/react/-/react-1.5.0.tgz#4f224ce731541e6db8f61d71cdad5d683024d9d6"
-  integrity sha512-mJzb/LRG+R3SeovzY5hjcD8wKjVO3q3BMF6ifH23Eo00VkXb9k+WwFISgGQ49vO1cbTB/GpdGqaJ0pISCY35pQ==
+"@sk-web-gui/react@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@sk-web-gui/react/-/react-2.0.0.tgz#d4e68770af1846c9af5f2c3b94c95af4bf727d9f"
+  integrity sha512-bpX+I7w2V34wLMcxE96LgDr7C1Dj1YAvg3VAWdPkXIzZcIWcjCVuQUOk8xsZAXfw90DipFB81j94Iee3fWnmHQ==
   dependencies:
     "@sk-web-gui/accordion" "2.1.6"
     "@sk-web-gui/avatar" "1.2.1"

@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcome, DecisionOutcomeKey, DecisionOutcomeLabel } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
@@ -57,7 +59,8 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
-import TextEditor from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 

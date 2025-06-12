@@ -1,3 +1,5 @@
+'use client';
+
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
@@ -40,7 +42,8 @@ import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
-import TextEditor from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';

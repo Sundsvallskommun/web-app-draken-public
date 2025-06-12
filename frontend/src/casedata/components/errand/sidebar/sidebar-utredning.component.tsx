@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
@@ -14,19 +16,12 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import {
-  Button,
-  cx,
-  FormControl,
-  FormErrorMessage,
-  Input,
-  TextEditor,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, cx, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
