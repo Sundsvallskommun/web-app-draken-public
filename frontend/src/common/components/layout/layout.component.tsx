@@ -283,7 +283,7 @@ export default function Layout({ title, children }) {
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
             <NextLink href="/kakor" passHref>
-              <Link>Läs mer om hur vi använder kakor</Link>
+              <Button variant={'link'}>Läs mer om hur vi använder kakor</Button>
             </NextLink>
           </p>
         }

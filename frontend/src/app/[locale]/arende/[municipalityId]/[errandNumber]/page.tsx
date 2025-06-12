@@ -56,13 +56,7 @@ export default function Arende2() {
           onClick={() => setInitalFocus()}
           className="sr-only focus:not-sr-only bg-primary-light border-2 border-black p-4 text-black inline-block focus:absolute focus:top-0 focus:left-0 focus:right-0 focus:m-auto focus:w-80 text-center"
         >
-          {/* <a
-            tabIndex={1}
-            onClick={(e) => setInitalFocus(e)}
-            c
-          > */}
           Hoppa till innehåll
-          {/* </a> */}
         </NextLink>
 
         {appConfig.isCaseData
@@ -74,9 +68,3 @@ export default function Arende2() {
     </div>
   );
 }
-
-// export const getServerSideProps = async ({ locale }) => ({
-//   props: {
-//     ...(await serverSideTranslations(locale, ['common', 'messages'])),
-//   },
-// });

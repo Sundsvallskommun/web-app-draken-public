@@ -37,7 +37,6 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
-// import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -409,12 +408,12 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
-    setValue('descriptionPlaintext', quillRef.current.getEditor().getText());
+  const onRichTextChange = (delta?, oldDelta?, source?) => {
+    setRichText(quillRef.current.getText());
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
+      shouldDirty: true,
+    });
+    setValue('descriptionPlaintext', quillRef.current.getText());
     trigger('description');
   };
 
@@ -460,7 +459,7 @@ export const CasedataDecisionTab: React.FC<{
     if (InTemplate === '') {
       content = '';
     }
-    onRichTextChange(content);
+    onRichTextChange();
   };
 
   const isSent = () => {
@@ -626,20 +625,16 @@ export const CasedataDecisionTab: React.FC<{
         <Input type="hidden" {...register('errandId')} />
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
           <TextEditor
-          // ref={quillRef}
-          // containerLabel="decision"
-          // value={richText}
-          // isMaximizable={true}
-          // readOnly={isErrandLocked(errand) || isSent()}
-          // toggleModal={() => {
-          //   setIsEditorModalOpen(!isEditorModalOpen);
-          // }}
-          // onChange={(value, delta, source, editor) => {
-          //   if (source === 'user') {
-          //     setTextIsDirty(true);
-          //   }
-          //   return onRichTextChange(value);
-          // }}
+            className={cx(`mb-md h-[80%]`)}
+            key={richText}
+            ref={quillRef}
+            defaultValue={richText}
+            onTextChange={(delta, oldDelta, source) => {
+              if (source === 'user') {
+                setTextIsDirty(true);
+              }
+              return onRichTextChange(delta, oldDelta, source);
+            }}
           />
         </div>
         <div className="my-sm text-error">

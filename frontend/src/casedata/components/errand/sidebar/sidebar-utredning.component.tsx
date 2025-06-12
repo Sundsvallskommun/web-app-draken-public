@@ -13,7 +13,17 @@ import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Button, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { yupResolver } from '@hookform/resolvers/yup';
+import {
+  Button,
+  cx,
+  FormControl,
+  FormErrorMessage,
+  Input,
+  TextEditor,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -79,7 +89,7 @@ export const SidebarUtredning: React.FC = () => {
     getValues,
     formState: { errors },
   }: UseFormReturn<UtredningFormModel, any, undefined> = useForm({
-    //resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     mode: 'onChange',
   });
 
@@ -195,11 +205,10 @@ export const SidebarUtredning: React.FC = () => {
     console.error('Something went wrong when saving utredning', e);
   };
 
-  const onRichTextChange = (val) => {
+  const onRichTextChange = (delta, oldDelta, source) => {
     const editor = quillRefUtredning.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined));
+    setRichText(editor);
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? editor : undefined));
     trigger('description');
   };
 
@@ -229,22 +238,19 @@ export const SidebarUtredning: React.FC = () => {
         <FormControl id="description" className="w-full">
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
           <div className="h-[42rem] -mb-48" data-cy="utredning-richtext-wrapper">
-            {/* <TextEditor
+            <TextEditor
+              className={cx(`mb-md h-[80%]`)}
+              key={richText}
               ref={quillRefUtredning}
-              containerLabel="utredning"
-              value={richText}
-              isMaximizable={false}
+              defaultValue={richText}
               readOnly={isSigned || !isErrandAdmin(errand, user)}
-              // toggleModal={() => {
-              //   setIsEditorModalOpen(!isEditorModalOpen);
-              // }}
-              onChange={(value, delta, source, editor) => {
+              onTextChange={(delta, oldDelta, source) => {
                 if (source === 'user') {
                   setTextIsDirty(true);
                 }
-                return onRichTextChange(value);
+                return onRichTextChange(delta, oldDelta, source);
               }}
-            /> */}
+            />
           </div>
           <div className="my-sm">
             {errors.description && formState.isDirty && (

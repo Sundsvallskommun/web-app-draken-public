@@ -1,7 +1,7 @@
 'use client';
 
-import LoginGuard from '@common/components/login-guard/login-guard';
 import { AppWrapper } from '@common/contexts/app.context';
+import { getMe } from '@common/services/user-service';
 import {
   ColorSchemeMode,
   ConfirmationDialogContextProvider,
@@ -9,17 +9,13 @@ import {
   defaultTheme,
   extendTheme,
 } from '@sk-web-gui/react';
+import '@styles/tailwind.scss';
+import store from '@supportmanagement/services/storage-service';
 import dayjs from 'dayjs';
 import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
-import type { AppProps } from 'next/app';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import '@styles/tailwind.scss';
-import store from '@supportmanagement/services/storage-service';
-import { appWithTranslation } from 'next-i18next';
-import nextI18NextConfig from '../../../../next-i18next.config';
-import { getMe } from '@common/services/user-service';
 import LoaderFullScreen from '../loader/loader-fullscreen';
 
 dayjs.extend(utc);
@@ -72,13 +68,6 @@ function AppLayout({ children }: ClientApplicationProps) {
   }
 
   return (
-    // <GuiProvider theme={theme} colorScheme={colorScheme}>
-    //   <ConfirmationDialogContextProvider>
-    //     <AppWrapper>
-    //       <LoginGuard>{children}</LoginGuard>
-    //     </AppWrapper>
-    //   </ConfirmationDialogContextProvider>
-    // </GuiProvider>
     <GuiProvider theme={theme} colorScheme={colorScheme as ColorSchemeMode}>
       <ConfirmationDialogContextProvider>
         <AppWrapper>{children}</AppWrapper>

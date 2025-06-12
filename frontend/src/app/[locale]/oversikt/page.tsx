@@ -19,12 +19,6 @@ const Oversikt: React.FC = () => {
     useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
-  // useEffect(() => {
-  //   if (!isLoggedIn) {
-  //     router.push('/login');
-  //   }
-  // }, [isLoggedIn, router]);
-
   const initialFocus = useRef(null);
   const setInitalFocus = (e) => {
     setTimeout(() => {
@@ -33,7 +27,6 @@ const Oversikt: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('USEEFFECT 2');
     setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
     getAdminUsers().then(setAdministrators);
   }, []);
@@ -74,9 +67,3 @@ const Oversikt: React.FC = () => {
 };
 
 export default Oversikt;
-
-// export const getServerSideProps = async ({ locale }) => ({
-//   props: {
-//     ...(await serverSideTranslations(locale, ['common'])),
-//   },
-// });

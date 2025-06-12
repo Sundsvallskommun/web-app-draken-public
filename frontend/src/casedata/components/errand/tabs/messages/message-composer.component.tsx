@@ -315,6 +315,7 @@ export const MessageComposer: React.FC<{
         : isPT()
         ? 'Gatuavdelningen, Trafiksektionen'
         : null,
+      interpolation: { escapeValue: false },
     });
   };
 
@@ -463,6 +464,8 @@ export const MessageComposer: React.FC<{
               <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
               <div className={cx(`h-[28rem] mb-12`)} data-cy="decision-richtext-wrapper">
                 <TextEditor
+                  className={cx(`mb-md h-[80%]`)}
+                  key={richText}
                   ref={quillRef}
                   defaultValue={richText}
                   onTextChange={(delta, oldDelta, source) => {

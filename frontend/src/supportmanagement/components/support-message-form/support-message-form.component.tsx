@@ -1,5 +1,3 @@
-'use client';
-
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
@@ -157,18 +155,14 @@ export const SupportMessageForm: React.FC<{
   const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
   const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
-  const confirm = useConfirm();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
   const quillRef = useRef(null);
   const [textIsDirty, setTextIsDirty] = useState(false);
-  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
-  const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const { setSupportErrand } = useAppContext();
-  const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
 
   const closeAttachmentModal = () => {
@@ -535,6 +529,7 @@ export const SupportMessageForm: React.FC<{
           <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
           <div className={cx(`h-[26rem] mb-16`)} data-cy="decision-richtext-wrapper">
             <TextEditor
+              key={richText}
               className={cx(`mb-md h-[80%]`)}
               readOnly={props.locked}
               ref={quillRef}
@@ -555,7 +550,6 @@ export const SupportMessageForm: React.FC<{
           )}
         </div>
       </div>
-      <Button onClick={() => alert(richText)}>Testa template</Button>
 
       {contactMeans === 'email' || contactMeans === 'webmessage' ? (
         <div className="w-full gap-xl mb-lg">
@@ -760,26 +754,6 @@ export const SupportMessageForm: React.FC<{
           <FormErrorMessage className="text-error">Något gick fel när meddelandet skulle skickas</FormErrorMessage>
         )}
       </div>
-      {isEditorModalOpen && (
-        <Modal show={true}></Modal>
-        // <EditorModal
-        //   isOpen={isEditorModalOpen}
-        //   readOnly={props.locked}
-        //   modalHeader="Ditt meddelande"
-        //   modalBody={quillRef.current.getEditor().getContents()}
-        //   onChange={(delta) => {
-        //     setTextIsDirty(true);
-        //     return onRichTextChange(delta);
-        //   }}
-        //   onClose={() => {
-        //     setIsEditorModalOpen(false);
-        //   }}
-        //   onCancel={() => {
-        //     setIsEditorModalOpen(false);
-        //   }}
-        //   onContinue={modalAction}
-        // />
-      )}
 
       <Modal show={isAttachmentModalOpen} onClose={closeAttachmentModal} label="Ladda upp bilaga" className="w-[40rem]">
         <Modal.Content>

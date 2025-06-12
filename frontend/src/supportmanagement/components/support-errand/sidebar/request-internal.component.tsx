@@ -1,4 +1,3 @@
-// import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
@@ -72,6 +71,8 @@ export interface RequestInternalFormProps {
   messageBodyPlaintext: string;
 }
 
+//NOT IN USED?
+
 export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
     user,
@@ -113,15 +114,10 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     mode: 'onChange',
   });
 
-  const onRichTextChange = (val) => {
-    if (quillRef.current) {
-      const editor = quillRef.current?.getEditor();
-      const length = editor?.getLength();
-      setRichText(val);
-      setValue('message', sanitized(length > 1 ? val : undefined));
-      setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
-      trigger('message');
-    }
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setValue('message', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('messageBodyPlaintext', quillRef.current.getText());
+    trigger('message');
   };
 
   const handleRequestInternal = (data: RequestInternalFormProps) => {
@@ -272,17 +268,16 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
             <Input data-cy="message-body-input" type="hidden" {...register('message')} />
             <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
               <TextEditor
-              // ref={quillRef}
-              // value={richText}
-              // errors={!!errors.message}
-              // isMaximizable={false}
-              // toggleModal={() => {}}
-              // onChange={(value, delta, source, editor) => {
-              //   if (source === 'user') {
-              //     setTextIsDirty(true);
-              //   }
-              //   return onRichTextChange(value);
-              // }}
+                className={cx(`mb-md h-[80%]`)}
+                key={richText}
+                ref={quillRef}
+                defaultValue={richText}
+                onTextChange={(delta, oldDelta, source) => {
+                  if (source === 'user') {
+                    setTextIsDirty(true);
+                  }
+                  return onRichTextChange(delta, oldDelta, source);
+                }}
               />
             </div>
           </FormControl>

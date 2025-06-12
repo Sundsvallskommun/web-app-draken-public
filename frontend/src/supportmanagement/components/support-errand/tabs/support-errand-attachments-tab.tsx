@@ -2,7 +2,7 @@ import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dr
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
-import { Dialog, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -123,7 +123,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
     formState,
     formState: { errors },
   } = useForm<SupportAttachmentFormModel>({
-    // resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     defaultValues: defaultAttachmentInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -248,7 +248,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Panel className="fixed inset-0" />
+            <DialogPanel className="fixed inset-0" />
           </TransitionChild>
 
           {/* This element is to trick the browser into centering the modal contents. */}

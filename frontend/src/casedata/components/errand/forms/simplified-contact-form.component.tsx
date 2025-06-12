@@ -215,7 +215,7 @@ export const SimplifiedContactForm: React.FC<{
     reset,
     formState: { errors },
   } = useForm<CasedataOwnerOrContact>({
-    //resolver: yupResolver(yupContact),
+    resolver: yupResolver(yupContact) as any,
     defaultValues: contact,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });

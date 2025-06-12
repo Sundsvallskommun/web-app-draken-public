@@ -54,7 +54,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
-    // resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     defaultValues: defaultSupportErrandInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });

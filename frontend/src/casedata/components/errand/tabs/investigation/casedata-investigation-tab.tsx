@@ -210,11 +210,9 @@ export const CasedataInvestigationTab: React.FC<{
     }
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setRichText(quillRef.current.getText());
+    setValue('description', sanitized(delta > 1 ? quillRef.current.getText() : undefined), { shouldDirty: true });
     trigger('description');
   };
 
@@ -410,17 +408,16 @@ export const CasedataInvestigationTab: React.FC<{
             <Input type="hidden" {...register('errandNumber')} />
             <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
               <TextEditor
-              // ref={quillRef}
-              // value={richText}
-              // isMaximizable={false}
-              // readOnly={!allowed}
-              // toggleModal={() => {}}
-              // onChange={(value, delta, source, editor) => {
-              //   if (source === 'user') {
-              //     setTextIsDirty(true);
-              //   }
-              //   return onRichTextChange(value);
-              // }}
+                className={cx(`mb-md h-[80%]`)}
+                key={richText}
+                ref={quillRef}
+                defaultValue={richText}
+                onTextChange={(delta, oldDelta, source) => {
+                  if (source === 'user') {
+                    setTextIsDirty(true);
+                  }
+                  return onRichTextChange(delta, oldDelta, source);
+                }}
               />
             </div>
             <div className="my-sm">
