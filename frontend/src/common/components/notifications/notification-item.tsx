@@ -14,30 +14,14 @@ import {
 } from '@supportmanagement/services/support-notification-service';
 import NextLink from 'next/link';
 import { NotificationRenderIcon } from './notification-render-icon';
-
-type Notification = SupportNotification | CaseDataNotification;
-
-//Help function to get the notification key subtype? in supportmanagement and subType? in casedata
-const getNotificationKey = (notification: Notification): string | undefined => {
-  return (notification as any).subType?.toUpperCase() ?? (notification as any).subtype?.toUpperCase();
-};
-
-const labelBySubType: Record<string, string> = {
-  ATTACHMENT: 'Ny bilaga',
-  DECISION: 'Nytt beslut',
-  ERRAND: 'Ärende uppdaterat',
-  MESSAGE: 'Nytt meddelande',
-  NOTE: 'Ny kommentar/anteckning',
-  SYSTEM: 'Fasbyte',
-  SUSPENSION: 'Parkering upphört',
-};
+import { NotificationType, getNotificationKey, labelBySubType } from './notification-utils';
 
 const senderFallback = (name?: string): string => {
   if (!name || name.toUpperCase() === 'UNKNOWN') return 'Okänd';
   return name;
 };
 
-export const NotificationItem: React.FC<{ notification: Notification }> = ({ notification }) => {
+export const NotificationItem: React.FC<{ notification: NotificationType }> = ({ notification }) => {
   const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
   const toastMessage = useSnackbar();
 
