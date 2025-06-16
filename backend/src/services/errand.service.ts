@@ -6,7 +6,7 @@ import { apiURL, latestBy } from '@utils/util';
 import ApiService from './api.service';
 import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
-import { Errand as ErrandDTO, PatchErrandCaseTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { CASEDATA_NAMESPACE } from '@/config';
 
 const SERVICE = `case-data/11.0`;
@@ -27,7 +27,7 @@ export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) =>
 export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, errandId: string) => CreateErrandDto = (errandData, errandId) => {
   const newErrand: CreateErrandDto = {
     ...(errandId && { id: parseInt(errandId, 10) }),
-    ...(errandData.caseType && { caseType: errandData.caseType as unknown as PatchErrandCaseTypeEnum }),
+    ...(errandData.caseType && { caseType: errandData.caseType }),
     ...(errandData.priority && { priority: errandData.priority as any }),
     ...(errandData.description && { description: errandData.description }),
     ...(errandData.caseTitleAddition && { caseTitleAddition: errandData.caseTitleAddition }),
