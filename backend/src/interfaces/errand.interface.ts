@@ -3,18 +3,15 @@ import {
   Errand as ErrandDTO,
   ErrandChannelEnum,
   PatchErrand as IPatchErrandDTO,
-  PatchErrandCaseTypeEnum,
   PatchErrandPriorityEnum,
   Stakeholder as StakeholderDTO,
   ExtraParameter,
   RelatedErrand,
-  Status,
 } from '@/data-contracts/case-data/data-contracts';
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ErrandPhase } from './errand-phase.interface';
-import { ErrandStatus, StatusDTO } from './errand-status.interface';
-import { GenericExtraParameters } from './extra-parameters.interface';
+import { StatusDTO } from './errand-status.interface';
 import { CreateStakeholderDto } from './stakeholder.interface';
 
 export class CreateErrandDto implements ErrandDTO {
@@ -29,7 +26,7 @@ export class CreateErrandDto implements ErrandDTO {
   externalCaseId?: string;
   @IsString()
   @IsOptional()
-  caseType?: PatchErrandCaseTypeEnum;
+  caseType?: string;
   @IsString()
   @IsOptional()
   channel?: ErrandChannelEnum;
@@ -109,7 +106,7 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   statusDescription?: string;
   @IsString()
   @IsOptional()
-  caseType?: PatchErrandCaseTypeEnum;
+  caseType?: string;
   @IsString()
   @IsOptional()
   priority?: PatchErrandPriorityEnum;
