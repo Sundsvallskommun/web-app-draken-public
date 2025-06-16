@@ -68,7 +68,7 @@ export interface WebMessageRequest {
   oepInstance?: WebMessageRequestOepInstanceEnum;
   /**
    * @maxItems 10
-   * @minItems 0
+   * @minItems 1
    */
   attachments?: WebMessageAttachment[];
 }
