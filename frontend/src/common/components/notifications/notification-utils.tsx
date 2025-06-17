@@ -17,3 +17,18 @@ export const labelBySubType: Record<string, string> = {
   SYSTEM: 'Fasbyte',
   SUSPENSION: 'Parkering upphört',
 };
+
+export const getFilteredNotifications = (
+  notifications: NotificationType[],
+  currentUsername: string
+): NotificationType[] => {
+  const username = (currentUsername || '').toLowerCase();
+
+  return notifications.filter((n) => {
+    const subTypeKey = getNotificationKey(n);
+    const createdBy = (n.createdBy || '').toLowerCase();
+
+    // Filtrera bort systemnotiser skapade av inloggad användare eller 'unknown'
+    return !(subTypeKey === 'SYSTEM' && (createdBy === username || createdBy === 'unknown'));
+  });
+};
