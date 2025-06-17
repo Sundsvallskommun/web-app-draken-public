@@ -7,7 +7,7 @@ import { Button, Divider, cx } from '@sk-web-gui/react';
 import { getSupportNotifications } from '@supportmanagement/services/support-notification-service';
 import { useEffect } from 'react';
 import { NotificationItem } from './notification-item';
-import { getNotificationKey } from './notification-utils';
+import { getFilteredNotifications, getNotificationKey } from './notification-utils';
 
 export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
   show,
@@ -31,13 +31,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
-  const filteredNotifications = notifications.filter((n) => {
-    const subTypeKey = getNotificationKey(n);
-    const createdBy = (n.createdBy || '').toLowerCase();
-    const currentUser = (user?.username || '').toLowerCase();
-
-    return !(subTypeKey === 'SYSTEM' && (createdBy === currentUser || createdBy === 'unknown'));
-  });
+  const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
 
   const acknowledgedNotifications = sortBy(
     filteredNotifications.filter((n) => n.acknowledged),
