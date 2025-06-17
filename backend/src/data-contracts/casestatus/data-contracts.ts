@@ -159,6 +159,7 @@ export interface CaseStatusResponse {
    * @example "BYGGR-2024-123456"
    */
   errandNumber?: string;
+  propertyDesignations?: string[];
 }
 
 /** Case status response */
