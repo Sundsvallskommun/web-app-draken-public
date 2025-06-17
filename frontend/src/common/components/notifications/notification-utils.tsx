@@ -28,7 +28,6 @@ export const getFilteredNotifications = (
     const subTypeKey = getNotificationKey(n);
     const createdBy = (n.createdBy || '').toLowerCase();
 
-    // Filtrera bort systemnotiser skapade av inloggad användare eller 'unknown'
     return !(subTypeKey === 'SYSTEM' && (createdBy === username || createdBy === 'unknown'));
   });
 };
