@@ -7,19 +7,14 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { prettyTime } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Avatar, cx, useSnackbar } from '@sk-web-gui/react';
+import { cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
 import NextLink from 'next/link';
 import { NotificationRenderIcon } from './notification-render-icon';
-import { NotificationType, getNotificationKey, labelBySubType } from './notification-utils';
-
-const senderFallback = (name?: string): string => {
-  if (!name || name.toUpperCase() === 'UNKNOWN') return 'Okänd';
-  return name;
-};
+import { NotificationType, getNotificationKey, labelBySubType, senderFallback } from './notification-utils';
 
 export const NotificationItem: React.FC<{ notification: NotificationType }> = ({ notification }) => {
   const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
