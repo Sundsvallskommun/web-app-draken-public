@@ -46,6 +46,7 @@ export const SupportManagementFilterType: React.FC = () => {
       });
     }
     setAllTypes(_types);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportMetadata, categories, types]);
 
   return (
@@ -58,7 +59,7 @@ export const SupportManagementFilterType: React.FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Ärende
+        Ärendetyp
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <SearchField
