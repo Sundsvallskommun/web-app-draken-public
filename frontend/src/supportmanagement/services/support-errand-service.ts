@@ -160,6 +160,12 @@ export enum StatusLabelROB {
   AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
 }
 
+export const shouldShowResumeErrandButton = (status?: Status): boolean => {
+  return (
+    !!status && [Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(status)
+  );
+};
+
 export enum AttestationStatus {
   APPROVED = 'APPROVED',
   DENIED = 'DENIED',
