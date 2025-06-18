@@ -8,6 +8,11 @@ export const getNotificationKey = (notification: NotificationType): string | und
   return (notification as any).subType?.toUpperCase() ?? (notification as any).subtype?.toUpperCase();
 };
 
+export const senderFallback = (name?: string): string => {
+  if (!name || name.toUpperCase() === 'UNKNOWN') return 'Okänd';
+  return name;
+};
+
 export const labelBySubType: Record<string, string> = {
   ATTACHMENT: 'Ny bilaga',
   DECISION: 'Nytt beslut',
@@ -28,6 +33,10 @@ export const getFilteredNotifications = (
     const subTypeKey = getNotificationKey(n);
     const createdBy = (n.createdBy || '').toLowerCase();
 
-    return !(subTypeKey === 'SYSTEM' && (createdBy === username || createdBy === 'unknown'));
+    //Temp filter to remove SYSTEM notifications created (fasbyte) until API is fixed
+    return !(subTypeKey === 'SYSTEM');
+
+    // This filter will be used when API is fixed. Then remove the current logic here above.
+    // return !(subTypeKey === 'SYSTEM' && (createdBy === username || createdBy === 'unknown'));
   });
 };
