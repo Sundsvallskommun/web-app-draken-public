@@ -33,7 +33,7 @@ export function DeployInfoBanner() {
   if (!info) return null;
 
   return (
-    <div className="fixed bottom-0 right-0 px-[1rem] py-[0.6rem] bg-[#f0f0f0] text-[1.2rem] rounded-tl-[0.8rem] shadow-[0_0_0.5rem_rgba(0,0,0,0.2)] z-[9999]">
+    <div className="fixed bottom-0 right-0 px-[1rem] py-[0.6rem] bg-background-200 text-[1.2rem] rounded-tl-[0.8rem] z-[9999]">
       <div>
         <strong>Branch:</strong> {info.branch}
       </div>
