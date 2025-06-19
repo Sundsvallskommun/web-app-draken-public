@@ -34,9 +34,6 @@ export const getFilteredNotifications = (
     const createdBy = (n.createdBy || '').toLowerCase();
 
     //Temp filter to remove SYSTEM notifications created (fasbyte) until API is fixed
-    return !(subTypeKey === 'SYSTEM');
-
-    // This filter will be used when API is fixed. Then remove the current logic here above.
-    // return !(subTypeKey === 'SYSTEM' && (createdBy === username || createdBy === 'unknown'));
+    return subTypeKey !== 'SYSTEM' && createdBy !== username;
   });
 };
