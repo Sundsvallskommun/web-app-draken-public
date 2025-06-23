@@ -9,132 +9,6 @@
  * ---------------------------------------------------------------
  */
 
-export interface Status {
-  /**
-   * The type of status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende inkommit"
-   */
-  statusType?: string;
-  /**
-   * Description of the status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende har kommit in från e-tjänsten."
-   */
-  description?: string;
-  /**
-   * The date and time when the status was recorded
-   * @format date-time
-   * @example "2023-01-01T12:00:00Z"
-   */
-  dateTime?: string;
-}
-
-export interface Problem {
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
-}
-
-export interface StatusType {
-  /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
-}
-
-export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  /** @format uri */
-  type?: string;
-  status?: StatusType;
-  violations?: Violation[];
-  title?: string;
-  message?: string;
-  /** @format uri */
-  instance?: string;
-  parameters?: Record<string, object>;
-  detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
-}
-
-export interface ThrowableProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
-}
-
-export interface Violation {
-  field?: string;
-  message?: string;
-}
-
 /** A stakeholder may have one or more addresses. For example, one POSTAL_ADDRESS and another INVOICE_ADDRESS. */
 export interface Address {
   /**
@@ -872,7 +746,10 @@ export interface Errand {
 
 /** Extra parameters for the errand */
 export interface ExtraParameter {
-  /** Parameter key */
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
@@ -995,6 +872,7 @@ export interface Notification {
   ownerFullName?: string;
   /**
    * Owner id of the notification
+   * @minLength 1
    * @example "AD01"
    */
   ownerId: string;
@@ -1010,11 +888,18 @@ export interface Notification {
   createdByFullName?: string;
   /**
    * Type of the notification
+   * @minLength 1
    * @example "CREATE"
    */
   type: string;
   /**
+   * Sub type of the notification
+   * @example "PHASE_CHANGE"
+   */
+  subType?: string;
+  /**
    * Description of the notification
+   * @minLength 1
    * @example "Some description of the notification"
    */
   description: string;
@@ -1072,6 +957,30 @@ export interface RelatedErrand {
   relationReason?: string;
 }
 
+/** The statuses connected to the errand */
+export interface Status {
+  /**
+   * The type of status
+   * @minLength 0
+   * @maxLength 255
+   * @example "Ärende inkommit"
+   */
+  statusType: string;
+  /**
+   * Description of the status
+   * @minLength 0
+   * @maxLength 255
+   * @example "Ärende har kommit in från e-tjänsten."
+   */
+  description?: string;
+  /**
+   * The date and time when the status was created
+   * @format date-time
+   * @example "2023-01-01T12:00:00Z"
+   */
+  created?: string;
+}
+
 /** Suspension information */
 export interface Suspension {
   /**
@@ -1122,11 +1031,13 @@ export enum Header {
 export interface MessageAttachment {
   /**
    * The attachment (file) content as a BASE64-encoded string
+   * @minLength 1
    * @example "aGVsbG8gd29ybGQK"
    */
   content: string;
   /**
    * The attachment filename
+   * @minLength 1
    * @example "test.txt"
    */
   name: string;
@@ -1219,6 +1130,107 @@ export interface MessageRequest {
   attachments?: MessageAttachment[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
+  /**
+   * Is message internal
+   * @example true
+   */
+  internal?: boolean;
+}
+
+/** Conversation model */
+export interface Conversation {
+  /**
+   * Conversation ID
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  id?: string;
+  /**
+   * The message-exchange topic
+   * @minLength 1
+   * @example "The conversation topic"
+   */
+  topic: string;
+  /** ConversationType model */
+  type: ConversationType;
+  relationIds?: string[];
+  participants?: Identifier[];
+  metadata?: KeyValues[];
+}
+
+/**
+ * ConversationType model
+ * @example "INTERNAL"
+ */
+export enum ConversationType {
+  INTERNAL = 'INTERNAL',
+  EXTERNAL = 'EXTERNAL',
+}
+
+/** Identifier model */
+export interface Identifier {
+  /**
+   * The conversation identifier type
+   * @pattern ^(adAccount|partyId)$
+   * @example "adAccount"
+   */
+  type?: string;
+  /**
+   * The conversation identifier value
+   * @minLength 1
+   * @example "joe01doe"
+   */
+  value: string;
+}
+
+/** KeyValues model */
+export interface KeyValues {
+  /**
+   * The key
+   * @example "key1"
+   */
+  key?: string;
+  values?: string[];
+}
+
+/** Message model */
+export interface Message {
+  /**
+   * Message ID
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  id?: string;
+  /**
+   * The ID of the replied message
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  inReplyToMessageId?: string;
+  /**
+   * The timestamp when the message was created.
+   * @format date-time
+   */
+  created?: string;
+  /** Identifier model */
+  createdBy?: Identifier;
+  /**
+   * The content of the message.
+   * @minLength 1
+   * @example "Hello, how can I help you?"
+   */
+  content: string;
+  readBy?: ReadBy[];
+  attachments?: Attachment[];
+}
+
+/** Readby model */
+export interface ReadBy {
+  /** Identifier model */
+  identifier?: Identifier;
+  /**
+   * The timestamp when the message was read.
+   * @format date-time
+   * @example "2023-01-01T12:00:00+01:00"
+   */
+  readAt?: string;
 }
 
 export interface PatchNotification {
@@ -1281,9 +1293,9 @@ export interface PatchErrand {
   externalCaseId?: string;
   /**
    * The type of case
-   * @example "PARKING_PERMIT"
+   * @example "NYBYGGNAD_ANSOKAN_OM_BYGGLOV"
    */
-  caseType?: PatchErrandCaseTypeEnum;
+  caseType?: string;
   /**
    * The priority of the case
    * @example "MEDIUM"
@@ -1398,7 +1410,6 @@ export interface PageErrand {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1409,20 +1420,25 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  paged?: boolean;
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
   unpaged?: boolean;
+  paged?: boolean;
+  /** @format int32 */
+  pageNumber?: number;
+  /** @format int32 */
+  pageSize?: number;
 }
 
 export interface SortObject {
-  empty?: boolean;
   sorted?: boolean;
+  empty?: boolean;
   unsorted?: boolean;
 }
 
@@ -1597,6 +1613,30 @@ export interface MessageResponse {
   attachments?: AttachmentResponse[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
+  /**
+   * Is message internal
+   * @example true
+   */
+  internal?: boolean;
+}
+
+export interface PageMessage {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  size?: number;
+  content?: Message[];
+  /** @format int32 */
+  number?: number;
+  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  pageable?: PageableObject;
+  empty?: boolean;
 }
 
 /**
@@ -1655,6 +1695,7 @@ export enum DecisionDecisionOutcomeEnum {
  */
 export enum ErrandChannelEnum {
   ESERVICE = 'ESERVICE',
+  ESERVICE_KATLA = 'ESERVICE_KATLA',
   EMAIL = 'EMAIL',
   WEB_UI = 'WEB_UI',
   MOBILE = 'MOBILE',
@@ -1679,50 +1720,6 @@ export enum ErrandPriorityEnum {
 export enum MessageRequestDirectionEnum {
   INBOUND = 'INBOUND',
   OUTBOUND = 'OUTBOUND',
-}
-
-/**
- * The type of case
- * @example "PARKING_PERMIT"
- */
-export enum PatchErrandCaseTypeEnum {
-  PARKING_PERMIT = 'PARKING_PERMIT',
-  PARKING_PERMIT_RENEWAL = 'PARKING_PERMIT_RENEWAL',
-  LOST_PARKING_PERMIT = 'LOST_PARKING_PERMIT',
-  MEX_LEASE_REQUEST = 'MEX_LEASE_REQUEST',
-  MEX_BUY_LAND_FROM_THE_MUNICIPALITY = 'MEX_BUY_LAND_FROM_THE_MUNICIPALITY',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY',
-  MEX_SQUARE_PLACE = 'MEX_SQUARE_PLACE',
-  MEX_BUY_SMALL_HOUSE_PLOT = 'MEX_BUY_SMALL_HOUSE_PLOT',
-  MEX_APPLICATION_FOR_ROAD_ALLOWANCE = 'MEX_APPLICATION_FOR_ROAD_ALLOWANCE',
-  MEX_UNAUTHORIZED_RESIDENCE = 'MEX_UNAUTHORIZED_RESIDENCE',
-  MEX_LAND_RIGHT = 'MEX_LAND_RIGHT',
-  MEX_EARLY_DIALOG_PLAN_NOTIFICATION = 'MEX_EARLY_DIALOG_PLAN_NOTIFICATION',
-  MEX_PROTECTIVE_HUNTING = 'MEX_PROTECTIVE_HUNTING',
-  MEX_LAND_INSTRUCTION = 'MEX_LAND_INSTRUCTION',
-  MEX_OTHER = 'MEX_OTHER',
-  MEX_LAND_SURVEYING_OFFICE = 'MEX_LAND_SURVEYING_OFFICE',
-  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE = 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
-  MEX_INVOICE = 'MEX_INVOICE',
-  MEX_REQUEST_FOR_PUBLIC_DOCUMENT = 'MEX_REQUEST_FOR_PUBLIC_DOCUMENT',
-  MEX_TERMINATION_OF_LEASE = 'MEX_TERMINATION_OF_LEASE',
-  MEX_HUNTING_LEASE = 'MEX_HUNTING_LEASE',
-  MEX_FORWARDED_FROM_CONTACTSUNDSVALL = 'MEX_FORWARDED_FROM_CONTACTSUNDSVALL',
-  MEX_BUILDING_PERMIT = 'MEX_BUILDING_PERMIT',
-  MEX_STORMWATER = 'MEX_STORMWATER',
-  MEX_INVASIVE_SPECIES = 'MEX_INVASIVE_SPECIES',
-  MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL = 'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL',
-  MEX_LITTERING = 'MEX_LITTERING',
-  MEX_REFERRAL_CONSULTATION = 'MEX_REFERRAL_CONSULTATION',
-  MEX_PUBLIC_SPACE_LEASE = 'MEX_PUBLIC_SPACE_LEASE',
-  MEX_EASEMENT = 'MEX_EASEMENT',
-  MEX_TREES_FORESTS = 'MEX_TREES_FORESTS',
-  MEX_ROAD_ASSOCIATION = 'MEX_ROAD_ASSOCIATION',
-  MEX_RETURNED_TO_CONTACT_SUNDSVALL = 'MEX_RETURNED_TO_CONTACT_SUNDSVALL',
-  MEX_SMALL_BOAT_HARBOR_DOCK_PORT = 'MEX_SMALL_BOAT_HARBOR_DOCK_PORT',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS',
-  APPEAL = 'APPEAL',
 }
 
 /**
