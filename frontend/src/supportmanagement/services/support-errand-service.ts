@@ -323,7 +323,7 @@ export enum ResolutionLabelKS {
 
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
-  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
 }
 export enum ResolutionLabelROB {
   RECRUITED = 'Rekryterad',
