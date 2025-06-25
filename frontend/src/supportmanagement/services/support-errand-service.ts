@@ -323,7 +323,7 @@ export enum ResolutionLabelKS {
 
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
-  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
 }
 export enum ResolutionLabelROB {
   RECRUITED = 'Rekryterad',
@@ -1016,7 +1016,7 @@ export const forwardSupportErrand: (
       headerReplyTo: '',
       headerReferences: '',
       emails: data.emails,
-      subject: 'Vidarebefordran av ärende',
+      subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,
       senderName: user.name,
