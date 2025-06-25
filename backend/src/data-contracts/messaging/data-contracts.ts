@@ -13,11 +13,13 @@
 export interface ExternalReference {
   /**
    * The external reference key
+   * @minLength 1
    * @example "flowInstanceId"
    */
   key: string;
   /**
    * The external reference value
+   * @minLength 1
    * @example "356t4r34f"
    */
   value: string;
@@ -29,7 +31,7 @@ export interface WebMessageAttachment {
   fileName?: string;
   /** Mime-type */
   mimeType?: string;
-  /** BASE64-encoded file, max size 10 MB */
+  /** BASE64-encoded file, max size 50 MB */
   base64Data?: string;
 }
 
@@ -47,18 +49,26 @@ export interface WebMessageParty {
 export interface WebMessageRequest {
   /** Party */
   party: WebMessageParty;
-  /** Message */
+  /**
+   * Message
+   * @minLength 1
+   */
   message: string;
   /** Sender */
   sender?: WebMessageSender;
   /**
+   * Send as owner
+   * @default false
+   */
+  sendAsOwner?: boolean;
+  /**
    * Determines if the message should be added to the internal or external OeP instance
-   * @example "internal"
+   * @example "INTERNAL"
    */
   oepInstance?: WebMessageRequestOepInstanceEnum;
   /**
    * @maxItems 10
-   * @minItems 0
+   * @minItems 1
    */
   attachments?: WebMessageAttachment[];
 }
@@ -149,10 +159,18 @@ export interface SmsRequest {
   sender?: string;
   /** Mobile number. Should start with +467x */
   mobileNumber: string;
-  /** Message */
+  /**
+   * Message
+   * @minLength 1
+   */
   message: string;
   /** Priority (optional, will be defaulted to NORMAL if not present) */
   priority?: SmsRequestPriorityEnum;
+  /**
+   * Department
+   * @example "API-Team"
+   */
+  department?: string;
 }
 
 /** Party */
@@ -174,11 +192,22 @@ export interface SmsBatchRequest {
    * @example "sender"
    */
   sender?: string;
-  /** Message to send as sms */
+  /**
+   * Message to send as sms
+   * @minLength 1
+   */
   message: string;
   /** Priority (optional, will be defaulted to NORMAL if not present) */
   priority?: SmsBatchRequestPriorityEnum;
-  /** Parties to send the sms message to */
+  /**
+   * Department
+   * @example "API-Team"
+   */
+  department?: string;
+  /**
+   * Parties to send the sms message to
+   * @minItems 1
+   */
   parties: SmsBatchRequestParty[];
 }
 
@@ -205,19 +234,32 @@ export interface MessageBatchResult {
 }
 
 export interface SlackRequest {
-  /** App/bot token */
+  /**
+   * App/bot token
+   * @minLength 1
+   */
   token: string;
-  /** Channel name/id */
+  /**
+   * Channel name/id
+   * @minLength 1
+   */
   channel: string;
-  /** Message (supports Slack markdown formatting) */
+  /**
+   * Message (supports Slack markdown formatting)
+   * @minLength 1
+   */
   message: string;
 }
 
 export interface Email {
-  /** The sender of the e-mail */
+  /**
+   * The sender of the e-mail
+   * @minLength 1
+   */
   name: string;
   /**
    * Sender e-mail address
+   * @minLength 1
    * @example "sender@sender.se"
    */
   address: string;
@@ -241,7 +283,10 @@ export interface Message {
   sender?: MessageSender;
   /** The message subject (for E-mails) */
   subject?: string;
-  /** Plain-text message text */
+  /**
+   * Plain-text message text
+   * @minLength 1
+   */
   message: string;
   /** HTML message text, for e-mails (BASE64-encoded) */
   htmlMessage?: string;
@@ -259,7 +304,10 @@ export interface MessageParty {
 }
 
 export interface MessageRequest {
-  /** The messages to be sent */
+  /**
+   * The messages to be sent
+   * @minItems 1
+   */
   messages: Message[];
 }
 
@@ -330,11 +378,17 @@ export interface LetterAttachment {
    * digital mail, snail-mail or any of them
    */
   deliveryMode: LetterAttachmentDeliveryModeEnum;
-  /** Filename */
+  /**
+   * Filename
+   * @minLength 1
+   */
   filename: string;
   /** Content type */
   contentType?: LetterAttachmentContentTypeEnum;
-  /** Content (BASE64-encoded) */
+  /**
+   * Content (BASE64-encoded)
+   * @minLength 1
+   */
   content: string;
 }
 
@@ -359,6 +413,7 @@ export interface LetterRequest {
   body?: string;
   /**
    * Department and unit that should be billed in case of snailmail
+   * @minLength 1
    * @example "SBK(Gatuavdelningen, Trafiksektionen)"
    */
   department: string;
@@ -379,7 +434,10 @@ export interface LetterSender {
 
 /** Support info */
 export interface LetterSenderSupportInfo {
-  /** Text */
+  /**
+   * Text
+   * @minLength 1
+   */
   text: string;
   /** E-mail address */
   emailAddress?: string;
@@ -393,6 +451,7 @@ export interface LetterSenderSupportInfo {
 export interface EmailAttachment {
   /**
    * The attachment filename
+   * @minLength 1
    * @example "test.txt"
    */
   name: string;
@@ -411,9 +470,15 @@ export interface EmailAttachment {
 export interface EmailRequest {
   /** Party */
   party?: EmailRequestParty;
-  /** Recipient e-mail address */
+  /**
+   * Recipient e-mail address
+   * @minLength 1
+   */
   emailAddress: string;
-  /** E-mail subject */
+  /**
+   * E-mail subject
+   * @minLength 1
+   */
   subject: string;
   /** E-mail plain-text body */
   message?: string;
@@ -439,10 +504,14 @@ export interface EmailRequestParty {
 
 /** Sender */
 export interface EmailSender {
-  /** The sender of the e-mail */
+  /**
+   * The sender of the e-mail
+   * @minLength 1
+   */
   name: string;
   /**
    * Sender e-mail address
+   * @minLength 1
    * @example "sender@sender.se"
    */
   address: string;
@@ -454,8 +523,12 @@ export interface EmailSender {
 }
 
 export interface EmailBatchRequest {
+  /** @minItems 1 */
   parties: Party[];
-  /** E-mail subject */
+  /**
+   * E-mail subject
+   * @minLength 1
+   */
   subject: string;
   /** E-mail plain-text body */
   message?: string;
@@ -477,6 +550,7 @@ export interface Party {
   partyId?: string;
   /**
    * Recipient e-mail address
+   * @minLength 1
    * @example "someone@somewhere.com"
    */
   emailAddress: string;
@@ -486,9 +560,15 @@ export interface Party {
 export interface DigitalMailAttachment {
   /** Content type */
   contentType?: DigitalMailAttachmentContentTypeEnum;
-  /** Content (BASE64-encoded) */
+  /**
+   * Content (BASE64-encoded)
+   * @minLength 1
+   */
   content: string;
-  /** Filename */
+  /**
+   * Filename
+   * @minLength 1
+   */
   filename: string;
 }
 
@@ -512,9 +592,15 @@ export interface DigitalMailRequest {
    * @example "SBK(Gatuavdelningen, Trafiksektionen)"
    */
   department?: string | null;
-  /** Content type */
+  /**
+   * Content type
+   * @minLength 1
+   */
   contentType: DigitalMailRequestContentTypeEnum;
-  /** Body (plain text if contentType is set to 'text/plain', BASE64-encoded if contentType is set to 'application/html') */
+  /**
+   * Body (plain text if contentType is set to 'text/plain', BASE64-encoded if contentType is set to 'application/html')
+   * @minLength 1
+   */
   body: string;
   /** Attachments */
   attachments?: DigitalMailAttachment[];
@@ -528,7 +614,10 @@ export interface DigitalMailSender {
 
 /** Support info */
 export interface DigitalMailSenderSupportInfo {
-  /** Text */
+  /**
+   * Text
+   * @minLength 1
+   */
   text: string;
   /** E-mail address */
   emailAddress?: string;
@@ -555,6 +644,7 @@ export interface Details {
   paymentReferenceType: DetailsPaymentReferenceTypeEnum;
   /**
    * The payment reference number
+   * @minLength 1
    * @maxLength 25
    * @example "426523791"
    */
@@ -562,6 +652,7 @@ export interface Details {
   accountType: DetailsAccountTypeEnum;
   /**
    * The receiving account (a valid BANKGIRO or PLUSGIRO number)
+   * @minLength 1
    * @example "12345"
    */
   accountNumber: string;
@@ -573,7 +664,10 @@ export interface DigitalInvoiceFile {
   contentType: DigitalInvoiceFileContentTypeEnum;
   /** Content (BASE64-encoded) */
   content: string;
-  /** Filename */
+  /**
+   * Filename
+   * @minLength 1
+   */
   filename: string;
 }
 
@@ -747,6 +841,8 @@ export interface PagingMetaData {
 
 /** Recipient model */
 export interface Recipient {
+  /** Addresses that gets a letter copy */
+  address?: Address;
   /**
    * The person identifier
    * @example "199001011234"
@@ -842,6 +938,14 @@ export interface DepartmentStatistics {
   DEPARTMENT_STATISTICS?: DepartmentLetterStatistics[];
 }
 
+export interface DepartmentStats {
+  ORIGIN?: string;
+  DEPARTMENT?: string;
+  SNAIL_MAIL?: StatisticsCounter;
+  DIGITAL_MAIL?: StatisticsCounter;
+  SMS?: StatisticsCounter;
+}
+
 export interface HistoryResponse {
   messageType?: HistoryResponseMessageTypeEnum;
   status?: HistoryResponseStatusEnum;
@@ -852,11 +956,11 @@ export interface HistoryResponse {
 
 /**
  * Determines if the message should be added to the internal or external OeP instance
- * @example "internal"
+ * @example "INTERNAL"
  */
 export enum WebMessageRequestOepInstanceEnum {
-  Internal = 'internal',
-  External = 'external',
+  INTERNAL = 'INTERNAL',
+  EXTERNAL = 'EXTERNAL',
 }
 
 /** Priority (optional, will be defaulted to NORMAL if not present) */
@@ -897,7 +1001,10 @@ export enum DigitalMailAttachmentContentTypeEnum {
   ApplicationPdf = 'application/pdf',
 }
 
-/** Content type */
+/**
+ * Content type
+ * @minLength 1
+ */
 export enum DigitalMailRequestContentTypeEnum {
   TextPlain = 'text/plain',
   TextHtml = 'text/html',

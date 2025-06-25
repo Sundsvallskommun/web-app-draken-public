@@ -1,9 +1,12 @@
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button } from '@sk-web-gui/react';
+import { getFilteredNotifications } from './notification-utils';
 
 export const NotificationsBell = (props: { toggleShow: () => void }) => {
-  const { notifications }: AppContextInterface = useAppContext();
+  const { notifications, user } = useAppContext();
+  const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
+  const newCount = filteredNotifications.filter((n) => !n.acknowledged).length;
 
   return (
     <Button
@@ -22,18 +25,14 @@ export const NotificationsBell = (props: { toggleShow: () => void }) => {
         </>
       }
     >
-      {notifications.filter((n) => !n.acknowledged).length ? (
+      {newCount > 0 && (
         <Badge
           className="absolute -top-10 -right-10 text-white"
           rounded
           color="vattjom"
-          counter={
-            notifications.filter((n) => !n.acknowledged).length > 99
-              ? '99+'
-              : notifications.filter((n) => !n.acknowledged).length
-          }
+          counter={newCount > 99 ? '99+' : newCount}
         />
-      ) : null}
+      )}
     </Button>
   );
 };
