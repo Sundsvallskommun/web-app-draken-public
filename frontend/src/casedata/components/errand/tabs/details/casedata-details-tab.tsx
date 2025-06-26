@@ -1,7 +1,6 @@
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
-  OptionBase,
   UppgiftField,
   extraParametersToUppgiftMapper,
   saveExtraParameters,
@@ -14,22 +13,9 @@ import { FacilityDTO } from '@common/interfaces/facilities';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { IconName } from 'lucide-react/dynamic';
-import {
-  Button,
-  Checkbox,
-  Divider,
-  FormControl,
-  FormLabel,
-  Input,
-  RadioButton,
-  Select,
-  Textarea,
-  cx,
-  useSnackbar,
-} from '@sk-web-gui/react';
-import dayjs from 'dayjs';
+import { Button, Divider, FormControl, FormLabel, Input, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 
 interface CasedataDetailsProps {
