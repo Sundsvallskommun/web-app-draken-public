@@ -169,6 +169,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     } else if (contactMeans === 'sms') {
       setValue('phone', _phone || '+46');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, contactMeans]);
 
   useEffect(() => {
@@ -186,6 +187,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
         setRichText(emailBody);
       }, 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, supportAttachments, supportMetadata, showModal]);
 
   return (
