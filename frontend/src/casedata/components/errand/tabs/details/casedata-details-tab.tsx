@@ -93,14 +93,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     setAllowed(_a);
   }, [user, errand]);
 
-  // const { register, setValue, getValues, trigger, control } = useForm<any>({
-  //   // TODO - Correct default values?
-  //   // defaultValues: errand.extraParameters,
-  //   mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-  // });
-
   const form = useForm<any>({
-    mode: 'onChange',
+    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
   const { register, setValue, getValues, trigger, control } = form;
 
