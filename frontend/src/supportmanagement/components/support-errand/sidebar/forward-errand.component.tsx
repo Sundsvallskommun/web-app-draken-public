@@ -1,7 +1,7 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
-import { isIK, isKA, isKC, isLOP } from '@common/services/application-service';
+import { isKA } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
@@ -101,7 +101,6 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const {
     register,
     control,
-    handleSubmit,
     watch,
     reset,
     setValue,
@@ -219,6 +218,10 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       });
     }
   }, [latestErrand, supportAttachments, supportMetadata, showModal, user.firstName, user.lastName, setValue]);
+
+  if (!appConfig.features.useEscalation) {
+    return null;
+  }
 
   return (
     <>
