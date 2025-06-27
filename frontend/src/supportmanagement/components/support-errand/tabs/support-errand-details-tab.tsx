@@ -65,14 +65,15 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
               <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>
             </div>
           ) : null}
-          {simpleParams
-            .filter((param) => param.values?.length > 0)
-            .map((param, idx) => (
-              <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
-                <div className="font-bold">{param.displayName}</div>
-                <div>{param.values.join(', ')}</div>
-              </div>
-            ))}
+          {simpleParams &&
+            simpleParams
+              .filter((param) => param.values?.length > 0)
+              .map((param, idx) => (
+                <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
+                  <div className="font-bold">{param.displayName}</div>
+                  <div>{param.values.join(', ')}</div>
+                </div>
+              ))}
         </div>
 
         {tables.map((table, idx) => (

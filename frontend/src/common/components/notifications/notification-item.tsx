@@ -7,37 +7,16 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { prettyTime } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Avatar, cx, useSnackbar } from '@sk-web-gui/react';
+import { cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
 import NextLink from 'next/link';
 import { NotificationRenderIcon } from './notification-render-icon';
+import { NotificationType, getNotificationKey, labelBySubType, senderFallback } from './notification-utils';
 
-type Notification = SupportNotification | CaseDataNotification;
-
-//Help function to get the notification key subtype? in supportmanagement and subType? in casedata
-const getNotificationKey = (notification: Notification): string | undefined => {
-  return (notification as any).subType?.toUpperCase() ?? (notification as any).subtype?.toUpperCase();
-};
-
-const labelBySubType: Record<string, string> = {
-  ATTACHMENT: 'Ny bilaga',
-  DECISION: 'Nytt beslut',
-  ERRAND: 'Ärende uppdaterat',
-  MESSAGE: 'Nytt meddelande',
-  NOTE: 'Ny kommentar/anteckning',
-  SYSTEM: 'Fasbyte',
-  SUSPENSION: 'Parkering upphört',
-};
-
-const senderFallback = (name?: string): string => {
-  if (!name || name.toUpperCase() === 'UNKNOWN') return 'Okänd';
-  return name;
-};
-
-export const NotificationItem: React.FC<{ notification: Notification }> = ({ notification }) => {
+export const NotificationItem: React.FC<{ notification: NotificationType }> = ({ notification }) => {
   const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
   const toastMessage = useSnackbar();
 

@@ -333,7 +333,7 @@ export const SidebarInfo: React.FC<{
         return solutionComponent('Löst', 'avslutade ärendet genom att koppla.', 'check');
       }
       case Resolution.REGISTERED_EXTERNAL_SYSTEM: {
-        return solutionComponent('Eskalerat', 'eskalerade ärendet.', 'split');
+        return solutionComponent('Överlämnat', 'eskalerade ärendet.', 'split');
       }
       case Resolution.SELF_SERVICE: {
         return solutionComponent('Löst', 'hänvisade till självservice.', 'check');
@@ -555,27 +555,7 @@ export const SidebarInfo: React.FC<{
                   )}
                 </p>
 
-                <Button
-                  className="w-full"
-                  color="vattjom"
-                  data-cy="suspend-button"
-                  leftIcon={<LucideIcon name="circle-play" />}
-                  variant="secondary"
-                  disabled={!allowed}
-                  loading={isLoading === 'status'}
-                  loadingText="Återupptar"
-                  onClick={() => {
-                    confirm
-                      .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          activateErrand();
-                        }
-                      });
-                  }}
-                >
-                  Återuppta ärende
-                </Button>
+                <ResumeErrand disabled={!allowed} />
               </>
             ) : (
               <div className="flex flex-col gap-8">

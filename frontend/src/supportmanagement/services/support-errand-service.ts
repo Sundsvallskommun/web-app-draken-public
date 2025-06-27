@@ -5,7 +5,6 @@ import { isKC, isROB } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
-import { RequestInfoFormProps } from '@supportmanagement/components/support-errand/sidebar/request-info.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
@@ -48,6 +47,14 @@ export enum PrettyRelation {
 export enum SupportStakeholderTypeEnum {
   PERSON = 'PERSON',
   ORGANIZATION = 'ORGANIZATION',
+}
+
+export interface RequestInfo {
+  contactMeans: string;
+  email: string;
+  phone: string;
+  message: string;
+  messageBodyPlaintext: string;
 }
 
 // Define a type based on the enum values
@@ -159,6 +166,12 @@ export enum StatusLabelROB {
   SOLVED = 'Löst',
   AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
 }
+
+export const shouldShowResumeErrandButton = (status?: Status): boolean => {
+  return (
+    !!status && [Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(status)
+  );
+};
 
 export enum AttestationStatus {
   APPROVED = 'APPROVED',
@@ -323,7 +336,7 @@ export enum ResolutionLabelKS {
 
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
-  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
 }
 export enum ResolutionLabelROB {
   RECRUITED = 'Rekryterad',
@@ -1055,7 +1068,7 @@ export const requestInfo: (
   user: User,
   errand: SupportErrand,
   municipalityId: string,
-  data: RequestInfoFormProps,
+  data: RequestInfo,
   supportAttachment: SupportAttachment[]
 ) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
   if (!errand.id) {
@@ -1101,7 +1114,7 @@ export const requestInternal: (
   user: User,
   errand: SupportErrand,
   municipalityId: string,
-  data: RequestInfoFormProps,
+  data: RequestInfo,
   supportAttachment: SupportAttachment[],
   title: string
 ) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment, title) => {
