@@ -230,11 +230,16 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     description: 'Med legitimerad personal avses personal med minst sjuksköterskeutbildning och giltig legitimation.',
     label: 'Jag intygar som legitimerad personal, att uppgifterna är riktiga',
     formField: {
-      type: 'checkbox',
+      type: 'radio',
       options: [
         {
-          label: 'Ja, jag är legitimerad',
+          label: 'Ja, jag är legitimerad och intygar att uppgifterna är riktiga',
           value: 'LICENSED',
+          name: 'certification',
+        },
+        {
+          label: 'Nej, jag är inte legitimerad',
+          value: 'NOT_LICENSED',
           name: 'certification',
         },
       ],

@@ -127,17 +127,22 @@ export const notificationRenewal_UppgiftFieldTemplate: UppgiftField[] = [
     section: 'Medicinskt utlåtande',
   },
   {
-    field: 'medical.certifyInformation',
+    field: 'medical.certifiedByLicensedPersonnel',
     value: '',
+    description: 'Med legitimerad personal avses personal med minst sjuksköterskeutbildning och giltig legitimation.',
     label: 'Jag intygar som legitimerad personal, att uppgifterna är riktiga',
-    description: 'Med legitimerad personal menas en person med minst sjuksköterska utbildning',
     formField: {
-      type: 'checkbox',
+      type: 'radio',
       options: [
         {
-          label: 'Ja, jag är legitimerad',
+          label: 'Ja, jag är legitimerad och intygar att uppgifterna är riktiga',
           value: 'LICENSED',
-          name: 'certifyInformation',
+          name: 'certification',
+        },
+        {
+          label: 'Nej, jag är inte legitimerad',
+          value: 'NOT_LICENSED',
+          name: 'certification',
         },
       ],
     },
