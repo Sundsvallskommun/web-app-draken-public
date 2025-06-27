@@ -4,10 +4,11 @@ import { Button } from '@sk-web-gui/react';
 import React from 'react';
 
 export interface Service {
-  id: number;
+  id: string;
   restyp: string;
   transport: string;
   aids: string[];
+  addon: string[];
   comment: string;
   startDate: string;
   endDate: string;
@@ -16,11 +17,12 @@ export interface Service {
 
 interface Props {
   service: Service;
-  onRemove: (id: number) => void;
-  onOrder: (id: number) => void;
+  onRemove: (id: string) => void;
+  onOrder: (id: string) => void;
+  onEdit: (service: Service) => void;
 }
 
-export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, onOrder }) => {
+export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, onOrder, onEdit }) => {
   return (
     <div className="w-full py-24 border-b border-gray-200">
       <div className="flex items-start gap-18">
@@ -45,7 +47,7 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, o
             </div>
             <div className="flex items-center gap-4 text-primary-700">
               <LucideIcon name="cog" size={16} />
-              <span>{service.aids.join(', ')}</span>
+              <span>{service.aids.length > 0 ? service.aids.join(', ') : 'Inga valda hjälpmedel'}</span>
             </div>
           </div>
 
@@ -58,6 +60,9 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, o
           <div className="pt-16 flex gap-16">
             <Button size="sm" onClick={() => onOrder(service.id)}>
               Beställ insats
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => onEdit(service)}>
+              Redigera
             </Button>
             <Button size="sm" variant="secondary" onClick={() => onRemove(service.id)}>
               Ta bort
