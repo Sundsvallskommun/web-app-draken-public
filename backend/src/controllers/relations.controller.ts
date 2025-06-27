@@ -4,13 +4,13 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+import { Errand as SupportErrand } from '@/data-contracts/supportmanagement/data-contracts';
 
 @Controller()
 export class RelationsController {
   private apiService = new ApiService();
-
   private SERVICE = `relations/1.0`;
 
   @Post('/:municipalityId/relations')
@@ -51,16 +51,56 @@ export class RelationsController {
     return { data: response.data, message: `Relation with id ${id} removed` };
   }
 
-  @Get('/:municipalityId/relations')
+  @Get('/:municipalityId/relations/:query/:sort')
   @OpenAPI({ summary: 'Find matching relations' })
   @UseBefore(authMiddleware)
-  async getRelations(@Req() req: RequestWithUser, @Param('municipalityId') municipalityId: string): Promise<{ data: any; message: string }> {
-    const url = `${municipalityId}/relations`;
+  async getRelations(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('query') query: string,
+    @Param('sort') sort: string,
+  ): Promise<{ data: any; message: string }> {
+    const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
     return { data: res.data, message: 'success' };
+  }
+
+  @Get('/:municipalityId/targetrelations/:query/:sort')
+  @OpenAPI({ summary: 'Find matching relations' })
+  @UseBefore(authMiddleware)
+  async getTargetRelations(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('query') query: string,
+    @Param('sort') sort: string,
+  ): Promise<{ data: any; message: string }> {
+    const url = `${municipalityId}/relations?filter=target.resourceId%3A%27${query}%27&sortDirection=${sort}`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
+      logger.error('Error when fetching relations: ', e);
+      throw e;
+    });
+
+    const errands = await Promise.all(
+      (res.data.relations || []).map(async (relation: any) => {
+        const urlSupportManagement = `supportmanagement/10.5/${municipalityId}/${relation.source.namespace}/errands/${relation.source.resourceId}`;
+        const errandResponse = await this.apiService.get<SupportErrand>({ url: urlSupportManagement }, req.user);
+        return errandResponse.data;
+      }),
+    );
+
+    const modifiedErrandInformation = errands.map((errand: any) => ({
+      status: errand.status,
+      resolution: errand.resolution,
+      errandNumber: errand.errandNumber,
+      classification: errand.classification,
+      stakeholder: errand.stakeholders?.find((s: any) => s.role === 'PRIMARY'),
+    }));
+
+    return { data: modifiedErrandInformation, message: 'success' };
   }
 }

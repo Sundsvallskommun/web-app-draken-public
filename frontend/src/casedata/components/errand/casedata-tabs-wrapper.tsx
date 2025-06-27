@@ -20,10 +20,22 @@ import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
-  const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
-    useAppContext();
+  const {
+    municipalityId,
+    errand,
+    setErrand,
+    messages,
+    setMessages,
+    conversation,
+    setConversation,
+    setMessageTree,
+    setAssets,
+    assets,
+    uiPhase,
+  } = useAppContext();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);
@@ -56,6 +68,19 @@ export const CasedataTabsWrapper: React.FC = () => {
             status: 'error',
           });
         });
+      getConversations(municipalityId, errand.id).then((res) => {
+        Promise.all(
+          res.data.map((conversation: any) =>
+            getConversationMessages(municipalityId, errand.id, conversation.id).then((messages) => {
+              const allMessages = messages.data
+                .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
+                .flat();
+              setConversation(allMessages);
+              console.log('ALL MESSAGES', allMessages);
+            })
+          )
+        );
+      });
       isPT() &&
         errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
         getAssets(errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT)).personId, 'PARKINGPERMIT')

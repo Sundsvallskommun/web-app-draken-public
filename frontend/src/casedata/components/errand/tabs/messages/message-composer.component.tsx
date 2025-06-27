@@ -41,9 +41,10 @@ import { MessageWrapper } from './message-wrapper.component';
 import { Role } from '@casedata/interfaces/role';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import { useTranslation } from 'next-i18next';
+import { sendInternalMessage } from '@casedata/services/casedata-conversation-service';
 
 export interface CasedataMessageTabFormModel {
-  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
+  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken';
   messageClassification: string;
   messageTemplate?: string;
   emails: { value: string }[];
@@ -237,33 +238,86 @@ export const MessageComposer: React.FC<{
     const renderedHtml = await renderMessageWithTemplates(data.messageBody);
     data.messageBody = renderedHtml.html;
 
-    apiCall(municipalityId, errand, data)
-      .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${
-            data.contactMeans === 'sms' ? 'SMS:et' : data.contactMeans === 'email' ? 'E-postmeddelandet' : 'Meddelandet'
-          } skickades`,
-          status: 'success',
+    if (data.contactMeans === 'draken') {
+      sendInternalMessage(
+        municipalityId,
+        'SBK_MEX',
+        errand.id.toString(),
+        props.message.conversationId,
+        user,
+        data.messageBody
+      )
+        .then(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `${
+              data.contactMeans === 'sms'
+                ? 'SMS:et'
+                : data.contactMeans === 'email'
+                ? 'E-postmeddelandet'
+                : 'Meddelandet'
+            } skickades`,
+            status: 'success',
+          });
+          setIsLoading(false);
+          props.update();
+          clearAndClose();
+        })
+        .catch((e) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `Något gick fel när ${
+              data.contactMeans === 'sms'
+                ? 'SMS:et'
+                : data.contactMeans === 'email'
+                ? 'e-postmeddelandet'
+                : 'meddelandet'
+            } skickades`,
+            status: 'error',
+          });
+          setError(true);
+          setIsLoading(false);
+          return;
         });
-        setIsLoading(false);
-        props.update();
-        clearAndClose();
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `Något gick fel när ${
-            data.contactMeans === 'sms' ? 'SMS:et' : data.contactMeans === 'email' ? 'e-postmeddelandet' : 'meddelandet'
-          } skickades`,
-          status: 'error',
+    } else {
+      apiCall(municipalityId, errand, data)
+        .then(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `${
+              data.contactMeans === 'sms'
+                ? 'SMS:et'
+                : data.contactMeans === 'email'
+                ? 'E-postmeddelandet'
+                : 'Meddelandet'
+            } skickades`,
+            status: 'success',
+          });
+          setIsLoading(false);
+          props.update();
+          clearAndClose();
+        })
+        .catch((e) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `Något gick fel när ${
+              data.contactMeans === 'sms'
+                ? 'SMS:et'
+                : data.contactMeans === 'email'
+                ? 'e-postmeddelandet'
+                : 'meddelandet'
+            } skickades`,
+            status: 'error',
+          });
+          setError(true);
+          setIsLoading(false);
+          return;
         });
-        setError(true);
-        setIsLoading(false);
-        return;
-      });
+    }
   };
 
   const abortHandler = () => {
@@ -327,13 +381,20 @@ export const MessageComposer: React.FC<{
     setReplying(!!props.message?.messageId);
     setValue('messageTemplate', '');
     if (props.message) {
-      const replyTo = props.message?.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values[0];
-      const references = props.message?.emailHeaders.find((h) => h.header === 'REFERENCES')?.values || [];
+      const replyTo = props.message?.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values[0];
+      const references = props.message?.emailHeaders?.find((h) => h.header === 'REFERENCES')?.values || [];
       references.push(replyTo);
       setValue('headerReplyTo', replyTo);
       setValue('headerReferences', references.join(','));
       setValue('emails', [{ value: props.message.email }]);
-      setValue('contactMeans', props.message.messageType === 'WEBMESSAGE' ? 'webmessage' : 'email');
+      setValue(
+        'contactMeans',
+        props.message.messageType === 'WEBMESSAGE'
+          ? 'webmessage'
+          : props.message.messageType === 'DRAKEN'
+          ? 'draken'
+          : 'email'
+      );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
       setRichText(defaultSignature() + historyHeader + props.message.message);
       trigger();

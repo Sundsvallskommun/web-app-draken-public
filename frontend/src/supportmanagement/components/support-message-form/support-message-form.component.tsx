@@ -45,6 +45,9 @@ import * as yup from 'yup';
 import { isKA, isKC } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useTranslation } from 'react-i18next';
+import { getRelations, Relations } from '@common/services/relations-service';
+import { getErrandNumberfromId } from '@common/services/casestatus-service';
+import { createConversation, sendInternalMessage } from '@casedata/services/casedata-conversation-service';
 
 const PREFILL_VALUE = '+46';
 
@@ -166,8 +169,10 @@ export const SupportMessageForm: React.FC<{
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const { setSupportErrand } = useAppContext();
-  const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
+  const [relationErrands, setRelationErrands] = useState<Relations[]>([]);
+  const [relationErrandsNumber, setRelationErrandsNumber] = useState<string[]>([]);
+  const [selectedRelationId, setSelectedRelationId] = useState<string>('');
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -272,77 +277,103 @@ export const SupportMessageForm: React.FC<{
     setIsSending(true);
     setMessageError(false);
     const data = getValues();
-    const messageData: MessageRequest = {
-      municipalityId: municipalityId,
-      errandId: data.id,
-      contactMeans: data.contactMeans,
-      emails: data.emails,
-      recipientEmail: '',
-      phoneNumbers: data.phoneNumbers,
-      plaintextMessage: data.messageBodyPlaintext,
-      htmlMessage: data.messageBody,
-      senderName: user.name,
-      subject: `Ärende #${supportErrand.errandNumber}`,
-      headerReplyTo: data.headerReplyTo,
-      headerReferences: data.headerReferences,
-      ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
-      ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
-    };
-    if (isKC() || isKA()) {
-      messageData.senderName = appConfig.applicationName;
+    if (contactMeans === 'relations') {
+      const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+      if (selectedRelation) {
+        createConversation(
+          municipalityId,
+          selectedRelation.target.namespace,
+          Number(selectedRelation.target.resourceId),
+          selectedRelation.id,
+          user,
+          `Ärende: #${supportErrand.errandNumber}`
+        ).then((res) => {
+          sendInternalMessage(
+            municipalityId,
+            selectedRelation.target.namespace,
+            selectedRelation.target.resourceId,
+            res.data.id,
+            user,
+            data.messageBodyPlaintext
+          );
+          setIsSending(false);
+        });
+      }
+    } else {
+      const messageData: MessageRequest = {
+        municipalityId: municipalityId,
+        errandId: data.id,
+        contactMeans: data.contactMeans,
+        emails: data.emails,
+        recipientEmail: '',
+        phoneNumbers: data.phoneNumbers,
+        plaintextMessage: data.messageBodyPlaintext,
+        htmlMessage: data.messageBody,
+        senderName: user.name,
+        subject: `Ärende #${supportErrand.errandNumber}`,
+        headerReplyTo: data.headerReplyTo,
+        headerReferences: data.headerReferences,
+        ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
+        ...((contactMeans === 'email' || contactMeans === 'webmessage') && {
+          existingAttachments: existingAttachments,
+        }),
+      };
+      if (isKC() || isKA()) {
+        messageData.senderName = appConfig.applicationName;
+      }
+      sendMessage(messageData)
+        .then(async (success) => {
+          if (!success) {
+            throw new Error('');
+          }
+          setIsSending(false);
+          if (document.querySelector('input[name="useEmail"]:checked')) {
+            setRichText(emailBody);
+          } else if (document.querySelector('input[name="useSms"]:checked')) {
+            setRichText(smsBody);
+          }
+          setValue('emails', []);
+          setValue('phoneNumbers', []);
+          removeMessageAttachment();
+          removeExistingAttachment();
+          setTimeout(() => {
+            props.setUnsaved(false);
+            setValue('messageBody', emailBody);
+            clearParameters();
+            clearErrors();
+            props.setShowMessageForm(false);
+          }, 0);
+
+          if (typeOfMessage === 'infoCompletion') {
+            await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
+          } else if (typeOfMessage === 'internalCompletion') {
+            await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+          }
+
+          const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+          setSupportErrand(updated.errand);
+
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message:
+              data.emails.length + data.phoneNumbers.length === 1
+                ? 'Ditt meddelande skickades'
+                : 'Dina meddelanden skickades',
+            status: 'success',
+          });
+        })
+        .catch((e) => {
+          console.error(e);
+          setIsSending(false);
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när meddelandet skulle skickas',
+            status: 'error',
+          });
+        });
     }
-    sendMessage(messageData)
-      .then(async (success) => {
-        if (!success) {
-          throw new Error('');
-        }
-        setIsSending(false);
-        if (document.querySelector('input[name="useEmail"]:checked')) {
-          setRichText(emailBody);
-        } else if (document.querySelector('input[name="useSms"]:checked')) {
-          setRichText(smsBody);
-        }
-        setValue('emails', []);
-        setValue('phoneNumbers', []);
-        removeMessageAttachment();
-        removeExistingAttachment();
-        setTimeout(() => {
-          props.setUnsaved(false);
-          setValue('messageBody', emailBody);
-          clearParameters();
-          clearErrors();
-          props.setShowMessageForm(false);
-        }, 0);
-
-        if (typeOfMessage === 'infoCompletion') {
-          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
-        } else if (typeOfMessage === 'internalCompletion') {
-          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
-        }
-
-        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
-        setSupportErrand(updated.errand);
-
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message:
-            data.emails.length + data.phoneNumbers.length === 1
-              ? 'Ditt meddelande skickades'
-              : 'Dina meddelanden skickades',
-          status: 'success',
-        });
-      })
-      .catch((e) => {
-        console.error(e);
-        setIsSending(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när meddelandet skulle skickas',
-          status: 'error',
-        });
-      });
   };
 
   useEffect(() => {
@@ -397,6 +428,22 @@ export const SupportMessageForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message]);
 
+  useEffect(() => {
+    getRelations(municipalityId, supportErrand.id, 'ASC').then(async (relations) => {
+      setRelationErrands(relations);
+      const errandNumbers = await Promise.all(
+        relations.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId))
+      );
+      setRelationErrandsNumber(errandNumbers);
+    });
+  }, [contactMeans]);
+
+  useEffect(() => {
+    if (contactMeans === 'relations' && relationErrands.length > 0 && !selectedRelationId) {
+      setSelectedRelationId(relationErrands[0].target.resourceId);
+    }
+  }, [relationErrands, contactMeans, selectedRelationId]);
+
   return (
     <div className="px-40 py-8 gap-24">
       <input type="hidden" {...register('id')} />
@@ -447,8 +494,41 @@ export const SupportMessageForm: React.FC<{
               E-tjänst
             </RadioButton>
           ) : null}
+          {appConfig.features.useRelations && (
+            <RadioButton
+              disabled={props.locked}
+              data-cy="useSms-radiobutton-true"
+              className="mr-sm mt-4"
+              name="contactMeans"
+              id="useRelations"
+              value="relations"
+              checked={contactMeans === 'relations'}
+              onChange={() => setValue('contactMeans', 'relations')}
+            >
+              Uppdatera länkat ärende
+            </RadioButton>
+          )}
         </RadioButton.Group>
       </div>
+
+      {contactMeans === 'relations' && (
+        <div className="w-full pt-16">
+          <strong className="text-md block mb-sm">Välj länkat ärende</strong>
+          {relationErrands.length > 0 ? (
+            <Select value={selectedRelationId} onChange={(e) => setSelectedRelationId(e.currentTarget.value)}>
+              {relationErrands.map((relation, key) => (
+                <Select.Option key={relation.target.resourceId} value={relation.target.resourceId}>
+                  {relationErrandsNumber[key]}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : (
+            <Select disabled value="">
+              <Select.Option value="">Laddar ärenden...</Select.Option>
+            </Select>
+          )}
+        </div>
+      )}
 
       <div className="w-full pt-16">
         <strong className="text-md">Typ av meddelande</strong>

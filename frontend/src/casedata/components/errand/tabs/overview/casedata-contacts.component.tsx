@@ -358,7 +358,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
             ) : null
           )}
         </div>
-        <div className="h-xl"></div>
       </div>
     </>
   );
