@@ -28,6 +28,7 @@ interface AppConfigFeatures {
   useRelations: boolean;
   useRolesForStakeholders: boolean;
   useDetailsTab: boolean;
+  useEscalation: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -54,6 +55,7 @@ export const appConfig: AppConfig = {
     useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true',
     useRolesForStakeholders: process.env.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS === 'true',
     useDetailsTab: process.env.NEXT_PUBLIC_USE_DETAILS_TAB === 'true',
+    useEscalation: process.env.NEXT_PUBLIC_USE_ESCALATION === 'true',
   },
 };
 
