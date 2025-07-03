@@ -1,22 +1,22 @@
 import { messageAttachment } from '@casedata/services/casedata-attachment-service';
+import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
+  MessageNode,
   fetchMessages,
   fetchMessagesTree,
   setMessageViewStatus,
-  MessageNode,
 } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, FormLabel, Label, RadioButton, Select, cx, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Divider, FormLabel, Select, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
-import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
-import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;

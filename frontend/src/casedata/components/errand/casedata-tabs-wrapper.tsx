@@ -34,9 +34,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     setErrand,
     messages,
     setMessages,
-    conversation,
     setConversation,
-    conversationTree,
     setConversationTree,
     setMessageTree,
     setAssets,
@@ -76,22 +74,24 @@ export const CasedataTabsWrapper: React.FC = () => {
           });
         });
       getConversations(municipalityId, errand.id).then((res) => {
-        Promise.all(
-          res.data.map((conversation: any) =>
-            getConversationMessages(municipalityId, errand.id, conversation.id)
-              .then((messages) => {
-                const allMessages = messages.data
-                  .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
-                  .flat();
-                const tree = groupByConversationIdSortedTree(allMessages);
-                setConversationTree(tree);
-                setConversation(allMessages);
-              })
-              .catch((e) => {
-                console.error('Error when fetching converstaions: ', e);
-              })
-          )
-        );
+        const fetchAndSetConversation = async (conversation: any) => {
+          try {
+            const messages = await getConversationMessages(municipalityId, errand.id, conversation.id);
+            const mappedMessages = messages.data.map((msgRes) => {
+              if (Array.isArray(msgRes)) return msgRes;
+              if (msgRes) return [msgRes];
+              return [];
+            });
+            const allMessages = mappedMessages.flat();
+            const tree = groupByConversationIdSortedTree(allMessages);
+            setConversationTree(tree);
+            setConversation(allMessages);
+          } catch (e) {
+            console.error('Error when fetching converstaions: ', e);
+          }
+        };
+
+        return Promise.all(res.data.map(fetchAndSetConversation));
       });
       isPT() &&
         errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
@@ -266,22 +266,24 @@ export const CasedataTabsWrapper: React.FC = () => {
                   });
                 });
               getConversations(municipalityId, errand.id).then((res) => {
-                Promise.all(
-                  res.data.map((conversation: any) =>
-                    getConversationMessages(municipalityId, errand.id, conversation.id)
-                      .then((messages) => {
-                        const allMessages = messages.data
-                          .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
-                          .flat();
-                        const tree = groupByConversationIdSortedTree(allMessages);
-                        setConversationTree(tree);
-                        setConversation(allMessages);
-                      })
-                      .catch((e) => {
-                        console.error('Error when fetching converstaions: ', e);
-                      })
-                  )
-                );
+                const fetchAndSetConversation = async (conversation: any) => {
+                  try {
+                    const messages = await getConversationMessages(municipalityId, errand.id, conversation.id);
+                    const mappedMessages = messages.data.map((msgRes) => {
+                      if (Array.isArray(msgRes)) return msgRes;
+                      if (msgRes) return [msgRes];
+                      return [];
+                    });
+                    const allMessages = mappedMessages.flat();
+                    const tree = groupByConversationIdSortedTree(allMessages);
+                    setConversationTree(tree);
+                    setConversation(allMessages);
+                  } catch (e) {
+                    console.error('Error when fetching converstaions: ', e);
+                  }
+                };
+
+                return Promise.all(res.data.map(fetchAndSetConversation));
               });
             }, 500)
           }

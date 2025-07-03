@@ -151,25 +151,36 @@ export const RenderedSupportMessage: React.FC<{
                 </>
               ) : null}
               <span className="flex text-xs whitespace-nowrap items-center">
-                {message.communicationType === 'SMS' ? (
-                  <>
-                    <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
-                  </>
-                ) : message.communicationType === 'EMAIL' ? (
-                  <>
-                    <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
-                  </>
-                ) : message.communicationType === 'WEB_MESSAGE' ? (
-                  <>
-                    <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
-                  </>
-                ) : message.communicationType === 'DRAKEN' ? (
-                  <>
-                    <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
-                  </>
-                ) : (
-                  ''
-                )}
+                {(() => {
+                  switch (message.communicationType) {
+                    case 'SMS':
+                      return (
+                        <>
+                          <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                        </>
+                      );
+                    case 'EMAIL':
+                      return (
+                        <>
+                          <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                        </>
+                      );
+                    case 'WEB_MESSAGE':
+                      return (
+                        <>
+                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                        </>
+                      );
+                    case 'DRAKEN':
+                      return (
+                        <>
+                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
+                        </>
+                      );
+                    default:
+                      return '';
+                  }
+                })()}
               </span>
             </div>
             {getMessageOwner(message)}

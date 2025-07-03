@@ -290,7 +290,7 @@ export const groupByConversationIdSortedTree = (messages: Message[]): MessageNod
 
   const trees: MessageNode[] = [];
   conversationMap.forEach((msgList) => {
-    const sorted = msgList.sort((a, b) => (dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : -1));
+    const sorted = msgList.toSorted((a, b) => (dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : -1));
 
     let prevNode: MessageNode | null = null;
     let rootNode: MessageNode | null = null;
