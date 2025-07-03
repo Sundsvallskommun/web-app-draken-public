@@ -4,15 +4,17 @@ export const ServiceListComponent = ({
   services,
   onRemove,
   onOrder,
+  onEdit,
 }: {
   services: Service[];
-  onRemove: (id: number) => void;
-  onOrder: (id: number) => void;
+  onRemove: (id: string) => void;
+  onOrder: (id: string) => void;
+  onEdit: (service: Service) => void;
 }) => {
   return (
     <div className="mt-32">
       {services.map((service) => (
-        <ServiceListItem key={service.id} service={service} onRemove={onRemove} onOrder={onOrder} />
+        <ServiceListItem key={service.id} service={service} onRemove={onRemove} onOrder={onOrder} onEdit={onEdit} />
       ))}
     </div>
   );
