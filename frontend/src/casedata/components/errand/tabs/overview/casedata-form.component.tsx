@@ -11,7 +11,7 @@ import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
-import { CaseTypesHiddenFromRegistration, FTNotificationCaseType } from '@casedata/interfaces/case-type';
+import { CaseTypesHiddenFromRegistration } from '@casedata/interfaces/case-type';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -52,6 +52,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
     setValue('priority', errand.priority);
     setValue('status', errand.status);
     setValue('phase', errand.phase);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const {
@@ -69,10 +70,12 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
 
   useEffect(() => {
     setValue('municipalityId', municipalityId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
   useEffect(() => {
     setFormIsValid(formState.isValid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState]);
 
   const { caseType, priority } = watch();
