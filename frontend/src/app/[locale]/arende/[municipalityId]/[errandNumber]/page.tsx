@@ -10,7 +10,6 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import { default as NextLink } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export default function Arende2() {
   const router = useRouter();

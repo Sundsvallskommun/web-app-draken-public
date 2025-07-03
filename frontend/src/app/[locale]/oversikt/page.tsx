@@ -9,7 +9,6 @@ import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
