@@ -1,19 +1,24 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment, isIK, isLOP, isROB } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
+import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import {
   countAttachment,
   getSupportAttachments,
   SupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
+import {
+  getSupportConversationMessages,
+  getSupportConversations,
+} from '@supportmanagement/services/support-conversation-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import {
   buildTree,
   countUnreadMessages,
   fetchSupportMessages,
+  groupByConversationIdSortedTree,
 } from '@supportmanagement/services/support-message-service';
 import { getSupportNotes, SupportNoteData } from '@supportmanagement/services/support-note-service';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
@@ -22,13 +27,14 @@ import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
-import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 
 export const SupportTabsWrapper: React.FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
+  const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState([]);
+  const [conversationMessageTree, setConversationMessageTree] = useState([]);
   const [supportNotes, setSupportNotes] = useState<SupportNoteData>();
   const {
     municipalityId,
@@ -82,6 +88,20 @@ export const SupportTabsWrapper: React.FC<{
         setMessageTree(tree);
         setMessages(res);
       });
+      getSupportConversations(municipalityId, supportErrand.id).then((res) => {
+        Promise.all(
+          res.data.map((conversation: any) =>
+            getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
+              const allMessages = messages.data
+                .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
+                .flat();
+              const conversationTree = groupByConversationIdSortedTree(allMessages);
+              setConversationMessageTree(conversationTree);
+              setSupportConversations(allMessages);
+            })
+          )
+        );
+      });
     }
   }, [supportErrand]);
 
@@ -116,6 +136,8 @@ export const SupportTabsWrapper: React.FC<{
         <SupportMessagesTab
           messages={messages}
           messageTree={messageTree}
+          supportConversations={supportConversations}
+          conversationMessageTree={conversationMessageTree}
           setUnsaved={setUnsavedChanges}
           update={update}
           municipalityId={municipalityId}

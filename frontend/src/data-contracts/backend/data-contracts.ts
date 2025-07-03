@@ -427,7 +427,6 @@ export interface MessageResponse {
   classification?: string;
   attachments?: any[];
   emailHeaders?: any[];
-  conversationId?: string;
 }
 
 export interface SupportAttachmentDto {

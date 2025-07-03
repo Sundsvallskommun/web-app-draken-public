@@ -11,6 +11,7 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
 
 export const getSender = (msg: Message) => {
   if (!msg) {
@@ -59,7 +60,7 @@ export const RenderedSupportMessage: React.FC<{
   // the first "-----Ursprungligt meddelande-----" line, so that only the
   // last message body is shown.
   const answerMessage =
-    Array.isArray(message.emailHeaders.IN_REPLY_TO) &&
+    Array.isArray(message.emailHeaders?.IN_REPLY_TO) &&
     // message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
     message.messageBody.replace(/\<br\>\<br\>\<br\>\<br\>/g, '<p><br></p>');
 
@@ -162,6 +163,10 @@ export const RenderedSupportMessage: React.FC<{
                   <>
                     <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
                   </>
+                ) : message.communicationType === 'DRAKEN' ? (
+                  <>
+                    <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
+                  </>
                 ) : (
                   ''
                 )}
@@ -197,7 +202,9 @@ export const RenderedSupportMessage: React.FC<{
             }}
           ></p>
           {message?.direction === 'INBOUND' &&
-          (message.communicationType === 'EMAIL' || message.communicationType === 'WEB_MESSAGE') ? (
+          (message.communicationType === 'EMAIL' ||
+            message.communicationType === 'WEB_MESSAGE' ||
+            message.communicationType === 'DRAKEN') ? (
             <Button
               type="button"
               className="self-start"
@@ -222,40 +229,76 @@ export const RenderedSupportMessage: React.FC<{
             expanded ? '' : 'max-h-0 overflow-hidden'
           } transition-[max-height] ease-in-out`}
         >
-          {message?.communicationAttachments.length > 0 ? (
+          {message?.communicationAttachments?.length > 0 ? (
             <ul className="flex flex-wrap gap-sm items-center my-12">
               <Icon icon={<Paperclip />} size="1.6rem" />
               {message?.communicationAttachments?.map((a, idx) => (
                 <Button
                   key={`${a.fileName}-${idx}`}
                   onClick={() => {
-                    getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
-                      .then((res) => {
-                        if (res.data) {
-                          const uri = `data:${a.mimeType};base64,${res.data}`;
-                          const link = document.createElement('a');
-                          const filename = a.fileName;
-                          link.href = uri;
-                          link.setAttribute('download', filename);
-                          document.body.appendChild(link);
-                          link.click();
-                        } else {
+                    if (message?.conversationId) {
+                      getSupportConversationAttachment(
+                        municipalityId,
+                        supportErrand.id,
+                        message.conversationId,
+                        message.messageId,
+                        a.id
+                      )
+                        .then((res) => {
+                          if (res.data.length !== 0) {
+                            const uri = `data:${a.mimeType};base64,${res.data}`;
+                            const link = document.createElement('a');
+                            const filename = a.fileName;
+                            link.href = uri;
+                            link.setAttribute('download', filename);
+                            document.body.appendChild(link);
+                            link.click();
+                          } else {
+                            toastMessage({
+                              position: 'bottom',
+                              closeable: false,
+                              message: 'Filen kan inte hittas eller är skadad.',
+                              status: 'error',
+                            });
+                          }
+                        })
+                        .catch((error) => {
                           toastMessage({
                             position: 'bottom',
                             closeable: false,
-                            message: 'Filen kan inte hittas eller är skadad.',
+                            message: 'Något gick fel när bilagan skulle hämtas',
                             status: 'error',
                           });
-                        }
-                      })
-                      .catch((error) => {
-                        toastMessage({
-                          position: 'bottom',
-                          closeable: false,
-                          message: 'Något gick fel när bilagan skulle hämtas',
-                          status: 'error',
                         });
-                      });
+                    } else {
+                      getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
+                        .then((res) => {
+                          if (res.data) {
+                            const uri = `data:${a.mimeType};base64,${res.data}`;
+                            const link = document.createElement('a');
+                            const filename = a.fileName;
+                            link.href = uri;
+                            link.setAttribute('download', filename);
+                            document.body.appendChild(link);
+                            link.click();
+                          } else {
+                            toastMessage({
+                              position: 'bottom',
+                              closeable: false,
+                              message: 'Filen kan inte hittas eller är skadad.',
+                              status: 'error',
+                            });
+                          }
+                        })
+                        .catch((error) => {
+                          toastMessage({
+                            position: 'bottom',
+                            closeable: false,
+                            message: 'Något gick fel när bilagan skulle hämtas',
+                            status: 'error',
+                          });
+                        });
+                    }
                   }}
                   role="listitem"
                   // eslint-disable-next-line jsx-a11y/alt-text
@@ -268,7 +311,7 @@ export const RenderedSupportMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {Array.isArray(message.emailHeaders.IN_REPLY_TO) ? (
+            {Array.isArray(message.emailHeaders?.IN_REPLY_TO) ? (
               <p
                 className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
                 dangerouslySetInnerHTML={{

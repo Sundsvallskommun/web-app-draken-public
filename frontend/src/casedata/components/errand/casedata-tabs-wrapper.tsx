@@ -5,7 +5,12 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { Role } from '@casedata/interfaces/role';
 import { getAssets } from '@casedata/services/asset-service';
 import { getErrand, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
-import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
+import {
+  countUnreadMessages,
+  fetchMessages,
+  fetchMessagesTree,
+  groupByConversationIdSortedTree,
+} from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
@@ -31,6 +36,8 @@ export const CasedataTabsWrapper: React.FC = () => {
     setMessages,
     conversation,
     setConversation,
+    conversationTree,
+    setConversationTree,
     setMessageTree,
     setAssets,
     assets,
@@ -71,13 +78,18 @@ export const CasedataTabsWrapper: React.FC = () => {
       getConversations(municipalityId, errand.id).then((res) => {
         Promise.all(
           res.data.map((conversation: any) =>
-            getConversationMessages(municipalityId, errand.id, conversation.id).then((messages) => {
-              const allMessages = messages.data
-                .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
-                .flat();
-              setConversation(allMessages);
-              console.log('ALL MESSAGES', allMessages);
-            })
+            getConversationMessages(municipalityId, errand.id, conversation.id)
+              .then((messages) => {
+                const allMessages = messages.data
+                  .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
+                  .flat();
+                const tree = groupByConversationIdSortedTree(allMessages);
+                setConversationTree(tree);
+                setConversation(allMessages);
+              })
+              .catch((e) => {
+                console.error('Error when fetching converstaions: ', e);
+              })
           )
         );
       });
@@ -253,6 +265,24 @@ export const CasedataTabsWrapper: React.FC = () => {
                     status: 'error',
                   });
                 });
+              getConversations(municipalityId, errand.id).then((res) => {
+                Promise.all(
+                  res.data.map((conversation: any) =>
+                    getConversationMessages(municipalityId, errand.id, conversation.id)
+                      .then((messages) => {
+                        const allMessages = messages.data
+                          .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
+                          .flat();
+                        const tree = groupByConversationIdSortedTree(allMessages);
+                        setConversationTree(tree);
+                        setConversation(allMessages);
+                      })
+                      .catch((e) => {
+                        console.error('Error when fetching converstaions: ', e);
+                      })
+                  )
+                );
+              });
             }, 500)
           }
         />

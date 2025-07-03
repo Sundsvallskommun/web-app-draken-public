@@ -1,6 +1,11 @@
 import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
+import {
+  fetchMessages,
+  fetchMessagesTree,
+  setMessageViewStatus,
+  MessageNode,
+} from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -23,26 +28,38 @@ export const CasedataMessagesTab: React.FC<{
     messages,
     messageTree,
     setMessages,
-    conversation,
-    setConversation,
     setMessageTree,
+    conversation,
+    conversationTree,
     user,
   } = useAppContext();
-  const [selectedMessage, setSelectedMessage] = useState<MessageResponse>();
+  const [selectedMessage, setSelectedMessage] = useState<MessageNode>();
   const [showSelectedMessage, setShowSelectedMessage] = useState(false);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [sortMessages, setSortMessages] = useState<number>(0);
   const [filterSource, setFilterSource] = useState<number>(0);
+  const [sortedMessages, setSortedMessages] = useState(messages);
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
+
+  const combinedMessages = React.useMemo(
+    () => [...(messages || []), ...(conversation || [])],
+    [messages, conversation]
+  );
+
+  const combinedMessageTree = React.useMemo(
+    () => [...(messageTree || []), ...(conversationTree || [])],
+    [messageTree, conversationTree]
+  );
+
   useEffect(() => {
     const _a = validateAction(errand, user) && !!errand.administrator;
     setAllowed(_a);
   }, [user, errand]);
 
-  const setMessageViewed = (msg: MessageResponse) => {
+  const setMessageViewed = (msg: MessageNode) => {
     if (msg.conversationId) {
-      console.log('IMPLEMENT HANDLING FOR READ CONVERSATIONS');
+      console.warn('Not implemented');
     } else {
       setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId, true)
         .then(() =>
@@ -126,60 +143,74 @@ export const CasedataMessagesTab: React.FC<{
     </div>
   );
 
-  const filteredAndSortedMessages = React.useMemo(() => {
-    let filtered = Array.isArray(messages) ? messages : messages ? [messages] : [];
-
-    if (filterSource > 0) {
-      const typeMap = {
-        1: 'DRAKEN',
-        2: 'DIGITAL_MAIL',
-        3: 'EMAIL',
-        4: 'SMS',
-        5: 'WEBMESSAGE',
-      };
-      filtered = filtered.filter((msg) => msg.messageType === typeMap[filterSource]);
+  useEffect(() => {
+    if (combinedMessages && combinedMessageTree) {
+      if (sortMessages === 1) {
+        let filteredMessages = combinedMessages.filter((message: MessageResponse) => message.direction === 'INBOUND');
+        setSortedMessages(filteredMessages);
+      } else if (sortMessages === 2) {
+        let filteredMessages = combinedMessages.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
+        setSortedMessages(filteredMessages);
+      } else {
+        setSortedMessages(combinedMessageTree);
+      }
     }
+  }, [combinedMessages, combinedMessageTree, sortMessages]);
 
-    if (sortMessages === 1) {
-      filtered = filtered.filter((msg) => msg.direction === 'INBOUND');
-    } else if (sortMessages === 2) {
-      filtered = filtered.filter((msg) => msg.direction === 'OUTBOUND');
+  useEffect(() => {
+    if (combinedMessages && combinedMessageTree) {
+      let filtered = combinedMessages;
+
+      if (filterSource !== 0) {
+        filtered = filtered.filter((message: MessageResponse) => {
+          switch (filterSource) {
+            case 1:
+              return message.messageType === 'DRAKEN';
+            case 2:
+              return message.messageType === 'DIGITAL_MAIL';
+            case 3:
+              return message.messageType === 'EMAIL';
+            case 4:
+              return message.messageType === 'SMS';
+            case 5:
+              return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
+            default:
+              return true;
+          }
+        });
+      }
+
+      if (sortMessages === 1) {
+        filtered = filtered.filter((message: MessageResponse) => message.direction === 'INBOUND');
+        setSortedMessages(filtered);
+      } else if (sortMessages === 2) {
+        filtered = filtered.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
+        setSortedMessages(filtered);
+      } else {
+        if (filterSource !== 0) {
+          const filteredTree = combinedMessageTree.filter((node: MessageNode) => {
+            switch (filterSource) {
+              case 1:
+                return node.messageType === 'DRAKEN';
+              case 2:
+                return node.messageType === 'DIGITAL_MAIL';
+              case 3:
+                return node.messageType === 'EMAIL';
+              case 4:
+                return node.messageType === 'SMS';
+              case 5:
+                return node.messageType === 'WEBMESSAGE' || !!node.externalCaseId;
+              default:
+                return true;
+            }
+          });
+          setSortedMessages(filteredTree);
+        } else {
+          setSortedMessages(combinedMessageTree);
+        }
+      }
     }
-
-    return filtered;
-  }, [messages, sortMessages, filterSource]);
-
-  const combinedMessages = React.useMemo(() => {
-    const typeMap = {
-      1: 'DRAKEN',
-      2: 'DIGITAL_MAIL',
-      3: 'EMAIL',
-      4: 'SMS',
-      5: 'WEBMESSAGE',
-    };
-
-    const filterBySource = (msg: MessageResponse) => filterSource === 0 || msg.messageType === typeMap[filterSource];
-
-    const filterByDirection = (msg: MessageResponse) =>
-      sortMessages === 0 ||
-      (sortMessages === 1 && msg.direction === 'INBOUND') ||
-      (sortMessages === 2 && msg.direction === 'OUTBOUND');
-
-    const safeSorted = Array.isArray(filteredAndSortedMessages)
-      ? filteredAndSortedMessages
-      : filteredAndSortedMessages
-      ? [filteredAndSortedMessages]
-      : [];
-
-    let filteredConversation: MessageResponse[] = [];
-    if (Array.isArray(conversation)) {
-      filteredConversation = conversation.filter((msg) => filterBySource(msg) && filterByDirection(msg));
-    } else if (conversation) {
-      filteredConversation = filterBySource(conversation) && filterByDirection(conversation) ? [conversation] : [];
-    }
-
-    return [...safeSorted, ...filteredConversation];
-  }, [filteredAndSortedMessages, conversation, sortMessages, filterSource]);
+  }, [combinedMessages, combinedMessageTree, sortMessages, filterSource]);
 
   return (
     <>
@@ -247,7 +278,7 @@ export const CasedataMessagesTab: React.FC<{
         </div>
         {combinedMessages?.length ? (
           <MessageTreeComponent
-            nodes={combinedMessages}
+            nodes={sortedMessages}
             selected={selectedMessage?.messageId}
             onSelect={(msg: MessageResponse) => {
               setMessageViewed(msg);
@@ -262,6 +293,7 @@ export const CasedataMessagesTab: React.FC<{
             <p className="pt-24 text-dark-disabled">Inga meddelanden</p>
           </>
         )}
+
         <MessageWrapper
           label="Meddelande"
           closeHandler={() => {
@@ -293,6 +325,8 @@ export const CasedataMessagesTab: React.FC<{
                           ? selectedMessage?.recipients.join(', ')
                           : selectedMessage?.messageType === 'SMS'
                           ? selectedMessage?.mobileNumber
+                          : selectedMessage?.messageType === 'WEBMESSAGE' || selectedMessage?.externalCaseId
+                          ? 'E-tjänst'
                           : ''}
                       </p>
                       <div className="flex text-small gap-16">
@@ -321,7 +355,7 @@ export const CasedataMessagesTab: React.FC<{
                     </Button>
                   ) : null}
                 </div>
-                {selectedMessage?.attachments?.length > 0 ? (
+                {selectedMessage?.attachments.length > 0 ? (
                   <ul className="flex flex-row gap-sm items-center my-12">
                     <LucideIcon name="paperclip" size="1.6rem" />
                     {selectedMessage?.attachments?.map((a, idx) => (
@@ -331,7 +365,6 @@ export const CasedataMessagesTab: React.FC<{
                           if (selectedMessage.conversationId) {
                             getConversationAttachment(
                               municipalityId,
-                              'SBK_MEX',
                               errand.id,
                               selectedMessage.conversationId,
                               selectedMessage.messageId,
@@ -395,7 +428,7 @@ export const CasedataMessagesTab: React.FC<{
                         }}
                         role="listitem"
                         leftIcon={
-                          a?.name?.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />
+                          a.name.endsWith('pdf') ? <LucideIcon name="paperclip" /> : <LucideIcon name="image" />
                         }
                         variant="tertiary"
                         data-cy={`message-attachment-${idx}`}

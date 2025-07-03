@@ -36,6 +36,7 @@ För KS (Kontakt Sundsvall):
 | LegalEntity         |     2.0 |
 | Relations           |     1.0 |
 | CaseStatus          |     4.0 |
+| Employee            |     2.0 |
 
 För PT (Parkeringstillstånd):
 

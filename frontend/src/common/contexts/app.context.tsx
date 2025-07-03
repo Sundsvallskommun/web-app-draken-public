@@ -48,6 +48,9 @@ export interface AppContextInterface {
   conversation;
   setConversation: (conversation: MessageNode[]) => void;
 
+  conversationTree;
+  setConversationTree: (conversationTree: MessageNode[]) => void;
+
   assets;
   setAssets: (assets: Asset[]) => void;
 
@@ -157,6 +160,7 @@ export function AppWrapper({ children }) {
   const [messages, setMessages] = useState<MessageNode[]>();
   const [messageTree, setMessageTree] = useState<MessageNode[]>();
   const [conversation, setConversation] = useState<MessageNode[]>();
+  const [conversationTree, setConversationTree] = useState<MessageNode[]>();
   const [assets, setAssets] = useState<Asset[]>();
   const [supportErrand, setSupportErrand] = useState<SupportErrand>();
   const [supportMetadata, setSupportMetadata] = useState<SupportMetadata>();
@@ -203,6 +207,9 @@ export function AppWrapper({ children }) {
 
         conversation,
         setConversation: (conversation: MessageNode[]) => setConversation(conversation),
+
+        conversationTree,
+        setConversationTree: (conversationTree: MessageNode[]) => setConversationTree(conversationTree),
 
         assets,
         setAssets: (assets: Asset[]) => setAssets(assets),

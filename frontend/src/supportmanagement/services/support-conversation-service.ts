@@ -1,28 +1,7 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { MessageNode } from './casedata-message-service';
-import { Attachment } from '@casedata/interfaces/attachment';
+import { MessageNode } from '@supportmanagement/services/support-message-service';
 
-export interface Identifier {
-  type?: string;
-  value: string;
-}
-
-export interface ReadBy {
-  identifier?: Identifier;
-  readAt?: string;
-}
-
-export interface Message {
-  id?: string;
-  inReplyToMessageId?: string;
-  created?: string;
-  createdBy?: Identifier;
-  content: string;
-  readBy?: ReadBy[];
-  attachments?: Attachment[];
-}
-
-export const getConversations: (municipalityId: string, errandId: number) => Promise<ApiResponse<any[]>> = (
+export const getSupportConversations: (municipalityId: string, errandId: string) => Promise<ApiResponse<any[]>> = (
   municipalityId,
   errandId
 ) => {
@@ -30,7 +9,7 @@ export const getConversations: (municipalityId: string, errandId: number) => Pro
     console.error('No errand id found, cannot fetch. Returning.');
   }
 
-  const url = `casedata/${municipalityId}/namespace/errands/${errandId}/communication/conversations`;
+  const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations`;
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
@@ -42,15 +21,15 @@ export const getConversations: (municipalityId: string, errandId: number) => Pro
     });
 };
 
-export const getConversationMessages: (
+export const getSupportConversationMessages: (
   municipalityId: string,
-  errandId: number,
+  errandId: string,
   conversationId: string
 ) => Promise<ApiResponse<MessageNode[]>> = (municipalityId, errandId, conversationId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+  const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages`;
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
@@ -62,13 +41,13 @@ export const getConversationMessages: (
     });
 };
 
-export const createConversation = async (
+export const createSupportConversation = async (
   municipalityId: string,
-  errandId: number,
+  errandId: string,
   relationId: string,
   topic: string
 ) => {
-  const res = await getConversations(municipalityId, errandId);
+  const res = await getSupportConversations(municipalityId, errandId);
   if (res && res.data) {
     const existingConversation = res.data.find((conv: any) => conv.relationIds && conv.relationIds[0] === relationId);
     if (existingConversation) {
@@ -80,7 +59,7 @@ export const createConversation = async (
     }
   }
 
-  const url = `casedata/${municipalityId}/namespace/errand/${errandId}/communication/conversations`;
+  const url = `supportmanagement/${municipalityId}/namespace/errand/${errandId}/communication/conversations`;
 
   const body: Partial<any> = {
     topic: topic,
@@ -99,14 +78,14 @@ export const createConversation = async (
     });
 };
 
-export const sendInternalMessage = (
+export const sendSupportInternalMessage = (
   municipalityId: string,
-  errandId: number,
+  errandId: string,
   conversationId: string,
   message: string,
-  files?: FileList[]
+  files?: { file: File }[]
 ) => {
-  const url = `${municipalityId}/namespace/errand/${errandId}/communication/conversations/${conversationId}/messages`;
+  const url = `supportmanagement/${municipalityId}/namespace/errand/${errandId}/communication/conversations/${conversationId}/messages`;
 
   const formData = new FormData();
   formData.append(
@@ -119,15 +98,13 @@ export const sendInternalMessage = (
   if (files && files.length > 0) {
     files.forEach((fileList) => {
       if (fileList) {
-        Array.from(fileList).forEach((file) => {
-          formData.append('attachments', file);
-        });
+        formData.append('attachments', fileList.file[0]);
       }
     });
   }
 
   return apiService
-    .post<ApiResponse<Message>, FormData>(url, formData, {
+    .post<ApiResponse<any>, FormData>(url, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     .then((res) => res.data)
@@ -137,7 +114,7 @@ export const sendInternalMessage = (
     });
 };
 
-export const getConversationAttachment: (
+export const getSupportConversationAttachment: (
   municipalityId: string,
   errandId: number,
   conversationId: string,
@@ -148,7 +125,7 @@ export const getConversationAttachment: (
     console.error('No errand id found, cannot fetch. Returning.');
   }
 
-  const url = `casedata/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages/${messageId}/attachments/${attachmentId}`;
+  const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages/${messageId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {

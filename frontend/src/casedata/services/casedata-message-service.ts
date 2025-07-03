@@ -193,7 +193,43 @@ export const countUnreadMessages = (tree: MessageNode[]): number => {
 
 export interface MessageNode extends MessageResponse {
   children?: MessageNode[];
+  conversationId?: string;
 }
+
+export const groupByConversationIdSortedTree = (messages: MessageNode[]): MessageNode[] => {
+  const conversationMap: Map<string, MessageNode[]> = new Map();
+
+  messages.forEach((msg) => {
+    if (!msg.conversationId) return;
+    if (!conversationMap.has(msg.conversationId)) {
+      conversationMap.set(msg.conversationId, []);
+    }
+    conversationMap.get(msg.conversationId)?.push(msg);
+  });
+
+  const trees: MessageNode[] = [];
+  conversationMap.forEach((msgList) => {
+    const sorted = msgList.sort((a, b) => (dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : -1));
+
+    let prevNode: MessageNode | null = null;
+    let rootNode: MessageNode | null = null;
+    sorted.forEach((msg) => {
+      const node: MessageNode = { ...msg, children: [] };
+      if (!prevNode) {
+        rootNode = node;
+      } else {
+        prevNode.children = [node];
+      }
+      prevNode = node;
+    });
+
+    if (rootNode) {
+      trees.push(rootNode);
+    }
+  });
+
+  return trees;
+};
 
 const buildTree = (_list: MessageResponse[]) => {
   const nodesMap: Map<string, MessageNode> = new Map();
