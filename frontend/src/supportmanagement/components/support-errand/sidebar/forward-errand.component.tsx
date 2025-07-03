@@ -2,6 +2,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
 import { isKA } from '@common/services/application-service';
+import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
@@ -32,7 +33,7 @@ import { sendClosingMessage } from '@supportmanagement/services/support-message-
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useRef, useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
 const yupForwardForm = yup.object().shape(
@@ -85,6 +86,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     supportAttachments: SupportAttachment[];
   } = useAppContext();
   const confirm = useConfirm();
+  const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const quillRef = useRef(null);
@@ -243,122 +245,149 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       >
         Överlämna ärendet
       </Button>
-      <Modal show={showModal} label="Överlämna ärendet" className="w-[52rem]" onClose={() => setShowModal(false)}>
-        <Modal.Content>
-          {appConfig.features.useDepartmentEscalation &&
-            (isKA() ? (
-              <Input type="hidden" {...register('recipient')} value="EMAIL" />
-            ) : (
-              <>
-                <p className="text-content font-semibold">Överlämna via:</p>
-                <small>
-                  Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa
-                  fall.
-                </small>
-                <FormControl id="resolution" className="w-full mb-md" required>
-                  <RadioButton.Group inline>
-                    <RadioButton
-                      value="DEPARTMENT"
-                      defaultChecked={recipient === 'DEPARTMENT'}
-                      onClick={(e) => {
-                        setRecipient('DEPARTMENT');
-                        setValue('recipient', 'DEPARTMENT');
-                      }}
-                    >
-                      Draken
-                    </RadioButton>
-                    <RadioButton
-                      value="EMAIL"
-                      defaultChecked={recipient === 'EMAIL'}
-                      onClick={(e) => {
-                        setRecipient('EMAIL');
-                        setValue('recipient', 'EMAIL');
-                      }}
-                    >
-                      E-post
-                    </RadioButton>
-                  </RadioButton.Group>
+      <Modal
+        show={showModal}
+        label={
+          Object.values(deepFlattenToObject(errandFormControls.formState.dirtyFields)).some((v) => v)
+            ? 'Du har osparade ändringar'
+            : 'Överlämna ärendet'
+        }
+        className="w-[52rem]"
+        onClose={() => setShowModal(false)}
+      >
+        {Object.values(deepFlattenToObject(errandFormControls.formState.dirtyFields)).some((v) => v) ? (
+          <>
+            <Modal.Content>
+              <p>Ärendet kan inte överlämnas då du har osparade ändringar. Var god spara för att fortsätta.</p>
+            </Modal.Content>
+            <Modal.Footer>
+              <Button onClick={() => setShowModal(false)} variant="primary" color="vattjom">
+                Ok
+              </Button>
+            </Modal.Footer>
+          </>
+        ) : (
+          <>
+            <Modal.Content>
+              {appConfig.features.useDepartmentEscalation &&
+                (isKA() ? (
+                  <Input type="hidden" {...register('recipient')} value="EMAIL" />
+                ) : (
+                  <>
+                    <p className="text-content font-semibold">Överlämna via:</p>
+                    <small>
+                      Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa
+                      fall.
+                    </small>
+                    <FormControl id="resolution" className="w-full mb-md" required>
+                      <RadioButton.Group inline>
+                        <RadioButton
+                          value="DEPARTMENT"
+                          defaultChecked={recipient === 'DEPARTMENT'}
+                          onClick={(e) => {
+                            setRecipient('DEPARTMENT');
+                            setValue('recipient', 'DEPARTMENT');
+                          }}
+                        >
+                          Draken
+                        </RadioButton>
+                        <RadioButton
+                          value="EMAIL"
+                          defaultChecked={recipient === 'EMAIL'}
+                          onClick={(e) => {
+                            setRecipient('EMAIL');
+                            setValue('recipient', 'EMAIL');
+                          }}
+                        >
+                          E-post
+                        </RadioButton>
+                      </RadioButton.Group>
+                    </FormControl>
+                  </>
+                ))}
+              {getValues().recipient === 'EMAIL' ? (
+                <FormControl id="email" className="w-full mb-md">
+                  <CommonNestedEmailArrayV2
+                    errand={supportErrand}
+                    data-cy="email-input"
+                    disabled={disabled}
+                    {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+                  />
+                  {errors && formState.errors.emails && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
+                    </div>
+                  )}
                 </FormControl>
-              </>
-            ))}
-          {getValues().recipient === 'EMAIL' ? (
-            <FormControl id="email" className="w-full mb-md">
-              <CommonNestedEmailArrayV2
-                errand={supportErrand}
-                data-cy="email-input"
-                disabled={disabled}
-                {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
-              />
-              {errors && formState.errors.emails && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
+              ) : getValues().recipient === 'DEPARTMENT' ? (
+                <FormControl id="resolution" className="w-full mb-md" required={getValues().recipient === 'EMAIL'}>
+                  <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
+                  <Select
+                    className="w-full"
+                    size="md"
+                    data-cy="resolution-input"
+                    placeholder="Välj verksamhet"
+                    aria-label="Välj verksamhet"
+                    {...register('department')}
+                  >
+                    <Select.Option value="MEX">Mark och exploatering (MEX)</Select.Option>
+                  </Select>
+                </FormControl>
+              ) : null}
+              <FormControl id="comment" className="w-full" required>
+                <FormLabel className="text-content font-semibold">Meddelande</FormLabel>
+                <Input data-cy="message-body-input" type="hidden" {...register('message')} />
+                <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
+                  <RichTextEditor
+                    ref={quillRef}
+                    value={richText}
+                    errors={!!errors.message}
+                    isMaximizable={false}
+                    toggleModal={() => {}}
+                    onChange={(value, delta, source, editor) => {
+                      if (source === 'user') {
+                        setTextIsDirty(true);
+                      }
+                      return onRichTextChange(value);
+                    }}
+                  />
                 </div>
-              )}
-            </FormControl>
-          ) : getValues().recipient === 'DEPARTMENT' ? (
-            <FormControl id="resolution" className="w-full mb-md" required={getValues().recipient === 'EMAIL'}>
-              <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
-              <Select
-                className="w-full"
-                size="md"
-                data-cy="resolution-input"
-                placeholder="Välj verksamhet"
-                aria-label="Välj verksamhet"
-                {...register('department')}
-              >
-                <Select.Option value="MEX">Mark och exploatering (MEX)</Select.Option>
-              </Select>
-            </FormControl>
-          ) : null}
-          <FormControl id="comment" className="w-full" required>
-            <FormLabel className="text-content font-semibold">Meddelande</FormLabel>
-            <Input data-cy="message-body-input" type="hidden" {...register('message')} />
-            <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
-              <RichTextEditor
-                ref={quillRef}
-                value={richText}
-                errors={!!errors.message}
-                isMaximizable={false}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(value);
-                }}
-              />
-            </div>
 
-            {errors && formState.errors.message && (
-              <div className="text-error">
-                <FormErrorMessage>{formState.errors.message?.message}</FormErrorMessage>
-              </div>
-            )}
-          </FormControl>
-        </Modal.Content>
-        <Modal.Footer className="flex flex-col">
-          <Button
-            variant="primary"
-            color="vattjom"
-            disabled={
-              isLoading || !formState.isValid || (recipient === 'EMAIL' && getValues('emails').length === 0) || disabled
-            }
-            className="w-full"
-            loading={isLoading}
-            loadingText="Vidarebefordrar ärende"
-            onClick={() => {
-              confirm
-                .showConfirmation('Överlämna ärendet', 'Vill du överlämna ärendet?', 'Ja', 'Nej', 'info', 'info')
-                .then((confirmed) => {
-                  if (confirmed) {
-                    handleForwardErrand(getValues(), closingMessage);
-                  }
-                });
-            }}
-          >
-            Överlämna ärendet
-          </Button>
-        </Modal.Footer>
+                {errors && formState.errors.message && (
+                  <div className="text-error">
+                    <FormErrorMessage>{formState.errors.message?.message}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+            </Modal.Content>
+            <Modal.Footer className="flex flex-col">
+              <Button
+                variant="primary"
+                color="vattjom"
+                disabled={
+                  isLoading ||
+                  !formState.isValid ||
+                  (recipient === 'EMAIL' && getValues('emails').length === 0) ||
+                  disabled
+                }
+                className="w-full"
+                loading={isLoading}
+                loadingText="Vidarebefordrar ärende"
+                onClick={() => {
+                  confirm
+                    .showConfirmation('Överlämna ärendet', 'Vill du överlämna ärendet?', 'Ja', 'Nej', 'info', 'info')
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        handleForwardErrand(getValues(), closingMessage);
+                      }
+                    });
+                }}
+              >
+                Överlämna ärendet
+              </Button>
+            </Modal.Footer>
+          </>
+        )}
       </Modal>
     </>
   );
