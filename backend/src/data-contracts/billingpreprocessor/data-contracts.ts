@@ -16,8 +16,8 @@ export interface Problem {
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  detail?: string;
   title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -87,8 +87,8 @@ export interface ThrowableProblem {
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  detail?: string;
   title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -364,38 +364,38 @@ export enum Type {
 }
 
 export interface PageBillingRecord {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  first?: boolean;
-  last?: boolean;
+  /** @format int32 */
+  totalPages?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  unpaged?: boolean;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
-  unsorted?: boolean;
-  empty?: boolean;
   sorted?: boolean;
+  empty?: boolean;
+  unsorted?: boolean;
 }

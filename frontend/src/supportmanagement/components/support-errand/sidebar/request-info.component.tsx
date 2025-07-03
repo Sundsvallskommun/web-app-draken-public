@@ -74,6 +74,8 @@ export interface RequestInfoFormProps {
   messageBodyPlaintext: string;
 }
 
+// NOT IN USE?
+
 export const RequestInfoComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
     user,

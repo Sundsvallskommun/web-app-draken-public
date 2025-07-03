@@ -68,7 +68,7 @@ export interface WebMessageRequest {
   oepInstance?: WebMessageRequestOepInstanceEnum;
   /**
    * @maxItems 10
-   * @minItems 0
+   * @minItems 1
    */
   attachments?: WebMessageAttachment[];
 }
@@ -896,6 +896,67 @@ export interface UserMessages {
   /** PagingMetaData model */
   _meta?: PagingMetaData;
   messages?: UserMessage[];
+}
+
+/** Batch information model */
+export interface Batch {
+  /**
+   * The batch id
+   * @example "b971e0f8-2942-4b45-9fa3-bd2cc22ed76b"
+   */
+  batchId?: string;
+  /**
+   * The original message type
+   * @example "LETTER"
+   */
+  messageType?: string;
+  /**
+   * Message subject if such exists for message(s) attached to the batch
+   * @example "Important message"
+   */
+  subject?: string;
+  /**
+   * Timestamp when the batch was sent
+   * @format date-time
+   */
+  sent?: string;
+  /**
+   * The amount of documents attached to message(s) in the batch
+   * @format int32
+   * @example 3
+   */
+  attachmentCount?: number;
+  /**
+   * The amount of recipients included in the batch
+   * @format int32
+   * @example 15
+   */
+  recipientCount?: number;
+  /** Batch status model */
+  status?: Status;
+}
+
+/** Batch status model */
+export interface Status {
+  /**
+   * Amount of successfully sent messages
+   * @format int32
+   * @example 13
+   */
+  successful?: number;
+  /**
+   * Amount of failed messages
+   * @format int32
+   * @example 2
+   */
+  unsuccessful?: number;
+}
+
+/** User batches model */
+export interface UserBatches {
+  /** PagingMetaData model */
+  _meta?: PagingMetaData;
+  batches?: Batch[];
 }
 
 export interface LetterStatistics {

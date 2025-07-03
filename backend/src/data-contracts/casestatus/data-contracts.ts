@@ -16,8 +16,8 @@ export interface Problem {
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
   detail?: string;
+  title?: string;
 }
 
 export interface StatusType {
@@ -87,8 +87,8 @@ export interface ThrowableProblem {
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
   detail?: string;
+  title?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -159,6 +159,7 @@ export interface CaseStatusResponse {
    * @example "BYGGR-2024-123456"
    */
   errandNumber?: string;
+  propertyDesignations?: string[];
 }
 
 /** Case status response */

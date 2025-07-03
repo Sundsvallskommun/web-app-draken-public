@@ -41,7 +41,6 @@ export default function Layout({ title, children }) {
   const applicationEnvironment = getApplicationEnvironment();
   const { theme } = useGui();
   const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
-  const router = useRouter();
   const pathName = usePathname();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber

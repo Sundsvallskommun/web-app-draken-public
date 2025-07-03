@@ -74,7 +74,7 @@ export interface RequestInternalFormProps {
   messageBodyPlaintext: string;
 }
 
-//NOT IN USED?
+//NOT IN USE?
 
 export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
