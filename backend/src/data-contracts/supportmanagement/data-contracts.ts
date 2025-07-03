@@ -1130,10 +1130,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1152,12 +1152,12 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
+  unpaged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
   paged?: boolean;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1359,10 +1359,10 @@ export enum EventType {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];

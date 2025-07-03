@@ -153,7 +153,9 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             </Modal.Footer>
           </Modal>
         </>
-      ) : null}
+      ) : (
+        <div></div>
+      )}
     </>
   );
 };

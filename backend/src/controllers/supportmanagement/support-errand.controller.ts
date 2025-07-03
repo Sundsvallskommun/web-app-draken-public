@@ -74,7 +74,7 @@ export enum Resolution {
 
 export enum ResolutionLabel {
   INFORMED = 'Informerat',
-  ESCALATED = 'Eskalerat',
+  ESCALATED = 'Överlämnat',
   CONNECTED = 'Kopplat',
 }
 

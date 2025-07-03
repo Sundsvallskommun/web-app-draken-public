@@ -224,7 +224,7 @@ export const SupportErrandsTable: React.FC = () => {
     }
 
     const solvedErrandText = () => {
-      if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED) return 'Eskalerat';
+      if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED) return 'Överlämnat';
       else if (resolution === Resolution.CLOSED && status === Status.SOLVED) return 'Avslutat';
       else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
       else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';

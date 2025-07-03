@@ -22,6 +22,7 @@ export const AttestationFilterStatusComponent: React.FC = () => {
         status: s,
       })) || []
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [billingrecordStatusToLabel]);
 
   return (

@@ -4,6 +4,7 @@ import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-er
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers } from '@common/services/user-service';
+import { DeployInfoBanner } from '@common/utils/deploy-info-banner';
 import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
@@ -35,6 +36,7 @@ const Oversikt: React.FC = () => {
     appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
   return (
@@ -62,6 +64,7 @@ const Oversikt: React.FC = () => {
           <OngoingCaseDataErrands />
         </SidebarLayout>
       ) : null}
+      <DeployInfoBanner />
     </>
   );
 };

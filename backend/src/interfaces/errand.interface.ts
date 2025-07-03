@@ -2,11 +2,11 @@ import {
   Decision as DecisionDTO,
   ErrandChannelEnum,
   Errand as ErrandDTO,
-  ExtraParameter,
   PatchErrand as IPatchErrandDTO,
   PatchErrandPriorityEnum,
-  RelatedErrand,
   Stakeholder as StakeholderDTO,
+  ExtraParameter,
+  RelatedErrand,
 } from '@/data-contracts/case-data/data-contracts';
 import { Type } from 'class-transformer';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';

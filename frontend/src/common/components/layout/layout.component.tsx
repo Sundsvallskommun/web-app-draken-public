@@ -148,7 +148,7 @@ export default function Layout({ title, children }) {
       <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto mr-8`}>
         {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
         {resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED
-          ? 'Eskalerat'
+          ? 'Överlämnat'
           : isROB()
           ? StatusLabelROB[status]
           : StatusLabel[status]}

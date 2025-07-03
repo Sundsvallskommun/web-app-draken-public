@@ -17,7 +17,7 @@ export const getSender = (msg: Message) => {
     return '';
   }
   if (msg.communicationType === 'WEB_MESSAGE') {
-    return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'OpenE';
+    return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
   }
   return msg?.sender || '(okänd avsändare)';
 };
@@ -27,7 +27,7 @@ export const getReciever = (msg: Message) => {
     return '';
   }
   if (msg.communicationType === 'WEB_MESSAGE') {
-    return msg.direction === 'INBOUND' ? 'Draken' : 'OpenE';
+    return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
   }
   return msg?.target || '(okänd mottagare)';
 };
@@ -99,6 +99,7 @@ export const RenderedSupportMessage: React.FC<{
           update();
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, supportErrand]);
 
   return (

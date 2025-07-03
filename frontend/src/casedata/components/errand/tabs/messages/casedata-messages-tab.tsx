@@ -212,6 +212,8 @@ export const CasedataMessagesTab: React.FC<{
                           ? selectedMessage?.recipients.join(', ')
                           : selectedMessage?.messageType === 'SMS'
                           ? selectedMessage?.mobileNumber
+                          : selectedMessage?.messageType === 'WEBMESSAGE' || selectedMessage?.externalCaseId
+                          ? 'E-tjänst'
                           : ''}
                       </p>
                       <div className="flex text-small gap-16">

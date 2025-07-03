@@ -16,6 +16,7 @@ import {
   SupportErrand,
   closeSupportErrand,
   getSupportErrandById,
+  shouldShowResumeErrandButton,
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
@@ -93,7 +94,14 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         color="vattjom"
         data-cy="solved-button"
         leftIcon={<LucideIcon name="check" />}
-        variant={!supportErrand || supportErrand.status !== Status.NEW ? 'primary' : 'secondary'}
+        variant={
+          !!(supportErrand?.status as Status) &&
+          [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(
+            supportErrand?.status as Status
+          )
+            ? 'secondary'
+            : 'primary'
+        }
         disabled={disabled}
         onClick={() => {
           setShowModal(true);
