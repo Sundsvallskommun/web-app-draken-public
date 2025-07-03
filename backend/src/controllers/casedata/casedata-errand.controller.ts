@@ -35,7 +35,7 @@ interface ResponseData {
 @UseBefore(hasPermissions(['canEditCasedata']))
 export class CaseDataErrandController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = `case-data/11.5`;
 
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
     const applicant: StakeholderDTO & { personalNumber?: string } = errandData.stakeholders.find(s => s.roles.includes(Role.APPLICANT));

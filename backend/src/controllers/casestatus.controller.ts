@@ -62,7 +62,7 @@ export class CaseStatusController {
     @Res() response: any,
   ): Promise<{ data: Errand; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${id}`;
-    const baseURL = apiURL('case-data/11.0');
+    const baseURL = apiURL('case-data/11.5');
     const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
     const errandData = errandResponse.data;
     return response.send(errandData.errandNumber);
