@@ -49,6 +49,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           ...defaultTheme.spacing,
           'max-content': '1440px',
         },
+        screens: { ...defaultTheme.screens, 'medium-device-max': '800px', 'large-device-max': '960px' },
       }),
     []
   );

@@ -13,9 +13,18 @@ import {
   isROB,
 } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
+import {
+  Button,
+  CookieConsent,
+  Divider,
+  Label,
+  Link,
+  Logo,
+  PopupMenu,
+  UserMenu,
+  useThemeQueries,
+} from '@sk-web-gui/react';
 import {
   Resolution,
   Status,
@@ -39,8 +48,7 @@ export default function Layout({ title, children }) {
     supportMetadata,
   }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
-  const { theme } = useGui();
-  const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
+  const { isMaxLargeDevice } = useThemeQueries();
   const router = useRouter();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
@@ -264,13 +272,13 @@ export default function Layout({ title, children }) {
             </PopupMenu>
           }
           bottomContent={
-            ((isMEX() && !isXl) || (isPT() && !isXl)) &&
+            ((isMEX() && !isMaxLargeDevice) || (isPT() && !isMaxLargeDevice)) &&
             (router.pathname === '/registrera' || router.pathname.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
-          {((isMEX() && isXl) || (isPT() && isXl)) &&
+          {((isMEX() && isMaxLargeDevice) || (isPT() && isMaxLargeDevice)) &&
           (router.pathname === '/registrera' || router.pathname.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}

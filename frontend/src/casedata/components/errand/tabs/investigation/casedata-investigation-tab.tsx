@@ -16,7 +16,6 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import CheckIcon from '@mui/icons-material/Check';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -451,7 +450,7 @@ export const CasedataInvestigationTab: React.FC<{
                 isLoading ? (
                   <Spinner color="tertiary" size={2} className="mr-sm" />
                 ) : (
-                  <CheckIcon fontSize="large" className="mr-sm" />
+                  <LucideIcon name="check" className="mr-sm" />
                 )
               }
             >

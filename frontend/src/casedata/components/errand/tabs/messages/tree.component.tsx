@@ -1,8 +1,7 @@
 import { MessageNode, countAllMessages, countUnreadMessages } from '@casedata/services/casedata-message-service';
 import React, { Fragment, useState } from 'react';
 import { RenderedMessage } from './rendered-message.component';
-import { Divider } from '@mui/material';
-import { Button, cx } from '@sk-web-gui/react';
+import { Button, cx, Divider } from '@sk-web-gui/react';
 
 interface MessageTreeProps {
   nodes: MessageNode[];
@@ -64,7 +63,7 @@ const MessageTreeComponent: React.FC<MessageTreeProps> = ({ nodes, selected, onS
     <div className="my-lg" data-cy="message-container">
       {nodes.map((node, idx) => (
         <Fragment key={`${idx}-${getId(node)}`}>
-          <Divider />
+          <Divider orientation="vertical" strong={true} />
           <MessageNodeComponent node={node} selected={selected} onSelect={onSelect} root={true} />
         </Fragment>
       ))}

@@ -1,5 +1,5 @@
 const ReactQuill = typeof window === 'object' ? require('react-quill') : () => false;
-import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+// import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { cx, useForkRef } from '@sk-web-gui/react';
 import { DeltaStatic, Sources } from 'quill';
 import React, { useEffect, useRef } from 'react';
@@ -115,7 +115,7 @@ export const RichTextEditor = React.forwardRef<
                     }}
                     className="ql-maximize"
                   >
-                    <OpenInFullIcon fontSize="large" className="material-icon mr-sm" aria-hidden="true" />
+                    {/* <OpenInFullIcon fontSize="large" className="material-icon mr-sm" aria-hidden="true" /> */}
                   </button>
                 </span>
               </div>

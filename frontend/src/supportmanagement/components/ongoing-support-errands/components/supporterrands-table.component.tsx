@@ -3,7 +3,6 @@ import { Category } from '@common/data-contracts/supportmanagement/data-contract
 import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
@@ -49,8 +48,6 @@ export const SupportErrandsTable: React.FC = () => {
   const page = watch('page');
   const [categories, setCategories] = useState<Category[]>();
 
-  const { theme } = useGui();
-  const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
   const currentStatusHaserrands =
     data.errands.filter((e) => {
       return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;

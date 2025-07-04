@@ -1,14 +1,25 @@
+import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
 import { Priority } from '@casedata/interfaces/priority';
-import { findStatusLabelForStatusKey, getCaseLabels, isErrandClosed } from '@casedata/services/casedata-errand-service';
+import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
 import { isPT } from '@common/services/application-service';
 import { sortBy } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button, Input, Label, Pagination, Select, Spinner, Table, cx, useGui } from '@sk-web-gui/react';
+import {
+  Badge,
+  Button,
+  Input,
+  Label,
+  Pagination,
+  Select,
+  Spinner,
+  Table,
+  cx,
+  useThemeQueries,
+} from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
 import NextLink from 'next/link';
@@ -16,7 +27,6 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
-import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -27,8 +37,7 @@ export const ErrandsTable: React.FC = () => {
   const totalPages = watch('totalPages');
   const page = watch('page');
 
-  const { theme } = useGui();
-  const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
+  const { isMaxMediumDevice } = useThemeQueries();
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',
@@ -208,16 +217,16 @@ export const ErrandsTable: React.FC = () => {
               href={`/arende/${municipalityId}/${errand.errandNumber}`}
               onClick={(e) => e.stopPropagation()}
               target="_blank"
-              data-icon={isMobile}
-              title={isMobile ? `${isErrandClosed(errand) ? 'Visa' : 'Hantera'} ärende` : undefined}
+              data-icon={isMaxMediumDevice}
+              title={isMaxMediumDevice ? `${isErrandClosed(errand) ? 'Visa' : 'Hantera'} ärende` : undefined}
               className={cx(
                 'no-underline sk-btn max-lg:sk-btn-icon',
-                rowHeight === 'normal' && !isMobile && !isPT() ? 'sk-btn-md' : 'sk-btn-sm',
+                rowHeight === 'normal' && !isMaxMediumDevice && !isPT() ? 'sk-btn-md' : 'sk-btn-sm',
                 isPT() && 'sk-btn-sm bg-primary text-light-primary w-full hover:text-dark-secondary',
                 isErrandClosed(errand) && !isPT() ? 'sk-btn-secondary' : 'sk-btn-tertiary'
               )}
             >
-              <Button.Content rightIcon={!isMobile && !isPT() && <LucideIcon name="external-link" />}>
+              <Button.Content rightIcon={!isMaxMediumDevice && !isPT() && <LucideIcon name="external-link" />}>
                 {isPT() ? (
                   errand.administrator ? (
                     <>
