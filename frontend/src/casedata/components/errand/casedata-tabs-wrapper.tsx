@@ -49,6 +49,29 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
+  async function handleConversation(municipalityId: string, errandId: number) {
+    getConversations(municipalityId, errandId).then((res) => {
+      const fetchAndSetConversation = async (conversation: any) => {
+        try {
+          const messages = await getConversationMessages(municipalityId, errandId, conversation.id);
+          const mappedMessages = messages.data.map((msgRes) => {
+            if (Array.isArray(msgRes)) return msgRes;
+            if (msgRes) return [msgRes];
+            return [];
+          });
+          const allMessages = mappedMessages.flat();
+          const tree = groupByConversationIdSortedTree(allMessages);
+          setConversationTree(tree);
+          setConversation(allMessages);
+        } catch (e) {
+          console.error('Error when fetching converstaions: ', e);
+        }
+      };
+
+      return Promise.all(res.data.map(fetchAndSetConversation));
+    });
+  }
+
   useEffect(() => {
     if (errand && errand.errandNumber) {
       fetchMessages(municipalityId, errand)
@@ -71,26 +94,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             status: 'error',
           });
         });
-      getConversations(municipalityId, errand.id).then((res) => {
-        const fetchAndSetConversation = async (conversation: any) => {
-          try {
-            const messages = await getConversationMessages(municipalityId, errand.id, conversation.id);
-            const mappedMessages = messages.data.map((msgRes) => {
-              if (Array.isArray(msgRes)) return msgRes;
-              if (msgRes) return [msgRes];
-              return [];
-            });
-            const allMessages = mappedMessages.flat();
-            const tree = groupByConversationIdSortedTree(allMessages);
-            setConversationTree(tree);
-            setConversation(allMessages);
-          } catch (e) {
-            console.error('Error when fetching converstaions: ', e);
-          }
-        };
-
-        return Promise.all(res.data.map(fetchAndSetConversation));
-      });
+      handleConversation(municipalityId, errand.id);
       isPT() &&
         errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
         getAssets(errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT)).personId, 'PARKINGPERMIT')
@@ -263,26 +267,7 @@ export const CasedataTabsWrapper: React.FC = () => {
                     status: 'error',
                   });
                 });
-              getConversations(municipalityId, errand.id).then((res) => {
-                const fetchAndSetConversation = async (conversation: any) => {
-                  try {
-                    const messages = await getConversationMessages(municipalityId, errand.id, conversation.id);
-                    const mappedMessages = messages.data.map((msgRes) => {
-                      if (Array.isArray(msgRes)) return msgRes;
-                      if (msgRes) return [msgRes];
-                      return [];
-                    });
-                    const allMessages = mappedMessages.flat();
-                    const tree = groupByConversationIdSortedTree(allMessages);
-                    setConversationTree(tree);
-                    setConversation(allMessages);
-                  } catch (e) {
-                    console.error('Error when fetching converstaions: ', e);
-                  }
-                };
-
-                return Promise.all(res.data.map(fetchAndSetConversation));
-              });
+              handleConversation(municipalityId, errand.id);
             }, 500)
           }
         />
