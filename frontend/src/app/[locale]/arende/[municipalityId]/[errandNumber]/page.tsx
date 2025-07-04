@@ -1,3 +1,5 @@
+'use client';
+
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
@@ -6,32 +8,29 @@ import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
-import { useRouter } from 'next/router';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export default function Arende2() {
   const router = useRouter();
-  const { id } = router.query;
+  const pathName = usePathname();
   const [errandId, setErrandId] = useState<string>();
   const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
 
   const initialFocus = useRef(null);
-  const setInitalFocus = (e) => {
+  const setInitalFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
 
   useEffect(() => {
-    if (appConfig.isCaseData) {
-      id?.[0] && setMunicipalityId(id[0]);
-      id?.[1] && setErrandId(id[1]);
-    } else if (appConfig.isSupportManagement) {
-      id?.[0] && setMunicipalityId(id[0]);
-      id?.[1] && setErrandId(id[1]);
-    }
-  }, [id]);
+    const municipality = pathName.split('/')[2];
+    const errandNumber = pathName.split('/')[3];
+    municipality && setMunicipalityId(municipality);
+    errandNumber && setErrandId(errandNumber);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     getAdminUsers().then((data) => {
@@ -49,14 +48,14 @@ export default function Arende2() {
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
       <Layout title={`${appConfig.applicationName} - Pågående ärende`}>
-        <NextLink href="#content" passHref legacyBehavior>
-          <a
-            tabIndex={1}
-            onClick={(e) => setInitalFocus(e)}
-            className="sr-only focus:not-sr-only bg-primary-light border-2 border-black p-4 text-black inline-block focus:absolute focus:top-0 focus:left-0 focus:right-0 focus:m-auto focus:w-80 text-center"
-          >
-            Hoppa till innehåll
-          </a>
+        <NextLink
+          href="#content"
+          passHref
+          tabIndex={1}
+          onClick={() => setInitalFocus()}
+          className="sr-only focus:not-sr-only bg-primary-light border-2 border-black p-4 text-black inline-block focus:absolute focus:top-0 focus:left-0 focus:right-0 focus:m-auto focus:w-80 text-center"
+        >
+          Hoppa till innehåll
         </NextLink>
 
         {appConfig.isCaseData
@@ -68,9 +67,3 @@ export default function Arende2() {
     </div>
   );
 }
-
-export const getServerSideProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale, ['common', 'messages'])),
-  },
-});

@@ -1,9 +1,22 @@
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+'use client';
+
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { FormControl, FormLabel, Button, Select, RadioButton, Checkbox, DatePicker, Combobox } from '@sk-web-gui/react';
+import {
+  FormControl,
+  FormLabel,
+  Button,
+  Select,
+  RadioButton,
+  Checkbox,
+  DatePicker,
+  Combobox,
+  cx,
+} from '@sk-web-gui/react';
 import { useRef, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
 import { serviceAddons, serviceAids, serviceModeOfTransportation, serviceTravelTypes } from './service';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const CasedataServicesTab: React.FC = () => {
   const [serviceText, setServiceText] = useState('');
@@ -243,12 +256,12 @@ export const CasedataServicesTab: React.FC = () => {
       </div>
 
       <div className="mt-24 h-[19rem]">
-        <RichTextEditor
+        <TextEditor
+          className={cx(`mb-md h-[80%]`)}
+          key={serviceText}
           ref={quillRef}
-          value={serviceText}
-          onChange={onRichTextChange}
-          isMaximizable={false}
-          containerLabel="service"
+          defaultValue={serviceText}
+          onTextChange={onRichTextChange}
         />
       </div>
 

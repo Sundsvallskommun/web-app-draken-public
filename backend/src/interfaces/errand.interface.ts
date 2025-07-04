@@ -1,7 +1,7 @@
 import {
   Decision as DecisionDTO,
-  Errand as ErrandDTO,
   ErrandChannelEnum,
+  Errand as ErrandDTO,
   PatchErrand as IPatchErrandDTO,
   PatchErrandPriorityEnum,
   Stakeholder as StakeholderDTO,

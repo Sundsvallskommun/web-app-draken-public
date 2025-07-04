@@ -1,19 +1,11 @@
-import { IErrand } from '@casedata/interfaces/errand';
-import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { CookieConsent, Link } from '@sk-web-gui/react';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { Button, CookieConsent } from '@sk-web-gui/react';
 import Head from 'next/head';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
 export default function SidebarLayout({ title, children, showAttestationTable, setShowAttestationTable }) {
-  const { user, errand, supportErrand }: { user: User; errand: IErrand; supportErrand: SupportErrand } =
-    useAppContext();
-  const applicationEnvironment = getApplicationEnvironment();
   const hostName = window.location.hostname;
 
   const [open, setOpen] = useState(true);
@@ -42,8 +34,8 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
           <p>
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
-            <NextLink href="/kakor" passHref legacyBehavior>
-              <Link>Läs mer om hur vi använder kakor</Link>
+            <NextLink href="/kakor" passHref>
+              <Button variant={'link'}>Läs mer om hur vi använder kakor</Button>
             </NextLink>
           </p>
         }
