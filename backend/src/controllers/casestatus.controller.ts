@@ -11,7 +11,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 export class CaseStatusController {
   private apiService = new ApiService();
 
-  private SERVICE = `casestatus/4.0`;
+  private SERVICE = `casestatus/4.1`;
 
   @Get('/:municipalityId/party/:partyId/statuses')
   @OpenAPI({ summary: 'Get all statuses connected to a partyId' })
