@@ -26,15 +26,33 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@pages/*": ["src/pages/*"],
-      "@public/*": ["src/public/*"],
-      "@config/*": ["src/config/*"],
-      "@contexts/*": ["src/common/contexts/*"],
-      "@supportmanagement/*": ["src/supportmanagement/*"],
-      "@casedata/*": ["src/casedata/*"],
-      "@common/*": ["src/common/*"],
-      "@jestRoot/*": [".jest/*"],
-      "@styles/*": ["src/styles/*"],
+      "@pages/*": [
+        "src/pages/*"
+      ],
+      "@public/*": [
+        "src/public/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ],
+      "@contexts/*": [
+        "src/common/contexts/*"
+      ],
+      "@supportmanagement/*": [
+        "src/supportmanagement/*"
+      ],
+      "@casedata/*": [
+        "src/casedata/*"
+      ],
+      "@common/*": [
+        "src/common/*"
+      ],
+      "@jestRoot/*": [
+        ".jest/*"
+      ],
+      "@styles/*": [
+        "src/styles/*"
+      ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],
@@ -44,15 +62,16 @@
       {
         "name": "next"
       }
-    ],
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
-    ".next/types/**/*.ts"
+    ".next-MEX/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
