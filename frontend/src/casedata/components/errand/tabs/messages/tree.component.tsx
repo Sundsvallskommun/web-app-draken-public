@@ -63,7 +63,7 @@ const MessageTreeComponent: React.FC<MessageTreeProps> = ({ nodes, selected, onS
     <div className="my-lg" data-cy="message-container">
       {nodes.map((node, idx) => (
         <Fragment key={`${idx}-${getId(node)}`}>
-          <Divider orientation="vertical" strong={true} />
+          <Divider />
           <MessageNodeComponent node={node} selected={selected} onSelect={onSelect} root={true} />
         </Fragment>
       ))}

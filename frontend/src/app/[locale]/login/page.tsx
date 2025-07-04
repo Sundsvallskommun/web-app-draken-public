@@ -5,11 +5,11 @@ import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { apiURL } from '@common/utils/api-url';
 import { appURL } from '@common/utils/app-url';
 import { appConfig } from '@config/appconfig';
-import { capitalize } from '@mui/material';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { capitalize } from 'underscore.string';
 
 // Turn on/off automatic login
 const autoLogin = false;

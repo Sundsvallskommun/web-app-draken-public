@@ -103,7 +103,7 @@ const MessageTreeComponent: React.FC<MessageTreeProps> = ({
     <div className="my-lg">
       {nodes.map((node, idx) => (
         <Fragment key={`${idx}-${getId(node)}`}>
-          <Divider orientation="vertical" strong={true} />
+          <Divider />
           <MessageNodeComponent
             update={update}
             setRichText={setRichText}
