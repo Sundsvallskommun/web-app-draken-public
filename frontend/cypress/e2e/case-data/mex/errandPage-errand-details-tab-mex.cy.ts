@@ -22,7 +22,7 @@ const checkExtraParameter = (extraParameters: ExtraParameter[], key: string, val
   const param = extraParameters.find((p: any) => p.key === key);
   console.log('found param', param);
   expect(param).to.exist;
-  expect(param.values[0]).to.equal(value);
+  expect(param?.values?.[0]).to.equal(value);
 };
 
 export const replaceExtraParameter = (extraParameters: ExtraParameter[], newParameter: ExtraParameter) => {

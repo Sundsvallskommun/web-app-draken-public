@@ -1,14 +1,10 @@
 import { formatCurrency, prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Input, Pagination, Select, Table, useGui } from '@sk-web-gui/react';
+import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
-import {
-  SupportErrandsData,
-  findAttestationStatusLabelForAttestationStatusKey,
-} from '@supportmanagement/services/support-errand-service';
+import { findAttestationStatusLabelForAttestationStatusKey } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -36,9 +32,6 @@ export const AttestationsTable: React.FC<{
   const pageSize = watch('pageSize');
   const totalPages = watch('totalPages');
   const page = watch('page');
-
-  const { theme } = useGui();
-  const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',

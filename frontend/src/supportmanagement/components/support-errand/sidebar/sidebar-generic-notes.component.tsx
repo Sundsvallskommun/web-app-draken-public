@@ -18,7 +18,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { GenericNote } from '@supportmanagement/components/notes-list/notes-list.component';
+import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
 import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
   SupportNote,
@@ -32,16 +32,10 @@ import { Fragment, useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-interface ErrandNotesTabFormModel {
-  id?: string;
-  partyId?: string;
-  text: string;
-}
-
 let formSchema = yup
   .object({
-    id: yup.string(),
-    partyId: yup.string(),
+    id: yup.string().optional(),
+    partyId: yup.string().optional(),
     text: yup.string().required('Text måste anges'),
   })
   .required();
@@ -51,7 +45,7 @@ export const SidebarGenericNotes: React.FC<{
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { user, supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
+  const { supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
   const [selectedNote, setSelectedNote] = useState<GenericNote>();
   const [notes, setNotes] = useState<SupportNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +72,9 @@ export const SidebarGenericNotes: React.FC<{
     trigger,
     formState,
     formState: { errors },
-  }: UseFormReturn<ErrandNotesTabFormModel, any, undefined> = useForm({ resolver: yupResolver(formSchema) });
+  }: UseFormReturn<ErrandNotesTabFormModel, any, undefined> = useForm({
+    resolver: yupResolver(formSchema) as any,
+  });
 
   const onSubmit = (note: ErrandNotesTabFormModel) => {
     setIsLoading(true);

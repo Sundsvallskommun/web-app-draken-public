@@ -1,18 +1,21 @@
+'use client';
+
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
+import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
+import { sendInternalMessage } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
+  MessageNode,
   renderMessageWithTemplates,
   sendMessage,
   sendSms,
-  MessageNode,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -39,14 +42,13 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useTranslation } from 'next-i18next';
+import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState } from 'react';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
-import { Role } from '@casedata/interfaces/role';
-import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
-import { useTranslation } from 'next-i18next';
-import { sendInternalMessage } from '@casedata/services/casedata-conversation-service';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken';
@@ -93,39 +95,39 @@ let formSchema = yup
     messageClassification: yup.string(),
     messageTemplate: yup.string(),
     emails: yup.array().when('contactMeans', {
-      is: (means: string) => means === 'email',
-      then: yup
-        .array()
-        .of(
-          yup
-            .object()
-            .shape({
+      is: (val: string) => val === 'email',
+      then: (schema) =>
+        schema
+          .of(
+            yup.object().shape({
               value: yup.string().email('E-postadress har fel format'),
             })
-            .required()
-        )
-        .min(1, 'Ange minst en E-postadress'),
+          )
+          .min(1, 'Ange minst en E-postadress'),
+      otherwise: (schema) => schema,
     }),
     newEmail: yup.string().when('contactMeans', {
       is: (means: string) => means === 'email',
-      then: yup.string().email('E-postadressen har fel format'),
+      then: (schema) => schema.email('E-postadressen har fel format'),
+      otherwise: (schema) => schema,
     }),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
-      then: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup
-              .string()
-              .required('Telefonnummer måste anges för sms-meddelande')
-              .trim()
-              .transform((val) => val && val.replace('-', ''))
-              .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
-          })
-        )
-        .min(1, 'Ange minst ett telefonnummer')
-        .required('Ange minst ett telefonnummer'),
+      then: (schema) =>
+        schema
+          .of(
+            yup.object().shape({
+              value: yup
+                .string()
+                .required('Telefonnummer måste anges för sms-meddelande')
+                .trim()
+                .transform((val) => val && val.replace('-', ''))
+                .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+            })
+          )
+          .min(1, 'Ange minst ett telefonnummer')
+          .required('Ange minst ett telefonnummer'),
+      otherwise: (schema) => schema,
     }),
     newPhoneNumber: yup
       .string()
@@ -195,7 +197,7 @@ export const MessageComposer: React.FC<{
     setValue,
     formState: { errors },
   } = useForm<CasedataMessageTabFormModel>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<CasedataMessageTabFormModel>,
     defaultValues: defaultMessage,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -332,15 +334,10 @@ export const MessageComposer: React.FC<{
   const newAttachments = watch('newAttachments');
   const { contactMeans } = watch();
 
-  const onRichTextChange = (val) => {
-    if (quillRef.current?.getEditor()) {
-      const editor = quillRef.current.getEditor();
-      const length = editor?.getLength();
-      setRichText(val);
-      setValue('messageBody', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
-      setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
-      trigger('messageBody');
-    }
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('messageBodyPlaintext', quillRef.current.getText());
+    trigger('messageBody');
   };
 
   useEffect(() => {
@@ -367,6 +364,7 @@ export const MessageComposer: React.FC<{
         : isPT()
         ? 'Gatuavdelningen, Trafiksektionen'
         : null,
+      interpolation: { escapeValue: false },
     });
   };
 
@@ -521,18 +519,17 @@ export const MessageComposer: React.FC<{
               <Input data-cy="message-body-input" type="hidden" {...register('messageBody')} />
               <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
               <div className={cx(`h-[28rem] mb-12`)} data-cy="decision-richtext-wrapper">
-                <RichTextEditor
+                <TextEditor
+                  className={cx(`mb-md h-[80%]`)}
+                  key={richText}
                   ref={quillRef}
-                  value={richText}
-                  isMaximizable={false}
-                  errors={!!errors.messageBody}
-                  toggleModal={() => {}}
-                  onChange={(value, delta, source, editor) => {
+                  defaultValue={richText}
+                  onTextChange={(delta, oldDelta, source) => {
                     props.setUnsaved(true);
                     if (source === 'user') {
                       setTextIsDirty(true);
                     }
-                    return onRichTextChange(value);
+                    return onRichTextChange(delta, oldDelta, source);
                   }}
                 />
               </div>

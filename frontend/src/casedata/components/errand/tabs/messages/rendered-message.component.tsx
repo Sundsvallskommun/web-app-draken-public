@@ -26,10 +26,8 @@ export const RenderedMessage: React.FC<{
   );
 
   const {
-    municipalityId,
     errand,
   }: {
-    municipalityId: string;
     errand: IErrand;
   } = useAppContext();
 

@@ -72,7 +72,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .contains(dayjs(mockMexErrand_base.data.created).format('YYYY-MM-DD HH:mm'))
         .should('exist');
       cy.get('[data-cy="errandStakeholderLabel"]').contains('Ärendeägare').should('exist');
-      cy.get('[data-cy="errandStakeholder"]').contains(`${applicant.firstName} ${applicant.lastName}`).should('exist');
+      cy.get('[data-cy="errandStakeholder"]')
+        .contains(`${applicant?.firstName} ${applicant?.lastName}`)
+        .should('exist');
       // Not in use right now
       // cy.get('[data-cy="errandPersonalNumberLabel"]').contains('Personnummer').should('exist');
       // cy.get('[data-cy="errandPersonalNumber"]').contains(applicant.personalNumber).should('exist');
@@ -89,29 +91,33 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       const renderedApplicant = cy.get('[data-cy="registered-applicants"] [data-cy="rendered-APPLICANT"]');
       renderedApplicant
         .get('[data-cy="stakeholder-name"]')
-        .should('contain', `${applicant.firstName} ${applicant.lastName}`);
-      renderedApplicant.get('[data-cy="stakeholder-ssn"]').should('contain', `${applicant.personalNumber}`);
+        .should('contain', `${applicant?.firstName} ${applicant?.lastName}`);
+      renderedApplicant.get('[data-cy="stakeholder-ssn"]').should('contain', `${applicant?.personalNumber}`);
       renderedApplicant
         .get('[data-cy="stakeholder-adress"]')
         .should(
           'contain',
-          `${applicant.addresses[0].street} ${applicant.addresses[0].postalCode} ${applicant.addresses[0].city}`
+          `${applicant?.addresses[0].street} ${applicant?.addresses[0].postalCode} ${applicant?.addresses[0].city}`
         );
       renderedApplicant
         .get('[data-cy="stakeholder-name"]')
-        .should('contain', `${applicant.firstName} ${applicant.lastName}`);
+        .should('contain', `${applicant?.firstName} ${applicant?.lastName}`);
 
       cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]').should('exist');
       const renderedContact = cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]');
-      renderedContact.get('[data-cy="stakeholder-name"]').should('contain', `${contact.firstName} ${contact.lastName}`);
-      renderedContact.get('[data-cy="stakeholder-ssn"]').should('contain', `${contact.personalNumber}`);
+      renderedContact
+        .get('[data-cy="stakeholder-name"]')
+        .should('contain', `${contact?.firstName} ${contact?.lastName}`);
+      renderedContact.get('[data-cy="stakeholder-ssn"]').should('contain', `${contact?.personalNumber}`);
       renderedContact
         .get('[data-cy="stakeholder-adress"]')
         .should(
           'contain',
-          `${contact.addresses[0].street} ${contact.addresses[0].postalCode} ${contact.addresses[0].city}`
+          `${contact?.addresses[0].street} ${contact?.addresses[0].postalCode} ${contact?.addresses[0].city}`
         );
-      renderedContact.get('[data-cy="stakeholder-name"]').should('contain', `${contact.firstName} ${contact.lastName}`);
+      renderedContact
+        .get('[data-cy="stakeholder-name"]')
+        .should('contain', `${contact?.firstName} ${contact?.lastName}`);
     });
 
     it('disables errand information and contact person edit menu when errand status is ArandeAvslutat', () => {
@@ -450,7 +456,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           contactInformation: [],
           extraParameters: {},
         },
-      ];
+      ] as any;
       res.data.stakeholders = contact;
       cy.intercept('GET', '**/errand/errandNumber/*', res).as('getErrand');
       cy.intercept(
@@ -556,7 +562,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           contactInformation: [],
           extraParameters: {},
         },
-      ];
+      ] as any;
       res.data.stakeholders = contact;
       cy.intercept('GET', '**/errand/errandNumber/*', res).as('getErrand');
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base).as('patchErrand');
@@ -725,7 +731,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           contactInformation: [],
           extraParameters: {},
         },
-      ];
+      ] as any;
       res.data.stakeholders = contact;
       cy.intercept('GET', '**/errand/errandNumber/*', res).as('getErrand');
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base).as('patchErrand');

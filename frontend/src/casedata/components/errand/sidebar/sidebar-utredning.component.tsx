@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
@@ -9,16 +11,17 @@ import {
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, cx, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
@@ -34,14 +37,14 @@ export interface UtredningFormModel {
 
 let formSchema = yup
   .object({
-    id: yup.number(),
+    id: yup.string(),
     errandNumber: yup.string(),
     description: yup.string().required('Text måste anges'),
-    law: yup.string(),
+    law: yup.object(),
     outcome: yup.string(),
     validFrom: yup.string(),
     validTo: yup.string(),
-    decidedBy: yup.string(),
+    decidedBy: yup.object(),
     extraParameters: yup.object(),
   })
   .required();
@@ -81,7 +84,7 @@ export const SidebarUtredning: React.FC = () => {
     getValues,
     formState: { errors },
   }: UseFormReturn<UtredningFormModel, any, undefined> = useForm({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     mode: 'onChange',
   });
 
@@ -197,11 +200,10 @@ export const SidebarUtredning: React.FC = () => {
     console.error('Something went wrong when saving utredning', e);
   };
 
-  const onRichTextChange = (val) => {
+  const onRichTextChange = (delta, oldDelta, source) => {
     const editor = quillRefUtredning.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined));
+    setRichText(editor);
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? editor : undefined));
     trigger('description');
   };
 
@@ -231,20 +233,17 @@ export const SidebarUtredning: React.FC = () => {
         <FormControl id="description" className="w-full">
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
           <div className="h-[42rem] -mb-48" data-cy="utredning-richtext-wrapper">
-            <RichTextEditor
+            <TextEditor
+              className={cx(`mb-md h-[80%]`)}
+              key={richText}
               ref={quillRefUtredning}
-              containerLabel="utredning"
-              value={richText}
-              isMaximizable={false}
+              defaultValue={richText}
               readOnly={isSigned || !isErrandAdmin(errand, user)}
-              // toggleModal={() => {
-              //   setIsEditorModalOpen(!isEditorModalOpen);
-              // }}
-              onChange={(value, delta, source, editor) => {
+              onTextChange={(delta, oldDelta, source) => {
                 if (source === 'user') {
                   setTextIsDirty(true);
                 }
-                return onRichTextChange(value);
+                return onRichTextChange(delta, oldDelta, source);
               }}
             />
           </div>
