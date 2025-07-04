@@ -16,7 +16,7 @@ interface ResponseData {
 @Controller()
 export class caseDataFacilitiesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = `case-data/11.5`;
 
   @Post('/casedata/:municipalityId/errands/:errandId/facilities')
   @OpenAPI({ summary: 'Save facilities by errand' })

@@ -12,6 +12,8 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
 import { CaseTypesHiddenFromRegistration, FTNotificationCaseType } from '@casedata/interfaces/case-type';
+import { appConfig } from '@config/appconfig';
+import { CaseDataRelationsDisclosure } from './casedata-relations-disclosure.component';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -255,6 +257,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             update={() => {}}
           />
         ) : null}
+
+        {appConfig.features.useRelations && <CaseDataRelationsDisclosure errand={errand} />}
       </div>
     </div>
   );

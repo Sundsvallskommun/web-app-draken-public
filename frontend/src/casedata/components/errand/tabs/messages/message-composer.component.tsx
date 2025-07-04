@@ -4,8 +4,14 @@ import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
+import { sendInternalMessage } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { renderMessageWithTemplates, sendMessage, sendSms } from '@casedata/services/casedata-message-service';
+import {
+  MessageNode,
+  renderMessageWithTemplates,
+  sendMessage,
+  sendSms,
+} from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
@@ -37,16 +43,15 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useTranslation } from 'next-i18next';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
-import dynamic from 'next/dynamic';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
-  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper';
+  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken';
   messageClassification: string;
   messageTemplate?: string;
   emails: { value: string }[];
@@ -149,7 +154,7 @@ let formSchema = yup
   .required();
 
 export const MessageComposer: React.FC<{
-  message: MessageResponse;
+  message: MessageNode;
   show: boolean;
   closeHandler: () => void;
   setUnsaved: (unsaved: boolean) => void;
@@ -240,33 +245,74 @@ export const MessageComposer: React.FC<{
     const renderedHtml = await renderMessageWithTemplates(data.messageBody);
     data.messageBody = renderedHtml.html;
 
-    apiCall(municipalityId, errand, data)
-      .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${
-            data.contactMeans === 'sms' ? 'SMS:et' : data.contactMeans === 'email' ? 'E-postmeddelandet' : 'Meddelandet'
-          } skickades`,
-          status: 'success',
+    if (data.contactMeans === 'draken') {
+      sendInternalMessage(
+        municipalityId,
+        errand.id,
+        props.message.conversationId,
+        data.messageBody,
+        data.messageAttachments.map((a) => a.file).filter((f): f is FileList => !!f)
+      )
+        .then(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `Meddelandet skickades`,
+            status: 'success',
+          });
+          setIsLoading(false);
+          props.update();
+          clearAndClose();
+        })
+        .catch((e) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `Något gick fel när meddelandet skickades`,
+            status: 'error',
+          });
+          console.error('Något gick fel när meddelandet skickades', e);
+          setError(true);
+          setIsLoading(false);
+          return;
         });
-        setIsLoading(false);
-        props.update();
-        clearAndClose();
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `Något gick fel när ${
-            data.contactMeans === 'sms' ? 'SMS:et' : data.contactMeans === 'email' ? 'e-postmeddelandet' : 'meddelandet'
-          } skickades`,
-          status: 'error',
+    } else {
+      apiCall(municipalityId, errand, data)
+        .then(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `${
+              data.contactMeans === 'sms'
+                ? 'SMS:et'
+                : data.contactMeans === 'email'
+                ? 'E-postmeddelandet'
+                : 'Meddelandet'
+            } skickades`,
+            status: 'success',
+          });
+          setIsLoading(false);
+          props.update();
+          clearAndClose();
+        })
+        .catch((e) => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: `Något gick fel när ${
+              data.contactMeans === 'sms'
+                ? 'SMS:et'
+                : data.contactMeans === 'email'
+                ? 'e-postmeddelandet'
+                : 'meddelandet'
+            } skickades`,
+            status: 'error',
+          });
+          setError(true);
+          setIsLoading(false);
+          return;
         });
-        setError(true);
-        setIsLoading(false);
-        return;
-      });
+    }
   };
 
   const abortHandler = () => {
@@ -326,13 +372,20 @@ export const MessageComposer: React.FC<{
     setReplying(!!props.message?.messageId);
     setValue('messageTemplate', '');
     if (props.message) {
-      const replyTo = props.message?.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values[0];
-      const references = props.message?.emailHeaders.find((h) => h.header === 'REFERENCES')?.values || [];
+      const replyTo = props.message?.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values[0];
+      const references = props.message?.emailHeaders?.find((h) => h.header === 'REFERENCES')?.values || [];
       references.push(replyTo);
       setValue('headerReplyTo', replyTo);
       setValue('headerReferences', references.join(','));
       setValue('emails', [{ value: props.message.email }]);
-      setValue('contactMeans', props.message.messageType === 'WEBMESSAGE' ? 'webmessage' : 'email');
+      setValue(
+        'contactMeans',
+        props.message.messageType === 'WEBMESSAGE'
+          ? 'webmessage'
+          : props.message.messageType === 'DRAKEN'
+          ? 'draken'
+          : 'email'
+      );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
       setRichText(defaultSignature() + historyHeader + props.message.message);
       trigger();
@@ -526,7 +579,7 @@ export const MessageComposer: React.FC<{
             </>
           ) : null}
 
-          {contactMeans === 'email' || contactMeans === 'webmessage' ? (
+          {contactMeans === 'email' || contactMeans === 'webmessage' || contactMeans === 'draken' ? (
             <>
               {contactMeans === 'webmessage'
                 ? errand.stakeholders
@@ -537,62 +590,64 @@ export const MessageComposer: React.FC<{
                       </div>
                     ))
                 : null}
-              <FormControl id="addExisting" className="w-full">
-                <FormLabel>Bilagor från ärendet</FormLabel>
-                <div className="flex gap-16">
-                  {/* <Input type="hidden" {...register('addExisting')} /> */}
-                  <Select
-                    tabIndex={props.show ? 0 : -1}
-                    {...register('addExisting')}
-                    className="w-full"
-                    placeholder="Välj bilaga"
-                    onChange={(r) => {
-                      setValue('addExisting', r.currentTarget.value);
-                    }}
-                    value={getValues('addExisting')}
-                    data-cy="select-errand-attachment"
-                  >
-                    <Select.Option value="">Välj bilaga</Select.Option>
-                    {errand.attachments
-                      ?.filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
-                      .map((att, idx) => {
-                        const label = `${getAttachmentLabel(att)}: ${att.name}`;
-                        return (
-                          <Select.Option
-                            value={att.name}
-                            key={`attachmentId-${idx}`}
-                            className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                          >
-                            {label}
-                          </Select.Option>
-                        );
-                      })}
-                  </Select>
-                  <Button
-                    tabIndex={props.show ? 0 : -1}
-                    type="button"
-                    variant="tertiary"
-                    disabled={!addExisting}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (addExisting) {
-                        const att = errand.attachments.find((a) => a.name === addExisting);
-                        append(att);
-                        setValue(`addExisting`, undefined);
-                      }
-                    }}
-                    className="rounded"
-                    data-cy="add-selected-attachment"
-                  >
-                    Lägg till
-                  </Button>
-                </div>
-                {errors.addExisting && (
-                  <div className="my-sm">
-                    <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
+              {contactMeans === 'email' || contactMeans === 'webmessage' ? (
+                <FormControl id="addExisting" className="w-full">
+                  <FormLabel>Bilagor från ärendet</FormLabel>
+                  <div className="flex gap-16">
+                    {/* <Input type="hidden" {...register('addExisting')} /> */}
+                    <Select
+                      tabIndex={props.show ? 0 : -1}
+                      {...register('addExisting')}
+                      className="w-full"
+                      placeholder="Välj bilaga"
+                      onChange={(r) => {
+                        setValue('addExisting', r.currentTarget.value);
+                      }}
+                      value={getValues('addExisting')}
+                      data-cy="select-errand-attachment"
+                    >
+                      <Select.Option value="">Välj bilaga</Select.Option>
+                      {errand.attachments
+                        ?.filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
+                        .map((att, idx) => {
+                          const label = `${getAttachmentLabel(att)}: ${att.name}`;
+                          return (
+                            <Select.Option
+                              value={att.name}
+                              key={`attachmentId-${idx}`}
+                              className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                            >
+                              {label}
+                            </Select.Option>
+                          );
+                        })}
+                    </Select>
+                    <Button
+                      tabIndex={props.show ? 0 : -1}
+                      type="button"
+                      variant="tertiary"
+                      disabled={!addExisting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (addExisting) {
+                          const att = errand.attachments.find((a) => a.name === addExisting);
+                          append(att);
+                          setValue(`addExisting`, undefined);
+                        }
+                      }}
+                      className="rounded"
+                      data-cy="add-selected-attachment"
+                    >
+                      Lägg till
+                    </Button>
                   </div>
-                )}
-              </FormControl>
+                  {errors.addExisting && (
+                    <div className="my-sm">
+                      <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
+                    </div>
+                  )}
+                </FormControl>
+              ) : null}
               {fields.length > 0 ? (
                 <div className="flex items-center w-full flex-wrap justify-start gap-md">
                   {fields.map((field, k) => {

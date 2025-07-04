@@ -5,7 +5,12 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { Role } from '@casedata/interfaces/role';
 import { getAssets } from '@casedata/services/asset-service';
 import { getErrand, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
-import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata/services/casedata-message-service';
+import {
+  countUnreadMessages,
+  fetchMessages,
+  fetchMessagesTree,
+  groupByConversationIdSortedTree,
+} from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
@@ -19,10 +24,22 @@ import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
-  const { municipalityId, errand, setErrand, messages, setMessages, setMessageTree, setAssets, assets, uiPhase } =
-    useAppContext();
+  const {
+    municipalityId,
+    errand,
+    setErrand,
+    messages,
+    setMessages,
+    setConversation,
+    setConversationTree,
+    setMessageTree,
+    setAssets,
+    assets,
+    uiPhase,
+  } = useAppContext();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);
@@ -31,6 +48,29 @@ export const CasedataTabsWrapper: React.FC = () => {
   const toastMessage = useSnackbar();
 
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
+
+  async function handleConversation(municipalityId: string, errandId: number) {
+    getConversations(municipalityId, errandId).then((res) => {
+      const fetchAndSetConversation = async (conversation: any) => {
+        try {
+          const messages = await getConversationMessages(municipalityId, errandId, conversation.id);
+          const mappedMessages = messages.data.map((msgRes) => {
+            if (Array.isArray(msgRes)) return msgRes;
+            if (msgRes) return [msgRes];
+            return [];
+          });
+          const allMessages = mappedMessages.flat();
+          const tree = groupByConversationIdSortedTree(allMessages);
+          setConversationTree(tree);
+          setConversation(allMessages);
+        } catch (e) {
+          console.error('Error when fetching converstaions: ', e);
+        }
+      };
+
+      return Promise.all(res.data.map(fetchAndSetConversation));
+    });
+  }
 
   useEffect(() => {
     if (errand && errand.errandNumber) {
@@ -54,6 +94,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             status: 'error',
           });
         });
+      handleConversation(municipalityId, errand.id);
       isPT() &&
         errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
         getAssets(errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT)).personId, 'PARKINGPERMIT')
@@ -226,6 +267,7 @@ export const CasedataTabsWrapper: React.FC = () => {
                     status: 'error',
                   });
                 });
+              handleConversation(municipalityId, errand.id);
             }, 500)
           }
         />

@@ -98,10 +98,8 @@ export class UserController {
   @Get('/user/:adaccount')
   @OpenAPI({ summary: 'Return employee info' })
   @UseBefore(authMiddleware)
-  @Header('Content-Type', 'image/jpeg')
-  @Header('Cross-Origin-Embedder-Policy', 'require-corp')
-  @Header('Cross-Origin-Resource-Policy', 'cross-origin')
-  async getEmployeeInfo(@Req() req: RequestWithUser, @Param('adaccount') adaccount: string, @QueryParam('width') width): Promise<any> {
+  @Header('Content-Type', 'application/json')
+  async getEmployeeInfo(@Req() req: RequestWithUser, @Param('adaccount') adaccount: string): Promise<any> {
     if (!adaccount) {
       throw new HttpException(400, 'Bad Request');
     }
@@ -113,6 +111,6 @@ export class UserController {
       },
       req.user,
     );
-    return res.data;
+    return res;
   }
 }

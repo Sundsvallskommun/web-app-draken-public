@@ -19,7 +19,12 @@ interface MessageTreeProps {
 }
 
 const getId = (node: MessageNode): string => {
-  return node.emailHeaders['MESSAGE_ID']?.[0];
+  if (node?.conversationId && node.conversationId !== '') {
+    return node?.conversationId;
+  }
+  if (node?.emailHeaders && node.emailHeaders['MESSAGE_ID'] && node.emailHeaders['MESSAGE_ID'][0]) {
+    return node.emailHeaders['MESSAGE_ID'][0];
+  }
 };
 
 const MessageNodeComponent: React.FC<{

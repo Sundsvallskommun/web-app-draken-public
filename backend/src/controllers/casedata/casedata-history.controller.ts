@@ -13,7 +13,7 @@ interface ResponseData {
 @Controller()
 export class CaseDataHistoryController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = `case-data/11.5`;
 
   @Get('/:municipalityId/errands/:errandId/history')
   @OpenAPI({ summary: 'Fetch history for errand' })

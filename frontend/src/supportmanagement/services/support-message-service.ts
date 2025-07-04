@@ -40,6 +40,8 @@ export interface Message {
   target: string;
   viewed: boolean;
   emailHeaders: Record<string, string[]>;
+  conversationId?: string;
+  messageId?: string;
 }
 
 const getClosingMessageBody = (): string => {
@@ -274,6 +276,41 @@ export const getMessageAttachment: (
 export interface MessageNode extends Message {
   children?: MessageNode[];
 }
+
+export const groupByConversationIdSortedTree = (messages: Message[]): MessageNode[] => {
+  const conversationMap: Map<string, Message[]> = new Map();
+
+  messages.forEach((msg) => {
+    if (!msg.conversationId) return;
+    if (!conversationMap.has(msg.conversationId)) {
+      conversationMap.set(msg.conversationId, []);
+    }
+    conversationMap.get(msg.conversationId)?.push(msg);
+  });
+
+  const trees: MessageNode[] = [];
+  conversationMap.forEach((msgList) => {
+    const sorted = msgList.toSorted((a, b) => (dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : -1));
+
+    let prevNode: MessageNode | null = null;
+    let rootNode: MessageNode | null = null;
+    sorted.forEach((msg) => {
+      const node: MessageNode = { ...msg, children: [] };
+      if (!prevNode) {
+        rootNode = node;
+      } else {
+        prevNode.children = [node];
+      }
+      prevNode = node;
+    });
+
+    if (rootNode) {
+      trees.push(rootNode);
+    }
+  });
+
+  return trees;
+};
 
 export const buildTree = (_list: Message[]) => {
   const nodesMap: Map<string, MessageNode> = new Map();

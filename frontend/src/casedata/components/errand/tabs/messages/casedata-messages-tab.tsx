@@ -1,66 +1,98 @@
 import { messageAttachment } from '@casedata/services/casedata-attachment-service';
+import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { fetchMessages, fetchMessagesTree, setMessageViewStatus } from '@casedata/services/casedata-message-service';
+import {
+  MessageNode,
+  fetchMessages,
+  fetchMessagesTree,
+  setMessageViewStatus,
+} from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import sanitized from '@common/services/sanitizer-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, RadioButton, cx, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Divider, FormLabel, Select, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
-import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, messages, messageTree, setMessages, setMessageTree, user } = useAppContext();
-  const [selectedMessage, setSelectedMessage] = useState<MessageResponse>();
+  const {
+    municipalityId,
+    errand,
+    messages,
+    messageTree,
+    setMessages,
+    setMessageTree,
+    conversation,
+    conversationTree,
+    user,
+  } = useAppContext();
+  const [selectedMessage, setSelectedMessage] = useState<MessageNode>();
   const [showSelectedMessage, setShowSelectedMessage] = useState(false);
   const [showMessageComposer, setShowMessageComposer] = useState(false);
   const [sortMessages, setSortMessages] = useState<number>(0);
+  const [filterSource, setFilterSource] = useState<number>(0);
   const [sortedMessages, setSortedMessages] = useState(messages);
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
+
+  const combinedMessages = React.useMemo(
+    () => [...(messages || []), ...(conversation || [])],
+    [messages, conversation]
+  );
+
+  const combinedMessageTree = React.useMemo(
+    () => [...(messageTree || []), ...(conversationTree || [])],
+    [messageTree, conversationTree]
+  );
+
   useEffect(() => {
     const _a = validateAction(errand, user) && !!errand.administrator;
     setAllowed(_a);
   }, [user, errand]);
 
-  const setMessageViewed = (msg: MessageResponse) => {
-    setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId, true)
-      .then(() =>
-        fetchMessagesTree(municipalityId, errand).catch(() => {
+  const setMessageViewed = (msg: MessageNode) => {
+    if (msg.conversationId) {
+      console.warn('Not implemented');
+    } else {
+      setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId, true)
+        .then(() =>
+          fetchMessagesTree(municipalityId, errand).catch(() => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Något gick fel när meddelanden hämtades',
+              status: 'error',
+            });
+          })
+        )
+        .then(setMessageTree)
+        .then(() =>
+          fetchMessages(municipalityId, errand).catch(() => {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Något gick fel när meddelanden hämtades',
+              status: 'error',
+            });
+          })
+        )
+        .then(setMessages)
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Något gick fel när meddelanden hämtades',
+            message: 'Något gick fel när meddelandets status uppdaterades',
             status: 'error',
           });
-        })
-      )
-      .then(setMessageTree)
-      .then(() =>
-        fetchMessages(municipalityId, errand).catch(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när meddelanden hämtades',
-            status: 'error',
-          });
-        })
-      )
-      .then(setMessages)
-      .catch(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när meddelandets status uppdaterades',
-          status: 'error',
         });
-      });
+    }
   };
 
   const getSender = (msg: MessageResponse) =>
@@ -69,9 +101,6 @@ export const CasedataMessagesTab: React.FC<{
   const getSenderInitials = (msg: MessageResponse) =>
     msg?.firstName && msg?.lastName ? `${msg.firstName?.[0]}${msg.lastName?.[0]}` : '@';
 
-  /* const getMessageType = (msg: MessageResponse) =>
-    msg?.messageType === 'EMAIL' ? 'E-post' : msg?.messageType === 'SMS' ? 'Sms' : '';
-*/
   const getMessageType = (msg: MessageResponse) => {
     if (msg?.messageType === 'WEBMESSAGE' || msg?.externalCaseId) {
       return (
@@ -91,12 +120,20 @@ export const CasedataMessagesTab: React.FC<{
           <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via digital brevlåda
         </>
       );
-    } else {
+    } else if (msg?.messageType === 'EMAIL') {
       return (
         <>
           <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via e-post
         </>
       );
+    } else if (msg?.messageType === 'DRAKEN') {
+      return (
+        <>
+          <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via Draken
+        </>
+      );
+    } else {
+      return <></>;
     }
   };
 
@@ -107,18 +144,73 @@ export const CasedataMessagesTab: React.FC<{
   );
 
   useEffect(() => {
-    if (messages && messageTree) {
+    if (combinedMessages && combinedMessageTree) {
       if (sortMessages === 1) {
-        let filteredMessages = messages.filter((message: MessageResponse) => message.direction === 'INBOUND');
+        let filteredMessages = combinedMessages.filter((message: MessageResponse) => message.direction === 'INBOUND');
         setSortedMessages(filteredMessages);
       } else if (sortMessages === 2) {
-        let filteredMessages = messages.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
+        let filteredMessages = combinedMessages.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
         setSortedMessages(filteredMessages);
       } else {
-        setSortedMessages(messageTree);
+        setSortedMessages(combinedMessageTree);
       }
     }
-  }, [messages, messageTree, sortMessages]);
+  }, [combinedMessages, combinedMessageTree, sortMessages]);
+
+  useEffect(() => {
+    if (combinedMessages && combinedMessageTree) {
+      let filtered = combinedMessages;
+
+      if (filterSource !== 0) {
+        filtered = filtered.filter((message: MessageResponse) => {
+          switch (filterSource) {
+            case 1:
+              return message.messageType === 'DRAKEN';
+            case 2:
+              return message.messageType === 'DIGITAL_MAIL';
+            case 3:
+              return message.messageType === 'EMAIL';
+            case 4:
+              return message.messageType === 'SMS';
+            case 5:
+              return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
+            default:
+              return true;
+          }
+        });
+      }
+
+      if (sortMessages === 1) {
+        filtered = filtered.filter((message: MessageResponse) => message.direction === 'INBOUND');
+        setSortedMessages(filtered);
+      } else if (sortMessages === 2) {
+        filtered = filtered.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
+        setSortedMessages(filtered);
+      } else {
+        if (filterSource !== 0) {
+          const filteredTree = combinedMessageTree.filter((node: MessageNode) => {
+            switch (filterSource) {
+              case 1:
+                return node.messageType === 'DRAKEN';
+              case 2:
+                return node.messageType === 'DIGITAL_MAIL';
+              case 3:
+                return node.messageType === 'EMAIL';
+              case 4:
+                return node.messageType === 'SMS';
+              case 5:
+                return node.messageType === 'WEBMESSAGE' || !!node.externalCaseId;
+              default:
+                return true;
+            }
+          });
+          setSortedMessages(filteredTree);
+        } else {
+          setSortedMessages(combinedMessageTree);
+        }
+      }
+    }
+  }, [combinedMessages, combinedMessageTree, sortMessages, filterSource]);
 
   return (
     <>
@@ -151,19 +243,40 @@ export const CasedataMessagesTab: React.FC<{
           </p>
         </div>
 
-        <RadioButton.Group inline className="mt-16">
-          <RadioButton value={0} defaultChecked={true} onChange={() => setSortMessages(0)}>
-            Alla
-          </RadioButton>
-          <RadioButton value={1} onChange={() => setSortMessages(1)}>
-            Mottagna
-          </RadioButton>
-          <RadioButton value={2} onChange={() => setSortMessages(2)}>
-            Skickade
-          </RadioButton>
-        </RadioButton.Group>
-
-        {sortedMessages?.length ? (
+        <div className="flex flex-row gap-30">
+          <div className="flex flex-col">
+            <FormLabel>Visa</FormLabel>
+            <Select
+              className="w-[16rem]"
+              size="sm"
+              aria-label="Välj ett sorteringsalternativ"
+              value={sortMessages.toString()}
+              onChange={(e) => setSortMessages(Number(e.target.value))}
+            >
+              <Select.Option value={0}>Alla</Select.Option>
+              <Select.Option value={1}>Mottagna</Select.Option>
+              <Select.Option value={2}>Skickade</Select.Option>
+            </Select>
+          </div>
+          <div className="flex flex-col">
+            <FormLabel>Inkom via</FormLabel>
+            <Select
+              className="w-[16rem]"
+              size="sm"
+              aria-label="Välj källa"
+              value={filterSource.toString()}
+              onChange={(e) => setFilterSource(Number(e.target.value))}
+            >
+              <Select.Option value={0}>Alla</Select.Option>
+              <Select.Option value={1}>Draken</Select.Option>
+              <Select.Option value={2}>Digital brevlåda</Select.Option>
+              <Select.Option value={3}>E-post</Select.Option>
+              <Select.Option value={4}>SMS</Select.Option>
+              <Select.Option value={5}>E-tjänst</Select.Option>
+            </Select>
+          </div>
+        </div>
+        {combinedMessages?.length ? (
           <MessageTreeComponent
             nodes={sortedMessages}
             selected={selectedMessage?.messageId}
@@ -223,8 +336,9 @@ export const CasedataMessagesTab: React.FC<{
                       </div>
                     </div>
                   </div>
-                  {selectedMessage?.direction === 'INBOUND' &&
-                  (selectedMessage.messageType === 'EMAIL' || selectedMessage.messageType === 'WEBMESSAGE') ? (
+                  {(selectedMessage?.direction === 'INBOUND' &&
+                    (selectedMessage.messageType === 'EMAIL' || selectedMessage.messageType === 'WEBMESSAGE')) ||
+                  selectedMessage?.conversationId ? (
                     <Button
                       type="button"
                       disabled={isErrandLocked(errand) || !allowed}
@@ -248,33 +362,69 @@ export const CasedataMessagesTab: React.FC<{
                       <Button
                         key={`${a.name}-${idx}`}
                         onClick={() => {
-                          messageAttachment(municipalityId, errand.id, selectedMessage.messageId, a.attachmentId)
-                            .then((res) => {
-                              if (res.data.length !== 0) {
-                                const uri = `data:${a.contentType};base64,${res.data}`;
-                                const link = document.createElement('a');
-                                const filename = a.name;
-                                link.href = uri;
-                                link.setAttribute('download', filename);
-                                document.body.appendChild(link);
-                                link.click();
-                              } else {
+                          if (selectedMessage.conversationId) {
+                            getConversationAttachment(
+                              municipalityId,
+                              errand.id,
+                              selectedMessage.conversationId,
+                              selectedMessage.messageId,
+                              a.attachmentId
+                            )
+                              .then((res) => {
+                                if (res.data.length !== 0) {
+                                  const uri = `data:${a.contentType};base64,${res.data}`;
+                                  const link = document.createElement('a');
+                                  const filename = a.name;
+                                  link.href = uri;
+                                  link.setAttribute('download', filename);
+                                  document.body.appendChild(link);
+                                  link.click();
+                                } else {
+                                  toastMessage({
+                                    position: 'bottom',
+                                    closeable: false,
+                                    message: 'Filen kan inte hittas eller är skadad.',
+                                    status: 'error',
+                                  });
+                                }
+                              })
+                              .catch((error) => {
                                 toastMessage({
                                   position: 'bottom',
                                   closeable: false,
-                                  message: 'Filen kan inte hittas eller är skadad.',
+                                  message: 'Något gick fel när bilagan skulle hämtas',
                                   status: 'error',
                                 });
-                              }
-                            })
-                            .catch((error) => {
-                              toastMessage({
-                                position: 'bottom',
-                                closeable: false,
-                                message: 'Något gick fel när bilagan skulle hämtas',
-                                status: 'error',
                               });
-                            });
+                          } else {
+                            messageAttachment(municipalityId, errand.id, selectedMessage.messageId, a.attachmentId)
+                              .then((res) => {
+                                if (res.data.length !== 0) {
+                                  const uri = `data:${a.contentType};base64,${res.data}`;
+                                  const link = document.createElement('a');
+                                  const filename = a.name;
+                                  link.href = uri;
+                                  link.setAttribute('download', filename);
+                                  document.body.appendChild(link);
+                                  link.click();
+                                } else {
+                                  toastMessage({
+                                    position: 'bottom',
+                                    closeable: false,
+                                    message: 'Filen kan inte hittas eller är skadad.',
+                                    status: 'error',
+                                  });
+                                }
+                              })
+                              .catch((error) => {
+                                toastMessage({
+                                  position: 'bottom',
+                                  closeable: false,
+                                  message: 'Något gick fel när bilagan skulle hämtas',
+                                  status: 'error',
+                                });
+                              });
+                          }
                         }}
                         role="listitem"
                         leftIcon={

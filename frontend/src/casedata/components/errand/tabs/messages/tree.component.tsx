@@ -9,7 +9,7 @@ interface MessageTreeProps {
   onSelect: (node: MessageNode) => void;
 }
 
-const getId = (node: MessageNode): string => node.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
+const getId = (node: MessageNode): string => node.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
 
 const MessageNodeComponent: React.FC<{
   node: MessageNode;

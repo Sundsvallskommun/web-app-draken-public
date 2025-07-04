@@ -13,7 +13,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 @Controller()
 export class ExportController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = `case-data/11.5`;
 
   @Post('/:municipalityId/export')
   @OpenAPI({ summary: 'Export list of errands' })
