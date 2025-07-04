@@ -35,7 +35,7 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
@@ -48,8 +48,7 @@ export default function Layout({ title, children }) {
     supportMetadata,
   }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
-  const { isMaxLargeDevice } = useThemeQueries();
-  const router = useRouter();
+  const { isMinLargeDevice } = useThemeQueries();
   const pathName = usePathname();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
@@ -271,13 +270,13 @@ export default function Layout({ title, children }) {
             </PopupMenu>
           }
           bottomContent={
-            ((isMEX() && !isMaxLargeDevice) || (isPT() && !isMaxLargeDevice)) &&
+            ((isMEX() && !isMinLargeDevice) || (isPT() && !isMinLargeDevice)) &&
             (pathName === '/registrera' || pathName.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
-          {((isMEX() && isMaxLargeDevice) || (isPT() && isMaxLargeDevice)) &&
+          {((isMEX() && isMinLargeDevice) || (isPT() && isMinLargeDevice)) &&
           (pathName === '/registrera' || pathName.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}
