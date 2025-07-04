@@ -621,7 +621,12 @@ export const Lagenhetsarrende: React.FC<{
                     }</ul><br /><p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm. Området är märkt ${
                     getValues().omradeTerms?.mapAttachments
                   } enligt kartbilaga ${getValues().omradeTerms?.mapAttachmentReference}.</p><br />`;
-                  setOmrade(content);
+
+                  const delta = quillRefOmrade.current.clipboard.convert({ html: content });
+                  quillRefOmrade.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOmrade.current.getSemanticHTML();
+                  setOmrade(semanticText);
+                  setValue('omrade', semanticText);
                   setShowOmrade(false);
                 }}
               >
@@ -632,16 +637,19 @@ export const Lagenhetsarrende: React.FC<{
           <FormControl id="kopeskilling" className="w-full">
             <Input type="hidden" {...register('omrade')} />
             <div className="h-[42rem] -mb-48" data-cy="area-richtext-wrapper">
-              <ContractTextEditorWrapper
-                val={omrade}
-                label="omrade"
-                setDirty={setTextIsDirty}
-                setValue={setValue}
-                trigger={trigger}
-                setState={setOmrade}
-                readOnly={!editOmrade}
-                editorRef={quillRefOmrade}
-              />
+              {omrade && (
+                <ContractTextEditorWrapper
+                  // key={omrade}
+                  val={omrade}
+                  label="omrade"
+                  setDirty={setTextIsDirty}
+                  setValue={setValue}
+                  trigger={trigger}
+                  setState={setOmrade}
+                  readOnly={!editOmrade}
+                  editorRef={quillRefOmrade}
+                />
+              )}
             </div>
           </FormControl>
           {saveButton('omrade')}
@@ -897,9 +905,6 @@ export const Lagenhetsarrende: React.FC<{
                   getValues('andamalTerms.condition.other') ? (content += '<li>XXXX</li>') : '';
 
                   content += `</ul>`;
-                  // content += `<br />
-                  // <strong>Förtydligande</strong><p>${getValues('andamalTerms.clarification')}</p><br />
-                  // <p>Bygglov finns: ${getValues('andamalTerms.bygglovExists') ? 'Ja' : 'Nej'}</p>`;
 
                   getValues('andamalTerms.condition.consent')
                     ? (content += `<p>${getValues('andamalTerms.condition.consent').conditionText}</p>`)
@@ -907,7 +912,12 @@ export const Lagenhetsarrende: React.FC<{
                   getValues('andamalTerms.condition.detailedplan')
                     ? (content += `<p>${getValues('andamalTerms.condition.detailedplan').conditionText}</p>`)
                     : null;
-                  setAndamal(content);
+
+                  const delta = quillRefAndamal.current.clipboard.convert({ html: content });
+                  quillRefAndamal.current.setContents(delta, 'silent');
+                  const semanticText = quillRefAndamal.current.getSemanticHTML();
+                  setAndamal(semanticText);
+                  setValue('andamal', semanticText);
                   setShowAndamal(false);
                 }}
               >
@@ -918,16 +928,18 @@ export const Lagenhetsarrende: React.FC<{
           <FormControl id="skog" className="w-full">
             <Input type="hidden" {...register('andamal')} />
             <div className="h-[42rem] -mb-48" data-cy="purpose-richtext-wrapper">
-              <ContractTextEditorWrapper
-                val={andamal}
-                label="andamal"
-                setDirty={setTextIsDirty}
-                setValue={setValue}
-                trigger={trigger}
-                setState={setAndamal}
-                readOnly={!editAndamal}
-                editorRef={quillRefAndamal}
-              />
+              {andamal && (
+                <ContractTextEditorWrapper
+                  val={andamal}
+                  label="andamal"
+                  setDirty={setTextIsDirty}
+                  setValue={setValue}
+                  trigger={trigger}
+                  setState={setAndamal}
+                  readOnly={!editAndamal}
+                  editorRef={quillRefAndamal}
+                />
+              )}
             </div>
           </FormControl>
           {saveButton('andamal')}
@@ -1092,7 +1104,12 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                    `;
-                  setArrendetid(content);
+
+                  const delta = quillRefArrendetid.current.clipboard.convert({ html: content });
+                  quillRefArrendetid.current.setContents(delta, 'silent');
+                  const semanticText = quillRefArrendetid.current.getSemanticHTML();
+                  setArrendetid(semanticText);
+                  setValue('arrendetid', semanticText);
                   setShowArrendetid(false);
                 }}
               >
@@ -1449,8 +1466,11 @@ export const Lagenhetsarrende: React.FC<{
                     getValues('arrendeavgiftTerms.yearOrQuarter') === 'year' ? 'årsvis' : 'kvartalsvis'
                   } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}.</p>`;
 
-                  setArrendeavgift(content);
-                  setValue('arrendeavgift', content);
+                  const delta = quillRefArrendeavgift.current.clipboard.convert({ html: content });
+                  quillRefArrendeavgift.current.setContents(delta, 'silent');
+                  const semanticText = quillRefArrendeavgift.current.getSemanticHTML();
+                  setArrendeavgift(semanticText);
+                  setValue('arrendeavgift', semanticText);
                   setShowArrendeavgift(false);
                 }}
               >
@@ -1553,7 +1573,11 @@ export const Lagenhetsarrende: React.FC<{
                   }<br />
                   `;
 
-                  setBygglov(content);
+                  const delta = quillRefBygglov.current.clipboard.convert({ html: content });
+                  quillRefBygglov.current.setContents(delta, 'silent');
+                  const semanticText = quillRefBygglov.current.getSemanticHTML();
+                  setBygglov(semanticText);
+                  setValue('bygglov', semanticText);
                   setShowBygglov(false);
                 }}
               >
@@ -1647,8 +1671,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   
               `;
-
-                  setOverlatelse(content);
+                  const delta = quillRefOverlatelse.current.clipboard.convert({ html: content });
+                  quillRefOverlatelse.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOverlatelse.current.getSemanticHTML();
+                  setOverlatelse(semanticText);
+                  setValue('overlatelse', semanticText);
                   setShowOverlatelse(false);
                 }}
               >
@@ -1741,8 +1768,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   
               `;
-
-                  setInskrivning(content);
+                  const delta = quillRefInskrivning.current.clipboard.convert({ html: content });
+                  quillRefInskrivning.current.setContents(delta, 'silent');
+                  const semanticText = quillRefInskrivning.current.getSemanticHTML();
+                  setInskrivning(semanticText);
+                  setValue('inskrivning', semanticText);
                   setShowInskrivning(false);
                 }}
               >
@@ -1840,8 +1870,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
               `;
-
-                  setSkick(content);
+                  const delta = quillRefSkick.current.clipboard.convert({ html: content });
+                  quillRefSkick.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSkick.current.getSemanticHTML();
+                  setSkick(semanticText);
+                  setValue('skick', semanticText);
                   setShowSkick(false);
                 }}
               >
@@ -1930,8 +1963,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
 
               `;
-
-                  setLedningar(content);
+                  const delta = quillRefLedningar.current.clipboard.convert({ html: content });
+                  quillRefLedningar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefLedningar.current.getSemanticHTML();
+                  setLedningar(semanticText);
+                  setValue('ledningar', semanticText);
                   setShowLedningar(false);
                 }}
               >
@@ -2019,8 +2055,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
 
               `;
-
-                  setKostnader(content);
+                  const delta = quillRefKostnader.current.clipboard.convert({ html: content });
+                  quillRefKostnader.current.setContents(delta, 'silent');
+                  const semanticText = quillRefKostnader.current.getSemanticHTML();
+                  setKostnader(semanticText);
+                  setValue('kostnader', semanticText);
                   setShowKostnader(false);
                 }}
               >
@@ -2159,8 +2198,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-
-                  setMarkfororeningar(content);
+                  const delta = quillRefMarkfororeningar.current.clipboard.convert({ html: content });
+                  quillRefMarkfororeningar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefMarkfororeningar.current.getSemanticHTML();
+                  setMarkfororeningar(semanticText);
+                  setValue('markfororeningar', semanticText);
                   setShowMarkfororeningar(false);
                 }}
               >
@@ -2296,8 +2338,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-
-                  setUpphorande(content);
+                  const delta = quillRefUpphorande.current.clipboard.convert({ html: content });
+                  quillRefUpphorande.current.setContents(delta, 'silent');
+                  const semanticText = quillRefUpphorande.current.getSemanticHTML();
+                  setUpphorande(semanticText);
+                  setValue('upphorande', semanticText);
                   setShowUpphorande(false);
                 }}
               >
@@ -2389,8 +2434,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-
-                  setSkadaansvar(content);
+                  const delta = quillRefSkadaansvar.current.clipboard.convert({ html: content });
+                  quillRefSkadaansvar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSkadaansvar.current.getSemanticHTML();
+                  setSkadaansvar(semanticText);
+                  setValue('skadaansvar', semanticText);
                   setShowSkadaansvar(false);
                 }}
               >
@@ -2537,7 +2585,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  setSarskilda(content);
+                  const delta = quillRefSarskilda.current.clipboard.convert({ html: content });
+                  quillRefSarskilda.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSarskilda.current.getSemanticHTML();
+                  setSarskilda(semanticText);
+                  setValue('sarskilda', semanticText);
                   setShowSarskilda(false);
                 }}
               >
@@ -2690,7 +2742,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  setJordabalken(content);
+                  const delta = quillRefJordabalken.current.clipboard.convert({ html: content });
+                  quillRefJordabalken.current.setContents(delta, 'silent');
+                  const semanticText = quillRefJordabalken.current.getSemanticHTML();
+                  setJordabalken(semanticText);
+                  setValue('jordabalken', semanticText);
                   setShowJordabalken(false);
                 }}
               >

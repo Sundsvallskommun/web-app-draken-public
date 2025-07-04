@@ -11,7 +11,6 @@ import {
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
@@ -31,8 +30,9 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { TextEditor } from '@sk-web-gui/text-editor';
 
 export interface UtredningFormModel {
   id?: string;
@@ -116,7 +116,9 @@ export const CasedataInvestigationTab: React.FC<{
     getValues,
     formState: { errors },
   } = useForm<UtredningFormModel>({
-    resolver: yupResolver(isFTErrand(props.errand) ? formSchemaFT : formSchema),
+    resolver: yupResolver(
+      isFTErrand(props.errand) ? formSchemaFT : formSchema
+    ) as unknown as Resolver<UtredningFormModel>,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -207,11 +209,9 @@ export const CasedataInvestigationTab: React.FC<{
     }
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setRichText(quillRef.current.getText());
+    setValue('description', sanitized(delta > 1 ? quillRef.current.getText() : undefined), { shouldDirty: true });
     trigger('description');
   };
 
@@ -406,17 +406,16 @@ export const CasedataInvestigationTab: React.FC<{
             <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
             <Input type="hidden" {...register('errandNumber')} />
             <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
-              <RichTextEditor
+              <TextEditor
+                className={cx(`mb-md h-[80%]`)}
+                key={richText}
                 ref={quillRef}
-                value={richText}
-                isMaximizable={false}
-                readOnly={!allowed}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
+                defaultValue={richText}
+                onTextChange={(delta, oldDelta, source) => {
                   if (source === 'user') {
                     setTextIsDirty(true);
                   }
-                  return onRichTextChange(value);
+                  return onRichTextChange(delta, oldDelta, source);
                 }}
               />
             </div>

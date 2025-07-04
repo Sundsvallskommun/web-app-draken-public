@@ -33,6 +33,7 @@
       "ROB": "Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Rekrytering och bemanning</strong>",
       "default": "Hej,<br><br>"
     },
-    "case_data_default_signature": "<br><br>Med vänlig hälsning<br><br><b>{{user}} </b><br><br><b>Sundsvalls kommun</b><br>{{department}} <p>851 85 Sundsvall</p><p>Besöksadress: Norrmalmsgatan 4</p><p>Telefon: +46 60 19 10 00</p><a href=\"http://www.sundsvall.se/\" target=\"_blank\">www.sundsvall.se</a><br><br><p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br> <p>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR).</p><br> <p>Läs mer på <a href=\"http://www.sundsvall.se/personuppgifter\" target=\"_blank\">www.sundsvall.se/personuppgifter</a>.</p>"
+    "case_data_default_signature": "<br><br>Med vänlig hälsning<br><br><b>{{user}} </b><br><br><b>Sundsvalls kommun</b><br>{{department}} <p>851 85 Sundsvall</p><p>Besöksadress: Norrmalmsgatan 4</p><p>Telefon: +46 60 19 10 00</p><a href=\"http://www.sundsvall.se/\" target=\"_blank\">www.sundsvall.se</a><br><br><p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br> <p>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR).</p><br> <p>Läs mer på <a href=\"http://www.sundsvall.se/personuppgifter\" target=\"_blank\">www.sundsvall.se/personuppgifter</a>.</p>",
+    "newline": "<br>"
   }
 }

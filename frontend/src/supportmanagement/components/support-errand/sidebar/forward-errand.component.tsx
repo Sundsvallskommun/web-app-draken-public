@@ -1,5 +1,6 @@
+'use client';
+
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { User } from '@common/interfaces/user';
 import { isKA } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
@@ -35,6 +36,8 @@ import { getAdminName } from '@supportmanagement/services/support-stakeholder-se
 import { useEffect, useRef, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
   {
@@ -46,11 +49,21 @@ const yupForwardForm = yup.object().shape(
         is: (emails: [], recipient: string) => {
           return !emails.length && recipient === 'EMAIL';
         },
-        then: yup.string().min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+        then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
       }),
     department: yup.string().required('Verksamhet är obligatoriskt'),
     message: yup.string().required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
+    emails: yup
+      .array()
+      .of(
+        yup
+          .object({
+            value: yup.string().email('Ogiltig e-postadress').required('E-postadress krävs'),
+          })
+          .required()
+      )
+      .required('Minst en e-postadress krävs'),
   },
   [['emails', 'recipient']]
 );
@@ -111,7 +124,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     trigger,
     formState: { errors },
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
-    resolver: yupResolver(yupForwardForm),
+    resolver: yupResolver(yupForwardForm) as any,
     defaultValues: {
       recipient: isKA() ? 'EMAIL' : 'DEPARTMENT',
       emails: [],
@@ -140,17 +153,11 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showModal]);
 
-  const onRichTextChange = (val) => {
-    if (quillRef.current) {
-      const editor = quillRef.current?.getEditor();
-      const length = editor?.getLength();
-      setRichText(val);
-      setValue('message', sanitized(length > 1 ? val : undefined));
-      setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
-      trigger('message');
-    }
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setValue('message', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('messageBodyPlaintext', quillRef.current.getText());
+    trigger('message');
   };
-
   const handleForwardErrand = (data: ForwardFormProps, msg: boolean) => {
     setIsLoading(true);
     setError(false);
@@ -338,17 +345,16 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                 <FormLabel className="text-content font-semibold">Meddelande</FormLabel>
                 <Input data-cy="message-body-input" type="hidden" {...register('message')} />
                 <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
-                  <RichTextEditor
+                  <TextEditor
+                    className={cx(`mb-md h-[80%]`)}
+                    key={richText}
                     ref={quillRef}
-                    value={richText}
-                    errors={!!errors.message}
-                    isMaximizable={false}
-                    toggleModal={() => {}}
-                    onChange={(value, delta, source, editor) => {
+                    defaultValue={richText}
+                    onTextChange={(delta, oldDelta, source) => {
                       if (source === 'user') {
                         setTextIsDirty(true);
                       }
-                      return onRichTextChange(value);
+                      return onRichTextChange(delta, oldDelta, source);
                     }}
                   />
                 </div>

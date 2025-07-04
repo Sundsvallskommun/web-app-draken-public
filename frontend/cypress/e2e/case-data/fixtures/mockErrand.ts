@@ -231,46 +231,46 @@ const proposed = mockErrand_base.data.decisions.find((d) => d.decisionType === '
 const final = mockErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL');
 
 export const mockPutProposedDecision: Decision = {
-  id: proposed.id,
-  created: proposed.created,
-  updated: proposed.updated,
+  id: proposed?.id,
+  created: proposed?.created,
+  updated: proposed?.updated,
   decisionType: 'PROPOSED',
   decisionOutcome: 'APPROVAL',
-  description: proposed.description,
+  description: proposed?.description || '',
   law: [
     {
-      heading: proposed.law[0].heading,
+      heading: proposed?.law[0].heading || '',
       sfs: 'Trafikförordningen (1998:1276)',
       chapter: '13',
       article: '8',
     },
   ],
-  decidedAt: proposed.decidedAt,
+  decidedAt: proposed?.decidedAt,
   // decidedBy: proposed.decidedBy,
-  validFrom: undefined,
-  validTo: undefined,
+  validFrom: '',
+  validTo: '',
   attachments: [],
 };
 
 export const mockPutFinalDecision: Decision = {
-  id: final.id,
-  created: final.created,
-  updated: final.updated,
+  id: final?.id,
+  created: final?.created,
+  updated: final?.updated,
   decisionType: 'FINAL',
   decisionOutcome: 'APPROVAL',
-  description: final.description,
+  description: final?.description || '',
   law: [
     {
-      heading: final.law[0].heading,
+      heading: final?.law[0].heading || '',
       sfs: 'Trafikförordningen (1998:1276)',
       chapter: '13',
       article: '8',
     },
   ],
-  decidedAt: final.decidedAt,
+  decidedAt: final?.decidedAt,
   // decidedBy: final.decidedBy,
-  validFrom: final.validFrom,
-  validTo: final.validTo,
+  validFrom: final?.validFrom || ' ',
+  validTo: final?.validTo || '',
   attachments: [],
 };
 

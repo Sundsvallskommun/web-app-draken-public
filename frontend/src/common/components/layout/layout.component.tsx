@@ -35,7 +35,7 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
-import { useRouter } from 'next/router';
+import { usePathname, useRouter } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
@@ -50,6 +50,7 @@ export default function Layout({ title, children }) {
   const applicationEnvironment = getApplicationEnvironment();
   const { isMaxLargeDevice } = useThemeQueries();
   const router = useRouter();
+  const pathName = usePathname();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
     : appConfig.isSupportManagement
@@ -205,9 +206,7 @@ export default function Layout({ title, children }) {
       </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
-          logo={
-            router.pathname.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />
-          }
+          logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}
           userMenu={
             <div className="flex items-center h-fit">
               <span data-cy="usermenu">
@@ -273,13 +272,13 @@ export default function Layout({ title, children }) {
           }
           bottomContent={
             ((isMEX() && !isMaxLargeDevice) || (isPT() && !isMaxLargeDevice)) &&
-            (router.pathname === '/registrera' || router.pathname.includes('arende')) ? (
+            (pathName === '/registrera' || pathName.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
           {((isMEX() && isMaxLargeDevice) || (isPT() && isMaxLargeDevice)) &&
-          (router.pathname === '/registrera' || router.pathname.includes('arende')) ? (
+          (pathName === '/registrera' || pathName.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}
         </PageHeader>
@@ -293,8 +292,8 @@ export default function Layout({ title, children }) {
           <p>
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
-            <NextLink href="/kakor" passHref legacyBehavior>
-              <Link>Läs mer om hur vi använder kakor</Link>
+            <NextLink href="/kakor" passHref>
+              <Button variant={'link'}>Läs mer om hur vi använder kakor</Button>
             </NextLink>
           </p>
         }
