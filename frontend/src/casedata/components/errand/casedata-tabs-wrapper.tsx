@@ -9,7 +9,6 @@ import { countUnreadMessages, fetchMessages, fetchMessagesTree } from '@casedata
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
 import React, { useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
@@ -29,7 +28,6 @@ export const CasedataTabsWrapper: React.FC = () => {
   const [unsavedContract, setUnsavedContract] = useState(false);
   const [unsavedUtredning, setUnsavedUtredning] = useState(false);
   const [unsavedDecision, setUnsavedDecision] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
   const toastMessage = useSnackbar();
 
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
@@ -351,41 +349,30 @@ export const CasedataTabsWrapper: React.FC = () => {
   }
 
   return (
-    <>
-      <div className="mb-xl">
-        {showVerification ? (
-          <div className="flex flex-col items-center justify-center my-lg">
-            <div className="text-3xl text-secondary my-sm">
-              <CheckCircleOutlineIcon fontSize="inherit" className="mr-sm" />
-            </div>
-            <div className="text-lg my-sm">Ärendet har sparats</div>
-          </div>
-        ) : (
-          <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
-            <Tabs
-              className="border-1 rounded-12 bg-background-content pt-22 pl-5"
-              tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
-              panelsClassName="border-t-1"
-              // TODO uncomment to set Avtal tab to be active when in TEST environment
-              // current={getApplicationEnvironment() === 'TEST' ? 3 : current}
-              current={currentTab}
-              onTabChange={() => {}}
-              size={'sm'}
-            >
-              {tabs
-                .filter((tab) => tab.visibleFor.includes(errand.phase) || !errand.phase)
-                .map((tab, index) => (
-                  <Tabs.Item key={tab.label}>
-                    <Tabs.Button disabled={tab.disabled} className="text-small">
-                      {tab.label}
-                    </Tabs.Button>
-                    <Tabs.Content>{tab.content}</Tabs.Content>
-                  </Tabs.Item>
-                ))}
-            </Tabs>
-          </WarnIfUnsavedChanges>
-        )}
-      </div>
-    </>
+    <div className="mb-xl">
+      <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
+        <Tabs
+          className="border-1 rounded-12 bg-background-content pt-22 pl-5"
+          tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
+          panelsClassName="border-t-1"
+          // TODO uncomment to set Avtal tab to be active when in TEST environment
+          // current={getApplicationEnvironment() === 'TEST' ? 3 : current}
+          current={currentTab}
+          onTabChange={() => {}}
+          size={'sm'}
+        >
+          {tabs
+            .filter((tab) => tab.visibleFor.includes(errand.phase) || !errand.phase)
+            .map((tab, index) => (
+              <Tabs.Item key={tab.label}>
+                <Tabs.Button disabled={tab.disabled} className="text-small">
+                  {tab.label}
+                </Tabs.Button>
+                <Tabs.Content>{tab.content}</Tabs.Content>
+              </Tabs.Item>
+            ))}
+        </Tabs>
+      </WarnIfUnsavedChanges>
+    </div>
   );
 };

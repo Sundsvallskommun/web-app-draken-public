@@ -13,9 +13,18 @@ import {
   isROB,
 } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
+import {
+  Button,
+  CookieConsent,
+  Divider,
+  Label,
+  Link,
+  Logo,
+  PopupMenu,
+  UserMenu,
+  useThemeQueries,
+} from '@sk-web-gui/react';
 import {
   Resolution,
   Status,
@@ -26,7 +35,7 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
@@ -39,8 +48,7 @@ export default function Layout({ title, children }) {
     supportMetadata,
   }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
-  const { theme } = useGui();
-  const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
+  const { isMinLargeDevice } = useThemeQueries();
   const pathName = usePathname();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
@@ -262,12 +270,14 @@ export default function Layout({ title, children }) {
             </PopupMenu>
           }
           bottomContent={
-            ((isMEX() && !isXl) || (isPT() && !isXl)) && (pathName === '/registrera' || pathName.includes('arende')) ? (
+            ((isMEX() && !isMinLargeDevice) || (isPT() && !isMinLargeDevice)) &&
+            (pathName === '/registrera' || pathName.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
-          {((isMEX() && isXl) || (isPT() && isXl)) && (pathName === '/registrera' || pathName.includes('arende')) ? (
+          {((isMEX() && isMinLargeDevice) || (isPT() && isMinLargeDevice)) &&
+          (pathName === '/registrera' || pathName.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}
         </PageHeader>

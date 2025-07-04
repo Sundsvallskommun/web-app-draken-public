@@ -4,7 +4,6 @@ import { getImageAspect } from '@casedata/services/casedata-attachment-service';
 import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, Image } from '@sk-web-gui/react';
 import { useRef, useState } from 'react';
@@ -17,7 +16,6 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
   const { municipalityId } = useAppContext();
   const imgRef = useRef<HTMLImageElement>(null);
   const [blob, setBlob] = useState<Blob>();
-  const [fileUrl, setFileUrl] = useState<string>();
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [scale, setScale] = useState(1);
@@ -140,8 +138,8 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
                 className="w-80"
                 onChange={(e) => setRotate(Math.min(180, Math.max(-180, Number(e.target.value))))}
               />
-              <CancelOutlinedIcon
-                fontSize="medium"
+              <LucideIcon
+                name="circle-x"
                 className={cx(
                   `absolute -right-1 ${rotate === 0 ? 'cursor-disabled text-gray-400' : 'cursor-pointer text-black'}`
                 )}
@@ -161,6 +159,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
               src={`data:${props.attachment?.mimeType};base64,${props.attachment?.file}`}
               style={{ transform: `scale(${scale}) rotate(${rotate}deg)` }}
               onLoad={onImageLoad}
+              alt="Uppladdad bild"
             />
           </ReactCrop>
         </div>

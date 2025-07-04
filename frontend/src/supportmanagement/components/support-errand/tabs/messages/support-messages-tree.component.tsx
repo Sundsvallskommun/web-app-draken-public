@@ -1,7 +1,6 @@
 import React, { Fragment, useState } from 'react';
 import { RenderedSupportMessage } from './rendered-support-message.component';
-import { Divider } from '@mui/material';
-import { Button, cx } from '@sk-web-gui/react';
+import { Button, cx, Divider } from '@sk-web-gui/react';
 import {
   MessageNode,
   countAllMessages,

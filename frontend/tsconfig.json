@@ -67,11 +67,13 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-KC/types/**/*.ts",
+    ".next-MEX/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
-    ".next-MEX/types/**/*.ts"
+    ".next-PT/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
