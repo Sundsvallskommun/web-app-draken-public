@@ -11,8 +11,7 @@ import { default as NextLink } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-export default function Arende2() {
-  const router = useRouter();
+const Arende: React.FC = () => {
   const pathName = usePathname();
   const [errandId, setErrandId] = useState<string>();
   const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
@@ -37,12 +36,14 @@ export default function Arende2() {
       setAdministrators(data);
     });
     setSubPage('Pågående ärende');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     appConfig.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
   return (
@@ -66,4 +67,6 @@ export default function Arende2() {
       </Layout>
     </div>
   );
-}
+};
+
+export default Arende;

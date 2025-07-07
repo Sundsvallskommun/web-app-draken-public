@@ -13,10 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 const Oversikt: React.FC = () => {
-  const router = useRouter();
-
-  const { user, isLoggedIn, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } =
-    useAppContext();
+  const { user, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
   const initialFocus = useRef(null);

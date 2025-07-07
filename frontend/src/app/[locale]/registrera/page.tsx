@@ -11,20 +11,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 const Registrera: React.FC = () => {
-  const router = useRouter();
-
-  const { isLoggedIn, setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
+  const { setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/login');
-    }
     getAdminUsers().then((data) => {
       setAdministrators(data);
     });
     setSubPage('Registrera ärende');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, router]);
+  }, []);
 
   useEffect(() => {
     setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
