@@ -38,7 +38,7 @@ const Login: React.FC = () => {
     const nonLoginSearch = !searchPath?.match(/\/login|\/logout/) && searchPath;
     const path = nonLoginPath || nonLoginSearch || '/';
 
-    //Basepath problem, lägger till FT/FT vid login. Detta löser buggen men inte en bra lösning.
+    //Basepath problem, lägger till BASEPATH/BASEPATH vid login. Detta löser buggen men inte en bra lösning.
     const cleanedPath = path.replace(new RegExp(`^${process.env.NEXT_PUBLIC_BASEPATH}`), '');
 
     const url = new URL(apiURL('/saml/login'));
