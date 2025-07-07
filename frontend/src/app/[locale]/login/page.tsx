@@ -53,7 +53,6 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     setInitalFocus();
-    console.log('Login useEffect', { isLoggedOut, failMessage, autoLogin });
     if (!router) return;
 
     if (isLoggedOut) {

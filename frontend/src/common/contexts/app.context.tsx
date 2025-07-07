@@ -27,9 +27,6 @@ export interface AppContextInterface {
   subPage: string;
   setSubPage: (subPage: string) => void;
 
-  isLoggedIn: boolean;
-  setIsLoggedIn: (isLoggedIn: boolean) => void;
-
   user: User;
   setUser: (user: User) => void;
 
@@ -140,7 +137,6 @@ const AppContext = createContext<AppContextInterface>(null);
 
 export function AppWrapper({ children }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [subPage, setSubPage] = useState('');
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
@@ -186,9 +182,6 @@ export function AppWrapper({ children }) {
 
         subPage,
         setSubPage: (subPage: string) => setSubPage(subPage),
-
-        isLoggedIn,
-        setIsLoggedIn: (isLoggedIn: boolean) => setIsLoggedIn(isLoggedIn),
 
         user,
         setUser: (user: User) => setUser(user),
