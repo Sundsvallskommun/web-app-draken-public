@@ -50,8 +50,10 @@ export const CasedataTabsWrapper: React.FC = () => {
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   async function handleConversation(municipalityId: string, errandId: number) {
-    getConversations(municipalityId, errandId).then((res) => {
-      const fetchAndSetConversation = async (conversation: any) => {
+    try {
+      const res = await getConversations(municipalityId, errandId);
+      const allMessages: any[] = [];
+      for (const conversation of res.data) {
         try {
           const messages = await getConversationMessages(municipalityId, errandId, conversation.id);
           const mappedMessages = messages.data.map((msgRes) => {
@@ -59,17 +61,18 @@ export const CasedataTabsWrapper: React.FC = () => {
             if (msgRes) return [msgRes];
             return [];
           });
-          const allMessages = mappedMessages.flat();
-          const tree = groupByConversationIdSortedTree(allMessages);
-          setConversationTree(tree);
-          setConversation(allMessages);
+          allMessages.push(...mappedMessages.flat());
         } catch (e) {
-          console.error('Error when fetching converstaions: ', e);
+          console.error(`Error fetching messages for conversation ${conversation.id}: `, e);
         }
-      };
+      }
 
-      return Promise.all(res.data.map(fetchAndSetConversation));
-    });
+      const tree = groupByConversationIdSortedTree(allMessages);
+      setConversationTree(tree);
+      setConversation(allMessages);
+    } catch (e) {
+      console.error('Error fetching conversations: ', e);
+    }
   }
 
   useEffect(() => {
