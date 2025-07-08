@@ -55,6 +55,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   const { theme } = useGui();
 
   const methods = useForm<IErrand>({
+    resolver: yupResolver(formSchema),
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
