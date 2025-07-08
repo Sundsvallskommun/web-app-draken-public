@@ -131,14 +131,6 @@ export const CasedataTabsWrapper: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  useEffect(() => {
-    // Need to define these variables for validation/dirty check to work??
-    const _ = Object.keys(methods.formState.dirtyFields).length;
-    const __ = methods.formState.isDirty;
-    setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [methods.getValues()]);
-
   const tabs: {
     label: string;
     content: React.ReactNode;
@@ -395,7 +387,11 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   return (
     <div className="mb-xl">
-      <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
+      <WarnIfUnsavedChanges
+        showWarning={
+          methods.formState.isDirty || unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision
+        }
+      >
         <Tabs
           className="border-1 rounded-12 bg-background-content pt-22 pl-5"
           tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
