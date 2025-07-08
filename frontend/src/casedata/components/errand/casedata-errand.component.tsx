@@ -274,13 +274,9 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                 Avbryt
                               </Button>
                               <SaveButtonComponent
-                                errand={errand}
                                 registeringNewErrand={typeof errand?.id === 'undefined'}
                                 setUnsaved={() => {}}
                                 update={() => {}}
-                                verifyAndClose={function (): void {
-                                  throw new Error('Function not implemented.');
-                                }}
                                 label="Registrera"
                                 color="vattjom"
                                 icon={<LucideIcon name="arrow-right" size={18} />}
