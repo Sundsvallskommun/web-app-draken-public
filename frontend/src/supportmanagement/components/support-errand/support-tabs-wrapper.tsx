@@ -66,59 +66,43 @@ export const SupportTabsWrapper: React.FC<{
     }
   }, [methods]);
 
+  const getMessagesAndConversations = () => {
+    getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
+    getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
+    fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+      const tree = buildTree(res);
+      setMessageTree(tree);
+      setMessages(res);
+    });
+    getSupportConversations(municipalityId, supportErrand.id).then((res) => {
+      Promise.all(
+        res.data.map((conversation: any) =>
+          getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
+            return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
+          })
+        )
+      ).then((allMessageGroups) => {
+        const allMessages = allMessageGroups.flat();
+        const conversationTree = groupByConversationIdSortedTree(allMessages);
+
+        setConversationMessageTree(conversationTree);
+        setSupportConversations(allMessages);
+      });
+    });
+  };
+
   const update = () => {
     if (supportErrand.id) {
       getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
-      getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
-      getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-      fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
-        const tree = buildTree(res);
-        setMessageTree(tree);
-        setMessages(res);
-      });
-      getSupportConversations(municipalityId, supportErrand.id).then((res) => {
-        Promise.all(
-          res.data.map((conversation: any) =>
-            getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
-              return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
-            })
-          )
-        ).then((allMessageGroups) => {
-          const allMessages = allMessageGroups.flat();
-          const conversationTree = groupByConversationIdSortedTree(allMessages);
-
-          setConversationMessageTree(conversationTree);
-          setSupportConversations(allMessages);
-        });
-      });
+      getMessagesAndConversations();
     }
   };
 
   useEffect(() => {
     if (supportErrand.id) {
-      getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
-      getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-      fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
-        const tree = buildTree(res);
-        setMessageTree(tree);
-        setMessages(res);
-      });
-      getSupportConversations(municipalityId, supportErrand.id).then((res) => {
-        Promise.all(
-          res.data.map((conversation: any) =>
-            getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
-              return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
-            })
-          )
-        ).then((allMessageGroups) => {
-          const allMessages = allMessageGroups.flat();
-          const conversationTree = groupByConversationIdSortedTree(allMessages);
-
-          setConversationMessageTree(conversationTree);
-          setSupportConversations(allMessages);
-        });
-      });
+      getMessagesAndConversations();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
 
   const tabs: {
