@@ -356,10 +356,10 @@ export const SidebarInfo: React.FC<{}> = () => {
   return (
     <div className="relative h-full flex flex-col justify-start">
       <div className="px-0 flex justify-between items-center">
-        <span className="text-base md:text-large xl:text-lead font-semibold">Information</span>
+        <span className="text-base md:text-large xl:text-lead font-semibold">Handläggning</span>
       </div>
 
-      {!errand?.administrator?.adAccount ? (
+      {/* {!errand?.administrator?.adAccount ? (
         <div className="mt-md">
           {uiPhase === UiPhase.inkommet ? (
             <p>
@@ -377,15 +377,15 @@ export const SidebarInfo: React.FC<{}> = () => {
             </p>
           )}
         </div>
-      ) : null}
+      ) : null} */}
       {errand?.id ? (
         <div className="w-full mt-md flex flex-col items-start gap-12">
           <FormControl id="administrator" className="w-full" required disabled={isErrandLocked(errand)}>
             <div className="flex justify-between">
-              <FormLabel className="flex justify-between text-small">Ansvarig handläggare</FormLabel>
+              <FormLabel className="flex justify-between text-small">Ansvarig</FormLabel>
               <Button
                 variant="link"
-                className="font-normal"
+                className="font-normal text-small"
                 size="sm"
                 disabled={errand?.administrator?.adAccount === user.username}
                 onClick={() => {
@@ -405,12 +405,12 @@ export const SidebarInfo: React.FC<{}> = () => {
               className="w-full"
               size="sm"
               data-cy="admin-input"
-              placeholder="Välj handläggare"
-              aria-label="Välj handläggare"
+              placeholder="Tilldela handläggare"
+              aria-label="Tilldela handläggare"
               {...register('admin')}
               value={admin}
             >
-              {!errand?.administrator?.adAccount ? <Select.Option>Välj handläggare</Select.Option> : null}
+              {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
               {administrators
                 .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
                 .map((a) => (
@@ -418,11 +418,14 @@ export const SidebarInfo: React.FC<{}> = () => {
                 ))}
             </Select>
           </FormControl>
-          {errand?.id && formState.dirtyFields.admin && admin !== 'Välj handläggare' ? (
+          {errand?.id && formState.dirtyFields.admin && admin !== 'Tilldela handläggare' ? (
             <Button
               color="primary"
               disabled={
-                !errand?.id || !formState.dirtyFields.admin || admin === 'Välj handläggare' || isErrandLocked(errand)
+                !errand?.id ||
+                !formState.dirtyFields.admin ||
+                admin === 'Tilldela handläggare' ||
+                isErrandLocked(errand)
               }
               loadingText="Sparar"
               loading={isLoading === 'admin'}
@@ -444,7 +447,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               !allowed
             }
           >
-            <FormLabel>Ärendestatus</FormLabel>
+            <FormLabel className="text-small">Ärendestatus</FormLabel>
             <Select
               className="w-full"
               size="sm"
