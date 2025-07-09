@@ -37,7 +37,7 @@ export const getStatusesUsingPartyId = (municipalityId: string, partyId: string)
     .get<ApiResponse<any>>(url)
     .then((res) => {
       const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
-      const sortedData = sortBy(mexErrands, 'firstSubmitted').reverse().slice(0, 12);
+      const sortedData = sortBy(mexErrands, 'firstSubmitted').slice(0, 12);
       return sortedData;
     })
     .catch((e) => {
@@ -53,7 +53,7 @@ export const getErrandStatus = (municipalityId: string, query: string) => {
     .get<ApiResponse<any>>(url)
     .then((res) => {
       const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
-      const sortedData = sortBy(mexErrands, 'firstSubmitted').reverse().slice(0, 12);
+      const sortedData = sortBy(mexErrands, 'firstSubmitted').slice(0, 12);
       return sortedData;
     })
     .catch((e) => {

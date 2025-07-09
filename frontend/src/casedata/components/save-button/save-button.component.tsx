@@ -23,13 +23,11 @@ export const SaveButtonComponent: React.FC<{
   const {
     errand,
     administrators,
-    user,
     municipalityId,
     setErrand,
   }: {
     errand: IErrand;
     administrators: Stakeholder[];
-    user: User;
     municipalityId: string;
     setErrand: (e: IErrand) => void;
   } = useAppContext();
@@ -54,8 +52,8 @@ export const SaveButtonComponent: React.FC<{
         title: 'Registrera ärende',
         content: (
           <>
-            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Inkomna
-            ärenden&quot;. Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
+            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Nya ärenden&quot;.
+            Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
             <br />
             <br />
             Vill du fortsätta med registreringen?
