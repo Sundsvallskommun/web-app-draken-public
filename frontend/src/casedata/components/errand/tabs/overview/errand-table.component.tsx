@@ -1,6 +1,6 @@
 import { Relations } from '@common/services/relations-service';
 import { Table } from '@sk-web-gui/react';
-import { StatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component';
+import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import React from 'react';
 
 interface ErrandsTableProps {
@@ -27,7 +27,7 @@ export const ErrandsTable: React.FC<ErrandsTableProps> = ({ errands, headers, ti
               {errands.map((errand, index) => (
                 <Table.Row key={`row-${index}`}>
                   <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
-                    {StatusLabelComponent(errand.status, errand.resolution)}
+                    <SupportStatusLabelComponent status={errand.status} resolution={errand.resolution} />
                   </Table.HeaderColumn>
                   <Table.Column>{errand.stakeholder.firstName + ' ' + errand.stakeholder.lastName}</Table.Column>
                   <Table.Column>{errand.errandNumber}</Table.Column>
