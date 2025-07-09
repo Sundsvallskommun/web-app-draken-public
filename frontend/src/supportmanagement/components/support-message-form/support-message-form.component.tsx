@@ -326,6 +326,44 @@ export const SupportMessageForm: React.FC<{
           setIsSending(false);
         });
       }
+      if (replying) {
+        sendSupportInternalMessage(
+          municipalityId,
+          supportErrand.id,
+          props.message?.conversationId,
+          data.messageBody,
+          data.messageAttachments
+        )
+          .then(async () => {
+            setTimeout(() => {
+              props.setUnsaved(false);
+              setValue('messageBody', emailBody);
+              clearParameters();
+              clearErrors();
+              props.setShowMessageForm(false);
+            }, 0);
+
+            const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+            setSupportErrand(updated.errand);
+
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Ditt meddelande skickades',
+              status: 'success',
+            });
+          })
+          .catch((e) => {
+            console.error(e);
+            setIsSending(false);
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Något gick fel när meddelandet skulle skickas',
+              status: 'error',
+            });
+          });
+      }
       setIsSending(false);
     } else {
       const messageData: MessageRequest = {
@@ -433,7 +471,11 @@ export const SupportMessageForm: React.FC<{
   });
 
   useEffect(() => {
-    setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0]);
+    setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || !!props.message?.conversationId);
+
+    if (!!props.message?.conversationId) {
+      setValue('contactMeans', 'relations');
+    }
     if (props.message) {
       const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
       const references = props.message?.emailHeaders?.['REFERENCES'] || [];
@@ -454,7 +496,7 @@ export const SupportMessageForm: React.FC<{
       setValue('phoneNumbers', []);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.message]);
+  }, [props.message, props.message?.conversationId]);
 
   useEffect(() => {
     getRelations(municipalityId, supportErrand.id, 'ASC').then(async (relations) => {
@@ -476,70 +518,72 @@ export const SupportMessageForm: React.FC<{
     <div className="px-40 py-8 gap-24">
       <input type="hidden" {...register('id')} />
 
-      <div className="w-full pt-16">
-        <strong className="text-md">Kontaktväg</strong>
-        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
-          {appConfig.features.useEmailContactChannel && (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useEmail-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useEmail"
-              value="email"
-              checked={contactMeans === 'email'}
-              onChange={() => setValue('contactMeans', 'email')}
-            >
-              E-post
-            </RadioButton>
-          )}
-          {appConfig.features.useSmsContactChannel && (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useSms-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useSms"
-              value="sms"
-              checked={contactMeans === 'sms'}
-              onChange={() => setValue('contactMeans', 'sms')}
-            >
-              SMS
-            </RadioButton>
-          )}
-          {Channels[supportErrand.channel] === Channels.ESERVICE ||
-          Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useWebmessage-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useWebmessage"
-              value="webmessage"
-              checked={contactMeans === 'webmessage'}
-              onChange={() => setValue('contactMeans', 'webmessage')}
-            >
-              E-tjänst
-            </RadioButton>
-          ) : null}
-          {appConfig.features.useRelations && (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useSms-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useRelations"
-              value="relations"
-              checked={contactMeans === 'relations'}
-              onChange={() => setValue('contactMeans', 'relations')}
-            >
-              Uppdatera länkat ärende
-            </RadioButton>
-          )}
-        </RadioButton.Group>
-      </div>
+      {!replying ? (
+        <div className="w-full pt-16">
+          <strong className="text-md">Kontaktväg</strong>
+          <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
+            {appConfig.features.useEmailContactChannel && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useEmail-radiobutton-true"
+                className="mr-sm mt-4"
+                name="contactMeans"
+                id="useEmail"
+                value="email"
+                checked={contactMeans === 'email'}
+                onChange={() => setValue('contactMeans', 'email')}
+              >
+                E-post
+              </RadioButton>
+            )}
+            {appConfig.features.useSmsContactChannel && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useSms-radiobutton-true"
+                className="mr-sm mt-4"
+                name="contactMeans"
+                id="useSms"
+                value="sms"
+                checked={contactMeans === 'sms'}
+                onChange={() => setValue('contactMeans', 'sms')}
+              >
+                SMS
+              </RadioButton>
+            )}
+            {Channels[supportErrand.channel] === Channels.ESERVICE ||
+            Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useWebmessage-radiobutton-true"
+                className="mr-sm mt-4"
+                name="contactMeans"
+                id="useWebmessage"
+                value="webmessage"
+                checked={contactMeans === 'webmessage'}
+                onChange={() => setValue('contactMeans', 'webmessage')}
+              >
+                E-tjänst
+              </RadioButton>
+            ) : null}
+            {appConfig.features.useRelations && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useSms-radiobutton-true"
+                className="mr-sm mt-4"
+                name="contactMeans"
+                id="useRelations"
+                value="relations"
+                checked={contactMeans === 'relations'}
+                onChange={() => setValue('contactMeans', 'relations')}
+              >
+                Uppdatera länkat ärende
+              </RadioButton>
+            )}
+          </RadioButton.Group>
+        </div>
+      ) : null}
 
-      {contactMeans === 'relations' && (
+      {contactMeans === 'relations' && !replying && (
         <div className="w-full pt-16">
           <strong className="text-md block mb-sm">Välj länkat ärende</strong>
           {relationErrands.length > 0 ? (

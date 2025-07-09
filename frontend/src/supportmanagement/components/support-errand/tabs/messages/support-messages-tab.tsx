@@ -1,19 +1,18 @@
 import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
-import { useAppContext } from '@contexts/app.context';
-import { Mail } from 'lucide-react';
-import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
-import { isSupportErrandLocked, validateAction, Status } from '@supportmanagement/services/support-errand-service';
-import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
-import React, { useEffect, useState } from 'react';
-import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
-import MessageTreeComponent from './support-messages-tree.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useTranslation } from 'next-i18next';
+import { useAppContext } from '@contexts/app.context';
+import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import {
   getDefaultEmailBody,
   getDefaultSmsBody,
 } from '@supportmanagement/components/templates/default-message-template';
-import { getConversationMessages } from '@casedata/services/casedata-conversation-service';
+import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
+import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
+import { Mail } from 'lucide-react';
+import { useTranslation } from 'next-i18next';
+import React, { useEffect, useState } from 'react';
+import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
+import MessageTreeComponent from './support-messages-tree.component';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
@@ -62,7 +61,6 @@ export const SupportMessagesTab: React.FC<{
   const onSelect = (message: Message) => {
     if (message.conversationId && message.conversationId !== '') {
       console.warn('Not implemented');
-      return;
     } else if (!message.viewed && supportErrand.assignedUserId === user.username) {
       setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
         props.update();
@@ -155,6 +153,24 @@ export const SupportMessagesTab: React.FC<{
           );
         });
         setSortedMessages(filteredMessageTree);
+      } else if (sortChannelMessages === 'DRAKEN') {
+        let filteredMessages = allMessages.filter((message: Message) => message.communicationType === 'DRAKEN');
+        allMessagesTree.filter((m) => {
+          return filteredMessages.find(
+            (x) =>
+              x.communicationID === m.communicationID &&
+              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : true)
+          );
+        });
+      } else if (sortChannelMessages === 'MINASIDOR') {
+        let filteredMessages = allMessages.filter((message: Message) => message.communicationType === 'MINASIDOR');
+        allMessagesTree.filter((m) => {
+          return filteredMessages.find(
+            (x) =>
+              x.communicationID === m.communicationID &&
+              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : true)
+          );
+        });
       } else {
         setSortedMessages(
           sortSendingTypeMessages !== 'ALL_SEND_TYPES'
@@ -218,6 +234,7 @@ export const SupportMessagesTab: React.FC<{
               <Select.Option value={'DRAKEN'}>Draken</Select.Option>
               <Select.Option value={CommunicationCommunicationTypeEnum.WEB_MESSAGE}>E-tjänst</Select.Option>
               <Select.Option value={CommunicationCommunicationTypeEnum.EMAIL}>E-post</Select.Option>
+              <Select.Option value={'MINASIDOR'}>Mina sidor</Select.Option>
               <Select.Option value={CommunicationCommunicationTypeEnum.SMS}>SMS</Select.Option>
             </Select>
           </FormControl>

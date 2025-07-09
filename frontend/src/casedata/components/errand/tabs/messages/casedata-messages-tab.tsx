@@ -17,6 +17,7 @@ import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import { MessageComposer } from './message-composer.component';
 import { MessageWrapper } from './message-wrapper.component';
 import MessageTreeComponent from './tree.component';
+import { RenderMessageReciever } from './render-message-reciever.component';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -132,6 +133,12 @@ export const CasedataMessagesTab: React.FC<{
           <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via Draken
         </>
       );
+    } else if (msg?.messageType === 'MINASIDOR') {
+      return (
+        <>
+          <LucideIcon name="mail" size="1.5rem" className="my-1" /> Via Mina sidor
+        </>
+      );
     } else {
       return <></>;
     }
@@ -171,8 +178,10 @@ export const CasedataMessagesTab: React.FC<{
             case 3:
               return message.messageType === 'EMAIL';
             case 4:
-              return message.messageType === 'SMS';
+              return message.messageType === 'MINASIDOR';
             case 5:
+              return message.messageType === 'SMS';
+            case 6:
               return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
             default:
               return true;
@@ -197,8 +206,10 @@ export const CasedataMessagesTab: React.FC<{
               case 3:
                 return node.messageType === 'EMAIL';
               case 4:
-                return node.messageType === 'SMS';
+                return node.messageType === 'MINASIDOR';
               case 5:
+                return node.messageType === 'SMS';
+              case 6:
                 return node.messageType === 'WEBMESSAGE' || !!node.externalCaseId;
               default:
                 return true;
@@ -271,8 +282,9 @@ export const CasedataMessagesTab: React.FC<{
               <Select.Option value={1}>Draken</Select.Option>
               <Select.Option value={2}>Digital brevlåda</Select.Option>
               <Select.Option value={3}>E-post</Select.Option>
-              <Select.Option value={4}>SMS</Select.Option>
-              <Select.Option value={5}>E-tjänst</Select.Option>
+              <Select.Option value={4}>Mina sidor</Select.Option>
+              <Select.Option value={5}>SMS</Select.Option>
+              <Select.Option value={6}>E-tjänst</Select.Option>
             </Select>
           </div>
         </div>
@@ -319,15 +331,22 @@ export const CasedataMessagesTab: React.FC<{
                           data-cy="sender"
                         ></strong>
                       </p>
-                      <p>
-                        <strong>Till: </strong>{' '}
-                        {selectedMessage?.messageType === 'EMAIL'
+                      <p className="text-small">
+                        <strong>Till: </strong>
+                        <strong>
+                          <RenderMessageReciever selectedMessage={selectedMessage} errand={errand} />
+                        </strong>
+                        {/* {selectedMessage?.messageType === 'EMAIL'
                           ? selectedMessage?.recipients.join(', ')
                           : selectedMessage?.messageType === 'SMS'
                           ? selectedMessage?.mobileNumber
                           : selectedMessage?.messageType === 'WEBMESSAGE' || selectedMessage?.externalCaseId
                           ? 'E-tjänst'
-                          : ''}
+                          : selectedMessage?.messageType === 'DRAKEN'
+                          ? 'Draken'
+                          : selectedMessage?.messageType === 'MINASIDOR'
+                          ? 'Mina sidor'
+                          : ''} */}
                       </p>
                       <div className="flex text-small gap-16">
                         {dayjs(selectedMessage?.sent).format('YYYY-MM-DD HH:mm')}

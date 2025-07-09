@@ -121,6 +121,10 @@ export const RenderedMessage: React.FC<{
                 <>
                   <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via Draken
                 </>
+              ) : message.messageType === 'MINASIDOR' ? (
+                <>
+                  <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
+                </>
               ) : (
                 ''
               )}

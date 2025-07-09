@@ -1,4 +1,4 @@
-import { Conversation, Message, PageMessage } from '@/data-contracts/case-data/data-contracts';
+import { Conversation, ConversationType, Message, PageMessage } from '@/data-contracts/case-data/data-contracts';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
@@ -47,6 +47,8 @@ export class CaseDataConversationController {
 
     const conversation = resConversation.data.find((c: any) => c.id === conversationId);
     const topic = conversation ? conversation.topic : undefined;
+
+    const messageType = conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
 
     url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);
@@ -97,7 +99,7 @@ export class CaseDataConversationController {
                 contentType: att?.mimeType,
               }))
             : [],
-          messageType: 'DRAKEN',
+          messageType: messageType,
           subject: topic,
           firstName,
           lastName,

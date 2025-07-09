@@ -24,17 +24,13 @@ export const SaveButtonComponent: React.FC<{
 }> = (props) => {
   const {
     administrators,
-    user,
     municipalityId,
     setErrand,
   }: {
     administrators: Stakeholder[];
-    user: User;
     municipalityId: string;
     setErrand: (e: IErrand) => void;
   } = useAppContext();
-  const [richText, setRichText] = useState<string>('');
-  const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [error, setError] = useState(false);
   const [isLoadingContinue, setIsLoadingContinue] = useState(false);
   const router = useRouter();
@@ -49,12 +45,7 @@ export const SaveButtonComponent: React.FC<{
 
   const {
     handleSubmit,
-    register,
-    control,
-    watch,
-    setValue,
     getValues,
-    trigger,
     reset,
     formState,
     formState: { errors },
@@ -74,8 +65,8 @@ export const SaveButtonComponent: React.FC<{
         title: 'Registrera ärende',
         content: (
           <>
-            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Inkomna
-            ärenden&quot;. Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
+            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Nya ärenden&quot;.
+            Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
             <br />
             <br />
             Vill du fortsätta med registreringen?

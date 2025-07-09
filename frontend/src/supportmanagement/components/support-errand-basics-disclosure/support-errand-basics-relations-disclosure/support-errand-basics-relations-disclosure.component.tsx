@@ -42,6 +42,10 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
           (stakeholder) => stakeholder.role === 'PRIMARY'
         )?.externalId;
 
+        if (!relatedPerson) {
+          return;
+        }
+
         const relatedErrands = await getRelations(municipalityId, supportErrand.id, sortOrder);
         setRelationErrands(relatedErrands);
 

@@ -3,7 +3,11 @@ import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { CornerDownRight, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus, Image } from 'lucide-react';
 import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
+import {
+  isSupportErrandLocked,
+  SupportErrand,
+  validateAction,
+} from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
@@ -12,6 +16,7 @@ import {
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
+import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
 
 export const getSender = (msg: Message) => {
   if (!msg) {
@@ -23,12 +28,23 @@ export const getSender = (msg: Message) => {
   return msg?.sender || '(okänd avsändare)';
 };
 
-export const getReciever = (msg: Message) => {
+export const getReciever = (msg: Message, supportErrand: SupportErrand) => {
   if (!msg) {
     return '';
   }
   if (msg.communicationType === 'WEB_MESSAGE') {
     return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
+  }
+  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'OUTBOUND') {
+    return getApplicantName(supportErrand);
+  }
+
+  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'INBOUND') {
+    return 'Draken';
+  }
+
+  if (msg.communicationType === 'DRAKEN') {
+    return 'Draken';
   }
   return msg?.target || '(okänd mottagare)';
 };
@@ -129,7 +145,7 @@ export const RenderedSupportMessage: React.FC<{
                   <p
                     className={cx(`mr-md break-all font-bold`)}
                     dangerouslySetInnerHTML={{
-                      __html: `Till: ${sanitized(getReciever(message))}`,
+                      __html: `Till: ${sanitized(getReciever(message, supportErrand))}`,
                     }}
                   ></p>
                 </div>
@@ -176,6 +192,12 @@ export const RenderedSupportMessage: React.FC<{
                       return (
                         <>
                           <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
+                        </>
+                      );
+                    case 'MINASIDOR':
+                      return (
+                        <>
+                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
                         </>
                       );
                     default:
