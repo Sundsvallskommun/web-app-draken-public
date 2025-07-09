@@ -336,17 +336,6 @@ export const CasedataMessagesTab: React.FC<{
                         <strong>
                           <RenderMessageReciever selectedMessage={selectedMessage} errand={errand} />
                         </strong>
-                        {/* {selectedMessage?.messageType === 'EMAIL'
-                          ? selectedMessage?.recipients.join(', ')
-                          : selectedMessage?.messageType === 'SMS'
-                          ? selectedMessage?.mobileNumber
-                          : selectedMessage?.messageType === 'WEBMESSAGE' || selectedMessage?.externalCaseId
-                          ? 'E-tjänst'
-                          : selectedMessage?.messageType === 'DRAKEN'
-                          ? 'Draken'
-                          : selectedMessage?.messageType === 'MINASIDOR'
-                          ? 'Mina sidor'
-                          : ''} */}
                       </p>
                       <div className="flex text-small gap-16">
                         {dayjs(selectedMessage?.sent).format('YYYY-MM-DD HH:mm')}

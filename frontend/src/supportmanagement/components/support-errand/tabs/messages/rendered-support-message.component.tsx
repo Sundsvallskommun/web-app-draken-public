@@ -238,7 +238,8 @@ export const RenderedSupportMessage: React.FC<{
           {message?.direction === 'INBOUND' &&
           (message.communicationType === 'EMAIL' ||
             message.communicationType === 'WEB_MESSAGE' ||
-            message.communicationType === 'DRAKEN') ? (
+            message.communicationType === 'DRAKEN' ||
+            message.communicationType === 'MINASIDOR') ? (
             <Button
               type="button"
               className="self-start"
@@ -246,11 +247,9 @@ export const RenderedSupportMessage: React.FC<{
               disabled={isSupportErrandLocked(supportErrand) || !allowed}
               size="sm"
               variant="primary"
-              onClick={async () => {
-                await onSelect(message);
-                setTimeout(() => {
-                  setShowMessageForm(true);
-                }, 0);
+              onClick={() => {
+                onSelect(message);
+                setShowMessageForm(true);
               }}
             >
               Svara

@@ -279,91 +279,55 @@ export const SupportMessageForm: React.FC<{
     const data = getValues();
     if (contactMeans === 'relations') {
       const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
-      if (selectedRelation) {
-        createSupportConversation(
+      let conversationId = undefined;
+      if (replying) {
+        conversationId = props.message?.conversationId;
+      } else if (selectedRelation) {
+        await createSupportConversation(
           municipalityId,
           supportErrand.id,
           selectedRelation.id,
           `Ärende: #${supportErrand.errandNumber}`
         ).then((res) => {
-          sendSupportInternalMessage(
-            municipalityId,
-            supportErrand.id,
-            res.data.id,
-            data.messageBody,
-            data.messageAttachments
-          )
-            .then(async () => {
-              setTimeout(() => {
-                props.setUnsaved(false);
-                setValue('messageBody', emailBody);
-                clearParameters();
-                clearErrors();
-                props.setShowMessageForm(false);
-              }, 0);
-
-              const updated = await getSupportErrandById(supportErrand.id, municipalityId);
-              setSupportErrand(updated.errand);
-
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Ditt meddelande skickades',
-                status: 'success',
-              });
-            })
-            .catch((e) => {
-              console.error(e);
-              setIsSending(false);
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Något gick fel när meddelandet skulle skickas',
-                status: 'error',
-              });
-            });
-
-          setIsSending(false);
+          conversationId = res.data.id;
         });
       }
-      if (replying) {
-        sendSupportInternalMessage(
-          municipalityId,
-          supportErrand.id,
-          props.message?.conversationId,
-          data.messageBody,
-          data.messageAttachments
-        )
-          .then(async () => {
-            setTimeout(() => {
-              props.setUnsaved(false);
-              setValue('messageBody', emailBody);
-              clearParameters();
-              clearErrors();
-              props.setShowMessageForm(false);
-            }, 0);
+      await sendSupportInternalMessage(
+        municipalityId,
+        supportErrand.id,
+        conversationId,
+        data.messageBody,
+        data.messageAttachments
+      )
+        .then(async () => {
+          setTimeout(() => {
+            props.setUnsaved(false);
+            setValue('messageBody', emailBody);
+            clearParameters();
+            clearErrors();
+            props.setShowMessageForm(false);
+          }, 0);
 
-            const updated = await getSupportErrandById(supportErrand.id, municipalityId);
-            setSupportErrand(updated.errand);
+          const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+          setSupportErrand(updated.errand);
 
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Ditt meddelande skickades',
-              status: 'success',
-            });
-          })
-          .catch((e) => {
-            console.error(e);
-            setIsSending(false);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när meddelandet skulle skickas',
-              status: 'error',
-            });
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Ditt meddelande skickades',
+            status: 'success',
           });
-      }
+        })
+        .catch((e) => {
+          console.error(e);
+          setIsSending(false);
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när meddelandet skulle skickas',
+            status: 'error',
+          });
+        });
       setIsSending(false);
     } else {
       const messageData: MessageRequest = {

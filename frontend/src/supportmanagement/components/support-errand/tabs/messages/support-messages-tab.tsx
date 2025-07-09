@@ -32,7 +32,7 @@ export const SupportMessagesTab: React.FC<{
   const [richText, setRichText] = useState<string>('');
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
-  const [sortedMessages, setSortedMessages] = useState(props.messages);
+  const [sortedMessages, setSortedMessages] = useState<Message[]>();
   const { t } = useTranslation();
 
   const allMessages = React.useMemo(
@@ -61,6 +61,7 @@ export const SupportMessagesTab: React.FC<{
   const onSelect = (message: Message) => {
     if (message.conversationId && message.conversationId !== '') {
       console.warn('Not implemented');
+      props.update();
     } else if (!message.viewed && supportErrand.assignedUserId === user.username) {
       setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
         props.update();

@@ -76,6 +76,21 @@ export const SupportTabsWrapper: React.FC<{
         setMessageTree(tree);
         setMessages(res);
       });
+      getSupportConversations(municipalityId, supportErrand.id).then((res) => {
+        Promise.all(
+          res.data.map((conversation: any) =>
+            getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
+              return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
+            })
+          )
+        ).then((allMessageGroups) => {
+          const allMessages = allMessageGroups.flat();
+          const conversationTree = groupByConversationIdSortedTree(allMessages);
+
+          setConversationMessageTree(conversationTree);
+          setSupportConversations(allMessages);
+        });
+      });
     }
   };
 
@@ -92,15 +107,16 @@ export const SupportTabsWrapper: React.FC<{
         Promise.all(
           res.data.map((conversation: any) =>
             getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
-              const allMessages = messages.data
-                .map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : []))
-                .flat();
-              const conversationTree = groupByConversationIdSortedTree(allMessages);
-              setConversationMessageTree(conversationTree);
-              setSupportConversations(allMessages);
+              return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
             })
           )
-        );
+        ).then((allMessageGroups) => {
+          const allMessages = allMessageGroups.flat();
+          const conversationTree = groupByConversationIdSortedTree(allMessages);
+
+          setConversationMessageTree(conversationTree);
+          setSupportConversations(allMessages);
+        });
       });
     }
   }, [supportErrand]);

@@ -384,6 +384,8 @@ export const MessageComposer: React.FC<{
           ? 'webmessage'
           : props.message.messageType === 'DRAKEN'
           ? 'draken'
+          : props.message.messageType === 'MINASIDOR'
+          ? 'draken' //Change value when possible to initiate conversation to MINASIDOR
           : 'email'
       );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
