@@ -50,8 +50,10 @@ export const CasedataTabsWrapper: React.FC = () => {
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   async function handleConversation(municipalityId: string, errandId: number) {
-    getConversations(municipalityId, errandId).then((res) => {
-      const fetchAndSetConversation = async (conversation: any) => {
+    try {
+      const res = await getConversations(municipalityId, errandId);
+      const allMessages: any[] = [];
+      for (const conversation of res.data) {
         try {
           const messages = await getConversationMessages(municipalityId, errandId, conversation.id);
           const mappedMessages = messages.data.map((msgRes) => {
@@ -59,17 +61,18 @@ export const CasedataTabsWrapper: React.FC = () => {
             if (msgRes) return [msgRes];
             return [];
           });
-          const allMessages = mappedMessages.flat();
-          const tree = groupByConversationIdSortedTree(allMessages);
-          setConversationTree(tree);
-          setConversation(allMessages);
+          allMessages.push(...mappedMessages.flat());
         } catch (e) {
-          console.error('Error when fetching converstaions: ', e);
+          console.error(`Error fetching messages for conversation ${conversation.id}: `, e);
         }
-      };
+      }
 
-      return Promise.all(res.data.map(fetchAndSetConversation));
-    });
+      const tree = groupByConversationIdSortedTree(allMessages);
+      setConversationTree(tree);
+      setConversation(allMessages);
+    } catch (e) {
+      console.error('Error fetching conversations: ', e);
+    }
   }
 
   useEffect(() => {
@@ -127,14 +130,6 @@ export const CasedataTabsWrapper: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
-
-  useEffect(() => {
-    // Need to define these variables for validation/dirty check to work??
-    const _ = Object.keys(methods.formState.dirtyFields).length;
-    const __ = methods.formState.isDirty;
-    setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [methods.getValues()]);
 
   const tabs: {
     label: string;
@@ -392,7 +387,11 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   return (
     <div className="mb-xl">
-      <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision}>
+      <WarnIfUnsavedChanges
+        showWarning={
+          methods.formState.isDirty || unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision
+        }
+      >
         <Tabs
           className="border-1 rounded-12 bg-background-content pt-22 pl-5"
           tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"

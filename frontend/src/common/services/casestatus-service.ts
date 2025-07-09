@@ -28,6 +28,9 @@ export const findOperationUsingNamespace = (namespace: string) => {
 };
 
 export const getStatusesUsingPartyId = (municipalityId: string, partyId: string) => {
+  if (!municipalityId || !partyId) {
+    return Promise.resolve([]);
+  }
   const url = `${municipalityId}/party/${partyId}/statuses`;
 
   return apiService

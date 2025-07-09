@@ -55,6 +55,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   const { theme } = useGui();
 
   const methods = useForm<IErrand>({
+    resolver: yupResolver(formSchema),
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -274,13 +275,9 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                 Avbryt
                               </Button>
                               <SaveButtonComponent
-                                errand={errand}
                                 registeringNewErrand={typeof errand?.id === 'undefined'}
                                 setUnsaved={() => {}}
                                 update={() => {}}
-                                verifyAndClose={function (): void {
-                                  throw new Error('Function not implemented.');
-                                }}
                                 label="Registrera"
                                 color="vattjom"
                                 icon={<LucideIcon name="arrow-right" size={18} />}

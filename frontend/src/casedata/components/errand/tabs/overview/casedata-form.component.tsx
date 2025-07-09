@@ -232,26 +232,22 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
           </div>
 
           <SaveButtonComponent
-            errand={errand}
-            registeringNewErrand={typeof errand?.id === 'undefined'}
-            label={typeof errand?.id === 'undefined' ? 'Registrera' : 'Spara'}
-            setUnsaved={setUnsaved}
+            registeringNewErrand={registeringNewErrand}
+            label={registeringNewErrand ? 'Registrera' : 'Spara'}
+            setUnsaved={() => {}}
             update={() => {}}
-            verifyAndClose={function (): void {
-              throw new Error('Function not implemented.');
-            }}
           />
         </div>
 
         {errand?.id ? (
           <CasedataContactsComponent
-            registeringNewErrand={typeof errand?.id === 'undefined'}
+            registeringNewErrand={registeringNewErrand}
             setUnsaved={setUnsaved}
             update={() => {}}
           />
         ) : null}
 
-        {appConfig.features.useRelations && errand?.id && <CaseDataRelationsDisclosure errand={errand} />}
+        {!registeringNewErrand && appConfig.features.useRelations && <CaseDataRelationsDisclosure errand={errand} />}
       </div>
     </div>
   );

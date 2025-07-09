@@ -598,6 +598,7 @@ export class SupportErrandController {
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
+      channel: 'PHONE',
       resolution: Resolution.INFORMED,
       title: 'Empty errand',
     };
