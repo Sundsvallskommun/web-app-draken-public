@@ -45,6 +45,12 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       inverted = false;
       icon = 'circle-pause';
       break;
+    case 'Inskickat':
+      color = 'vattjom';
+      break;
+    case 'Under behandling':
+      color = 'gronsta';
+      break;
     default:
       color = 'tertiary';
       break;
