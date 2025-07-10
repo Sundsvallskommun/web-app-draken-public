@@ -745,7 +745,7 @@ export const SimplifiedContactForm: React.FC<{
                 onClick={handleSubmit(onSubmit, onError)}
                 leftIcon={<LucideIcon name="plus"></LucideIcon>}
               >
-                {label}
+                Lägg till {label.toLowerCase()}
               </Button>
             </>
           </div>
@@ -761,7 +761,7 @@ export const SimplifiedContactForm: React.FC<{
             onClick={() => setManual(true)}
             disabled={props.disabled}
           >
-            {label} manuellt
+            Lägg till manuellt
           </Button>
         </div>
       )}

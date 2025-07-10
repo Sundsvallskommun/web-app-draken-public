@@ -211,7 +211,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       visit();
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockPersonNumber'));
-      cy.get('button').contains('Lägg till ärendeintressent manuellt').should('exist');
+      cy.get('button').contains('Lägg till manuellt').should('exist');
       cy.get('[data-cy="search-button-person"]').click();
       cy.wait('@notFoundAddress');
       cy.get('[data-cy="not-found-error-message"]').should('exist').and('have.text', 'Sökningen gav ingen träff');
