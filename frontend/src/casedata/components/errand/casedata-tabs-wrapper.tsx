@@ -185,6 +185,46 @@ export const CasedataTabsWrapper: React.FC = () => {
         : [],
     },
     {
+      label: `Meddelanden (${countUnreadMessages(messages)})`,
+      content: errand?.id && (
+        <CasedataMessagesTab
+          setUnsaved={() => {}}
+          update={() =>
+            setTimeout(() => {
+              getErrand(municipalityId, errand.id.toString())
+                .then((res) => {
+                  setErrand(res.errand);
+                  return res;
+                })
+                .then((res) => fetchMessagesTree(municipalityId, errand).then(setMessages))
+                .catch((e) => {
+                  toastMessage({
+                    position: 'bottom',
+                    closeable: false,
+                    message: `Något gick fel när ärendet skulle hämtas`,
+                    status: 'error',
+                  });
+                });
+              handleConversation(municipalityId, errand.id);
+            }, 500)
+          }
+        />
+      ),
+      disabled: !errand?.id,
+      visibleFor: errand?.id
+        ? [
+            ErrandPhase.aktualisering,
+            ErrandPhase.utredning,
+            ErrandPhase.beslut,
+            ErrandPhase.hantera,
+            ErrandPhase.verkstalla,
+            ErrandPhase.uppfoljning,
+            ErrandPhase.canceled,
+            ErrandPhase.overklagad,
+          ]
+        : [],
+    },
+    {
       label: `Bilagor (${(errand?.attachments && errand?.attachments.length) || 0})`,
       content: errand && <CasedataAttachments />,
       disabled: !errand?.id,
@@ -240,46 +280,6 @@ export const CasedataTabsWrapper: React.FC = () => {
               ErrandPhase.overklagad,
             ]
           : [],
-    },
-    {
-      label: `Meddelanden (${countUnreadMessages(messages)})`,
-      content: errand?.id && (
-        <CasedataMessagesTab
-          setUnsaved={() => {}}
-          update={() =>
-            setTimeout(() => {
-              getErrand(municipalityId, errand.id.toString())
-                .then((res) => {
-                  setErrand(res.errand);
-                  return res;
-                })
-                .then((res) => fetchMessagesTree(municipalityId, errand).then(setMessages))
-                .catch((e) => {
-                  toastMessage({
-                    position: 'bottom',
-                    closeable: false,
-                    message: `Något gick fel när ärendet skulle hämtas`,
-                    status: 'error',
-                  });
-                });
-              handleConversation(municipalityId, errand.id);
-            }, 500)
-          }
-        />
-      ),
-      disabled: !errand?.id,
-      visibleFor: errand?.id
-        ? [
-            ErrandPhase.aktualisering,
-            ErrandPhase.utredning,
-            ErrandPhase.beslut,
-            ErrandPhase.hantera,
-            ErrandPhase.verkstalla,
-            ErrandPhase.uppfoljning,
-            ErrandPhase.canceled,
-            ErrandPhase.overklagad,
-          ]
-        : [],
     },
     {
       label: `Utredning`,
