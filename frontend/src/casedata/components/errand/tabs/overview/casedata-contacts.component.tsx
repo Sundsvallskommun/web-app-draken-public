@@ -313,7 +313,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 allowOrganization={!isPT()}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, roles: [Role.APPLICANT] }}
-                label="Lägg till ärendeägare"
+                label="Ärendeägare"
                 id="owner"
               />
             ) : null}
@@ -329,7 +329,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         <Divider.Section>
           <div className="flex gap-sm items-center">
             <LucideIcon name="users"></LucideIcon>
-            <h2 className="text-h4-sm md:text-h4-md">Övriga ärendeintressenter</h2>
+            <h2 className="text-h4-sm md:text-h4-md">Övriga parter</h2>
           </div>
         </Divider.Section>
         <div data-cy="registered-contacts" className="my-lg px-0 md:px-24 lg:px-40 pb-40 pt-0">
@@ -341,7 +341,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 allowOrganization={!isPT()}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, roles: [Role.CONTACT_PERSON] }}
-                label="Lägg till ärendeintressent"
+                label="Övrig part"
                 id="person"
               />
             </div>
