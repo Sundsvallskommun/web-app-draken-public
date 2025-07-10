@@ -39,6 +39,7 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 
 export default function Layout({ title, children }) {
   const {
@@ -74,96 +75,6 @@ export default function Layout({ title, children }) {
     </NextLink>
   );
 
-  const StatusLabelComponent = (status: string, resolution: string) => {
-    let color,
-      inverted = false,
-      icon = null;
-    switch (status) {
-      case 'SOLVED':
-        color = 'primary';
-        icon = resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM ? 'split' : 'check';
-        break;
-      case 'ONGOING':
-        color = 'gronsta';
-        icon = 'pen';
-        break;
-      case 'NEW':
-        color = 'vattjom';
-        break;
-      case 'PENDING':
-        color = 'gronsta';
-        inverted = true;
-        icon = 'clock-10';
-        break;
-      case 'SUSPENDED':
-        color = 'warning';
-        inverted = true;
-        icon = 'circle-pause';
-        break;
-      case 'ASSIGNED':
-        color = 'warning';
-        inverted = false;
-        icon = 'circle-pause';
-        break;
-      case 'AWAITING_INTERNAL_RESPONSE':
-        color = 'gronsta';
-        inverted = true;
-        icon = 'clock-10';
-        break;
-      case 'SUSPENDED':
-        color = 'warning';
-        inverted = true;
-        icon = 'circle-pause';
-        break;
-      case 'ASSIGNED':
-        color = 'warning';
-        inverted = false;
-        icon = 'circle-pause';
-        break;
-      case 'UPSTART':
-        color = 'tertiary';
-        inverted = true;
-        break;
-      case 'PUBLISH_SELECTION':
-        color = 'vattjom';
-        inverted = true;
-        break;
-      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
-        color = 'tertiary';
-        inverted = true;
-        break;
-      case 'REFERENCE_CHECK':
-        color = 'juniskar';
-        inverted = true;
-        break;
-      case 'REVIEW':
-        color = 'warning';
-        inverted = true;
-        break;
-      case 'SECURITY_CLEARENCE':
-        color = 'bjornstigen';
-        inverted = true;
-        break;
-      case 'FEEDBACK_CLOSURE':
-        color = 'error';
-        inverted = true;
-        break;
-      default:
-        color = 'tertiary';
-        break;
-    }
-    return (
-      <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto mr-8`}>
-        {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
-        {resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED
-          ? 'Överlämnat'
-          : isROB()
-          ? StatusLabelROB[status]
-          : StatusLabel[status]}
-      </Label>
-    );
-  };
-
   const SingleErrandTitle = () => (
     <div className="flex items-center gap-24 py-10">
       <a
@@ -177,8 +88,8 @@ export default function Layout({ title, children }) {
       <span className="text-large">
         {appConfig.isSupportManagement ? (
           <>
-            {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
-            <span className="font-bold">
+            <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
+            <span className="font-bold ml-8">
               {supportMetadata?.categories
                 ?.find((t) => t.name === supportErrand.category)
                 ?.types.find((t) => t.name === supportErrand.classification.type)?.displayName ||

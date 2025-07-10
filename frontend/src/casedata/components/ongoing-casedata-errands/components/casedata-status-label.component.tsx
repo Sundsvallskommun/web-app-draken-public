@@ -14,7 +14,6 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
     case ErrandStatus.BeslutOverklagat:
     case ErrandStatus.BeslutVerkstallt:
     case ErrandStatus.Beslutad:
-
     case ErrandStatus.UnderGranskning:
     case ErrandStatus.UnderUtredning:
     case ErrandStatus.UnderBeslut:
@@ -34,12 +33,11 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       inverted = true;
       icon = 'clock-10';
       break;
-    //  Lines below to be used for suspended errands shortly
-    // case ErrandStatus.Parkerat:
-    //   color = 'warning';
-    //   inverted = true;
-    //   icon = 'circle-pause';
-    //   break;
+    case ErrandStatus.Parkerad:
+      color = 'warning';
+      inverted = true;
+      icon = 'circle-pause';
+      break;
     case ErrandStatus.Tilldelat:
       color = 'warning';
       inverted = false;
