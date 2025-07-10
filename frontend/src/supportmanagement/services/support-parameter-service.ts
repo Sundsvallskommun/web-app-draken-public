@@ -76,28 +76,28 @@ const template: ParametersObject = {
       values: ['All befintlig dokumentation är skapad och dokumenterad', 'false'],
     },
     {
-      key: 'recruitment@closure_0',
-      displayName: 'Avslut',
+      key: 'recruitment@sync',
+      displayName: 'Avstämning',
       group: 'Avstämning',
       values: ['Avstämning med chefen', 'false', ''],
+    },
+    {
+      key: 'recruitment@closure_0',
+      displayName: 'Avslut',
+      group: 'Arkivera',
+      values: ['Arkivera ansökningshandlingar', 'false', ''],
     },
     {
       key: 'recruitment@closure_1',
       displayName: 'Avslut',
       group: 'Återkoppling',
-      values: ['Återkoppling till slutkandidat', 'false', ''],
+      values: ['Återkoppling till övriga kandidater', 'false', ''],
     },
     {
       key: 'recruitment@closure_2',
       displayName: 'Avslut',
-      group: 'Återkoppling',
-      values: ['Återkoppling till övriga kandidater', 'false', ''],
-    },
-    {
-      key: 'recruitment@other_0',
-      displayName: 'Antal rekryterade',
       group: 'Antal rekryterade',
-      values: ['Antal rekryterade', undefined, '', 'number'],
+      values: ['Antal rekryterade', 'false', '', 'number'],
     },
   ],
 };
