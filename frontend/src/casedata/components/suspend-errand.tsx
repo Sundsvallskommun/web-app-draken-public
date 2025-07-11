@@ -1,13 +1,13 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { getErrand, phaseChangeInProgress, setSuspendedErrands } from '@casedata/services/casedata-errand-service';
+import { getErrand, phaseChangeInProgress, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 const yupSuspendForm = yup.object().shape({
@@ -51,9 +51,8 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
     setError(false);
-    return setSuspendedErrands(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
+    return setErrandStatus(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
       .then((res) => {
-        console.log('setSuspendedErrands response:', res);
         toastMessage({
           position: 'bottom',
           closeable: false,
