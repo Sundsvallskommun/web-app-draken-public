@@ -266,9 +266,12 @@ export const getOwnerStakeholder: (e: IErrand) => CasedataOwnerOrContact = (e) =
 export const getStakeholdersByRelation: (e: IErrand, relation: Role) => CasedataOwnerOrContact[] = (e, relation) =>
   e.stakeholders?.filter((s) => s.roles.includes(relation));
 
-export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) => Role = (s) => {
-  const relations = [...Object.entries(MEXRelation), ...Object.entries(PTRelation)].map(([key, value]) => key);
-  return s.roles.find((r) => relations.includes(r)) || undefined;
+export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) => Role | undefined = (s) => {
+  const relations = [...Object.keys(MEXRelation), ...Object.keys(PTRelation)];
+  if (s.roles.length === 1 && s.roles[0] === Role.APPLICANT) {
+    return Role.APPLICANT;
+  }
+  return s.roles.find((r) => relations.includes(r) && r !== Role.APPLICANT) || undefined;
 };
 
 export const validateOwnerForSendingDecision: (e: IErrand) => boolean = (e) =>
