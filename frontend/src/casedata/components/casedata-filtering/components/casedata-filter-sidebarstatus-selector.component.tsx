@@ -5,14 +5,12 @@ import {
   getStatusLabel,
   newStatuses,
   ongoingStatuses,
-  setSuspendedErrands,
   suspendedStatuses,
 } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button, Spinner } from '@sk-web-gui/react';
+import { Badge, Button } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
