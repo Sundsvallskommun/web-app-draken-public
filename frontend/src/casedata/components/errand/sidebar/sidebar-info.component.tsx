@@ -444,7 +444,8 @@ export const SidebarInfo: React.FC<{}> = () => {
               isErrandLocked(errand) ||
               errand.status?.statusType === ErrandStatus.Beslutad ||
               errand.phase === ErrandPhase.uppfoljning ||
-              !allowed
+              !allowed ||
+              !errand.administrator
             }
           >
             <FormLabel className="text-small">Ärendestatus</FormLabel>
