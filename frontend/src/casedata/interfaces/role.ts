@@ -28,6 +28,7 @@ export enum Role {
 }
 
 export enum MEXRelation {
+  APPLICANT = 'Ärendeägare',
   LEASEHOLDER = 'Arrendator',
   COMPANY_SIGNATORY = 'Firmatecknare',
   CASHIER = 'Kassör',
@@ -46,6 +47,7 @@ export enum MEXRelation {
 }
 
 export enum PTRelation {
+  APPLICANT = 'Ärendeägare',
   FELLOW_APPLICANT = 'Medsökande',
   DRIVER = 'Förare',
   PASSENGER = 'Passagerare',

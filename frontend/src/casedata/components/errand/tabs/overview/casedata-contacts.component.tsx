@@ -13,7 +13,7 @@ import {
   removeStakeholder,
 } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { isPT } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Divider, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
@@ -29,8 +29,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
   const [addContact, setAddContact] = useState(false);
   const [addApplicant, setAddApplicant] = useState(false);
   const [selectedContact, setSelectedContact] = useState<CasedataOwnerOrContact>();
-  const { municipalityId, errand, setErrand, user } = useAppContext();
-  // const message = useMessage();
+  const { municipalityId, errand, setErrand } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -133,7 +132,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         {selectedContact?.id === contact.id ? (
           <SimplifiedContactForm
             disabled={isErrandLocked(errand)}
-            allowRelation={true}
             setUnsaved={props.setUnsaved}
             contact={contact}
             label={`Redigera ${label.toLowerCase()}`}
@@ -173,7 +171,14 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 className="text-body"
                 onClick={() => {
                   return deleteConfirm
-                    .showConfirmation('Ta bort?', 'Vill du ta bort denna intressent?', 'Ja', 'Nej', 'info', 'info')
+                    .showConfirmation(
+                      'Ta bort?',
+                      `Vill du ta bort denna ${label?.toLowerCase() || 'intressent'}?`,
+                      'Ja',
+                      'Nej',
+                      'info',
+                      'info'
+                    )
                     .then((confirmed) => {
                       if (confirmed) {
                         onRemoveContact(contact.id, index);
@@ -308,9 +313,8 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
             {stakeholdersFields.filter((stakeholder, idx) => stakeholder.roles.includes(Role.APPLICANT)).length ===
             0 ? (
               <SimplifiedContactForm
+                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 disabled={isErrandLocked(errand)}
-                allowRelation={true}
-                allowOrganization={!isPT()}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, roles: [Role.APPLICANT] }}
                 label="Ärendeägare"
@@ -336,9 +340,8 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
           {addContact ? (
             <div className="w-full mt-md">
               <SimplifiedContactForm
+                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 disabled={isErrandLocked(errand)}
-                allowRelation={true}
-                allowOrganization={!isPT()}
                 setUnsaved={props.setUnsaved}
                 contact={{ ...emptyContact, roles: [Role.CONTACT_PERSON] }}
                 label="Övrig part"
