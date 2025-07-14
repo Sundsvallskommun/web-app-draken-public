@@ -76,6 +76,13 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       });
   };
 
+  if (
+    errand?.status?.statusType === ErrandStatus.InterntAterkoppling ||
+    errand?.status?.statusType === ErrandStatus.VantarPaKomplettering
+  ) {
+    return null;
+  }
+
   return (
     <>
       {!(errand?.status?.statusType === ErrandStatus.Parkerad) ? (

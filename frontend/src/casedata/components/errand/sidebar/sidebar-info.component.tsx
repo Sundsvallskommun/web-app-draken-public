@@ -462,7 +462,12 @@ export const SidebarInfo: React.FC<{}> = () => {
           </>
         ) : (
           <>
-            <PhaseChanger />
+            {errand?.status?.statusType === ErrandStatus.InterntAterkoppling ||
+            errand?.status?.statusType === ErrandStatus.VantarPaKomplettering ? (
+              <ResumeErrandButton disabled={!isErrandAdmin(errand, user)} />
+            ) : (
+              <PhaseChanger />
+            )}
             {uiPhase !== UiPhase.registrerad && (
               <Button
                 leftIcon={<LucideIcon name="mail" />}
