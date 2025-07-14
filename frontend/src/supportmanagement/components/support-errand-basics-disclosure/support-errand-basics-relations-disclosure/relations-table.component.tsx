@@ -4,12 +4,14 @@ import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-cased
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { findStatusLabelForStatusKey } from '@casedata/services/casedata-errand-service';
+import { Relations } from '@common/services/relations-service';
+import { CaseLabels } from '@casedata/interfaces/case-label';
 
 interface ErrandsTableProps {
   errands: CaseStatusResponse[];
   headers: React.ReactNode;
-  linkedStates: boolean[];
-  handleLinkClick: (index: number) => void;
+  linkedStates: Relations[];
+  handleLinkClick: (index: string) => void;
   title: string;
   dataCy: string;
 }
@@ -51,17 +53,20 @@ export const ErrandsTable: React.FC<ErrandsTableProps> = ({
             <Table.Body>
               {errands.map((errand, index) => (
                 <Table.Row key={`row-${index}`}>
-                  <Table.HeaderColumn scope="row" className="w-[20rem] overflow-hidden text-ellipsis table-caption">
+                  <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
                     <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status)} />
                   </Table.HeaderColumn>
-                  <Table.Column className="w-[19rem]">{errand.caseType}</Table.Column>
-                  <Table.Column>{findOperationUsingNamespace(errand.namespace)}</Table.Column>
-                  <Table.Column>
-                    {errand.errandNumber.split('-').slice(1).join('-') || errand.errandNumber}
+                  <Table.Column className="w-[17rem]">
+                    {CaseLabels.ALL[errand.caseType] ?? errand.caseType}
                   </Table.Column>
+                  <Table.Column>{findOperationUsingNamespace(errand.namespace)}</Table.Column>
+                  <Table.Column>{errand.errandNumber}</Table.Column>
                   <Table.Column className="w-[15.4rem]">
                     <div className="flex justify-center">
-                      <LinkButtonComponent isLinked={linkedStates[index]} onClick={() => handleLinkClick(index)} />
+                      <LinkButtonComponent
+                        isLinked={linkedStates.some((relation) => relation.target.resourceId === errand.caseId)}
+                        onClick={() => handleLinkClick(errand.caseId)}
+                      />
                     </div>
                   </Table.Column>
                 </Table.Row>

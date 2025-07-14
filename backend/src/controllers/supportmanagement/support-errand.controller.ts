@@ -598,6 +598,7 @@ export class SupportErrandController {
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
+      channel: 'PHONE',
       resolution: Resolution.INFORMED,
       title: 'Empty errand',
     };
@@ -859,7 +860,7 @@ export class SupportErrandController {
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
-    const CASEDATA_SERVICE = `case-data/11.0`;
+    const CASEDATA_SERVICE = `case-data/11.5`;
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
       .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand }, req.user)

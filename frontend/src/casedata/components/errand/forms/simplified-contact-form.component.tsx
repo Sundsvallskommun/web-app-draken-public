@@ -1,5 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
-import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
+import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -13,7 +13,7 @@ import {
   searchOrganization,
   searchPerson,
 } from '@common/services/adress-service';
-import { isMEX, isPT } from '@common/services/application-service';
+import { isPT } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -29,20 +29,20 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Input,
+  isArray,
   Modal,
   RadioButton,
-  Select,
-  cx,
-  isArray,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { ContactRelationSelect } from './contact-relation-select.component';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,
@@ -69,7 +69,6 @@ export const emptyContact: CasedataOwnerOrContact = {
 
 export const SimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
-  allowRelation?: boolean;
   contact: CasedataOwnerOrContact;
   setUnsaved: (unsaved: boolean) => void;
   disabled?: boolean;
@@ -79,7 +78,6 @@ export const SimplifiedContactForm: React.FC<{
 }> = (props) => {
   const {
     allowOrganization = false,
-    allowRelation = false,
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
@@ -90,37 +88,42 @@ export const SimplifiedContactForm: React.FC<{
   const yupContact = yup.object().shape(
     {
       id: yup.string(),
-      personalNumber: yup.string().when('stakeholderType', {
+      personalNumber: yup.string().when(['stakeholderType'], {
         is: (type: string) => type === 'PERSON',
-        then: yup
-          .string()
-          .trim()
-          .matches(ssnPattern, invalidSsnMessage)
-          .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+        then: (schema) =>
+          schema
+            .trim()
+            .matches(ssnPattern, invalidSsnMessage)
+            .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+        otherwise: (schema) => schema,
       }),
       personId: yup.string(),
       stakeholderType: yup.string(),
-      organizationName: yup.string().when(['stakeholderType', 'lastName'], {
-        is: (sType: string, lastName: string) =>
-          sType === 'ORGANIZATION' && (searchMode === 'organization' || searchMode === 'enterprise'),
-        then: yup.string().required('Organisationsnamn måste anges'),
+      organizationName: yup.string().when(['stakeholderType', 'lastName'], ([sType, lastName], schema) => {
+        if (sType === 'ORGANIZATION' && (searchMode === 'organization' || searchMode === 'enterprise')) {
+          return schema.required('Organisationsnamn måste anges');
+        }
+        return schema;
       }),
-      organizationNumber: yup.string().when('stakeholderType', {
+      organizationNumber: yup.string().when(['stakeholderType'], {
         is: (type: string) => type === 'ORGANIZATION',
-        then: yup
-          .string()
-          .trim()
-          .matches(orgNumberPattern, invalidOrgNumberMessage)
-          .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+        then: (schema) =>
+          schema
+            .trim()
+            .matches(orgNumberPattern, invalidOrgNumberMessage)
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+        otherwise: (schema) => schema,
       }),
 
-      firstName: yup.string().when('organizationName', {
+      firstName: yup.string().when(['organizationName'], {
         is: (_: string) => searchMode === 'person',
-        then: yup.string().required('Förnamn måste anges'),
+        then: (schema) => schema.required('Förnamn måste anges'),
+        otherwise: (schema) => schema,
       }),
-      lastName: yup.string().when('organizationName', {
+      lastName: yup.string().when(['organizationName'], {
         is: (_: string) => searchMode === 'person',
-        then: yup.string().required('Efternamn måste anges'),
+        then: (schema) => schema.required('Efternamn måste anges'),
+        otherwise: (schema) => schema,
       }),
       relation: yup.string(),
 
@@ -171,8 +174,8 @@ export const SimplifiedContactForm: React.FC<{
               })
             )
             .min(1, 'Ange minst en e-postadress och ett telefonnummer'),
-      primaryContact: yup.boolean(),
-      messageAllowed: yup.boolean(),
+      // primaryContact: yup.boolean(),
+      // messageAllowed: yup.boolean(),
       roles: yup.array().of(yup.string()),
     },
     [
@@ -210,7 +213,7 @@ export const SimplifiedContactForm: React.FC<{
     reset,
     formState: { errors },
   } = useForm<CasedataOwnerOrContact>({
-    resolver: yupResolver(yupContact),
+    resolver: yupResolver(yupContact) as any,
     defaultValues: contact,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -262,16 +265,6 @@ export const SimplifiedContactForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, contact]);
 
-  const validEmailOrPhonenumberExists = () =>
-    (emails && emails.length > 0 && !errors.emails) || (phoneNumbers && phoneNumbers.length > 0);
-
-  useEffect(() => {
-    if (!validEmailOrPhonenumberExists()) {
-      // setValue(`messageAllowed`, false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emails, phoneNumbers]);
-
   useEffect(() => {
     if (
       (manual || editing) &&
@@ -289,6 +282,10 @@ export const SimplifiedContactForm: React.FC<{
       apiCall = editStakeholder;
     } else {
       apiCall = addStakeholder;
+    }
+
+    if (getValues().newRole === Role.APPLICANT && getValues().relation === getValues().newRole) {
+      setValue('relation', '');
     }
     apiCall(municipalityId, errand.id.toString(), getValues())
       .then((res) => {
@@ -690,38 +687,13 @@ export const SimplifiedContactForm: React.FC<{
                 />
               </div>
 
-              {allowRelation ? (
-                <FormControl id={`contact-relation`} size="sm" className="w-full">
-                  <FormLabel>Roll</FormLabel>
-                  <Select
-                    data-cy={`roll-select`}
-                    disabled={props.disabled}
-                    {...register(`relation`)}
-                    className={cx(formState.errors.relation ? 'border-2 border-error' : null, 'w-full')}
-                  >
-                    <Select.Option key="" value="">
-                      Välj roll
-                    </Select.Option>
-                    {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
-                      .sort((a, b) => (a[1] > b[1] ? 1 : -1))
-                      .map(([key, relation]) => {
-                        return (
-                          <Select.Option key={key} value={key}>
-                            {relation}
-                          </Select.Option>
-                        );
-                      })}
-                  </Select>
-
-                  {errors && formState.errors.relation && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{formState.errors.relation?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              ) : (
-                <div className="w-1/2"></div>
-              )}
+              <ContactRelationSelect
+                contact={contact}
+                register={register}
+                errors={errors}
+                disabled={props.disabled}
+                className="w-full"
+              />
 
               {(formState.errors.emails || formState.errors.phoneNumbers) && (
                 <div className="flex gap-lg my-sm text-error">
@@ -740,7 +712,7 @@ export const SimplifiedContactForm: React.FC<{
                 onClick={handleSubmit(onSubmit, onError)}
                 leftIcon={<LucideIcon name="plus"></LucideIcon>}
               >
-                {label}
+                Lägg till {label.toLowerCase()}
               </Button>
             </>
           </div>
@@ -756,12 +728,17 @@ export const SimplifiedContactForm: React.FC<{
             onClick={() => setManual(true)}
             disabled={props.disabled}
           >
-            {label} manuellt
+            Lägg till manuellt
           </Button>
         </div>
       )}
 
-      <Modal show={manual || editing} className="w-[56rem]" onClose={closeHandler} label={label}>
+      <Modal
+        show={manual || editing}
+        className="w-[56rem]"
+        onClose={closeHandler}
+        label={manual ? `Lägg till ${label.toLowerCase()}` : `Redigera ${label.toLowerCase()}`}
+      >
         <Modal.Content className="p-0">
           {allowOrganization ? searchModeSelector('modal') : null}
           {searchMode === 'person' ? (
@@ -787,38 +764,13 @@ export const SimplifiedContactForm: React.FC<{
                     </div>
                   )}
                 </FormControl>
-                {allowRelation ? (
-                  <FormControl id={`contact-relation`} className="w-1/2" size="sm">
-                    <FormLabel>Roll</FormLabel>
-                    <Select
-                      data-cy={`roll-select`}
-                      disabled={props.disabled}
-                      {...register(`relation`)}
-                      className="w-full"
-                    >
-                      <Select.Option key="" value="">
-                        Välj roll
-                      </Select.Option>
-                      {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
-                        .sort((a, b) => (a[1] > b[1] ? 1 : -1))
-                        .map(([key, relation]) => {
-                          return (
-                            <Select.Option key={key} value={key}>
-                              {relation}
-                            </Select.Option>
-                          );
-                        })}
-                    </Select>
-
-                    {errors && formState.errors.relation && (
-                      <div className="my-sm text-error">
-                        <FormErrorMessage>{formState.errors.relation?.message}</FormErrorMessage>
-                      </div>
-                    )}
-                  </FormControl>
-                ) : (
-                  <div className="w-1/2"></div>
-                )}
+                <ContactRelationSelect
+                  contact={contact}
+                  register={register}
+                  errors={errors}
+                  disabled={props.disabled}
+                  className="w-1/2"
+                />
               </div>
               <div className="flex gap-lg">
                 <FormControl id={`firstName`} className="w-1/2">
@@ -888,38 +840,13 @@ export const SimplifiedContactForm: React.FC<{
                     </div>
                   )}
                 </FormControl>
-                {allowRelation ? (
-                  <FormControl id={`contact-relation`} className="w-1/2" size="sm">
-                    <FormLabel>Roll</FormLabel>
-                    <Select
-                      data-cy={`roll-select`}
-                      disabled={props.disabled}
-                      {...register(`relation`)}
-                      className={cx(formState.errors.relation ? 'border-2 border-error' : null, 'w-full')}
-                    >
-                      <Select.Option key="" value="">
-                        Välj roll
-                      </Select.Option>
-                      {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
-                        .sort((a, b) => (a[1] > b[1] ? 1 : -1))
-                        .map(([key, relation]) => {
-                          return (
-                            <Select.Option key={key} value={key}>
-                              {relation}
-                            </Select.Option>
-                          );
-                        })}
-                    </Select>
-
-                    {errors && formState.errors.relation && (
-                      <div className="my-sm text-error">
-                        <FormErrorMessage>{formState.errors.relation?.message}</FormErrorMessage>
-                      </div>
-                    )}
-                  </FormControl>
-                ) : (
-                  <div className="w-1/2"></div>
-                )}
+                <ContactRelationSelect
+                  contact={contact}
+                  register={register}
+                  errors={errors}
+                  disabled={props.disabled}
+                  className="w-1/2"
+                />
               </div>
               <FormControl id={`organizationName`} className="w-full">
                 <FormLabel>Organisationsnamn</FormLabel>
@@ -1071,7 +998,7 @@ export const SimplifiedContactForm: React.FC<{
                 onClick={handleSubmit(onSubmit, onError)}
                 data-cy="contact-form-save-button"
               >
-                {editing ? 'Spara uppgifter' : label}
+                {editing ? 'Ändra uppgifter' : 'Lägg till uppgifter'}
               </Button>
             </div>
           </div>

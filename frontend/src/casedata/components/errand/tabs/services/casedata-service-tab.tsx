@@ -1,9 +1,24 @@
-import { useState } from 'react';
+'use client';
+
+import {
+  FormControl,
+  FormLabel,
+  Button,
+  Select,
+  RadioButton,
+  Checkbox,
+  DatePicker,
+  Combobox,
+  cx,
+} from '@sk-web-gui/react';
+import { useRef, useState } from 'react';
 import { Modal } from '@sk-web-gui/react';
 import { CasedataServiceForm } from './casedata-service-form.component';
 import { ServiceListComponent } from './casedata-service-list.component';
+import dynamic from 'next/dynamic';
 import { Service } from './casedata-service-item.component';
 import { v4 as uuidv4 } from 'uuid';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const CasedataServicesTab: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
@@ -30,11 +45,9 @@ export const CasedataServicesTab: React.FC = () => {
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
         service kunden har rätt till vid sina resor.
       </p>
-
       <div className="mt-24">
         <CasedataServiceForm onSubmit={handleAddService} onCancel={() => {}} />
       </div>
-
       <div className="mt-32 pt-24">
         <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
         <ServiceListComponent

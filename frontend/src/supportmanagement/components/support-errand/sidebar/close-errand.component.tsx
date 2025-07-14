@@ -94,7 +94,14 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         color="vattjom"
         data-cy="solved-button"
         leftIcon={<LucideIcon name="check" />}
-        variant={shouldShowResumeErrandButton(supportErrand?.status as Status) ? 'secondary' : 'primary'}
+        variant={
+          !!(supportErrand?.status as Status) &&
+          [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(
+            supportErrand?.status as Status
+          )
+            ? 'secondary'
+            : 'primary'
+        }
         disabled={disabled}
         onClick={() => {
           setShowModal(true);

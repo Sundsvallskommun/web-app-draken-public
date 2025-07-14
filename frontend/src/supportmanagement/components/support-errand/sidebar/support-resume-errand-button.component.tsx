@@ -9,7 +9,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 
-export const ResumeErrand: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();

@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { FormControl, FormLabel, Select, Combobox, RadioButton, Checkbox, DatePicker, Button } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+import dynamic from 'next/dynamic';
 import { v4 as uuidv4 } from 'uuid';
-
 import { serviceTravelTypes, serviceModeOfTransportation, serviceAids, serviceAddons } from './service';
 import { Service } from './casedata-service-item.component';
-
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 interface Props {
   initialService?: Service;
   onSubmit: (service: Service) => void;
@@ -250,15 +249,18 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
       </div>
 
       <div className="mt-24 h-[19rem]">
-        <RichTextEditor
+        <TextEditor
+          className="mb-md h-[80%]"
           ref={quillRef}
-          value={serviceText}
-          onChange={setServiceText}
-          isMaximizable={false}
-          containerLabel="service"
+          defaultValue={serviceText}
+          onTextChange={(_delta, _oldDelta, source) => {
+            if (quillRef.current) {
+              const html = quillRef.current.root.innerHTML;
+              setServiceText(html);
+            }
+          }}
         />
       </div>
-
       <div className="mt-24 pt-24">
         <Button leftIcon={<LucideIcon name="check" />} variant="primary" size="md" onClick={handleSubmit}>
           {initialService ? 'Spara ändringar' : 'Lägg till insats'}

@@ -1,5 +1,4 @@
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useMediaQuery } from '@mui/material';
 import { SearchField, useGui } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -17,8 +16,6 @@ export const SupportManagementFilterQuery: React.FC = () => {
   const value = watch('query');
   const [query, setQuery] = useState<string>(value);
   const gui = useGui();
-
-  const isMobile = useMediaQuery(`screen and (max-width: ${gui.theme.screens.md})`);
 
   useDebounceEffect(
     () => {

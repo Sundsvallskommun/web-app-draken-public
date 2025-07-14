@@ -400,7 +400,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedUserId: undefined,
   assignedGroupId: undefined,
   resolution: 'INFORMED',
-  channel: ContactChannelType.PHONE,
+  channel: 'PHONE',
   municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',

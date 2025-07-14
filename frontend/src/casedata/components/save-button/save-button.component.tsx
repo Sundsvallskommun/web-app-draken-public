@@ -6,15 +6,13 @@ import { User } from '@common/interfaces/user';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { stakeholder2Contact } from '@casedata/services/casedata-stakeholder-service';
 import { Role } from '@casedata/interfaces/role';
 
 export const SaveButtonComponent: React.FC<{
-  errand: IErrand;
-  verifyAndClose: () => void;
   registeringNewErrand?: boolean;
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
@@ -23,19 +21,18 @@ export const SaveButtonComponent: React.FC<{
   icon?: JSX.Element;
 }> = (props) => {
   const {
+    errand,
     administrators,
-    user,
     municipalityId,
     setErrand,
   }: {
+    errand: IErrand;
     administrators: Stakeholder[];
-    user: User;
     municipalityId: string;
     setErrand: (e: IErrand) => void;
   } = useAppContext();
-  const [richText, setRichText] = useState<string>('');
-  const [modalAction, setModalAction] = useState<() => Promise<any>>();
   const [error, setError] = useState(false);
+  const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const [isLoadingContinue, setIsLoadingContinue] = useState(false);
   const router = useRouter();
   const saveConfirm = useConfirm();
@@ -45,41 +42,18 @@ export const SaveButtonComponent: React.FC<{
     content: 'Vill du spara ärendet?',
   });
 
-  const { errand, verifyAndClose, setUnsaved, update, registeringNewErrand } = props;
+  const { registeringNewErrand } = props;
 
-  const {
-    handleSubmit,
-    register,
-    control,
-    watch,
-    setValue,
-    getValues,
-    trigger,
-    reset,
-    formState,
-    formState: { errors },
-  }: UseFormReturn<IErrand, any, undefined> = useFormContext();
-
-  const [doneSaving, setDoneSaving] = useState(false);
-  useEffect(() => {
-    if (errand?.id && doneSaving) {
-      router.push(
-        `/arende/${municipalityId}/${errand.errandNumber}`,
-        `/arende/${municipalityId}/${errand.errandNumber}`,
-        { shallow: true }
-      );
-    }
-  }, [doneSaving, errand?.id, errand?.errandNumber, municipalityId, router]);
+  const { handleSubmit, getValues, reset, formState }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   useEffect(() => {
-    const registeringNewErrand = typeof errand?.id === 'undefined';
     if (registeringNewErrand) {
       setConfirmContent({
         title: 'Registrera ärende',
         content: (
           <>
-            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Inkomna
-            ärenden&quot;. Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
+            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Nya ärenden&quot;.
+            Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
             <br />
             <br />
             Vill du fortsätta med registreringen?
@@ -98,7 +72,7 @@ export const SaveButtonComponent: React.FC<{
     console.error('Some error', errors);
   };
 
-  const onSubmit = (close: boolean) => {
+  const onSubmit = () => {
     const data: IErrand = getValues();
     if (formState.dirtyFields['administratorName']) {
       data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
@@ -146,40 +120,20 @@ export const SaveButtonComponent: React.FC<{
     setIsLoading(true);
     return saveErrand(dataToSave)
       .then(async (res) => {
-        setIsLoading(false);
-        setUnsaved(false);
-        update();
-        if (close) {
-          verifyAndClose();
-        }
-        if (!res.errandSuccessful) {
-          throw new Error('Errand could not be registered');
-        }
-
-        const e = await getErrand(municipalityId, res.errandId);
-        setErrand(e.errand);
-
         if (registeringNewErrand) {
-          setUnsaved(false);
-          setTimeout(() => {
-            reset(e.errand);
-          }, 0);
+          reset();
+          setErrandNumber(res.errand?.errandNumber);
+        } else {
+          const saved = await getErrand(municipalityId, res.errandId);
+          setErrand(saved.errand);
         }
-        setTimeout(() => {
-          reset(e.errand);
-        }, 0);
+        setIsLoading(false);
         toastMessage({
           position: 'bottom',
           closeable: false,
           message: 'Ärendet sparades',
           status: 'success',
         });
-        return true;
-      })
-      .then(() => {
-        if (registeringNewErrand) {
-          setDoneSaving(true);
-        }
       })
       .catch((e) => {
         console.error('Error when updating errand:', e);
@@ -195,7 +149,15 @@ export const SaveButtonComponent: React.FC<{
       });
   };
 
-  const onSubmitAndContinue = () => onSubmit(false);
+  useEffect(() => {
+    setTimeout(() => {
+      if (errandNumber && window.location.pathname.includes('registrera') && !formState.isDirty) {
+        console.log('Redirecting to errand page after registration, formState.isDirty:', formState.isDirty);
+        router.push(`/arende/${municipalityId}/${errandNumber}`);
+      }
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.isDirty, errandNumber]);
 
   return (
     <div>
@@ -214,7 +176,7 @@ export const SaveButtonComponent: React.FC<{
                 .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
                 .then((confirmed) => {
                   if (confirmed) {
-                    onSubmitAndContinue();
+                    onSubmit();
                   }
                   return confirmed ? () => true : () => {};
                 });

@@ -1,23 +1,16 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIK, isKA, isKC, isLOP, isROB } from '@common/services/application-service';
+import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { useMediaQuery } from '@mui/material';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Input, Label, Pagination, Select, Spinner, Table, useGui } from '@sk-web-gui/react';
+import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
+import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Channels,
-  Resolution,
-  ResolutionLabelIK,
-  ResolutionLabelKA,
-  ResolutionLabelLOP,
-  ResolutionLabelROB,
   Status,
-  StatusLabel,
-  StatusLabelROB,
   SupportErrand,
   getLabelCategory,
   getLabelSubType,
@@ -29,8 +22,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
-import { appConfig } from '@config/appconfig';
+import { SupportStatusLabelComponent } from './support-status-label.component';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -49,8 +41,6 @@ export const SupportErrandsTable: React.FC = () => {
   const page = watch('page');
   const [categories, setCategories] = useState<Category[]>();
 
-  const { theme } = useGui();
-  const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
   const currentStatusHaserrands =
     data.errands.filter((e) => {
       return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;
@@ -147,96 +137,6 @@ export const SupportErrandsTable: React.FC = () => {
     </Table.HeaderColumn>
   ));
 
-  const StatusLabelComponent = (status: string, resolution: string) => {
-    const solvedErrandIcon = () => {
-      if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
-      else if (resolution === Resolution.CLOSED) return 'check';
-      else if (resolution === Resolution.BACK_TO_MANAGER) return 'redo';
-      else if (resolution === Resolution.BACK_TO_HR) return 'redo';
-      else if (status === 'SOLVED') return 'check';
-    };
-    let color,
-      inverted = false,
-      icon = null;
-    switch (status) {
-      case 'SOLVED':
-        color = 'primary';
-        icon = solvedErrandIcon();
-        break;
-      case 'ONGOING':
-        color = 'gronsta';
-        icon = 'pen';
-        break;
-      case 'NEW':
-        color = 'vattjom';
-        break;
-      case 'PENDING':
-        color = 'gronsta';
-        inverted = true;
-        icon = 'clock-10';
-        break;
-      case 'AWAITING_INTERNAL_RESPONSE':
-        color = 'gronsta';
-        inverted = true;
-        icon = 'clock-10';
-        break;
-      case 'SUSPENDED':
-        color = 'warning';
-        inverted = true;
-        icon = 'circle-pause';
-        break;
-      case 'ASSIGNED':
-        color = 'warning';
-        inverted = false;
-        icon = 'circle-pause';
-        break;
-      case 'UPSTART':
-        color = 'tertiary';
-        inverted = true;
-        break;
-      case 'PUBLISH_SELECTION':
-        color = 'vattjom';
-        inverted = true;
-        break;
-      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
-        color = 'tertiary';
-        inverted = true;
-        break;
-      case 'REFERENCE_CHECK':
-        color = 'juniskar';
-        inverted = true;
-        break;
-      case 'REVIEW':
-        color = 'warning';
-        inverted = true;
-        break;
-      case 'SECURITY_CLEARENCE':
-        color = 'bjornstigen';
-        inverted = true;
-        break;
-      case 'FEEDBACK_CLOSURE':
-        color = 'error';
-        inverted = true;
-        break;
-      default:
-        color = 'tertiary';
-        break;
-    }
-
-    const solvedErrandText = () => {
-      if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED) return 'Överlämnat';
-      else if (resolution === Resolution.CLOSED && status === Status.SOLVED) return 'Avslutat';
-      else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
-      else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';
-      else return isROB() ? StatusLabelROB[status] : StatusLabel[status];
-    };
-    return (
-      <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-        {icon ? <LucideIcon name={icon} size={16} /> : null} {solvedErrandText()}
-      </Label>
-    );
-  };
-
   const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
     const primaryStakeholder = errand.stakeholders.find((primary) => primary.role === 'PRIMARY');
     if (primaryStakeholder) {
@@ -265,7 +165,9 @@ export const SupportErrandsTable: React.FC = () => {
         onClick={() => openErrandeInNewWindow(errand)}
         className="cursor-pointer"
       >
-        <Table.Column>{StatusLabelComponent(errand.status, errand.resolution)}</Table.Column>
+        <Table.Column>
+          <SupportStatusLabelComponent status={errand.status} resolution={errand.resolution} />
+        </Table.Column>
         <Table.Column>
           {!!notification ? (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">

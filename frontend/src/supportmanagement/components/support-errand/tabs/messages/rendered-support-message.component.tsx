@@ -3,7 +3,11 @@ import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { CornerDownRight, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus, Image } from 'lucide-react';
 import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
+import {
+  isSupportErrandLocked,
+  SupportErrand,
+  validateAction,
+} from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
@@ -11,23 +15,36 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
+import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
 
 export const getSender = (msg: Message) => {
   if (!msg) {
     return '';
   }
   if (msg.communicationType === 'WEB_MESSAGE') {
-    return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'OpenE';
+    return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
   }
   return msg?.sender || '(okänd avsändare)';
 };
 
-export const getReciever = (msg: Message) => {
+export const getReciever = (msg: Message, supportErrand: SupportErrand) => {
   if (!msg) {
     return '';
   }
   if (msg.communicationType === 'WEB_MESSAGE') {
-    return msg.direction === 'INBOUND' ? 'Draken' : 'OpenE';
+    return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
+  }
+  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'OUTBOUND') {
+    return getApplicantName(supportErrand);
+  }
+
+  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'INBOUND') {
+    return 'Draken';
+  }
+
+  if (msg.communicationType === 'DRAKEN') {
+    return 'Draken';
   }
   return msg?.target || '(okänd mottagare)';
 };
@@ -59,7 +76,7 @@ export const RenderedSupportMessage: React.FC<{
   // the first "-----Ursprungligt meddelande-----" line, so that only the
   // last message body is shown.
   const answerMessage =
-    Array.isArray(message.emailHeaders.IN_REPLY_TO) &&
+    Array.isArray(message.emailHeaders?.IN_REPLY_TO) &&
     // message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
     message.messageBody.replace(/\<br\>\<br\>\<br\>\<br\>/g, '<p><br></p>');
 
@@ -99,6 +116,7 @@ export const RenderedSupportMessage: React.FC<{
           update();
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, supportErrand]);
 
   return (
@@ -127,7 +145,7 @@ export const RenderedSupportMessage: React.FC<{
                   <p
                     className={cx(`mr-md break-all font-bold`)}
                     dangerouslySetInnerHTML={{
-                      __html: `Till: ${sanitized(getReciever(message))}`,
+                      __html: `Till: ${sanitized(getReciever(message, supportErrand))}`,
                     }}
                   ></p>
                 </div>
@@ -150,21 +168,42 @@ export const RenderedSupportMessage: React.FC<{
                 </>
               ) : null}
               <span className="flex text-xs whitespace-nowrap items-center">
-                {message.communicationType === 'SMS' ? (
-                  <>
-                    <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
-                  </>
-                ) : message.communicationType === 'EMAIL' ? (
-                  <>
-                    <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
-                  </>
-                ) : message.communicationType === 'WEB_MESSAGE' ? (
-                  <>
-                    <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
-                  </>
-                ) : (
-                  ''
-                )}
+                {(() => {
+                  switch (message.communicationType) {
+                    case 'SMS':
+                      return (
+                        <>
+                          <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
+                        </>
+                      );
+                    case 'EMAIL':
+                      return (
+                        <>
+                          <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
+                        </>
+                      );
+                    case 'WEB_MESSAGE':
+                      return (
+                        <>
+                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                        </>
+                      );
+                    case 'DRAKEN':
+                      return (
+                        <>
+                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
+                        </>
+                      );
+                    case 'MINASIDOR':
+                      return (
+                        <>
+                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
+                        </>
+                      );
+                    default:
+                      return '';
+                  }
+                })()}
               </span>
             </div>
             {getMessageOwner(message)}
@@ -197,7 +236,10 @@ export const RenderedSupportMessage: React.FC<{
             }}
           ></p>
           {message?.direction === 'INBOUND' &&
-          (message.communicationType === 'EMAIL' || message.communicationType === 'WEB_MESSAGE') ? (
+          (message.communicationType === 'EMAIL' ||
+            message.communicationType === 'WEB_MESSAGE' ||
+            message.communicationType === 'DRAKEN' ||
+            message.communicationType === 'MINASIDOR') ? (
             <Button
               type="button"
               className="self-start"
@@ -205,11 +247,9 @@ export const RenderedSupportMessage: React.FC<{
               disabled={isSupportErrandLocked(supportErrand) || !allowed}
               size="sm"
               variant="primary"
-              onClick={async () => {
-                await onSelect(message);
-                setTimeout(() => {
-                  setShowMessageForm(true);
-                }, 0);
+              onClick={() => {
+                onSelect(message);
+                setShowMessageForm(true);
               }}
             >
               Svara
@@ -222,40 +262,76 @@ export const RenderedSupportMessage: React.FC<{
             expanded ? '' : 'max-h-0 overflow-hidden'
           } transition-[max-height] ease-in-out`}
         >
-          {message?.communicationAttachments.length > 0 ? (
+          {message?.communicationAttachments?.length > 0 ? (
             <ul className="flex flex-wrap gap-sm items-center my-12">
               <Icon icon={<Paperclip />} size="1.6rem" />
               {message?.communicationAttachments?.map((a, idx) => (
                 <Button
                   key={`${a.fileName}-${idx}`}
                   onClick={() => {
-                    getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
-                      .then((res) => {
-                        if (res.data) {
-                          const uri = `data:${a.mimeType};base64,${res.data}`;
-                          const link = document.createElement('a');
-                          const filename = a.fileName;
-                          link.href = uri;
-                          link.setAttribute('download', filename);
-                          document.body.appendChild(link);
-                          link.click();
-                        } else {
+                    if (message?.conversationId) {
+                      getSupportConversationAttachment(
+                        municipalityId,
+                        supportErrand.id,
+                        message.conversationId,
+                        message.messageId,
+                        a.id
+                      )
+                        .then((res) => {
+                          if (res.data.length !== 0) {
+                            const uri = `data:${a.mimeType};base64,${res.data}`;
+                            const link = document.createElement('a');
+                            const filename = a.fileName;
+                            link.href = uri;
+                            link.setAttribute('download', filename);
+                            document.body.appendChild(link);
+                            link.click();
+                          } else {
+                            toastMessage({
+                              position: 'bottom',
+                              closeable: false,
+                              message: 'Filen kan inte hittas eller är skadad.',
+                              status: 'error',
+                            });
+                          }
+                        })
+                        .catch((error) => {
                           toastMessage({
                             position: 'bottom',
                             closeable: false,
-                            message: 'Filen kan inte hittas eller är skadad.',
+                            message: 'Något gick fel när bilagan skulle hämtas',
                             status: 'error',
                           });
-                        }
-                      })
-                      .catch((error) => {
-                        toastMessage({
-                          position: 'bottom',
-                          closeable: false,
-                          message: 'Något gick fel när bilagan skulle hämtas',
-                          status: 'error',
                         });
-                      });
+                    } else {
+                      getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
+                        .then((res) => {
+                          if (res.data) {
+                            const uri = `data:${a.mimeType};base64,${res.data}`;
+                            const link = document.createElement('a');
+                            const filename = a.fileName;
+                            link.href = uri;
+                            link.setAttribute('download', filename);
+                            document.body.appendChild(link);
+                            link.click();
+                          } else {
+                            toastMessage({
+                              position: 'bottom',
+                              closeable: false,
+                              message: 'Filen kan inte hittas eller är skadad.',
+                              status: 'error',
+                            });
+                          }
+                        })
+                        .catch((error) => {
+                          toastMessage({
+                            position: 'bottom',
+                            closeable: false,
+                            message: 'Något gick fel när bilagan skulle hämtas',
+                            status: 'error',
+                          });
+                        });
+                    }
                   }}
                   role="listitem"
                   // eslint-disable-next-line jsx-a11y/alt-text
@@ -268,7 +344,7 @@ export const RenderedSupportMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {Array.isArray(message.emailHeaders.IN_REPLY_TO) ? (
+            {Array.isArray(message.emailHeaders?.IN_REPLY_TO) ? (
               <p
                 className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
                 dangerouslySetInnerHTML={{

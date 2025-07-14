@@ -1192,6 +1192,34 @@ export interface KeyValues {
   values?: string[];
 }
 
+/** ConversationAttachment model */
+export interface ConversationAttachment {
+  /**
+   * ConversationAttachment ID
+   * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"
+   */
+  id?: string;
+  /**
+   * Name of the file
+   * @example "my-file.txt"
+   */
+  fileName?: string;
+  /**
+   * Size of the file in bytes
+   * @format int32
+   * @example 1024
+   */
+  fileSize?: number;
+  /** Mime type of the file */
+  mimeType?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   * @example "2023-01-01T00:00:00+01:00"
+   */
+  created?: string;
+}
+
 /** Message model */
 export interface Message {
   /**
@@ -1218,7 +1246,7 @@ export interface Message {
    */
   content: string;
   readBy?: ReadBy[];
-  attachments?: Attachment[];
+  attachments?: ConversationAttachment[];
 }
 
 /** Readby model */

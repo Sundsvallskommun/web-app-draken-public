@@ -1140,10 +1140,10 @@ export interface PageErrand {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   empty?: boolean;
 }
@@ -1369,10 +1369,10 @@ export interface PageEvent {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   empty?: boolean;
 }
@@ -1518,20 +1518,20 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   empty?: boolean;
 }

@@ -27,9 +27,6 @@ export interface AppContextInterface {
   subPage: string;
   setSubPage: (subPage: string) => void;
 
-  isLoggedIn: boolean;
-  setIsLoggedIn: (isLoggedIn: boolean) => void;
-
   user: User;
   setUser: (user: User) => void;
 
@@ -44,6 +41,12 @@ export interface AppContextInterface {
 
   messageTree;
   setMessageTree: (messages: MessageNode[]) => void;
+
+  conversation;
+  setConversation: (conversation: MessageNode[]) => void;
+
+  conversationTree;
+  setConversationTree: (conversationTree: MessageNode[]) => void;
 
   assets;
   setAssets: (assets: Asset[]) => void;
@@ -134,7 +137,6 @@ const AppContext = createContext<AppContextInterface>(null);
 
 export function AppWrapper({ children }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [subPage, setSubPage] = useState('');
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
@@ -153,6 +155,8 @@ export function AppWrapper({ children }) {
   const [errand, setErrand] = useState<IErrand>();
   const [messages, setMessages] = useState<MessageNode[]>();
   const [messageTree, setMessageTree] = useState<MessageNode[]>();
+  const [conversation, setConversation] = useState<MessageNode[]>();
+  const [conversationTree, setConversationTree] = useState<MessageNode[]>();
   const [assets, setAssets] = useState<Asset[]>();
   const [supportErrand, setSupportErrand] = useState<SupportErrand>();
   const [supportMetadata, setSupportMetadata] = useState<SupportMetadata>();
@@ -179,9 +183,6 @@ export function AppWrapper({ children }) {
         subPage,
         setSubPage: (subPage: string) => setSubPage(subPage),
 
-        isLoggedIn,
-        setIsLoggedIn: (isLoggedIn: boolean) => setIsLoggedIn(isLoggedIn),
-
         user,
         setUser: (user: User) => setUser(user),
 
@@ -196,6 +197,12 @@ export function AppWrapper({ children }) {
 
         messageTree,
         setMessageTree: (messages: MessageNode[]) => setMessageTree(messages),
+
+        conversation,
+        setConversation: (conversation: MessageNode[]) => setConversation(conversation),
+
+        conversationTree,
+        setConversationTree: (conversationTree: MessageNode[]) => setConversationTree(conversationTree),
 
         assets,
         setAssets: (assets: Asset[]) => setAssets(assets),

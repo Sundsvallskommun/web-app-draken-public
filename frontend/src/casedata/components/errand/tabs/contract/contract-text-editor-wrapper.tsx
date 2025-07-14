@@ -1,7 +1,11 @@
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+'use client';
+
 import sanitized from '@common/services/sanitizer-service';
 import { MutableRefObject } from 'react';
 import { UseFormTrigger } from 'react-hook-form';
+import dynamic from 'next/dynamic';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
+import { cx } from '@sk-web-gui/react';
 
 export interface ContractTextEditorWrapperProps {
   editorRef: MutableRefObject<any>;
@@ -17,23 +21,18 @@ export interface ContractTextEditorWrapperProps {
 export const ContractTextEditorWrapper: React.FC<ContractTextEditorWrapperProps> = (props) => {
   const { editorRef, readOnly, val, label, setDirty, setValue, trigger, setState } = props;
   return (
-    <RichTextEditor
+    <TextEditor
+      className={cx(`mb-md h-[80%]`)}
       ref={editorRef}
       readOnly={readOnly}
-      containerLabel="overlatelseforklaring"
-      value={val}
-      onChange={(value, _delta, source, _editor) => {
+      defaultValue={val}
+      onTextChange={(delta, oldDelta, source) => {
         if (source === 'user') {
           setDirty(true);
         }
-        const editor = editorRef.current.getEditor();
-        const length = editor.getLength();
-        // Amazing fix for newline removal bug
-        if (value && value.substring(value.length - 11) == '<p><br></p>') {
-          value = value.substring(0, value.length - 11) + '<p>&#8205;</p>';
-        }
-        setState(value);
-        setValue(label, sanitized(length > 1 ? value : undefined));
+        const text = editorRef.current.getSemanticHTML();
+        setState(text);
+        setValue(label, sanitized((delta.ops[0].retain as any) > 1 ? editorRef.current.getSemanticHTML() : undefined));
         trigger(label);
         return;
       }}
