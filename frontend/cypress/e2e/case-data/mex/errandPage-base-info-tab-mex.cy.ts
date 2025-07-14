@@ -44,19 +44,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/101/messages', mockMessages);
       cy.intercept('GET', /\/errand\/\d*\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept(
-        'GET',
-        '**/contract/2024-01026',
-        mockContract
-        // mockMexErrand_base.data.extraParameters.find((param) => param.key === 'contractId')?.values[0]
-      ).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );
-      //localhost:3027/MEX/casedata/2281/namespace/errands/101/communication/conversations
-      http: cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
       );
 
@@ -231,8 +225,30 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('shows error message on invalid org number', () => {
+      mockMexErrand_base.data.stakeholders = [
+        {
+          id: 2103,
+          version: 1,
+          personalNumber: Cypress.env('mockPersonNumber'),
+          created: '2024-05-21T11:04:18.753613+02:00',
+          updated: '2024-05-21T11:04:18.753618+02:00',
+          type: 'PERSON',
+          firstName: 'My',
+          lastName: 'Testsson',
+          adAccount: 'kctest',
+          roles: ['ADMINISTRATOR'],
+          addresses: [],
+          address: {
+            streetAddress: '',
+          },
+          contactInformation: [],
+          extraParameters: {},
+        },
+      ];
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       visit();
+
+      cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
       cy.get('[data-cy="org-number-error-message-owner"]').should('exist').and('have.text', invalidOrgNumberMessage);
@@ -245,7 +261,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="org-number-error-message-person"]').should('not.exist');
     });
 
-    it.only('saves the correct errand information', () => {
+    it('saves the correct errand information', () => {
       mockMexErrand_base.data.stakeholders = [
         {
           id: 2103,
@@ -268,13 +284,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       ];
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errand/101/messages', mockMessages);
-      // cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/organization', mockOrganization).as('postOrganization');
       cy.visit('/arende/2281/PRH-2022-000019');
-      // cy.wait('@getErrandById');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -328,6 +342,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('DELETE', `**/errands/101/stakeholders/**`, mockErrand_base).as('removeStakeholder');
       visit();
 
+      cy.get('[data-cy="search-enterprise-owner-form"]').should('exist').click();
       cy.get('[data-cy="search-enterprise-owner-form"]').should('exist').click();
       cy.get('[data-cy="contact-orgNumber-owner"]').type('556677-8899');
       cy.wait(300);
