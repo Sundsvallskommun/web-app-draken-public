@@ -286,16 +286,16 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Button
               variant="primary"
               disabled={isErrandLocked(errand)}
-              onClick={() =>
-                handleSaveClick({
+              onClick={async () => {
+                await handleSaveClick({
                   fields,
                   label: 'fullSave',
                   form,
                   onSave,
                   toastMessage,
                   setIsLoading,
-                })
-              }
+                });
+              }}
               loading={loading === 'fullSave'}
               loadingText="Sparar"
               className="mt-lg"
