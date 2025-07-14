@@ -27,6 +27,7 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -88,6 +89,21 @@ export const ErrandsTable: React.FC = () => {
       });
     }
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.errandNumber}`, '_blank');
+  };
+
+  const primaryStakeholderNameorEmail = (errand: IErrand) => {
+    const primaryStakeholder = getOwnerStakeholder(errand);
+
+    if (primaryStakeholder) {
+      const { firstName, lastName, organizationName } = primaryStakeholder;
+      if (firstName && lastName) return `${firstName} ${lastName}`;
+
+      if (organizationName) return `${organizationName}`;
+
+      const emailChannel = primaryStakeholder.emails?.[0]?.value;
+      if (!!emailChannel) return emailChannel;
+    }
+    return '';
   };
 
   const findLatestNotification = (errand: IErrand) => {
@@ -200,8 +216,13 @@ export const ErrandsTable: React.FC = () => {
             })}
           </Table.Column>
         )}
-        <Table.Column>
-          <time dateTime={errand.created}>{errand.created}</time>
+        <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+          <div>
+            <time dateTime={errand.created}>{errand.created}</time>
+          </div>
+          <div>
+            <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
+          </div>
         </Table.Column>
         <Table.Column>
           {`${errand.administrator?.firstName || ''} ${errand.administrator?.lastName || ''}`}
