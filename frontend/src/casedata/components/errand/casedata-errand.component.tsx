@@ -12,7 +12,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
@@ -221,11 +221,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>
                                       {errand.facilities.map((estate, index) => (
-                                        <>
+                                        <Fragment key={`estate-${estate.id}`}>
                                           {index === 0
                                             ? estateToText(estate?.address?.propertyDesignation)
                                             : ', ' + estateToText(estate?.address?.propertyDesignation)}
-                                        </>
+                                        </Fragment>
                                       ))}
                                       {errand.facilities.length === 0 ? '(Saknas)' : null}
                                     </div>
