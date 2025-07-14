@@ -82,16 +82,16 @@ const template: ParametersObject = {
       values: ['Avstämning med chefen', 'false', ''],
     },
     {
-      key: 'recruitment@closure_0',
-      displayName: 'Avslut',
-      group: 'Arkivera',
-      values: ['Arkivera ansökningshandlingar', 'false', ''],
-    },
-    {
       key: 'recruitment@closure_1',
       displayName: 'Avslut',
       group: 'Återkoppling',
       values: ['Återkoppling till övriga kandidater', 'false', ''],
+    },
+    {
+      key: 'recruitment@closure_0',
+      displayName: 'Avslut',
+      group: 'Arkivera',
+      values: ['Arkivera ansökningshandlingar', 'false', ''],
     },
     {
       key: 'recruitment@closure_2',
