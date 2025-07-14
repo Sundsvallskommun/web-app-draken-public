@@ -94,7 +94,7 @@ export const SidebarInfo: React.FC<{}> = () => {
   }, [errand, administrators]);
 
   useEffect(() => {
-    const s = [ErrandStatus.VantarPaKomplettering, ErrandStatus.InterntAterkoppling, ErrandStatus.Tilldelat];
+    const s = [ErrandStatus.VantarPaKomplettering, ErrandStatus.InternAterkoppling, ErrandStatus.Tilldelat];
     if (errand?.phase === ErrandPhase.aktualisering) {
       s.unshift(ErrandStatus.ArendeInkommit);
     }

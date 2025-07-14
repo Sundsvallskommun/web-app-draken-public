@@ -305,8 +305,8 @@ export const mockPTErrand_base_afterStatusChange: { data: ApiErrand; message: st
         created: '2023-12-14T13:51:14.635643+01:00',
       },
       {
-        statusType: 'Internt komplettering',
-        description: 'Internt komplettering',
+        statusType: 'Intern komplettering',
+        description: 'Intern komplettering',
         created: '2024-12-14T13:51:14.635643+01:00',
       },
     ],

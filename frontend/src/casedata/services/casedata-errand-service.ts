@@ -81,7 +81,7 @@ export const newStatuses = [ErrandStatus.ArendeInkommit];
 export const ongoingStatuses = [
   ErrandStatus.UnderGranskning,
   ErrandStatus.VantarPaKomplettering,
-  ErrandStatus.InterntAterkoppling,
+  ErrandStatus.InternAterkoppling,
   ErrandStatus.UnderUtredning,
   ErrandStatus.UnderBeslut,
   ErrandStatus.Beslutad,

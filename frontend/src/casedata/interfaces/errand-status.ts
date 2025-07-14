@@ -2,7 +2,7 @@ export enum ErrandStatus {
   ArendeInkommit = 'Ärende inkommit',
   UnderGranskning = 'Under granskning',
   VantarPaKomplettering = 'Väntar på komplettering',
-  InterntAterkoppling = 'Internt återkoppling',
+  InternAterkoppling = 'Intern återkoppling',
   UnderUtredning = 'Under utredning',
   UnderBeslut = 'Under beslut',
   Beslutad = 'Beslutad',

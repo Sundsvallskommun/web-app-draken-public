@@ -65,8 +65,8 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('manages Information', () => {
       const mockStatus = {
-        status: 'Internt komplettering',
-        description: 'Internt komplettering',
+        status: 'Intern komplettering',
+        description: 'Intern komplettering',
         dateTime: '2024-12-14T13:51:14.635643+01:00',
       };
       cy.intercept('PATCH', '**/errands/*/stakeholders/*', mockPTErrand_base.data.stakeholders).as('patchStakeholders');
