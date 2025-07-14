@@ -235,6 +235,17 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     { label: 'Medicinskt utlåtande', icon: 'clipboard-signature' },
   ];
 
+  const handleFullSaveClick = async () => {
+    await handleSaveClick({
+      fields,
+      label: 'fullSave',
+      form,
+      onSave,
+      toastMessage,
+      setIsLoading,
+    });
+  };
+
   return (
     <form
       onChange={() => {
@@ -286,16 +297,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Button
               variant="primary"
               disabled={isErrandLocked(errand)}
-              onClick={async () => {
-                await handleSaveClick({
-                  fields,
-                  label: 'fullSave',
-                  form,
-                  onSave,
-                  toastMessage,
-                  setIsLoading,
-                });
-              }}
+              onClick={handleFullSaveClick}
               loading={loading === 'fullSave'}
               loadingText="Sparar"
               className="mt-lg"
