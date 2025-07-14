@@ -225,11 +225,9 @@ export const SupportErrandsTable: React.FC = () => {
           <div>
             <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
           </div>
-          {isLOP() || isKA() ? (
-            <div>
-              <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
-            </div>
-          ) : null}
+          <div>
+            <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
+          </div>
         </Table.Column>
         <Table.Column>{Priority[errand.priority]}</Table.Column>
         {errand.status === Status.SUSPENDED ? (
