@@ -95,7 +95,6 @@ export const ErrandsTable: React.FC = () => {
     const primaryStakeholder = getOwnerStakeholder(errand);
 
     if (primaryStakeholder) {
-      console.log('primaryStakeholder', primaryStakeholder);
       const { firstName, lastName, organizationName } = primaryStakeholder;
       if (firstName && lastName) return `${firstName} ${lastName}`;
 
