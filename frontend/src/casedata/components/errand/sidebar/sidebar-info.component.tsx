@@ -332,13 +332,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                   size="sm"
                   disabled={errand?.administrator?.adAccount === user.username}
                   onClick={() => {
-                    confirm
-                      .showConfirmation('Ta ärende', 'Vill du tilldela dig själv ärendet?', 'Ja', 'Nej', 'info', 'info')
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          selfAssignErrand();
-                        }
-                      });
+                    selfAssignErrand();
                   }}
                 >
                   Ta ärende
