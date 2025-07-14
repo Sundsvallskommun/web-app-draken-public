@@ -11,15 +11,12 @@ import {
   isErrandAdmin,
   isErrandLocked,
   phaseChangeInProgress,
-  setSuspendedErrands,
-  triggerErrandPhaseChange,
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
-import { sortBy } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -37,9 +34,10 @@ import {
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { UseFormReturn, useForm } from 'react-hook-form';
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
+import { ResumeErrandButton } from './resume-errand-button.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
@@ -53,8 +51,8 @@ export const SidebarInfo: React.FC<{}> = () => {
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<'status' | 'admin' | false>();
   const [showMessageComposer, setShowMessageComposer] = useState(false);
-  const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'suspend' | false>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
@@ -297,64 +295,6 @@ export const SidebarInfo: React.FC<{}> = () => {
     }
   };
 
-  const triggerPhaseChange = () => {
-    return triggerErrandPhaseChange(municipalityId, errand)
-      .then(() => getErrand(municipalityId, errand.id.toString()))
-      .then((res) => setErrand(res.errand))
-      .then(() => {
-        setIsLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fasbytet inleddes',
-          status: 'success',
-        });
-        setIsLoading(false);
-      })
-      .catch(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när fasbytet inleddes',
-          status: 'error',
-        });
-        setIsLoading(false);
-      });
-  };
-
-  const activateErrand = () => {
-    setIsLoading('suspend');
-    setError(false);
-    const previousStatus = sortBy(errand.statuses, 'created').reverse()[1].statusType;
-    return setSuspendedErrands(
-      errand.id,
-      municipalityId,
-      Object.values(ErrandStatus).find((status) => status === previousStatus),
-      null,
-      null
-    )
-      .then((res) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet återupptogs',
-          status: 'success',
-        });
-        setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när ärendet skulle återupptas',
-          status: 'error',
-        });
-        setError(true);
-        setIsLoading(false);
-      });
-  };
-
   return (
     <>
       <div className="relative h-full flex flex-col justify-start">
@@ -447,7 +387,8 @@ export const SidebarInfo: React.FC<{}> = () => {
                 isErrandLocked(errand) ||
                 errand.status?.statusType === ErrandStatus.Beslutad ||
                 errand.phase === ErrandPhase.uppfoljning ||
-                !allowed
+                !allowed ||
+                !errand.administrator
               }
             >
               <FormLabel className="text-small">Ärendestatus</FormLabel>
@@ -492,7 +433,34 @@ export const SidebarInfo: React.FC<{}> = () => {
 
         <Divider className="my-20"></Divider>
 
-        {errand?.status?.statusType !== ErrandStatus.Parkerad ? (
+        {errand?.status?.statusType === ErrandStatus.Parkerad ||
+        errand?.status?.statusType === ErrandStatus.Tilldelat ? (
+          <>
+            <div className="flex">
+              <Label>
+                <LucideIcon size="1.5rem" name="circle-pause" />{' '}
+                {errand?.status?.statusType === ErrandStatus.Parkerad ? 'Parkerat ' : 'Tilldelat '}
+              </Label>
+              <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
+            </div>
+            <p className="text-small">
+              {getValues('admin') === 'Välj handläggare' ? (
+                <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
+              ) : (
+                <span className="mb-24">
+                  <strong>{getValues('admin')}</strong>
+                  {errand?.status?.statusType === ErrandStatus.Parkerad
+                    ? ' parkerade ärendet med en påminnelse '
+                    : ' tilldelades ärendet'}{' '}
+                  {errand.suspension?.suspendedTo
+                    ? dayjs(errand.suspension.suspendedTo).format('DD MMM, HH:mm')
+                    : errand?.status?.statusType === ErrandStatus.Parkerad && '(datum saknas)'}
+                </span>
+              )}
+            </p>
+            <ResumeErrandButton disabled={!isErrandAdmin(errand, user)} />
+          </>
+        ) : (
           <>
             <PhaseChanger />
             {uiPhase !== UiPhase.registrerad && (
@@ -510,57 +478,8 @@ export const SidebarInfo: React.FC<{}> = () => {
                 Nytt meddelande
               </Button>
             )}
-            {<SuspendErrandComponent disabled={false} />}
+            <SuspendErrandComponent disabled={false} />
           </>
-        ) : (
-          errand?.status?.statusType === ErrandStatus.Parkerad && (
-            <>
-              <div className="flex">
-                <Label>
-                  <LucideIcon size="1.5rem" name="circle-pause" />{' '}
-                  {errand?.status?.statusType === ErrandStatus.Parkerad ? 'Parkerat ' : 'Tilldelat '}
-                </Label>
-                <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
-              </div>
-              <p className="text-small">
-                {getValues('admin') === 'Välj handläggare' ? (
-                  <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
-                ) : (
-                  <span className="mb-24">
-                    <strong>{getValues('admin')}</strong>
-                    {errand?.status?.statusType === ErrandStatus.Parkerad
-                      ? ' parkerade ärendet med en påminnelse '
-                      : ' tilldelades ärendet'}{' '}
-                    {errand.suspension.suspendedTo !== null
-                      ? dayjs(errand.suspension.suspendedTo).format('DD MMM, HH:mm')
-                      : errand?.status?.statusType === ErrandStatus.Parkerad && '(datum saknas)'}
-                  </span>
-                )}
-              </p>
-
-              <Button
-                className="mt-16"
-                color="vattjom"
-                data-cy="suspend-button"
-                leftIcon={<LucideIcon name="circle-play" />}
-                variant="secondary"
-                disabled={!allowed}
-                loading={isLoading === 'status'}
-                loadingText="Återupptar"
-                onClick={() => {
-                  confirm
-                    .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        activateErrand();
-                      }
-                    });
-                }}
-              >
-                Återuppta ärende
-              </Button>
-            </>
-          )
         )}
         {isAppealEnabled() ? (
           <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand)} />
@@ -568,7 +487,8 @@ export const SidebarInfo: React.FC<{}> = () => {
 
         {uiPhase !== UiPhase.slutfor &&
           errand.phase !== ErrandPhase.verkstalla &&
-          errand.phase !== ErrandPhase.uppfoljning && (
+          errand.phase !== ErrandPhase.uppfoljning &&
+          errand?.status?.statusType !== ErrandStatus.Tilldelat && (
             <>
               <Button
                 className="mt-16"
