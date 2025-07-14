@@ -55,7 +55,7 @@ interface SupportRoles {
 export class SupportMetadataController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.3`;
+  private SERVICE = `supportmanagement/10.6`;
 
   @Get('/supportmetadata/:municipalityId')
   @OpenAPI({ summary: 'Get support metadata' })

@@ -16,7 +16,7 @@ interface ResponseData {
 @Controller()
 export class SupportConversationController {
   private apiService = new ApiService();
-  SERVICE = `supportmanagement/10.5`;
+  SERVICE = `supportmanagement/10.6`;
 
   @Get('/supportmanagement/:municipalityId/namespace/errands/:errandId/communication/conversations')
   @OpenAPI({ summary: 'Return all conversations by errandId' })

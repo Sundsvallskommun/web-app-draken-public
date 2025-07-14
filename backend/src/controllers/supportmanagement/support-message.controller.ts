@@ -133,7 +133,7 @@ export const generateMessageId = () => `<${uuidv4()}@CONTACTCENTER>`;
 export class SupportMessageController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.3`;
+  private SERVICE = `supportmanagement/10.6`;
 
   @Post('/supportmessage/:municipalityId/:id')
   @HttpCode(201)

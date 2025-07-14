@@ -87,7 +87,7 @@ export class RelationsController {
 
     const errands = await Promise.all(
       (res.data.relations || []).map(async (relation: any) => {
-        const urlSupportManagement = `supportmanagement/10.5/${municipalityId}/${relation.source.namespace}/errands/${relation.source.resourceId}`;
+        const urlSupportManagement = `supportmanagement/10.6/${municipalityId}/${relation.source.namespace}/errands/${relation.source.resourceId}`;
         const errandResponse = await this.apiService.get<SupportErrand>({ url: urlSupportManagement }, req.user);
         return errandResponse.data;
       }),
