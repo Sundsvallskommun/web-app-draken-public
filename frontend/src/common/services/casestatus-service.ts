@@ -1,7 +1,5 @@
-import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from './api-service';
 import { sortBy } from './helper-service';
-import { StringMatcher } from 'node_modules/cypress/types/net-stubbing';
 
 export interface CaseStatusResponse {
   caseId?: string;
