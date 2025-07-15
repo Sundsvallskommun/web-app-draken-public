@@ -37,7 +37,6 @@ import {
   Modal,
   RadioButton,
   Select,
-  Spinner,
   cx,
   useConfirm,
   useSnackbar,
@@ -751,7 +750,6 @@ export const MessageComposer: React.FC<{
               variant="primary"
               color="primary"
               disabled={isLoading || !formState.isValid || !allowed}
-              leftIcon={isLoading ? <Spinner size={2} className="mr-sm" /> : null}
             >
               Skicka meddelande
             </Button>
