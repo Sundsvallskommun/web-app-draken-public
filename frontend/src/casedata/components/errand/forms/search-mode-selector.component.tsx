@@ -1,6 +1,5 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { Input, RadioButton } from '@sk-web-gui/react';
-import { clear } from 'console';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
 interface SearchModeSelectorProps {

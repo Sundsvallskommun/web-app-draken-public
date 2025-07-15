@@ -6,7 +6,6 @@ import {
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
-import { clear } from 'console';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
 interface SupportContactSearchModeSelectorProps {
