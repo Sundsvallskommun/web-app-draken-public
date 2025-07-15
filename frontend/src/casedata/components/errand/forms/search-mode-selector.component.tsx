@@ -5,28 +5,20 @@ import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 interface SearchModeSelectorProps {
   inName: string;
   searchMode: string;
-  // disabled: boolean;
   form: UseFormReturn<CasedataOwnerOrContact>;
-  // contact: SupportStakeholderFormModel;
   id: string;
   setSearchMode: React.Dispatch<React.SetStateAction<string>>;
-  // setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult>>;
   setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
-  // setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
   replacePhonenumbers: UseFieldArrayReplace<CasedataOwnerOrContact, 'phoneNumbers'>;
 }
 
 export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
   inName,
   searchMode,
-  // disabled,
   form,
-  // contact,
   id,
   setSearchMode,
-  // setSelectedUser,
   setSearchResult,
-  // setSearchResultArray,
   replacePhonenumbers,
 }) => {
   const { register, setValue, clearErrors, watch } = form;
