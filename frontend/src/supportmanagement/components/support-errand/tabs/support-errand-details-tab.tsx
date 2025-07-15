@@ -13,7 +13,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
 
   const simpleParams = useMemo(
     () =>
-      supportErrand.parameters.filter((p) => {
+      supportErrand.parameters?.filter((p) => {
         return typeof p.displayName === 'string' && !p.displayName.includes('|') && !p.key.includes('recruitment@');
       }),
     [supportErrand.parameters]
