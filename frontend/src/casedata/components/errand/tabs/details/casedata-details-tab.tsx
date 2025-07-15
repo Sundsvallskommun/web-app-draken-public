@@ -94,9 +94,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   }, [user, errand]);
 
   const form = useForm<any>({
-    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    mode: 'onChange',
   });
-  const { register, setValue, trigger, control } = form;
+  const { register, setValue, trigger } = form;
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
@@ -297,19 +297,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Button
               variant="primary"
               disabled={isErrandLocked(errand)}
-              onClick={() => {
-                (async () => {
-                  try {
-                    await handleFullSaveClick();
-                  } catch (error) {
-                    toastMessage({
-                      position: 'bottom',
-                      closeable: true,
-                      message: 'Något gick fel vid sparandet',
-                      status: 'error',
-                    });
-                  }
-                })();
+              onClick={async () => {
+                await handleFullSaveClick();
               }}
               loading={loading === 'fullSave'}
               loadingText="Sparar"
