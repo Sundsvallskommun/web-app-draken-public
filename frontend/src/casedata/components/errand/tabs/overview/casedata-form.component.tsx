@@ -51,6 +51,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
     setValue('priority', errand.priority);
     setValue('status', errand.status);
     setValue('phase', errand.phase);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const {
@@ -65,10 +66,12 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
 
   useEffect(() => {
     setValue('municipalityId', municipalityId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 
   useEffect(() => {
     setFormIsValid(formState.isValid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState]);
 
   const { caseType, priority } = watch();
