@@ -99,6 +99,9 @@ export const SidebarInfo: React.FC<{}> = () => {
       s.unshift(ErrandStatus.ArendeInkommit);
     }
     if (uiPhase === UiPhase.granskning) {
+      if (s.includes(ErrandStatus.ArendeInkommit)) {
+        s.splice(s.indexOf(ErrandStatus.ArendeInkommit), 1);
+      }
       s.push(ErrandStatus.UnderGranskning);
     }
     if (errand?.phase === ErrandPhase.utredning) {
