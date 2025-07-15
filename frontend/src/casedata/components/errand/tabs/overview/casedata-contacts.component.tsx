@@ -131,6 +131,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
       <div className="w-full" key={`contact-${index}`}>
         {selectedContact?.id === contact.id ? (
           <SimplifiedContactForm
+            allowOrganization={appConfig.features.useOrganizationStakeholders}
             disabled={isErrandLocked(errand)}
             setUnsaved={props.setUnsaved}
             contact={contact}

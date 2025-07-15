@@ -45,7 +45,7 @@ export const mockMexErrand_base = {
         personalNumber: MOCK_PERSON_NUMBER,
         firstName: 'My',
         lastName: 'Testsson',
-        roles: ['ADMINISTRATOR', 'SELLER'],
+        roles: ['ADMINISTRATOR'],
         adAccount: 'kctest',
         addresses: [],
         address: {
