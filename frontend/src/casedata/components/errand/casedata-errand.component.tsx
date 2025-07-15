@@ -78,9 +78,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   useEffect(() => {
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     const errandNumber = pathName.split('/')[3];
     if (errandNumber) {
       // Existing errand, load it and show it

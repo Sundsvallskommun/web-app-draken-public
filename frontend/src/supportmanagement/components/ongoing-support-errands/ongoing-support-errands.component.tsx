@@ -202,9 +202,11 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     setSupportErrand(undefined);
     //eslint-disable-next-line
   }, [router]);

@@ -60,7 +60,7 @@ function AppLayout({ children }: ClientApplicationProps) {
   );
 
   useEffect(() => {
-    getMe();
+    getMe().catch((e) => {});
     setMounted(true);
   }, [setMounted]);
 
