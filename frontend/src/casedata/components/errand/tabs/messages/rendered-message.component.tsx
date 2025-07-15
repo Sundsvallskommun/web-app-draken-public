@@ -26,10 +26,8 @@ export const RenderedMessage: React.FC<{
   );
 
   const {
-    municipalityId,
     errand,
   }: {
-    municipalityId: string;
     errand: IErrand;
   } = useAppContext();
 
@@ -65,7 +63,7 @@ export const RenderedMessage: React.FC<{
             selected === message.messageId ? 'bg-background-color-mixin-1 rounded-xl' : null
           }`
         )}
-        data-cy={`node-${message?.emailHeaders[0]?.values || message?.messageId}`}
+        data-cy={`node-${message?.emailHeaders?.[0]?.values || message?.messageId}`}
       >
         <div className="flex w-full">
           {messageAvatar(message)}
@@ -118,6 +116,14 @@ export const RenderedMessage: React.FC<{
               ) : message.messageType === 'WEBMESSAGE' || message.externalCaseId ? (
                 <>
                   <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
+                </>
+              ) : message.messageType === 'DRAKEN' ? (
+                <>
+                  <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via Draken
+                </>
+              ) : message.messageType === 'MINASIDOR' ? (
+                <>
+                  <LucideIcon name="monitor" size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
                 </>
               ) : (
                 ''

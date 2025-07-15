@@ -11,7 +11,9 @@ import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
-import { CaseTypesHiddenFromRegistration } from '@casedata/interfaces/case-type';
+import { CaseTypesHiddenFromRegistration, FTNotificationCaseType } from '@casedata/interfaces/case-type';
+import { appConfig } from '@config/appconfig';
+import { CaseDataRelationsDisclosure } from './casedata-relations-disclosure.component';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -40,11 +42,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   setFormIsValid,
   ...rest
 }) => {
-  const { administrators, municipalityId, setMunicipalityId, user } = useAppContext();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const { administrators, municipalityId, setMunicipalityId } = useAppContext();
   const [selectableAdmins, setSelectableAdmins] = useState<string[]>([]);
-  const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
 
   useEffect(() => {
     setSelectableAdmins(administrators.map((a) => `${a.firstName} ${a.lastName}`));
@@ -57,10 +56,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
 
   const {
     register,
-    control,
-    handleSubmit,
     watch,
-    reset,
     setValue,
     getValues,
     trigger,
@@ -183,7 +179,6 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
                 {Object.entries(getCaseLabels())
                   .filter(([key]) => !caseTypesHiddenFromRegistation.includes(key))
-                  // .filter(([key]) => !notificationKeys.includes(key) && key !== 'APPEAL')
                   .sort((a, b) => a[1].localeCompare(b[1]))
                   .map(([key, label]: [string, string], index) => {
                     return (
@@ -240,24 +235,22 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
           </div>
 
           <SaveButtonComponent
-            errand={errand}
-            registeringNewErrand={typeof errand?.id === 'undefined'}
-            label={typeof errand?.id === 'undefined' ? 'Registrera' : 'Spara'}
-            setUnsaved={setUnsaved}
+            registeringNewErrand={registeringNewErrand}
+            label={registeringNewErrand ? 'Registrera' : 'Spara'}
+            setUnsaved={() => {}}
             update={() => {}}
-            verifyAndClose={function (): void {
-              throw new Error('Function not implemented.');
-            }}
           />
         </div>
 
         {errand?.id ? (
           <CasedataContactsComponent
-            registeringNewErrand={typeof errand?.id === 'undefined'}
+            registeringNewErrand={registeringNewErrand}
             setUnsaved={setUnsaved}
             update={() => {}}
           />
         ) : null}
+
+        {!registeringNewErrand && appConfig.features.useRelations && <CaseDataRelationsDisclosure errand={errand} />}
       </div>
     </div>
   );

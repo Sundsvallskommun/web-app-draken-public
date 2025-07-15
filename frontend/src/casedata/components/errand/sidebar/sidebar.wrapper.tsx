@@ -15,9 +15,9 @@ export const SidebarWrapper = () => {
     component: React.ReactNode;
   }[] = [
     {
-      label: 'Information',
+      label: 'Handläggning',
       key: 'info',
-      icon: 'info',
+      icon: 'user-cog',
       component: <SidebarInfo />,
     },
     {

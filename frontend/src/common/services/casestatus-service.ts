@@ -26,17 +26,50 @@ export const findOperationUsingNamespace = (namespace: string) => {
 };
 
 export const getStatusesUsingPartyId = (municipalityId: string, partyId: string) => {
+  if (!municipalityId || !partyId) {
+    return Promise.resolve([]);
+  }
   const url = `${municipalityId}/party/${partyId}/statuses`;
 
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
       const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
-      const sortedData = sortBy(mexErrands, 'firstSubmitted').reverse().slice(0, 12);
+      const sortedData = sortBy(mexErrands, 'firstSubmitted').slice(0, 12);
       return sortedData;
     })
     .catch((e) => {
       console.error('Something went wrong when creating relation: ' + e);
+      throw e;
+    });
+};
+
+export const getErrandStatus = (municipalityId: string, query: string) => {
+  const url = `${municipalityId}/errands/statuses/${query}`;
+
+  return apiService
+    .get<ApiResponse<any>>(url)
+    .then((res) => {
+      const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
+      const sortedData = sortBy(mexErrands, 'firstSubmitted').slice(0, 12);
+      return sortedData;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when creating relation: ' + e);
+      throw e;
+    });
+};
+
+export const getErrandNumberfromId = (municipalityId: string, errandId: string) => {
+  const url = `${municipalityId}/errandbyid/${errandId}`;
+
+  return apiService
+    .get<string>(url)
+    .then((res) => {
+      return res.data;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching errand number: ' + e);
       throw e;
     });
 };

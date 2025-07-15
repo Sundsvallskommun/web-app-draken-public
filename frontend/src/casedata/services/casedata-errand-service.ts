@@ -590,6 +590,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
 
 interface SaveErrandResponse {
   errandId?: string;
+  errand?: IErrand;
   errandSuccessful: boolean;
   attachmentsSuccessful: boolean;
   noteSuccessful: boolean;
@@ -627,6 +628,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         )
         .then(async (res) => {
           result.errandSuccessful = true;
+          result.errand = mapErrandToIErrand(res.data.data, data.municipalityId);
           result.errandId = res.data.data.id.toString();
           return result;
         })
@@ -817,7 +819,7 @@ export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) 
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
 };
 
-export const setSuspendedErrands = async (
+export const setErrandStatus = async (
   errandId: number,
   municipalityId: string,
   status: ErrandStatus,

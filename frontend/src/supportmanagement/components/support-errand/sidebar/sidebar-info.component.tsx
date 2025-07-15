@@ -1,5 +1,6 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
+import { isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -10,6 +11,7 @@ import {
   Resolution,
   Status,
   StatusLabel,
+  StatusLabelROB,
   SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
@@ -20,7 +22,6 @@ import {
   supportErrandIsEmpty,
   updateSupportErrand,
   validateAction,
-  StatusLabelROB,
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
@@ -28,11 +29,9 @@ import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'r
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
-import { SuspendErrandComponent } from './suspend-errand.component';
-import { isROB } from '@common/services/application-service';
+import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { StartProcessComponent } from './start-process.component';
-import { RequestInfoComponent } from './request-info.component';
-import { ResumeErrand } from './resume-errand.component';
+import { SuspendErrandComponent } from './suspend-errand.component';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -75,6 +74,7 @@ export const SidebarInfo: React.FC<{
     } else {
       setAllowed(isAdmin());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
   const toast = (kind, label) =>
@@ -227,6 +227,7 @@ export const SidebarInfo: React.FC<{
     } else {
       setValue('priority', 'Välj prioritet');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, administrators]);
 
   useEffect(() => {
@@ -554,33 +555,13 @@ export const SidebarInfo: React.FC<{
                   )}
                 </p>
 
-                <Button
-                  className="w-full"
-                  color="vattjom"
-                  data-cy="suspend-button"
-                  leftIcon={<LucideIcon name="circle-play" />}
-                  variant="secondary"
-                  disabled={!allowed}
-                  loading={isLoading === 'status'}
-                  loadingText="Återupptar"
-                  onClick={() => {
-                    confirm
-                      .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          activateErrand();
-                        }
-                      });
-                  }}
-                >
-                  Återuppta ärende
-                </Button>
+                <SupportResumeErrandButton disabled={!allowed} />
               </>
             ) : (
               <div className="flex flex-col gap-8">
                 {allowed && !supportErrandIsEmpty(supportErrand) && (
                   <>
-                    <ResumeErrand disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                    <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                     <StartProcessComponent
                       disabled={!allowed || supportErrandIsEmpty(supportErrand)}
                       onSubmit={onSubmit}
@@ -591,7 +572,7 @@ export const SidebarInfo: React.FC<{
                         leftIcon={<LucideIcon name="mail" />}
                         className="w-full"
                         color="vattjom"
-                        data-cy="suspend-button"
+                        data-cy="new-message-button"
                         variant="secondary"
                         onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
                       >

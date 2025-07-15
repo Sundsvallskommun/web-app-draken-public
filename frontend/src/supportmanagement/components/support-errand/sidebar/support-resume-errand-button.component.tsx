@@ -4,11 +4,12 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   getSupportErrandById,
   setSupportErrandStatus,
+  shouldShowResumeErrandButton,
   Status,
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 
-export const ResumeErrand: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -40,7 +41,7 @@ export const ResumeErrand: React.FC<{ disabled: boolean }> = ({ disabled }) => {
       });
   };
 
-  if (![Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE].includes(supportErrand?.status as Status)) {
+  if (!shouldShowResumeErrandButton(supportErrand?.status)) {
     return null;
   }
 
@@ -50,7 +51,7 @@ export const ResumeErrand: React.FC<{ disabled: boolean }> = ({ disabled }) => {
       color="vattjom"
       data-cy="resume-button"
       leftIcon={<LucideIcon name="circle-play" />}
-      variant="secondary"
+      variant={shouldShowResumeErrandButton(supportErrand?.status) ? 'primary' : 'secondary'}
       disabled={disabled}
       loading={isLoading}
       loadingText="Återupptar"

@@ -1,8 +1,7 @@
 import { MessageNode, countAllMessages, countUnreadMessages } from '@casedata/services/casedata-message-service';
 import React, { Fragment, useState } from 'react';
 import { RenderedMessage } from './rendered-message.component';
-import { Divider } from '@mui/material';
-import { Button, cx } from '@sk-web-gui/react';
+import { Button, cx, Divider } from '@sk-web-gui/react';
 
 interface MessageTreeProps {
   nodes: MessageNode[];
@@ -10,7 +9,7 @@ interface MessageTreeProps {
   onSelect: (node: MessageNode) => void;
 }
 
-const getId = (node: MessageNode): string => node.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
+const getId = (node: MessageNode): string => node.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
 
 const MessageNodeComponent: React.FC<{
   node: MessageNode;

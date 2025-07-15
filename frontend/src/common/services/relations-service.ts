@@ -9,6 +9,13 @@ export const relationsLabels = [
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
+export const relationsLabelsCaseData = [
+  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendeägare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+];
+
 export interface Relations {
   id?: string;
   type: string;
@@ -26,10 +33,14 @@ export interface Relations {
   };
 }
 
+interface RelationsResponse {
+  relations: Relations[];
+  meta: any;
+}
+
 export const createRelation = (municipalityId: string, sourceId: string, targetId: string) => {
   const url = `${municipalityId}/relations`;
 
-  console.log('Creating relation with sourceId: ' + sourceId + ' and targetId: ' + targetId);
   const body: Partial<Relations> = {
     type: 'LINK',
     source: {
@@ -41,7 +52,7 @@ export const createRelation = (municipalityId: string, sourceId: string, targetI
     target: {
       resourceId: targetId,
       type: 'case',
-      service: 'casedata',
+      service: 'case-data',
       namespace: 'SBK_MEX',
     },
   };
@@ -69,12 +80,28 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     });
 };
 
-export const getRelations = (municipalityId: string, sourceId: string) => {
-  const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${sourceId}%27`;
+export const getRelations = (municipalityId: string, sourceId: string, sort: string) => {
+  const url = `${municipalityId}/relations/${sourceId}/${sort}`;
+
+  return apiService
+    .get<ApiResponse<RelationsResponse>>(url)
+    .then((res) => {
+      return res.data.data.relations;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when getting relation: ' + e);
+      throw e;
+    });
+};
+
+export const getTargetRelations = (municipalityId: string, targetId: string, sort: string) => {
+  const url = `${municipalityId}/targetrelations/${targetId}/${sort}`;
 
   return apiService
     .get<ApiResponse<any>>(url)
-    .then((res) => res.data)
+    .then((res) => {
+      return res.data.data;
+    })
     .catch((e) => {
       console.error('Something went wrong when getting relation: ' + e);
       throw e;

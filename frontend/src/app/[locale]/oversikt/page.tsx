@@ -1,3 +1,5 @@
+'use client';
+
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
@@ -7,22 +9,12 @@ import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-export const Oversikt: React.FC = () => {
-  const router = useRouter();
-
-  const { user, isLoggedIn, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } =
-    useAppContext();
+const Oversikt: React.FC = () => {
+  const { user, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      // router.push('/login');
-    }
-  }, [isLoggedIn, router]);
 
   const initialFocus = useRef(null);
   const setInitalFocus = (e) => {
@@ -74,9 +66,3 @@ export const Oversikt: React.FC = () => {
 };
 
 export default Oversikt;
-
-export const getServerSideProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale, ['common'])),
-  },
-});

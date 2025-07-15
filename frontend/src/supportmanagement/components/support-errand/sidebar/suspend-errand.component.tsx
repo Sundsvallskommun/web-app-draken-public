@@ -61,7 +61,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     trigger,
     formState: { errors },
   }: UseFormReturn<SuspendFormProps, any, undefined> = useForm({
-    resolver: yupResolver(yupSuspendForm),
+    resolver: yupResolver(yupSuspendForm) as any,
     defaultValues: { date: dayjs().add(30, 'day').format('YYYY-MM-DD'), comment: '' },
     mode: 'onChange',
   });
@@ -153,7 +153,9 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             </Modal.Footer>
           </Modal>
         </>
-      ) : null}
+      ) : (
+        <div></div>
+      )}
     </>
   );
 };
