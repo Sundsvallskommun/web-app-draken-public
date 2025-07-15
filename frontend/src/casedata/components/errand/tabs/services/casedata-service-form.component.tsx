@@ -21,7 +21,6 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [validityType, setValidityType] = useState<'tidsbegransad' | 'tillsvidare'>('tidsbegransad');
-  const [searchValueAids, setSearchValueAids] = useState('');
   const [searchValueAddons, setSearchValueAddons] = useState('');
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
