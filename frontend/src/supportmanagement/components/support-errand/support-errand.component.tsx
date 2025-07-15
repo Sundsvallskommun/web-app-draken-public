@@ -80,9 +80,11 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   useEffect(() => {
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     if (props.id) {
       setIsLoading(true);
       getSupportErrandById(props.id, municipalityId)

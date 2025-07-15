@@ -62,6 +62,8 @@ const Login: React.FC = () => {
       if (failMessage === 'NOT_AUTHORIZED' && autoLogin) {
         // autologin
         onLogin();
+      } else if (failMessage === 'NOT_AUTHORIZED') {
+        setIsLoading(false);
       } else if (failMessage) {
         setErrorMessage(t(`login:errors.${failMessage}`));
         setIsLoading(false);

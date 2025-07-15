@@ -105,9 +105,11 @@ export const AttestationTab = () => {
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     setSupportErrand(undefined);
     getBillingRecords(municipalityId);
     //eslint-disable-next-line

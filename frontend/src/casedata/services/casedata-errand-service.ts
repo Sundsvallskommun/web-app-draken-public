@@ -619,7 +619,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         })
         .catch((e) => {
           console.error('Something went wrong when patching errand');
-          return result;
+          return Promise.reject(result);
         })
     : apiService
         .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(
@@ -637,7 +637,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         })
         .catch((e) => {
           console.error('Something went wrong when creating errand');
-          return result;
+          return Promise.reject(result);
         });
 };
 
