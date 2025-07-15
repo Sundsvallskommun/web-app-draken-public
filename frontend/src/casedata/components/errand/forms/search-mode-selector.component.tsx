@@ -1,5 +1,6 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { Input, RadioButton } from '@sk-web-gui/react';
+import { clear } from 'console';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
 interface SearchModeSelectorProps {
@@ -24,6 +25,35 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
   const { register, setValue, clearErrors, watch } = form;
   const stakeholderType = watch(`stakeholderType`);
 
+  const clearCommonFields = () => {
+    replacePhonenumbers([]);
+    setValue('city', '');
+    setValue('zip', '');
+    setValue('careof', '');
+    setValue('street', '');
+    clearErrors(['phoneNumbers']);
+    setSearchResult(false);
+  };
+
+  const clearFields = (type: 'PERSON' | 'ORGANIZATION') => {
+    clearCommonFields();
+    setTimeout(() => {
+      if (type === 'PERSON') {
+        clearErrors(['organizationNumber']);
+        setValue('organizationName', '', { shouldDirty: false });
+        setValue('organizationNumber', '', { shouldDirty: false });
+        setValue('stakeholderType', 'PERSON', { shouldDirty: true });
+      } else {
+        clearErrors(['personalNumber']);
+        setValue('personalNumber', '', { shouldDirty: false });
+        setValue('personId', '', { shouldDirty: false });
+        setValue('firstName', '', { shouldDirty: false });
+        setValue('lastName', '', { shouldDirty: false });
+        setValue('stakeholderType', 'ORGANIZATION', { shouldDirty: true });
+      }
+    }, 0);
+  };
+
   return (
     <fieldset className="flex mt-ms mb-md gap-lg justify-start">
       <legend className="text-md my-sm contents"></legend>
@@ -39,19 +69,9 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
         onChange={() => {}}
         onClick={(e) => {
           setSearchMode('person');
-          replacePhonenumbers([]);
-          setValue('city', '');
-          setValue('zip', '');
-          setValue('careof', '');
-          setValue('street', '');
-          clearErrors(['organizationNumber']);
-          setTimeout(() => {
-            setValue(`organizationName`, '', { shouldDirty: false });
-            setValue(`organizationNumber`, '', { shouldDirty: false });
-            setValue(`stakeholderType`, 'PERSON', { shouldDirty: true });
-            setSearchResult(false);
-            clearErrors(['phoneNumbers']);
-          }, 0);
+          if (stakeholderType === 'ORGANIZATION') {
+            clearFields('PERSON');
+          }
         }}
       >
         Privat
@@ -68,21 +88,7 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
         onClick={(e) => {
           setSearchMode('enterprise');
           if (stakeholderType === 'PERSON') {
-            replacePhonenumbers([]);
-            setValue('city', '');
-            setValue('zip', '');
-            setValue('careof', '');
-            setValue('street', '');
-            clearErrors(['personalNumber']);
-            setTimeout(() => {
-              setValue(`personalNumber`, '', { shouldDirty: false });
-              setValue(`personId`, '', { shouldDirty: false });
-              setValue(`firstName`, '', { shouldDirty: false });
-              setValue(`lastName`, '', { shouldDirty: false });
-              setValue(`stakeholderType`, 'ORGANIZATION', { shouldDirty: true });
-              clearErrors(['phoneNumbers']);
-              setSearchResult(false);
-            }, 0);
+            clearFields('ORGANIZATION');
           }
         }}
       >
@@ -99,22 +105,8 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
         checked={searchMode === 'organization'}
         onClick={(e) => {
           setSearchMode('organization');
-          replacePhonenumbers([]);
-          setValue('city', '');
-          setValue('zip', '');
-          setValue('careof', '');
-          setValue('street', '');
-          clearErrors(['personalNumber']);
           if (stakeholderType === 'PERSON') {
-            setTimeout(() => {
-              setValue(`personalNumber`, '', { shouldDirty: false });
-              setValue(`personId`, '', { shouldDirty: false });
-              setValue(`firstName`, '', { shouldDirty: false });
-              setValue(`lastName`, '', { shouldDirty: false });
-              setValue(`stakeholderType`, 'ORGANIZATION', { shouldDirty: true });
-              clearErrors(['phoneNumbers']);
-              setSearchResult(false);
-            }, 0);
+            clearFields('ORGANIZATION');
           }
         }}
       >
