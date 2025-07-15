@@ -136,7 +136,6 @@ export const ErrandsTable: React.FC = () => {
     const caseMeaning = errand.extraParameters.find((param) => param.key === 'caseMeaning');
     if (caseMeaning && caseMeaning.values?.[0].length > 27) {
       caseMeaning.values[0] = `${caseMeaning.values[0].substring(0, 27)}...`;
-      console.log('Case meaning truncated:', caseMeaning.values[0]);
     }
     return (
       <Table.Row
