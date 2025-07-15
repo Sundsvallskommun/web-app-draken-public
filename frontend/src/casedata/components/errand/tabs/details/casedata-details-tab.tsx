@@ -26,18 +26,16 @@ interface CasedataDetailsProps {
 
 async function handleSaveClick({
   fields,
-  label,
   form,
   onSave,
   toastMessage,
   setIsLoading,
 }: {
   fields: UppgiftField[];
-  label: string;
   form: ReturnType<typeof useForm>;
-  onSave: (data: ExtraParameter[]) => void;
+  onSave: (data: ExtraParameter[]) => void | Promise<void>;
   toastMessage: ReturnType<typeof useSnackbar>;
-  setIsLoading: (label: string) => void;
+  setIsLoading: (bool: boolean) => void;
 }) {
   const fieldNames = fields.map((f) => f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR));
   fieldNames.push('propertyDesignation');
@@ -76,14 +74,14 @@ async function handleSaveClick({
     };
   });
 
-  setIsLoading(label);
+  setIsLoading(true);
   onSave(data);
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
-  const [loading, setIsLoading] = useState<string>();
+  const [loading, setIsLoading] = useState<boolean>();
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
@@ -235,17 +233,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     { label: 'Medicinskt utlåtande', icon: 'clipboard-signature' },
   ];
 
-  const handleFullSaveClick = async () => {
-    await handleSaveClick({
-      fields,
-      label: 'fullSave',
-      form,
-      onSave,
-      toastMessage,
-      setIsLoading,
-    });
-  };
-
   return (
     <form
       onChange={() => {
@@ -297,10 +284,16 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             <Button
               variant="primary"
               disabled={isErrandLocked(errand)}
-              onClick={async () => {
-                await handleFullSaveClick();
-              }}
-              loading={loading === 'fullSave'}
+              onClick={() =>
+                handleSaveClick({
+                  fields,
+                  form,
+                  onSave,
+                  toastMessage,
+                  setIsLoading,
+                })
+              }
+              loading={loading}
               loadingText="Sparar"
               className="mt-lg"
               data-cy="save-entire-form-button"
