@@ -1,12 +1,12 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import { AddressResult } from '@common/services/adress-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
-import { AddressResult } from '@common/services/adress-service';
 
 interface SupportContactModalProps {
   manual: boolean;

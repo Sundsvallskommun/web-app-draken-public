@@ -1,9 +1,8 @@
-import { FormControl, FormLabel, Select, FormErrorMessage, cx } from '@sk-web-gui/react';
-import { Role, MEXRelation, PTRelation } from '@casedata/interfaces/role';
-import { isMEX, isPT } from '@common/services/application-service';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { isMEX, isPT } from '@common/services/application-service';
+import { FormControl, FormErrorMessage, FormLabel, Select, cx } from '@sk-web-gui/react';
 import { FieldErrors, UseFormRegister } from 'react-hook-form';
-import { useAppContext } from '@contexts/app.context';
 
 export const ContactRelationSelect: React.FC<{
   contact: CasedataOwnerOrContact;
@@ -12,8 +11,6 @@ export const ContactRelationSelect: React.FC<{
   disabled?: boolean;
   className?: string;
 }> = ({ contact, register, errors, disabled, className }) => {
-  const { errand } = useAppContext();
-
   return (
     <FormControl id={`contact-relation`} size="sm" className={className}>
       <FormLabel>Roll</FormLabel>
@@ -29,6 +26,9 @@ export const ContactRelationSelect: React.FC<{
         {Object.entries(isMEX ? MEXRelation : isPT ? PTRelation : [])
           .filter(([key]) => {
             if (key === Role.APPLICANT && contact.roles.includes(Role.CONTACT_PERSON)) {
+              return false;
+            }
+            if (key === Role.CONTACT_PERSON && contact.roles.includes(Role.APPLICANT)) {
               return false;
             }
             return true;

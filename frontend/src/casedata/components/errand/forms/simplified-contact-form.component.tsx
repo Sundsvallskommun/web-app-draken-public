@@ -196,7 +196,10 @@ export const SimplifiedContactForm: React.FC<{
 
   const form = useForm<CasedataOwnerOrContact>({
     resolver: yupResolver(yupContact) as any,
-    defaultValues: contact,
+    defaultValues: {
+      ...contact,
+      relation: contact.roles?.[contact.roles.length - 1] ?? '',
+    },
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -260,6 +263,11 @@ export const SimplifiedContactForm: React.FC<{
     if (getValues().newRole === Role.APPLICANT && getValues().relation === getValues().newRole) {
       setValue('relation', '');
     }
+
+    if (getValues().newRole === Role.CONTACT_PERSON && getValues().relation === getValues().newRole) {
+      setValue('relation', '');
+    }
+
     apiCall(municipalityId, errand.id.toString(), getValues())
       .then((res) => {
         getErrand(municipalityId, errand.id.toString()).then((res) => {

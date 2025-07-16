@@ -51,7 +51,12 @@ export const ContactModal: React.FC<ContactModalProps> = ({
   const { errand } = useAppContext();
 
   return (
-    <Modal show={manual || editing} className="w-[56rem]" onClose={closeHandler} label={label}>
+    <Modal
+      show={manual || editing}
+      className="w-[56rem]"
+      onClose={closeHandler}
+      label={manual ? `Lägg till ${label.toLowerCase()}` : `Redigera ${label.toLowerCase()}`}
+    >
       <Modal.Content className="p-0">
         {allowOrganization ? (
           <SearchModeSelector
@@ -93,7 +98,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
                 register={register}
                 errors={errors}
                 disabled={disabled}
-                className="w-full"
+                className={cx(manual || editing ? 'w-1/2' : 'w-full')}
               />
             </div>
             <div className="flex gap-lg">
@@ -170,7 +175,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
                 register={register}
                 errors={errors}
                 disabled={disabled}
-                className="w-full"
+                className={cx(manual || editing ? 'w-1/2' : 'w-full')}
               />
             </div>
             <FormControl id={`organizationName`} className="w-full">
@@ -323,7 +328,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
               onClick={onSubmit}
               data-cy="contact-form-save-button"
             >
-              {editing ? 'Spara uppgifter' : label}
+              {editing ? 'Ändra uppgifter' : 'Lägg till uppgifter'}
             </Button>
           </div>
         </div>

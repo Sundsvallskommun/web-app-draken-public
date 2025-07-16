@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PrettyRole, PTRelation, Role } from '@casedata/interfaces/role';
 import {
   CasedataOwnerOrContact,
   ContactInfoType,
@@ -268,10 +268,10 @@ export const getStakeholdersByRelation: (e: IErrand, relation: Role) => Casedata
 
 export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) => Role | undefined = (s) => {
   const relations = [...Object.keys(MEXRelation), ...Object.keys(PTRelation)];
-  if (s.roles.length === 1 && s.roles[0] === Role.APPLICANT) {
-    return Role.APPLICANT;
+  if (s.roles.length === 1) {
+    return s.roles[0];
   }
-  return s.roles.find((r) => relations.includes(r) && r !== Role.APPLICANT) || undefined;
+  return s.roles.find((r) => relations.includes(r) && r !== Role.APPLICANT && r !== Role.CONTACT_PERSON) || undefined;
 };
 
 export const validateOwnerForSendingDecision: (e: IErrand) => boolean = (e) =>
