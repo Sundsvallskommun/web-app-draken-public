@@ -120,7 +120,6 @@ export const SearchResult: React.FC<SearchResultProps> = ({
         className="mt-20"
         disabled={!formState.isValid}
         onClick={onSubmit}
-        leftIcon={<LucideIcon name="plus"></LucideIcon>}
       >
         Lägg till {label.toLowerCase()}
       </Button>
