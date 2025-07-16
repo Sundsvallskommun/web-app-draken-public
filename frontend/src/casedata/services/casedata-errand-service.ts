@@ -59,6 +59,7 @@ export const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendemening', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Prio', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
