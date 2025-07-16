@@ -332,6 +332,7 @@ export enum ResolutionLabelKS {
   SELF_SERVICE = 'Hänvisat till självservice',
   INTERNAL_SERVICE = 'Hänvisat till intern service',
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+  SECURE_APPBOX = 'SecureAppbox',
 }
 
 export enum ResolutionLabelKA {
