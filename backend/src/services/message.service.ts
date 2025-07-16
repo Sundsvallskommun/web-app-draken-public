@@ -44,7 +44,7 @@ interface SmsMessage {
 
 const NOTIFY_CONTACTS = false;
 const SERVICE = `case-data/11.5`;
-const MESSAGING_SERVICE = `messaging/6.0`;
+const MESSAGING_SERVICE = `messaging/7.3`;
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
 
