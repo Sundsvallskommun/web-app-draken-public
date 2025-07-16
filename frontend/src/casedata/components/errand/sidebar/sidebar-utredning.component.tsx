@@ -200,10 +200,8 @@ export const SidebarUtredning: React.FC = () => {
     console.error('Something went wrong when saving utredning', e);
   };
 
-  const onRichTextChange = (delta, oldDelta, source) => {
-    const editor = quillRefUtredning.current.getEditor();
-    setRichText(editor);
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? editor : undefined));
+  const onRichTextChange = (delta) => {
+    sanitized(delta.ops[0].retain > 1 ? quillRefUtredning.current.root.innerHTML : undefined);
     trigger('description');
   };
 
@@ -243,7 +241,7 @@ export const SidebarUtredning: React.FC = () => {
                 if (source === 'user') {
                   setTextIsDirty(true);
                 }
-                return onRichTextChange(delta, oldDelta, source);
+                return onRichTextChange(delta);
               }}
             />
           </div>

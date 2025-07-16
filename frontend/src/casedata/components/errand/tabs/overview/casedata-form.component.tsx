@@ -4,7 +4,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
-import { getCaseLabels, isErrandLocked, municipalityIds } from '@casedata/services/casedata-errand-service';
+import { getCaseLabels, municipalityIds } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Divider, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
@@ -165,7 +165,6 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               <FormLabel>Ärendetyp</FormLabel>
               <Input type="hidden" {...register('caseType')} />
               <Select
-                disabled={isErrandLocked(errand)}
                 data-cy="casetype-input"
                 value={caseType}
                 className="w-full text-dark-primary"
@@ -202,7 +201,6 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               <FormLabel>Prioritet</FormLabel>
               <Select
                 {...register('priority')}
-                disabled={isErrandLocked(errand)}
                 data-cy="priority-input"
                 value={priority}
                 className="w-full text-dark-primary"
@@ -233,13 +231,6 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               )}
             </FormControl>
           </div>
-
-          <SaveButtonComponent
-            registeringNewErrand={registeringNewErrand}
-            label={registeringNewErrand ? 'Registrera' : 'Spara'}
-            setUnsaved={() => {}}
-            update={() => {}}
-          />
         </div>
 
         {errand?.id ? (

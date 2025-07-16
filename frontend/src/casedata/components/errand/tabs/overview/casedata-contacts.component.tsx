@@ -70,6 +70,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
   useEffect(() => {
     reset(errand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const onRemoveContact: (stakeholderId: string, index: number) => Promise<boolean> = (stakeholderId, index) => {

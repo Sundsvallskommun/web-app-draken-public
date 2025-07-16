@@ -94,7 +94,10 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             leftIcon={<LucideIcon name="circle-pause" />}
             variant="secondary"
             disabled={
-              disabled || phaseChangeInProgress(errand) || errand?.status?.statusType === ErrandStatus.ArendeAvslutat
+              disabled ||
+              phaseChangeInProgress(errand) ||
+              errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
+              !errand?.administrator
             }
             onClick={() => setShowModal(true)}
           >
