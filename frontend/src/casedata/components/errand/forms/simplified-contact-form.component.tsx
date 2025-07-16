@@ -194,8 +194,6 @@ export const SimplifiedContactForm: React.FC<{
     onClose();
   };
 
-  console.log('contactlength', contact.roles?.length);
-
   const form = useForm<CasedataOwnerOrContact>({
     resolver: yupResolver(yupContact) as any,
     defaultValues: {

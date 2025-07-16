@@ -19,7 +19,7 @@ export const ContactRelationSelect: React.FC<{
         disabled={disabled}
         {...register(`relation`)}
         className={cx(errors?.relation ? 'border-2 border-error' : 'w-full')}
-        defaultValue={contact.roles?.[0] ?? ''}
+        // defaultValue={contact.roles?.[0] ?? ''}
       >
         <Select.Option key="" value="">
           Välj roll
