@@ -76,7 +76,7 @@
     "envalid": "^8.0.0",
     "i18next": "^24.2.3",
     "i18next-resources-to-backend": "^1.2.1",
-    "next": "^15.3.3",
+    "next": "^15.4.1",
     "next-i18next": "^15.4.2",
     "next-i18n-router": "^5.5.2",
     "react": "^19.1.0",
