@@ -1,4 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -11,7 +12,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 export class SupportHistoryController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.6`;
+  private SERVICE = apiServiceName('supportmanagement');
 
   @Get('/supporthistory/:municipalityId/:id')
   @OpenAPI({ summary: 'Get events for errand' })

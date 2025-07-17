@@ -1,3 +1,4 @@
+import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
 import { EstateInfoSearch, EstateInformation } from '@/interfaces/estate-info.interface';
 import { RequestWithUser } from '@interfaces/auth.interface';
@@ -14,6 +15,7 @@ interface ResponseData {
 @Controller()
 export class EstateInfoController {
   private apiService = new ApiService();
+  SERVICE = apiServiceName('estateinfo');
 
   @Get('/estateByPropertyDesignation/:query')
   @OpenAPI({ summary: 'Fetch info for estate by address' })
@@ -23,7 +25,7 @@ export class EstateInfoController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
+    const url = `${this.SERVICE}/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
     const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: query, maxHits: 10 } }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
@@ -36,7 +38,7 @@ export class EstateInfoController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-address`;
+    const url = `${this.SERVICE}/${process.env.MUNICIPALITY_ID}/estate-by-address`;
     const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { address: query, maxHits: 10 } }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
@@ -46,7 +48,7 @@ export class EstateInfoController {
   @UseBefore(authMiddleware)
   async fetchEstateInfo(@Req() req: RequestWithUser, @Param('designation') designation: string) {
     if (designation !== '') {
-      const url = `estateinfo/2.0/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
+      const url = `${this.SERVICE}/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
       const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: designation, maxHits: 10 } }, req.user).catch(e => {
         throw new HttpException(400, 'Could not find estate for designation: ' + designation);
       });
@@ -54,7 +56,7 @@ export class EstateInfoController {
       const indexOfEstate = res.data.findIndex(estate => estate.designation === designation);
 
       if (res.data.length !== 0 && indexOfEstate !== -1) {
-        const url = `estateinfo/2.0/estate-data`;
+        const url = `${this.SERVICE}/estate-data`;
         const result = await this.apiService
           .get<EstateInformation>({ url, params: { objectidentifier: res.data[indexOfEstate].objectidentifier } }, req.user)
           .catch(e => {

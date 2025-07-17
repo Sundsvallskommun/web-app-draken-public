@@ -12,11 +12,12 @@ import { logger } from '@utils/logger';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { ResponseData } from './casedata-notes.controller';
+import { apiServiceName } from '@/config/api-config';
 
 @Controller()
 export class CaseDataDecisionsController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.5`;
+  SERVICE = apiServiceName('case-data');
 
   async isUnsigning(municipalityId: string, errandid: string, decision: Decision, user: User) {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandid}/decisions/${decision.id}`;

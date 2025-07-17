@@ -11,7 +11,7 @@ För MEX (Mark och exploatering):
 | ActiveDirectory     |     2.0 |
 | Citizen             |     3.0 |
 | CaseData            |    11.5 |
-| Messaging           |     7.0 |
+| Messaging           |     7.3 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     2.0 |
@@ -25,7 +25,7 @@ För KS (Kontakt Sundsvall):
 | API                 | Version |
 | ------------------- | ------: |
 | CaseData            |    11.5 |
-| SupportManagement   |    10.2 |
+| SupportManagement   |    10.6 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
@@ -45,7 +45,7 @@ För PT (Parkeringstillstånd):
 | ActiveDirectory     |     2.0 |
 | Citizen             |     3.0 |
 | CaseData            |    11.5 |
-| Messaging           |     7.0 |
+| Messaging           |     7.3 |
 | Templating          |     2.0 |
 | Contract            |     2.1 |
 | Employee            |     2.0 |
@@ -57,7 +57,7 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    10.3 |
+| SupportManagement   |    10.6 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
@@ -78,14 +78,14 @@ För ROB (Rekrytering och bemanning):
 | Employee            |     2.0 |
 | LegalEntity         |     2.0 |
 | SimulatorServer     |     2.0 |
-| SupportManagement   |    10.2 |
+| SupportManagement   |    10.6 |
 | Templating          |     2.0 |
 
 För KA (Kontakt Ånge):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    10.2 |
+| SupportManagement   |    10.6 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |

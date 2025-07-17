@@ -1,4 +1,5 @@
-import { BillingRecord, PageBillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
+import { apiServiceName } from '@/config/api-config';
+import { BillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { CBillingRecord, CPageBillingRecord } from '@/interfaces/billing-interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -6,7 +7,7 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
-import { apiURL, luhnCheck, toOffsetDateTime } from '@/utils/util';
+import { apiURL, toOffsetDateTime } from '@/utils/util';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
@@ -15,7 +16,7 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class BillingController {
   private apiService = new ApiService();
-  private SERVICE = `billingpreprocessor/4.0`;
+  private SERVICE = apiServiceName('billingpreprocessor');
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })
@@ -45,7 +46,7 @@ export class BillingController {
     //   let guidRes = null;
     //   const isPersonNumber = luhnCheck(query);
     //   if (isPersonNumber) {
-    //     const guidUrl = `citizen/3.0/${query}/guid`;
+    //     const guidUrl = `${this.CITIZEN_SERVICE}/${query}/guid`;
     //     guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
     //   }
     //   let queryFilter = `(`;

@@ -1,4 +1,5 @@
 import { CASEDATA_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -19,7 +20,7 @@ interface ResponseData {
 @Controller()
 export class CaseDataAttachmentController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.5`;
+  SERVICE = apiServiceName('case-data');
 
   @Post('/casedata/:municipalityId/errands/:errandId/attachments')
   @HttpCode(201)

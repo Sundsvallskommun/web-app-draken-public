@@ -1,3 +1,4 @@
+import { apiServiceName } from '@/config/api-config';
 import { Errand } from '@/data-contracts/case-data/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -11,7 +12,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 export class CaseStatusController {
   private apiService = new ApiService();
 
-  private SERVICE = `casestatus/4.1`;
+  private SERVICE = apiServiceName('casestatus');
 
   @Get('/:municipalityId/party/:partyId/statuses')
   @OpenAPI({ summary: 'Get all statuses connected to a partyId' })
@@ -62,7 +63,7 @@ export class CaseStatusController {
     @Res() response: any,
   ): Promise<{ data: Errand; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${id}`;
-    const baseURL = apiURL('case-data/11.5');
+    const baseURL = apiURL(apiServiceName('case-data'));
     const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
     const errandData = errandResponse.data;
     return response.send(errandData.errandNumber);

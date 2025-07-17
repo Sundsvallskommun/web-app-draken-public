@@ -1,16 +1,17 @@
-import { HttpException } from '@exceptions/HttpException';
-import { RequestWithUser } from '@interfaces/auth.interface';
-import ApiService from '@services/api.service';
-import authMiddleware from '@middlewares/auth.middleware';
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
-import { validationMiddleware } from '@/middlewares/validation.middleware';
-import { logger } from '@/utils/logger';
-import { noteIsTjansteanteckning } from '@/services/errand-note.service';
-import { apiURL } from '@/utils/util';
-import { validateAction } from '@services/errand.service';
+import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data/data-contracts';
 import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
+import { validationMiddleware } from '@/middlewares/validation.middleware';
+import { noteIsTjansteanteckning } from '@/services/errand-note.service';
+import { logger } from '@/utils/logger';
+import { apiURL } from '@/utils/util';
+import { HttpException } from '@exceptions/HttpException';
+import { RequestWithUser } from '@interfaces/auth.interface';
+import authMiddleware from '@middlewares/auth.middleware';
+import ApiService from '@services/api.service';
+import { validateAction } from '@services/errand.service';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
 
 export interface ResponseData {
   data: any;
@@ -20,7 +21,7 @@ export interface ResponseData {
 @Controller()
 export class CasedataNotesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.5`;
+  SERVICE = apiServiceName('case-data');
 
   @Patch('/casedata/:municipalityId/errands/:id/notes')
   @HttpCode(201)

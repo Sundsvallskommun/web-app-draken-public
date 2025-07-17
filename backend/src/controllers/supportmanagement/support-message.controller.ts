@@ -1,4 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import {
   Communication,
   CommunicationAttachment,
@@ -133,7 +134,7 @@ export const generateMessageId = () => `<${uuidv4()}@CONTACTCENTER>`;
 export class SupportMessageController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.6`;
+  private SERVICE = apiServiceName('supportmanagement');
 
   @Post('/supportmessage/:municipalityId/:id')
   @HttpCode(201)

@@ -7,11 +7,13 @@ import { apiURL } from '@/utils/util';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { Errand as SupportErrand } from '@/data-contracts/supportmanagement/data-contracts';
+import { apiServiceName } from '@/config/api-config';
 
 @Controller()
 export class RelationsController {
   private apiService = new ApiService();
-  private SERVICE = `relations/1.0`;
+  private SERVICE = apiServiceName('relations');
+  SUPPORTMANAGEMENT_SERVICE = apiServiceName('supportmanagement');
 
   @Post('/:municipalityId/relations')
   @HttpCode(201)
@@ -87,7 +89,7 @@ export class RelationsController {
 
     const errands = await Promise.all(
       (res.data.relations || []).map(async (relation: any) => {
-        const urlSupportManagement = `supportmanagement/10.6/${municipalityId}/${relation.source.namespace}/errands/${relation.source.resourceId}`;
+        const urlSupportManagement = `${this.SUPPORTMANAGEMENT_SERVICE}/${municipalityId}/${relation.source.namespace}/errands/${relation.source.resourceId}`;
         const errandResponse = await this.apiService.get<SupportErrand>({ url: urlSupportManagement }, req.user);
         return errandResponse.data;
       }),
