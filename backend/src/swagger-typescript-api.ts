@@ -34,7 +34,7 @@ const APIS = [
   },
   {
     name: 'messaging',
-    version: '7.0',
+    version: '7.3',
   },
   {
     name: 'case-data',
