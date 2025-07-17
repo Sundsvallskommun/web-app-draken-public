@@ -4,13 +4,14 @@ import { Priority } from '@casedata/interfaces/priority';
 import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
-import { isPT } from '@common/services/application-service';
+import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Badge,
   Button,
+  Callout,
   Input,
   Label,
   Pagination,
@@ -28,6 +29,7 @@ import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { PriorityComponent } from '@common/components/priority/priority.component';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -49,10 +51,11 @@ export const ErrandsTable: React.FC = () => {
     0: 'facilities.address.propertyDesignation',
     1: 'updated',
     2: 'caseType',
-    3: 'priority',
-    4: 'created',
-    5: 'administrator',
-    6: 'status.statusType',
+    3: 'extraParameters.caseMeaning',
+    4: 'priority',
+    5: 'created',
+    6: 'administrator',
+    7: 'status.statusType',
   };
 
   const serverSideSortableColsPT: { [key: number]: string } = {
@@ -132,6 +135,10 @@ export const ErrandsTable: React.FC = () => {
 
   const rows = (data.errands || []).map((errand: IErrand, index) => {
     const notification = findLatestNotification(errand);
+    const caseMeaning = errand.extraParameters.find((param) => param.key === 'caseMeaning');
+    if (caseMeaning && caseMeaning.values?.[0].length > 27) {
+      caseMeaning.values[0] = `${caseMeaning.values[0].substring(0, 27)}...`;
+    }
     return (
       <Table.Row
         key={`row-${index}`}
@@ -173,40 +180,10 @@ export const ErrandsTable: React.FC = () => {
             </div>
           )}
         </Table.Column>
+        {isMEX() && <Table.Column>{caseMeaning?.values}</Table.Column>}
         {isPT() && <Table.Column>{errand.errandNumber}</Table.Column>}
         <Table.Column>
-          {isPT() ? (
-            <>
-              <Badge
-                className="w-[8px] h-[8px]"
-                color={
-                  errand.priority === Priority.HIGH
-                    ? 'error'
-                    : errand.priority === Priority.MEDIUM
-                    ? 'warning'
-                    : 'vattjom'
-                }
-                rounded
-              />
-              {errand.priority}
-            </>
-          ) : (
-            <Label
-              rounded={true}
-              inverted={true}
-              color={
-                errand.priority === Priority.HIGH
-                  ? 'error'
-                  : errand.priority === Priority.MEDIUM
-                  ? 'warning'
-                  : errand.priority === Priority.LOW
-                  ? 'info'
-                  : 'vattjom'
-              }
-            >
-              {errand.priority}
-            </Label>
-          )}
+          <PriorityComponent priority={errand.priority} />
         </Table.Column>
         {isPT() && (
           <Table.Column>

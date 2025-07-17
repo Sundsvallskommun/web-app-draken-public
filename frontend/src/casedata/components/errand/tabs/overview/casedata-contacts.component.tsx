@@ -135,7 +135,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
             disabled={isErrandLocked(errand)}
             setUnsaved={props.setUnsaved}
             contact={contact}
-            label={`Redigera ${label.toLowerCase()}`}
+            label={`${label.toLowerCase()}`}
             onClose={() => setSelectedContact(undefined)}
             id="edit"
           />

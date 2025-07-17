@@ -59,6 +59,7 @@ export const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendemening', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Prio', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -194,16 +195,6 @@ export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = 
   }
 };
 
-export const getPriorityColor = (priority: Priority) => {
-  switch (priority) {
-    case Priority.HIGH:
-      return 'text-error-surface-primary';
-    case Priority.MEDIUM:
-      return 'text-warning-surface-primary';
-    case Priority.LOW:
-      return 'text-vattjom-surface-primary';
-  }
-};
 const defaultMunicipality = municipalityIds.find((m) => m.label === 'Sundsvall');
 
 export const emptyErrand: Partial<IErrand> = {

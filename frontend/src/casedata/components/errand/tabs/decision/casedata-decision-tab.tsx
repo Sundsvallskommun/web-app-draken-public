@@ -1,6 +1,6 @@
 'use client';
 
-import { DecisionOutcome, DecisionOutcomeKey, DecisionOutcomeLabel } from '@casedata/interfaces/decision';
+import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
@@ -53,13 +53,12 @@ import {
   FormLabel,
   Input,
   Select,
-  Spinner,
   cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import dynamic from 'next/dynamic';
+import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -484,9 +483,11 @@ export const CasedataDecisionTab: React.FC<{
           size="sm"
           disabled={!formState.isValid || !allowed}
           onClick={getPdfPreview}
-          rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+          loading={isPreviewLoading}
+          loadingText="Hämtar PDF"
+          rightIcon={<LucideIcon name="download" />}
         >
-          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
+          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
         </Button>
       </div>
       <div className="mt-24">
@@ -672,9 +673,11 @@ export const CasedataDecisionTab: React.FC<{
             size="md"
             disabled={!formState.isValid || !allowed}
             onClick={getPdfPreview}
-            rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+            loading={isPreviewLoading}
+            loadingText="Hämtar PDF"
+            rightIcon={<LucideIcon name="download" />}
           >
-            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
+            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
           </Button>
           <Button
             data-cy="save-and-send-decision-button"
@@ -731,11 +734,11 @@ export const CasedataDecisionTab: React.FC<{
                   });
               }
             }}
-            rightIcon={
-              isSaveAndSendLoading ? <Spinner size={2} className="mr-sm" /> : <LucideIcon name="send-horizontal" />
-            }
+            rightIcon={<LucideIcon name="send-horizontal" />}
+            loading={isSaveAndSendLoading}
+            loadingText="Skickar beslut"
           >
-            {isSaveAndSendLoading ? 'Skickar' : 'Skicka beslut'}
+            Skicka beslut
           </Button>
         </div>
         {!validateOwnerForSendingDecision(errand) ? (

@@ -3,7 +3,7 @@ import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { appealErrand, getErrand } from '@casedata/services/casedata-errand-service';
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
-import { Button, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -69,11 +69,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
     );
   };
 
-  return isLoading ? (
-    <Button disabled className="mt-16" variant="secondary" rightIcon={<Spinner size={2} />}>
-      Registrera överklagan
-    </Button>
-  ) : errand.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (
+  return errand.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (
     <Button className="mt-16" variant="secondary" onClick={() => handleClick(errand)}>
       Visa relaterat ärende
     </Button>
@@ -94,6 +90,8 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
           });
       })}
       disabled={props.disabled}
+      loading={isLoading}
+      loadingText="Registrerar överklagan"
     >
       Registrera överklagan
     </Button>

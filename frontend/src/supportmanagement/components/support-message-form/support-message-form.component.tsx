@@ -466,7 +466,7 @@ export const SupportMessageForm: React.FC<{
     getRelations(municipalityId, supportErrand.id, 'ASC').then(async (relations) => {
       setRelationErrands(relations);
       const errandNumbers = await Promise.all(
-        relations.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId))
+        relations?.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId)) ?? []
       );
       setRelationErrandsNumber(errandNumbers);
     });

@@ -1,7 +1,13 @@
 import { isROB } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
-import { Resolution, Status, StatusLabel, StatusLabelROB } from '@supportmanagement/services/support-errand-service';
+import {
+  Resolution,
+  ResolutionLabelROB,
+  Status,
+  StatusLabel,
+  StatusLabelROB,
+} from '@supportmanagement/services/support-errand-service';
 
 export const SupportStatusLabelComponent: React.FC<{ status: string; resolution: string }> = ({
   status,
@@ -83,11 +89,28 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
   }
 
   const solvedErrandText = () => {
-    if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED) return 'Eskalerat';
-    else if (resolution === Resolution.CLOSED && status === Status.SOLVED) return 'Avslutat';
-    else if (resolution === Resolution.BACK_TO_MANAGER && status === Status.SOLVED) return 'Åter till chef';
-    else if (resolution === Resolution.BACK_TO_HR && status === Status.SOLVED) return 'Åter till HR';
-    else return isROB() ? StatusLabelROB[status] : StatusLabel[status];
+    const isRob = isROB();
+
+    if (status === Status.SOLVED && resolution) {
+      if (isRob) {
+        return ResolutionLabelROB[resolution as Resolution] ?? 'Löst';
+      }
+
+      switch (resolution) {
+        case Resolution.REGISTERED_EXTERNAL_SYSTEM:
+          return 'Eskalerat';
+        case Resolution.CLOSED:
+          return 'Avslutat';
+        case Resolution.BACK_TO_MANAGER:
+          return 'Åter till chef';
+        case Resolution.BACK_TO_HR:
+          return 'Åter till HR';
+      }
+    }
+
+    return isRob
+      ? StatusLabelROB[status as Status] ?? 'Status saknas'
+      : StatusLabel[status as Status] ?? 'Status saknas';
   };
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>

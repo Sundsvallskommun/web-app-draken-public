@@ -2,36 +2,12 @@ import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wr
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import {
-  getApplicationEnvironment,
-  isIK,
-  isKA,
-  isKC,
-  isLOP,
-  isMEX,
-  isPT,
-  isROB,
-} from '@common/services/application-service';
+import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  CookieConsent,
-  Divider,
-  Label,
-  Link,
-  Logo,
-  PopupMenu,
-  UserMenu,
-  useThemeQueries,
-} from '@sk-web-gui/react';
-import {
-  Resolution,
-  Status,
-  StatusLabel,
-  StatusLabelROB,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
+import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
@@ -39,7 +15,6 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 
 export default function Layout({ title, children }) {
   const {

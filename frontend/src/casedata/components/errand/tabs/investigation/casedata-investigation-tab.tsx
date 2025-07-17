@@ -25,14 +25,13 @@ import {
   FormLabel,
   Input,
   Select,
-  Spinner,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { TextEditor } from '@sk-web-gui/text-editor';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { TextEditor } from '@sk-web-gui/text-editor';
 
 export interface UtredningFormModel {
   id?: string;
@@ -444,15 +443,11 @@ export const CasedataInvestigationTab: React.FC<{
                 !isFTErrand(props.errand) &&
                 (!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty)
               }
-              leftIcon={
-                isLoading ? (
-                  <Spinner color="tertiary" size={2} className="mr-sm" />
-                ) : (
-                  <LucideIcon name="check" className="mr-sm" />
-                )
-              }
+              leftIcon={<LucideIcon name="check" className="mr-sm" />}
+              loading={isLoading}
+              loadingText="Sparar"
             >
-              {isLoading ? 'Sparar' : 'Spara'}
+              Spara
             </Button>
             {isFTErrand(props.errand) && (
               <Button
@@ -474,9 +469,10 @@ export const CasedataInvestigationTab: React.FC<{
                       return confirmed ? () => true : () => {};
                     });
                 }}
-                leftIcon={isLoading ? <Spinner color="tertiary" size={2} className="mr-sm" /> : null}
+                loading={isLoading}
+                loadingText="Återställer mall"
               >
-                {isLoading ? 'Återställer mall' : 'Återställ mall'}
+                Återställ mall
               </Button>
             )}
           </div>

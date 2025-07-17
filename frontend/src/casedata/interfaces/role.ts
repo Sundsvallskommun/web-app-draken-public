@@ -44,6 +44,7 @@ export enum MEXRelation {
   SECTION_HEAD = 'Sektionschef',
   ALTERNATE = 'Suppleant',
   SECRETARY = 'Sekreterare',
+  CONTACT_PERSON = 'Ärendeintressent',
 }
 
 export enum PTRelation {
@@ -53,6 +54,7 @@ export enum PTRelation {
   PASSENGER = 'Passagerare',
   DOCTOR = 'Läkare',
   REPORTER = 'Anmälare',
+  CONTACT_PERSON = 'Ärendeintressent',
 }
 
 export enum PrettyRole {
