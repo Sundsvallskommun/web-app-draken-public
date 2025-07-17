@@ -382,6 +382,9 @@ export const SidebarInfo: React.FC<{
       case Resolution.PARTLY: {
         return solutionComponent('Delvis', 'avslutade ärendet.', 'check');
       }
+      case Resolution.SECURE_APPBOX: {
+        return solutionComponent('Löst', 'avslutade ärendet genom SecureAppbox.', 'check');
+      }
     }
   };
 
