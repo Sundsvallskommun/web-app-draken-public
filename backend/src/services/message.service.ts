@@ -1,3 +1,5 @@
+import { CASEDATA_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import {
   Classification,
   EmailHeader,
@@ -24,7 +26,6 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
-import { CASEDATA_NAMESPACE } from '@/config';
 
 interface SmsMessage {
   party?: {
@@ -43,8 +44,8 @@ interface SmsMessage {
 }
 
 const NOTIFY_CONTACTS = false;
-const SERVICE = `case-data/11.5`;
-const MESSAGING_SERVICE = `messaging/7.3`;
+const SERVICE = apiServiceName('case-data');
+const MESSAGING_SERVICE = apiServiceName('messaging');
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
 

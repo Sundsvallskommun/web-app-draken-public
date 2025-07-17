@@ -1,12 +1,13 @@
-import { Conversation, ConversationType, Message, PageMessage } from '@/data-contracts/supportmanagement/data-contracts';
+import { apiServiceName } from '@/config/api-config';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
+import { Conversation, ConversationType, PageMessage } from '@/data-contracts/supportmanagement/data-contracts';
+import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Get, Param, Post, Req, UseBefore, UploadedFiles } from 'routing-controllers';
+import { Body, Controller, Get, Param, Post, Req, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { fileUploadOptions } from '@/utils/fileUploadOptions';
 
 interface ResponseData {
   data: any;
@@ -16,7 +17,9 @@ interface ResponseData {
 @Controller()
 export class SupportConversationController {
   private apiService = new ApiService();
-  SERVICE = `supportmanagement/10.6`;
+  SERVICE = apiServiceName('supportmanagement');
+  CITIZEN_SERVICE = apiServiceName('citizen');
+  EMPLOYEE_SERVICE = apiServiceName('employee');
 
   @Get('/supportmanagement/:municipalityId/namespace/errands/:errandId/communication/conversations')
   @OpenAPI({ summary: 'Return all conversations by errandId' })
@@ -68,7 +71,7 @@ export class SupportConversationController {
             sender = req.user.firstName + ' ' + req.user.lastName;
             direction = 'OUTBOUND';
           } else {
-            const adAccountUrl = `employee/2.0/${municipalityId}/portalpersondata/PERSONAL/${msg?.createdBy?.value}`;
+            const adAccountUrl = `${this.EMPLOYEE_SERVICE}/${municipalityId}/portalpersondata/PERSONAL/${msg?.createdBy?.value}`;
             const res = await this.apiService.get<PortalPersonData>({ url: adAccountUrl }, req.user);
             sender = res.data.givenname + ' ' + res.data.lastname;
             direction = 'INBOUND';
@@ -76,7 +79,7 @@ export class SupportConversationController {
         }
 
         if (msg?.createdBy?.type === 'PARTY_ID') {
-          const adAccountUrl = `citizen/3.0/${municipalityId}/${msg?.createdBy?.value}`;
+          const adAccountUrl = `${this.CITIZEN_SERVICE}/${municipalityId}/${msg?.createdBy?.value}`;
           const res = await this.apiService.get<any>({ url: adAccountUrl }, req.user);
           sender = res.data.givenname + ' ' + res.data.lastname;
           direction = 'INBOUND';

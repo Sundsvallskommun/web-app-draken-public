@@ -1,16 +1,17 @@
-import { RequestWithUser } from '@interfaces/auth.interface';
-import { validationMiddleware } from '@middlewares/validation.middleware';
-import ApiService from '@services/api.service';
-import authMiddleware from '@middlewares/auth.middleware';
-import { IsOptional, IsString, ValidateNested } from 'class-validator';
-import { Type as TypeTransformer } from 'class-transformer';
-import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
-import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 import { MUNICIPALITY_ID } from '@/config';
-import { logger } from '@/utils/logger';
+import { apiServiceName } from '@/config/api-config';
 import { Address, BusinessInformation, County, LegalForm, Municipality } from '@/data-contracts/businessengagements/data-contracts';
 import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
+import { logger } from '@/utils/logger';
+import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
+import { RequestWithUser } from '@interfaces/auth.interface';
+import authMiddleware from '@middlewares/auth.middleware';
+import { validationMiddleware } from '@middlewares/validation.middleware';
+import ApiService from '@services/api.service';
+import { Type as TypeTransformer } from 'class-transformer';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 class SsnPayload {
   @IsString()
@@ -209,15 +210,18 @@ const MOCKDATAFORTEST: ResponseData = {
 @Controller()
 export class AddressController {
   private apiService = new ApiService();
+  CITIZEN_SERVICE = apiServiceName('citizen');
+  EMPLOYEE_SERVICE = apiServiceName('employee');
+  LEGALENTITY_SERVICE = apiServiceName('legalentity');
 
   @Post('/address/')
   @OpenAPI({ summary: 'Return adress for given person number' })
   @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
   async cases(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<ResponseData> {
-    const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
+    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `citizen/3.0/${MUNICIPALITY_ID}/${guidRes.data}`;
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${guidRes.data}`;
     const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
 
     return { data: res.data, message: 'success' } as ResponseData;
@@ -227,10 +231,10 @@ export class AddressController {
   @OpenAPI({ summary: 'Return personId for given person number' })
   @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
   async personId(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<PersonIdResponseData> {
-    const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
+    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `citizen/3.0/${MUNICIPALITY_ID}/citizen/${guidRes.data}`;
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/citizen/${guidRes.data}`;
     const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
 
     return { data: { personId: res.data.personId }, message: 'success' } as PersonIdResponseData;
@@ -245,7 +249,7 @@ export class AddressController {
     const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
-    const url = `legalentity/2.0/${MUNICIPALITY_ID}/${guidRes.data}`;
+    const url = `${this.LEGALENTITY_SERVICE}/${MUNICIPALITY_ID}/${guidRes.data}`;
 
     const res = await this.apiService.get<LegalEntity2>({ url }, req.user);
 
@@ -262,7 +266,7 @@ export class AddressController {
     @Param('loginName') loginName: string,
     @Res() response: any,
   ): Promise<{ data: EmployeeAddress; message: string }> {
-    const baseUrl = `employee/2.0/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
+    const baseUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
     const res = await this.apiService.get<EmployeeAddress>({ url: baseUrl }, req.user).catch(e => {
       logger.error('Error when fetching user information');
       throw e;
@@ -270,7 +274,7 @@ export class AddressController {
     const personId = res.data?.personid;
 
     if (personId) {
-      const empUrl = `employee/2.0/${MUNICIPALITY_ID}/employments?personId=${personId}`;
+      const empUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employments?personId=${personId}`;
       const empRes = await this.apiService.get<any[]>({ url: empUrl }, req.user).catch(e => {
         logger.error('Error when fetching employment data');
         return { data: [] };
@@ -298,12 +302,12 @@ export class AddressController {
     @Param('personalNumber') personalNumber: string,
     @Res() response: any,
   ): Promise<{ data: EmployedPersonData; message: string }> {
-    const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${personalNumber}/guid`;
+    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${personalNumber}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
     if (!guidRes.data) {
       throw new Error('No data found for the given personal number');
     }
-    const url = `employee/2.0/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
+    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
     const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
       logger.error('Error when fetching employed user information');
       throw e;
