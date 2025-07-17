@@ -1,6 +1,7 @@
 import { Priority } from '@casedata/interfaces/priority';
+import { PriorityComponent } from '@common/components/priority/priority.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isKA, isKC, isLOP } from '@common/services/application-service';
+import { isKC } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
@@ -229,7 +230,9 @@ export const SupportErrandsTable: React.FC = () => {
             <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
           </div>
         </Table.Column>
-        <Table.Column>{Priority[errand.priority]}</Table.Column>
+        <Table.Column>
+          <PriorityComponent priority={Priority[errand.priority]} />
+        </Table.Column>
         {errand.status === Status.SUSPENDED ? (
           <Table.Column>
             <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
