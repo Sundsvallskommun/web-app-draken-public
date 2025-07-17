@@ -12,7 +12,7 @@ const statusOverrides: Partial<Record<ToastStatus, ToastOverrides>> = {
     closeable: true,
     position: 'bottom',
   },
-  // error, info, warning kan läggas till vid behov
+  // Options for error, info, warning can be added similarly
 };
 
 interface ToastInput {
