@@ -2,15 +2,15 @@ import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-w
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { Priority } from '@casedata/interfaces/priority';
 import { emptyErrand, getErrandByErrandNumber, getUiPhase } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -175,20 +175,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   </div>
                                   <div>
                                     <span className="flex gap-sm items-center">
-                                      <Badge
-                                        className="!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px] align-center"
-                                        color={
-                                          errand?.priority === Priority.HIGH
-                                            ? 'error'
-                                            : errand?.priority === Priority.MEDIUM
-                                            ? 'warning'
-                                            : errand?.priority === Priority.LOW
-                                            ? 'vattjom'
-                                            : 'vattjom'
-                                        }
-                                        data-cy="errandPriority"
-                                      />
-                                      {errand?.priority}
+                                      <PriorityComponent priority={errand?.priority} />
                                     </span>
                                   </div>
                                 </div>

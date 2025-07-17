@@ -11,6 +11,7 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Badge,
   Button,
+  Callout,
   Input,
   Label,
   Pagination,
@@ -28,6 +29,7 @@ import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { PriorityComponent } from '@common/components/priority/priority.component';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -181,38 +183,7 @@ export const ErrandsTable: React.FC = () => {
         {isMEX() && <Table.Column>{caseMeaning?.values}</Table.Column>}
         {isPT() && <Table.Column>{errand.errandNumber}</Table.Column>}
         <Table.Column>
-          {isPT() ? (
-            <>
-              <Badge
-                className="w-[8px] h-[8px]"
-                color={
-                  errand.priority === Priority.HIGH
-                    ? 'error'
-                    : errand.priority === Priority.MEDIUM
-                    ? 'warning'
-                    : 'vattjom'
-                }
-                rounded
-              />
-              {errand.priority}
-            </>
-          ) : (
-            <Label
-              rounded={true}
-              inverted={true}
-              color={
-                errand.priority === Priority.HIGH
-                  ? 'error'
-                  : errand.priority === Priority.MEDIUM
-                  ? 'warning'
-                  : errand.priority === Priority.LOW
-                  ? 'info'
-                  : 'vattjom'
-              }
-            >
-              {errand.priority}
-            </Label>
-          )}
+          <PriorityComponent priority={errand.priority} />
         </Table.Column>
         {isPT() && (
           <Table.Column>
