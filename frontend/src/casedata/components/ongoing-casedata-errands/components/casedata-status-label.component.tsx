@@ -28,7 +28,7 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       inverted = true;
       icon = 'clock-10';
       break;
-    case ErrandStatus.InterntAterkoppling:
+    case ErrandStatus.InternAterkoppling:
       color = 'gronsta';
       inverted = true;
       icon = 'clock-10';
