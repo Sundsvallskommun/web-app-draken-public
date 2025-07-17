@@ -52,12 +52,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   } = useAppContext();
   const toastMessage = useSnackbar();
 
-  const { theme } = useGui();
-
   const methods = useForm<IErrand>({
     resolver: yupResolver(formSchema),
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    disabled: isErrandLocked(errand),
   });
 
   const initialFocus = useRef(null);
@@ -211,13 +210,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   <div className="pr-sm w-[40%]">
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>
-                                      {errand.facilities.map((estate, index) => (
-                                        <Fragment key={`estate-${estate.id}`}>
-                                          {index === 0
-                                            ? estateToText(estate?.address?.propertyDesignation)
-                                            : ', ' + estateToText(estate?.address?.propertyDesignation)}
-                                        </Fragment>
-                                      ))}
+                                      {errand.facilities.map((estate, index) =>
+                                        index === 0
+                                          ? estateToText(estate?.address?.propertyDesignation)
+                                          : ', ' + estateToText(estate?.address?.propertyDesignation)
+                                      )}
                                       {errand.facilities.length === 0 ? '(Saknas)' : null}
                                     </div>
                                   </div>

@@ -267,29 +267,6 @@ export const Facilities: React.FC<{
             )}
           </Table.Body>
         </Table>
-        {props.onSave && internalUnsaved ? (
-          <Button
-            className="mt-md"
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
-            data-cy="save-propertysearch-button"
-            variant="primary"
-            onClick={() => {
-              try {
-                setIsLoading(true);
-                props.onSave(realEstates).then(() => {
-                  setIsLoading(false);
-                  setInternalUnsaved(false);
-                });
-              } catch (error) {
-                console.error('Error: ', error);
-              }
-            }}
-            loading={isLoading}
-            loadingText="Sparar"
-          >
-            Spara
-          </Button>
-        ) : null}
       </div>
     </div>
   );

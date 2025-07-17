@@ -133,6 +133,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     } else {
       updateStakeholdersFromErrand();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, existingContract]);
 
   const contractForm = useForm<ContractData & ContractStatus & KopeavtalsTemplate & LagenhetsArendeTemplate>({
@@ -249,6 +250,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           contractForm.setValue('externalReferenceId', errand.id.toString());
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const contractType = contractForm.watch('contractType') as ContractType;

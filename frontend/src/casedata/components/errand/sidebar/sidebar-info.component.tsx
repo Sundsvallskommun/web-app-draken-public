@@ -40,6 +40,7 @@ import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { SaveButtonComponent } from '@casedata/components/save-button/save-button.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -309,25 +310,6 @@ export const SidebarInfo: React.FC<{}> = () => {
           <span className="text-base md:text-large xl:text-lead font-semibold">Handläggning</span>
         </div>
 
-        {/* {!errand?.administrator?.adAccount ? (
-        <div className="mt-md">
-          {uiPhase === UiPhase.inkommet ? (
-            <p>
-              För att registrera ett ärende behöver du beskriva ärendet, lägga till en ärendeägare samt addera uppgifter
-              som kan vara viktiga för en handläggare att ta del av.
-            </p>
-          ) : UiPhase.granskning ? (
-            <p>
-              För att inleda utredning behöver ärendet tilldelas en ansvarig handläggare. Du kan utse dig själv eller
-              någon annan i ditt team.
-            </p>
-          ) : (
-            <p>
-              Ärendet behöver tilldelas en ansvarig handläggare. Du kan utse dig själv eller någon annan i ditt team.
-            </p>
-          )}
-        </div>
-      ) : null} */}
         {errand?.id ? (
           <div className="w-full mt-md flex flex-col items-start gap-12">
             <FormControl id="administrator" className="w-full" required disabled={isErrandLocked(errand)}>
@@ -410,25 +392,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 ))}
               </Select>
             </FormControl>
-            {errand?.id && formState.dirtyFields.status && getValues().status !== 'Välj status' ? (
-              <Button
-                color="primary"
-                disabled={
-                  !errand?.id ||
-                  !formState.dirtyFields.status ||
-                  getValues().status === 'Välj status' ||
-                  isErrandLocked(errand) ||
-                  !allowed
-                }
-                loadingText="Sparar"
-                loading={isLoading === 'status'}
-                size="sm"
-                onClick={handleSubmit(saveStatus, onError)}
-                data-cy="save-status-button"
-              >
-                Spara
-              </Button>
-            ) : null}
+            <SaveButtonComponent setUnsaved={() => {}} update={() => {}} label="Spara ärende" color="primary" />
           </div>
         ) : null}
 

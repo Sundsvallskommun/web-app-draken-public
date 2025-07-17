@@ -1,10 +1,14 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
-import { CasedataOverviewTab } from '@casedata/components/errand/tabs/overview/casedata-overview-tab';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { Role } from '@casedata/interfaces/role';
 import { getAssets } from '@casedata/services/asset-service';
-import { getErrand, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
+import {
+  getErrand,
+  isErrandLocked,
+  isFTErrand,
+  phaseChangeInProgress,
+} from '@casedata/services/casedata-errand-service';
 import {
   countUnreadMessages,
   fetchMessages,
@@ -25,6 +29,7 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
 import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
+import CasedataForm from './tabs/overview/casedata-form.component';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -131,6 +136,12 @@ export const CasedataTabsWrapper: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
+  const unlockedTabs = ['Meddelanden', 'Beslut'];
+  const shouldDisableTab = (tabLabel: string): boolean => {
+    if (!isErrandLocked(errand)) return false;
+    return !unlockedTabs.some((label) => tabLabel.startsWith(label));
+  };
+
   const tabs: {
     label: string;
     content: React.ReactNode;
@@ -140,13 +151,14 @@ export const CasedataTabsWrapper: React.FC = () => {
     {
       label: 'Grunduppgifter',
       content: (
-        <CasedataOverviewTab
-          errand={errand}
+        <CasedataForm
           registeringNewErrand={typeof errand?.id === 'undefined'}
           setUnsaved={(u) => {
             setUnsavedChanges(u);
           }}
           update={() => {}}
+          setFormIsValid={() => {}}
+          errand={errand}
         />
       ),
       disabled: false,
@@ -409,7 +421,9 @@ export const CasedataTabsWrapper: React.FC = () => {
                 <Tabs.Button disabled={tab.disabled} className="text-small">
                   {tab.label}
                 </Tabs.Button>
-                <Tabs.Content>{tab.content}</Tabs.Content>
+                <Tabs.Content>
+                  <fieldset disabled={shouldDisableTab(tab.label)}>{tab.content}</fieldset>
+                </Tabs.Content>
               </Tabs.Item>
             ))}
         </Tabs>
