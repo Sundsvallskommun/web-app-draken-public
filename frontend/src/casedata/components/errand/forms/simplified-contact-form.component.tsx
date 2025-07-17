@@ -25,6 +25,7 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,
@@ -272,12 +273,12 @@ export const SimplifiedContactForm: React.FC<{
       .then((res) => {
         getErrand(municipalityId, errand.id.toString()).then((res) => {
           setErrand(res.errand);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ärendepersonen sparades',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: 'Ärendepersonen sparades',
+              status: 'success',
+            })
+          );
           onClose();
           setModalOpen(false);
           setManual(false);

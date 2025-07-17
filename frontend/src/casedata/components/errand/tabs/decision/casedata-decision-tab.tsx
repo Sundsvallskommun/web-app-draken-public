@@ -59,6 +59,7 @@ import {
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -200,12 +201,12 @@ export const CasedataDecisionTab: React.FC<{
       .then((res) => setErrand(res.errand))
       .then(() => {
         setIsLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fasbytet inleddes',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Fasbytet inleddes',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
       })
       .catch(() => {
@@ -227,12 +228,12 @@ export const CasedataDecisionTab: React.FC<{
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Beslutet sparades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Beslutet sparades',
+          status: 'success',
+        })
+      );
       await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({
@@ -314,12 +315,12 @@ export const CasedataDecisionTab: React.FC<{
           };
       const updatedStatus = await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const phaseChange = await triggerPhaseChange();
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Beslutet skickades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Beslutet skickades',
+          status: 'success',
+        })
+      );
     } catch (error) {
       toastMessage({
         position: 'bottom',

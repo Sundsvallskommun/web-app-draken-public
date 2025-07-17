@@ -16,6 +16,7 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -132,12 +133,12 @@ export const PhaseChanger = () => {
     setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Handläggaren sparades, går vidare till granskning',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggaren sparades, går vidare till granskning',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
@@ -171,12 +172,12 @@ export const PhaseChanger = () => {
             .then((res) => setErrand(res.errand))
             .then(() => {
               setIsLoading(false);
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Fasbytet inleddes',
-                status: 'success',
-              });
+              toastMessage(
+                getToastOptions({
+                  message: 'Fasbytet inleddes',
+                  status: 'success',
+                })
+              );
               setError(true);
               setIsLoading(false);
             })

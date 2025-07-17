@@ -1,5 +1,6 @@
 import { User } from '@common/interfaces/user';
 import { prettyTime } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -174,12 +175,12 @@ export const SupportErrandInvoiceTab: React.FC<{
     return saveBillingRecord(supportErrand, municipalityId, getValues())
       .then(() => {
         setIsLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fakturan sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Fakturan sparades',
+            status: 'success',
+          })
+        );
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch(() => {

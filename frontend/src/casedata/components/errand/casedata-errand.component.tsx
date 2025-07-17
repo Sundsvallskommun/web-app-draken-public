@@ -112,12 +112,14 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
       // Registering new errand, show default values
       setErrand(emptyErrand);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   useEffect(() => {
     if (errand) {
       setUiPhase(getUiPhase(errand));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   function estateToText(propertyDesignation: string) {

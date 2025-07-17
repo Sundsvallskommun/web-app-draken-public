@@ -13,6 +13,7 @@ import {
   removeStakeholder,
 } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Divider, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
@@ -43,15 +44,8 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
   }, [errand]);
 
   const {
-    register,
     control,
-    handleSubmit,
-    watch,
-    setValue,
-    trigger,
     reset,
-    getValues,
-    formState,
     formState: { errors },
   }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
@@ -70,6 +64,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
   useEffect(() => {
     reset(errand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const onRemoveContact: (stakeholderId: string, index: number) => Promise<boolean> = (stakeholderId, index) => {
@@ -77,12 +72,12 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
       .then((res) => {
         getErrand(municipalityId, errand.id.toString()).then((res) => {
           setErrand(res.errand);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Intressenten togs bort',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: 'Intressenten togs bort',
+              status: 'success',
+            })
+          );
         });
         return !!res;
       })
@@ -106,12 +101,12 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
       .then((res) => {
         getErrand(municipalityId, errand.id.toString()).then((res) => {
           setErrand(res.errand);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ändringen sparades',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: 'Ändringen sparades',
+              status: 'success',
+            })
+          );
         });
         return res ? true : false;
       })

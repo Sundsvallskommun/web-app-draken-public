@@ -1,6 +1,7 @@
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { saveSignedContractAttachment } from '@casedata/services/contract-service';
 import FileUpload from '@common/components/file-upload/file-upload.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -131,12 +132,12 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
                     getErrand(municipalityId, errand.id.toString())
                       .then((res) => setErrand(res.errand))
                       .then(() => {
-                        toastMessage({
-                          position: 'bottom',
-                          closeable: false,
-                          message: 'Bilagan sparades',
-                          status: 'success',
-                        });
+                        toastMessage(
+                          getToastOptions({
+                            message: 'Bilagan sparades',
+                            status: 'success',
+                          })
+                        );
                       })
                   )
                   .catch(() => {

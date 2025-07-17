@@ -3,6 +3,7 @@ import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/cased
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -87,12 +88,12 @@ export const SidebarGenericNotes: React.FC<{
 
     return apiCall
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${label_singular}en sparades`,
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: `${label_singular}en sparades`,
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
@@ -133,12 +134,12 @@ export const SidebarGenericNotes: React.FC<{
     const note: ErrandNotesTabFormModel = getValues();
     return updateSupportNote(supportErrand.id, municipalityId, note.id, note.text)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${label_singular}en sparades`,
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: `${label_singular}en sparades`,
+            status: 'success',
+          })
+        );
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
         setValue('id', '');
@@ -159,12 +160,12 @@ export const SidebarGenericNotes: React.FC<{
   const removeNote = (inNote) => {
     return deleteSupportNote(supportErrand.id, municipalityId, inNote.id)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${label_singular}en togs bort`,
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: `${label_singular}en togs bort`,
+            status: 'success',
+          })
+        );
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
       })

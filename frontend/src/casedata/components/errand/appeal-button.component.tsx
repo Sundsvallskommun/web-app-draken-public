@@ -2,6 +2,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { appealErrand, getErrand } from '@casedata/services/casedata-errand-service';
 import { Admin } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
@@ -38,12 +39,12 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
           throw new Error('Failed to fetch the appealed errand');
         }
         setErrand(appealedErrand.errand, () => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Överklagan registrerad',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: 'Överklagan registrerad',
+              status: 'success',
+            })
+          );
         });
         router.replace(`/arende/${municipalityId}/${appealedErrand.errand.errandNumber}`);
         setIsLoading(false);

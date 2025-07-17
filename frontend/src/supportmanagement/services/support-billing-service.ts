@@ -501,6 +501,7 @@ export const useBillingRecords = (
           });
         });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [setBillingRecords, billingRecords, size, filter, sort, toastMessage]
   );
 
@@ -508,6 +509,7 @@ export const useBillingRecords = (
     if (size && size > 0) {
       fetchBillingRecords().then(() => setIsLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, size, sort]);
 
   useEffect(() => {

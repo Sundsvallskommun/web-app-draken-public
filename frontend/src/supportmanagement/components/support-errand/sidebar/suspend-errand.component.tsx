@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -71,12 +72,12 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     setError(false);
     return setSuspension(supportErrand.id, municipalityId, Status.SUSPENDED, data.date, data.comment)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet parkerades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet parkerades',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         setShowModal(false);
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));

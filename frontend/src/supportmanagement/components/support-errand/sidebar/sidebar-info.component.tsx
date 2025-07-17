@@ -32,6 +32,7 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { StartProcessComponent } from './start-process.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -77,13 +78,23 @@ export const SidebarInfo: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
-  const toast = (kind, label) =>
-    toastMessage({
-      position: 'bottom',
-      closeable: false,
-      message: label,
-      status: kind,
-    });
+  const toast = (kind: 'success' | 'error' | 'warning' | 'info', label) => {
+    if (kind === 'success') {
+      toastMessage(
+        getToastOptions({
+          message: label,
+          status: kind,
+        })
+      );
+    } else {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: label,
+        status: kind,
+      });
+    }
+  };
 
   const {
     register,
@@ -145,12 +156,12 @@ export const SidebarInfo: React.FC<{
             });
         }
         update();
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet uppdaterades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet uppdaterades',
+            status: 'success',
+          })
+        );
         setTimeout(async () => {
           const e = await getSupportErrandById(getValues().id, municipalityId);
           setSupportErrand(e.errand);

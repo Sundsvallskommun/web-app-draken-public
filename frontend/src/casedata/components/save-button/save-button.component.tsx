@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { stakeholder2Contact } from '@casedata/services/casedata-stakeholder-service';
 import { Role } from '@casedata/interfaces/role';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;
@@ -128,12 +129,12 @@ export const SaveButtonComponent: React.FC<{
           setErrand(saved.errand);
         }
         setIsLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet sparades',
+            status: 'success',
+          })
+        );
       })
       .catch((e) => {
         console.error('Error when updating errand:', e);
