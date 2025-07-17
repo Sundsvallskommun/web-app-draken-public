@@ -44,7 +44,7 @@ export enum MEXRelation {
   SECTION_HEAD = 'Sektionschef',
   ALTERNATE = 'Suppleant',
   SECRETARY = 'Sekreterare',
-  CONTACT_PERSON = 'Ärendeintressent',
+  CONTACT_PERSON = 'Kontaktperson',
 }
 
 export enum PTRelation {
@@ -54,7 +54,7 @@ export enum PTRelation {
   PASSENGER = 'Passagerare',
   DOCTOR = 'Läkare',
   REPORTER = 'Anmälare',
-  CONTACT_PERSON = 'Ärendeintressent',
+  CONTACT_PERSON = 'Kontaktperson',
 }
 
 export enum PrettyRole {
@@ -64,7 +64,7 @@ export enum PrettyRole {
   PAYMENT_PERSON = 'PAYMENT_PERSON',
   INVOICE_RECIPENT = 'Fakturamottagare',
   OPERATOR = 'OPERATOR',
-  CONTACT_PERSON = 'Ärendeintressent',
+  CONTACT_PERSON = 'Kontaktperson',
   ADMINISTRATOR = 'Handläggare',
   FELLOW_APPLICANT = 'Medsökande',
   DRIVER = 'Förare',

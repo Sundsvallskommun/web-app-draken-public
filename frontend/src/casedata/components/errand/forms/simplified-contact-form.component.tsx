@@ -292,7 +292,7 @@ export const SimplifiedContactForm: React.FC<{
       .catch((error) => {
         console.error('Error:', error);
         toastMessage({
-          message: 'Något gick fel när ärendeintressenten sparades',
+          message: 'Något gick fel när ärendepersonen sparades',
           status: 'error',
         });
         setIsLoading(false);
