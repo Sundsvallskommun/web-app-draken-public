@@ -4,8 +4,9 @@ import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
 import ApiService from './api.service';
 import { Errand } from '@/data-contracts/supportmanagement/data-contracts';
+import { apiServiceName } from '@/config/api-config';
 
-const SERVICE = `supportmanagement/10.6`;
+const SERVICE = apiServiceName('supportmanagement');
 const namespace = SUPPORTMANAGEMENT_NAMESPACE;
 
 export const validateSupportAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (
@@ -37,7 +38,7 @@ export const checkIfSupportAdministrator: (user: User) => Promise<boolean> = asy
   //
   // Därtill har domän gjorts konfigurerbar i .env-filen.
   //
-  const url = `activedirectory/2.0/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
+  const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
   const res = await apiService.get<AdUser[]>({ url }, user);
   return res.data.some(u => u.name === user.username);
 };

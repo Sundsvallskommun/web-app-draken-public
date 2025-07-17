@@ -1,11 +1,12 @@
+import { apiServiceName } from '@/config/api-config';
+import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { UiPhase } from '@/interfaces/errand-phase.interface';
+import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
 import ApiService from './api.service';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
-import { UiPhase } from '@/interfaces/errand-phase.interface';
-import { User } from '@/interfaces/users.interface';
-import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 
-const SERVICE = `case-data/11.5`;
+const SERVICE = apiServiceName('case-data');
 
 export const validateContractAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (
   municipalityId,

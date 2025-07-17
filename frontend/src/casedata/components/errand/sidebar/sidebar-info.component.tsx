@@ -39,6 +39,7 @@ import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { SaveButtonComponent } from '@casedata/components/save-button/save-button.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
@@ -123,12 +124,12 @@ export const SidebarInfo: React.FC<{}> = () => {
     setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Handläggare sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggare sparades',
+            status: 'success',
+          })
+        );
 
         const status = Object.entries(ErrandStatus).find(([key, label]) => label === 'Tilldelat')[1];
         updateErrandStatus(municipalityId, errand.id.toString(), status).then(() => {
@@ -157,12 +158,12 @@ export const SidebarInfo: React.FC<{}> = () => {
     setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Handläggare sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggare sparades',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
@@ -173,6 +174,35 @@ export const SidebarInfo: React.FC<{}> = () => {
           position: 'bottom',
           closeable: false,
           message: 'Något gick fel när handläggaren sparades',
+          status: 'error',
+        });
+        setError(true);
+        setIsLoading(false);
+        return;
+      });
+  };
+
+  const saveStatus = () => {
+    const status = Object.entries(ErrandStatus).find(([key, label]) => label === getValues().status)[1];
+    setIsLoading('status');
+    setError(false);
+    return updateErrandStatus(municipalityId, errand.id.toString(), status)
+      .then(() => {
+        toastMessage(
+          getToastOptions({
+            message: 'Status ändrades',
+            status: 'success',
+          })
+        );
+        setIsLoading(false);
+        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        reset();
+      })
+      .catch((e) => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när status ändrades',
           status: 'error',
         });
         setError(true);
@@ -228,21 +258,21 @@ export const SidebarInfo: React.FC<{}> = () => {
       };
       return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
         .then(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: `Tjänsteanteckningen sparades`,
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: `Tjänsteanteckningen sparades`,
+              status: 'success',
+            })
+          );
 
           cancelErrandPhaseChange(municipalityId, errand)
             .then(() => {
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Ärendet avslutades',
-                status: 'success',
-              });
+              toastMessage(
+                getToastOptions({
+                  message: 'Ärendet avslutades',
+                  status: 'success',
+                })
+              );
               setModalIsOpen(false);
 
               //TODO add polling.

@@ -1,3 +1,4 @@
+import { apiServiceName } from '@/config/api-config';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -13,7 +14,7 @@ interface ResponseData {
 @Controller()
 export class CaseDataHistoryController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.5`;
+  SERVICE = apiServiceName('case-data');
 
   @Get('/:municipalityId/errands/:errandId/history')
   @OpenAPI({ summary: 'Fetch history for errand' })

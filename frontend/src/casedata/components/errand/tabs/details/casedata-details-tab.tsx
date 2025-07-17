@@ -16,6 +16,7 @@ import { IconName } from 'lucide-react/dynamic';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -47,12 +48,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       return getErrand(municipalityId, errand.id.toString())
         .then((res) => {
           setErrand(res.errand);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Fastighetsinformationen sparades',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: 'Fastighetsinformationen sparades',
+              status: 'success',
+            })
+          );
           setIsLoading(undefined);
         })
         .catch(() => {

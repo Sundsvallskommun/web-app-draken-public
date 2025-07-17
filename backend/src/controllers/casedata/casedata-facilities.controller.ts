@@ -1,3 +1,4 @@
+import { apiServiceName } from '@/config/api-config';
 import { Facility as FacilityDTO } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { logger } from '@/utils/logger';
@@ -16,7 +17,7 @@ interface ResponseData {
 @Controller()
 export class caseDataFacilitiesController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.5`;
+  SERVICE = apiServiceName('case-data');
 
   @Post('/casedata/:municipalityId/errands/:errandId/facilities')
   @OpenAPI({ summary: 'Save facilities by errand' })

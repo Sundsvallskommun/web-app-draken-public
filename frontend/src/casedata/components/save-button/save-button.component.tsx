@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { stakeholder2Contact } from '@casedata/services/casedata-stakeholder-service';
 import { Role } from '@casedata/interfaces/role';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   extraParametersToUppgiftMapper,
   UppgiftField,
@@ -239,12 +240,10 @@ export const SaveButtonComponent: React.FC<{
         reset();
       }
 
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
+      toastMessage( getToastOptions({
         message: 'Ärendet sparades',
         status: 'success',
-      });
+      }));
     } catch (e) {
       console.error('Error when saving errand:', e);
       toastMessage({

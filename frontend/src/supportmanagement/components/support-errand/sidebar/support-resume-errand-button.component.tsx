@@ -8,6 +8,7 @@ import {
   Status,
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
@@ -19,12 +20,12 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
     setIsLoading(true);
     return setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärende återupptogs',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärende återupptogs',
+            status: 'success',
+          })
+        );
         return getSupportErrandById(supportErrand.id, municipalityId).then((res) => {
           setSupportErrand(res.errand);
           setIsLoading(false);

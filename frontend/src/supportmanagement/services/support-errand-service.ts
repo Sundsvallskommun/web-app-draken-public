@@ -305,6 +305,7 @@ export enum Resolution {
   RECRUITED = 'RECRUITED',
   ABORTED = 'ABORTED',
   PARTLY = 'PARTLY',
+  SECURE_APPBOX = 'SECURE_APPBOX',
 }
 
 export enum ResolutionLabelLOP {

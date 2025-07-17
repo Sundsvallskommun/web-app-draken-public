@@ -1,9 +1,8 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { isPT } from '@common/services/application-service';
+import { isMEX } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { UseFormReturn } from 'react-hook-form';
 import { ContactRelationSelect } from './contact-relation-select.component';
@@ -81,7 +80,7 @@ export const SearchResult: React.FC<SearchResultProps> = ({
           addingStakeholder={true}
           errand={errand}
           disabled={disabled}
-          required={!isPT()}
+          required={isMEX()}
           error={!!formState.errors.emails}
           key={`nested-email-array`}
           {...{ control, register, errors, watch, setValue, trigger }}
@@ -90,7 +89,6 @@ export const SearchResult: React.FC<SearchResultProps> = ({
       <div className="my-md">
         <CommonNestedPhoneArrayV2
           disabled={disabled}
-          required={!isPT()}
           error={!!formState.errors.phoneNumbers}
           key={`nested-phone-array`}
           {...{ control, register, errors, watch, setValue, trigger }}

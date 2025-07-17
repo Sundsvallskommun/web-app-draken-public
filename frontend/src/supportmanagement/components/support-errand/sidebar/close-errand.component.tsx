@@ -1,6 +1,7 @@
 import { User } from '@common/interfaces/user';
 import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useConfirm, useSnackbar } from '@sk-web-gui/react';
@@ -16,7 +17,6 @@ import {
   SupportErrand,
   closeSupportErrand,
   getSupportErrandById,
-  shouldShowResumeErrandButton,
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
@@ -62,12 +62,12 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         }
       })
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet avslutades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet avslutades',
+            status: 'success',
+          })
+        );
         setTimeout(() => {
           window.close();
         }, 2000);
