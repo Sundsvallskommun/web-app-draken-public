@@ -39,6 +39,7 @@ import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -122,12 +123,12 @@ export const SidebarInfo: React.FC<{}> = () => {
     setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Handläggare sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggare sparades',
+            status: 'success',
+          })
+        );
 
         const status = Object.entries(ErrandStatus).find(([key, label]) => label === 'Tilldelat')[1];
         updateErrandStatus(municipalityId, errand.id.toString(), status).then(() => {
@@ -156,12 +157,12 @@ export const SidebarInfo: React.FC<{}> = () => {
     setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Handläggare sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggare sparades',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
@@ -186,12 +187,12 @@ export const SidebarInfo: React.FC<{}> = () => {
     setError(false);
     return updateErrandStatus(municipalityId, errand.id.toString(), status)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Status ändrades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Status ändrades',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
@@ -256,21 +257,21 @@ export const SidebarInfo: React.FC<{}> = () => {
       };
       return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
         .then(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: `Tjänsteanteckningen sparades`,
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: `Tjänsteanteckningen sparades`,
+              status: 'success',
+            })
+          );
 
           cancelErrandPhaseChange(municipalityId, errand)
             .then(() => {
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Ärendet avslutades',
-                status: 'success',
-              });
+              toastMessage(
+                getToastOptions({
+                  message: 'Ärendet avslutades',
+                  status: 'success',
+                })
+              );
               setModalIsOpen(false);
 
               //TODO add polling.

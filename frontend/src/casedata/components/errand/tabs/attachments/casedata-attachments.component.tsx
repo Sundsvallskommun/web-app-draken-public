@@ -40,6 +40,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { FileUploadWrapper } from '../../../../../common/components/file-upload/file-upload-dragdrop-context';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export interface SingleAttachment {
   file: File | undefined;
@@ -388,12 +389,12 @@ export const CasedataAttachments: React.FC = () => {
                           getErrand(municipalityId, errand.id.toString())
                             .then((res) => setErrand(res.errand))
                             .then(() => {
-                              toastMessage({
-                                position: 'bottom',
-                                closeable: false,
-                                message: attachments.length > 1 ? 'Bilagorna sparades' : 'Bilagan sparades',
-                                status: 'success',
-                              });
+                              toastMessage(
+                                getToastOptions({
+                                  message: attachments.length > 1 ? 'Bilagorna sparades' : 'Bilagan sparades',
+                                  status: 'success',
+                                })
+                              );
                               setSelectedAttachment(null);
                               setValue('id', undefined);
                               reset(defaultAttachmentInformation);
@@ -571,10 +572,12 @@ export const CasedataAttachments: React.FC = () => {
                                               });
                                             })
                                             .then(() => {
-                                              toastMessage({
-                                                message: 'Bilagan togs bort',
-                                                status: 'success',
-                                              });
+                                              toastMessage(
+                                                getToastOptions({
+                                                  message: 'Bilagan togs bort',
+                                                  status: 'success',
+                                                })
+                                              );
                                             })
                                             .catch((e) => {
                                               toastMessage({

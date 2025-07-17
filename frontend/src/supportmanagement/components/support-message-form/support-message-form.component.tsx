@@ -52,6 +52,7 @@ import {
   sendSupportInternalMessage,
 } from '@supportmanagement/services/support-conversation-service';
 import dynamic from 'next/dynamic';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
@@ -311,12 +312,12 @@ export const SupportMessageForm: React.FC<{
           const updated = await getSupportErrandById(supportErrand.id, municipalityId);
           setSupportErrand(updated.errand);
 
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ditt meddelande skickades',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: 'Ditt meddelande skickades',
+              status: 'success',
+            })
+          );
         })
         .catch((e) => {
           console.error(e);
@@ -383,15 +384,15 @@ export const SupportMessageForm: React.FC<{
           const updated = await getSupportErrandById(supportErrand.id, municipalityId);
           setSupportErrand(updated.errand);
 
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message:
-              data.emails.length + data.phoneNumbers.length === 1
-                ? 'Ditt meddelande skickades'
-                : 'Dina meddelanden skickades',
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message:
+                data.emails.length + data.phoneNumbers.length === 1
+                  ? 'Ditt meddelande skickades'
+                  : 'Dina meddelanden skickades',
+              status: 'success',
+            })
+          );
         })
         .catch((e) => {
           console.error(e);

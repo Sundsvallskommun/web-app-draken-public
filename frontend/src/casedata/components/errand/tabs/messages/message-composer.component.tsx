@@ -47,6 +47,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { MessageWrapper } from './message-wrapper.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
@@ -253,12 +254,12 @@ export const MessageComposer: React.FC<{
         data.messageAttachments.map((a) => a.file).filter((f): f is FileList => !!f)
       )
         .then(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: `Meddelandet skickades`,
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: `Meddelandet skickades`,
+              status: 'success',
+            })
+          );
           setIsLoading(false);
           props.update();
           clearAndClose();
@@ -278,18 +279,18 @@ export const MessageComposer: React.FC<{
     } else {
       apiCall(municipalityId, errand, data)
         .then(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: `${
-              data.contactMeans === 'sms'
-                ? 'SMS:et'
-                : data.contactMeans === 'email'
-                ? 'E-postmeddelandet'
-                : 'Meddelandet'
-            } skickades`,
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: `${
+                data.contactMeans === 'sms'
+                  ? 'SMS:et'
+                  : data.contactMeans === 'email'
+                  ? 'E-postmeddelandet'
+                  : 'Meddelandet'
+              } skickades`,
+              status: 'success',
+            })
+          );
           setIsLoading(false);
           props.update();
           clearAndClose();

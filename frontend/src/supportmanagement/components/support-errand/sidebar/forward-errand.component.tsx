@@ -37,6 +37,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 import dynamic from 'next/dynamic';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
@@ -171,12 +172,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         }
       })
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet vidarebefordrades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet vidarebefordrades',
+            status: 'success',
+          })
+        );
         setTimeout(() => {
           window.close();
         }, 2000);

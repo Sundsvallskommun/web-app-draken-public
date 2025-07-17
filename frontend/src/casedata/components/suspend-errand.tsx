@@ -1,6 +1,7 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, phaseChangeInProgress, setErrandStatus } from '@casedata/services/casedata-errand-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -53,12 +54,12 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     setError(false);
     return setErrandStatus(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
       .then((res) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet parkerades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            status: 'success',
+            message: 'Ärendet parkerades',
+          })
+        );
         setIsLoading(false);
         setShowModal(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));

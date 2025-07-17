@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import BillingForm from '../billing/billing-form.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
@@ -98,12 +99,12 @@ export const AttestationInvoiceForm: React.FC<{
   const onSubmit = () => {
     return saveBillingRecord(undefined, municipalityId, getValues())
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fakturan sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Fakturan sparades',
+            status: 'success',
+          })
+        );
         props.update(getValues().id);
       })
       .catch(() => {

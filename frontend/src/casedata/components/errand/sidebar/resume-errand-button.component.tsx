@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { sortBy } from '@common/services/helper-service';
 import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, errand, setErrand } = useAppContext();
@@ -23,12 +24,12 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
       null
     )
       .then((res) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet återupptogs',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet återupptogs',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       })

@@ -131,6 +131,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, props.id]);
 
   return (

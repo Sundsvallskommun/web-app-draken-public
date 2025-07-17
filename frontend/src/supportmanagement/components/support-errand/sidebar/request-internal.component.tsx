@@ -34,6 +34,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 import dynamic from 'next/dynamic';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupRequestFeedbackForm = yup.object().shape(
@@ -128,12 +129,12 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     setError(false);
     return requestInternal(user, supportErrand, municipalityId, data, addedAttachment, appConfig.applicationName)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Komplettering begärd',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Komplettering begärd',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         setShowModal(false);
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));

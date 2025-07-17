@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import dynamic from 'next/dynamic';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
@@ -99,12 +100,12 @@ export const SidebarUtredning: React.FC = () => {
       const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);
       setError(undefined);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Utredningen sparades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Utredningen sparades',
+          status: 'success',
+        })
+      );
     } catch (error) {
       toastMessage({
         position: 'bottom',

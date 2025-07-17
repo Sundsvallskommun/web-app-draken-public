@@ -13,6 +13,7 @@ import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -138,12 +139,12 @@ export const CasedataInvestigationTab: React.FC<{
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Utredningen sparades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Utredningen sparades',
+          status: 'success',
+        })
+      );
       await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({

@@ -2,6 +2,7 @@ import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dr
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -214,12 +215,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
             setSelectedAttachment(null);
           })
           .then(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Bilagan togs bort',
-              status: 'success',
-            });
+            toastMessage(
+              getToastOptions({
+                message: 'Bilagan togs bort',
+                status: 'success',
+              })
+            );
             setIsLoading(false);
           })
           .catch((e) => {
@@ -371,12 +372,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
                           reset();
                           setAddAttachmentWindowIsOpen(false);
                           setDragDrop(false);
-                          toastMessage({
-                            position: 'bottom',
-                            closeable: false,
-                            message: 'Bilagan sparades',
-                            status: 'success',
-                          });
+                          toastMessage(
+                            getToastOptions({
+                              message: 'Bilagan sparades',
+                              status: 'success',
+                            })
+                          );
                         })
                         .catch((e) => {
                           if (e.message === 'MAX_SIZE') {
