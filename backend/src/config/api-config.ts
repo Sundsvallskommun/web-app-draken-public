@@ -54,7 +54,7 @@ export const APIS = [
   },
   {
     name: 'casestatus',
-    version: '4.0',
+    version: '4.1',
   },
 ];
 
