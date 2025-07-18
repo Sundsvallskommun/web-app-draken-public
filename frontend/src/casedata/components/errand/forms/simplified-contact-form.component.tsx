@@ -6,7 +6,6 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isValidOrgNumber } from '@common/services/adress-service';
-import { isPT } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -17,6 +16,8 @@ import {
   phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
@@ -25,8 +26,6 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,
