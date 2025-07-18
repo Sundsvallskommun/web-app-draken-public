@@ -6,7 +6,6 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isValidOrgNumber } from '@common/services/adress-service';
-import { isPT } from '@common/services/application-service';
 import {
   invalidOrgNumberMessage,
   invalidPhoneMessage,
@@ -17,6 +16,8 @@ import {
   phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
@@ -25,7 +26,6 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,
@@ -119,46 +119,51 @@ export const SimplifiedContactForm: React.FC<{
         .trim()
         .transform((val) => val && val.replace('-', ''))
         .matches(newNumberPhonePattern, invalidPhoneMessage),
-      phoneNumbers: isPT()
-        ? yup.array().of(
-            yup.object().shape({
-              value: yup
-                .string()
-                .trim()
-                .transform((val) => val.replace('-', ''))
-                .matches(phonePattern, invalidPhoneMessage),
-            })
-          )
-        : yup
-            .array()
-            .of(
-              yup.object().shape({
-                value: yup
-                  .string()
-                  .trim()
-                  .transform((val) => val.replace('-', ''))
-                  .matches(phonePattern, invalidPhoneMessage),
-              })
-            )
-            .min(1, 'Ange minst en e-postadress och ett telefonnummer'),
-
       newEmail: yup.string().trim().email('E-postadress har fel format'),
-      emails: isPT()
-        ? yup.array().of(
-            yup.object().shape({
-              value: yup.string().trim().email('E-postadress har fel format'),
-            })
-          )
-        : yup
-            .array()
-            .of(
-              yup.object().shape({
-                value: yup.string().trim().email('E-postadress har fel format'),
-              })
-            )
-            .min(1, 'Ange minst en e-postadress och ett telefonnummer'),
-      // primaryContact: yup.boolean(),
-      // messageAllowed: yup.boolean(),
+      phoneNumbers: yup
+        .array()
+        .of(
+          yup.object().shape({
+            value: yup
+              .string()
+              .trim()
+              .transform((val) => val.replace('-', ''))
+              .matches(phonePattern, invalidPhoneMessage),
+          })
+        )
+        .test(
+          'contact-channel-required-phone',
+          'Ange minst en godkänd e-postadress eller ett telefonnummer',
+          function (phoneNumbers) {
+            if (!appConfig.features.useRequireContactChannel) return true;
+            const emails = this.parent.emails || [];
+            const hasValidPhone = (phoneNumbers || []).some(
+              (p) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
+            );
+            const hasValidEmail = (emails || []).some((e) => e.value && yup.string().email().isValidSync(e.value));
+            return hasValidEmail || hasValidPhone;
+          }
+        ),
+      emails: yup
+        .array()
+        .of(
+          yup.object().shape({
+            value: yup.string().trim().email('E-postadress har fel format'),
+          })
+        )
+        .test(
+          'contact-channel-required',
+          'Ange minst en godkänd e-postadress eller ett telefonnummer',
+          function (emails) {
+            if (!appConfig.features.useRequireContactChannel) return true;
+            const phoneNumbers = this.parent.phoneNumbers || [];
+            const hasValidEmail = (emails || []).some((e) => e.value && yup.string().email().isValidSync(e.value));
+            const hasValidPhone = (phoneNumbers || []).some(
+              (p) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
+            );
+            return hasValidEmail || hasValidPhone;
+          }
+        ),
       roles: yup.array().of(yup.string()),
     },
     [
@@ -168,7 +173,7 @@ export const SimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { municipalityId, errand, setErrand } = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
