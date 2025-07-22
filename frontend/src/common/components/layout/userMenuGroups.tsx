@@ -14,7 +14,8 @@ export const userMenuGroups = [
         element: () => (
           <PopupMenu.Item>
             <PopupMenu position="right" align="start">
-              <PopupMenu.Button className="justify-between w-full" leftIcon={<LucideIcon name="palette" />}>
+              <PopupMenu.Button className="justify-between w-full">
+                <LucideIcon name="palette" />
                 <span className="w-full flex justify-between">
                   Färgläge
                   <LucideIcon name="chevron-right" />
@@ -32,6 +33,7 @@ export const userMenuGroups = [
         element: () => (
           <PopupMenu.Item>
             <Link key={'logout'} href={`${process.env.NEXT_PUBLIC_API_URL}/saml/logout`} className={`usermenu-item`}>
+              <LucideIcon name="log-out" />
               <span className="inline">Logga ut</span>
             </Link>
           </PopupMenu.Item>
