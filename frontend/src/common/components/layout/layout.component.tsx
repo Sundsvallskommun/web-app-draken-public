@@ -102,7 +102,7 @@ export default function Layout({ title, children }) {
                   menuTitle={`${user.name} (${user.username})`}
                   menuSubTitle=""
                   menuGroups={userMenuGroups}
-                  buttonRounded
+                  buttonRounded={false}
                   buttonSize="sm"
                 />
               </span>
