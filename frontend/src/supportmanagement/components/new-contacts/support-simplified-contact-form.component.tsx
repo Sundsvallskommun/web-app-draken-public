@@ -351,7 +351,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         <div className="">
           <Button
             disabled={props.disabled}
-            className="my-20"
+            className="mt-20"
             data-cy={`add-manually-button-${id}`}
             color="vattjom"
             inverted
