@@ -179,6 +179,7 @@ export const CasedataAttachments: React.FC = () => {
     if (vals.attachmentType) {
       trigger();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attachmentType, selectedAttachment]);
 
   useEffect(() => {

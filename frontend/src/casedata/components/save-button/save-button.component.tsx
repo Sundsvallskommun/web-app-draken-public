@@ -8,7 +8,12 @@ import { Button, cx, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
-import { stakeholder2Contact } from '@casedata/services/casedata-stakeholder-service';
+import {
+  addStakeholder,
+  editStakeholder,
+  removeStakeholder,
+  stakeholder2Contact,
+} from '@casedata/services/casedata-stakeholder-service';
 import { Role } from '@casedata/interfaces/role';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
@@ -231,19 +236,34 @@ export const SaveButtonComponent: React.FC<{
     setIsLoadingContinue(true);
 
     try {
+      dataToSave.stakeholders?.forEach(async (stakeholder) => {
+        if (stakeholder?.id) {
+          await editStakeholder(municipalityId, dataToSave?.id.toString(), stakeholder);
+        }
+      });
+
       const res = await saveErrand(dataToSave);
-      const saved = await getErrand(municipalityId, res.errandId);
-      setErrand(saved.errand);
-      setErrandNumber(saved.errand.errandNumber);
+      const saved = await getErrand(municipalityId, res.errandId.toString());
+      const removedStakeholders = (dataToSave.stakeholders ?? []).filter((s) => s.removed);
+
+      for (const removed of removedStakeholders) {
+        await removeStakeholder(municipalityId, res.errandId.toString(), removed.id);
+      }
+
+      const saved2 = await getErrand(municipalityId, res.errandId.toString());
+      setErrand(saved2.errand);
+      setErrandNumber(saved2.errand?.errandNumber);
 
       if (registeringNewErrand) {
         reset();
       }
 
-      toastMessage( getToastOptions({
-        message: 'Ärendet sparades',
-        status: 'success',
-      }));
+      toastMessage(
+        getToastOptions({
+          message: 'Ärendet sparades',
+          status: 'success',
+        })
+      );
     } catch (e) {
       console.error('Error when saving errand:', e);
       toastMessage({

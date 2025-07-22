@@ -789,6 +789,7 @@ export const updateSupportErrand: (
   } else {
     responseObj.attachments = true;
   }
+
   const stakeholders = buildStakeholdersList(formdata);
 
   const data: Partial<SupportErrandDto> = {
