@@ -1,53 +1,20 @@
+import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { CornerDownRight, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus, Image } from 'lucide-react';
-import { Avatar, Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import {
-  isSupportErrandLocked,
-  SupportErrand,
-  validateAction,
-} from '@supportmanagement/services/support-errand-service';
+import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
+import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
+import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
   Message,
+  MessageNode,
   setMessageViewStatus,
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
+import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
-import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
-
-export const getSender = (msg: Message) => {
-  if (!msg) {
-    return '';
-  }
-  if (msg.communicationType === 'WEB_MESSAGE') {
-    return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
-  }
-  return msg?.sender || '(okänd avsändare)';
-};
-
-export const getReciever = (msg: Message, supportErrand: SupportErrand) => {
-  if (!msg) {
-    return '';
-  }
-  if (msg.communicationType === 'WEB_MESSAGE') {
-    return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
-  }
-  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'OUTBOUND') {
-    return getApplicantName(supportErrand);
-  }
-
-  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'INBOUND') {
-    return 'Draken';
-  }
-
-  if (msg.communicationType === 'DRAKEN') {
-    return 'Draken';
-  }
-  return msg?.target || '(okänd mottagare)';
-};
+import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
 
 export const RenderedSupportMessage: React.FC<{
   update: () => void;
@@ -55,7 +22,7 @@ export const RenderedSupportMessage: React.FC<{
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
   richText: string;
   emailBody: string;
-  message: Message;
+  message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;
   root?: boolean;
@@ -63,7 +30,7 @@ export const RenderedSupportMessage: React.FC<{
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
   const { supportErrand, municipalityId, user }: AppContextInterface = useAppContext();
   const [allowed, setAllowed] = useState(false);
-  const [expanded, setExpanded] = useState(message.communicationType === 'WEB_MESSAGE' ? true : false);
+  const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
 
   useEffect(() => {
     const _a = validateAction(supportErrand, user);
@@ -80,9 +47,15 @@ export const RenderedSupportMessage: React.FC<{
     // message.messageBody.split('Från: ')[0].split('-----Ursprungligt')[0];
     message.messageBody.replace(/\<br\>\<br\>\<br\>\<br\>/g, '<p><br></p>');
 
-  const messageAvatar = (message: Message) => (
-    <Avatar rounded color={message.direction === 'OUTBOUND' ? 'juniskar' : 'bjornstigen'} size={'md'} initials={'NN'} />
-  );
+  const getSender = (msg: Message) => {
+    if (!msg) {
+      return '';
+    }
+    if (msg.communicationType === 'WEB_MESSAGE') {
+      return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
+    }
+    return msg?.sender || '(okänd avsändare)';
+  };
 
   const getMessageOwner = (msg: Message) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
@@ -124,14 +97,11 @@ export const RenderedSupportMessage: React.FC<{
       <div
         data-cy={`message-${message.communicationID}`}
         key={`message-${message.communicationID}`}
-        className={cx(
-          `rounded-4 m-0 py-sm px-sm text-md hover:bg-background-color-mixin-1
-          }`
-        )}
+        className={cx('rounded-4 m-0 py-sm px-sm text-md hover:bg-background-color-mixin-1')}
       >
         <div className="relative flex gap-md items-start justify-between">
           <div className="flex w-full">
-            {messageAvatar(message)}
+            <MessageAvatar message={message} />
             <div className="w-5/6 ml-sm">
               <div className="my-0 flex justify-between">
                 <div>
@@ -142,12 +112,9 @@ export const RenderedSupportMessage: React.FC<{
                       __html: `Från: ${sanitized(getSender(message))}`,
                     }}
                   ></p>
-                  <p
-                    className={cx(`mr-md break-all font-bold`)}
-                    dangerouslySetInnerHTML={{
-                      __html: `Till: ${sanitized(getReciever(message, supportErrand))}`,
-                    }}
-                  ></p>
+                  <p className="mr-md break-all font-bold">
+                    Till : <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
+                  </p>
                 </div>
               </div>
             </div>
@@ -228,14 +195,14 @@ export const RenderedSupportMessage: React.FC<{
             </Button>
           </div>
         </div>
-        <div className="pl-xl flex justify-between items-end">
+        <div className="pl-xl flex justify-between items-start">
           <p
             className={cx(`my-0 text-primary`, message.viewed ? 'font-normal' : 'font-bold')}
             dangerouslySetInnerHTML={{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {message?.direction === 'INBOUND' &&
+          {expanded &&
           (message.communicationType === 'EMAIL' ||
             message.communicationType === 'WEB_MESSAGE' ||
             message.communicationType === 'DRAKEN' ||
@@ -252,7 +219,7 @@ export const RenderedSupportMessage: React.FC<{
                 setShowMessageForm(true);
               }}
             >
-              Svara
+              {message?.direction === 'INBOUND' ? 'Svara' : 'Följ upp'}
             </Button>
           ) : null}
         </div>

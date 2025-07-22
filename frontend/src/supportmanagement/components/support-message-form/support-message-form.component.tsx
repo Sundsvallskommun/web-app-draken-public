@@ -146,33 +146,32 @@ export const SupportMessageForm: React.FC<{
   setRichText: React.Dispatch<React.SetStateAction<string>>;
   message: Message;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
-  showSelectedMessage: boolean;
   setUnsaved?: (boolean) => void;
   update?: () => void;
 }> = (props) => {
+  const { richText, setRichText, emailBody, smsBody } = props;
+
   const {
     municipalityId,
     user,
     supportErrand,
     supportAttachments,
+    setSupportErrand,
   }: {
     municipalityId: string;
     user: User;
     supportErrand: SupportErrand;
     supportAttachments: SupportAttachment[];
+    setSupportErrand: (errand: SupportErrand) => void;
   } = useAppContext();
 
-  const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
   const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
   const quillRef = useRef(null);
-  const [textIsDirty, setTextIsDirty] = useState(false);
-  const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
-  const { setSupportErrand } = useAppContext();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [relationErrands, setRelationErrands] = useState<Relations[]>([]);
   const [relationErrandsNumber, setRelationErrandsNumber] = useState<string[]>([]);
@@ -660,9 +659,6 @@ export const SupportMessageForm: React.FC<{
               defaultValue={richText}
               onTextChange={(delta, oldDelta, source) => {
                 props.setUnsaved(true);
-                if (source === 'user') {
-                  setTextIsDirty(true);
-                }
                 return onRichTextChange(delta, oldDelta, source);
               }}
             />
@@ -842,38 +838,28 @@ export const SupportMessageForm: React.FC<{
       ) : null}
 
       <div className="flex my-md gap-md">
-        {messageVerification ? (
-          <div className="text-md text-secondary my-sm">
-            {/* TODO FIX */}
-            {/* <LucideIcon name="check" fontSize="inherit" className="ml-sm mr-sm" /> */}
-            <span>Meddelandet har skickats</span>
-          </div>
-        ) : (
-          <>
-            <Button
-              onClick={() => {
-                props.setShowMessageForm(false);
-                clearParameters();
-              }}
-              variant="secondary"
-              color="primary"
-            >
-              Avbryt
-            </Button>
-            <Button
-              variant="primary"
-              color="primary"
-              type="button"
-              loading={isSending}
-              loadingText="Skickar meddelande"
-              disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
-              onClick={handleSubmit(onSubmit)}
-              data-cy="send-message-button"
-            >
-              Skicka meddelande
-            </Button>
-          </>
-        )}
+        <Button
+          onClick={() => {
+            props.setShowMessageForm(false);
+            clearParameters();
+          }}
+          variant="secondary"
+          color="primary"
+        >
+          Avbryt
+        </Button>
+        <Button
+          variant="primary"
+          color="primary"
+          type="button"
+          loading={isSending}
+          loadingText="Skickar meddelande"
+          disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
+          onClick={handleSubmit(onSubmit)}
+          data-cy="send-message-button"
+        >
+          Skicka meddelande
+        </Button>
       </div>
       <div className="my-sm">
         {messageError && (

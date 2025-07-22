@@ -1,6 +1,7 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import sanitized from '@common/services/sanitizer-service';
 
 const getMessageSourceLabel = (message: MessageNode, errand: IErrand) => {
   if (!message) return '';
@@ -39,5 +40,5 @@ export const RenderMessageReciever: React.FC<{ selectedMessage: MessageNode; err
 }) => {
   const nameOfReciever = getMessageSourceLabel(selectedMessage, errand);
 
-  return <>{nameOfReciever}</>;
+  return <>{sanitized(nameOfReciever)}</>;
 };
