@@ -52,29 +52,27 @@ export const CaseDataRelationsDisclosure: React.FC<{
   ));
 
   return (
-    <div className="mt-md">
-      <Disclosure
-        variant="alt"
-        icon={<LucideIcon name="network" />}
-        header="Relaterade ärenden"
-        data-cy={`facility-disclosure`}
-      >
-        <p className="mb-[2.4rem]">Nedan kan du se ärenden relaterade till detta ärende.</p>
+    <Disclosure
+      variant="alt"
+      icon={<LucideIcon name="network" />}
+      header="Relaterade ärenden"
+      data-cy={`facility-disclosure`}
+    >
+      <p className="mb-[2.4rem]">Nedan kan du se ärenden relaterade till detta ärende.</p>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-[5rem]">
-            <Spinner />
-          </div>
-        ) : (
-          <ErrandsTable
-            errands={relationErrands}
-            headers={headers}
-            linkedStates={relationErrands}
-            title="Ärenden"
-            dataCy="ongoingerrands-table"
-          />
-        )}
-      </Disclosure>
-    </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-[5rem]">
+          <Spinner />
+        </div>
+      ) : (
+        <ErrandsTable
+          errands={relationErrands}
+          headers={headers}
+          linkedStates={relationErrands}
+          title="Ärenden"
+          dataCy="ongoingerrands-table"
+        />
+      )}
+    </Disclosure>
   );
 };

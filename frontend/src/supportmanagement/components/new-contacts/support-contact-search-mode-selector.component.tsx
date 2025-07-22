@@ -68,7 +68,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
 
   return (
     <fieldset
-      className="flex mx-md mt-ms mb-md gap-lg justify-start"
+      className="flex mt-ms mb-md gap-lg justify-start"
       data-cy={`searchmode-selector-${inName}`}
       disabled={disabled}
     >
