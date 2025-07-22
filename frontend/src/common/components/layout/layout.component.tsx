@@ -15,6 +15,7 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 
 export default function Layout({ title, children }) {
   const {
@@ -75,7 +76,8 @@ export default function Layout({ title, children }) {
         ) : null}
         {appConfig.isCaseData ? (
           <>
-            <span className="font-bold">Ärende: </span>
+            <CasedataStatusLabelComponent status={errand.status.statusType}></CasedataStatusLabelComponent>
+            <span className="font-bold ml-8">Ärende: </span>
             {errandNumber}
           </>
         ) : null}
