@@ -1,17 +1,14 @@
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Status,
   SupportErrand,
   getSupportErrandById,
   setSuspension,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
@@ -31,35 +28,22 @@ export interface SuspendFormProps {
 
 export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    user,
     municipalityId,
     supportErrand,
     setSupportErrand,
-    supportMetadata,
-    supportAttachments,
   }: {
-    user: User;
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
   } = useAppContext();
-  const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const {
     register,
-    control,
-    handleSubmit,
-    watch,
-    reset,
-    setValue,
     getValues,
     formState,
-    trigger,
     formState: { errors },
   }: UseFormReturn<SuspendFormProps, any, undefined> = useForm({
     resolver: yupResolver(yupSuspendForm) as any,
@@ -69,7 +53,6 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
 
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
-    setError(false);
     return setSuspension(supportErrand.id, municipalityId, Status.SUSPENDED, data.date, data.comment)
       .then(() => {
         toastMessage(
@@ -89,7 +72,6 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
           message: 'Något gick fel när ärendet skulle parkeras',
           status: 'error',
         });
-        setError(true);
         setIsLoading(false);
         return;
       });
