@@ -28,10 +28,12 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     municipalityId,
     errand,
     setErrand,
+    user,
   }: {
     municipalityId: string;
     errand: IErrand;
     setErrand: any;
+    user;
   } = useAppContext();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -95,7 +97,11 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             leftIcon={<LucideIcon name="circle-pause" />}
             variant="secondary"
             disabled={
-              disabled || phaseChangeInProgress(errand) || errand?.status?.statusType === ErrandStatus.ArendeAvslutat
+              disabled ||
+              phaseChangeInProgress(errand) ||
+              errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
+              !errand?.administrator ||
+              user.username.toLocaleLowerCase() !== errand?.administrator.adAccount.toLocaleLowerCase()
             }
             onClick={() => setShowModal(true)}
           >
