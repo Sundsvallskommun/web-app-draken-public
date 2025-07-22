@@ -112,11 +112,9 @@ export default function Layout({ title, children }) {
                 data-cy="register-new-errand-button"
               >
                 <Button
-                  color={appConfig.isCaseData ? 'primary' : 'vattjom'}
-                  variant={appConfig.isCaseData ? 'tertiary' : 'primary'}
-                  rightIcon={
-                    appConfig.isCaseData ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
-                  }
+                  color={'primary'}
+                  variant={'tertiary'}
+                  rightIcon={<LucideIcon name="external-link" color="primary" variant="tertiary" />}
                 >
                   Nytt ärende
                 </Button>
