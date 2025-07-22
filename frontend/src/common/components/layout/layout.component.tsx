@@ -76,7 +76,7 @@ export default function Layout({ title, children }) {
         ) : null}
         {appConfig.isCaseData ? (
           <>
-            <CasedataStatusLabelComponent status={errand.status.statusType}></CasedataStatusLabelComponent>
+            <CasedataStatusLabelComponent status={errand.status.statusType} />
             <span className="font-bold ml-8">Ärende: </span>
             {errandNumber}
           </>
