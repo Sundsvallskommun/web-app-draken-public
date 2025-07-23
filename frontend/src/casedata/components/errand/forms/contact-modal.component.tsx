@@ -2,7 +2,6 @@ import { SearchModeSelector } from '@casedata/components/errand/forms/search-mod
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { isMEX } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal } from '@sk-web-gui/react';
@@ -292,7 +291,6 @@ export const ContactModal: React.FC<ContactModalProps> = ({
           addingStakeholder={true}
           errand={errand}
           disabled={disabled}
-          required={isMEX()}
           error={!!formState.errors.emails}
           key={`nested-email-array`}
           {...{ control, register, errors, watch, setValue, trigger }}

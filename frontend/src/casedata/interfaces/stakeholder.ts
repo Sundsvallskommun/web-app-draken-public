@@ -22,7 +22,7 @@ export interface CreateStakeholderDto {
   organizationNumber?: string;
   authorizedSignatory?: string;
   personId?: string;
-  adAccount?: string;
+  adAccount?: string; //NOTE: This is same as Username
   personalNumber?: string;
   extraParameters?: {
     primaryContact?: 'true' | 'false';

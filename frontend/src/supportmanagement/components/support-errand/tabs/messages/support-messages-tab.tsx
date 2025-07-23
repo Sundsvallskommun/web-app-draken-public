@@ -1,4 +1,4 @@
-import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
+import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
@@ -25,9 +25,7 @@ export const SupportMessagesTab: React.FC<{
 }> = (props) => {
   const { supportErrand, municipalityId, user } = useAppContext();
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
-  const [selected, setSelected] = useState<string>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
-  const [showSelectedMessage, setShowSelectedMessage] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
   const [richText, setRichText] = useState<string>('');
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
@@ -68,9 +66,7 @@ export const SupportMessagesTab: React.FC<{
       });
     }
 
-    setSelected(message.communicationID);
     setSelectedMessage(message);
-    setShowSelectedMessage(true);
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(true);
@@ -200,7 +196,6 @@ export const SupportMessagesTab: React.FC<{
             rightIcon={<Icon icon={<Mail />} size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
-              setShowSelectedMessage(false);
               setShowMessageForm(true);
               setRichText(emailBody);
             }}
@@ -274,7 +269,6 @@ export const SupportMessagesTab: React.FC<{
           <SupportMessageForm
             locked={isSupportErrandLocked(supportErrand)}
             showMessageForm={showMessageForm}
-            showSelectedMessage={showSelectedMessage}
             setShowMessageForm={setShowMessageForm}
             prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
             prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}

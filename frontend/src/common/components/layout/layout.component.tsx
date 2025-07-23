@@ -15,6 +15,7 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 
 export default function Layout({ title, children }) {
   const {
@@ -75,7 +76,8 @@ export default function Layout({ title, children }) {
         ) : null}
         {appConfig.isCaseData ? (
           <>
-            <span className="font-bold">Ärende: </span>
+            <CasedataStatusLabelComponent status={errand.status.statusType} />
+            <span className="font-bold ml-8">Ärende: </span>
             {errandNumber}
           </>
         ) : null}
@@ -100,7 +102,7 @@ export default function Layout({ title, children }) {
                   menuTitle={`${user.name} (${user.username})`}
                   menuSubTitle=""
                   menuGroups={userMenuGroups}
-                  buttonRounded
+                  buttonRounded={false}
                   buttonSize="sm"
                 />
               </span>
@@ -112,11 +114,9 @@ export default function Layout({ title, children }) {
                 data-cy="register-new-errand-button"
               >
                 <Button
-                  color={appConfig.isCaseData ? 'primary' : 'vattjom'}
-                  variant={appConfig.isCaseData ? 'tertiary' : 'primary'}
-                  rightIcon={
-                    appConfig.isCaseData ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
-                  }
+                  color={'primary'}
+                  variant={'tertiary'}
+                  rightIcon={<LucideIcon name="external-link" color="primary" variant="tertiary" />}
                 >
                   Nytt ärende
                 </Button>

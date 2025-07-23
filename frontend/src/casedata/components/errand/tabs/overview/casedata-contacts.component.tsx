@@ -10,7 +10,7 @@ import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-
 import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { Avatar, Button, Disclosure, Divider, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
@@ -292,14 +292,8 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
   return (
     <>
-      <div className="mt-md">
-        <Divider.Section>
-          <div className="flex gap-sm items-center">
-            <LucideIcon name="user"></LucideIcon>
-            <h2 className="text-h4-sm md:text-h4-md">Ärendeägare</h2>
-          </div>
-        </Divider.Section>
-        <div data-cy="registered-applicants" className="my-lg px-0 md:px-24 lg:px-40 pb-40 pt-0">
+      <Disclosure variant="alt" header="Ärendeägare" icon={<LucideIcon name="user" />} initalOpen={true}>
+        <div data-cy="registered-applicants" className="my-lg px-0 pt-0">
           <div className="w-full">
             {watchedStakeholders?.filter((s) => s.roles.includes(Role.APPLICANT) && !s.removed).length === 0 ? (
               <SimplifiedContactForm
@@ -324,13 +318,10 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               .map((caseData, idx) => renderContact(caseData, idx, 'Ärendeägare'))}
           </div>
         </div>
-        <Divider.Section>
-          <div className="flex gap-sm items-center">
-            <LucideIcon name="users"></LucideIcon>
-            <h2 className="text-h4-sm md:text-h4-md">Övriga parter</h2>
-          </div>
-        </Divider.Section>
-        <div data-cy="registered-contacts" className="my-lg px-0 md:px-24 lg:px-40 pb-40 pt-0">
+      </Disclosure>
+
+      <Disclosure variant="alt" header="Övriga parter" icon={<LucideIcon name="user" />} initalOpen={true}>
+        <div data-cy="registered-contacts" className="my-lg px-0 pt-0">
           {addContact && (
             <div className="w-full mt-md">
               <SimplifiedContactForm
@@ -371,7 +362,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
             </FormControl>
           )}
         </div>
-      </div>
+      </Disclosure>
     </>
   );
 };

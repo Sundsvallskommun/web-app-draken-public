@@ -1,5 +1,5 @@
 import { useAppContext } from '@contexts/app.context';
-import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
+import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { SupportMessageForm } from '@supportmanagement/components/support-message-form/support-message-form.component';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useTranslation } from 'next-i18next';
@@ -42,7 +42,6 @@ export const MessagePortal: React.FC = () => {
       <SupportMessageForm
         locked={isSupportErrandLocked(supportErrand)}
         showMessageForm={show}
-        showSelectedMessage={false}
         setShowMessageForm={setShow}
         prefillEmail={supportErrand?.customer?.[0]?.emails?.[0]?.value}
         prefillPhone={supportErrand?.customer?.[0]?.phoneNumbers?.[0]?.value}

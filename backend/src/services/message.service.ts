@@ -240,7 +240,7 @@ export const saveMessageOnErrand: (
   const apiService = new ApiService();
 
   // Fetch message info from Messaging and construct SaveMessage object
-  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/message/${message.id}`;
+  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};

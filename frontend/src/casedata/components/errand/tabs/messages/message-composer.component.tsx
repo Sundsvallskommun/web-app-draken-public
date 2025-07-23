@@ -5,7 +5,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { sendInternalMessage } from '@casedata/services/casedata-conversation-service';
-import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   MessageNode,
   renderMessageWithTemplates,
@@ -46,8 +46,9 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { MessageWrapper } from './message-wrapper.component';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { MessageWrapper } from '@common/components/message/message-wrapper.component';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
@@ -165,9 +166,9 @@ export const MessageComposer: React.FC<{
   const [richText, setRichText] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [textIsDirty, setTextIsDirty] = useState(false);
   const [replying, setReplying] = useState(false);
-  const [filteredAttachments, setFilteredAttachments] = useState([]);
+  const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
+
   const submitConfirm = useConfirm();
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -312,6 +313,17 @@ export const MessageComposer: React.FC<{
           setIsLoading(false);
           return;
         });
+
+      if (
+        errand.status.statusType !== ErrandStatus.VantarPaKomplettering &&
+        errand.status.statusType !== ErrandStatus.InterntAterkoppling
+      ) {
+        if (typeOfMessage === 'infoCompletion') {
+          await setErrandStatus(errand.id, municipalityId, ErrandStatus.VantarPaKomplettering, null, null);
+        } else if (typeOfMessage === 'internalCompletion') {
+          await setErrandStatus(errand.id, municipalityId, ErrandStatus.InterntAterkoppling, null, null);
+        }
+      }
     }
   };
 
@@ -339,13 +351,6 @@ export const MessageComposer: React.FC<{
     setValue('messageBodyPlaintext', quillRef.current.getText());
     trigger('messageBody');
   };
-
-  useEffect(() => {
-    errand.attachments;
-    setFilteredAttachments(
-      errand.attachments?.filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
-    );
-  }, [existingAttachments]);
 
   useEffect(() => {
     if (contactMeans === 'sms') {
@@ -483,6 +488,42 @@ export const MessageComposer: React.FC<{
             </fieldset>
           ) : null}
 
+          <div className="w-full pt-16">
+            <strong className="text-md">Typ av meddelande</strong>
+            <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
+              <RadioButton
+                disabled={isLoading || !allowed}
+                name="useNewMessage"
+                id="useNewMessage"
+                value="newMessage"
+                checked={typeOfMessage === 'newMessage'}
+                onChange={(e) => setTypeOfMessage(e.target.value)}
+              >
+                Nytt meddelande
+              </RadioButton>
+              <RadioButton
+                disabled={isLoading || !allowed}
+                name="useInfoCompletion"
+                id="useInfoCompletion"
+                value="infoCompletion"
+                checked={typeOfMessage === 'infoCompletion'}
+                onChange={(e) => setTypeOfMessage(e.target.value)}
+              >
+                Begär komplettering
+              </RadioButton>
+              <RadioButton
+                disabled={isLoading || !allowed}
+                name="useInternalCompletion"
+                id="useInternalCompletion"
+                value="internalCompletion"
+                checked={typeOfMessage === 'internalCompletion'}
+                onChange={(e) => setTypeOfMessage(e.target.value)}
+              >
+                Begär intern återkoppling
+              </RadioButton>
+            </RadioButton.Group>
+          </div>
+
           <FormControl className="w-full my-12" size="sm" id="messageTemplate">
             <FormLabel>Välj meddelandemall</FormLabel>
             <Select
@@ -528,9 +569,6 @@ export const MessageComposer: React.FC<{
                   defaultValue={richText}
                   onTextChange={(delta, oldDelta, source) => {
                     props.setUnsaved(true);
-                    if (source === 'user') {
-                      setTextIsDirty(true);
-                    }
                     return onRichTextChange(delta, oldDelta, source);
                   }}
                 />
