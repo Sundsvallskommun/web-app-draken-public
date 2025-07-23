@@ -12,6 +12,7 @@ export type StakeholderType = 'PERSON' | 'ORGANIZATION';
 
 export interface CreateStakeholderDto {
   id?: string;
+  clientId?: string;
   type: StakeholderType;
   roles: Role[];
   addresses?: Address[];

@@ -1,32 +1,31 @@
 import { IErrand } from '@casedata/interfaces/errand';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Role } from '@casedata/interfaces/role';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { getErrand, isErrandLocked, saveErrand } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
-import { deepFlattenToObject } from '@common/services/helper-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, cx, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
 import {
-  addStakeholder,
+  EXTRAPARAMETER_SEPARATOR,
+  extraParametersToUppgiftMapper,
+  saveExtraParameters,
+  UppgiftField,
+} from '@casedata/services/casedata-extra-parameters-service';
+import { saveFacilities } from '@casedata/services/casedata-facilities-service';
+import {
   editStakeholder,
   removeStakeholder,
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
-import { Role } from '@casedata/interfaces/role';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import {
-  extraParametersToUppgiftMapper,
-  UppgiftField,
-  EXTRAPARAMETER_SEPARATOR,
-  saveExtraParameters,
-} from '@casedata/services/casedata-extra-parameters-service';
+import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
-import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import { FacilityDTO } from '@common/interfaces/facilities';
+import { deepFlattenToObject } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;

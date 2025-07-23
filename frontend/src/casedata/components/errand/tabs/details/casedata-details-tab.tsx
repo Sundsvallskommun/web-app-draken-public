@@ -110,7 +110,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         </Divider.Section>
 
         {isAppeal && label === 'Övergripande' && (
-          <p className="px-0">
+          <div className="px-0">
             <FormControl className="w-full" key="relatesTo">
               <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
               <Input
@@ -122,7 +122,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 placeholder="t.ex. PRH-2024-000275"
               />
             </FormControl>
-          </p>
+          </div>
         )}
 
         <div className="px-0">
