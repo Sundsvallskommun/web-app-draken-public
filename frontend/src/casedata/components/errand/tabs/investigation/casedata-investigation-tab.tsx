@@ -209,9 +209,8 @@ export const CasedataInvestigationTab: React.FC<{
     }
   };
 
-  const onRichTextChange = (delta, oldDelta, source) => {
-    setRichText(quillRef.current.getText());
-    setValue('description', sanitized(delta > 1 ? quillRef.current.getText() : undefined), { shouldDirty: true });
+  const onRichTextChange = (delta) => {
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
     trigger('description');
   };
 
@@ -415,7 +414,7 @@ export const CasedataInvestigationTab: React.FC<{
                   if (source === 'user') {
                     setTextIsDirty(true);
                   }
-                  return onRichTextChange(delta, oldDelta, source);
+                  return onRichTextChange(delta);
                 }}
               />
             </div>

@@ -1,24 +1,11 @@
 'use client';
 
-import {
-  FormControl,
-  FormLabel,
-  Button,
-  Select,
-  RadioButton,
-  Checkbox,
-  DatePicker,
-  Combobox,
-  cx,
-} from '@sk-web-gui/react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Modal } from '@sk-web-gui/react';
 import { CasedataServiceForm } from './casedata-service-form.component';
 import { ServiceListComponent } from './casedata-service-list.component';
-import dynamic from 'next/dynamic';
 import { Service } from './casedata-service-item.component';
 import { v4 as uuidv4 } from 'uuid';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const CasedataServicesTab: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);

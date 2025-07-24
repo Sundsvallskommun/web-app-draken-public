@@ -42,11 +42,9 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   setFormIsValid,
   ...rest
 }) => {
-  const { administrators, municipalityId, setMunicipalityId } = useAppContext();
-  const [selectableAdmins, setSelectableAdmins] = useState<string[]>([]);
+  const { municipalityId, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
-    setSelectableAdmins(administrators.map((a) => `${a.firstName} ${a.lastName}`));
     setValue('channel', errand.channel);
     setValue('priority', errand.priority);
     setValue('status', errand.status);
@@ -228,16 +226,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 )}
               </FormControl>
             </div>
-
-            <SaveButtonComponent
-              registeringNewErrand={registeringNewErrand}
-              label={registeringNewErrand ? 'Registrera' : 'Spara'}
-              setUnsaved={() => {}}
-              update={() => {}}
-            />
           </div>
         </Disclosure>
-
         {errand?.id ? (
           <CasedataContactsComponent
             registeringNewErrand={registeringNewErrand}

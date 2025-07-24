@@ -2,7 +2,12 @@ import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-w
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { emptyErrand, getErrandByErrandNumber, getUiPhase } from '@casedata/services/casedata-errand-service';
+import {
+  emptyErrand,
+  getErrandByErrandNumber,
+  getUiPhase,
+  isErrandLocked,
+} from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
@@ -52,12 +57,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   } = useAppContext();
   const toastMessage = useSnackbar();
 
-  const { theme } = useGui();
-
   const methods = useForm<IErrand>({
     resolver: yupResolver(formSchema),
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    disabled: isErrandLocked(errand),
   });
 
   const initialFocus = useRef(null);

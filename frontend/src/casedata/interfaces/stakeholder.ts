@@ -12,6 +12,7 @@ export type StakeholderType = 'PERSON' | 'ORGANIZATION';
 
 export interface CreateStakeholderDto {
   id?: string;
+  clientId?: string;
   type: StakeholderType;
   roles: Role[];
   addresses?: Address[];
@@ -43,6 +44,7 @@ export interface StakeholderData extends Data {
 
 export interface CasedataOwnerOrContact {
   id: string;
+  clientId: string; // Random client side ID, needed for UI purposes before the stakeholder is saved. When saved it will get a id from the backend.
   stakeholderType: StakeholderType;
   roles: Role[];
   newRole: Role;
@@ -67,4 +69,5 @@ export interface CasedataOwnerOrContact {
   }[];
   adAccount?: string;
   extraInformation?: string;
+  removed?: boolean;
 }

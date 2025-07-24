@@ -1,21 +1,20 @@
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { IErrand } from '@casedata/interfaces/errand';
+import { getErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
   extraParametersToUppgiftMapper,
-  saveExtraParameters,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Divider, FormControl, FormLabel, Input, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
-import { Button, Divider, FormControl, FormLabel, Input, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 
@@ -23,60 +22,6 @@ interface CasedataDetailsProps {
   update: () => void;
   setUnsaved: Dispatch<SetStateAction<boolean>>;
   registeringNewErrand: boolean;
-}
-
-async function handleSaveClick({
-  fields,
-  form,
-  onSave,
-  toastMessage,
-  setIsLoading,
-}: {
-  fields: UppgiftField[];
-  form: ReturnType<typeof useForm>;
-  onSave: (data: ExtraParameter[]) => void | Promise<void>;
-  toastMessage: ReturnType<typeof useSnackbar>;
-  setIsLoading: (bool: boolean) => void;
-}) {
-  const fieldNames = fields.map((f) => f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR));
-  fieldNames.push('propertyDesignation');
-
-  const isValid = await form.trigger(fieldNames);
-
-  if (!isValid) {
-    toastMessage({
-      position: 'bottom',
-      closeable: false,
-      message: 'Fyll i alla obligatoriska fält i denna sektion innan du sparar',
-      status: 'error',
-    });
-
-    const firstInvalid = fieldNames.find((name) => form.formState.errors[name]);
-    const el = document.querySelector(`[name="${firstInvalid}"]`) as HTMLElement;
-    if (el?.scrollIntoView) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.focus?.();
-    }
-
-    return;
-  }
-
-  const data: ExtraParameter[] = fieldNames.map((fieldName) => {
-    const rawValue = form.getValues()[fieldName];
-    const values =
-      Array.isArray(rawValue) && rawValue.length > 0
-        ? rawValue
-        : typeof rawValue === 'string' && rawValue.trim() !== ''
-        ? [rawValue]
-        : [];
-    return {
-      key: fieldName.replace(new RegExp(EXTRAPARAMETER_SEPARATOR, 'g'), '.'),
-      values,
-    };
-  });
-
-  setIsLoading(true);
-  onSave(data);
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
@@ -92,9 +37,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     setAllowed(_a);
   }, [user, errand]);
 
-  const form = useForm<any>({
-    mode: 'onChange',
-  });
+  const form = useFormContext<IErrand>();
+
   const { register, setValue, trigger } = form;
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
@@ -127,54 +71,19 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     });
   };
 
-  const onSave = async (extraParams: ExtraParameter[]) => {
-    // If saving facilities is done when saving extraparameters, we must do them in
-    // sequence, not in parallel. Otherwise the requests may collide and casedata
-    // will give an error response. For now, do not save facilities and extraparameters
-    // with the same button.
-    //
-    // if (isMEX()) {
-    //   await saveFacilities(municipalityId, errand.id, getValues().facilities);
-    // }
-
-    saveExtraParameters(municipalityId, extraParams, errand)
-      .then(() => {
-        setIsLoading(undefined);
-        props.setUnsaved(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
-          setErrand(res.errand);
-          toastMessage(
-            getToastOptions({
-              message: 'Uppgifterna sparades',
-              status: 'success',
-            })
-          );
-          setIsLoading(undefined);
-        });
-      })
-      .catch(() => {
-        setIsLoading(undefined);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när uppgifterna skulle sparas',
-          status: 'error',
-        });
-      });
-  };
-
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
     const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || [];
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);
+
     uppgifterFields?.forEach((f) => {
       const key = f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
       const isCheckbox = f.formField.type === 'checkbox';
       const rawValue = f.value;
 
-      setValue(
+      setValue<any>(
         key,
         isCheckbox
           ? Array.isArray(rawValue)
@@ -183,12 +92,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           : rawValue
       );
     });
+
+    setValue('description', errand.description || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
-
-  const renderFormControl = (detail: UppgiftField, idx: number) => (
-    <CasedataFormFieldRenderer detail={detail} idx={idx} form={form} errand={errand} />
-  );
 
   const renderSection = (fields: UppgiftField[], label: string, icon: IconName) => {
     const isAppeal = errand.caseType === 'APPEAL';
@@ -203,8 +110,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         </Divider.Section>
 
         {isAppeal && label === 'Övergripande' && (
-          <p className="px-0">
-            <FormControl className="w-full" key="relatesTo" disabled={isErrandLocked(errand)}>
+          <div className="px-0">
+            <FormControl className="w-full" key="relatesTo">
               <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
               <Input
                 type="text"
@@ -215,10 +122,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 placeholder="t.ex. PRH-2024-000275"
               />
             </FormControl>
-          </p>
+          </div>
         )}
 
-        <div className="px-0">{fields?.map(renderFormControl)}</div>
+        <div className="px-0">
+          {fields?.map((detail, idx) => (
+            <CasedataFormFieldRenderer
+              key={`${detail.field}-${idx}`}
+              detail={detail}
+              idx={idx}
+              form={form}
+              errand={errand}
+            />
+          ))}
+        </div>
       </div>
     );
   };
@@ -278,29 +195,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                   readOnly={true}
                   rows={7}
                   id="description"
-                  value={errand.description}
                 />
               </FormControl>
             </div>
-            <Button
-              variant="primary"
-              disabled={isErrandLocked(errand)}
-              onClick={() =>
-                handleSaveClick({
-                  fields,
-                  form,
-                  onSave,
-                  toastMessage,
-                  setIsLoading,
-                })
-              }
-              loading={loading}
-              loadingText="Sparar"
-              className="mt-lg"
-              data-cy="save-entire-form-button"
-            >
-              Spara ärendeuppgifter
-            </Button>
           </div>
         </div>
       </div>

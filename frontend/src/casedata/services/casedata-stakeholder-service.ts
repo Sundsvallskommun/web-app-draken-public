@@ -225,6 +225,7 @@ export const removeStakeholder = (municipalityId: string, errandId: string, stak
 export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (s) => {
   return {
     id: s.id,
+    clientId: s.clientId,
     stakeholderType: s.type,
     roles: s.roles,
     newRole: s.roles?.[0] || Role.CONTACT_PERSON,

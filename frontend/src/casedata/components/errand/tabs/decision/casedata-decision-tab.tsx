@@ -411,8 +411,7 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const onRichTextChange = (delta?, oldDelta?, source?) => {
-    setRichText(quillRef.current.getText());
+  const onRichTextChange = (delta?) => {
     setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
       shouldDirty: true,
     });
@@ -439,6 +438,7 @@ export const CasedataDecisionTab: React.FC<{
       setValue('id', undefined);
     }
     trigger();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const changeTemplate = (InTemplate) => {
@@ -638,7 +638,7 @@ export const CasedataDecisionTab: React.FC<{
               if (source === 'user') {
                 setTextIsDirty(true);
               }
-              return onRichTextChange(delta, oldDelta, source);
+              return onRichTextChange(delta);
             }}
           />
         </div>

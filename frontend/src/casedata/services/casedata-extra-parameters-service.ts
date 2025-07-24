@@ -140,37 +140,41 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
   // from the template will be used.
 
   errand.extraParameters.forEach((param) => {
-    const caseType = errand.caseType;
-    const field = param['key'];
+    try {
+      const caseType = errand.caseType;
+      const field = param['key'];
 
-    if (isSupportedCaseType(caseType)) {
-      const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-      const caseTypeTemplate = template[resolvedCaseType] as UppgiftField[];
-      const templateField = caseTypeTemplate?.find((f) => f.field === field);
+      if (isSupportedCaseType(caseType)) {
+        const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
+        const caseTypeTemplate = template[resolvedCaseType] as UppgiftField[];
+        const templateField = caseTypeTemplate?.find((f) => f.field === field);
 
-      if (caseType && field && templateField) {
-        const { label, formField, section, dependsOn } = templateField;
-        const isCheckbox = formField.type === 'checkbox';
-        const value = isCheckbox ? param.values : param.values[0] || '';
+        if (caseType && field && templateField) {
+          const { label, formField, section, dependsOn } = templateField;
+          const isCheckbox = formField.type === 'checkbox';
+          const value = isCheckbox ? param.values : param.values[0] || '';
 
-        obj[caseType] = obj[caseType] || [];
-        const data: UppgiftField = {
-          field,
-          value,
-          label,
-          formField,
-          section,
-          dependsOn,
-        };
+          obj[caseType] = obj[caseType] || [];
+          const data: UppgiftField = {
+            field,
+            value,
+            label,
+            formField,
+            section,
+            dependsOn,
+          };
 
-        const a: UppgiftField[] = obj[caseType];
-        const i = a.findIndex((f) => f.field === field);
-        if (i > -1) {
-          obj[caseType][i] = data;
-        } else {
-          obj[caseType].push(data);
+          const a: UppgiftField[] = obj[caseType];
+          const i = a.findIndex((f) => f.field === field);
+          if (i > -1) {
+            obj[caseType][i] = data;
+          } else {
+            obj[caseType].push(data);
+          }
         }
       }
+    } catch (error) {
+      console.warn('Kunde inte mappa extraParameter:', param, error);
     }
   });
 

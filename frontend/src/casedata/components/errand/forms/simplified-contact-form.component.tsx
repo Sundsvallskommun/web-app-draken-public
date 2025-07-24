@@ -26,6 +26,7 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
+import { v4 as uuidv4 } from 'uuid';
 
 export const emptyContact: CasedataOwnerOrContact = {
   id: undefined,
@@ -48,7 +49,15 @@ export const emptyContact: CasedataOwnerOrContact = {
   newEmail: '',
   emails: [],
   extraInformation: '',
+  clientId: '',
 };
+
+export const createEmptyContact = (role: Role = Role.CONTACT_PERSON): CasedataOwnerOrContact => ({
+  ...emptyContact,
+  roles: [role],
+  newRole: role,
+  clientId: uuidv4(),
+});
 
 export const SimplifiedContactForm: React.FC<{
   allowOrganization?: boolean;
@@ -56,16 +65,20 @@ export const SimplifiedContactForm: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   disabled?: boolean;
   onClose?: () => void;
+  onSave?: (data: any) => void;
   label: string;
   id: string;
+  editing?: boolean;
 }> = (props) => {
   const {
     allowOrganization = false,
     contact = emptyContact,
     setUnsaved = () => {},
     onClose = () => {},
+    onSave = () => {},
     label = '',
     id,
+    editing = false,
   } = props;
 
   const yupContact = yup.object().shape(
@@ -178,7 +191,6 @@ export const SimplifiedContactForm: React.FC<{
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [manual, setManual] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const [searchResult, setSearchResult] = useState(false);
   const [loading, setIsLoading] = useState(false);
 
@@ -195,7 +207,6 @@ export const SimplifiedContactForm: React.FC<{
   };
 
   const closeHandler = () => {
-    setModalOpen(false);
     setManual(false);
     onClose();
   };
@@ -214,7 +225,6 @@ export const SimplifiedContactForm: React.FC<{
   const firstName = watch(`firstName`);
   const lastName = watch(`lastName`);
   const organizationName = watch(`organizationName`);
-  const toastMessage = useSnackbar();
 
   const { append: appendPhonenumber, replace: replacePhonenumbers } = useFieldArray({
     control,
@@ -223,7 +233,7 @@ export const SimplifiedContactForm: React.FC<{
 
   // Restricted editing means that personalNumber, firstName, lastName,
   // organizationNam and orgName cannot be changed.
-  const editing = !!contact.id;
+
   const restrictedEditing = editing && errand.channel !== Channels.WEB_UI;
 
   const resetPersonNumber = () => {
@@ -258,14 +268,6 @@ export const SimplifiedContactForm: React.FC<{
   }, [firstName, lastName, organizationName]);
 
   const onSubmit = () => {
-    setIsLoading(true);
-    let apiCall;
-    if (contact.id) {
-      apiCall = editStakeholder;
-    } else {
-      apiCall = addStakeholder;
-    }
-
     if (getValues().newRole === Role.APPLICANT && getValues().relation === getValues().newRole) {
       setValue('relation', '');
     }
@@ -274,35 +276,18 @@ export const SimplifiedContactForm: React.FC<{
       setValue('relation', '');
     }
 
-    apiCall(municipalityId, errand.id.toString(), getValues())
-      .then((res) => {
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
-          setErrand(res.errand);
-          toastMessage(
-            getToastOptions({
-              message: 'Ärendepersonen sparades',
-              status: 'success',
-            })
-          );
-          onClose();
-          setModalOpen(false);
-          setManual(false);
-          reset();
-          setValue('personalNumber', '');
-          setValue('organizationNumber', '');
-          setSearchResult(false);
-          setSearchMode('person');
-          setIsLoading(false);
-        });
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        toastMessage({
-          message: 'Något gick fel när ärendepersonen sparades',
-          status: 'error',
-        });
-        setIsLoading(false);
-      });
+    setIsLoading(true);
+
+    onSave(getValues());
+
+    setManual(false);
+    setValue('personalNumber', '');
+    setValue('organizationNumber', '');
+    setSearchResult(false);
+    setSearchMode('person');
+    reset();
+    onClose();
+    setIsLoading(false);
   };
 
   const onError = () => {};
@@ -312,6 +297,10 @@ export const SimplifiedContactForm: React.FC<{
       <div className="invisible">
         <FormControl id={`id`}>
           <Input data-cy={`contact-id`} {...register(`id`)} type="hidden" />
+        </FormControl>
+
+        <FormControl id={`clientId`}>
+          <Input data-cy={`contact-client-id`} {...register(`clientId`)} type="hidden" />
         </FormControl>
       </div>
 
