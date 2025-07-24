@@ -38,6 +38,12 @@ import {
 } from './components/casedata-filter-status.component';
 import { CasedataFilterTags } from './components/casedata-filter-tags.component';
 import { useAppContext } from '@contexts/app.context';
+import { appConfig } from '@config/appconfig';
+import {
+  CasedataStakeholderType,
+  CaseStakeholderTypeFilter,
+  CaseStakeholderTypeValues,
+} from './components/casedata-filter-stakeholder-type.component';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -46,7 +52,8 @@ export type CaseDataFilter = CaseTypeFilter &
   CaseAdminsFilter &
   CaseQueryFilter &
   CasePropertyDesignationFilter &
-  CasePhaseFilter;
+  CasePhaseFilter &
+  CaseStakeholderTypeFilter;
 export const CaseDataValues = {
   ...CaseTypeValues,
   ...CaseStatusValues,
@@ -56,6 +63,7 @@ export const CaseDataValues = {
   ...CaseQueryValues,
   ...CasePropertyDesignationValues,
   ...CasePhaseValues,
+  ...CaseStakeholderTypeValues,
 };
 
 const CaseDataFiltering: React.FC<{
@@ -129,6 +137,11 @@ const CaseDataFiltering: React.FC<{
               ) : (
                 <div className="relative max-md:w-full">
                   <CasedataFilterPhase />
+                </div>
+              )}
+              {appConfig.features.useOrganizationStakeholders && (
+                <div className="relative max-md:w-full">
+                  <CasedataStakeholderType />
                 </div>
               )}
             </div>

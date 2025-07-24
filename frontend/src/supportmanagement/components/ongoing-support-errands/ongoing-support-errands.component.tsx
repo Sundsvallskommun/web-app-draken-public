@@ -1,10 +1,12 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
+import { attestationEnabled } from '@common/services/feature-flag-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { Disclosure } from '@headlessui/react';
+import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
+import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
   getLabelTypeFromName,
@@ -20,8 +22,6 @@ import SupportManagementFiltering, {
   SupportManagementValues,
 } from '../supportmanagement-filtering/supportmanagement-filtering.component';
 import { SupportErrandsTable } from './components/supporterrands-table.component';
-import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
-import { attestationEnabled } from '@common/services/feature-flag-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -367,11 +367,11 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
                   : null}
               </h1>
             </div>
-            <Disclosure.Panel static>
+            <DisclosurePanel static>
               <FormProvider {...tableForm}>
                 <SupportErrandsTable />
               </FormProvider>
-            </Disclosure.Panel>
+            </DisclosurePanel>
           </Disclosure>
         </div>
       </main>
