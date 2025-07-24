@@ -122,6 +122,7 @@ export class CaseDataErrandController {
     @QueryParam('start') start: string,
     @QueryParam('end') end: string,
     @QueryParam('sort') sort: string,
+    @QueryParam('stakeholderType') stakeholderType: string,
     @QueryParam('propertyDesignation') propertyDesignation: string,
     @Res() response: any,
   ): Promise<ResponseData> {
@@ -159,6 +160,13 @@ export class CaseDataErrandController {
         priorityQuery.push(`priority:'${s}'`);
       });
       filterList.push(`(${priorityQuery.join(' or ')})`);
+    }
+    if (stakeholderType) {
+      const stakeholderTypeQuery = [];
+      stakeholderType.split(',').forEach(s => {
+        stakeholderTypeQuery.push(`exists(stakeholders.type:'${s}')`);
+      });
+      filterList.push(`(${stakeholderTypeQuery.join(' or ')})`);
     }
     if (phase) {
       const phaseQuery = [];
