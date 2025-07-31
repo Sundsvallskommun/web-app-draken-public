@@ -1,3 +1,4 @@
+import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 
@@ -36,16 +37,6 @@ export type AttachmentCategory =
   | 'OTHER_ATTACHMENT';
 
 export const MAX_FILE_SIZE_MB = 50;
-
-export const imageMimeTypes = [
-  'image/jpeg',
-  'image/gif',
-  'image/png',
-  'image/tiff',
-  'image/bmp',
-  'image/heic',
-  'image/heif',
-];
 
 export const documentMimeTypes = [
   'application/pdf',
@@ -89,8 +80,6 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const isImageAttachment: (a: SupportAttachment) => boolean = (a) => {
   return imageMimeTypes.includes(a.mimeType);

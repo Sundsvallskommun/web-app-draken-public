@@ -1,5 +1,5 @@
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
-import FileUpload from '@common/components/file-upload/file-upload.component';
+import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -26,7 +26,6 @@ import {
   deleteSupportAttachment,
   documentMimeTypes,
   getSupportAttachment,
-  imageMimeTypes,
   saveSupportAttachments,
 } from '@supportmanagement/services/support-attachment-service';
 import {

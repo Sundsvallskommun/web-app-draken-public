@@ -13,6 +13,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Errand page support attachments tab', () => {
@@ -43,8 +44,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         .should('have.text', `Bilagor (${mockSupportAttachments.length})`)
         .click({ force: true });
     });
-
-    const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
 
     it('shows the correct attachment information', () => {
       cy.get('[data-cy="supportattachments-list"] .attachment-item').should(
