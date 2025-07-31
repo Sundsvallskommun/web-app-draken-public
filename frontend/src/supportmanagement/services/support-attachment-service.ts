@@ -37,7 +37,15 @@ export type AttachmentCategory =
 
 export const MAX_FILE_SIZE_MB = 50;
 
-export const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
+export const imageMimeTypes = [
+  'image/jpeg',
+  'image/gif',
+  'image/png',
+  'image/tiff',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
+];
 
 export const documentMimeTypes = [
   'application/pdf',
@@ -76,6 +84,8 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   'ods',
   'text/html',
   'msg',
+  'heic',
+  'heif',
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];

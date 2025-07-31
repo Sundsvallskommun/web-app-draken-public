@@ -13,7 +13,6 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-//import { imageMimeTypes } from '@supportmanagement/services/support-attachment-service';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Errand page support attachments tab', () => {

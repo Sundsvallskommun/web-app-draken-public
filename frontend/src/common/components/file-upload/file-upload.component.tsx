@@ -55,7 +55,15 @@ const FileUpload: React.FC<{
 
   const ref = useRef<HTMLLabelElement>(null);
 
-  const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
+  const imageMimeTypes = [
+    'image/jpeg',
+    'image/gif',
+    'image/png',
+    'image/tiff',
+    'image/bmp',
+    'image/heic',
+    'image/heif',
+  ];
 
   const appendNewItem = () => {
     setError(undefined);
@@ -108,10 +116,12 @@ const FileUpload: React.FC<{
       appendNewItem();
     }
     setFirstLoad(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newItem]);
 
   useEffect(() => {
     setValue(`${fieldName}-newItem`, undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
