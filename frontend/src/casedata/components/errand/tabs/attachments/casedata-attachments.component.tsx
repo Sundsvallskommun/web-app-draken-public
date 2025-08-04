@@ -1,3 +1,4 @@
+import { useSaveErrand } from '@casedata/hooks/useSaveErrand';
 import { Attachment } from '@casedata/interfaces/attachment';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
@@ -18,6 +19,7 @@ import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-
 import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Dialog, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -39,7 +41,6 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { FileUploadWrapper } from '../../../../../common/components/file-upload/file-upload-dragdrop-context';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export interface SingleAttachment {
   file: File | undefined;
@@ -152,6 +153,7 @@ export const CasedataAttachments: React.FC = () => {
 
   const attachments = watch('attachments');
   const attachmentType = watch('attachmentType');
+  const saveErrand = useSaveErrand(false);
 
   const downloadDocument = (a: Attachment) => {
     const uri = `data:${a.mimeType};base64,${a.file}`;
@@ -354,8 +356,15 @@ export const CasedataAttachments: React.FC = () => {
                     color="primary"
                     loading={isLoading}
                     loadingText="Laddar upp"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.preventDefault();
+                      setIsLoading(true);
+                      const saved = await saveErrand();
+                      if (!saved) {
+                        setIsLoading(false);
+                        return;
+                      }
+
                       const vals:
                         | CasedataAttachmentFormModel
                         | ({ newItem: FileList | undefined } & Record<string, any>) = getValues();
@@ -553,40 +562,35 @@ export const CasedataAttachments: React.FC = () => {
                                 <Button
                                   data-cy={`delete-attachment-${attachment.id}`}
                                   leftIcon={<LucideIcon name="trash" />}
-                                  onClick={() => {
-                                    removeConfirm
-                                      .showConfirmation(
-                                        'Ta bort?',
-                                        'Vill du ta bort denna bilaga?',
-                                        'Ja',
-                                        'Nej',
-                                        'info',
-                                        'info'
-                                      )
-                                      .then((confirmed) => {
-                                        if (confirmed) {
-                                          deleteAttachment(municipalityId, errand?.id, attachment)
-                                            .then((res) => {
-                                              getErrand(municipalityId, errand.id.toString()).then((res) => {
-                                                setErrand(res.errand);
-                                              });
-                                            })
-                                            .then(() => {
-                                              toastMessage(
-                                                getToastOptions({
-                                                  message: 'Bilagan togs bort',
-                                                  status: 'success',
-                                                })
-                                              );
-                                            })
-                                            .catch((e) => {
-                                              toastMessage({
-                                                message: 'Något gick fel när bilagan togs bort',
-                                                status: 'error',
-                                              });
-                                            });
-                                        }
+                                  onClick={async () => {
+                                    const confirmed = await removeConfirm.showConfirmation(
+                                      'Ta bort?',
+                                      'Vill du ta bort denna bilaga?',
+                                      'Ja',
+                                      'Nej',
+                                      'info',
+                                      'info'
+                                    );
+                                    if (!confirmed) return;
+                                    try {
+                                      const saved = await saveErrand();
+                                      if (!saved) return;
+
+                                      await deleteAttachment(municipalityId, errand?.id, attachment);
+                                      const res = await getErrand(municipalityId, errand.id.toString());
+                                      setErrand(res.errand);
+                                      toastMessage(
+                                        getToastOptions({
+                                          message: 'Bilagan togs bort',
+                                          status: 'success',
+                                        })
+                                      );
+                                    } catch (e) {
+                                      toastMessage({
+                                        message: 'Något gick fel när bilagan togs bort',
+                                        status: 'error',
                                       });
+                                    }
                                   }}
                                 >
                                   Ta bort

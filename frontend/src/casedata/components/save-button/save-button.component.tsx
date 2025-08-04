@@ -1,8 +1,8 @@
+import { useSaveErrand } from '@casedata/hooks/useSaveErrand';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Role } from '@casedata/interfaces/role';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
-import { getErrand, isErrandLocked, saveErrand } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   extraParametersToUppgiftMapper,
@@ -10,16 +10,10 @@ import {
   UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
-import {
-  editStakeholder,
-  removeStakeholder,
-  stakeholder2Contact,
-} from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
@@ -180,103 +174,6 @@ export const SaveButtonComponent: React.FC<{
     };
   }
 
-  const onSubmit = async () => {
-    const data: IErrand = getValues();
-
-    if (formState.dirtyFields['administratorName']) {
-      data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
-    }
-
-    if (data.administrator && data.administrator.adAccount) {
-      const adAccount = data.administrator.adAccount.toLowerCase();
-
-      data.stakeholders =
-        data.stakeholders?.filter(
-          (s) => !s.roles?.includes(Role.ADMINISTRATOR) && s.adAccount?.toLowerCase() !== adAccount
-        ) || [];
-
-      const mappedAdmin = {
-        ...stakeholder2Contact(data.administrator),
-        newRole: Role.ADMINISTRATOR,
-      };
-
-      data.stakeholders.push(mappedAdmin);
-    }
-
-    const extraParams = await saveCaseDetails({
-      data,
-      municipalityId,
-      toastMessage,
-      errand,
-    });
-
-    if (extraParams === null) return;
-
-    let dataToSave: Partial<IErrand> & { municipalityId: string };
-
-    if (registeringNewErrand) {
-      const { administrator, ...rest } = data;
-      dataToSave = rest;
-    } else {
-      const dirtyData = {
-        id: data.id,
-        municipalityId: data.municipalityId,
-        ...Object.entries(formState.dirtyFields).reduce((acc, [field, dirty]) => {
-          if (dirty) acc[field] = data[field];
-          return acc;
-        }, {} as any),
-      };
-
-      delete dirtyData.administrator;
-      dataToSave = dirtyData;
-    }
-
-    setError(false);
-    setIsLoadingContinue(true);
-
-    try {
-      dataToSave.stakeholders?.forEach(async (stakeholder) => {
-        if (stakeholder?.id) {
-          await editStakeholder(municipalityId, dataToSave?.id.toString(), stakeholder);
-        }
-      });
-
-      const res = await saveErrand(dataToSave);
-      const saved = await getErrand(municipalityId, res.errandId.toString());
-      const removedStakeholders = (dataToSave.stakeholders ?? []).filter((s) => s.removed);
-
-      for (const removed of removedStakeholders) {
-        await removeStakeholder(municipalityId, res.errandId.toString(), removed.id);
-      }
-
-      const saved2 = await getErrand(municipalityId, res.errandId.toString());
-      setErrand(saved2.errand);
-      setErrandNumber(saved2.errand?.errandNumber);
-
-      if (registeringNewErrand) {
-        reset();
-      }
-
-      toastMessage(
-        getToastOptions({
-          message: 'Ärendet sparades',
-          status: 'success',
-        })
-      );
-    } catch (e) {
-      console.error('Error when saving errand:', e);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när ärendet sparades',
-        status: 'error',
-      });
-      setError(true);
-    } finally {
-      setIsLoadingContinue(false);
-    }
-  };
-
   useEffect(() => {
     setTimeout(() => {
       if (errandNumber && window.location.pathname.includes('registrera') && !formState.isDirty) {
@@ -286,6 +183,8 @@ export const SaveButtonComponent: React.FC<{
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState.isDirty, errandNumber]);
+
+  const saveErrand = useSaveErrand(registeringNewErrand);
 
   return (
     <div className="w-full flex gap-lg items-end">
@@ -300,19 +199,8 @@ export const SaveButtonComponent: React.FC<{
         }
         type="button"
         onClick={handleSubmit(() => {
-          if (registeringNewErrand) {
-            return saveConfirm
-              .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
-              .then((confirmed) => {
-                if (confirmed) {
-                  onSubmit();
-                }
-                return confirmed ? () => true : () => {};
-              });
-          } else {
-            onSubmit();
-          }
-        }, onError)}
+          saveErrand();
+        })}
         color={
           (props.color as
             | 'info'
