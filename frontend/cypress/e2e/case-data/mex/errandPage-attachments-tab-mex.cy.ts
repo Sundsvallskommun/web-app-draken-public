@@ -8,10 +8,9 @@ import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
+import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
-  const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
-
   describe('Errand page attachments tab', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/messages/MEX-2024-000280*', mockMessages);

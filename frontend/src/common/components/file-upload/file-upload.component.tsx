@@ -9,6 +9,16 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { UploadCloud } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
 
+export const imageMimeTypes = [
+  'image/jpeg',
+  'image/gif',
+  'image/png',
+  'image/tiff',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
+];
+
 const FileUpload: React.FC<{
   dragDrop: boolean;
   fieldName: string;
@@ -54,8 +64,6 @@ const FileUpload: React.FC<{
   const [added, setAdded] = useState<number>(0);
 
   const ref = useRef<HTMLLabelElement>(null);
-
-  const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
 
   const appendNewItem = () => {
     setError(undefined);
@@ -108,10 +116,12 @@ const FileUpload: React.FC<{
       appendNewItem();
     }
     setFirstLoad(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newItem]);
 
   useEffect(() => {
     setValue(`${fieldName}-newItem`, undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

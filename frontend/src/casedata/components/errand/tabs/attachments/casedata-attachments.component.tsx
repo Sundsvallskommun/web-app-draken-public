@@ -9,13 +9,12 @@ import {
   getAttachmentKey,
   getAttachmentLabel,
   getPTAttachmentKey,
-  imageMimeTypes,
   onlyOneAllowed,
   PTAttachmentLabels,
   sendAttachments,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
-import FileUpload from '@common/components/file-upload/file-upload.component';
+import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';

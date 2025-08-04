@@ -7,7 +7,6 @@ import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
-import { imageMimeTypes } from '@casedata/services/casedata-attachment-service';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockAsset } from '../fixtures/mockAsset';
 
