@@ -1,8 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Role } from '@casedata/interfaces/role';
-import { Stakeholder } from '@casedata/interfaces/stakeholder';
-import { getErrand, isErrandLocked, saveErrand } from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandLocked, saveErrand, updateErrandStatus } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   extraParametersToUppgiftMapper,
@@ -10,15 +8,13 @@ import {
   UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
-import {
-  editStakeholder,
-  removeStakeholder,
-  stakeholder2Contact,
-} from '@casedata/services/casedata-stakeholder-service';
+import { editStakeholder, removeStakeholder, setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
+import { User } from '@common/interfaces/user';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -34,17 +30,20 @@ export const SaveButtonComponent: React.FC<{
   color?: string;
   label?: string;
   icon?: JSX.Element;
+  loading?: boolean;
 }> = (props) => {
   const {
     errand,
     administrators,
     municipalityId,
     setErrand,
+    user,
   }: {
     errand: IErrand;
-    administrators: Stakeholder[];
+    administrators: Admin[];
     municipalityId: string;
     setErrand: (e: IErrand) => void;
+    user: User;
   } = useAppContext();
   const [error, setError] = useState(false);
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
@@ -184,23 +183,11 @@ export const SaveButtonComponent: React.FC<{
     const data: IErrand = getValues();
 
     if (formState.dirtyFields['administratorName']) {
-      data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
-    }
-
-    if (data.administrator && data.administrator.adAccount) {
-      const adAccount = data.administrator.adAccount.toLowerCase();
-
-      data.stakeholders =
-        data.stakeholders?.filter(
-          (s) => !s.roles?.includes(Role.ADMINISTRATOR) && s.adAccount?.toLowerCase() !== adAccount
-        ) || [];
-
-      const mappedAdmin = {
-        ...stakeholder2Contact(data.administrator),
-        newRole: Role.ADMINISTRATOR,
-      };
-
-      data.stakeholders.push(mappedAdmin);
+      const admin = administrators.find((a) => a.displayName === getValues().administratorName);
+      setAdministrator(municipalityId, errand, admin);
+      if (admin.adAccount !== user.username) {
+        updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Tilldelat);
+      }
     }
 
     const extraParams = await saveCaseDetails({
@@ -326,7 +313,7 @@ export const SaveButtonComponent: React.FC<{
             | 'juniskar') || 'primary'
         }
         rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
-        loading={isLoadingContinue}
+        loading={isLoadingContinue || props.loading}
         loadingText="Sparar"
       >
         {props.label || 'Spara'}
