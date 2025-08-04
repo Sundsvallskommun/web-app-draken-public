@@ -18,17 +18,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Modal,
-  Select,
-  Spinner,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, FormErrorMessage, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 
@@ -44,8 +34,6 @@ export const PhaseChanger = () => {
     useAppContext();
   const phaseConfirm = useConfirm();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [selectingAdmin, setSelectingAdmin] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
   const [allowed, setAllowed] = useState(false);
@@ -55,14 +43,11 @@ export const PhaseChanger = () => {
   }, [user, errand]);
 
   const {
-    register,
-    control,
     handleSubmit,
     watch,
     reset,
     setValue,
     getValues,
-    formState,
     formState: { errors },
   }: UseFormReturn<{ admin: string }, any, undefined> = useForm();
 
@@ -130,7 +115,6 @@ export const PhaseChanger = () => {
   const onSave = () => {
     const admin = administrators.find((a) => a.displayName === getValues().admin);
     setIsLoading(true);
-    setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
         toastMessage(
@@ -142,7 +126,6 @@ export const PhaseChanger = () => {
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        setSelectingAdmin(false);
         pollDisplayPhase();
       })
       .catch((e) => {
@@ -152,7 +135,6 @@ export const PhaseChanger = () => {
           message: 'Något gick fel när handläggaren sparades',
           status: 'error',
         });
-        setError(true);
         setIsLoading(false);
         return;
       });
@@ -178,7 +160,6 @@ export const PhaseChanger = () => {
                   status: 'success',
                 })
               );
-              setError(true);
               setIsLoading(false);
             })
             .catch(() => {
@@ -188,7 +169,6 @@ export const PhaseChanger = () => {
                 message: 'Något gick fel när fasbytet inleddes',
                 status: 'error',
               });
-              setError(true);
               setIsLoading(false);
             });
         }
@@ -200,75 +180,18 @@ export const PhaseChanger = () => {
       Fasbyte pågår
     </Button>
   ) : uiPhase === UiPhase.registrerad ? (
-    <>
-      <Button
-        variant="primary"
-        color="vattjom"
-        onClick={() => {
-          setSelectingAdmin(true);
-        }}
-        rightIcon={<LucideIcon name="arrow-right" size={18} />}
-      >
-        Tilldela handläggare
-      </Button>
-      <Modal
-        show={selectingAdmin}
-        className="w-[43rem]"
-        onClose={() => {
-          setSelectingAdmin(false);
-          setValue('admin', 'Välj handläggare');
-        }}
-        label={'Tilldela handläggare'}
-      >
-        <Modal.Content>
-          <p>
-            För att inleda utredning behöver ärendet tilldelas en ansvarig handläggare. Du kan utse dig själv eller
-            någon annan i ditt team.
-          </p>
-          <FormControl id="administrator" className="w-full" required>
-            <FormLabel>Ansvarig handläggare</FormLabel>
-            <Select
-              className="w-full"
-              size="sm"
-              data-cy="admin-input"
-              placeholder="Välj handläggare"
-              aria-label="Välj handläggare"
-              {...register('admin')}
-              value={admin}
-            >
-              {!errand?.administrator?.adAccount ? <Select.Option>Välj handläggare</Select.Option> : null}
-              {administrators.map((a) => (
-                <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-        </Modal.Content>
-        <Modal.Footer>
-          <Button
-            variant="tertiary"
-            size="sm"
-            onClick={() => {
-              setSelectingAdmin(false);
-              setValue('admin', 'Välj handläggare');
-            }}
-          >
-            Avbryt
-          </Button>
-          {errand?.id && formState.dirtyFields.admin && admin !== 'Välj handläggare' ? (
-            <Button
-              variant="primary"
-              disabled={!errand?.id || !formState.dirtyFields.admin || admin === 'Välj handläggare'}
-              loadingText="Sparar"
-              loading={isLoading}
-              size="sm"
-              onClick={handleSubmit(onSave, onError)}
-            >
-              Tilldela
-            </Button>
-          ) : null}
-        </Modal.Footer>
-      </Modal>
-    </>
+    <Button
+      variant="primary"
+      color="vattjom"
+      onClick={() => {
+        const admin = administrators.find((a) => a.adAccount === user.username);
+        setValue('admin', admin.displayName);
+        handleSubmit(onSave, onError)();
+      }}
+      rightIcon={<LucideIcon name="arrow-right" size={18} />}
+    >
+      Inled granskning
+    </Button>
   ) : uiPhase === UiPhase.beslut ||
     errand.phase === ErrandPhase.verkstalla ||
     errand.status?.statusType === ErrandStatus.ArendeAvslutat ? null : (

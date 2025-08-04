@@ -1,3 +1,4 @@
+import { SaveButtonComponent } from '@casedata/components/save-button/save-button.component';
 import { SuspendErrandComponent } from '@casedata/components/suspend-errand';
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { IErrand } from '@casedata/interfaces/errand';
@@ -11,13 +12,13 @@ import {
   isErrandAdmin,
   isErrandLocked,
   phaseChangeInProgress,
-  updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
 import { Admin } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -29,18 +30,15 @@ import {
   Modal,
   Select,
   Textarea,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
-import { ResumeErrandButton } from './resume-errand-button.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { SaveButtonComponent } from '@casedata/components/save-button/save-button.component';
+import { ResumeErrandButton } from './resume-errand-button.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -53,11 +51,9 @@ export const SidebarInfo: React.FC<{}> = () => {
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState<'status' | 'admin' | false>();
   const [showMessageComposer, setShowMessageComposer] = useState(false);
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
   const toastMessage = useSnackbar();
-  const confirm = useConfirm();
   const { pollDisplayPhase } = useDisplayPhasePoller();
   const [allowed, setAllowed] = useState(false);
 
@@ -66,16 +62,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     setAllowed(_a);
   }, [user, errand]);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    reset,
-    setValue,
-    getValues,
-    formState,
-  }: UseFormReturn<{ admin: string; status: string; publicNote }, any, undefined> = useForm();
+  const { setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   useEffect(() => {
     if (administrators && errand?.administrator?.adAccount) {
@@ -83,14 +70,14 @@ export const SidebarInfo: React.FC<{}> = () => {
         administrators.filter((a) => {
           return a.adAccount === errand.administrator.adAccount;
         })?.[0]?.displayName || '';
-      setValue('admin', match);
+      setValue('administratorName', match);
     } else {
-      setValue('admin', 'Välj handläggare');
+      setValue('administratorName', 'Välj handläggare');
     }
     if (errand?.id && errand?.status?.statusType) {
-      setValue('status', errand.status?.statusType);
+      setValue('status.statusType', errand.status?.statusType);
     } else {
-      setValue('status', 'Välj status');
+      setValue('status.statusType', 'Välj status');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, administrators]);
@@ -118,44 +105,9 @@ export const SidebarInfo: React.FC<{}> = () => {
     setSelectableStatuses(s);
   }, [errand]);
 
-  const saveAdmin = () => {
-    const admin = administrators.find((a) => a.displayName === getValues().admin);
-    setIsLoading('admin');
-    setError(false);
-    return setAdministrator(municipalityId, errand, admin)
-      .then(() => {
-        toastMessage(
-          getToastOptions({
-            message: 'Handläggare sparades',
-            status: 'success',
-          })
-        );
-
-        const status = Object.entries(ErrandStatus).find(([key, label]) => label === 'Tilldelat')[1];
-        updateErrandStatus(municipalityId, errand.id.toString(), status).then(() => {
-          setIsLoading(false);
-          getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-          reset();
-          pollDisplayPhase();
-        });
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när handläggaren sparades',
-          status: 'error',
-        });
-        setError(true);
-        setIsLoading(false);
-        return;
-      });
-  };
-
   const selfAssignErrand = () => {
+    setLoading(true);
     const admin = administrators.find((a) => a.adAccount === user.username);
-    setIsLoading('admin');
-    setError(false);
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
         toastMessage(
@@ -164,10 +116,10 @@ export const SidebarInfo: React.FC<{}> = () => {
             status: 'success',
           })
         );
-        setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
         pollDisplayPhase();
+        setLoading(false);
       })
       .catch((e) => {
         toastMessage({
@@ -176,49 +128,10 @@ export const SidebarInfo: React.FC<{}> = () => {
           message: 'Något gick fel när handläggaren sparades',
           status: 'error',
         });
-        setError(true);
-        setIsLoading(false);
+        setLoading(false);
         return;
       });
   };
-
-  const saveStatus = () => {
-    const status = Object.entries(ErrandStatus).find(([key, label]) => label === getValues().status)[1];
-    setIsLoading('status');
-    setError(false);
-    return updateErrandStatus(municipalityId, errand.id.toString(), status)
-      .then(() => {
-        toastMessage(
-          getToastOptions({
-            message: 'Status ändrades',
-            status: 'success',
-          })
-        );
-        setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-        reset();
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när status ändrades',
-          status: 'error',
-        });
-        setError(true);
-        setIsLoading(false);
-        return;
-      });
-  };
-
-  const onError = () => {
-    console.error('Something went wrong when saving');
-  };
-
-  const { admin } = watch();
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const status = useMemo(() => getValues().status, [getValues()]);
 
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
@@ -333,8 +246,8 @@ export const SidebarInfo: React.FC<{}> = () => {
                 data-cy="admin-input"
                 placeholder="Tilldela handläggare"
                 aria-label="Tilldela handläggare"
-                {...register('admin')}
-                value={admin}
+                {...register('administratorName')}
+                value={getValues().administratorName}
               >
                 {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
                 {administrators
@@ -344,24 +257,6 @@ export const SidebarInfo: React.FC<{}> = () => {
                   ))}
               </Select>
             </FormControl>
-            {errand?.id && formState.dirtyFields.admin && admin !== 'Tilldela handläggare' ? (
-              <Button
-                color="primary"
-                disabled={
-                  !errand?.id ||
-                  !formState.dirtyFields.admin ||
-                  admin === 'Tilldela handläggare' ||
-                  isErrandLocked(errand)
-                }
-                loadingText="Sparar"
-                loading={isLoading === 'admin'}
-                size="sm"
-                onClick={handleSubmit(saveAdmin, onError)}
-                data-cy="assign-administrator-button"
-              >
-                Tilldela
-              </Button>
-            ) : null}
             <FormControl
               id="status"
               className="w-full"
@@ -381,8 +276,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 data-cy="status-input"
                 placeholder="Välj status"
                 aria-label="Välj status"
-                {...register('status')}
-                value={status}
+                {...register('status.statusType')}
               >
                 {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
                 {selectableStatuses.map((c: string, index) => (
@@ -392,7 +286,13 @@ export const SidebarInfo: React.FC<{}> = () => {
                 ))}
               </Select>
             </FormControl>
-            <SaveButtonComponent setUnsaved={() => {}} update={() => {}} label="Spara ärende" color="primary" />
+            <SaveButtonComponent
+              setUnsaved={() => {}}
+              update={() => {}}
+              label="Spara ärende"
+              color="primary"
+              loading={loading}
+            />
           </div>
         ) : null}
 
@@ -409,11 +309,11 @@ export const SidebarInfo: React.FC<{}> = () => {
               <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
             </div>
             <p className="text-small">
-              {getValues('admin') === 'Välj handläggare' ? (
+              {getValues('administratorName') === 'Välj handläggare' ? (
                 <span className="mb-24">Ärendet parkerades utan en handläggare.</span>
               ) : (
                 <span className="mb-24">
-                  <strong>{getValues('admin')}</strong>
+                  <strong>{getValues('administratorName')}</strong>
                   {errand?.status?.statusType === ErrandStatus.Parkerad
                     ? ' parkerade ärendet med en påminnelse '
                     : ' tilldelades ärendet'}{' '}
