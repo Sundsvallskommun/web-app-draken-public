@@ -16,6 +16,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
+
 export function useSaveCasedataErrand(registeringNewErrand: boolean) {
   const { errand, administrators, municipalityId, setErrand, user } = useAppContext();
   const toastMessage = useSnackbar();
