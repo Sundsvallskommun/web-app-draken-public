@@ -1,6 +1,7 @@
 import { SaveButtonComponent } from '@casedata/components/save-button/save-button.component';
 import { SuspendErrandComponent } from '@casedata/components/suspend-errand';
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -103,34 +104,38 @@ export const SidebarInfo: React.FC<{}> = () => {
       s.unshift(errand.status?.statusType as ErrandStatus);
     }
     setSelectableStatuses(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  const selfAssignErrand = () => {
+  const errandSave = useSaveCasedataErrand(false);
+  const selfAssignErrand = async () => {
     setLoading(true);
-    const admin = administrators.find((a) => a.adAccount === user.username);
-    return setAdministrator(municipalityId, errand, admin)
-      .then(() => {
-        toastMessage(
-          getToastOptions({
-            message: 'Handläggare sparades',
-            status: 'success',
-          })
-        );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-        reset();
-        pollDisplayPhase();
-        setLoading(false);
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när handläggaren sparades',
-          status: 'error',
-        });
-        setLoading(false);
-        return;
+    try {
+      await errandSave();
+      const admin = administrators.find((a) => a.adAccount === user.username);
+      await setAdministrator(municipalityId, errand, admin);
+
+      toastMessage(
+        getToastOptions({
+          message: 'Handläggare sparades',
+          status: 'success',
+        })
+      );
+
+      const updated = await getErrand(municipalityId, errand.id.toString());
+      setErrand(updated.errand);
+      reset();
+      pollDisplayPhase();
+    } catch (e) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när handläggaren sparades',
+        status: 'error',
       });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
