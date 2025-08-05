@@ -1,4 +1,3 @@
-import { SaveButtonComponent } from '@casedata/components/save-button/save-button.component';
 import { CaseTypesHiddenFromRegistration } from '@casedata/interfaces/case-type';
 import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
@@ -10,7 +9,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
 import { CaseDataRelationsDisclosure } from './casedata-relations-disclosure.component';

@@ -128,7 +128,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   function estateToText(propertyDesignation: string) {
     if (!propertyDesignation) {
-      return '(Saknas)';
+      return '(saknas)';
     }
     const MunicipalityName = propertyDesignation.toLowerCase().split(' ')[0];
     const propertyName = propertyDesignation
@@ -222,7 +222,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                             : ', ' + estateToText(estate?.address?.propertyDesignation)}
                                         </Fragment>
                                       ))}
-                                      {errand.facilities.length === 0 ? '(Saknas)' : null}
+                                      {errand.facilities.length === 0 ? '(saknas)' : null}
                                     </div>
                                   </div>
                                 ) : (

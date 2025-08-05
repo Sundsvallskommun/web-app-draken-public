@@ -105,6 +105,7 @@ export interface IErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
+  publicNote?: string;
 }
 
 export interface ErrandsData extends Data {
