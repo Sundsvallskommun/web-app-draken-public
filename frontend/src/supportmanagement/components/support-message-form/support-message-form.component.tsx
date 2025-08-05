@@ -468,9 +468,10 @@ export const SupportMessageForm: React.FC<{
       const errandNumbers = await Promise.all(
         relations?.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId)) ?? []
       );
-      setRelationErrandsNumber(errandNumbers);
+      setRelationErrandsNumber(errandNumbers.toSorted());
     });
-  }, [contactMeans]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.showMessageForm]);
 
   useEffect(() => {
     if (contactMeans === 'relations' && relationErrands.length > 0 && !selectedRelationId) {
