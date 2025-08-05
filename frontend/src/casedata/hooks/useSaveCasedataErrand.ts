@@ -1,6 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { Role } from '@casedata/interfaces/role';
-import { getErrand, saveErrand } from '@casedata/services/casedata-errand-service';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { getErrand, saveErrand, updateErrandStatus } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   extraParametersToUppgiftMapper,
@@ -8,11 +8,7 @@ import {
   UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
-import {
-  editStakeholder,
-  removeStakeholder,
-  stakeholder2Contact,
-} from '@casedata/services/casedata-stakeholder-service';
+import { editStakeholder, removeStakeholder, setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
@@ -20,9 +16,8 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
-
-export function useSaveErrand(registeringNewErrand: boolean) {
-  const { errand, administrators, municipalityId, setErrand } = useAppContext();
+export function useSaveCasedataErrand(registeringNewErrand: boolean) {
+  const { errand, administrators, municipalityId, setErrand, user } = useAppContext();
   const toastMessage = useSnackbar();
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
 
@@ -106,23 +101,11 @@ export function useSaveErrand(registeringNewErrand: boolean) {
     const data: IErrand = getValues();
 
     if (formState.dirtyFields['administratorName']) {
-      data.administrator = administrators.find((a) => `${a.firstName} ${a.lastName}` === data.administratorName);
-    }
-
-    if (data.administrator && data.administrator.adAccount) {
-      const adAccount = data.administrator.adAccount.toLowerCase();
-
-      data.stakeholders =
-        data.stakeholders?.filter(
-          (s) => !s.roles?.includes(Role.ADMINISTRATOR) && s.adAccount?.toLowerCase() !== adAccount
-        ) || [];
-
-      const mappedAdmin = {
-        ...stakeholder2Contact(data.administrator),
-        newRole: Role.ADMINISTRATOR,
-      };
-
-      data.stakeholders.push(mappedAdmin);
+      const admin = administrators.find((a) => a.displayName === getValues().administratorName);
+      setAdministrator(municipalityId, errand, admin);
+      if (admin.adAccount !== user.username) {
+        updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Tilldelat);
+      }
     }
 
     const extraParams = await saveCaseDetails(data);
