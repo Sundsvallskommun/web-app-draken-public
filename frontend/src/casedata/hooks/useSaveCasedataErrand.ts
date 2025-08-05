@@ -101,14 +101,6 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean) {
   async function save(): Promise<boolean> {
     const data: IErrand = getValues();
 
-    if (formState.dirtyFields['administratorName']) {
-      const admin = administrators.find((a) => a.displayName === getValues().administratorName);
-      setAdministrator(municipalityId, errand, admin);
-      if (admin.adAccount !== user.username) {
-        updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Tilldelat);
-      }
-    }
-
     const extraParams = await saveCaseDetails(data);
     if (extraParams === null) return false;
 
@@ -130,17 +122,27 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean) {
       dataToSave = dirtyData;
     }
 
+    if (formState.dirtyFields['administratorName']) {
+      const admin = administrators.find((a) => a.displayName === getValues().administratorName);
+      if (!!admin) {
+        setAdministrator(municipalityId, errand, admin);
+        if (admin.adAccount !== user.username) {
+          updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Tilldelat);
+        }
+      }
+    }
+
     try {
       if (dataToSave.stakeholders) {
         for (const stakeholder of dataToSave.stakeholders) {
-          if (stakeholder?.id) {
-            await editStakeholder(municipalityId, dataToSave?.id?.toString(), stakeholder);
+          if (stakeholder.id && !stakeholder.removed) {
+            await editStakeholder(municipalityId, dataToSave.id.toString(), stakeholder);
           }
         }
       }
 
       const res = await saveErrand(dataToSave);
-      const saved = await getErrand(municipalityId, res.errandId.toString());
+      await getErrand(municipalityId, res.errandId.toString());
 
       const removedStakeholders = (dataToSave.stakeholders ?? []).filter((s) => s.removed);
       for (const removed of removedStakeholders) {
