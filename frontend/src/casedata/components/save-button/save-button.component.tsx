@@ -1,4 +1,4 @@
-import { useSaveErrand } from '@casedata/hooks/useSaveErrand';
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
@@ -75,7 +75,7 @@ export const SaveButtonComponent: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState.isDirty, errandNumber]);
 
-  const saveErrand = useSaveErrand(registeringNewErrand);
+  const saveErrand = useSaveCasedataErrand(registeringNewErrand);
 
   return (
     <div className="w-full flex gap-lg items-end">

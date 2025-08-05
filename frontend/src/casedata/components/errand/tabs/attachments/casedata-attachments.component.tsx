@@ -1,4 +1,4 @@
-import { useSaveErrand } from '@casedata/hooks/useSaveErrand';
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { Attachment } from '@casedata/interfaces/attachment';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
@@ -153,7 +153,7 @@ export const CasedataAttachments: React.FC = () => {
 
   const attachments = watch('attachments');
   const attachmentType = watch('attachmentType');
-  const saveErrand = useSaveErrand(false);
+  const saveErrand = useSaveCasedataErrand(false);
 
   const downloadDocument = (a: Attachment) => {
     const uri = `data:${a.mimeType};base64,${a.file}`;
