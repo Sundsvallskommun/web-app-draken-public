@@ -1,6 +1,7 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { MessageNode } from './casedata-message-service';
 import { Attachment } from '@casedata/interfaces/attachment';
+import { IErrand } from '@casedata/interfaces/errand';
 
 export interface Identifier {
   type?: string;
@@ -65,27 +66,16 @@ export const getConversationMessages: (
 export const createConversation = async (
   municipalityId: string,
   errandId: number,
-  relationId: string,
-  topic: string
+  topic: string,
+  type: string,
+  relationId?: string
 ) => {
-  const res = await getConversations(municipalityId, errandId);
-  if (res && res.data) {
-    const existingConversation = res.data.find((conv: any) => conv.relationIds && conv.relationIds[0] === relationId);
-    if (existingConversation) {
-      return {
-        data: {
-          id: existingConversation.id,
-        },
-      };
-    }
-  }
-
   const url = `casedata/${municipalityId}/namespace/errand/${errandId}/communication/conversations`;
 
   const body: Partial<any> = {
     topic: topic,
-    type: 'INTERNAL',
-    relationIds: [relationId],
+    type: type,
+    ...(relationId ? { relationIds: [relationId] } : {}),
   };
 
   return apiService
@@ -99,7 +89,7 @@ export const createConversation = async (
     });
 };
 
-export const sendInternalMessage = (
+export const sendConversationMessage = (
   municipalityId: string,
   errandId: number,
   conversationId: string,
@@ -158,4 +148,52 @@ export const getConversationAttachment: (
       console.error('Something went wrong when fetching conversation attachment for errand: ', errandId);
       throw e;
     });
+};
+
+// Comments is to prepare CD for creating relations
+export const getOrCreateConversationId = async (
+  municipalityId: string,
+  errand: IErrand,
+  contactMeans: string,
+  // selectedRelationId: string,
+  // relationErrands: Relations[],
+  messageConversationId: string
+): Promise<string> => {
+  const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
+
+  // const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+
+  const conversations = await getConversations(municipalityId, errand.id);
+  const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
+
+  // const existingInternalConversation = conversations.data.find(
+  //   (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation.id
+  // );
+
+  let conversationId: string | undefined = undefined;
+
+  // if (contactMeans === 'draken' && existingInternalConversation) {
+  //   conversationId = existingInternalConversation.id;
+  // }
+
+  if (contactMeans === 'minasidor' && existingExternalConversation) {
+    conversationId = existingExternalConversation.id;
+  }
+
+  if (messageConversationId) {
+    conversationId = messageConversationId;
+  }
+
+  if (!conversationId) {
+    const newConversation = await createConversation(
+      municipalityId,
+      errand.id,
+      `Ärende: #${errand.errandNumber}`,
+      conversationType
+      // selectedRelation?.id
+    );
+    conversationId = newConversation.data.id;
+  }
+
+  return conversationId;
 };

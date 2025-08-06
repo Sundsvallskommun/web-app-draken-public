@@ -5,7 +5,7 @@ import { isErrandLocked, validateAction } from '@casedata/services/casedata-erra
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
+import sanitized, { convertPlainTextToHTML, extractBody, isHTML } from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -52,6 +52,10 @@ export const RenderedMessage: React.FC<{
       }
     }
   };
+
+  const content = isHTML(message?.message)
+    ? sanitized(extractBody(message?.message))
+    : convertPlainTextToHTML(message?.message);
 
   return (
     <>
@@ -289,7 +293,7 @@ export const RenderedMessage: React.FC<{
               <p
                 className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
                 dangerouslySetInnerHTML={{
-                  __html: sanitized(message?.message || ''),
+                  __html: sanitized(content || ''),
                 }}
               ></p>
             )}

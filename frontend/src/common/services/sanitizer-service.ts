@@ -45,4 +45,18 @@ export const sanitizedInline: (unsafe: string) => string = (unsafe) => {
   return SanitizeHTML(unsafe.replace('</', ' </'), inlineConfig);
 };
 
+export function isHTML(str: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(str);
+}
+
+export function extractBody(html: string): string {
+  const match = html.match(/<body[^>]*>((.|[\n\r])*)<\/body>/im);
+  return match ? match[1] : html;
+}
+
+export function convertPlainTextToHTML(text: string): string {
+  const escaped = SanitizeHTML(text);
+  return escaped.replace(/\r?\n/g, '<br>');
+}
+
 export default sanitized;

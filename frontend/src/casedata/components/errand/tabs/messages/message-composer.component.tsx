@@ -2,9 +2,15 @@
 
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
-import { sendInternalMessage } from '@casedata/services/casedata-conversation-service';
+import {
+  createConversation,
+  getConversations,
+  getOrCreateConversationId,
+  sendConversationMessage,
+} from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   MessageNode,
@@ -16,6 +22,7 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
+import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -25,6 +32,7 @@ import {
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -46,13 +54,10 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
-  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken';
+  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor';
   messageClassification: string;
   messageTemplate?: string;
   emails: { value: string }[];
@@ -246,11 +251,18 @@ export const MessageComposer: React.FC<{
     const renderedHtml = await renderMessageWithTemplates(data.messageBody);
     data.messageBody = renderedHtml.html;
 
-    if (data.contactMeans === 'draken') {
-      sendInternalMessage(
+    if (data.contactMeans === 'draken' || data.contactMeans === 'minasidor') {
+      const conversationId = await getOrCreateConversationId(
+        municipalityId,
+        errand,
+        contactMeans,
+        props?.message?.conversationId
+      );
+
+      sendConversationMessage(
         municipalityId,
         errand.id,
-        props.message.conversationId,
+        conversationId,
         data.messageBody,
         data.messageAttachments.map((a) => a.file).filter((f): f is FileList => !!f)
       )
@@ -390,7 +402,7 @@ export const MessageComposer: React.FC<{
           : props.message.messageType === 'DRAKEN'
           ? 'draken'
           : props.message.messageType === 'MINASIDOR'
-          ? 'draken' //Change value when possible to initiate conversation to MINASIDOR
+          ? 'minasidor'
           : 'email'
       );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
@@ -447,7 +459,6 @@ export const MessageComposer: React.FC<{
               <RadioButton
                 tabIndex={props.show ? 0 : -1}
                 data-cy="useEmail-radiobutton-true"
-                size="lg"
                 className="mr-sm"
                 name="useEmail"
                 id="useEmail"
@@ -460,7 +471,6 @@ export const MessageComposer: React.FC<{
               <RadioButton
                 tabIndex={props.show ? 0 : -1}
                 data-cy="useSms-radiobutton-true"
-                size="lg"
                 className="mr-sm"
                 name="useSms"
                 id="useSms"
@@ -474,7 +484,6 @@ export const MessageComposer: React.FC<{
                 <RadioButton
                   tabIndex={props.show ? 0 : -1}
                   data-cy="useWebMessage-radiobutton-true"
-                  size="lg"
                   className="mr-sm"
                   name="useWebMessage"
                   id="useWebMessage"
@@ -483,6 +492,20 @@ export const MessageComposer: React.FC<{
                   {...register('contactMeans')}
                 >
                   E-tjänst
+                </RadioButton>
+              )}
+              {!!getOwnerStakeholder(errand)?.personalNumber && (
+                <RadioButton
+                  tabIndex={props.show ? 0 : -1}
+                  data-cy="useMinaSidor-radiobutton-true"
+                  className="mr-sm"
+                  name="useMinaSidor"
+                  id="useMinaSidor"
+                  value={'minasidor'}
+                  defaultChecked={!!errand.externalCaseId}
+                  {...register('contactMeans')}
+                >
+                  Mina sidor
                 </RadioButton>
               )}
             </fieldset>
@@ -619,9 +642,12 @@ export const MessageComposer: React.FC<{
             </>
           ) : null}
 
-          {contactMeans === 'email' || contactMeans === 'webmessage' || contactMeans === 'draken' ? (
+          {contactMeans === 'email' ||
+          contactMeans === 'webmessage' ||
+          contactMeans === 'draken' ||
+          contactMeans === 'minasidor' ? (
             <>
-              {contactMeans === 'webmessage'
+              {contactMeans === 'webmessage' || contactMeans === 'minasidor'
                 ? errand.stakeholders
                     .filter((o) => o.roles.indexOf(Role.APPLICANT) !== -1)
                     .map((filteredOwner, idx) => (
