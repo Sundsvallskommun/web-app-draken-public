@@ -29,8 +29,12 @@ export const ErrandsTable: React.FC<ErrandsTableProps> = ({ errands, headers, ti
                   <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
                     <SupportStatusLabelComponent status={errand.status} resolution={errand.resolution} />
                   </Table.HeaderColumn>
-                  <Table.Column>{errand.stakeholder.firstName + ' ' + errand.stakeholder.lastName}</Table.Column>
-                  <Table.Column>{errand.errandNumber}</Table.Column>
+                  <Table.Column>
+                    {errand?.stakeholder
+                      ? errand?.stakeholder?.firstName + ' ' + errand?.stakeholder?.lastName
+                      : '(saknas)'}
+                  </Table.Column>
+                  <Table.Column>{errand?.errandNumber}</Table.Column>
                   <Table.Column className="w-[15.4rem]" />
                 </Table.Row>
               ))}

@@ -6,10 +6,14 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
+import { isKA, isKC } from '@common/services/application-service';
+import { getErrandNumberfromId } from '@common/services/casestatus-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
+import { Relations, getRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Paperclip, File, X } from 'lucide-react';
 import {
   Button,
   Chip,
@@ -22,7 +26,6 @@ import {
   RadioButton,
   Select,
   cx,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import {
@@ -30,6 +33,12 @@ import {
   SupportAttachment,
   getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
+import {
+  createSupportConversation,
+  getOrCreateSupportConversationId,
+  getSupportConversations,
+  sendSupportConversationMessage,
+} from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
   Status,
@@ -39,20 +48,13 @@ import {
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+import { File, Paperclip, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import * as yup from 'yup';
-import { isKA, isKC } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
 import { useTranslation } from 'react-i18next';
-import { getRelations, Relations } from '@common/services/relations-service';
-import { getErrandNumberfromId } from '@common/services/casestatus-service';
-import {
-  createSupportConversation,
-  sendSupportInternalMessage,
-} from '@supportmanagement/services/support-conversation-service';
-import dynamic from 'next/dynamic';
-import { getToastOptions } from '@common/utils/toast-message-settings';
+import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
@@ -277,22 +279,17 @@ export const SupportMessageForm: React.FC<{
     setIsSending(true);
     setMessageError(false);
     const data = getValues();
-    if (contactMeans === 'relations') {
-      const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
-      let conversationId = undefined;
-      if (replying) {
-        conversationId = props.message?.conversationId;
-      } else if (selectedRelation) {
-        await createSupportConversation(
-          municipalityId,
-          supportErrand.id,
-          selectedRelation.id,
-          `Ärende: #${supportErrand.errandNumber}`
-        ).then((res) => {
-          conversationId = res.data.id;
-        });
-      }
-      await sendSupportInternalMessage(
+    if (contactMeans === 'draken' || contactMeans === 'minasidor') {
+      const conversationId = await getOrCreateSupportConversationId(
+        municipalityId,
+        supportErrand,
+        contactMeans,
+        selectedRelationId,
+        relationErrands,
+        props?.message?.conversationId
+      );
+
+      await sendSupportConversationMessage(
         municipalityId,
         supportErrand.id,
         conversationId,
@@ -438,7 +435,7 @@ export const SupportMessageForm: React.FC<{
     setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || !!props.message?.conversationId);
 
     if (!!props.message?.conversationId) {
-      setValue('contactMeans', 'relations');
+      setValue('contactMeans', 'draken');
     }
     if (props.message) {
       const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
@@ -474,7 +471,7 @@ export const SupportMessageForm: React.FC<{
   }, [props.showMessageForm]);
 
   useEffect(() => {
-    if (contactMeans === 'relations' && relationErrands.length > 0 && !selectedRelationId) {
+    if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
       setSelectedRelationId(relationErrands[0].target.resourceId);
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
@@ -533,22 +530,36 @@ export const SupportMessageForm: React.FC<{
             {appConfig.features.useRelations && (
               <RadioButton
                 disabled={props.locked}
-                data-cy="useSms-radiobutton-true"
+                data-cy="useDraken-radiobutton-true"
                 className="mr-sm mt-4"
                 name="contactMeans"
-                id="useRelations"
-                value="relations"
-                checked={contactMeans === 'relations'}
-                onChange={() => setValue('contactMeans', 'relations')}
+                id="useDraken"
+                value="draken"
+                checked={contactMeans === 'draken'}
+                onChange={() => setValue('contactMeans', 'draken')}
               >
-                Uppdatera länkat ärende
+                Draken
+              </RadioButton>
+            )}
+            {getSupportOwnerStakeholder(supportErrand)?.personNumber && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useMinasidor-radiobutton-true"
+                className="mr-sm mt-4"
+                name="contactMeans"
+                id="useMinasidor"
+                value="minasidor"
+                checked={contactMeans === 'minasidor'}
+                onChange={() => setValue('contactMeans', 'minasidor')}
+              >
+                Mina sidor
               </RadioButton>
             )}
           </RadioButton.Group>
         </div>
       ) : null}
 
-      {contactMeans === 'relations' && !replying && (
+      {contactMeans === 'draken' && !replying && (
         <div className="w-full pt-16">
           <strong className="text-md block mb-sm">Välj länkat ärende</strong>
           {relationErrands.length > 0 ? (
@@ -672,7 +683,7 @@ export const SupportMessageForm: React.FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' || contactMeans === 'webmessage' || contactMeans === 'relations' ? (
+      {contactMeans === 'email' || contactMeans === 'webmessage' ? (
         <div className="w-full gap-xl mb-lg">
           {contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
@@ -790,7 +801,10 @@ export const SupportMessageForm: React.FC<{
         </div>
       ) : null}
 
-      {(!props.locked && contactMeans === 'email') || contactMeans === 'webmessage' || contactMeans === 'relations' ? (
+      {(!props.locked && contactMeans === 'email') ||
+      contactMeans === 'webmessage' ||
+      contactMeans === 'draken' ||
+      contactMeans === 'minasidor' ? (
         <div className="flex mb-24">
           <Button
             variant="tertiary"

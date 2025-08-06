@@ -1,6 +1,6 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
+import sanitized, { convertPlainTextToHTML, extractBody, isHTML } from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
@@ -91,6 +91,10 @@ export const RenderedSupportMessage: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, supportErrand]);
+
+  const content = isHTML(message?.messageBody)
+    ? sanitized(extractBody(message?.messageBody))
+    : convertPlainTextToHTML(message?.messageBody);
 
   return (
     <>
@@ -322,7 +326,7 @@ export const RenderedSupportMessage: React.FC<{
               <p
                 className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
                 dangerouslySetInnerHTML={{
-                  __html: sanitized(message?.messageBody || ''),
+                  __html: sanitized(content || ''),
                 }}
               ></p>
             )}

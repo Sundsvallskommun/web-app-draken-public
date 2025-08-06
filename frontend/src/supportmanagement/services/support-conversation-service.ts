@@ -1,5 +1,7 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { Relations, relationsLabels } from '@common/services/relations-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
+import { SupportErrand } from './support-errand-service';
 
 export const getSupportConversations: (municipalityId: string, errandId: string) => Promise<ApiResponse<any[]>> = (
   municipalityId,
@@ -44,27 +46,16 @@ export const getSupportConversationMessages: (
 export const createSupportConversation = async (
   municipalityId: string,
   errandId: string,
-  relationId: string,
-  topic: string
+  topic: string,
+  type: string,
+  relationId?: string
 ) => {
-  const res = await getSupportConversations(municipalityId, errandId);
-  if (res && res.data) {
-    const existingConversation = res.data.find((conv: any) => conv.relationIds && conv.relationIds[0] === relationId);
-    if (existingConversation) {
-      return {
-        data: {
-          id: existingConversation.id,
-        },
-      };
-    }
-  }
-
   const url = `supportmanagement/${municipalityId}/namespace/errand/${errandId}/communication/conversations`;
 
   const body: Partial<any> = {
     topic: topic,
-    type: 'INTERNAL',
-    relationIds: [relationId],
+    type: type,
+    ...(relationId ? { relationIds: [relationId] } : {}),
   };
 
   return apiService
@@ -78,7 +69,7 @@ export const createSupportConversation = async (
     });
 };
 
-export const sendSupportInternalMessage = (
+export const sendSupportConversationMessage = (
   municipalityId: string,
   errandId: string,
   conversationId: string,
@@ -135,4 +126,49 @@ export const getSupportConversationAttachment: (
       console.error('Something went wrong when fetching conversation attachment for errand: ', errandId);
       throw e;
     });
+};
+
+export const getOrCreateSupportConversationId = async (
+  municipalityId: string,
+  supportErrand: SupportErrand,
+  contactMeans: string,
+  selectedRelationId: string,
+  relationErrands: Relations[],
+  messageConversationId: string
+): Promise<string> => {
+  const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
+  const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+
+  const conversations = await getSupportConversations(municipalityId, supportErrand.id);
+  const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
+  const existingInternalConversation = conversations.data.find(
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation.id
+  );
+
+  let conversationId: string | undefined = undefined;
+
+  if (contactMeans === 'draken' && existingInternalConversation) {
+    conversationId = existingInternalConversation.id;
+  }
+
+  if (contactMeans === 'minasidor' && existingExternalConversation) {
+    conversationId = existingExternalConversation.id;
+  }
+
+  if (messageConversationId) {
+    conversationId = messageConversationId;
+  }
+
+  if (!conversationId) {
+    const newConversation = await createSupportConversation(
+      municipalityId,
+      supportErrand.id,
+      `Ärende: #${supportErrand.errandNumber}`,
+      conversationType,
+      selectedRelation?.id
+    );
+    conversationId = newConversation.data.id;
+  }
+
+  return conversationId;
 };
