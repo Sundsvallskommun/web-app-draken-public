@@ -31,11 +31,25 @@ export const RenderedMessage: React.FC<{
 
   const toastMessage = useSnackbar();
 
+  if (message.messageType === 'EMAIL') {
+    const match = sanitized(message.message).match(/<div[^>]*>[\s\S]*?<\/div>/i);
+    message.message = match ? match[0] : message.message;
+  }
+
   // We truncate reply messages at the first occurence of "Från: " and
   // the first "-----Ursprungligt meddelande-----" line, so that only the
   // last message body is shown.
-  const answerMessage = message.message.replace(/\<br\>\<br\>\<br\>\<br\>/g, '<p><br></p>');
+  let answerMessage = message.message;
+  const hasInReplyToWithValue = message.emailHeaders?.some((headerObj) => headerObj.header === 'IN_REPLY_TO');
+  if (hasInReplyToWithValue) {
+    const marker = '<p>-----Ursprungligt meddelande-----</p>';
+    const firstIndex = message.message.indexOf(marker);
+    const secondIndex = message.message.indexOf(marker, firstIndex + marker.length);
 
+    if (secondIndex !== -1) {
+      answerMessage = message.message.slice(0, secondIndex);
+    }
+  }
   const getSender = (msg: MessageNode) =>
     msg?.firstName && msg?.lastName ? `${msg.firstName} ${msg.lastName}` : msg?.email ? msg.email : '(okänd avsändare)';
 
@@ -282,11 +296,11 @@ export const RenderedMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {Array.isArray(message.emailHeaders?.find((h) => h.header === 'IN_REPLY_TO')?.value) ? (
+            {message.messageType === 'EMAIL' ? (
               <p
                 className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
                 dangerouslySetInnerHTML={{
-                  __html: sanitized(answerMessage.toString() || ''),
+                  __html: sanitized(answerMessage || ''),
                 }}
               ></p>
             ) : (
