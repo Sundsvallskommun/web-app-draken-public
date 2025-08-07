@@ -5,12 +5,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
-import {
-  createConversation,
-  getConversations,
-  getOrCreateConversationId,
-  sendConversationMessage,
-} from '@casedata/services/casedata-conversation-service';
+import { getOrCreateConversationId, sendConversationMessage } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   MessageNode,
@@ -174,7 +169,6 @@ export const MessageComposer: React.FC<{
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
 
-  const submitConfirm = useConfirm();
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
@@ -801,19 +795,9 @@ export const MessageComposer: React.FC<{
               type="button"
               loading={isLoading}
               loadingText="Skickar meddelande"
-              onClick={handleSubmit(
-                () => {
-                  return submitConfirm
-                    .showConfirmation('Skicka', 'Vill du skicka meddelandet?', 'Ja', 'Nej', 'info', 'info')
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        onSubmit(getValues());
-                      }
-                      return confirmed ? () => true : () => {};
-                    });
-                },
-                () => {}
-              )}
+              onClick={handleSubmit(() => {
+                onSubmit(getValues());
+              })}
               variant="primary"
               color="primary"
               disabled={isLoading || !formState.isValid || !allowed}
