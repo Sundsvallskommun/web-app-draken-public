@@ -32,7 +32,6 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
-// import { TextEditor } from '@sk-web-gui/text-editor';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
