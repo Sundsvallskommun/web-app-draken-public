@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
@@ -29,7 +31,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { TextEditor } from '@sk-web-gui/text-editor';
+import dynamic from 'next/dynamic';
+// import { TextEditor } from '@sk-web-gui/text-editor';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
