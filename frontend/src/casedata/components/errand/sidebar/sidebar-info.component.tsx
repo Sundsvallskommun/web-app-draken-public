@@ -357,7 +357,14 @@ export const SidebarInfo: React.FC<{}> = () => {
           </>
         )}
         {isAppealEnabled() ? (
-          <AppealButtonComponent disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand)} />
+          <AppealButtonComponent
+            disabled={
+              !isErrandAdmin(errand, user) ||
+              phaseChangeInProgress(errand) ||
+              errand?.status?.statusType === ErrandStatus.UnderGranskning ||
+              errand?.status?.statusType === ErrandStatus.UnderUtredning
+            }
+          />
         ) : null}
 
         {uiPhase !== UiPhase.slutfor &&
