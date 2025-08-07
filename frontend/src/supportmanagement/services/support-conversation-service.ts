@@ -142,7 +142,7 @@ export const getOrCreateSupportConversationId = async (
   const conversations = await getSupportConversations(municipalityId, supportErrand.id);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation.id
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.id
   );
 
   let conversationId: string | undefined = undefined;
