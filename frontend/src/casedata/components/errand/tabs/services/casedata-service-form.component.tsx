@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { FormControl, FormLabel, Select, Combobox, RadioButton, Checkbox, DatePicker, Button } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
