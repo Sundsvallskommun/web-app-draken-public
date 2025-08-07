@@ -36,7 +36,7 @@ export class caseDataFacilitiesController {
     const baseURL = apiURL(this.SERVICE);
     const data = JSON.stringify(facilities);
 
-    const response = await this.apiService
+    await this.apiService
       .put<FacilityDTO, Partial<string>>({ url, baseURL, data: data }, req.user)
       .then(facilitiesResponse => {
         return facilitiesResponse.data;

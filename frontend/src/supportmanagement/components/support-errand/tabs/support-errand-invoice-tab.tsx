@@ -118,6 +118,7 @@ export const SupportErrandInvoiceTab: React.FC<{
         resetManager(manager);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
 
   const formControls = useForm<CBillingRecord>({
@@ -127,14 +128,10 @@ export const SupportErrandInvoiceTab: React.FC<{
   });
 
   const {
-    control,
-    register,
     handleSubmit,
     reset,
-    trigger,
     getValues,
     setValue,
-    watch,
     formState: { errors },
   } = formControls;
 
@@ -164,6 +161,7 @@ export const SupportErrandInvoiceTab: React.FC<{
   useEffect(() => {
     const _a = validateAction(supportErrand, user) && record?.status === CBillingRecordStatusEnum.NEW;
     setAllowed(_a);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
   const onError = (error) => {

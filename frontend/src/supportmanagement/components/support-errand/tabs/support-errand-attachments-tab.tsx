@@ -161,6 +161,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
     if (vals.attachments) {
       trigger();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

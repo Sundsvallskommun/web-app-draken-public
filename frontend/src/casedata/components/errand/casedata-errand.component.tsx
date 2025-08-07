@@ -78,6 +78,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     getAdminUsers().then((data) => {
       setAdministrators(data);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -74,6 +74,7 @@ export const ThreeLevelCategorization: React.FC<{
     const categoryItem = categoriesList?.find((c) => c.name === category);
     setTypesList(categoryItem?.labels?.sort((a, b) => a.displayName?.localeCompare(b.displayName)) || []);
     setOldTypesList(oldCategoriesList?.find((c) => c.name === category)?.types || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, categoriesList]);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export const ThreeLevelCategorization: React.FC<{
       .filter(Boolean)
       .map((label) => label.name);
     setValue('labels', selectedLabelsArray, { shouldDirty: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLabels]);
 
   const getSelectedLabels = (errandLabels: string[], labelCategories: Label[]): { [key: string]: Label } => {

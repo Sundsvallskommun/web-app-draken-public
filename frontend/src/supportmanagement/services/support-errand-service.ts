@@ -248,7 +248,6 @@ export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadat
 
 export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata) => {
   const types = getLabelCategory(errand, metadata)?.labels;
-  const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
   const matchingType = types?.find((t) => errand.labels.includes(t.name));
   if (matchingType) {
     return matchingType;

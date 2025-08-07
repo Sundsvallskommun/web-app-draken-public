@@ -39,7 +39,8 @@ const Login: React.FC = () => {
     const path = nonLoginPath || nonLoginSearch || '/';
 
     //Basepath problem, lägger till BASEPATH/BASEPATH vid login. Detta löser buggen men inte en bra lösning.
-    const cleanedPath = path.replace(new RegExp(`^${process.env.NEXT_PUBLIC_BASEPATH}`), '');
+    const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
+    const cleanedPath = path.startsWith(basePath) ? path.slice(basePath.length) : path;
 
     const url = new URL(apiURL('/saml/login'));
     const queries = new URLSearchParams({

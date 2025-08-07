@@ -12,6 +12,7 @@ function renderContractTermCheckboxList({ getValues, setValue, register }) {
           conditionText,
         });
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isChecked, key, header, conditionText, setValue]);
 
     return (

@@ -1,10 +1,9 @@
-import { User } from '@common/interfaces/user';
 import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Checkbox, FormControl, Modal, RadioButton, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Resolution,
@@ -25,20 +24,16 @@ import { UseFormReturn, useFormContext } from 'react-hook-form';
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    user,
     supportAdmins,
     municipalityId,
     supportErrand,
     setSupportErrand,
   }: {
-    user: User;
     supportAdmins: SupportAdmin[];
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
   } = useAppContext();
-  const confirm = useConfirm();
-  const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -52,7 +47,6 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
 
   const handleCloseErrand = (resolution: Resolution, msg: boolean) => {
     setIsLoading(true);
-    setError(false);
     return closeSupportErrand(supportErrand.id, municipalityId, resolution)
       .then(() => {
         if (msg) {
@@ -81,7 +75,6 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           message: 'Något gick fel när ärendet skulle avslutas',
           status: 'error',
         });
-        setError(true);
         setIsLoading(false);
         return;
       });

@@ -40,14 +40,12 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
     municipalityId,
     supportErrand,
     setSupportErrand,
-    supportAdmins,
     setSupportAdmins,
     supportMetadata,
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: (e: any) => void;
-    supportAdmins: SupportAdmin[];
     setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
   } = useAppContext();
@@ -72,6 +70,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   useEffect(() => {
     getSupportAdmins().then(setSupportAdmins);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -101,7 +100,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           methods.reset(res.errand);
           setIsLoading(false);
         })
-        .catch((e) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,

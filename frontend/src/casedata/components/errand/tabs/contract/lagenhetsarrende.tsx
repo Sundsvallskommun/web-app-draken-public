@@ -128,8 +128,6 @@ export const Lagenhetsarrende: React.FC<{
   const [jordabalken, setJordabalken] = useState<string>('');
 
   const [showSignature, setShowSignature] = useState(false);
-  const [editSignature, setEditSignature] = useState(false);
-  const quillRefSignature = useRef(null);
   const [signature, setSignature] = useState<string>('');
 
   const [textIsDirty, setTextIsDirty] = useState(false);
@@ -151,9 +149,10 @@ export const Lagenhetsarrende: React.FC<{
       s.personalNumber = ssn;
       setValue('leaseholders', leaseholders);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaseholders]);
 
-  const { fields: leaseholdersFields, replace: replaceLeaseholders } = useFieldArray({
+  const { replace: replaceLeaseholders } = useFieldArray({
     control,
     keyName: 'leaseholderId',
     name: 'leaseholders',
@@ -165,9 +164,10 @@ export const Lagenhetsarrende: React.FC<{
       s.personalNumber = ssn;
       setValue('grantors', grantors);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grantors]);
 
-  const { fields: grantorsFields, replace: replaceGrantholders } = useFieldArray({
+  const { replace: replaceGrantholders } = useFieldArray({
     control,
     keyName: 'grantorId',
     name: 'grantors',
@@ -176,10 +176,12 @@ export const Lagenhetsarrende: React.FC<{
   useEffect(() => {
     replaceLeaseholders(leaseholders);
     replaceGrantholders(grantors);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaseholders, grantors]);
 
   useEffect(() => {
     setValue('propertyDesignations', getErrandPropertyDesignations(errand));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   useEffect(() => {
@@ -202,80 +204,99 @@ export const Lagenhetsarrende: React.FC<{
       setValue('jordabalken', existingContract.jordabalken);
       setValue('signature', existingContract.signature);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
   useEffect(() => {
     setOmrade(watch().omrade);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().omrade]);
 
   useEffect(() => {
     setAndamal(watch().andamal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().andamal]);
 
   useEffect(() => {
     setArrendetid(watch().arrendetid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().arrendetid]);
 
   useEffect(() => {
     setArrendeavgift(watch().arrendeavgift);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().arrendeavgift]);
 
   useEffect(() => {
     setBygglov(watch().bygglov);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().bygglov]);
 
   useEffect(() => {
     setOverlatelse(watch().overlatelse);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().overlatelse]);
 
   useEffect(() => {
     setInskrivning(watch().inskrivning);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().inskrivning]);
 
   useEffect(() => {
     setSkick(watch().skick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().skick]);
 
   useEffect(() => {
     setLedningar(watch().ledningar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().ledningar]);
 
   useEffect(() => {
     setKostnader(watch().kostnader);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().kostnader]);
 
   useEffect(() => {
     setMarkfororeningar(watch().markfororeningar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().markfororeningar]);
 
   useEffect(() => {
     setUpphorande(watch().upphorande);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().upphorande]);
 
   useEffect(() => {
     setAdditionalTerms(watch().additionalTerms);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().additionalTerms]);
 
   useEffect(() => {
     setSkadaansvar(watch().skadaansvar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().skadaansvar]);
 
   useEffect(() => {
     setSarskilda(watch().sarskilda);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().sarskilda]);
 
   useEffect(() => {
     setJordabalken(watch().jordabalken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().jordabalken]);
 
   useEffect(() => {
     setSignature(watch().signature);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().signature]);
 
   useEffect(() => {
     const doneMarkedElements =
       errand.extraParameters.find((parameters) => parameters.key === 'lagenhetsarrende')?.values || [];
     setDoneMark(doneMarkedElements);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -283,6 +304,7 @@ export const Lagenhetsarrende: React.FC<{
       saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
       setUnsaved(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneMark]);
 
   const markSectionAsDone = (inSection: string) => {

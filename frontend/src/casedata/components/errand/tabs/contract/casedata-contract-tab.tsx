@@ -74,7 +74,6 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     user,
   }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
     useAppContext();
-  const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<string>();
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
@@ -264,8 +263,6 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     document.body.appendChild(link);
     link.click();
   };
-
-  const { status } = contractForm.watch();
 
   return (
     <FormProvider {...contractForm}>

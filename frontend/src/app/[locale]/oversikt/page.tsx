@@ -9,23 +9,16 @@ import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const Oversikt: React.FC = () => {
   const { user, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
-  const initialFocus = useRef(null);
-  const setInitalFocus = (e) => {
-    setTimeout(() => {
-      initialFocus.current && initialFocus.current.focus();
-    });
-  };
-
   useEffect(() => {
     setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
     getAdminUsers().then(setAdministrators);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

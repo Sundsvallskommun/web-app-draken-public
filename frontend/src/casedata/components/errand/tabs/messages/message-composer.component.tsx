@@ -371,6 +371,7 @@ export const MessageComposer: React.FC<{
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans]);
 
   const defaultSignature = () => {
@@ -414,6 +415,7 @@ export const MessageComposer: React.FC<{
       setValue('headerReferences', '');
       setValue('contactMeans', !!errand.externalCaseId ? 'webmessage' : 'email');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message, errand]);
 
   const changeTemplate = (inTemplateValue: string) => {

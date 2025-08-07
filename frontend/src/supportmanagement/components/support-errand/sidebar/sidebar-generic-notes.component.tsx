@@ -120,6 +120,7 @@ export const SidebarGenericNotes: React.FC<{
     if (selectedNote) {
       setSelectedNote(notes.map(makeGeneric).find((n) => n.id === selectedNote.id));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
 
   const text = watch().text;
@@ -198,6 +199,7 @@ export const SidebarGenericNotes: React.FC<{
     } else {
       setValue('partyId', '');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
 
   return (

@@ -19,19 +19,17 @@ import { getSupportErrandEvents } from '@supportmanagement/services/support-hist
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
 import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const {
     municipalityId,
     supportErrand,
-    setSupportErrand,
     supportMetadata,
     supportAdmins,
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (supportErrand: SupportErrand) => void;
     supportMetadata: SupportMetadata;
     supportAdmins: SupportAdmin[];
   } = useAppContext();
@@ -43,7 +41,6 @@ export const SidebarHistory: React.FC<{}> = () => {
   const [selectedChange, setSelectedChange] = useState<ParsedSupportEvent>();
   const [selectedChangeDetails, setSelectedChangeDetails] = useState<ParsedSupportRevisionDifference[]>();
   const [keyMapper, setKeyMapper] = useState<{ [key: string]: string }>();
-  let initialFocus = useRef(null);
 
   useEffect(() => {
     if (supportErrand && keyMapper && Object.keys(keyMapper).length > 1) {
@@ -56,6 +53,7 @@ export const SidebarHistory: React.FC<{}> = () => {
         })
         .catch((e) => setError(true));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, keyMapper]);
 
   useEffect(() => {
@@ -106,6 +104,7 @@ export const SidebarHistory: React.FC<{}> = () => {
           setSelectedIndex(undefined);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex]);
 
   return (

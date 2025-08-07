@@ -69,7 +69,7 @@ export class CaseDataAttachmentController {
     }
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.patch<any, Partial<Attachment>>({ url, baseURL, data: attachmentData }, req.user);
+    await this.apiService.patch<any, Partial<Attachment>>({ url, baseURL, data: attachmentData }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;
   }
 
@@ -101,7 +101,7 @@ export class CaseDataAttachmentController {
       name: attachmentData.name,
       note: attachmentData.note,
     };
-    const res = await this.apiService.put<any, Attachment>({ url, baseURL, data }, req.user);
+    await this.apiService.put<any, Attachment>({ url, baseURL, data }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;
   }
 

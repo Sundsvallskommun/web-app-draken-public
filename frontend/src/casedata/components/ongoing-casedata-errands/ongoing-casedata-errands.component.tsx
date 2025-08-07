@@ -66,6 +66,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   useEffect(() => {
     setValue('status', selectedErrandStatuses);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedErrandStatuses]);
 
   const router = useRouter();
@@ -111,6 +112,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
       resetFilter(storedFilters);
       triggerFilter();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username]);
 
   useEffect(() => {
@@ -127,6 +129,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
         store.set('sort', JSON.stringify({}));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

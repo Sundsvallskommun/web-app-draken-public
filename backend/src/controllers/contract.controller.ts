@@ -87,7 +87,7 @@ export class CasedataContractsController {
     }
     const url = `contracts/${MUNICIPALITY_ID}/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const putRes = await this.apiService.put<any, Contract>({ url, baseURL, data }, req.user).catch(e => {
+    await this.apiService.put<any, Contract>({ url, baseURL, data }, req.user).catch(e => {
       throw e;
     });
     const getRes = await this.apiService.get<Contract>({ url, baseURL }, req.user).catch(e => {

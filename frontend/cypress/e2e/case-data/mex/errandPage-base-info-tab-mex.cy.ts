@@ -1,28 +1,26 @@
 /// <reference types="cypress" />
 
-import { CaseLabels } from '@casedata/interfaces/case-label';
 import { CaseTypes } from '@casedata/interfaces/case-type';
 import { Channels } from '@casedata/interfaces/channels';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Role } from '@casedata/interfaces/role';
 import { invalidOrgNumberMessage, invalidSsnMessage, latestBy } from '@common/services/helper-service';
 import { onlyOn } from '@cypress/skip-test';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockErrand_base } from 'cypress/e2e/case-data/fixtures/mockErrand';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockOrganization } from 'cypress/e2e/case-data/fixtures/mockOrganization';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
+import dayjs from 'dayjs';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockContract } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
-import { Role } from '@casedata/interfaces/role';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import dayjs from 'dayjs';
-import { mockErrand_base } from 'cypress/e2e/case-data/fixtures/mockErrand';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
-import { mockContract } from '../fixtures/mockContract';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
@@ -61,8 +59,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('shows the correct base errand information', () => {
-      const caseLabel = CaseLabels.ALL[mockMexErrand_base.data.caseType];
-      const priority = Priority[mockMexErrand_base.data.priority];
       const channel = Channels[mockMexErrand_base.data.channel];
       const applicant = mockMexErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
       const contact = mockMexErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.CONTACT_PERSON));
