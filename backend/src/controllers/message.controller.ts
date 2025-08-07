@@ -362,11 +362,8 @@ export class MessageController {
     const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
-    let url;
     let message: WebMessageRequest;
-    const MESSAGE_ID = generateMessageId();
     if (errandData.data.externalCaseId) {
-      url = `${this.MESSAGING_SERVICE}/${municipalityId}/webmessage`;
       const attachments = files.map(file => {
         return {
           base64Data: file.buffer.toString('base64'),

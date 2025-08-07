@@ -66,7 +66,7 @@ export class CasedataNotesController {
     }
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.patch<any, CreateErrandNoteDto>({ url, baseURL, data: noteData }, req.user);
+    await this.apiService.patch<any, CreateErrandNoteDto>({ url, baseURL, data: noteData }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;
   }
 

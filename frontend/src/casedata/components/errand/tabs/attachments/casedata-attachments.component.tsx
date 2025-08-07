@@ -65,14 +65,12 @@ const defaultAttachmentInformation: CasedataAttachmentFormModel = {
 };
 
 export const CasedataAttachments: React.FC = () => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { municipalityId, errand, setErrand } = useAppContext();
   const [modalAttachment, setModalAttachment] = useState<Attachment>();
   const [modalFetching, setModalFetching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
   const [dragDrop, setDragDrop] = useState<boolean>(false);
-  const [error, setError] = useState(false);
-  const [sizeError, setSizeError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [selectedAttachment, setSelectedAttachment] = useState<Attachment>();
@@ -125,11 +123,9 @@ export const CasedataAttachments: React.FC = () => {
   const {
     register,
     control,
-    handleSubmit,
     trigger,
     watch,
     reset,
-    clearErrors,
     setValue,
     getValues,
     formState,
@@ -182,10 +178,6 @@ export const CasedataAttachments: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attachmentType, selectedAttachment]);
-
-  useEffect(() => {
-    setSizeError(false);
-  }, [attachments]);
 
   const openHandler = () => {
     setAddAttachmentWindowIsOpen(true);
@@ -408,8 +400,6 @@ export const CasedataAttachments: React.FC = () => {
                               setValue('id', undefined);
                               reset(defaultAttachmentInformation);
                               setIsLoading(false);
-                              setError(false);
-                              setSizeError(false);
                               setAddAttachmentWindowIsOpen(false);
                               setDragDrop(false);
                             })
@@ -457,7 +447,6 @@ export const CasedataAttachments: React.FC = () => {
               size="sm"
               onClick={() => {
                 setDragDrop(true);
-                setSizeError(false);
                 setAttachmentTypeExists(false);
                 reset();
                 openHandler();

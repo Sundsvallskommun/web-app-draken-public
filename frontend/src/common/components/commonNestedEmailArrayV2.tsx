@@ -59,6 +59,7 @@ const CommonNestedEmailArrayV2 = ({
     }
 
     setListedEmails(stakeholders);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand?.stakeholders]);
 
   return (

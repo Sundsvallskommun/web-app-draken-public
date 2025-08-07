@@ -109,7 +109,7 @@ export const sendWebMessage = (municipalityId: string, message: WebMessageReques
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            const notify = await notifyContactPersons(municipalityId, errandData.data, req.user);
+            await notifyContactPersons(municipalityId, errandData.data, req.user);
             return { data: res.data, message: `Message sent` };
           } else {
             return { data: res.data, message: `Message sent` };
@@ -204,7 +204,7 @@ export const sendDigitalMail = (municipalityId, message, req, errandData, classi
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            const notify = await notifyContactPersons(municipalityId, errandData.data, req.user);
+            await notifyContactPersons(municipalityId, errandData.data, req.user);
             return { data: { messageId: id }, message: `Message sent` };
           } else {
             return { data: { messageId: id }, message: `Message sent` };

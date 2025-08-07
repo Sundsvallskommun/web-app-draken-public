@@ -140,6 +140,7 @@ export const CasedataDecisionTab: React.FC<{
         })
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lawHeading]);
 
   useEffect(() => {
@@ -193,6 +194,7 @@ export const CasedataDecisionTab: React.FC<{
 
   useEffect(() => {
     props.setUnsaved(formState.isDirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {

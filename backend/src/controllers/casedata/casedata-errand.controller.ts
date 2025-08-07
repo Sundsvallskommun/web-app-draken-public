@@ -1,4 +1,5 @@
 import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import {
   Errand as ErrandDTO,
   PageErrand as PageErrandDTO,
@@ -20,7 +21,6 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
-import { apiServiceName } from '@/config/api-config';
 
 interface SingleErrandResponseData {
   data: ErrandDTO;
@@ -236,7 +236,6 @@ export class CaseDataErrandController {
     @Param('municipalityId') municipalityId: string,
     @Body() errandData: CreateErrandDto,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const { user } = req;
     const data = makeErrandApiData(errandData, undefined);
 
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands`;

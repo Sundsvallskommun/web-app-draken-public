@@ -82,6 +82,7 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
       setAllLabelTypes(_labelTypes);
       setAllLabelSubTypes(_labelSubTypes);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportMetadata, categories, types, labelCategories, labelTypes, labelSubTypes]);
 
   const hasTags =

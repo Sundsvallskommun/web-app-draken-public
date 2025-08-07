@@ -91,6 +91,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   useEffect(() => {
     setValue('status', selectedSupportErrandStatuses);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSupportErrandStatuses]);
 
   const setInitialFocus = () => {
@@ -171,6 +172,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
       resetFilter(storedFilters);
       triggerFilter();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
 
   useEffect(() => {
@@ -190,6 +192,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         store.set('sort', JSON.stringify({}));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

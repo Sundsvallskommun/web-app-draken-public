@@ -47,12 +47,12 @@ export const AttestationTab = () => {
   const invoiceTypeFilter = watchFilter('invoiceType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
-  const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
   const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
 
   useEffect(() => {
     getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId, page, pageSize, attestationFilterObject, sortObject]);
 
   const setInitialFocus = () => {
@@ -127,6 +127,7 @@ export const AttestationTab = () => {
 
   useEffect(() => {
     getSupportAdmins().then(setSupportAdmins);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useDebounceEffect(

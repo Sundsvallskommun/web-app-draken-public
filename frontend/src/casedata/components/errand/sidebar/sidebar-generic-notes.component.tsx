@@ -111,6 +111,7 @@ export const SidebarGenericNotes: React.FC<{
     if (selectedNote) {
       setSelectedNote(errand?.notes.find((n) => n.id === selectedNote.id));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const text = watch().text;
