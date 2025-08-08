@@ -32,7 +32,7 @@ export const userMenuGroups = [
         label: 'Logga ut',
         element: () => (
           <PopupMenu.Item>
-            <Link key={'logout'} href={`${process.env.NEXT_PUBLIC_API_URL}/saml/logout`} className={`usermenu-item`}>
+            <Link key="logout" href={`${process.env.NEXT_PUBLIC_BASEPATH}/logout`} className="usermenu-item">
               <LucideIcon name="log-out" />
               <span className="inline">Logga ut</span>
             </Link>
