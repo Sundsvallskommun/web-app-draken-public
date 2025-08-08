@@ -165,8 +165,8 @@ export const CasedataInvestigationTab: React.FC<{
   const getPdfPreview = () => {
     const data = getValues();
     renderUtredningPdf(props.errand, data).then(async (d) => {
-      const saved = await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
-      const refresh = await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
+      await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
+      await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
       if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
         const uri = `data:application/pdf;base64,${d.pdfBase64}`;
         const link = document.createElement('a');
