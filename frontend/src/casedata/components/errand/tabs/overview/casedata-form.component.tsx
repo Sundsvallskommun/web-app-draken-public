@@ -36,10 +36,8 @@ interface CasedataFormProps {
 const CasedataForm: React.FC<CasedataFormProps> = ({
   errand,
   setUnsaved = () => {},
-  update,
   registeringNewErrand,
   setFormIsValid,
-  ...rest
 }) => {
   const { municipalityId, setMunicipalityId } = useAppContext();
 

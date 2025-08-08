@@ -25,7 +25,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter } = filterForm;
   const tableForm = useForm<AttestationTableForm>({
     defaultValues: { sortColumn: 'modified', sortOrder: 'desc', pageSize: 12 },
   });
@@ -109,7 +109,7 @@ export const AttestationTab = () => {
       .then((user) => {
         setUser(user);
       })
-      .catch((e) => {});
+      .catch(() => {});
     setSupportErrand(undefined);
     getBillingRecords(municipalityId);
     //eslint-disable-next-line

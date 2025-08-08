@@ -195,7 +195,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     name: `phoneNumbers`,
   });
 
-  const { append: appendEmail, replace: replaceEmails } = useFieldArray({ control, name: 'emails' });
+  const { append: appendEmail } = useFieldArray({ control, name: 'emails' });
 
   const editing = props.editing;
 
