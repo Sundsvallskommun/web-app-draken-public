@@ -1,5 +1,5 @@
-import { AngeSymbol } from 'src/styles/ange-symbol';
 import React from 'react';
+import { AngeSymbol } from 'src/styles/ange-symbol';
 
 export interface AppConfig {
   symbol: React.ReactNode | null;

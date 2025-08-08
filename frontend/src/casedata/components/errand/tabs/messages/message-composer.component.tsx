@@ -5,12 +5,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
-import {
-  createConversation,
-  getConversations,
-  getOrCreateConversationId,
-  sendConversationMessage,
-} from '@casedata/services/casedata-conversation-service';
+import { getOrCreateConversationId, sendConversationMessage } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   MessageNode,
