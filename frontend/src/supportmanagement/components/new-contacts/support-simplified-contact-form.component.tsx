@@ -52,7 +52,6 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const yupContact = yup.object().shape(
     {
-      id: yup.string(),
       personNumber: appConfig.features.useOrganizationStakeholders
         ? yup.string().when('stakeholderType', {
             is: (type: string) => type === 'PERSON',
@@ -110,7 +109,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       administrationCode: yup.string(),
       administrationName: yup.string(),
       department: yup.string(),
-      referencenumber: yup.string(),
+      referencenumber: yup.string().optional(),
       title: yup.string(),
       newPhoneNumber: yup
         .string()

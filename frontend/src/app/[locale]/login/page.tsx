@@ -22,8 +22,8 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { t } = useTranslation();
 
-  const isLoggedOut = searchParams.get('loggedout') === '';
-  const failMessage = searchParams.get('failMessage');
+  const isLoggedOut = searchParams?.get('loggedout') === '';
+  const failMessage = searchParams?.get('failMessage');
 
   const initalFocus = useRef<HTMLButtonElement>(null);
   const setInitalFocus = () => {
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
   };
 
   const onLogin = () => {
-    const searchPath = searchParams.get('path');
+    const searchPath = searchParams?.get('path');
     const nonLoginPath = !pathName?.match(/\/login/) && pathName;
     const nonLoginSearch = !searchPath?.match(/\/login|\/logout/) && searchPath;
     const path = nonLoginPath || nonLoginSearch || '/';

@@ -22,11 +22,11 @@ const Registrera: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
+    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();

@@ -80,7 +80,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="self-assign-errand-button"]').should('exist').click();
 
       cy.wait('@setAdmin').then((interception) => {
-        expect(interception.response.body.assignedUserId).to.equal('kctest');
+        expect(interception?.response?.body?.assignedUserId).to.equal('kctest');
         expect(interception?.response?.statusCode).to.eq(200);
       });
     });

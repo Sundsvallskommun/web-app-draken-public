@@ -74,15 +74,15 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       goToInvoiceTab();
       const mockOrgId = mockPortalPersonData_internal.data.orgTree.split('|').slice(1, 2)[0];
       const internalInvoiceType = invoiceSettings.invoiceTypes.find(
-        (t) => (t.invoiceType = 'Extra löneutbetalning - Systemet')
-      ).internal;
+        (t) => t.invoiceType === 'Extra löneutbetalning - Systemet'
+      )?.internal;
       const internalCustomer = invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId);
       const baseData = {
         category: 'SALARY_AND_PENSION',
         status: 'NEW',
         type: 'INTERNAL',
         invoice: {
-          customerId: invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId).customerId.toString(),
+          customerId: invoiceSettings.customers.internal.find((c) => c.orgId[0] === mockOrgId)?.customerId.toString(),
           description: 'Extra löneutbetalning - Systemet',
           customerReference: mockPortalPersonData_internal.data.referenceNumber,
           ourReference: mockMe.data.name,
@@ -96,11 +96,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
               accountInformation: [
                 {
                   amount: 300,
-                  costCenter: internalInvoiceType.accountInformation.costCenter,
-                  subaccount: internalInvoiceType.accountInformation.subaccount,
-                  department: internalInvoiceType.accountInformation.department,
+                  costCenter: internalInvoiceType?.accountInformation.costCenter,
+                  subaccount: internalInvoiceType?.accountInformation.subaccount,
+                  department: internalInvoiceType?.accountInformation.department,
                   activity: '5756',
-                  counterpart: internalCustomer.counterpart,
+                  counterpart: internalCustomer?.counterpart,
                 },
               ],
             },
@@ -112,11 +112,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
               accountInformation: [
                 {
                   amount: 6,
-                  costCenter: internalInvoiceType.accountInformation.costCenter,
-                  subaccount: internalInvoiceType.accountInformation.subaccount,
-                  department: internalInvoiceType.accountInformation.department,
-                  activity: internalInvoiceType.accountInformation.activity,
-                  counterpart: internalCustomer.counterpart,
+                  costCenter: internalInvoiceType?.accountInformation.costCenter,
+                  subaccount: internalInvoiceType?.accountInformation.subaccount,
+                  department: internalInvoiceType?.accountInformation.department,
+                  activity: internalInvoiceType?.accountInformation.activity,
+                  counterpart: internalCustomer?.counterpart,
                 },
               ],
             },
@@ -138,12 +138,14 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="save-invoice-button"]').click();
       cy.wait('@saveBillingRecord').should(({ request, response }) => {
         const modifiedData = structuredClone(baseData);
-        const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === 'Extra beställning').internal;
+        const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === 'Extra beställning')?.internal;
         modifiedData.invoice.description = 'Extra beställning';
-        modifiedData.invoice.invoiceRows[0].costPerUnit = invoiceType.invoiceRows[0].costPerUnit;
-        modifiedData.invoice.invoiceRows[0].accountInformation[0].amount = invoiceType.invoiceRows[0].costPerUnit;
-        modifiedData.invoice.invoiceRows[1].costPerUnit = invoiceType.invoiceRows[1].costPerUnit;
-        modifiedData.invoice.invoiceRows[1].accountInformation[0].amount = invoiceType.invoiceRows[1].costPerUnit;
+        if (invoiceType) {
+          modifiedData.invoice.invoiceRows[0].costPerUnit = invoiceType.invoiceRows[0].costPerUnit;
+          modifiedData.invoice.invoiceRows[0].accountInformation[0].amount = invoiceType.invoiceRows[0].costPerUnit;
+          modifiedData.invoice.invoiceRows[1].costPerUnit = invoiceType.invoiceRows[1].costPerUnit;
+          modifiedData.invoice.invoiceRows[1].accountInformation[0].amount = invoiceType.invoiceRows[1].costPerUnit;
+        }
         expect(request.body).to.deep.equal(modifiedData);
       });
 
@@ -152,10 +154,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="save-invoice-button"]').click();
       cy.wait('@saveBillingRecord').should(({ request, response }) => {
         const modifiedData = structuredClone(baseData);
-        const counterpart = invoiceSettings.customers.internal.find((c) => c.customerId === 40).counterpart;
+        const counterpart = invoiceSettings.customers.internal.find((c) => c.customerId === 40)?.counterpart;
         modifiedData.invoice.customerId = '40';
-        modifiedData.invoice.invoiceRows[0].accountInformation[0].counterpart = counterpart;
-        modifiedData.invoice.invoiceRows[1].accountInformation[0].counterpart = counterpart;
+        if (counterpart) {
+          modifiedData.invoice.invoiceRows[0].accountInformation[0].counterpart = counterpart;
+          modifiedData.invoice.invoiceRows[1].accountInformation[0].counterpart = counterpart;
+        }
         expect(request.body).to.deep.equal(modifiedData);
       });
 
@@ -164,7 +168,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="save-invoice-button"]').click();
       cy.wait('@saveBillingRecord').should(({ request, response }) => {
         const modifiedData = structuredClone(baseData);
-        const costcenter = invoiceSettings.activities.find((a) => a.value === '5757').costCenter;
+        const costcenter = invoiceSettings.activities.find((a) => a.value === '5757')?.costCenter;
         modifiedData.invoice.invoiceRows.forEach((row) => {
           row.accountInformation[0].activity = '5757';
           row.accountInformation[0].costCenter = costcenter;
@@ -200,7 +204,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getOrganization');
       const externalInvoiceType = invoiceSettings.invoiceTypes.find(
         (t) => (t.invoiceType = 'Extra löneutbetalning - Systemet')
-      ).external;
+      )?.external;
       const externalCustomer = invoiceSettings.customers.external.find(
         (c) => c.companyId === mockPortalPersonData_external.data.companyId
       );
@@ -213,7 +217,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           invoice: {
             customerId: mockPortalPersonData_external.data.companyId.toString(),
             description: 'Extra löneutbetalning - Systemet',
-            customerReference: externalCustomer.customerReference,
+            customerReference: externalCustomer?.customerReference,
             ourReference: mockMe.data.name,
             referenceId: 'N/A',
             invoiceRows: [
@@ -226,19 +230,19 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
                 accountInformation: [
                   {
                     amount: 300,
-                    costCenter: externalInvoiceType.accountInformation.costCenter,
-                    subaccount: externalInvoiceType.accountInformation.subaccount,
-                    department: externalInvoiceType.accountInformation.department,
-                    activity: externalInvoiceType.accountInformation.activity,
-                    counterpart: externalCustomer.counterpart,
+                    costCenter: externalInvoiceType?.accountInformation.costCenter,
+                    subaccount: externalInvoiceType?.accountInformation.subaccount,
+                    department: externalInvoiceType?.accountInformation.department,
+                    activity: externalInvoiceType?.accountInformation.activity,
+                    counterpart: externalCustomer?.counterpart,
                   },
                   {
                     amount: 6,
-                    costCenter: externalInvoiceType.accountInformation.costCenter,
-                    subaccount: externalInvoiceType.accountInformation.subaccount,
-                    department: externalInvoiceType.accountInformation.department,
-                    activity: externalInvoiceType.accountInformation.activity,
-                    counterpart: externalCustomer.counterpart,
+                    costCenter: externalInvoiceType?.accountInformation.costCenter,
+                    subaccount: externalInvoiceType?.accountInformation.subaccount,
+                    department: externalInvoiceType?.accountInformation.department,
+                    activity: externalInvoiceType?.accountInformation.activity,
+                    counterpart: externalCustomer?.counterpart,
                     project: '11041',
                   },
                 ],
