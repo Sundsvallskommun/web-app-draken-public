@@ -1,7 +1,7 @@
 import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-wrapper';
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { UiPhase } from '@casedata/interfaces/errand-phase';
+import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import {
   emptyErrand,
   getErrandByErrandNumber,
@@ -18,10 +18,16 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
+import { Channels } from '@casedata/interfaces/channels';
+
+type IErrandFormData = Pick<
+  IErrand,
+  'caseType' | 'channel' | 'description' | 'municipalityId' | 'phase' | 'priority' | 'status'
+>;
 
 export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   let formSchema = yup
@@ -58,13 +64,13 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   const toastMessage = useSnackbar();
 
   const methods = useForm<IErrand>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<IErrand>, //Temporary bypass for resolver
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
     disabled: isErrandLocked(errand),
   });
 
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitialFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
@@ -88,7 +94,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
         setUser(user);
       })
       .catch((e) => {});
-    const errandNumber = pathName.split('/')[3];
+    const errandNumber = pathName?.split('/')[3];
     if (errandNumber) {
       // Existing errand, load it and show it
       setIsLoading(true);
@@ -105,7 +111,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
           setErrand(res.errand);
           setIsLoading(false);
         })
-        .catch((e) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,

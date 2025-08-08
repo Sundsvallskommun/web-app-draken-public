@@ -140,37 +140,57 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       //Errand owner
       cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[0].firstName).should('exist');
       cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[0].address).should('exist');
-      cy.get('[data-cy="stakeholder-email"]')
-        .contains(mockSupportErrand.stakeholders[0].contactChannels.find((k) => k.type === 'Email').value)
-        .should('exist');
-      cy.get('[data-cy="stakeholder-phone"]')
-        .contains(mockSupportErrand.stakeholders[0].contactChannels.find((k) => k.type === 'Phone').value)
-        .should('exist');
-      cy.get('[data-cy="stakeholder-title"]')
-        .contains(mockSupportErrand.stakeholders[0].parameters.find((p) => p.key === 'title').values[0])
-        .should('exist');
-      cy.get('[data-cy="stakeholder-department"]')
-        .contains(mockSupportErrand.stakeholders[0].parameters.find((p) => p.key === 'department').values[0])
-        .should('exist');
+
+      // const stakeholder = mockSupportErrand.stakeholders[0];
+      const getContactValue = (stakeholderIndex: number, type: string): string => {
+        const stakeholder = mockSupportErrand.stakeholders[stakeholderIndex];
+        const channel = stakeholder.contactChannels.find((c) => c.type === type);
+        expect(channel, `Expected stakeholder #${stakeholderIndex} to have a contact channel of type '${type}'`).to.not
+          .be.undefined;
+        return channel!.value;
+      };
+
+      const getParameterValue = (stakeholderIndex: number, key: string): string => {
+        const stakeholder = mockSupportErrand.stakeholders[stakeholderIndex];
+        if (!stakeholder.parameters) {
+          throw new Error(`Expected stakeholder #${stakeholderIndex} parameters to be defined`);
+        }
+        const param = stakeholder.parameters.find((p) => p.key === key);
+        expect(param, `Expected stakeholder #${stakeholderIndex} to have parameter '${key}'`).to.not.be.undefined;
+        expect(param!.values.length, `Expected parameter '${key}' to have at least one value`).to.be.greaterThan(0);
+        return param!.values[0];
+      };
+
+      const getStringValue = (
+        stakeholderIndex: number,
+        key: keyof (typeof mockSupportErrand.stakeholders)[0]
+      ): string => {
+        const stakeholder = mockSupportErrand.stakeholders[stakeholderIndex];
+        const value = stakeholder[key];
+        expect(value, `Expected stakeholder #${stakeholderIndex} to have a defined ${key}`).to.not.be.undefined;
+        return value as string;
+      };
+
+      // Stakeholder 0
+      cy.get('[data-cy="stakeholder-email"]').contains(getContactValue(0, 'Email')).should('exist');
+      cy.get('[data-cy="stakeholder-phone"]').contains(getContactValue(0, 'Phone')).should('exist');
+      cy.get('[data-cy="stakeholder-title"]').contains(getParameterValue(0, 'title')).should('exist');
+      cy.get('[data-cy="stakeholder-department"]').contains(getParameterValue(0, 'department')).should('exist');
       cy.get('[data-cy="stakeholder-referenceNumber"]')
-        .contains(mockSupportErrand.stakeholders[0].parameters.find((p) => p.key === 'referenceNumber').values[0])
+        .contains(getParameterValue(0, 'referenceNumber'))
         .should('exist');
 
-      // Contact person #1
-      cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[1].firstName).should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[1].address).should('exist');
-      cy.get('[data-cy="stakeholder-email"]')
-        .contains(mockSupportErrand.stakeholders[1].contactChannels.find((k) => k.type === 'Email').value)
-        .should('exist');
-      // Contact person #2
-      cy.get('[data-cy="stakeholder-name"]').contains(mockSupportErrand.stakeholders[2].firstName).should('exist');
-      cy.get('[data-cy="stakeholder-adress"]').contains(mockSupportErrand.stakeholders[2].address).should('exist');
-      cy.get('[data-cy="stakeholder-email"]')
-        .contains(mockSupportErrand.stakeholders[2].contactChannels.find((k) => k.type === 'Email').value)
-        .should('exist');
-      cy.get('[data-cy="stakeholder-phone"]')
-        .contains(mockSupportErrand.stakeholders[2].contactChannels.find((k) => k.type === 'Phone').value)
-        .should('exist');
+      // Contact person #1 (index 1)
+      cy.get('[data-cy="stakeholder-name"]').contains(getStringValue(1, 'firstName')).should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(getStringValue(1, 'address')).should('exist');
+      cy.get('[data-cy="stakeholder-email"]').contains(getContactValue(1, 'Email')).should('exist');
+
+      // Contact person #2 (index 2)
+      cy.get('[data-cy="stakeholder-name"]').contains(getStringValue(2, 'firstName')).should('exist');
+      cy.get('[data-cy="stakeholder-adress"]').contains(getStringValue(2, 'address')).should('exist');
+      cy.get('[data-cy="stakeholder-email"]').contains(getContactValue(2, 'Email')).should('exist');
+      cy.get('[data-cy="stakeholder-phone"]').contains(getContactValue(2, 'Phone')).should('exist');
+
       cy.get('[data-cy="add-customer-button"]').should('not.exist');
       cy.get('[data-cy="add-manually-button-person"]').should('exist');
     });
@@ -651,8 +671,10 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(s.lastName).to.equal(m.lastname);
         expect(s.role).to.equal('PRIMARY');
         expect(s.externalIdType).to.equal('PRIVATE');
-        expect(s.contactChannels[0].value).to.equal(Cypress.env('mockEmail'));
-        expect(s.contactChannels[1].value).to.equal('+4670000000');
+        expect(s.contactChannels && s.contactChannels.length > 0, 'Expected contactChannels to have entries').to.be
+          .true;
+        expect(s.contactChannels![0].value).to.equal(Cypress.env('mockEmail'));
+        expect(s.contactChannels![1].value).to.equal('+4670000000');
         expect([200, 304]).to.include(response && response.statusCode);
       });
     });

@@ -115,6 +115,7 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
       return 'Ärenden';
     }
   }
+  return 'Ärenden';
 };
 
 export const isFTErrand = (errand: IErrand) => {

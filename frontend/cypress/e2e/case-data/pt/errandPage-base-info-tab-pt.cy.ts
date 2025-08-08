@@ -52,9 +52,9 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('shows the correct base errand information', () => {
-      const caseLabel = CaseLabels.ALL[mockPTErrand_base.data.caseType];
+      const caseLabel = CaseLabels.ALL[mockPTErrand_base.data.caseType as keyof typeof CaseLabels.ALL];
       const priority: string = mockPTErrand_base.data.priority;
-      const channel = Channels[mockPTErrand_base.data.channel];
+      const channel = Channels[mockPTErrand_base.data.channel as keyof typeof Channels];
       const applicant = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
       const contact = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.CONTACT_PERSON));
       visit();
@@ -70,9 +70,12 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         .contains(dayjs(mockPTErrand_base.data.created).format('YYYY-MM-DD HH:mm'))
         .should('exist');
       cy.get('[data-cy="errandStakeholderLabel"]').contains('Ärendeägare').should('exist');
-      cy.get('[data-cy="errandStakeholder"]').contains(`${applicant.firstName} ${applicant.lastName}`).should('exist');
+      cy.get('[data-cy="errandStakeholder"]')
+        .contains(`${applicant?.firstName} ${applicant?.lastName}`)
+        .should('exist');
       cy.get('[data-cy="errandPersonalNumberLabel"]').contains('Personnummer').should('exist');
-      cy.get('[data-cy="errandPersonalNumber"]').contains(applicant.personalNumber).should('exist');
+
+      cy.get('[data-cy="errandPersonalNumber"]').contains(applicant?.personalNumber!).should('exist');
 
       // Fields in errand form
       cy.get('[data-cy="channel-input"]').should('exist');
@@ -91,29 +94,33 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       const renderedApplicant = cy.get('[data-cy="registered-applicants"] [data-cy="rendered-APPLICANT"]');
       renderedApplicant
         .get('[data-cy="stakeholder-name"]')
-        .should('contain', `${applicant.firstName} ${applicant.lastName}`);
-      renderedApplicant.get('[data-cy="stakeholder-ssn"]').should('contain', `${applicant.personalNumber}`);
+        .should('contain', `${applicant?.firstName} ${applicant?.lastName}`);
+      renderedApplicant.get('[data-cy="stakeholder-ssn"]').should('contain', `${applicant?.personalNumber}`);
       renderedApplicant
         .get('[data-cy="stakeholder-adress"]')
         .should(
           'contain',
-          `${applicant.addresses[0].street} ${applicant.addresses[0].postalCode} ${applicant.addresses[0].city}`
+          `${applicant?.addresses?.[0].street} ${applicant?.addresses?.[0].postalCode} ${applicant?.addresses?.[0].city}`
         );
       renderedApplicant
         .get('[data-cy="stakeholder-name"]')
-        .should('contain', `${applicant.firstName} ${applicant.lastName}`);
+        .should('contain', `${applicant?.firstName} ${applicant?.lastName}`);
 
       cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]').should('exist');
       const renderedContact = cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]');
-      renderedContact.get('[data-cy="stakeholder-name"]').should('contain', `${contact.firstName} ${contact.lastName}`);
-      renderedContact.get('[data-cy="stakeholder-ssn"]').should('contain', `${contact.personalNumber}`);
+      renderedContact
+        .get('[data-cy="stakeholder-name"]')
+        .should('contain', `${contact?.firstName} ${contact?.lastName}`);
+      renderedContact.get('[data-cy="stakeholder-ssn"]').should('contain', `${contact?.personalNumber}`);
       renderedContact
         .get('[data-cy="stakeholder-adress"]')
         .should(
           'contain',
-          `${contact.addresses[0].street} ${contact.addresses[0].postalCode} ${contact.addresses[0].city}`
+          `${contact?.addresses?.[0].street} ${contact?.addresses?.[0].postalCode} ${contact?.addresses?.[0].city}`
         );
-      renderedContact.get('[data-cy="stakeholder-name"]').should('contain', `${contact.firstName} ${contact.lastName}`);
+      renderedContact
+        .get('[data-cy="stakeholder-name"]')
+        .should('contain', `${contact?.firstName} ${contact?.lastName}`);
     });
 
     it('disables errand information and contact person edit menu when errand status is ArandeAvslutat', () => {

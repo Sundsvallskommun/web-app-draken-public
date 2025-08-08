@@ -49,7 +49,7 @@ export const CasedataFilterDates: React.FC = () => {
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           data-cy="casedata-validTo-input"
-          min={startDate ? dayjs(startDate).format('YYYY-MM-DD') : null}
+          min={startDate ? dayjs(startDate).format('YYYY-MM-DD') : ''}
         />
         <Button onClick={() => handleApply()}>Visa tidsperiod</Button>
       </PopupMenu.Panel>

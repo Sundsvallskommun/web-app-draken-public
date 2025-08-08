@@ -59,7 +59,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('shows the correct base errand information', () => {
-      const channel = Channels[mockMexErrand_base.data.channel];
+      const channel = Channels[mockMexErrand_base.data.channel as keyof typeof Channels];
       const applicant = mockMexErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
       const contact = mockMexErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.CONTACT_PERSON));
       visit();

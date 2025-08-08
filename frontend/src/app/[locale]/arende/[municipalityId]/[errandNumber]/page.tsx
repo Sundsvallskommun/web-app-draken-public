@@ -16,7 +16,7 @@ const Arende: React.FC = () => {
   const [errandId, setErrandId] = useState<string>();
   const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
 
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
@@ -24,8 +24,8 @@ const Arende: React.FC = () => {
   };
 
   useEffect(() => {
-    const municipality = pathName.split('/')[2];
-    const errandNumber = pathName.split('/')[3];
+    const municipality = pathName?.split('/')[2];
+    const errandNumber = pathName?.split('/')[3];
     municipality && setMunicipalityId(municipality);
     errandNumber && setErrandId(errandNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps

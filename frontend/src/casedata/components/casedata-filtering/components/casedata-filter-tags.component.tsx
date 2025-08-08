@@ -32,7 +32,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
   const phases = watch('phase');
   const stakeholderType = watch('stakeholderType');
 
-  const { selectedErrandStatuses }: { selectedErrandStatuses } = useAppContext();
+  const { selectedErrandStatuses }: { selectedErrandStatuses: string[] } = useAppContext();
 
   const hasTags =
     types.length > 0 ||
@@ -111,12 +111,12 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
             key={`caseStatus-${statusIndex}`}
             onClick={() => handleRemoveStatus(status)}
           >
-            {ErrandStatus[status]}
+            {ErrandStatus[status as keyof typeof ErrandStatus]}
           </Chip>
         ))}
       {priorities.map((priority, prioIndex) => (
         <Chip data-cy="tag-prio" key={`casePrio-${prioIndex}`} onClick={() => handleRemovePriority(priority)}>
-          {Priority[priority]} prioritet
+          {Priority[priority as keyof typeof Priority]} prioritet
         </Chip>
       ))}
 
@@ -148,7 +148,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
       {phases &&
         phases.map((phase, phaseIndex) => (
           <Chip data-cy={`tag-phase-${phase}`} key={`casePhase-${phaseIndex}`} onClick={() => handleRemovePhase(phase)}>
-            {ErrandPhasePT[phase]}
+            {ErrandPhasePT[phase as keyof typeof ErrandPhasePT]}
           </Chip>
         ))}
 

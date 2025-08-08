@@ -30,7 +30,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
     return appealErrand(errand)
       .then(async (res) => {
         setIsLoading(false);
-        if (!res.errandSuccessful) {
+        if (!res.errandSuccessful || !res.errandId) {
           throw new Error('Errand could not be registered');
         }
 
@@ -63,9 +63,9 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
       });
   };
 
-  const handleClick = (errand) => {
+  const handleClick = (errand: IErrand) => {
     window.open(
-      `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.relatesTo[0].errandNumber}`,
+      `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.relatesTo?.[0].errandNumber}`,
       '_blank'
     );
   };

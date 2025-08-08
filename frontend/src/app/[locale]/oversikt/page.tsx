@@ -16,7 +16,7 @@ const Oversikt: React.FC = () => {
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
   useEffect(() => {
-    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
+    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
     getAdminUsers().then(setAdministrators);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

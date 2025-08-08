@@ -64,18 +64,24 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'getErrand'
       );
-      const labelCat = mockMetaData.labels.labelStructure[0];
-      const labelType = labelCat.labels[0];
-      cy.get('[data-cy="labelCategory-input"]').select(labelCat.displayName);
+      const labelCat = mockMetaData?.labels?.labelStructure?.[0];
+      const labelType = labelCat?.labels?.[0];
+
+      expect(labelCat, 'Expected labelCat to be defined').to.not.be.undefined;
+      expect(labelCat?.displayName, 'Expected labelCat.displayName to be defined').to.not.be.undefined;
+      expect(labelType, 'Expected labelType to be defined').to.not.be.undefined;
+      expect(labelType?.displayName, 'Expected labelType.displayName to be defined').to.not.be.undefined;
+
+      cy.get('[data-cy="labelCategory-input"]').select(labelCat!.displayName!);
       cy.get('[data-cy="labelType-input"]').click();
-      cy.get('[data-cy="labelType-list"]').children().contains(labelType.displayName).click();
+      cy.get('[data-cy="labelType-list"]').children().contains(labelType!.displayName!).click();
       cy.get('[data-cy="description-input"]').type('Mock description');
       cy.get('[data-cy="save-button"]').click();
       cy.wait(`@updateErrand`).should(({ request, response }) => {
-        expect(request.body.classification.category).to.equal(labelCat.name);
-        expect(request.body.classification.type).to.equal(labelType.name);
-        expect(request.body.labels).to.include(labelCat.name);
-        expect(request.body.labels).to.include(labelType.name);
+        expect(request.body.classification.category).to.equal(labelCat!.name!);
+        expect(request.body.classification.type).to.equal(labelType!.name!);
+        expect(request.body.labels).to.include(labelCat!.name!);
+        expect(request.body.labels).to.include(labelType!.name!);
         expect(request.body.channel).to.equal('PHONE');
         expect(request.body.priority).to.equal('MEDIUM');
         expect(request.body.description).to.equal('Mock description');
@@ -83,11 +89,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           assignedUserId: mockEmptySupportErrand.assignedUserId,
           businessRelated: false,
           classification: {
-            category: labelCat.name,
-            type: labelType.name,
+            category: labelCat?.name,
+            type: labelType?.name,
           },
           externalTags: mockEmptySupportErrand.externalTags,
-          labels: [labelCat.name, labelType.name],
+          labels: [labelCat?.name, labelType?.name],
           channel: 'PHONE',
           priority: 'MEDIUM',
           resolution: 'INFORMED',
