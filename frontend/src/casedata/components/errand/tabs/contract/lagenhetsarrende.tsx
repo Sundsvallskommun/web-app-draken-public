@@ -908,25 +908,30 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = `Området får användas till följande ändamål<ul>`;
-                  getValues('andamalTerms.condition.byggnad') ? (content += '<li>Byggnad</li>') : '';
-                  getValues('andamalTerms.condition.batplats') ? (content += '<li>Båtplats</li>') : '';
-                  getValues('andamalTerms.condition.idrattsandamal') ? (content += '<li>Idrottsändamål</li>') : '';
-                  getValues('andamalTerms.condition.led') ? (content += '<li>Led</li>') : '';
-                  getValues('andamalTerms.condition.parkering') ? (content += '<li>Parkering</li>') : '';
-                  getValues('andamalTerms.condition.skylt') ? (content += '<li>Skylt</li>') : '';
-                  getValues('andamalTerms.condition.snotipp') ? (content += '<li>Snötipp</li>') : '';
-                  getValues('andamalTerms.condition.tomtkomplement') ? (content += '<li>Tomtkomplement</li>') : '';
-                  getValues('andamalTerms.condition.upplag') ? (content += '<li>Upplag</li>') : '';
-                  getValues('andamalTerms.condition.uppstallning') ? (content += '<li>Uppställning</li>') : '';
-                  getValues('andamalTerms.condition.ytjordvarme') ? (content += '<li>Ytjordvärme</li>') : '';
-                  getValues('andamalTerms.condition.vag') ? (content += '<li>Väg</li>') : '';
-                  getValues('andamalTerms.condition.atervinningsstation')
-                    ? (content += '<li>Återvinningsstation</li>')
-                    : '';
-                  getValues('andamalTerms.condition.other') ? (content += '<li>XXXX</li>') : '';
+                    const conditions = [
+                      { key: 'byggnad', label: 'Byggnad' },
+                      { key: 'batplats', label: 'Båtplats' },
+                      { key: 'idrattsandamal', label: 'Idrottsändamål' },
+                      { key: 'led', label: 'Led' },
+                      { key: 'parkering', label: 'Parkering' },
+                      { key: 'skylt', label: 'Skylt' },
+                      { key: 'snotipp', label: 'Snötipp' },
+                      { key: 'tomtkomplement', label: 'Tomtkomplement' },
+                      { key: 'upplag', label: 'Upplag' },
+                      { key: 'uppstallning', label: 'Uppställning' },
+                      { key: 'ytjordvarme', label: 'Ytjordvärme' },
+                      { key: 'vag', label: 'Väg' },
+                      { key: 'atervinningsstation', label: 'Återvinningsstation' },
+                      { key: 'other', label: 'XXXX' },
+                    ];
 
-                  content += `</ul>`;
+                    let content = `Området får användas till följande ändamål<ul>`;
+                    conditions.forEach(({ key, label }) => {
+                      if (getValues(`andamalTerms.condition.${key}` as keyof typeof getValues)) {
+                        content += `<li>${label}</li>`;
+                      }
+                    });
+                    content += `</ul>`;
 
                   getValues('andamalTerms.condition.consent')
                     ? (content += `<p>${getValues('andamalTerms.condition.consent').conditionText}</p>`)
