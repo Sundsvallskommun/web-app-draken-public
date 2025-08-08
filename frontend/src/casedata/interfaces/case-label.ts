@@ -47,7 +47,7 @@ export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>>
 };
 
 export enum MEXCaseLabel {
-  'MEX_SQUARE_PLACE' = 'Ansökan torgplats',
+  'MEX_SQUARE_PLACE' = 'Torgplats',
   'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' = 'Begäran om allmän handling',
   'MEX_INVOICE' = 'Faktura',
   'MEX_LEASE_REQUEST' = 'Arrende/Nyttjanderätt',
