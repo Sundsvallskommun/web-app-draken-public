@@ -20,8 +20,7 @@ import {
   fetchSupportMessages,
   groupByConversationIdSortedTree,
 } from '@supportmanagement/services/support-message-service';
-import { getSupportNotes, SupportNoteData } from '@supportmanagement/services/support-note-service';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
@@ -35,7 +34,6 @@ export const SupportTabsWrapper: React.FC<{
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState([]);
   const [conversationMessageTree, setConversationMessageTree] = useState([]);
-  const [supportNotes, setSupportNotes] = useState<SupportNoteData>();
   const {
     municipalityId,
     supportErrand,
@@ -50,10 +48,7 @@ export const SupportTabsWrapper: React.FC<{
     setSupportAttachments: (e: SupportAttachment[]) => void;
   } = useAppContext();
 
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
-  const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -67,7 +62,6 @@ export const SupportTabsWrapper: React.FC<{
   }, [methods]);
 
   const getMessagesAndConversations = () => {
-    getSupportNotes(supportErrand.id, municipalityId).then(setSupportNotes);
     getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
     fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
       const tree = buildTree(res);
@@ -168,24 +162,15 @@ export const SupportTabsWrapper: React.FC<{
     },
   ];
 
-  const modalFocus = useRef(null);
-  const setModalFocus = () => {
-    setTimeout(() => {
-      modalFocus.current && modalFocus.current.focus();
-    });
-  };
-
-  const [current, setCurrent] = useState<number | undefined>(0);
-
   return (
     <>
       <div className="mb-xl">
-        <WarnIfUnsavedChanges showWarning={unsavedChanges || unsavedUppgifter}>
+        <WarnIfUnsavedChanges showWarning={unsavedChanges}>
           <Tabs
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
             tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
             panelsClassName="border-t-1"
-            current={current}
+            current={0}
             onTabChange={() => {}}
             size={'sm'}
           >
