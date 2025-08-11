@@ -150,9 +150,9 @@ export const PhaseChanger = () => {
   const triggerPhaseChange = () => {
     phaseConfirm
       .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
-      .then((confirmed) => {
+      .then(async (confirmed) => {
         if (confirmed) {
-          errandSave();
+          await errandSave();
           return triggerErrandPhaseChange(municipalityId, errand)
             .then(() => getErrand(municipalityId, errand.id.toString()))
             .then((res) => setErrand(res.errand))
@@ -187,10 +187,10 @@ export const PhaseChanger = () => {
     <Button
       variant="primary"
       color="vattjom"
-      onClick={() => {
+      onClick={async () => {
         const admin = administrators.find((a) => a.adAccount === user.username);
         setValue('admin', admin.displayName);
-        errandSave();
+        await errandSave();
         handleSubmit(onSave, onError)();
       }}
       rightIcon={<LucideIcon name="arrow-right" size={18} />}
