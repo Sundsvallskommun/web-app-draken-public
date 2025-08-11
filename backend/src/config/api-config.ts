@@ -37,10 +37,6 @@ export const APIS = [
     version: '10.6',
   },
   {
-    name: 'businessengagements',
-    version: '3.0',
-  },
-  {
     name: 'billingpreprocessor',
     version: '4.0',
   },
@@ -55,6 +51,10 @@ export const APIS = [
   {
     name: 'casestatus',
     version: '4.1',
+  },
+  {
+    name: 'party',
+    version: '2.0',
   },
 ];
 

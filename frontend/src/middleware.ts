@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
     });
 
     if (status === 401) {
-      const absoluteUrl = new URL(`${process.env.BASE_PATH}/login?path=${pathname}`, origin);
+      const absoluteUrl = new URL(`${process.env.NEXT_PUBLIC_BASEPATH}/login?path=${pathname}`, origin);
       return NextResponse.redirect(absoluteUrl.toString());
     }
   }

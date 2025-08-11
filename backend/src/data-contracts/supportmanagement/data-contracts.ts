@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -8,6 +9,27 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+/** Type of event */
+export enum EventType {
+  CREATE = "CREATE",
+  UPDATE = "UPDATE",
+  DELETE = "DELETE",
+  UNKNOWN = "UNKNOWN",
+}
+
+/** ConversationType model */
+export enum ConversationType {
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
+}
+
+/** Priority model */
+export enum Priority {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+}
 
 export interface Problem {
   /** @format uri */
@@ -674,13 +696,6 @@ export interface Parameter {
   values?: string[];
 }
 
-/** Priority model */
-export enum Priority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-}
-
 /** Stakeholder model */
 export interface Stakeholder {
   /**
@@ -947,12 +962,6 @@ export interface ConversationRequest {
   metadata?: KeyValues[];
 }
 
-/** ConversationType model */
-export enum ConversationType {
-  INTERNAL = 'INTERNAL',
-  EXTERNAL = 'EXTERNAL',
-}
-
 /** Identifier model */
 export interface Identifier {
   /**
@@ -1130,10 +1139,13 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  first?: boolean;
+  last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1142,28 +1154,25 @@ export interface PageErrand {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
+  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
+  sorted?: boolean;
   empty?: boolean;
   unsorted?: boolean;
-  sorted?: boolean;
 }
 
 /** Revision model */
@@ -1350,19 +1359,14 @@ export interface EventMetaData {
   value?: string;
 }
 
-/** Type of event */
-export enum EventType {
-  CREATE = 'CREATE',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  UNKNOWN = 'UNKNOWN',
-}
-
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  first?: boolean;
+  last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1371,9 +1375,6 @@ export interface PageEvent {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1522,6 +1523,9 @@ export interface PageMessage {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  first?: boolean;
+  last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1530,9 +1534,6 @@ export interface PageMessage {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1570,13 +1571,18 @@ export interface ErrandAttachment {
   created?: string;
 }
 
+export interface CountResponse {
+  /** @format int64 */
+  count?: number;
+}
+
 /**
  * If the communication is inbound or outbound from the perspective of case-data/e-service.
  * @example "INBOUND"
  */
 export enum CommunicationDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 /**
@@ -1584,7 +1590,7 @@ export enum CommunicationDirectionEnum {
  * @example "EMAIL"
  */
 export enum CommunicationCommunicationTypeEnum {
-  SMS = 'SMS',
-  EMAIL = 'EMAIL',
-  WEB_MESSAGE = 'WEB_MESSAGE',
+  SMS = "SMS",
+  EMAIL = "EMAIL",
+  WEB_MESSAGE = "WEB_MESSAGE",
 }
