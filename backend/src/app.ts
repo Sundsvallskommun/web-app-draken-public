@@ -26,6 +26,7 @@ import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
@@ -45,7 +46,6 @@ import { Profile } from './interfaces/profile.interface';
 import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidUrl } from './utils/util';
-
 const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
 const sessionTTL = 4 * 24 * 60 * 60;
 // NOTE: memory uses ms while file uses seconds
@@ -197,6 +197,17 @@ class App {
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
 
+    const samlLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      limit: 100,
+      keyGenerator: req => {
+        if (req.user?.username) return `u:${req.user.username}`;
+        if ((req as any).sessionID) return `s:${(req as any).sessionID}`;
+        return `ip:${req.ip}`;
+      },
+    });
+    this.app.set('trust proxy', 1);
+
     this.app.use(
       session({
         secret: SECRET_KEY,
@@ -213,25 +224,9 @@ class App {
     this.app.use(passport.session());
     passport.use('saml', samlStrategy);
 
-    // this.app.use(
-    //   cors({
-    //     credentials: CREDENTIALS,
-    //     origin: function (origin, callback) {
-    //       if (origin === undefined || corsWhitelist.indexOf(origin) !== -1 || corsWhitelist.indexOf('*') !== -1) {
-    //         callback(null, true);
-    //       } else {
-    //         if (NODE_ENV == 'development') {
-    //           callback(null, true);
-    //         } else {
-    //           callback(new Error('Not allowed by CORS'));
-    //         }
-    //       }
-    //     },
-    //   }),
-    // );
-
     this.app.get(
       `${BASE_URL_PREFIX}/saml/login`,
+      samlLimiter,
       (req, res, next) => {
         if (req.session.returnTo) {
           req.query.RelayState = req.session.returnTo;
@@ -258,6 +253,7 @@ class App {
 
     this.app.get(
       `${BASE_URL_PREFIX}/saml/logout`,
+      samlLimiter,
       (req, res, next) => {
         if (req.session.returnTo) {
           req.query.RelayState = req.session.returnTo;
@@ -279,7 +275,7 @@ class App {
       },
     );
 
-    this.app.get(`${BASE_URL_PREFIX}/saml/logout/callback`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
+    this.app.get(`${BASE_URL_PREFIX}/saml/logout/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
       req.logout(err => {
         if (err) {
           return next(err);
@@ -313,7 +309,7 @@ class App {
       });
     });
 
-    this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
+    this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
       let successRedirect: URL, failureRedirect: URL;
 
       const urls = req?.body?.RelayState.split(',');
