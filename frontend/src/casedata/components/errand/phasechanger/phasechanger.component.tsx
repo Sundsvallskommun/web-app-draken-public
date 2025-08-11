@@ -1,4 +1,5 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -144,11 +145,14 @@ export const PhaseChanger = () => {
     console.error('Something went wrong when saving');
   };
 
+  const errandSave = useSaveCasedataErrand(false);
+
   const triggerPhaseChange = () => {
     phaseConfirm
       .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
+          errandSave();
           return triggerErrandPhaseChange(municipalityId, errand)
             .then(() => getErrand(municipalityId, errand.id.toString()))
             .then((res) => setErrand(res.errand))
@@ -186,6 +190,7 @@ export const PhaseChanger = () => {
       onClick={() => {
         const admin = administrators.find((a) => a.adAccount === user.username);
         setValue('admin', admin.displayName);
+        errandSave();
         handleSubmit(onSave, onError)();
       }}
       rightIcon={<LucideIcon name="arrow-right" size={18} />}

@@ -200,11 +200,6 @@ class App {
     const samlLimiter = rateLimit({
       windowMs: 60 * 1000,
       limit: 100,
-      keyGenerator: req => {
-        if (req.user?.username) return `u:${req.user.username}`;
-        if ((req as any).sessionID) return `s:${(req as any).sessionID}`;
-        return `ip:${req.ip}`;
-      },
     });
     this.app.set('trust proxy', 1);
 

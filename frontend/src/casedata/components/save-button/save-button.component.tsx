@@ -23,18 +23,11 @@ export const SaveButtonComponent: React.FC<{
 }> = (props) => {
   const {
     errand,
-    administrators,
     municipalityId,
-    setErrand,
-    user,
   }: {
     errand: IErrand;
-    administrators: Admin[];
     municipalityId: string;
-    setErrand: (e: IErrand) => void;
-    user: User;
   } = useAppContext();
-  const [error, setError] = useState(false);
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const [isLoadingContinue, setIsLoadingContinue] = useState(false);
   const router = useRouter();
