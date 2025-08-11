@@ -65,7 +65,6 @@ export const SaveButtonComponent: React.FC<{
   useEffect(() => {
     setTimeout(() => {
       if (errandNumber && window.location.pathname.includes('registrera') && !formState.isDirty) {
-        console.log('Redirecting to errand page after registration, formState.isDirty:', formState.isDirty);
         router.push(`/arende/${municipalityId}/${errandNumber}`);
       }
     }, 0);
