@@ -1,5 +1,5 @@
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Link, PopupMenu } from '@sk-web-gui/react';
+import { Button, PopupMenu } from '@sk-web-gui/react';
 import { ColorSchemeItems } from './color-scheme-items.component';
 
 export const userMenuGroups = [
@@ -32,10 +32,16 @@ export const userMenuGroups = [
         label: 'Logga ut',
         element: () => (
           <PopupMenu.Item>
-            <Link key="logout" href={`${process.env.NEXT_PUBLIC_BASEPATH}/logout`} className="usermenu-item">
+            <Button
+              type="button"
+              className="usermenu-item w-full text-left inline-flex items-center gap-2"
+              onClick={() => {
+                window.location.assign(`${process.env.NEXT_PUBLIC_BASEPATH}/logout`);
+              }}
+            >
               <LucideIcon name="log-out" />
-              <span className="inline">Logga ut</span>
-            </Link>
+              <span>Logga ut</span>
+            </Button>
           </PopupMenu.Item>
         ),
       },
