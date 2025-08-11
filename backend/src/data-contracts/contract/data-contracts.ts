@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -10,14 +11,14 @@
  */
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -214,7 +215,16 @@ export interface Feature {
   crs?: Crs;
   bbox?: number[];
   properties?: Record<string, object>;
-  geometry?: Feature | FeatureCollection | GeometryCollection | LineString | MultiLineString | MultiPoint | MultiPolygon | Point | Polygon;
+  geometry?:
+    | Feature
+    | FeatureCollection
+    | GeometryCollection
+    | LineString
+    | MultiLineString
+    | MultiPoint
+    | MultiPolygon
+    | Point
+    | Polygon;
   id?: string;
 }
 
@@ -278,7 +288,17 @@ export interface GeoJsonObject {
 }
 
 export type GeometryCollection = GeoJsonObject & {
-  geometries?: (Feature | FeatureCollection | GeometryCollection | LineString | MultiLineString | MultiPoint | MultiPolygon | Point | Polygon)[];
+  geometries?: (
+    | Feature
+    | FeatureCollection
+    | GeometryCollection
+    | LineString
+    | MultiLineString
+    | MultiPoint
+    | MultiPolygon
+    | Point
+    | Polygon
+  )[];
 };
 
 /** Invoicing details */
@@ -451,10 +471,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -487,14 +507,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -578,6 +598,6 @@ export interface PagingMetaData {
 }
 
 export enum CrsTypeEnum {
-  Name = 'name',
-  Link = 'link',
+  Name = "name",
+  Link = "link",
 }

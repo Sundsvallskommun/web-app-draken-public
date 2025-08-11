@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -9,18 +10,18 @@
  * ---------------------------------------------------------------
  */
 
+/** Version increment mode */
+export enum IncrementMode {
+  MAJOR = "MAJOR",
+  MINOR = "MINOR",
+}
+
 /** Template default value */
 export interface DefaultValue {
   /** Field name */
   fieldName?: string;
   /** Value */
   value?: string;
-}
-
-/** Version increment mode */
-export enum IncrementMode {
-  MAJOR = 'MAJOR',
-  MINOR = 'MINOR',
 }
 
 /** Metadata */
@@ -169,12 +170,12 @@ export interface DetailedTemplateResponse {
 
 /** Type */
 export enum TemplateResponseTypeEnum {
-  PEBBLE = 'PEBBLE',
-  WORD = 'WORD',
+  PEBBLE = "PEBBLE",
+  WORD = "WORD",
 }
 
 /** Type */
 export enum DetailedTemplateResponseTypeEnum {
-  PEBBLE = 'PEBBLE',
-  WORD = 'WORD',
+  PEBBLE = "PEBBLE",
+  WORD = "WORD",
 }

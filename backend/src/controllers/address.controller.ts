@@ -1,6 +1,5 @@
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Address, BusinessInformation, County, LegalForm, Municipality } from '@/data-contracts/businessengagements/data-contracts';
 import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
 import { logger } from '@/utils/logger';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
@@ -9,7 +8,7 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsString, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
@@ -79,42 +78,6 @@ interface EmployedPersonData {
   loginName: string;
 }
 
-class CLegalForm implements LegalForm {
-  @IsString()
-  legalFormCode: string;
-  @IsString()
-  legalFormDescription: string;
-}
-
-class CAddress implements Address {
-  @IsString()
-  @IsOptional()
-  city: string;
-  @IsString()
-  @IsOptional()
-  street: string;
-  @IsString()
-  @IsOptional()
-  postcode: string;
-  @IsString()
-  @IsOptional()
-  careOf: string;
-}
-
-class CMunicipality implements Municipality {
-  @IsString()
-  municipalityCode: string;
-  @IsString()
-  municipalityName: string;
-}
-
-class CCounty implements County {
-  @IsString()
-  countyCode: string;
-  @IsString()
-  countyName: string;
-}
-
 class CLEPostAddress implements LEPostAddress {
   @IsString()
   coAdress?: string | null;
@@ -171,7 +134,7 @@ class CLegalEntity2WithId extends CLegalEntity2 implements LegalEntity2WithId {
 }
 
 interface ResponseData {
-  data: Citizenaddress | BusinessInformation;
+  data: Citizenaddress | LegalEntity2;
   message: string;
 }
 
@@ -180,39 +143,13 @@ interface PersonIdResponseData {
   message: string;
 }
 
-const MOCKDATAFORTEST: ResponseData = {
-  data: {
-    personId: 'test-guid',
-    givenname: 'Tomas',
-    lastname: 'Testsson',
-    gender: 'K',
-    civilStatus: 'OG',
-    nrDate: '20121201',
-    classified: 'N',
-    protectedNR: 'N',
-    addresses: [
-      {
-        realEstateDescription: 'Test',
-        address: 'Testgatan 1',
-        appartmentNumber: 'LGH 1',
-        postalCode: '12345',
-        city: 'TESTSTAD',
-        municipality: '2281',
-        country: 'SVERIGE',
-        emigrated: false,
-        addressType: 'POPULATION_REGISTRATION_ADDRESS',
-      },
-    ],
-  },
-  message: 'success',
-};
-
 @Controller()
 export class AddressController {
   private apiService = new ApiService();
   CITIZEN_SERVICE = apiServiceName('citizen');
   EMPLOYEE_SERVICE = apiServiceName('employee');
   LEGALENTITY_SERVICE = apiServiceName('legalentity');
+  PARTY_SERVICE = apiServiceName('party');
 
   @Post('/address/')
   @OpenAPI({ summary: 'Return adress for given person number' })
@@ -246,7 +183,7 @@ export class AddressController {
   @UseBefore(authMiddleware, validationMiddleware(OrgNrPayload, 'body'))
   async organization(@Req() req: RequestWithUser, @Res() response: any, @Body() orgNrPayload: OrgNrPayload): Promise<ResponseData> {
     const formattedOrgNr = formatOrgNr(orgNrPayload.orgNr, OrgNumberFormat.NODASH);
-    const guidUrl = `party/2.0/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
+    const guidUrl = `${this.PARTY_SERVICE}/${MUNICIPALITY_ID}/ENTERPRISE/${formattedOrgNr}/partyId`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
 
     const url = `${this.LEGALENTITY_SERVICE}/${MUNICIPALITY_ID}/${guidRes.data}`;

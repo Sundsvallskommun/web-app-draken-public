@@ -10,6 +10,12 @@
  * ---------------------------------------------------------------
  */
 
+/** Party type model */
+export enum PartyType {
+  ENTERPRISE = "ENTERPRISE",
+  PRIVATE = "PRIVATE",
+}
+
 export interface Problem {
   /** @format uri */
   instance?: string;
@@ -111,82 +117,4 @@ export interface ThrowableProblem {
 export interface Violation {
   field?: string;
   message?: string;
-}
-
-/** Case status response */
-export interface CaseStatusResponse {
-  /**
-   * Case id
-   * @example "1234567890"
-   */
-  caseId?: string;
-  /**
-   * External case id
-   * @example "1234567890"
-   */
-  externalCaseId?: string;
-  /**
-   * Case type
-   * @example "Building permit"
-   */
-  caseType?: string;
-  /**
-   * Status
-   * @example "In progress"
-   */
-  status?: string;
-  /**
-   * First submitted
-   * @example "2021-01-01"
-   */
-  firstSubmitted?: string;
-  /**
-   * Last status change
-   * @example "2021-01-01"
-   */
-  lastStatusChange?: string;
-  /**
-   * The system that the case is in
-   * @example "BYGGR"
-   */
-  system?: string;
-  /**
-   * The namespace of the case
-   * @example "Namespace"
-   */
-  namespace?: string;
-  /**
-   * Human readable identifier for the case
-   * @example "BYGGR-2024-123456"
-   */
-  errandNumber?: string;
-  propertyDesignations?: string[];
-}
-
-/** Case status response */
-export interface CasePdfResponse {
-  /**
-   * External case id
-   * @example "1234567890"
-   */
-  externalCaseId?: string;
-  /**
-   * Base64 encoded PDF
-   * @example "JVBERi0x"
-   */
-  base64?: string;
-}
-
-/** Case status response */
-export interface OepStatusResponse {
-  /**
-   * Key
-   * @example "status"
-   */
-  key?: string;
-  /**
-   * Value
-   * @example "In progress"
-   */
-  value?: string;
 }
