@@ -389,7 +389,14 @@ export const MessageComposer: React.FC<{
       references.push(replyTo);
       setValue('headerReplyTo', replyTo);
       setValue('headerReferences', references.join(','));
-      setValue('emails', [{ value: props.message.email }]);
+      setValue(
+        'emails',
+        props.message.direction === 'OUTBOUND'
+          ? props.message?.recipients.map((email) => ({
+              value: email,
+            }))
+          : [{ value: props.message.email }]
+      );
       setValue(
         'contactMeans',
         props.message.messageType === 'WEBMESSAGE'
