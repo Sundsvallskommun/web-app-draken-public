@@ -44,6 +44,7 @@ import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -59,7 +60,6 @@ import {
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -68,6 +68,8 @@ export interface DecisionFormModel {
   id?: string;
   errandId?: number;
   errandNumber?: string;
+  personalNumber?: string;
+  errandCaseType?: string;
   description: string;
   descriptionPlaintext: string;
   law: Law[];
@@ -85,6 +87,7 @@ let formSchema = yup
     description: yup.string(),
     descriptionPlaintext: yup.string(),
     errandId: yup.number(),
+    errandCaseType: yup.string(),
     law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup
       .string()
@@ -166,6 +169,8 @@ export const CasedataDecisionTab: React.FC<{
       description: '',
       errandId: errand.id,
       errandNumber: errand.errandNumber,
+      personalNumber: getOwnerStakeholder(errand)?.personalNumber,
+      errandCaseType: errand.caseType,
       law: [lawMapping[0]],
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
       outcome: 'Välj beslut',
@@ -534,7 +539,7 @@ export const CasedataDecisionTab: React.FC<{
 
           {isPT() && (
             <>
-              <FormControl className="w-full">
+              <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
                 <Input type="hidden" {...register('law')} />
                 <Select
@@ -632,7 +637,7 @@ export const CasedataDecisionTab: React.FC<{
         <Input type="hidden" {...register('errandId')} />
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
           <TextEditor
-            className={cx(`mb-md h-[80%]`)}
+            className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
             key={richText}
             ref={quillRef}
             defaultValue={richText}

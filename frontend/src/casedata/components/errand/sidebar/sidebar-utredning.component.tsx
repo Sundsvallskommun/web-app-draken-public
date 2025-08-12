@@ -11,22 +11,25 @@ import {
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useEffect, useRef, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
-import * as yup from 'yup';
 import dynamic from 'next/dynamic';
-import { getToastOptions } from '@common/utils/toast-message-settings';
+import { useEffect, useRef, useState } from 'react';
+import { useForm, UseFormReturn } from 'react-hook-form';
+import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
   errandNumber?: string;
+  personalNumber?: string;
+  errandCaseType?: string;
   description: string;
   law: Law;
   outcome: string;
@@ -40,6 +43,8 @@ let formSchema = yup
   .object({
     id: yup.string(),
     errandNumber: yup.string(),
+    personalNumber: yup.string(),
+    errandCaseType: yup.string(),
     description: yup.string().required('Text måste anges'),
     law: yup.object(),
     outcome: yup.string(),
@@ -209,6 +214,8 @@ export const SidebarUtredning: React.FC = () => {
   useEffect(() => {
     const existingUtredning = errand.decisions?.find((d) => d.decisionType === 'PROPOSED');
     setValue('errandNumber', errand.errandNumber);
+    setValue('personalNumber', getOwnerStakeholder(errand)?.personalNumber);
+    setValue('errandCaseType', errand.caseType);
     setValue('outcome', DecisionOutcomeKey.Bifall);
     if (existingUtredning) {
       setValue('id', existingUtredning.id.toString());
@@ -228,6 +235,8 @@ export const SidebarUtredning: React.FC = () => {
       <div className="w-full mt-xl flex flex-col items-start gap-12">
         <Input type="hidden" {...register('id')} />
         <Input type="hidden" {...register('errandNumber')} />
+        <Input type="hidden" {...register('errandCaseType')} />
+        <Input type="hidden" {...register('personalNumber')} />
         <Input type="hidden" {...register('outcome')} />
         <FormControl id="description" className="w-full">
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />

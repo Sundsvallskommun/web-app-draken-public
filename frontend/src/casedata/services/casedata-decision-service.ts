@@ -1,6 +1,7 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
 import { Attachment } from '@casedata/interfaces/attachment';
+import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
@@ -10,8 +11,8 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
-import { getOwnerStakeholder } from './casedata-stakeholder-service';
 import { isFTErrand } from './casedata-errand-service';
+import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
   {
@@ -238,6 +239,8 @@ export const renderPdf: (
 
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && isFTErrand(errand)) {
+    identifier = 'sbk.ft.general';
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
@@ -251,6 +254,7 @@ export const renderPdf: (
         ? 'passenger'
         : // TODO Default to driver if capacity is missing?
           'driver';
+
     identifier = `sbk.rph.${outcome === 'cancellation' ? 'decision' : templateType}.${capacity}.${outcome}`;
   }
 
@@ -259,6 +263,8 @@ export const renderPdf: (
     identifier: identifier,
     parameters: {
       caseNumber: formData.errandNumber,
+      caseType: getLabelFromCaseType(formData.errandCaseType),
+      personalNumber: formData.personalNumber,
       addressLastname: owner?.lastName,
       addressFirstname: owner?.firstName,
       addressCo: owner?.careof,

@@ -32,10 +32,10 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
