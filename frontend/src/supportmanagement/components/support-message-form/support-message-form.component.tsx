@@ -443,7 +443,10 @@ export const SupportMessageForm: React.FC<{
       references.push(replyTo);
       setValue('headerReplyTo', replyTo);
       setValue('headerReferences', references.join(','));
-      setValue('emails', [{ value: props.message.sender }]);
+      setValue(
+        'emails',
+        props.message.direction === 'OUTBOUND' ? [{ value: props.message?.target }] : [{ value: props.message.sender }]
+      );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
 
       setRichText(emailBody + historyHeader + props.message.messageBody);
