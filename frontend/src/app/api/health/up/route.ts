@@ -1,20 +1,19 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-
 import axios from 'axios';
 import https from 'https';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 const requireAuth = process.env.HEALTH_AUTH === 'true';
 const authUsername = process.env.HEALTH_USERNAME;
 const authPassword = process.env.HEALTH_PASSWORD;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { headers: resHeaders } = req;
-  const { authorization } = resHeaders;
+export const GET = async () => {
+  const headersList = await headers();
+  const authorization = headersList.get('authorization');
   const userAuth64 = Buffer.from(`${authUsername}:${authPassword}`).toString('base64');
 
   if (requireAuth && authorization !== `Basic ${userAuth64}`) {
-    res.status(401).send('Not Authorized');
-    return;
+    return new NextResponse('NOT_AUTHORIZED', { status: 401 });
   }
 
   try {
@@ -23,15 +22,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     const health = await axios
       .get(`${process.env.NEXT_PUBLIC_API_URL}/health/up`, { httpsAgent: agent })
-      .then((res) => {
-        return res.data;
-      });
+      .then((res) => res.data);
 
-    res.status(200).send(health);
+    return new NextResponse(JSON.stringify(health), { status: 200 });
   } catch (error) {
-    res.status(500).send({
-      error: error.toString(),
-      status: 'ERROR!',
-    });
+    return new NextResponse(
+      JSON.stringify({
+        error: (error as object).toString(),
+        status: 'ERROR!',
+      }),
+      { status: 500 }
+    );
   }
-}
+};
