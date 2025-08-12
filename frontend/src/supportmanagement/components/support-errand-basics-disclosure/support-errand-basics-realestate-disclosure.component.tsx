@@ -42,6 +42,7 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
     setValue('facilities', facilities, {
       shouldValidate: true,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

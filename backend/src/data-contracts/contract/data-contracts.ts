@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -214,7 +215,16 @@ export interface Feature {
   crs?: Crs;
   bbox?: number[];
   properties?: Record<string, object>;
-  geometry?: Feature | FeatureCollection | GeometryCollection | LineString | MultiLineString | MultiPoint | MultiPolygon | Point | Polygon;
+  geometry?:
+    | Feature
+    | FeatureCollection
+    | GeometryCollection
+    | LineString
+    | MultiLineString
+    | MultiPoint
+    | MultiPolygon
+    | Point
+    | Polygon;
   id?: string;
 }
 
@@ -278,7 +288,17 @@ export interface GeoJsonObject {
 }
 
 export type GeometryCollection = GeoJsonObject & {
-  geometries?: (Feature | FeatureCollection | GeometryCollection | LineString | MultiLineString | MultiPoint | MultiPolygon | Point | Polygon)[];
+  geometries?: (
+    | Feature
+    | FeatureCollection
+    | GeometryCollection
+    | LineString
+    | MultiLineString
+    | MultiPoint
+    | MultiPolygon
+    | Point
+    | Polygon
+  )[];
 };
 
 /** Invoicing details */
@@ -338,7 +358,10 @@ export type MultiPolygon = GeoJsonObject & {
 
 /** Parameter model */
 export interface Parameter {
-  /** Parameter key */
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
@@ -575,6 +598,6 @@ export interface PagingMetaData {
 }
 
 export enum CrsTypeEnum {
-  Name = 'name',
-  Link = 'link',
+  Name = "name",
+  Link = "link",
 }

@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -9,130 +10,41 @@
  * ---------------------------------------------------------------
  */
 
-export interface Status {
-  /**
-   * The type of status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende inkommit"
-   */
-  statusType?: string;
-  /**
-   * Description of the status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende har kommit in från e-tjänsten."
-   */
-  description?: string;
-  /**
-   * The date and time when the status was recorded
-   * @format date-time
-   * @example "2023-01-01T12:00:00Z"
-   */
-  dateTime?: string;
+/**
+ * ConversationType model
+ * @example "INTERNAL"
+ */
+export enum ConversationType {
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
 }
 
-export interface Problem {
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
+/**
+ * An email header
+ * @example "MESSAGE_ID"
+ */
+export enum Header {
+  IN_REPLY_TO = "IN_REPLY_TO",
+  REFERENCES = "REFERENCES",
+  MESSAGE_ID = "MESSAGE_ID",
 }
 
-export interface StatusType {
-  /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
+/** Message classification */
+export enum Classification {
+  INFORMATION = "INFORMATION",
+  COMPLETION_REQUEST = "COMPLETION_REQUEST",
+  OBTAIN_OPINION = "OBTAIN_OPINION",
+  INTERNAL_COMMUNICATION = "INTERNAL_COMMUNICATION",
+  OTHER = "OTHER",
 }
 
-export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  /** @format uri */
-  type?: string;
-  status?: StatusType;
-  violations?: Violation[];
-  title?: string;
-  message?: string;
-  /** @format uri */
-  instance?: string;
-  parameters?: Record<string, object>;
-  detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
-}
-
-export interface ThrowableProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
-}
-
-export interface Violation {
-  field?: string;
-  message?: string;
+/**
+ * The type of note
+ * @example "INTERNAL"
+ */
+export enum NoteType {
+  INTERNAL = "INTERNAL",
+  PUBLIC = "PUBLIC",
 }
 
 /** A stakeholder may have one or more addresses. For example, one POSTAL_ADDRESS and another INVOICE_ADDRESS. */
@@ -872,7 +784,10 @@ export interface Errand {
 
 /** Extra parameters for the errand */
 export interface ExtraParameter {
-  /** Parameter key */
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
@@ -950,15 +865,6 @@ export interface Note {
   updated?: string;
 }
 
-/**
- * The type of note
- * @example "INTERNAL"
- */
-export enum NoteType {
-  INTERNAL = 'INTERNAL',
-  PUBLIC = 'PUBLIC',
-}
-
 /** List of notifications connected to this errand */
 export interface Notification {
   /**
@@ -995,6 +901,7 @@ export interface Notification {
   ownerFullName?: string;
   /**
    * Owner id of the notification
+   * @minLength 1
    * @example "AD01"
    */
   ownerId: string;
@@ -1010,11 +917,18 @@ export interface Notification {
   createdByFullName?: string;
   /**
    * Type of the notification
+   * @minLength 1
    * @example "CREATE"
    */
   type: string;
   /**
+   * Sub type of the notification
+   * @example "PHASE_CHANGE"
+   */
+  subType?: string;
+  /**
    * Description of the notification
+   * @minLength 1
    * @example "Some description of the notification"
    */
   description: string;
@@ -1072,6 +986,30 @@ export interface RelatedErrand {
   relationReason?: string;
 }
 
+/** The statuses connected to the errand */
+export interface Status {
+  /**
+   * The type of status
+   * @minLength 0
+   * @maxLength 255
+   * @example "Ärende inkommit"
+   */
+  statusType: string;
+  /**
+   * Description of the status
+   * @minLength 0
+   * @maxLength 255
+   * @example "Ärende har kommit in från e-tjänsten."
+   */
+  description?: string;
+  /**
+   * The date and time when the status was created
+   * @format date-time
+   * @example "2023-01-01T12:00:00Z"
+   */
+  created?: string;
+}
+
 /** Suspension information */
 export interface Suspension {
   /**
@@ -1088,15 +1026,6 @@ export interface Suspension {
   suspendedFrom?: string;
 }
 
-/** Message classification */
-export enum Classification {
-  INFORMATION = 'INFORMATION',
-  COMPLETION_REQUEST = 'COMPLETION_REQUEST',
-  OBTAIN_OPINION = 'OBTAIN_OPINION',
-  INTERNAL_COMMUNICATION = 'INTERNAL_COMMUNICATION',
-  OTHER = 'OTHER',
-}
-
 /** List of email headers on the message */
 export interface EmailHeader {
   /** An email header */
@@ -1108,25 +1037,17 @@ export interface EmailHeader {
   values?: string[];
 }
 
-/**
- * An email header
- * @example "MESSAGE_ID"
- */
-export enum Header {
-  IN_REPLY_TO = 'IN_REPLY_TO',
-  REFERENCES = 'REFERENCES',
-  MESSAGE_ID = 'MESSAGE_ID',
-}
-
 /** MessageResponse */
 export interface MessageAttachment {
   /**
    * The attachment (file) content as a BASE64-encoded string
+   * @minLength 1
    * @example "aGVsbG8gd29ybGQK"
    */
   content: string;
   /**
    * The attachment filename
+   * @minLength 1
    * @example "test.txt"
    */
   name: string;
@@ -1219,6 +1140,126 @@ export interface MessageRequest {
   attachments?: MessageAttachment[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
+  /**
+   * Is message internal
+   * @example true
+   */
+  internal?: boolean;
+}
+
+/** Conversation model */
+export interface Conversation {
+  /**
+   * Conversation ID
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  id?: string;
+  /**
+   * The message-exchange topic
+   * @minLength 1
+   * @example "The conversation topic"
+   */
+  topic: string;
+  /** ConversationType model */
+  type: ConversationType;
+  relationIds?: string[];
+  participants?: Identifier[];
+  metadata?: KeyValues[];
+}
+
+/** Identifier model */
+export interface Identifier {
+  /**
+   * The conversation identifier type
+   * @pattern ^(adAccount|partyId)$
+   * @example "adAccount"
+   */
+  type?: string;
+  /**
+   * The conversation identifier value
+   * @minLength 1
+   * @example "joe01doe"
+   */
+  value: string;
+}
+
+/** KeyValues model */
+export interface KeyValues {
+  /**
+   * The key
+   * @example "key1"
+   */
+  key?: string;
+  values?: string[];
+}
+
+/** ConversationAttachment model */
+export interface ConversationAttachment {
+  /**
+   * ConversationAttachment ID
+   * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"
+   */
+  id?: string;
+  /**
+   * Name of the file
+   * @example "my-file.txt"
+   */
+  fileName?: string;
+  /**
+   * Size of the file in bytes
+   * @format int32
+   * @example 1024
+   */
+  fileSize?: number;
+  /** Mime type of the file */
+  mimeType?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   * @example "2023-01-01T00:00:00+01:00"
+   */
+  created?: string;
+}
+
+/** Message model */
+export interface Message {
+  /**
+   * Message ID
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  id?: string;
+  /**
+   * The ID of the replied message
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  inReplyToMessageId?: string;
+  /**
+   * The timestamp when the message was created.
+   * @format date-time
+   */
+  created?: string;
+  /** Identifier model */
+  createdBy?: Identifier;
+  /**
+   * The content of the message.
+   * @minLength 1
+   * @example "Hello, how can I help you?"
+   */
+  content: string;
+  readBy?: ReadBy[];
+  attachments?: ConversationAttachment[];
+}
+
+/** Readby model */
+export interface ReadBy {
+  /** Identifier model */
+  identifier?: Identifier;
+  /**
+   * The timestamp when the message was read.
+   * @format date-time
+   * @example "2023-01-01T12:00:00+01:00"
+   */
+  readAt?: string;
 }
 
 export interface PatchNotification {
@@ -1281,9 +1322,9 @@ export interface PatchErrand {
   externalCaseId?: string;
   /**
    * The type of case
-   * @example "PARKING_PERMIT"
+   * @example "NYBYGGNAD_ANSOKAN_OM_BYGGLOV"
    */
-  caseType?: PatchErrandCaseTypeEnum;
+  caseType?: string;
   /**
    * The priority of the case
    * @example "MEDIUM"
@@ -1414,6 +1455,10 @@ export interface PageErrand {
 
 export interface PageableObject {
   paged?: boolean;
+  /** @format int32 */
+  pageNumber?: number;
+  /** @format int32 */
+  pageSize?: number;
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
@@ -1421,8 +1466,8 @@ export interface PageableObject {
 }
 
 export interface SortObject {
-  empty?: boolean;
   sorted?: boolean;
+  empty?: boolean;
   unsorted?: boolean;
 }
 
@@ -1597,6 +1642,30 @@ export interface MessageResponse {
   attachments?: AttachmentResponse[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
+  /**
+   * Is message internal
+   * @example true
+   */
+  internal?: boolean;
+}
+
+export interface PageMessage {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  pageable?: PageableObject;
+  /** @format int32 */
+  size?: number;
+  content?: Message[];
+  /** @format int32 */
+  number?: number;
+  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  empty?: boolean;
 }
 
 /**
@@ -1604,9 +1673,9 @@ export interface MessageResponse {
  * @example "RESIDENTIAL"
  */
 export enum AddressAddressCategoryEnum {
-  POSTAL_ADDRESS = 'POSTAL_ADDRESS',
-  INVOICE_ADDRESS = 'INVOICE_ADDRESS',
-  VISITING_ADDRESS = 'VISITING_ADDRESS',
+  POSTAL_ADDRESS = "POSTAL_ADDRESS",
+  INVOICE_ADDRESS = "INVOICE_ADDRESS",
+  VISITING_ADDRESS = "VISITING_ADDRESS",
 }
 
 /**
@@ -1614,9 +1683,9 @@ export enum AddressAddressCategoryEnum {
  * @example "EMAIL"
  */
 export enum ContactInformationContactTypeEnum {
-  CELLPHONE = 'CELLPHONE',
-  PHONE = 'PHONE',
-  EMAIL = 'EMAIL',
+  CELLPHONE = "CELLPHONE",
+  PHONE = "PHONE",
+  EMAIL = "EMAIL",
 }
 
 /**
@@ -1624,8 +1693,8 @@ export enum ContactInformationContactTypeEnum {
  * @example "PERSON"
  */
 export enum StakeholderTypeEnum {
-  PERSON = 'PERSON',
-  ORGANIZATION = 'ORGANIZATION',
+  PERSON = "PERSON",
+  ORGANIZATION = "ORGANIZATION",
 }
 
 /**
@@ -1633,9 +1702,9 @@ export enum StakeholderTypeEnum {
  * @example "APPROVAL"
  */
 export enum DecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
 /**
@@ -1643,10 +1712,10 @@ export enum DecisionDecisionTypeEnum {
  * @example "GRANTED"
  */
 export enum DecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
 /**
@@ -1654,11 +1723,12 @@ export enum DecisionDecisionOutcomeEnum {
  * @example "EMAIL"
  */
 export enum ErrandChannelEnum {
-  ESERVICE = 'ESERVICE',
-  EMAIL = 'EMAIL',
-  WEB_UI = 'WEB_UI',
-  MOBILE = 'MOBILE',
-  SYSTEM = 'SYSTEM',
+  ESERVICE = "ESERVICE",
+  ESERVICE_KATLA = "ESERVICE_KATLA",
+  EMAIL = "EMAIL",
+  WEB_UI = "WEB_UI",
+  MOBILE = "MOBILE",
+  SYSTEM = "SYSTEM",
 }
 
 /**
@@ -1667,9 +1737,9 @@ export enum ErrandChannelEnum {
  * @example "HIGH"
  */
 export enum ErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 /**
@@ -1677,52 +1747,8 @@ export enum ErrandPriorityEnum {
  * @example "INBOUND"
  */
 export enum MessageRequestDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
-}
-
-/**
- * The type of case
- * @example "PARKING_PERMIT"
- */
-export enum PatchErrandCaseTypeEnum {
-  PARKING_PERMIT = 'PARKING_PERMIT',
-  PARKING_PERMIT_RENEWAL = 'PARKING_PERMIT_RENEWAL',
-  LOST_PARKING_PERMIT = 'LOST_PARKING_PERMIT',
-  MEX_LEASE_REQUEST = 'MEX_LEASE_REQUEST',
-  MEX_BUY_LAND_FROM_THE_MUNICIPALITY = 'MEX_BUY_LAND_FROM_THE_MUNICIPALITY',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY',
-  MEX_SQUARE_PLACE = 'MEX_SQUARE_PLACE',
-  MEX_BUY_SMALL_HOUSE_PLOT = 'MEX_BUY_SMALL_HOUSE_PLOT',
-  MEX_APPLICATION_FOR_ROAD_ALLOWANCE = 'MEX_APPLICATION_FOR_ROAD_ALLOWANCE',
-  MEX_UNAUTHORIZED_RESIDENCE = 'MEX_UNAUTHORIZED_RESIDENCE',
-  MEX_LAND_RIGHT = 'MEX_LAND_RIGHT',
-  MEX_EARLY_DIALOG_PLAN_NOTIFICATION = 'MEX_EARLY_DIALOG_PLAN_NOTIFICATION',
-  MEX_PROTECTIVE_HUNTING = 'MEX_PROTECTIVE_HUNTING',
-  MEX_LAND_INSTRUCTION = 'MEX_LAND_INSTRUCTION',
-  MEX_OTHER = 'MEX_OTHER',
-  MEX_LAND_SURVEYING_OFFICE = 'MEX_LAND_SURVEYING_OFFICE',
-  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE = 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
-  MEX_INVOICE = 'MEX_INVOICE',
-  MEX_REQUEST_FOR_PUBLIC_DOCUMENT = 'MEX_REQUEST_FOR_PUBLIC_DOCUMENT',
-  MEX_TERMINATION_OF_LEASE = 'MEX_TERMINATION_OF_LEASE',
-  MEX_HUNTING_LEASE = 'MEX_HUNTING_LEASE',
-  MEX_FORWARDED_FROM_CONTACTSUNDSVALL = 'MEX_FORWARDED_FROM_CONTACTSUNDSVALL',
-  MEX_BUILDING_PERMIT = 'MEX_BUILDING_PERMIT',
-  MEX_STORMWATER = 'MEX_STORMWATER',
-  MEX_INVASIVE_SPECIES = 'MEX_INVASIVE_SPECIES',
-  MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL = 'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL',
-  MEX_LITTERING = 'MEX_LITTERING',
-  MEX_REFERRAL_CONSULTATION = 'MEX_REFERRAL_CONSULTATION',
-  MEX_PUBLIC_SPACE_LEASE = 'MEX_PUBLIC_SPACE_LEASE',
-  MEX_EASEMENT = 'MEX_EASEMENT',
-  MEX_TREES_FORESTS = 'MEX_TREES_FORESTS',
-  MEX_ROAD_ASSOCIATION = 'MEX_ROAD_ASSOCIATION',
-  MEX_RETURNED_TO_CONTACT_SUNDSVALL = 'MEX_RETURNED_TO_CONTACT_SUNDSVALL',
-  MEX_SMALL_BOAT_HARBOR_DOCK_PORT = 'MEX_SMALL_BOAT_HARBOR_DOCK_PORT',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS',
-  APPEAL = 'APPEAL',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 /**
@@ -1730,9 +1756,9 @@ export enum PatchErrandCaseTypeEnum {
  * @example "MEDIUM"
  */
 export enum PatchErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 /**
@@ -1740,9 +1766,9 @@ export enum PatchErrandPriorityEnum {
  * @example "APPROVAL"
  */
 export enum PatchDecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
 /**
@@ -1750,10 +1776,10 @@ export enum PatchDecisionDecisionTypeEnum {
  * @example "GRANTED"
  */
 export enum PatchDecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
 /**
@@ -1761,6 +1787,6 @@ export enum PatchDecisionDecisionOutcomeEnum {
  * @example "INBOUND"
  */
 export enum MessageResponseDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }

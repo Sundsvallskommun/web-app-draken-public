@@ -1,17 +1,17 @@
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
+import { ExportButton } from '@common/components/export-button/export-button.component';
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { Disclosure } from '@headlessui/react';
+import { appConfig } from '@config/appconfig';
+import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import store from '@supportmanagement/services/storage-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { ExportButton } from '@common/components/export-button/export-button.component';
-import { isExportEnabled } from '@common/services/feature-flag-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -51,6 +51,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const statusFilter = watchFilter('status');
   const propertyDesignation = watchFilter('propertyDesignation');
   const phaseFilter = watchFilter('phase');
+  const stakeholderTypeFilter = watchFilter('stakeholderType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
@@ -65,6 +66,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   useEffect(() => {
     setValue('status', selectedErrandStatuses);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedErrandStatuses]);
 
   const router = useRouter();
@@ -110,6 +112,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
       resetFilter(storedFilters);
       triggerFilter();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username]);
 
   useEffect(() => {
@@ -126,6 +129,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
         store.set('sort', JSON.stringify({}));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -138,9 +142,11 @@ export const OngoingCaseDataErrands: React.FC = () => {
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     setErrand(undefined);
     //eslint-disable-next-line
   }, [router]);
@@ -199,6 +205,9 @@ export const OngoingCaseDataErrands: React.FC = () => {
       if (phaseFilter && phaseFilter.length > 0) {
         fObj['phase'] = phaseFilter;
       }
+      if (stakeholderTypeFilter && stakeholderTypeFilter.length > 0) {
+        fObj['stakeholderType'] = stakeholderTypeFilter;
+      }
       setFilterObject(fObj);
       setExtraFilter(extraFilterObj);
       store.set('filter', JSON.stringify(fObj));
@@ -215,6 +224,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
       enddate,
       propertyDesignation,
       phaseFilter,
+      stakeholderTypeFilter,
     ]
   );
 
@@ -263,14 +273,14 @@ export const OngoingCaseDataErrands: React.FC = () => {
                   ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
                   : null}
               </h1>
-              {isExportEnabled() && <ExportButton errands={errands} municipalityId={municipalityId} />}
+              {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
 
-            <Disclosure.Panel static>
+            <DisclosurePanel static>
               <FormProvider {...tableForm}>
                 <ErrandsTable />
               </FormProvider>
-            </Disclosure.Panel>
+            </DisclosurePanel>
           </Disclosure>
         </div>
       </main>

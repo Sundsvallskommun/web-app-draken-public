@@ -128,8 +128,6 @@ export const Lagenhetsarrende: React.FC<{
   const [jordabalken, setJordabalken] = useState<string>('');
 
   const [showSignature, setShowSignature] = useState(false);
-  const [editSignature, setEditSignature] = useState(false);
-  const quillRefSignature = useRef(null);
   const [signature, setSignature] = useState<string>('');
 
   const [textIsDirty, setTextIsDirty] = useState(false);
@@ -151,9 +149,10 @@ export const Lagenhetsarrende: React.FC<{
       s.personalNumber = ssn;
       setValue('leaseholders', leaseholders);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaseholders]);
 
-  const { fields: leaseholdersFields, replace: replaceLeaseholders } = useFieldArray({
+  const { replace: replaceLeaseholders } = useFieldArray({
     control,
     keyName: 'leaseholderId',
     name: 'leaseholders',
@@ -165,9 +164,10 @@ export const Lagenhetsarrende: React.FC<{
       s.personalNumber = ssn;
       setValue('grantors', grantors);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grantors]);
 
-  const { fields: grantorsFields, replace: replaceGrantholders } = useFieldArray({
+  const { replace: replaceGrantholders } = useFieldArray({
     control,
     keyName: 'grantorId',
     name: 'grantors',
@@ -176,10 +176,12 @@ export const Lagenhetsarrende: React.FC<{
   useEffect(() => {
     replaceLeaseholders(leaseholders);
     replaceGrantholders(grantors);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaseholders, grantors]);
 
   useEffect(() => {
     setValue('propertyDesignations', getErrandPropertyDesignations(errand));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   useEffect(() => {
@@ -202,80 +204,99 @@ export const Lagenhetsarrende: React.FC<{
       setValue('jordabalken', existingContract.jordabalken);
       setValue('signature', existingContract.signature);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
   useEffect(() => {
     setOmrade(watch().omrade);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().omrade]);
 
   useEffect(() => {
     setAndamal(watch().andamal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().andamal]);
 
   useEffect(() => {
     setArrendetid(watch().arrendetid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().arrendetid]);
 
   useEffect(() => {
     setArrendeavgift(watch().arrendeavgift);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().arrendeavgift]);
 
   useEffect(() => {
     setBygglov(watch().bygglov);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().bygglov]);
 
   useEffect(() => {
     setOverlatelse(watch().overlatelse);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().overlatelse]);
 
   useEffect(() => {
     setInskrivning(watch().inskrivning);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().inskrivning]);
 
   useEffect(() => {
     setSkick(watch().skick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().skick]);
 
   useEffect(() => {
     setLedningar(watch().ledningar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().ledningar]);
 
   useEffect(() => {
     setKostnader(watch().kostnader);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().kostnader]);
 
   useEffect(() => {
     setMarkfororeningar(watch().markfororeningar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().markfororeningar]);
 
   useEffect(() => {
     setUpphorande(watch().upphorande);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().upphorande]);
 
   useEffect(() => {
     setAdditionalTerms(watch().additionalTerms);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().additionalTerms]);
 
   useEffect(() => {
     setSkadaansvar(watch().skadaansvar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().skadaansvar]);
 
   useEffect(() => {
     setSarskilda(watch().sarskilda);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().sarskilda]);
 
   useEffect(() => {
     setJordabalken(watch().jordabalken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().jordabalken]);
 
   useEffect(() => {
     setSignature(watch().signature);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().signature]);
 
   useEffect(() => {
     const doneMarkedElements =
       errand.extraParameters.find((parameters) => parameters.key === 'lagenhetsarrende')?.values || [];
     setDoneMark(doneMarkedElements);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -283,6 +304,7 @@ export const Lagenhetsarrende: React.FC<{
       saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
       setUnsaved(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneMark]);
 
   const markSectionAsDone = (inSection: string) => {
@@ -621,7 +643,12 @@ export const Lagenhetsarrende: React.FC<{
                     }</ul><br /><p>Områdets areal är ca ${getValues().omradeTerms?.areaSize} kvm. Området är märkt ${
                     getValues().omradeTerms?.mapAttachments
                   } enligt kartbilaga ${getValues().omradeTerms?.mapAttachmentReference}.</p><br />`;
-                  setOmrade(content);
+
+                  const delta = quillRefOmrade.current.clipboard.convert({ html: content });
+                  quillRefOmrade.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOmrade.current.getSemanticHTML();
+                  setOmrade(semanticText);
+                  setValue('omrade', semanticText);
                   setShowOmrade(false);
                 }}
               >
@@ -632,16 +659,19 @@ export const Lagenhetsarrende: React.FC<{
           <FormControl id="kopeskilling" className="w-full">
             <Input type="hidden" {...register('omrade')} />
             <div className="h-[42rem] -mb-48" data-cy="area-richtext-wrapper">
-              <ContractTextEditorWrapper
-                val={omrade}
-                label="omrade"
-                setDirty={setTextIsDirty}
-                setValue={setValue}
-                trigger={trigger}
-                setState={setOmrade}
-                readOnly={!editOmrade}
-                editorRef={quillRefOmrade}
-              />
+              {omrade && (
+                <ContractTextEditorWrapper
+                  // key={omrade}
+                  val={omrade}
+                  label="omrade"
+                  setDirty={setTextIsDirty}
+                  setValue={setValue}
+                  trigger={trigger}
+                  setState={setOmrade}
+                  readOnly={!editOmrade}
+                  editorRef={quillRefOmrade}
+                />
+              )}
             </div>
           </FormControl>
           {saveButton('omrade')}
@@ -878,28 +908,30 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  let content = `Området får användas till följande ändamål<ul>`;
-                  getValues('andamalTerms.condition.byggnad') ? (content += '<li>Byggnad</li>') : '';
-                  getValues('andamalTerms.condition.batplats') ? (content += '<li>Båtplats</li>') : '';
-                  getValues('andamalTerms.condition.idrattsandamal') ? (content += '<li>Idrottsändamål</li>') : '';
-                  getValues('andamalTerms.condition.led') ? (content += '<li>Led</li>') : '';
-                  getValues('andamalTerms.condition.parkering') ? (content += '<li>Parkering</li>') : '';
-                  getValues('andamalTerms.condition.skylt') ? (content += '<li>Skylt</li>') : '';
-                  getValues('andamalTerms.condition.snotipp') ? (content += '<li>Snötipp</li>') : '';
-                  getValues('andamalTerms.condition.tomtkomplement') ? (content += '<li>Tomtkomplement</li>') : '';
-                  getValues('andamalTerms.condition.upplag') ? (content += '<li>Upplag</li>') : '';
-                  getValues('andamalTerms.condition.uppstallning') ? (content += '<li>Uppställning</li>') : '';
-                  getValues('andamalTerms.condition.ytjordvarme') ? (content += '<li>Ytjordvärme</li>') : '';
-                  getValues('andamalTerms.condition.vag') ? (content += '<li>Väg</li>') : '';
-                  getValues('andamalTerms.condition.atervinningsstation')
-                    ? (content += '<li>Återvinningsstation</li>')
-                    : '';
-                  getValues('andamalTerms.condition.other') ? (content += '<li>XXXX</li>') : '';
+                    const conditions = [
+                      { key: 'byggnad', label: 'Byggnad' },
+                      { key: 'batplats', label: 'Båtplats' },
+                      { key: 'idrattsandamal', label: 'Idrottsändamål' },
+                      { key: 'led', label: 'Led' },
+                      { key: 'parkering', label: 'Parkering' },
+                      { key: 'skylt', label: 'Skylt' },
+                      { key: 'snotipp', label: 'Snötipp' },
+                      { key: 'tomtkomplement', label: 'Tomtkomplement' },
+                      { key: 'upplag', label: 'Upplag' },
+                      { key: 'uppstallning', label: 'Uppställning' },
+                      { key: 'ytjordvarme', label: 'Ytjordvärme' },
+                      { key: 'vag', label: 'Väg' },
+                      { key: 'atervinningsstation', label: 'Återvinningsstation' },
+                      { key: 'other', label: 'XXXX' },
+                    ];
 
-                  content += `</ul>`;
-                  // content += `<br />
-                  // <strong>Förtydligande</strong><p>${getValues('andamalTerms.clarification')}</p><br />
-                  // <p>Bygglov finns: ${getValues('andamalTerms.bygglovExists') ? 'Ja' : 'Nej'}</p>`;
+                    let content = `Området får användas till följande ändamål<ul>`;
+                    conditions.forEach(({ key, label }) => {
+                      if (getValues(`andamalTerms.condition.${key}` as keyof typeof getValues)) {
+                        content += `<li>${label}</li>`;
+                      }
+                    });
+                    content += `</ul>`;
 
                   getValues('andamalTerms.condition.consent')
                     ? (content += `<p>${getValues('andamalTerms.condition.consent').conditionText}</p>`)
@@ -907,7 +939,12 @@ export const Lagenhetsarrende: React.FC<{
                   getValues('andamalTerms.condition.detailedplan')
                     ? (content += `<p>${getValues('andamalTerms.condition.detailedplan').conditionText}</p>`)
                     : null;
-                  setAndamal(content);
+
+                  const delta = quillRefAndamal.current.clipboard.convert({ html: content });
+                  quillRefAndamal.current.setContents(delta, 'silent');
+                  const semanticText = quillRefAndamal.current.getSemanticHTML();
+                  setAndamal(semanticText);
+                  setValue('andamal', semanticText);
                   setShowAndamal(false);
                 }}
               >
@@ -918,16 +955,18 @@ export const Lagenhetsarrende: React.FC<{
           <FormControl id="skog" className="w-full">
             <Input type="hidden" {...register('andamal')} />
             <div className="h-[42rem] -mb-48" data-cy="purpose-richtext-wrapper">
-              <ContractTextEditorWrapper
-                val={andamal}
-                label="andamal"
-                setDirty={setTextIsDirty}
-                setValue={setValue}
-                trigger={trigger}
-                setState={setAndamal}
-                readOnly={!editAndamal}
-                editorRef={quillRefAndamal}
-              />
+              {andamal && (
+                <ContractTextEditorWrapper
+                  val={andamal}
+                  label="andamal"
+                  setDirty={setTextIsDirty}
+                  setValue={setValue}
+                  trigger={trigger}
+                  setState={setAndamal}
+                  readOnly={!editAndamal}
+                  editorRef={quillRefAndamal}
+                />
+              )}
             </div>
           </FormControl>
           {saveButton('andamal')}
@@ -1092,7 +1131,12 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                    `;
-                  setArrendetid(content);
+
+                  const delta = quillRefArrendetid.current.clipboard.convert({ html: content });
+                  quillRefArrendetid.current.setContents(delta, 'silent');
+                  const semanticText = quillRefArrendetid.current.getSemanticHTML();
+                  setArrendetid(semanticText);
+                  setValue('arrendetid', semanticText);
                   setShowArrendetid(false);
                 }}
               >
@@ -1449,8 +1493,11 @@ export const Lagenhetsarrende: React.FC<{
                     getValues('arrendeavgiftTerms.yearOrQuarter') === 'year' ? 'årsvis' : 'kvartalsvis'
                   } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}.</p>`;
 
-                  setArrendeavgift(content);
-                  setValue('arrendeavgift', content);
+                  const delta = quillRefArrendeavgift.current.clipboard.convert({ html: content });
+                  quillRefArrendeavgift.current.setContents(delta, 'silent');
+                  const semanticText = quillRefArrendeavgift.current.getSemanticHTML();
+                  setArrendeavgift(semanticText);
+                  setValue('arrendeavgift', semanticText);
                   setShowArrendeavgift(false);
                 }}
               >
@@ -1553,7 +1600,11 @@ export const Lagenhetsarrende: React.FC<{
                   }<br />
                   `;
 
-                  setBygglov(content);
+                  const delta = quillRefBygglov.current.clipboard.convert({ html: content });
+                  quillRefBygglov.current.setContents(delta, 'silent');
+                  const semanticText = quillRefBygglov.current.getSemanticHTML();
+                  setBygglov(semanticText);
+                  setValue('bygglov', semanticText);
                   setShowBygglov(false);
                 }}
               >
@@ -1647,8 +1698,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   
               `;
-
-                  setOverlatelse(content);
+                  const delta = quillRefOverlatelse.current.clipboard.convert({ html: content });
+                  quillRefOverlatelse.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOverlatelse.current.getSemanticHTML();
+                  setOverlatelse(semanticText);
+                  setValue('overlatelse', semanticText);
                   setShowOverlatelse(false);
                 }}
               >
@@ -1741,8 +1795,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   
               `;
-
-                  setInskrivning(content);
+                  const delta = quillRefInskrivning.current.clipboard.convert({ html: content });
+                  quillRefInskrivning.current.setContents(delta, 'silent');
+                  const semanticText = quillRefInskrivning.current.getSemanticHTML();
+                  setInskrivning(semanticText);
+                  setValue('inskrivning', semanticText);
                   setShowInskrivning(false);
                 }}
               >
@@ -1840,8 +1897,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
               `;
-
-                  setSkick(content);
+                  const delta = quillRefSkick.current.clipboard.convert({ html: content });
+                  quillRefSkick.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSkick.current.getSemanticHTML();
+                  setSkick(semanticText);
+                  setValue('skick', semanticText);
                   setShowSkick(false);
                 }}
               >
@@ -1930,8 +1990,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
 
               `;
-
-                  setLedningar(content);
+                  const delta = quillRefLedningar.current.clipboard.convert({ html: content });
+                  quillRefLedningar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefLedningar.current.getSemanticHTML();
+                  setLedningar(semanticText);
+                  setValue('ledningar', semanticText);
                   setShowLedningar(false);
                 }}
               >
@@ -2019,8 +2082,11 @@ export const Lagenhetsarrende: React.FC<{
                   }
 
               `;
-
-                  setKostnader(content);
+                  const delta = quillRefKostnader.current.clipboard.convert({ html: content });
+                  quillRefKostnader.current.setContents(delta, 'silent');
+                  const semanticText = quillRefKostnader.current.getSemanticHTML();
+                  setKostnader(semanticText);
+                  setValue('kostnader', semanticText);
                   setShowKostnader(false);
                 }}
               >
@@ -2159,8 +2225,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-
-                  setMarkfororeningar(content);
+                  const delta = quillRefMarkfororeningar.current.clipboard.convert({ html: content });
+                  quillRefMarkfororeningar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefMarkfororeningar.current.getSemanticHTML();
+                  setMarkfororeningar(semanticText);
+                  setValue('markfororeningar', semanticText);
                   setShowMarkfororeningar(false);
                 }}
               >
@@ -2296,8 +2365,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-
-                  setUpphorande(content);
+                  const delta = quillRefUpphorande.current.clipboard.convert({ html: content });
+                  quillRefUpphorande.current.setContents(delta, 'silent');
+                  const semanticText = quillRefUpphorande.current.getSemanticHTML();
+                  setUpphorande(semanticText);
+                  setValue('upphorande', semanticText);
                   setShowUpphorande(false);
                 }}
               >
@@ -2389,8 +2461,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-
-                  setSkadaansvar(content);
+                  const delta = quillRefSkadaansvar.current.clipboard.convert({ html: content });
+                  quillRefSkadaansvar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSkadaansvar.current.getSemanticHTML();
+                  setSkadaansvar(semanticText);
+                  setValue('skadaansvar', semanticText);
                   setShowSkadaansvar(false);
                 }}
               >
@@ -2537,7 +2612,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  setSarskilda(content);
+                  const delta = quillRefSarskilda.current.clipboard.convert({ html: content });
+                  quillRefSarskilda.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSarskilda.current.getSemanticHTML();
+                  setSarskilda(semanticText);
+                  setValue('sarskilda', semanticText);
                   setShowSarskilda(false);
                 }}
               >
@@ -2690,7 +2769,11 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  setJordabalken(content);
+                  const delta = quillRefJordabalken.current.clipboard.convert({ html: content });
+                  quillRefJordabalken.current.setContents(delta, 'silent');
+                  const semanticText = quillRefJordabalken.current.getSemanticHTML();
+                  setJordabalken(semanticText);
+                  setValue('jordabalken', semanticText);
                   setShowJordabalken(false);
                 }}
               >

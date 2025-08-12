@@ -12,11 +12,12 @@ import { logger } from '@utils/logger';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { ResponseData } from './casedata-notes.controller';
+import { apiServiceName } from '@/config/api-config';
 
 @Controller()
 export class CaseDataDecisionsController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = apiServiceName('case-data');
 
   async isUnsigning(municipalityId: string, errandid: string, decision: Decision, user: User) {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandid}/decisions/${decision.id}`;
@@ -54,7 +55,7 @@ export class CaseDataDecisionsController {
     };
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions`;
     const baseURL = apiURL(this.SERVICE);
-    const response = await this.apiService.patch<any, Decision>({ url, baseURL, data: patchData }, req.user).catch(e => {
+    await this.apiService.patch<any, Decision>({ url, baseURL, data: patchData }, req.user).catch(e => {
       logger.error(`Error when patching decision: ${e}`);
       throw e;
     });
@@ -81,7 +82,7 @@ export class CaseDataDecisionsController {
     if (await this.isUnsigning(municipalityId, errandId.toString(), decisionData, req.user)) {
       throw new HttpException(400, 'Cannot unsign a signed decision');
     }
-    const response = await this.apiService.put<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
+    await this.apiService.put<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
       logger.error(`Error when putting decision: ${e}`);
       throw e;
     });

@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
@@ -11,12 +13,11 @@ import {
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import CheckIcon from '@mui/icons-material/Check';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -27,13 +28,14 @@ import {
   FormLabel,
   Input,
   Select,
-  Spinner,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
@@ -117,7 +119,9 @@ export const CasedataInvestigationTab: React.FC<{
     getValues,
     formState: { errors },
   } = useForm<UtredningFormModel>({
-    resolver: yupResolver(isFTErrand(props.errand) ? formSchemaFT : formSchema),
+    resolver: yupResolver(
+      isFTErrand(props.errand) ? formSchemaFT : formSchema
+    ) as unknown as Resolver<UtredningFormModel>,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -138,12 +142,12 @@ export const CasedataInvestigationTab: React.FC<{
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Utredningen sparades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Utredningen sparades',
+          status: 'success',
+        })
+      );
       await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({
@@ -161,8 +165,8 @@ export const CasedataInvestigationTab: React.FC<{
   const getPdfPreview = () => {
     const data = getValues();
     renderUtredningPdf(props.errand, data).then(async (d) => {
-      const saved = await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
-      const refresh = await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
+      await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
+      await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
       if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
         const uri = `data:application/pdf;base64,${d.pdfBase64}`;
         const link = document.createElement('a');
@@ -208,11 +212,8 @@ export const CasedataInvestigationTab: React.FC<{
     }
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
+  const onRichTextChange = (delta) => {
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
     trigger('description');
   };
 
@@ -407,17 +408,16 @@ export const CasedataInvestigationTab: React.FC<{
             <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
             <Input type="hidden" {...register('errandNumber')} />
             <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
-              <RichTextEditor
+              <TextEditor
+                className={cx(`mb-md h-[80%]`)}
+                key={richText}
                 ref={quillRef}
-                value={richText}
-                isMaximizable={false}
-                readOnly={!allowed}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
+                defaultValue={richText}
+                onTextChange={(delta, oldDelta, source) => {
                   if (source === 'user') {
                     setTextIsDirty(true);
                   }
-                  return onRichTextChange(value);
+                  return onRichTextChange(delta);
                 }}
               />
             </div>
@@ -447,15 +447,11 @@ export const CasedataInvestigationTab: React.FC<{
                 !isFTErrand(props.errand) &&
                 (!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty)
               }
-              leftIcon={
-                isLoading ? (
-                  <Spinner color="tertiary" size={2} className="mr-sm" />
-                ) : (
-                  <CheckIcon fontSize="large" className="mr-sm" />
-                )
-              }
+              leftIcon={<LucideIcon name="check" className="mr-sm" />}
+              loading={isLoading}
+              loadingText="Sparar"
             >
-              {isLoading ? 'Sparar' : 'Spara'}
+              Spara
             </Button>
             {isFTErrand(props.errand) && (
               <Button
@@ -477,9 +473,10 @@ export const CasedataInvestigationTab: React.FC<{
                       return confirmed ? () => true : () => {};
                     });
                 }}
-                leftIcon={isLoading ? <Spinner color="tertiary" size={2} className="mr-sm" /> : null}
+                loading={isLoading}
+                loadingText="Återställer mall"
               >
-                {isLoading ? 'Återställer mall' : 'Återställ mall'}
+                Återställ mall
               </Button>
             )}
           </div>

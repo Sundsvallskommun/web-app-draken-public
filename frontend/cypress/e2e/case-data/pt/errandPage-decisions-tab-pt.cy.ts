@@ -52,7 +52,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
       cy.intercept(
         'PUT',
-        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL').id}`,
+        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id}`,
         mockPTErrand_base
       ).as('updateDecision');
 
@@ -94,7 +94,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
       cy.intercept(
         'PUT',
-        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL').id}`,
+        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id}`,
         mockPTErrand_base
       ).as('updateDecision');
 

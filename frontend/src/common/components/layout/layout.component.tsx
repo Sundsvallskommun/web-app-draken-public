@@ -2,34 +2,20 @@ import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wr
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import {
-  getApplicationEnvironment,
-  isIK,
-  isKA,
-  isKC,
-  isLOP,
-  isMEX,
-  isPT,
-  isROB,
-} from '@common/services/application-service';
+import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, CookieConsent, Divider, Label, Link, Logo, PopupMenu, UserMenu, useGui } from '@sk-web-gui/react';
-import {
-  Resolution,
-  Status,
-  StatusLabel,
-  StatusLabelROB,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
+import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import Head from 'next/head';
 import NextLink from 'next/link';
-import { useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 
 export default function Layout({ title, children }) {
   const {
@@ -39,9 +25,8 @@ export default function Layout({ title, children }) {
     supportMetadata,
   }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
-  const { theme } = useGui();
-  const isXl = useMediaQuery(`screen and (min-width:${theme.screens.xl})`);
-  const router = useRouter();
+  const { isMinLargeDevice } = useThemeQueries();
+  const pathName = usePathname();
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
     : appConfig.isSupportManagement
@@ -66,96 +51,6 @@ export default function Layout({ title, children }) {
     </NextLink>
   );
 
-  const StatusLabelComponent = (status: string, resolution: string) => {
-    let color,
-      inverted = false,
-      icon = null;
-    switch (status) {
-      case 'SOLVED':
-        color = 'primary';
-        icon = resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM ? 'split' : 'check';
-        break;
-      case 'ONGOING':
-        color = 'gronsta';
-        icon = 'pen';
-        break;
-      case 'NEW':
-        color = 'vattjom';
-        break;
-      case 'PENDING':
-        color = 'gronsta';
-        inverted = true;
-        icon = 'clock-10';
-        break;
-      case 'SUSPENDED':
-        color = 'warning';
-        inverted = true;
-        icon = 'circle-pause';
-        break;
-      case 'ASSIGNED':
-        color = 'warning';
-        inverted = false;
-        icon = 'circle-pause';
-        break;
-      case 'AWAITING_INTERNAL_RESPONSE':
-        color = 'gronsta';
-        inverted = true;
-        icon = 'clock-10';
-        break;
-      case 'SUSPENDED':
-        color = 'warning';
-        inverted = true;
-        icon = 'circle-pause';
-        break;
-      case 'ASSIGNED':
-        color = 'warning';
-        inverted = false;
-        icon = 'circle-pause';
-        break;
-      case 'UPSTART':
-        color = 'tertiary';
-        inverted = true;
-        break;
-      case 'PUBLISH_SELECTION':
-        color = 'vattjom';
-        inverted = true;
-        break;
-      case 'INTERNAL_CONTROL_AND_INTERVIEWS':
-        color = 'tertiary';
-        inverted = true;
-        break;
-      case 'REFERENCE_CHECK':
-        color = 'juniskar';
-        inverted = true;
-        break;
-      case 'REVIEW':
-        color = 'warning';
-        inverted = true;
-        break;
-      case 'SECURITY_CLEARENCE':
-        color = 'bjornstigen';
-        inverted = true;
-        break;
-      case 'FEEDBACK_CLOSURE':
-        color = 'error';
-        inverted = true;
-        break;
-      default:
-        color = 'tertiary';
-        break;
-    }
-    return (
-      <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto mr-8`}>
-        {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
-        {resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM && status === Status.SOLVED
-          ? 'Eskalerat'
-          : isROB()
-          ? StatusLabelROB[status]
-          : StatusLabel[status]}
-      </Label>
-    );
-  };
-
   const SingleErrandTitle = () => (
     <div className="flex items-center gap-24 py-10">
       <a
@@ -169,8 +64,8 @@ export default function Layout({ title, children }) {
       <span className="text-large">
         {appConfig.isSupportManagement ? (
           <>
-            {StatusLabelComponent(supportErrand.status, supportErrand.resolution)}
-            <span className="font-bold">
+            <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
+            <span className="font-bold ml-8">
               {supportMetadata?.categories
                 ?.find((t) => t.name === supportErrand.category)
                 ?.types.find((t) => t.name === supportErrand.classification.type)?.displayName ||
@@ -181,7 +76,8 @@ export default function Layout({ title, children }) {
         ) : null}
         {appConfig.isCaseData ? (
           <>
-            <span className="font-bold">Ärende: </span>
+            <CasedataStatusLabelComponent status={errand.status.statusType} />
+            <span className="font-bold ml-8">Ärende: </span>
             {errandNumber}
           </>
         ) : null}
@@ -197,9 +93,7 @@ export default function Layout({ title, children }) {
       </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
-          logo={
-            router.pathname.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />
-          }
+          logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}
           userMenu={
             <div className="flex items-center h-fit">
               <span data-cy="usermenu">
@@ -208,7 +102,7 @@ export default function Layout({ title, children }) {
                   menuTitle={`${user.name} (${user.username})`}
                   menuSubTitle=""
                   menuGroups={userMenuGroups}
-                  buttonRounded
+                  buttonRounded={false}
                   buttonSize="sm"
                 />
               </span>
@@ -220,11 +114,9 @@ export default function Layout({ title, children }) {
                 data-cy="register-new-errand-button"
               >
                 <Button
-                  color={appConfig.isCaseData ? 'primary' : 'vattjom'}
-                  variant={appConfig.isCaseData ? 'tertiary' : 'primary'}
-                  rightIcon={
-                    appConfig.isCaseData ? <LucideIcon name="external-link" color="primary" variant="tertiary" /> : null
-                  }
+                  color={'primary'}
+                  variant={'tertiary'}
+                  rightIcon={<LucideIcon name="external-link" color="primary" variant="tertiary" />}
                 >
                   Nytt ärende
                 </Button>
@@ -264,14 +156,14 @@ export default function Layout({ title, children }) {
             </PopupMenu>
           }
           bottomContent={
-            ((isMEX() && !isXl) || (isPT() && !isXl)) &&
-            (router.pathname === '/registrera' || router.pathname.includes('arende')) ? (
+            ((isMEX() && !isMinLargeDevice) || (isPT() && !isMinLargeDevice)) &&
+            (pathName === '/registrera' || pathName.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
-          {((isMEX() && isXl) || (isPT() && isXl)) &&
-          (router.pathname === '/registrera' || router.pathname.includes('arende')) ? (
+          {((isMEX() && isMinLargeDevice) || (isPT() && isMinLargeDevice)) &&
+          (pathName === '/registrera' || pathName.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}
         </PageHeader>
@@ -285,8 +177,8 @@ export default function Layout({ title, children }) {
           <p>
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
-            <NextLink href="/kakor" passHref legacyBehavior>
-              <Link>Läs mer om hur vi använder kakor</Link>
+            <NextLink href="/kakor" passHref>
+              <Button variant={'link'}>Läs mer om hur vi använder kakor</Button>
             </NextLink>
           </p>
         }

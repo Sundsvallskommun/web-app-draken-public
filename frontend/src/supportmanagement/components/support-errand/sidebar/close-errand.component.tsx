@@ -1,9 +1,9 @@
-import { User } from '@common/interfaces/user';
 import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Checkbox, FormControl, Modal, RadioButton, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Resolution,
@@ -24,20 +24,16 @@ import { UseFormReturn, useFormContext } from 'react-hook-form';
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    user,
     supportAdmins,
     municipalityId,
     supportErrand,
     setSupportErrand,
   }: {
-    user: User;
     supportAdmins: SupportAdmin[];
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
   } = useAppContext();
-  const confirm = useConfirm();
-  const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -51,29 +47,21 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
 
   const handleCloseErrand = (resolution: Resolution, msg: boolean) => {
     setIsLoading(true);
-    setError(false);
     return closeSupportErrand(supportErrand.id, municipalityId, resolution)
       .then(() => {
         if (msg) {
           const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
           const adminName = getAdminName(admin, supportErrand);
-          const resolutionLabel = isLOP()
-            ? ResolutionLabelLOP[resolution]
-            : isIK()
-            ? ResolutionLabelLOP[resolution] //ResolutionLabelIK[resolution]?
-            : isROB()
-            ? ResolutionLabelROB[resolution]
-            : ResolutionLabelKS[resolution];
-          return sendClosingMessage(adminName, supportErrand, resolutionLabel, municipalityId);
+          return sendClosingMessage(adminName, supportErrand, municipalityId);
         }
       })
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet avslutades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Ärendet avslutades',
+            status: 'success',
+          })
+        );
         setTimeout(() => {
           window.close();
         }, 2000);
@@ -87,7 +75,6 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           message: 'Något gick fel när ärendet skulle avslutas',
           status: 'error',
         });
-        setError(true);
         setIsLoading(false);
         return;
       });
@@ -100,7 +87,14 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         color="vattjom"
         data-cy="solved-button"
         leftIcon={<LucideIcon name="check" />}
-        variant={!supportErrand || supportErrand.status !== Status.NEW ? 'primary' : 'secondary'}
+        variant={
+          !!(supportErrand?.status as Status) &&
+          [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(
+            supportErrand?.status as Status
+          )
+            ? 'secondary'
+            : 'primary'
+        }
         disabled={disabled}
         onClick={() => {
           setShowModal(true);
@@ -162,7 +156,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               </FormControl>
             </Modal.Content>
             <Modal.Footer className="flex flex-col">
-              {(isLOP() || isIK()) && (
+              {(isLOP() || isIK() || isKA()) && (
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"

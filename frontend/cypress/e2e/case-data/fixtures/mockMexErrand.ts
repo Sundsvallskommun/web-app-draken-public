@@ -11,9 +11,9 @@ export const mockMexErrand_base = {
     created: '2024-05-17T10:49:58.958435+02:00',
     updated: '2024-05-17T10:50:18.789089+02:00',
     errandNumber: 'MEX-2024-000280',
-    caseType: 'MEX_APPLICATION_SQUARE_PLACE',
+    caseType: 'MEX_SQUARE_PLACE',
     priority: 'MEDIUM',
-    caseTitleAddition: 'Ansökan torgplats',
+    caseTitleAddition: 'Torgplats',
     phase: 'Beslut',
     externalCaseId: '1234',
     status: {
@@ -45,7 +45,7 @@ export const mockMexErrand_base = {
         personalNumber: MOCK_PERSON_NUMBER,
         firstName: 'My',
         lastName: 'Testsson',
-        roles: ['ADMINISTRATOR', 'SELLER'],
+        roles: ['ADMINISTRATOR'],
         adAccount: 'kctest',
         addresses: [],
         address: {

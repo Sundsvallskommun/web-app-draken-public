@@ -10,6 +10,7 @@ import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-ser
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Divider, FormControl, Modal, PopupMenu, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -71,12 +72,12 @@ export const SidebarGenericNotes: React.FC<{
     if (createNote) {
       return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
         .then(() => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: `${label_singular}en sparades`,
-            status: 'success',
-          });
+          toastMessage(
+            getToastOptions({
+              message: `${label_singular}en sparades`,
+              status: 'success',
+            })
+          );
           setIsLoading(false);
           getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
           setValue('text', '');
@@ -110,6 +111,7 @@ export const SidebarGenericNotes: React.FC<{
     if (selectedNote) {
       setSelectedNote(errand?.notes.find((n) => n.id === selectedNote.id));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const text = watch().text;
@@ -131,12 +133,12 @@ export const SidebarGenericNotes: React.FC<{
 
     return saveErrandNote(municipalityId, errand.id?.toString(), editNote)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${label_singular}en sparades`,
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: `${label_singular}en sparades`,
+            status: 'success',
+          })
+        );
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
         setEditNote(false);
@@ -157,12 +159,12 @@ export const SidebarGenericNotes: React.FC<{
   const removeNote = (inNote) => {
     return deleteErrandNote(municipalityId, errand.id?.toString(), inNote.id?.toString())
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `${label_singular}en togs bort`,
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: `${label_singular}en togs bort`,
+            status: 'success',
+          })
+        );
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
       })

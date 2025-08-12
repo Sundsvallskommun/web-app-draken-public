@@ -1,13 +1,12 @@
 import { Attachment } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
+import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { toBase64 } from '@common/utils/toBase64';
 
 export const MAX_FILE_SIZE_MB = 50;
-
-export const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
 
 export const documentMimeTypes = [
   'application/pdf',
@@ -46,6 +45,8 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   'ods',
   'text/html',
   'msg',
+  'heic',
+  'heif',
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];

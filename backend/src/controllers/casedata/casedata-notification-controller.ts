@@ -1,6 +1,6 @@
 import { CASEDATA_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Notification as CasedataNotification, PatchNotification } from '@/data-contracts/case-data/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
@@ -95,7 +95,7 @@ export class PatchNotificationDto implements PatchNotification {
 export class CasedataNotificationController {
   private apiService = new ApiService();
   private namespace = CASEDATA_NAMESPACE;
-  SERVICE = `case-data/11.0`;
+  SERVICE = apiServiceName('case-data');
 
   @Get('/casedatanotifications/:municipalityId')
   @OpenAPI({ summary: 'Get notifications' })

@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -8,6 +9,27 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+/** Type of event */
+export enum EventType {
+  CREATE = "CREATE",
+  UPDATE = "UPDATE",
+  DELETE = "DELETE",
+  UNKNOWN = "UNKNOWN",
+}
+
+/** ConversationType model */
+export enum ConversationType {
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
+}
+
+/** Priority model */
+export enum Priority {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+}
 
 export interface Problem {
   /** @format uri */
@@ -135,6 +157,12 @@ export interface NamespaceConfig {
    */
   shortCode: string;
   /**
+   * Time to live (in days) for notifications created in this namespace
+   * @format int32
+   * @example 40
+   */
+  notificationTTLInDays?: number;
+  /**
    * Timestamp when the configuration was created
    * @format date-time
    * @example "2000-10-31T01:30:00+02:00"
@@ -152,6 +180,7 @@ export interface NamespaceConfig {
 export interface Label {
   /**
    * Label classification
+   * @minLength 1
    * @example "subtype"
    */
   classification: string;
@@ -162,6 +191,7 @@ export interface Label {
   displayName?: string;
   /**
    * Name for the label
+   * @minLength 1
    * @example "keyCard"
    */
   name: string;
@@ -251,6 +281,7 @@ export interface EmailIntegration {
 export interface Status {
   /**
    * Name for the status
+   * @minLength 1
    * @example "statusName"
    */
   name: string;
@@ -272,6 +303,7 @@ export interface Status {
 export interface Role {
   /**
    * Name for the role. Used as key
+   * @minLength 1
    * @example "roleName"
    */
   name: string;
@@ -298,6 +330,7 @@ export interface Role {
 export interface ExternalIdType {
   /**
    * Name for the external id type
+   * @minLength 1
    * @example "PRIVATE"
    */
   name: string;
@@ -325,6 +358,7 @@ export interface ContactReason {
   id?: number;
   /**
    * Reason for contact
+   * @minLength 1
    * @example "Segt internet"
    */
   reason: string;
@@ -348,7 +382,7 @@ export interface Category {
    * Name for the category
    * @example "Category name"
    */
-  name: string;
+  name?: string;
   /**
    * Display name for the category
    * @example "Displayed name"
@@ -374,6 +408,7 @@ export interface Category {
 export interface Type {
   /**
    * Name for the type
+   * @minLength 1
    * @example "typename"
    */
   name: string;
@@ -407,12 +442,12 @@ export interface Classification {
    * Category for the errand
    * @example "SUPPORT_CASE"
    */
-  category: string;
+  category?: string;
   /**
    * Type of errand
    * @example "OTHER_ISSUES"
    */
-  type: string;
+  type?: string;
 }
 
 /** Contact channel model */
@@ -445,21 +480,21 @@ export interface Errand {
    * Title for the errand
    * @example "Title for the errand"
    */
-  title: string;
+  title?: string;
   /** Priority model */
-  priority: Priority;
+  priority?: Priority;
   stakeholders?: Stakeholder[];
   /** @uniqueItems true */
   externalTags?: ExternalTag[];
   /** Parameters for the errand */
   parameters?: Parameter[];
   /** Classification model */
-  classification: Classification;
+  classification?: Classification;
   /**
    * Status for the errand
    * @example "NEW_CASE"
    */
-  status: string;
+  status?: string;
   /**
    * Resolution status for closed errands. Value can be set to anything
    * @example "FIXED"
@@ -481,7 +516,7 @@ export interface Errand {
    * User id for the person which has created the errand
    * @example "joe01doe"
    */
-  reporterUserId: string;
+  reporterUserId?: string;
   /**
    * Id for the user which currently is assigned to the errand if a user is assigned
    * @example "joe01doe"
@@ -547,11 +582,13 @@ export interface Errand {
 export interface ExternalTag {
   /**
    * Key for external tag
+   * @minLength 1
    * @example "caseId"
    */
   key: string;
   /**
    * Value for external tag
+   * @minLength 1
    * @example "8849-2848"
    */
   value: string;
@@ -585,7 +622,7 @@ export interface Notification {
    * Owner id of the notification
    * @example "AD01"
    */
-  ownerId: string;
+  ownerId?: string;
   /**
    * User who created the notification
    * @example "TestUser"
@@ -600,12 +637,17 @@ export interface Notification {
    * Type of the notification
    * @example "CREATE"
    */
-  type: string;
+  type?: string;
+  /**
+   * Subtype of the notification
+   * @example "ATTACHMENT"
+   */
+  subtype?: string;
   /**
    * Description of the notification
    * @example "Some description of the notification"
    */
-  description: string;
+  description?: string;
   /**
    * Content of the notification
    * @example "Some content of the notification"
@@ -637,30 +679,21 @@ export interface Notification {
    * @example "PRH-2022-000001"
    */
   errandNumber?: string;
-    /**
-   * Sub type of the notification
-   * @example "PHASE_CHANGE"
-   */
-  subtype?: string;
 }
 
 /** Parameter model */
 export interface Parameter {
-  /** Parameter key */
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
   /** Parameter group name */
   group?: string;
-  /** Parameter values */
+  /** Parameter values. Each value can have a maximum length of 2000 characters */
   values?: string[];
-}
-
-/** Priority model */
-export enum Priority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
 }
 
 /** Stakeholder model */
@@ -778,6 +811,7 @@ export interface CreateErrandNoteRequest {
   body: string;
   /**
    * Created by
+   * @minLength 1
    * @example "John Doe"
    */
   createdBy: string;
@@ -787,11 +821,12 @@ export interface CreateErrandNoteRequest {
 export interface WebMessageAttachment {
   /**
    * The attachment file name
+   * @minLength 1
    * @example "test.txt"
    */
   fileName: string;
   /**
-   * The attachment (file) content as a BASE64-encoded string, max size 10 MB
+   * The attachment (file) content as a BASE64-encoded string, max size 50 MB
    * @format base64
    * @example "aGVsbG8gd29ybGQK"
    */
@@ -806,7 +841,14 @@ export interface WebMessageRequest {
    */
   internal?: boolean;
   /**
+   * Indicates if the message should be dispatched with messaging or not
+   * @default true
+   * @example true
+   */
+  dispatch?: boolean;
+  /**
    * Message in plain text
+   * @minLength 1
    * @example "Message in plain text"
    */
   message: string;
@@ -828,7 +870,10 @@ export interface SmsRequest {
    * @example "+46761234567"
    */
   recipient: string;
-  /** Message */
+  /**
+   * Message
+   * @minLength 1
+   */
   message: string;
   /**
    * Indicates if the message is internal
@@ -841,11 +886,12 @@ export interface SmsRequest {
 export interface EmailAttachment {
   /**
    * The attachment file name
+   * @minLength 1
    * @example "test.txt"
    */
   fileName: string;
   /**
-   * The attachment (file) content as a BASE64-encoded string, max size 10 MB
+   * The attachment (file) content as a BASE64-encoded string, max size 50 MB
    * @format base64
    * @example "aGVsbG8gd29ybGQK"
    */
@@ -871,16 +917,19 @@ export interface EmailRequest {
   recipient: string;
   /**
    * Subject
+   * @minLength 1
    * @example "Subject"
    */
   subject: string;
   /**
    * Message in html (optionally in BASE64 encoded format)
+   * @minLength 1
    * @example "<html>HTML-formatted message</html>"
    */
   htmlMessage: string;
   /**
    * Message in plain text
+   * @minLength 1
    * @example "Message in plain text"
    */
   message: string;
@@ -896,6 +945,62 @@ export interface EmailRequest {
   emailHeaders?: Record<string, string[]>;
   attachments?: EmailAttachment[];
   attachmentIds?: string[];
+}
+
+/** ConversationRequest model */
+export interface ConversationRequest {
+  /**
+   * The message-exchange topic
+   * @minLength 1
+   * @example "The conversation topic"
+   */
+  topic: string;
+  /** ConversationType model */
+  type: ConversationType;
+  relationIds?: string[];
+  participants?: Identifier[];
+  metadata?: KeyValues[];
+}
+
+/** Identifier model */
+export interface Identifier {
+  /**
+   * The conversation identifier type
+   * @pattern ^(adAccount|partyId)$
+   * @example "adAccount"
+   */
+  type?: string;
+  /**
+   * The conversation identifier value
+   * @minLength 1
+   * @example "joe01doe"
+   */
+  value: string;
+}
+
+/** KeyValues model */
+export interface KeyValues {
+  /**
+   * The key
+   * @example "key1"
+   */
+  key?: string;
+  values?: string[];
+}
+
+/** Message body */
+export interface MessageRequest {
+  /**
+   * The ID of the replied message
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  inReplyToMessageId?: string;
+  /**
+   * The content of the message.
+   * @minLength 1
+   * @example "Hello, how can I help you?"
+   */
+  content: string;
 }
 
 /** UpdateErrandNoteRequest model */
@@ -916,6 +1021,7 @@ export interface UpdateErrandNoteRequest {
   body: string;
   /**
    * Modified by
+   * @minLength 1
    * @example "John Doe"
    */
   modifiedBy: string;
@@ -985,6 +1091,25 @@ export interface ErrandNote {
   modified?: string;
 }
 
+/** Conversation model */
+export interface Conversation {
+  /**
+   * Conversation ID
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  id?: string;
+  /**
+   * The message-exchange topic
+   * @example "The conversation topic"
+   */
+  topic?: string;
+  /** ConversationType model */
+  type?: ConversationType;
+  relationIds?: string[];
+  participants?: Identifier[];
+  metadata?: KeyValues[];
+}
+
 /** Labels model */
 export interface Labels {
   /**
@@ -1014,10 +1139,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   first?: boolean;
   last?: boolean;
   pageable?: PageableObject;
@@ -1045,8 +1170,8 @@ export interface PageableObject {
 }
 
 export interface SortObject {
-  empty?: boolean;
   sorted?: boolean;
+  empty?: boolean;
   unsorted?: boolean;
 }
 
@@ -1234,19 +1359,11 @@ export interface EventMetaData {
   value?: string;
 }
 
-/** Type of event */
-export enum EventType {
-  CREATE = 'CREATE',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  UNKNOWN = 'UNKNOWN',
-}
-
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   first?: boolean;
   last?: boolean;
   pageable?: PageableObject;
@@ -1345,6 +1462,93 @@ export interface CommunicationAttachment {
   mimeType?: string;
 }
 
+/** Attachment model */
+export interface Attachment {
+  /**
+   * Attachment ID
+   * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"
+   */
+  id?: string;
+  /**
+   * Name of the file
+   * @example "my-file.txt"
+   */
+  fileName?: string;
+  /**
+   * Size of the file in bytes
+   * @format int32
+   * @example 1024
+   */
+  fileSize?: number;
+  /** Mime type of the file */
+  mimeType?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   * @example "2023-01-01T00:00:00+01:00"
+   */
+  created?: string;
+}
+
+/** Message model */
+export interface Message {
+  /**
+   * Message ID
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  id?: string;
+  /**
+   * The ID of the replied message
+   * @example "1aefbbb8-de82-414b-b5d7-ba7c5bbe4506"
+   */
+  inReplyToMessageId?: string;
+  /**
+   * The timestamp when the message was created.
+   * @format date-time
+   */
+  created?: string;
+  /** Identifier model */
+  createdBy?: Identifier;
+  /**
+   * The content of the message.
+   * @example "Hello, how can I help you?"
+   */
+  content?: string;
+  readBy?: ReadBy[];
+  attachments?: Attachment[];
+}
+
+export interface PageMessage {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  first?: boolean;
+  last?: boolean;
+  pageable?: PageableObject;
+  /** @format int32 */
+  size?: number;
+  content?: Message[];
+  /** @format int32 */
+  number?: number;
+  sort?: SortObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  empty?: boolean;
+}
+
+/** Readby model */
+export interface ReadBy {
+  /** Identifier model */
+  identifier?: Identifier;
+  /**
+   * The timestamp when the message was read.
+   * @format date-time
+   * @example "2023-01-01T12:00:00+01:00"
+   */
+  readAt?: string;
+}
+
 /** ErrandAttachment model */
 export interface ErrandAttachment {
   /**
@@ -1356,9 +1560,20 @@ export interface ErrandAttachment {
    * Name of the file
    * @example "my-file.txt"
    */
-  fileName: string;
+  fileName?: string;
   /** Mime type of the file */
   mimeType?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   * @example "2023-01-01T00:00:00Z"
+   */
+  created?: string;
+}
+
+export interface CountResponse {
+  /** @format int64 */
+  count?: number;
 }
 
 /**
@@ -1366,8 +1581,8 @@ export interface ErrandAttachment {
  * @example "INBOUND"
  */
 export enum CommunicationDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 /**
@@ -1375,7 +1590,7 @@ export enum CommunicationDirectionEnum {
  * @example "EMAIL"
  */
 export enum CommunicationCommunicationTypeEnum {
-  SMS = 'SMS',
-  EMAIL = 'EMAIL',
-  WEB_MESSAGE = 'WEB_MESSAGE',
+  SMS = "SMS",
+  EMAIL = "EMAIL",
+  WEB_MESSAGE = "WEB_MESSAGE",
 }

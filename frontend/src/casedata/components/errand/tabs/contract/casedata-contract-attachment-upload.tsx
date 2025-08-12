@@ -1,12 +1,13 @@
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { saveSignedContractAttachment } from '@casedata/services/contract-service';
 import FileUpload from '@common/components/file-upload/file-upload.component';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 export interface CasedataSignedContractAttachmentFormModel {
@@ -46,7 +47,7 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
     getValues,
     formState: { errors },
   } = useForm<CasedataSignedContractAttachmentFormModel>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<CasedataSignedContractAttachmentFormModel>,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -131,12 +132,12 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
                     getErrand(municipalityId, errand.id.toString())
                       .then((res) => setErrand(res.errand))
                       .then(() => {
-                        toastMessage({
-                          position: 'bottom',
-                          closeable: false,
-                          message: 'Bilagan sparades',
-                          status: 'success',
-                        });
+                        toastMessage(
+                          getToastOptions({
+                            message: 'Bilagan sparades',
+                            status: 'success',
+                          })
+                        );
                       })
                   )
                   .catch(() => {

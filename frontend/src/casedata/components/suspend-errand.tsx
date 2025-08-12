@@ -1,13 +1,14 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { getErrand, phaseChangeInProgress, setSuspendedErrands } from '@casedata/services/casedata-errand-service';
+import { getErrand, phaseChangeInProgress, setErrandStatus } from '@casedata/services/casedata-errand-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 const yupSuspendForm = yup.object().shape({
@@ -27,10 +28,12 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     municipalityId,
     errand,
     setErrand,
+    user,
   }: {
     municipalityId: string;
     errand: IErrand;
     setErrand: any;
+    user;
   } = useAppContext();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -42,7 +45,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     getValues,
     formState,
     formState: { errors },
-  }: UseFormReturn<SuspendFormProps, any, undefined> = useForm({
+  } = useForm<SuspendFormProps>({
     resolver: yupResolver(yupSuspendForm),
     defaultValues: { date: dayjs().add(30, 'day').format('YYYY-MM-DD'), comment: '' },
     mode: 'onChange',
@@ -51,15 +54,14 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
     setError(false);
-    return setSuspendedErrands(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
+    return setErrandStatus(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
       .then((res) => {
-        console.log('setSuspendedErrands response:', res);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet parkerades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            status: 'success',
+            message: 'Ärendet parkerades',
+          })
+        );
         setIsLoading(false);
         setShowModal(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
@@ -77,6 +79,13 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       });
   };
 
+  if (
+    errand?.status?.statusType === ErrandStatus.InterntAterkoppling ||
+    errand?.status?.statusType === ErrandStatus.VantarPaKomplettering
+  ) {
+    return null;
+  }
+
   return (
     <>
       {!(errand?.status?.statusType === ErrandStatus.Parkerad) ? (
@@ -88,7 +97,11 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             leftIcon={<LucideIcon name="circle-pause" />}
             variant="secondary"
             disabled={
-              disabled || phaseChangeInProgress(errand) || errand?.status?.statusType === ErrandStatus.ArendeAvslutat
+              disabled ||
+              phaseChangeInProgress(errand) ||
+              errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
+              !errand?.administrator ||
+              user.username.toLocaleLowerCase() !== errand?.administrator.adAccount.toLocaleLowerCase()
             }
             onClick={() => setShowModal(true)}
           >

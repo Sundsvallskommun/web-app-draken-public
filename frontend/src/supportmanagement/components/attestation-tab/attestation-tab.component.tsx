@@ -1,7 +1,7 @@
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
-import { Disclosure } from '@headlessui/react';
+import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
@@ -19,13 +19,13 @@ import {
   getBillingRecords,
   useBillingRecords,
 } from '@supportmanagement/services/support-billing-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter } = filterForm;
   const tableForm = useForm<AttestationTableForm>({
     defaultValues: { sortColumn: 'modified', sortOrder: 'desc', pageSize: 12 },
   });
@@ -47,12 +47,12 @@ export const AttestationTab = () => {
   const invoiceTypeFilter = watchFilter('invoiceType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
-  const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
   const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
 
   useEffect(() => {
     getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId, page, pageSize, attestationFilterObject, sortObject]);
 
   const setInitialFocus = () => {
@@ -105,9 +105,11 @@ export const AttestationTab = () => {
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch(() => {});
     setSupportErrand(undefined);
     getBillingRecords(municipalityId);
     //eslint-disable-next-line
@@ -125,6 +127,7 @@ export const AttestationTab = () => {
 
   useEffect(() => {
     getSupportAdmins().then(setSupportAdmins);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useDebounceEffect(
@@ -178,14 +181,14 @@ export const AttestationTab = () => {
             <div>
               <h1 className="p-0 m-0">Godkänn fakturaunderlag</h1>
             </div>
-            <Disclosure.Panel static>
+            <DisclosurePanel static>
               <FormProvider {...tableForm}>
                 <AttestationsTable
                   setSelectedRecord={setSelectedRecord}
                   setShowSelectedRecord={setShowSelectedRecord}
                 />
               </FormProvider>
-            </Disclosure.Panel>
+            </DisclosurePanel>
           </Disclosure>
         </div>
       </main>

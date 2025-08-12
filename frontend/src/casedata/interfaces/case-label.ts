@@ -47,7 +47,7 @@ export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>>
 };
 
 export enum MEXCaseLabel {
-  'MEX_SQUARE_PLACE' = 'Ansökan torgplats',
+  'MEX_SQUARE_PLACE' = 'Torgplats',
   'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' = 'Begäran om allmän handling',
   'MEX_INVOICE' = 'Faktura',
   'MEX_LEASE_REQUEST' = 'Arrende/Nyttjanderätt',
@@ -98,4 +98,22 @@ export const getShortLabel = (caseType: string): string => {
     CaseLabels.ALL[caseType] ??
     ''
   );
+};
+
+export const ALL_LABELS = {
+  ...PTCaseLabel,
+  ...FTCaseLabel,
+  ...MEXCaseLabel,
+} as const;
+
+export type AnyCaseType = keyof typeof ALL_LABELS;
+
+const ALL_SHORT_LABELS: Partial<Record<AnyCaseType, string>> = {
+  ...PTCaseShortLabel,
+  ...FTCaseShortLabel,
+} as const;
+
+export const getLabelFromCaseType = (caseType?: string | null): string => {
+  if (!caseType) return '';
+  return ALL_LABELS[caseType as AnyCaseType] ?? '';
 };

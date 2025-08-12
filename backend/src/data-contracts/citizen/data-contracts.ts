@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -68,10 +69,6 @@ export interface CustodyChildrenPupil {
   unRegCode?: string | null;
   /** @format date-time */
   unRegDate?: string | null;
-}
-
-export interface ModelPostPerson {
-  personalNumber?: string | null;
 }
 
 export interface PersonGuidBatch {

@@ -1,7 +1,5 @@
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
-import { useMediaQuery } from '@mui/material';
-import { SearchField, useGui } from '@sk-web-gui/react';
+import { SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -17,9 +15,6 @@ export const CasedataFilterQuery: React.FC = () => {
   const { watch, setValue } = useFormContext<CaseQueryFilter>();
   const value = watch('query');
   const [query, setQuery] = useState<string>(value);
-  const gui = useGui();
-
-  const isMobile = useMediaQuery(`screen and (max-width: ${gui.theme.screens.md})`);
 
   useDebounceEffect(
     () => {

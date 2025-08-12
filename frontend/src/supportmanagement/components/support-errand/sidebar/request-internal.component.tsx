@@ -1,4 +1,5 @@
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+'use client';
+
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
@@ -32,23 +33,28 @@ import { SupportMetadata } from '@supportmanagement/services/support-metadata-se
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import dynamic from 'next/dynamic';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupRequestFeedbackForm = yup.object().shape(
   {
     contactMeans: yup.string().required('Kontaktsätt är obligatoriskt'),
     email: yup.string().when('contactMeans', {
-      is: (contactMeans: string) => contactMeans === 'email',
-      then: yup.string().trim().email('E-postadress har fel format').required('E-postadress måste anges'),
+      is: 'email',
+      then: (schema) => schema.trim().email('E-postadress har fel format').required('E-postadress måste anges'),
+      otherwise: (schema) => schema,
     }),
     phone: yup.string().when('contactMeans', {
-      is: (contactMeans: string) => contactMeans === 'sms',
-      then: yup
-        .string()
-        .test('empty-check', 'Telefonnummer måste anges för sms-meddelande', (phone) => phone.length >= 4)
-        .required('Telefonnummer måste anges för sms-meddelande')
-        .trim()
-        .transform((val) => val && val.replace('-', ''))
-        .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+      is: 'sms',
+      then: (schema) =>
+        schema
+          .test('empty-check', 'Telefonnummer måste anges för sms-meddelande', (phone) => phone.length >= 4)
+          .required('Telefonnummer måste anges för sms-meddelande')
+          .trim()
+          .transform((val) => val && val.replace('-', ''))
+          .matches(supportManagementPhonePatternOrCountryCode, invalidPhoneMessage),
+      otherwise: (schema) => schema,
     }),
     message: yup.string().required('Meddelande är obligatoriskt'),
     messageBodyPlaintext: yup.string(),
@@ -68,6 +74,8 @@ export interface RequestInternalFormProps {
   message: string;
   messageBodyPlaintext: string;
 }
+
+//NOT IN USE?
 
 export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
@@ -98,30 +106,22 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
   const [addedAttachment, setAddedAttachment] = useState<SupportAttachment[]>([]);
   const {
     register,
-    control,
-    handleSubmit,
-    watch,
     reset,
     setValue,
     getValues,
     formState,
     trigger,
     formState: { errors },
-  }: UseFormReturn<RequestInternalFormProps, any, undefined> = useForm({
+  }: UseFormReturn<RequestInternalFormProps> = useForm<RequestInternalFormProps>({
     resolver: yupResolver(yupRequestFeedbackForm),
     defaultValues: { contactMeans: 'email', email: '', phone: '', message: '', messageBodyPlaintext: '' },
     mode: 'onChange',
   });
 
-  const onRichTextChange = (val) => {
-    if (quillRef.current) {
-      const editor = quillRef.current?.getEditor();
-      const length = editor?.getLength();
-      setRichText(val);
-      setValue('message', sanitized(length > 1 ? val : undefined));
-      setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
-      trigger('message');
-    }
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setValue('message', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('messageBodyPlaintext', quillRef.current.getText());
+    trigger('message');
   };
 
   const handleRequestInternal = (data: RequestInternalFormProps) => {
@@ -129,12 +129,12 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     setError(false);
     return requestInternal(user, supportErrand, municipalityId, data, addedAttachment, appConfig.applicationName)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Komplettering begärd',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Komplettering begärd',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         setShowModal(false);
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
@@ -169,6 +169,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     } else if (contactMeans === 'sms') {
       setValue('phone', _phone || '+46');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, contactMeans]);
 
   useEffect(() => {
@@ -186,6 +187,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
         setRichText(emailBody);
       }, 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, supportAttachments, supportMetadata, showModal]);
 
   return (
@@ -271,17 +273,16 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
             <FormLabel className="text-content font-semibold">Meddelande</FormLabel>
             <Input data-cy="message-body-input" type="hidden" {...register('message')} />
             <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
-              <RichTextEditor
+              <TextEditor
+                className={cx(`mb-md h-[80%]`)}
+                key={richText}
                 ref={quillRef}
-                value={richText}
-                errors={!!errors.message}
-                isMaximizable={false}
-                toggleModal={() => {}}
-                onChange={(value, delta, source, editor) => {
+                defaultValue={richText}
+                onTextChange={(delta, oldDelta, source) => {
                   if (source === 'user') {
                     setTextIsDirty(true);
                   }
-                  return onRichTextChange(value);
+                  return onRichTextChange(delta, oldDelta, source);
                 }}
               />
             </div>

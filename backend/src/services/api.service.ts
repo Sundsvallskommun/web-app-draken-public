@@ -1,9 +1,9 @@
-import { v4 as uuidv4 } from 'uuid';
 import { HttpException } from '@exceptions/HttpException';
 import { User } from '@interfaces/users.interface';
-import { apiURL } from '@utils/util';
 import { logger } from '@utils/logger';
-import axios, { AxiosError, AxiosInstance, AxiosInterceptorManager, AxiosRequestConfig, AxiosRequestHeaders } from 'axios';
+import { apiURL } from '@utils/util';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import ApiTokenService from './api-token.service';
 
 export class ApiResponse<T> {

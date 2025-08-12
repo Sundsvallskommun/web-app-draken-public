@@ -1,4 +1,3 @@
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
@@ -16,16 +15,14 @@ export const TypeValues = {
 };
 
 export const SupportManagementFilterType: React.FC = () => {
-  const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
+  const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const categories = watch('category');
   const types = watch('type');
   const { register } = useFormContext<TypeFilter>();
   const [query, setQuery] = useState<string>('');
-  const [allCategories, setAllCategories] = useState<Category[]>();
   const [allTypes, setAllTypes] = useState<SupportType[]>();
   const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
   useEffect(() => {
-    setAllCategories(supportMetadata?.categories);
     const _types: SupportType[] = [];
     if (categories.length > 0) {
       categories?.forEach((category) => {
@@ -46,6 +43,7 @@ export const SupportManagementFilterType: React.FC = () => {
       });
     }
     setAllTypes(_types);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportMetadata, categories, types]);
 
   return (
@@ -58,7 +56,7 @@ export const SupportManagementFilterType: React.FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Ärende
+        Ärendetyp
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <SearchField

@@ -1,22 +1,33 @@
 import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-wrapper';
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { Priority } from '@casedata/interfaces/priority';
-import { emptyErrand, getErrandByErrandNumber, getUiPhase } from '@casedata/services/casedata-errand-service';
+import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
+import {
+  emptyErrand,
+  getErrandByErrandNumber,
+  getUiPhase,
+  isErrandLocked,
+} from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/router';
-import { useEffect, useRef, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
+import { Channels } from '@casedata/interfaces/channels';
+
+type IErrandFormData = Pick<
+  IErrand,
+  'caseType' | 'channel' | 'description' | 'municipalityId' | 'phase' | 'priority' | 'status'
+>;
 
 export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   let formSchema = yup
@@ -52,36 +63,39 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   } = useAppContext();
   const toastMessage = useSnackbar();
 
-  const { theme } = useGui();
-
   const methods = useForm<IErrand>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<IErrand>, //Temporary bypass for resolver
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    disabled: isErrandLocked(errand),
   });
 
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitialFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
   const router = useRouter();
+  const pathName = usePathname();
   const { setUser } = useAppContext();
 
   useEffect(() => {
     getAdminUsers().then((data) => {
       setAdministrators(data);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
-    const { id } = router.query;
-    if (id) {
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
+    const errandNumber = pathName?.split('/')[3];
+    if (errandNumber) {
       // Existing errand, load it and show it
       setIsLoading(true);
       getErrandByErrandNumber(municipalityId, props.id)
@@ -97,7 +111,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
           setErrand(res.errand);
           setIsLoading(false);
         })
-        .catch((e) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -109,17 +123,19 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
       // Registering new errand, show default values
       setErrand(emptyErrand);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   useEffect(() => {
     if (errand) {
       setUiPhase(getUiPhase(errand));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   function estateToText(propertyDesignation: string) {
     if (!propertyDesignation) {
-      return '(Saknas)';
+      return '(saknas)';
     }
     const MunicipalityName = propertyDesignation.toLowerCase().split(' ')[0];
     const propertyName = propertyDesignation
@@ -172,20 +188,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   </div>
                                   <div>
                                     <span className="flex gap-sm items-center">
-                                      <Badge
-                                        className="!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px] align-center"
-                                        color={
-                                          errand?.priority === Priority.HIGH
-                                            ? 'error'
-                                            : errand?.priority === Priority.MEDIUM
-                                            ? 'warning'
-                                            : errand?.priority === Priority.LOW
-                                            ? 'vattjom'
-                                            : 'vattjom'
-                                        }
-                                        data-cy="errandPriority"
-                                      />
-                                      {errand?.priority}
+                                      <PriorityComponent priority={errand?.priority} />
                                     </span>
                                   </div>
                                 </div>
@@ -220,13 +223,13 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>
                                       {errand.facilities.map((estate, index) => (
-                                        <>
+                                        <Fragment key={`estate-${estate.id}`}>
                                           {index === 0
                                             ? estateToText(estate?.address?.propertyDesignation)
                                             : ', ' + estateToText(estate?.address?.propertyDesignation)}
-                                        </>
+                                        </Fragment>
                                       ))}
-                                      {errand.facilities.length === 0 ? '(Saknas)' : null}
+                                      {errand.facilities.length === 0 ? '(saknas)' : null}
                                     </div>
                                   </div>
                                 ) : (
@@ -274,13 +277,9 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                 Avbryt
                               </Button>
                               <SaveButtonComponent
-                                errand={errand}
                                 registeringNewErrand={typeof errand?.id === 'undefined'}
                                 setUnsaved={() => {}}
                                 update={() => {}}
-                                verifyAndClose={function (): void {
-                                  throw new Error('Function not implemented.');
-                                }}
                                 label="Registrera"
                                 color="vattjom"
                                 icon={<LucideIcon name="arrow-right" size={18} />}

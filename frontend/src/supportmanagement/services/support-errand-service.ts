@@ -5,7 +5,6 @@ import { isKC, isROB } from '@common/services/application-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
-import { RequestInfoFormProps } from '@supportmanagement/components/support-errand/sidebar/request-info.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
@@ -48,6 +47,14 @@ export enum PrettyRelation {
 export enum SupportStakeholderTypeEnum {
   PERSON = 'PERSON',
   ORGANIZATION = 'ORGANIZATION',
+}
+
+export interface RequestInfo {
+  contactMeans: string;
+  email: string;
+  phone: string;
+  message: string;
+  messageBodyPlaintext: string;
 }
 
 // Define a type based on the enum values
@@ -160,6 +167,12 @@ export enum StatusLabelROB {
   AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
 }
 
+export const shouldShowResumeErrandButton = (status?: Status): boolean => {
+  return (
+    !!status && [Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(status)
+  );
+};
+
 export enum AttestationStatus {
   APPROVED = 'APPROVED',
   DENIED = 'DENIED',
@@ -235,7 +248,6 @@ export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadat
 
 export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata) => {
   const types = getLabelCategory(errand, metadata)?.labels;
-  const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
   const matchingType = types?.find((t) => errand.labels.includes(t.name));
   if (matchingType) {
     return matchingType;
@@ -292,6 +304,7 @@ export enum Resolution {
   RECRUITED = 'RECRUITED',
   ABORTED = 'ABORTED',
   PARTLY = 'PARTLY',
+  SECURE_APPBOX = 'SECURE_APPBOX',
 }
 
 export enum ResolutionLabelLOP {
@@ -319,11 +332,12 @@ export enum ResolutionLabelKS {
   SELF_SERVICE = 'Hänvisat till självservice',
   INTERNAL_SERVICE = 'Hänvisat till intern service',
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+  SECURE_APPBOX = 'SecureAppbox',
 }
 
 export enum ResolutionLabelKA {
   SOLVED = 'Löst av Kontaktcenter',
-  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har eskalerats till annan funktion)',
+  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
 }
 export enum ResolutionLabelROB {
   RECRUITED = 'Rekryterad',
@@ -387,7 +401,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedUserId: undefined,
   assignedGroupId: undefined,
   resolution: 'INFORMED',
-  channel: ContactChannelType.PHONE,
+  channel: 'PHONE',
   municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',
@@ -401,6 +415,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   newAttachment: undefined,
   attachments: [],
   externalTags: [],
+  parameters: [],
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
@@ -773,6 +788,7 @@ export const updateSupportErrand: (
   } else {
     responseObj.attachments = true;
   }
+
   const stakeholders = buildStakeholdersList(formdata);
 
   const data: Partial<SupportErrandDto> = {
@@ -804,6 +820,7 @@ export const updateSupportErrand: (
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
     externalTags: formdata.externalTags || [],
+    parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {
     data.externalTags.push({
@@ -1014,7 +1031,7 @@ export const forwardSupportErrand: (
       headerReplyTo: '',
       headerReferences: '',
       emails: data.emails,
-      subject: 'Vidarebefordran av ärende',
+      subject: `Överlämnat ärende #${errand.errandNumber} ${errand.channel === 'EMAIL' ? `- "${errand.title}"` : ''}`,
       htmlMessage: data.message,
       plaintextMessage: data.messageBodyPlaintext,
       senderName: user.name,
@@ -1053,7 +1070,7 @@ export const requestInfo: (
   user: User,
   errand: SupportErrand,
   municipalityId: string,
-  data: RequestInfoFormProps,
+  data: RequestInfo,
   supportAttachment: SupportAttachment[]
 ) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
   if (!errand.id) {
@@ -1099,7 +1116,7 @@ export const requestInternal: (
   user: User,
   errand: SupportErrand,
   municipalityId: string,
-  data: RequestInfoFormProps,
+  data: RequestInfo,
   supportAttachment: SupportAttachment[],
   title: string
 ) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment, title) => {

@@ -1,3 +1,4 @@
+import { apiServiceName } from '@/config/api-config';
 import {
   AttachmentResponse,
   Classification,
@@ -187,8 +188,8 @@ const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkerings
 @Controller()
 export class MessageController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
-  MESSAGING_SERVICE = `messaging/6.0`;
+  SERVICE = apiServiceName('case-data');
+  MESSAGING_SERVICE = apiServiceName('messaging');
 
   @Post('/casedata/:municipalityId/message/decision')
   @HttpCode(201)
@@ -361,11 +362,8 @@ export class MessageController {
     const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
-    let url;
     let message: WebMessageRequest;
-    const MESSAGE_ID = generateMessageId();
     if (errandData.data.externalCaseId) {
-      url = `${this.MESSAGING_SERVICE}/${municipalityId}/webmessage`;
       const attachments = files.map(file => {
         return {
           base64Data: file.buffer.toString('base64'),

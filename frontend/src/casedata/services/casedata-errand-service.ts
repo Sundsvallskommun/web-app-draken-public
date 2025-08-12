@@ -59,6 +59,7 @@ export const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+  { label: 'Ärendemening', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Prio', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Registrerat', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Handläggare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -114,6 +115,7 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
       return 'Ärenden';
     }
   }
+  return 'Ärenden';
 };
 
 export const isFTErrand = (errand: IErrand) => {
@@ -127,7 +129,7 @@ export const findStatusKeyForStatusLabel = (statusKey: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusKey)?.[0];
 
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
-  Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1];
+  Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1] || statusLabel;
 
 export const getCaseTypes = () => {
   const isTest = getApplicationEnvironment() === 'TEST';
@@ -184,22 +186,16 @@ export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = 
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
   if (errand?.status && typeof errand?.status === 'object') {
-    return errand?.status?.statusType === ErrandStatus.ArendeAvslutat || phaseChangeInProgress(errand as IErrand);
+    return (
+      errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
+      errand?.status?.statusType === ErrandStatus.Parkerad ||
+      phaseChangeInProgress(errand as IErrand)
+    );
   } else {
     return errand?.status === ErrandStatus.ArendeAvslutat;
   }
 };
 
-export const getPriorityColor = (priority: Priority) => {
-  switch (priority) {
-    case Priority.HIGH:
-      return 'text-error-surface-primary';
-    case Priority.MEDIUM:
-      return 'text-warning-surface-primary';
-    case Priority.LOW:
-      return 'text-vattjom-surface-primary';
-  }
-};
 const defaultMunicipality = municipalityIds.find((m) => m.label === 'Sundsvall');
 
 export const emptyErrand: Partial<IErrand> = {
@@ -590,6 +586,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
 
 interface SaveErrandResponse {
   errandId?: string;
+  errand?: IErrand;
   errandSuccessful: boolean;
   attachmentsSuccessful: boolean;
   noteSuccessful: boolean;
@@ -618,7 +615,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         })
         .catch((e) => {
           console.error('Something went wrong when patching errand');
-          return result;
+          return Promise.reject(result);
         })
     : apiService
         .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(
@@ -627,6 +624,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         )
         .then(async (res) => {
           result.errandSuccessful = true;
+          result.errand = mapErrandToIErrand(res.data.data, data.municipalityId);
           result.errandId = res.data.data.id.toString();
           return result;
         })
@@ -635,7 +633,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         })
         .catch((e) => {
           console.error('Something went wrong when creating errand');
-          return result;
+          return Promise.reject(result);
         });
 };
 
@@ -817,7 +815,7 @@ export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) 
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
 };
 
-export const setSuspendedErrands = async (
+export const setErrandStatus = async (
   errandId: number,
   municipalityId: string,
   status: ErrandStatus,

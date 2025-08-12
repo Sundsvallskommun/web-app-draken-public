@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
@@ -9,20 +11,25 @@ import {
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, cx, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
   errandNumber?: string;
+  personalNumber?: string;
+  errandCaseType?: string;
   description: string;
   law: Law;
   outcome: string;
@@ -34,14 +41,16 @@ export interface UtredningFormModel {
 
 let formSchema = yup
   .object({
-    id: yup.number(),
+    id: yup.string(),
     errandNumber: yup.string(),
+    personalNumber: yup.string(),
+    errandCaseType: yup.string(),
     description: yup.string().required('Text måste anges'),
-    law: yup.string(),
+    law: yup.object(),
     outcome: yup.string(),
     validFrom: yup.string(),
     validTo: yup.string(),
-    decidedBy: yup.string(),
+    decidedBy: yup.object(),
     extraParameters: yup.object(),
   })
   .required();
@@ -81,7 +90,7 @@ export const SidebarUtredning: React.FC = () => {
     getValues,
     formState: { errors },
   }: UseFormReturn<UtredningFormModel, any, undefined> = useForm({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     mode: 'onChange',
   });
 
@@ -96,12 +105,12 @@ export const SidebarUtredning: React.FC = () => {
       const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);
       setError(undefined);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Utredningen sparades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Utredningen sparades',
+          status: 'success',
+        })
+      );
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -197,17 +206,16 @@ export const SidebarUtredning: React.FC = () => {
     console.error('Something went wrong when saving utredning', e);
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRefUtredning.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined));
+  const onRichTextChange = (delta) => {
+    sanitized(delta.ops[0].retain > 1 ? quillRefUtredning.current.root.innerHTML : undefined);
     trigger('description');
   };
 
   useEffect(() => {
     const existingUtredning = errand.decisions?.find((d) => d.decisionType === 'PROPOSED');
     setValue('errandNumber', errand.errandNumber);
+    setValue('personalNumber', getOwnerStakeholder(errand)?.personalNumber);
+    setValue('errandCaseType', errand.caseType);
     setValue('outcome', DecisionOutcomeKey.Bifall);
     if (existingUtredning) {
       setValue('id', existingUtredning.id.toString());
@@ -215,6 +223,7 @@ export const SidebarUtredning: React.FC = () => {
       setRichText(existingUtredning.description);
       setValue('outcome', existingUtredning.decisionOutcome);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   return (
@@ -226,24 +235,23 @@ export const SidebarUtredning: React.FC = () => {
       <div className="w-full mt-xl flex flex-col items-start gap-12">
         <Input type="hidden" {...register('id')} />
         <Input type="hidden" {...register('errandNumber')} />
+        <Input type="hidden" {...register('errandCaseType')} />
+        <Input type="hidden" {...register('personalNumber')} />
         <Input type="hidden" {...register('outcome')} />
         <FormControl id="description" className="w-full">
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
           <div className="h-[42rem] -mb-48" data-cy="utredning-richtext-wrapper">
-            <RichTextEditor
+            <TextEditor
+              className={cx(`mb-md h-[80%]`)}
+              key={richText}
               ref={quillRefUtredning}
-              containerLabel="utredning"
-              value={richText}
-              isMaximizable={false}
+              defaultValue={richText}
               readOnly={isSigned || !isErrandAdmin(errand, user)}
-              // toggleModal={() => {
-              //   setIsEditorModalOpen(!isEditorModalOpen);
-              // }}
-              onChange={(value, delta, source, editor) => {
+              onTextChange={(delta, oldDelta, source) => {
                 if (source === 'user') {
                   setTextIsDirty(true);
                 }
-                return onRichTextChange(value);
+                return onRichTextChange(delta);
               }}
             />
           </div>

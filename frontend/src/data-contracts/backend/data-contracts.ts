@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -15,28 +16,6 @@ export interface SsnPayload {
 
 export interface OrgNrPayload {
   orgNr: string;
-}
-
-export interface CLegalForm {
-  legalFormCode: string;
-  legalFormDescription: string;
-}
-
-export interface CAddress {
-  city?: string;
-  street?: string;
-  postcode?: string;
-  careOf?: string;
-}
-
-export interface CMunicipality {
-  municipalityCode: string;
-  municipalityName: string;
-}
-
-export interface CCounty {
-  countyCode: string;
-  countyName: string;
 }
 
 export interface CLEPostAddress {
@@ -176,27 +155,27 @@ export interface CPageBillingRecord {
 }
 
 export interface ExtraParametersDto {
-  'application.reason'?: string;
-  'application.role'?: ExtraParametersDtoApplicationRoleEnum;
-  'application.applicant.capacity'?: string;
-  'application.applicant.testimonial'?: ExtraParametersDtoApplicationApplicantTestimonialEnum;
-  'application.applicant.signingAbility'?: ExtraParametersDtoApplicationApplicantSigningAbilityEnum;
-  'disability.aid'?: string;
-  'disability.walkingAbility'?: ExtraParametersDtoDisabilityWalkingAbilityEnum;
-  'disability.walkingDistance.beforeRest'?: string;
-  'disability.walkingDistance.max'?: string;
-  'disability.duration'?: string;
-  'disability.canBeAloneWhileParking'?: ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum;
-  'disability.canBeAloneWhileParking.note'?: string;
-  'consent.contact.doctor'?: ExtraParametersDtoConsentContactDoctorEnum;
-  'consent.view.transportationServiceDetails'?: ExtraParametersDtoConsentViewTransportationServiceDetailsEnum;
-  'application.lostPermit.policeReportNumber'?: string;
-  'application.renewal.changedCircumstances'?: ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum;
-  'application.renewal.expirationDate'?: string;
-  'application.renewal.medicalConfirmationRequired'?: string;
-  'artefact.permit.number'?: string;
-  'artefact.permit.status'?: string;
-  'application.supplement.dueDate'?: string;
+  "application.reason"?: string;
+  "application.role"?: ExtraParametersDtoApplicationRoleEnum;
+  "application.applicant.capacity"?: string;
+  "application.applicant.testimonial"?: ExtraParametersDtoApplicationApplicantTestimonialEnum;
+  "application.applicant.signingAbility"?: ExtraParametersDtoApplicationApplicantSigningAbilityEnum;
+  "disability.aid"?: string;
+  "disability.walkingAbility"?: ExtraParametersDtoDisabilityWalkingAbilityEnum;
+  "disability.walkingDistance.beforeRest"?: string;
+  "disability.walkingDistance.max"?: string;
+  "disability.duration"?: string;
+  "disability.canBeAloneWhileParking"?: ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum;
+  "disability.canBeAloneWhileParking.note"?: string;
+  "consent.contact.doctor"?: ExtraParametersDtoConsentContactDoctorEnum;
+  "consent.view.transportationServiceDetails"?: ExtraParametersDtoConsentViewTransportationServiceDetailsEnum;
+  "application.lostPermit.policeReportNumber"?: string;
+  "application.renewal.changedCircumstances"?: ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum;
+  "application.renewal.expirationDate"?: string;
+  "application.renewal.medicalConfirmationRequired"?: string;
+  "artefact.permit.number"?: string;
+  "artefact.permit.status"?: string;
+  "application.supplement.dueDate"?: string;
 }
 
 export interface Attachment {
@@ -497,17 +476,17 @@ export interface CNotification {
 export interface SupportErrandDto {
   id?: string;
   errandNumber?: string;
-  title: string;
+  title?: string;
   stakeholders?: CSupportStakeholder[];
-  priority: string;
+  priority?: string;
   externalTags?: CExternalTag[];
   parameters?: CParameter[];
-  classification: Classification;
-  status: string;
+  classification?: Classification;
+  status?: string;
   resolution?: string;
   description?: string;
   channel?: string;
-  reporterUserId: string;
+  reporterUserId?: string;
   assignedUserId?: string;
   assignedGroupId?: string;
   escalationEmail?: string;
@@ -524,7 +503,7 @@ export interface SupportErrandDto {
 
 export interface ForwardFormDto {
   recipient: string;
-  email: string;
+  emails: any[];
   department: string;
   message: string;
   messageBodyPlaintext: string;
@@ -599,6 +578,7 @@ export interface SupportNotificationDto {
   globalAcknowledged?: boolean;
   errandId: string;
   errandNumber: string;
+  subtype: string;
 }
 
 export interface TemplateSelector {
@@ -608,65 +588,65 @@ export interface TemplateSelector {
 }
 
 export enum CBillingRecordTypeEnum {
-  EXTERNAL = 'EXTERNAL',
-  INTERNAL = 'INTERNAL',
+  EXTERNAL = "EXTERNAL",
+  INTERNAL = "INTERNAL",
 }
 
 export enum CBillingRecordStatusEnum {
-  NEW = 'NEW',
-  APPROVED = 'APPROVED',
-  INVOICED = 'INVOICED',
-  REJECTED = 'REJECTED',
+  NEW = "NEW",
+  APPROVED = "APPROVED",
+  INVOICED = "INVOICED",
+  REJECTED = "REJECTED",
 }
 
 export enum ExtraParametersDtoApplicationRoleEnum {
-  SELF = 'SELF',
-  GUARDIAN = 'GUARDIAN',
-  CUSTODIAN = 'CUSTODIAN',
+  SELF = "SELF",
+  GUARDIAN = "GUARDIAN",
+  CUSTODIAN = "CUSTODIAN",
 }
 
 export enum ExtraParametersDtoApplicationApplicantTestimonialEnum {
-  True = 'true',
-  False = 'false',
+  True = "true",
+  False = "false",
 }
 
 export enum ExtraParametersDtoApplicationApplicantSigningAbilityEnum {
-  True = 'true',
-  False = 'false',
+  True = "true",
+  False = "false",
 }
 
 export enum ExtraParametersDtoDisabilityWalkingAbilityEnum {
-  True = 'true',
-  False = 'false',
+  True = "true",
+  False = "false",
 }
 
 export enum ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum {
-  True = 'true',
-  False = 'false',
+  True = "true",
+  False = "false",
 }
 
 export enum ExtraParametersDtoConsentContactDoctorEnum {
-  True = 'true',
-  False = 'false',
+  True = "true",
+  False = "false",
 }
 
 export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
-  True = 'true',
-  False = 'false',
+  True = "true",
+  False = "false",
 }
 
 export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
-  Y = 'Y',
-  N = 'N',
+  Y = "Y",
+  N = "N",
 }
 
 export enum CCommunicationDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 export enum CCommunicationCommunicationTypeEnum {
-  SMS = 'SMS',
-  EMAIL = 'EMAIL',
-  WEB_MESSAGE = 'WEB_MESSAGE',
+  SMS = "SMS",
+  EMAIL = "EMAIL",
+  WEB_MESSAGE = "WEB_MESSAGE",
 }

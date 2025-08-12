@@ -16,9 +16,7 @@ export const CategoryValues = {
 };
 
 export const SupportManagementFilterCategory: React.FC = () => {
-  const { register, watch } = useFormContext<SupportManagementFilter>();
-  const categories = watch('category');
-  const types = watch('type');
+  const { register } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
   const [allCategories, setAllCategories] = useState<Category[]>();
   const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();

@@ -155,7 +155,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('button').contains('Ja').click();
 
       cy.wait('@sendEmail').should(({ response }) => {
-        expect(response.statusCode).to.equal(200);
+        expect(response?.statusCode).to.equal(200);
       });
     });
 
@@ -186,7 +186,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.wait('@sendWebmessage').should(({ request, response }) => {
         expect(request.body).to.contain('webmessage');
-        expect(response.statusCode).to.equal(200);
+        expect(response?.statusCode).to.equal(200);
       });
     });
 

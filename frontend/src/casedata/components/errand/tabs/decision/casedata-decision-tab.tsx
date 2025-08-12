@@ -1,3 +1,5 @@
+'use client';
+
 import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
@@ -21,7 +23,7 @@ import { AppContextInterface, useAppContext } from '@common/contexts/app.context
 import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -38,12 +40,12 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
@@ -54,12 +56,13 @@ import {
   FormLabel,
   Input,
   Select,
-  Spinner,
   cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import dynamic from 'next/dynamic';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -67,6 +70,8 @@ export interface DecisionFormModel {
   id?: string;
   errandId?: number;
   errandNumber?: string;
+  personalNumber?: string;
+  errandCaseType?: string;
   description: string;
   descriptionPlaintext: string;
   law: Law[];
@@ -84,6 +89,7 @@ let formSchema = yup
     description: yup.string(),
     descriptionPlaintext: yup.string(),
     errandId: yup.number(),
+    errandCaseType: yup.string(),
     law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup
       .string()
@@ -92,10 +98,8 @@ let formSchema = yup
         return outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup.string().when('outcome', {
-          is: (outcome: string) => outcome === 'Bifall',
-          then: yup.string().required('Giltig från måste anges'),
-          otherwise: yup.string().notRequired(),
+      ? yup.string().when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+          return outcome === 'Bifall' ? schema.required('Giltig från måste anges') : schema.notRequired();
         })
       : yup.string(),
 
@@ -131,6 +135,18 @@ export const CasedataDecisionTab: React.FC<{
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   useEffect(() => {
+    if (lawHeading) {
+      setValue(
+        'law',
+        lawMapping.filter((law) => {
+          return law.heading === lawHeading;
+        })
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lawHeading]);
+
+  useEffect(() => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -145,12 +161,14 @@ export const CasedataDecisionTab: React.FC<{
     getValues,
     formState: { errors },
   } = useForm<DecisionFormModel>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<DecisionFormModel>,
     defaultValues: {
       id: undefined,
       description: '',
       errandId: errand.id,
       errandNumber: errand.errandNumber,
+      personalNumber: getOwnerStakeholder(errand)?.personalNumber,
+      errandCaseType: errand.caseType,
       law: getLawMapping(errand),
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
       outcome: 'Välj beslut',
@@ -194,12 +212,12 @@ export const CasedataDecisionTab: React.FC<{
       .then((res) => setErrand(res.errand))
       .then(() => {
         setIsLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fasbytet inleddes',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Fasbytet inleddes',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
       })
       .catch(() => {
@@ -221,12 +239,12 @@ export const CasedataDecisionTab: React.FC<{
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Beslutet sparades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Beslutet sparades',
+          status: 'success',
+        })
+      );
       await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({
@@ -308,12 +326,12 @@ export const CasedataDecisionTab: React.FC<{
           };
       const updatedStatus = await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const phaseChange = await triggerPhaseChange();
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Beslutet skickades',
-        status: 'success',
-      });
+      toastMessage(
+        getToastOptions({
+          message: 'Beslutet skickades',
+          status: 'success',
+        })
+      );
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -404,12 +422,11 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('description', sanitized(length > 1 ? val : undefined), { shouldDirty: true });
-    setValue('descriptionPlaintext', quillRef.current.getEditor().getText());
+  const onRichTextChange = (delta?) => {
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
+      shouldDirty: true,
+    });
+    setValue('descriptionPlaintext', quillRef.current.getText());
     trigger('description');
   };
 
@@ -455,7 +472,7 @@ export const CasedataDecisionTab: React.FC<{
     if (InTemplate === '') {
       content = '';
     }
-    onRichTextChange(content);
+    onRichTextChange();
   };
 
   const isSent = () => {
@@ -477,9 +494,11 @@ export const CasedataDecisionTab: React.FC<{
           size="sm"
           disabled={!formState.isValid || !allowed}
           onClick={getPdfPreview}
-          rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+          loading={isPreviewLoading}
+          loadingText="Hämtar PDF"
+          rightIcon={<LucideIcon name="download" />}
         >
-          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska (pdf)'}
+          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
         </Button>
       </div>
       <div className="mt-24">
@@ -523,7 +542,7 @@ export const CasedataDecisionTab: React.FC<{
 
           {isPT() && (
             <>
-              <FormControl className="w-full">
+              <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
                 <Input type="hidden" {...register('law')} />
                 <Combobox
@@ -618,17 +637,16 @@ export const CasedataDecisionTab: React.FC<{
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
-          <RichTextEditor
+          <TextEditor
+            className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
+            key={richText}
             ref={quillRef}
-            containerLabel="decision"
-            value={richText}
-            isMaximizable={true}
-            readOnly={isErrandLocked(errand) || isSent()}
-            toggleModal={() => {
-              setIsEditorModalOpen(!isEditorModalOpen);
-            }}
-            onChange={(value) => {
-              return onRichTextChange(value);
+            defaultValue={richText}
+            onTextChange={(delta, oldDelta, source) => {
+              if (source === 'user') {
+                setTextIsDirty(true);
+              }
+              return onRichTextChange(delta);
             }}
           />
         </div>
@@ -664,9 +682,11 @@ export const CasedataDecisionTab: React.FC<{
             size="md"
             disabled={!formState.isValid || !allowed}
             onClick={getPdfPreview}
-            rightIcon={isPreviewLoading ? <Spinner size={2} /> : <LucideIcon name="download" />}
+            loading={isPreviewLoading}
+            loadingText="Hämtar PDF"
+            rightIcon={<LucideIcon name="download" />}
           >
-            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska (.pdf)'}
+            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
           </Button>
           <Button
             data-cy="save-and-send-decision-button"
@@ -723,11 +743,11 @@ export const CasedataDecisionTab: React.FC<{
                   });
               }
             }}
-            rightIcon={
-              isSaveAndSendLoading ? <Spinner size={2} className="mr-sm" /> : <LucideIcon name="send-horizontal" />
-            }
+            rightIcon={<LucideIcon name="send-horizontal" />}
+            loading={isSaveAndSendLoading}
+            loadingText="Skickar beslut"
           >
-            {isSaveAndSendLoading ? 'Skickar' : 'Skicka beslut'}
+            Skicka beslut
           </Button>
         </div>
         {!validateOwnerForSendingDecision(errand) ? (
