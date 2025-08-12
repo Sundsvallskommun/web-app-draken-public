@@ -7,7 +7,6 @@ import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
   getLawMapping,
-  lawMapping,
   renderBeslutPdf,
   renderHtml,
   saveDecision,
@@ -26,6 +25,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { KopeAvtalsData } from '@casedata/interfaces/kopeavtals-data';
 import { LagenhetsArrendeData } from '@casedata/interfaces/lagenhetsarrende-data';
@@ -134,17 +134,12 @@ export const CasedataDecisionTab: React.FC<{
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
+  const [textIsDirty, setTextIsDirty] = useState(false);
   useEffect(() => {
-    if (lawHeading) {
-      setValue(
-        'law',
-        lawMapping.filter((law) => {
-          return law.heading === lawHeading;
-        })
-      );
-    }
+    const laws = getValues('law')?.map((law) => law.heading) ?? [];
+    setSelectedLaws(laws);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lawHeading]);
+  }, []);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -235,7 +230,7 @@ export const CasedataDecisionTab: React.FC<{
     try {
       setIsLoading(true);
       const rendered = await renderBeslutPdf(errand, data);
-      const saved = await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -405,13 +400,14 @@ export const CasedataDecisionTab: React.FC<{
       setIsPreviewLoading(false);
     }
   };
-
+  const saveErrandData = useSaveCasedataErrand(false);
   const onSubmit = () => {
     saveConfirm
       .showConfirmation('Spara beslut', 'Vill du spara detta beslut?', 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
           const data = getValues();
+          saveErrandData;
           save(data);
           return Promise.resolve(true);
         }
