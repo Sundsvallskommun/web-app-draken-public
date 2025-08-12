@@ -400,20 +400,22 @@ export const CasedataDecisionTab: React.FC<{
       setIsPreviewLoading(false);
     }
   };
-  const saveErrandData = useSaveCasedataErrand(false);
+  const saveCasedataErrand = useSaveCasedataErrand(false);
+
   const onSubmit = () => {
-    saveConfirm
+    return saveConfirm
       .showConfirmation('Spara beslut', 'Vill du spara detta beslut?', 'Ja', 'Nej', 'info', 'info')
-      .then((confirmed) => {
+      .then(async (confirmed) => {
         if (confirmed) {
+          await saveCasedataErrand();
+
           const data = getValues();
-          saveErrandData;
           save(data);
+
           return Promise.resolve(true);
         }
       });
   };
-
   const onError = (e) => {
     console.error('Something went wrong when saving decision', e);
   };
