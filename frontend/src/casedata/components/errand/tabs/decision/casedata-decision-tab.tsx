@@ -6,7 +6,7 @@ import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
-  lawMapping,
+  getLawMapping,
   renderBeslutPdf,
   renderHtml,
   saveDecision,
@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { KopeAvtalsData } from '@casedata/interfaces/kopeavtals-data';
 import { LagenhetsArrendeData } from '@casedata/interfaces/lagenhetsarrende-data';
@@ -48,6 +49,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
+  Combobox,
   Dialog,
   FormControl,
   FormErrorMessage,
@@ -122,29 +124,22 @@ export const CasedataDecisionTab: React.FC<{
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
-  const [selectedBeslut, setselectedBeslut] = useState<number>(1);
-  const [textIsDirty, setTextIsDirty] = useState(false);
+  const selectedBeslut = 1;
   const [richText, setRichText] = useState<string>('');
   const [error, setError] = useState<string>();
   const quillRef = useRef(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
-  const [lawHeading, setLawHeading] = useState<string>('');
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-
+  const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
+  const [textIsDirty, setTextIsDirty] = useState(false);
   useEffect(() => {
-    if (lawHeading) {
-      setValue(
-        'law',
-        lawMapping.filter((law) => {
-          return law.heading === lawHeading;
-        })
-      );
-    }
+    const laws = getValues('law')?.map((law) => law.heading) ?? [];
+    setSelectedLaws(laws);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lawHeading]);
+  }, []);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -153,10 +148,8 @@ export const CasedataDecisionTab: React.FC<{
 
   const {
     register,
-    control,
     handleSubmit,
     watch,
-    reset,
     trigger,
     formState,
     setValue,
@@ -171,7 +164,7 @@ export const CasedataDecisionTab: React.FC<{
       errandNumber: errand.errandNumber,
       personalNumber: getOwnerStakeholder(errand)?.personalNumber,
       errandCaseType: errand.caseType,
-      law: [lawMapping[0]],
+      law: getLawMapping(errand),
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
       outcome: 'Välj beslut',
       validFrom: '',
@@ -202,6 +195,12 @@ export const CasedataDecisionTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
 
+  useEffect(() => {
+    const laws = getValues('law')?.map((law) => law.heading) ?? [];
+    setSelectedLaws(laws);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const triggerPhaseChange = () => {
     return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
@@ -231,7 +230,7 @@ export const CasedataDecisionTab: React.FC<{
     try {
       setIsLoading(true);
       const rendered = await renderBeslutPdf(errand, data);
-      const saved = await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -401,19 +400,22 @@ export const CasedataDecisionTab: React.FC<{
       setIsPreviewLoading(false);
     }
   };
+  const saveCasedataErrand = useSaveCasedataErrand(false);
 
   const onSubmit = () => {
-    saveConfirm
+    return saveConfirm
       .showConfirmation('Spara beslut', 'Vill du spara detta beslut?', 'Ja', 'Nej', 'info', 'info')
-      .then((confirmed) => {
+      .then(async (confirmed) => {
         if (confirmed) {
+          await saveCasedataErrand();
+
           const data = getValues();
           save(data);
+
           return Promise.resolve(true);
         }
       });
   };
-
   const onError = (e) => {
     console.error('Something went wrong when saving decision', e);
   };
@@ -437,7 +439,6 @@ export const CasedataDecisionTab: React.FC<{
       setValue('id', existingDecision.id.toString());
       setValue('description', existingDecision.description);
       setRichText(existingDecision.description);
-      setLawHeading(existingDecision.law?.[0]?.heading);
       setValue('outcome', existingDecision.decisionOutcome);
       setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
       setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
@@ -542,35 +543,33 @@ export const CasedataDecisionTab: React.FC<{
               <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
                 <Input type="hidden" {...register('law')} />
-                <Select
-                  className={cx(`w-full`, errors.law ? 'border-error' : '')}
-                  data-cy="law-select"
-                  name="law"
-                  size="sm"
-                  disabled={isSent()}
-                  onChange={(e) => {
-                    setValue(
-                      'law',
-                      lawMapping.filter((law) => {
-                        return law.heading === e.target.value;
-                      }),
-                      { shouldDirty: true }
-                    );
-                    props.setUnsaved(true);
-                    trigger();
-                  }}
+                <Combobox
+                  multiple
                   placeholder="Välj lagrum"
-                  value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
+                  value={selectedLaws}
+                  size="sm"
+                  onChange={(e) => {
+                    const newValue = e.target.value as string[];
+                    setSelectedLaws(newValue);
+                    const newLaws = getLawMapping(errand).filter((law) => newValue.includes(law.heading));
+                    setValue('law', newLaws, { shouldDirty: true });
+                    props.setUnsaved(true);
+                    trigger('law');
+                  }}
+                  onSelect={(e) => {
+                    const selected = e.target.value as string[];
+                    setSelectedLaws(selected);
+                  }}
                 >
-                  <Select.Option value={''}>Välj lagrum</Select.Option>
-                  {lawMapping.map((law, index) => {
-                    return (
-                      <Select.Option key={index} value={law.heading}>
+                  <Combobox.Input />
+                  <Combobox.List>
+                    {getLawMapping(errand).map((law, index) => (
+                      <Combobox.Option key={index} value={law.heading}>
                         {law.heading}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
+                      </Combobox.Option>
+                    ))}
+                  </Combobox.List>
+                </Combobox>
                 <div className="my-sm text-error">
                   {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
                 </div>

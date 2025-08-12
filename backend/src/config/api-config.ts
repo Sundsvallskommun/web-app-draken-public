@@ -56,6 +56,10 @@ export const APIS = [
     name: 'party',
     version: '2.0',
   },
+  {
+    name: 'partyassets',
+    version: '3.0',
+  },
 ];
 
 export function apiServiceName(name: string): string {

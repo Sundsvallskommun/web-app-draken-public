@@ -1,5 +1,6 @@
 'use client';
 
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
@@ -127,10 +128,17 @@ export const CasedataInvestigationTab: React.FC<{
 
   const description = watch().description;
   const outcome = watch().outcome;
-
+  const saveCasedataErrand = useSaveCasedataErrand();
   const save = async (data: UtredningFormModel) => {
     try {
       setIsLoading(true);
+
+      const extraSaved = await saveCasedataErrand();
+      if (!extraSaved) {
+        setIsLoading(false);
+        return;
+      }
+
       if (isFTErrand(props.errand)) {
         data.outcome = 'APPROVAL';
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED');

@@ -17,7 +17,7 @@ import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
 
-export function useSaveCasedataErrand(registeringNewErrand: boolean) {
+export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
   const { errand, administrators, municipalityId, setErrand, user } = useAppContext();
   const toastMessage = useSnackbar();
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
