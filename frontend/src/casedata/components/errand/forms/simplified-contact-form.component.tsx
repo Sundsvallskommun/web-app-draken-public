@@ -268,13 +268,15 @@ export const SimplifiedContactForm: React.FC<{
   }, [firstName, lastName, organizationName]);
 
   const onSubmit = () => {
-    if (getValues().newRole === Role.APPLICANT && getValues().relation === getValues().newRole) {
+    const { newRole, relation } = getValues();
+
+    if (newRole === Role.APPLICANT && relation === newRole) {
+      setValue('relation', '');
+    } else if (newRole === Role.CONTACT_PERSON && relation === newRole) {
       setValue('relation', '');
     }
 
-    if (getValues().newRole === Role.CONTACT_PERSON && getValues().relation === getValues().newRole) {
-      setValue('relation', '');
-    }
+    setValue('roles', [newRole, relation as Role], { shouldDirty: true });
 
     setIsLoading(true);
 

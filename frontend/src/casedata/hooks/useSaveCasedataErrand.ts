@@ -135,7 +135,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
     try {
       if (dataToSave.stakeholders) {
         for (const stakeholder of dataToSave.stakeholders) {
-          if (stakeholder.id && !stakeholder.removed) {
+          if (stakeholder.id && !stakeholder.removed && stakeholder.newRole !== 'ADMINISTRATOR') {
             await editStakeholder(municipalityId, dataToSave.id.toString(), stakeholder);
           }
         }
