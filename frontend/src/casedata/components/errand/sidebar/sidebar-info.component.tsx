@@ -221,6 +221,8 @@ export const SidebarInfo: React.FC<{}> = () => {
     }
   };
 
+  console.log('rendering sidebar info', getValues('status.statusType'));
+
   return (
     <>
       <div className="relative h-full flex flex-col justify-start">
@@ -282,6 +284,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 placeholder="Välj status"
                 aria-label="Välj status"
                 {...register('status.statusType')}
+                value={getValues().status.statusType}
               >
                 {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
                 {selectableStatuses.map((c: string, index) => (
