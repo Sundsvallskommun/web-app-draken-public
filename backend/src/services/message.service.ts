@@ -245,7 +245,18 @@ export const saveMessageOnErrand: (
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
   const emailHeaders: EmailHeader[] = Object.entries(headers).map(h => ({ header: h[0] as Header, values: h[1] }));
-  const attachments = (messagingInfo.content.attachments || []) as ((WebMessageAttachment & EmailAttachment) | any)[];
+
+  const attachments: ((WebMessageAttachment & EmailAttachment) | any)[] = [];
+
+  if (messagingInfo?.content?.attachments && messagingInfo?.content?.attachments?.length > 0) {
+    for (const attachment of messagingInfo.content.attachments) {
+      const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments/${attachment.name}`;
+      const attachmentResponse = await apiService.get<ArrayBuffer>({ url: attachmentUrl, responseType: 'arraybuffer' }, user);
+      const attatchmentBase64 = Buffer.from(attachmentResponse.data).toString('base64');
+      attachments.push({ ...attachment, content: attatchmentBase64 });
+    }
+  }
+
   const saveMessage: MessageRequest = {
     messageId: message.id,
     messageType: message.messageType || '',
@@ -265,7 +276,7 @@ export const saveMessageOnErrand: (
     userId: '',
     attachments: attachments.map(a => ({
       content: a.content || a.base64Data,
-      name: a.name || a.filename || a.fileName,
+      name: a.name || a.fileName,
       contentType: a.contentType || a.mimeType,
     })),
     emailHeaders: emailHeaders,
