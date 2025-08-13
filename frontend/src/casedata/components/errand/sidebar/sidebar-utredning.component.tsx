@@ -207,7 +207,7 @@ export const SidebarUtredning: React.FC = () => {
   };
 
   const onRichTextChange = (delta) => {
-    sanitized(delta.ops[0].retain > 1 ? quillRefUtredning.current.root.innerHTML : undefined);
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRefUtredning.current.root.innerHTML : undefined));
     trigger('description');
   };
 
