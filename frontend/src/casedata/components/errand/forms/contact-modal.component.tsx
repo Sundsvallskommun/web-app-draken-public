@@ -17,7 +17,7 @@ interface ContactModalProps {
   onSubmit: () => void;
   label: string;
   searchMode: string;
-  disabled: boolean;
+  disabled?: boolean;
   loading: boolean;
   form: UseFormReturn<CasedataOwnerOrContact>;
   contact: CasedataOwnerOrContact;

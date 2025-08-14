@@ -267,24 +267,3 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult> = (or
           }
         });
 };
-
-export const fetchPersonId: (ssn: string) => Promise<{
-  personId: string;
-}> = (ssn: string) => {
-  return apiService
-    .post<ApiResponse<CitizenAddressData>, { ssn: string }>('personid', { ssn })
-    .then((res) => res.data.data)
-    .then((res) => {
-      if (res.error) {
-        throw 'Person ID not found';
-      } else {
-        return {
-          personId: res.personId,
-        };
-      }
-    })
-    .catch((e) => {
-      console.error('Error when fetching personId');
-      return { personId: null, error: 'personId not found' };
-    });
-};

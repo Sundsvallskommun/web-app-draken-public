@@ -2,8 +2,6 @@ import { ContactModal } from '@casedata/components/errand/forms/contact-modal.co
 import { Channels } from '@casedata/interfaces/channels';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { getErrand } from '@casedata/services/casedata-errand-service';
-import { addStakeholder, editStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isValidOrgNumber } from '@common/services/adress-service';
 import {
@@ -16,20 +14,19 @@ import {
   phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FormControl, Input, useSnackbar } from '@sk-web-gui/react';
+import { Button, FormControl, Input } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
-import { v4 as uuidv4 } from 'uuid';
 
-export const emptyContact: CasedataOwnerOrContact = {
-  id: undefined,
+const emptyContact: CasedataOwnerOrContact = {
+  id: '',
   stakeholderType: 'PERSON',
   roles: [],
   newRole: Role.CONTACT_PERSON,
@@ -107,7 +104,7 @@ export const SimplifiedContactForm: React.FC<{
           schema
             .trim()
             .matches(orgNumberPattern, invalidOrgNumberMessage)
-            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => !orgNr || isValidOrgNumber(orgNr)),
         otherwise: (schema) => schema,
       }),
 
@@ -153,7 +150,9 @@ export const SimplifiedContactForm: React.FC<{
             const hasValidPhone = (phoneNumbers || []).some(
               (p) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
             );
-            const hasValidEmail = (emails || []).some((e) => e.value && yup.string().email().isValidSync(e.value));
+            const hasValidEmail = (emails || []).some(
+              (e: { value?: string }) => e.value && yup.string().email().isValidSync(e.value)
+            );
             return hasValidEmail || hasValidPhone;
           }
         ),
@@ -172,7 +171,7 @@ export const SimplifiedContactForm: React.FC<{
             const phoneNumbers = this.parent.phoneNumbers || [];
             const hasValidEmail = (emails || []).some((e) => e.value && yup.string().email().isValidSync(e.value));
             const hasValidPhone = (phoneNumbers || []).some(
-              (p) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
+              (p: { value?: string }) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
             );
             return hasValidEmail || hasValidPhone;
           }
@@ -186,7 +185,7 @@ export const SimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const { errand } = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -326,12 +325,13 @@ export const SimplifiedContactForm: React.FC<{
           manual={manual}
           searchResult={searchResult}
           notFound={notFound}
+          setNotFound={setNotFound}
+          searching={searching}
+          setSearching={setSearching}
           setUnsaved={setUnsaved}
           id={id}
-          setSearchMode={setSearchMode}
           setSearchResult={setSearchResult}
           appendPhonenumber={appendPhonenumber}
-          {...searchProps}
         />
       ) : null}
 
@@ -344,7 +344,6 @@ export const SimplifiedContactForm: React.FC<{
           loading={loading}
           onSubmit={onSubmit}
           label={label}
-          {...searchProps}
         />
       ) : null}
 

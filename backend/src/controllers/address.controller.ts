@@ -164,19 +164,6 @@ export class AddressController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Post('/personid/')
-  @OpenAPI({ summary: 'Return personId for given person number' })
-  @UseBefore(authMiddleware, validationMiddleware(SsnPayload, 'body'))
-  async personId(@Req() req: RequestWithUser, @Res() response: any, @Body() ssnPayload: SsnPayload): Promise<PersonIdResponseData> {
-    const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${ssnPayload.ssn}/guid`;
-    const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);
-
-    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/citizen/${guidRes.data}`;
-    const res = await this.apiService.get<Citizenaddress>({ url }, req.user);
-
-    return { data: { personId: res.data.personId }, message: 'success' } as PersonIdResponseData;
-  }
-
   @Post('/organization/')
   @OpenAPI({ summary: 'Return info for given organization number' })
   @ResponseSchema(CLegalEntity2WithId)

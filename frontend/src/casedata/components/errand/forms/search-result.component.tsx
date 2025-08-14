@@ -9,7 +9,7 @@ import { ContactRelationSelect } from './contact-relation-select.component';
 interface SearchResultProps {
   contact: CasedataOwnerOrContact;
   searchMode: string;
-  disabled: boolean;
+  disabled?: boolean;
   form: UseFormReturn<CasedataOwnerOrContact>;
   loading: boolean;
   onSubmit: () => void;

@@ -1,7 +1,7 @@
 import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-wrapper';
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
+import { UiPhase } from '@casedata/interfaces/errand-phase';
 import {
   emptyErrand,
   getErrandByErrandNumber,
@@ -15,14 +15,13 @@ import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { usePathname, useRouter } from 'next/navigation';
+import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
-import { Channels } from '@casedata/interfaces/channels';
 
 type IErrandFormData = Pick<
   IErrand,
@@ -35,7 +34,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
       caseType: yup
         .string()
         .required('Ärendetyp måste anges')
-        .test('notDefaultCasetype', 'Ärendetyp måste väljas', (val) => val && val !== 'Välj ärendetyp'),
+        .test('notDefaultCasetype', 'Ärendetyp måste väljas', (val) => !!val && val !== 'Välj ärendetyp'),
       channel: yup.string(),
       description: yup.string(),
       municipalityId: yup.string().required('Kommun måste anges'),
@@ -77,7 +76,6 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     });
   };
   const router = useRouter();
-  const pathName = usePathname();
   const { setUser } = useAppContext();
 
   useEffect(() => {
@@ -94,8 +92,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
         setUser(user);
       })
       .catch((e) => {});
-    const errandNumber = pathName?.split('/')[3];
-    if (errandNumber) {
+    if (props.id) {
       // Existing errand, load it and show it
       setIsLoading(true);
       getErrandByErrandNumber(municipalityId, props.id)
@@ -133,7 +130,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  function estateToText(propertyDesignation: string) {
+  function estateToText(propertyDesignation?: string) {
     if (!propertyDesignation) {
       return '(saknas)';
     }
@@ -171,7 +168,9 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                           <>
                             <div className="flex flex-col lg:flex-row justify-between lg:items-center mb-24 pt-8 w-full">
                               <h1 className="max-md:w-full text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                                {errand && errand.id ? CaseLabels.ALL[errand?.caseType] : ''}
+                                {errand && errand.id
+                                  ? CaseLabels.ALL[errand?.caseType as keyof typeof CaseLabels.ALL]
+                                  : ''}
                               </h1>
                             </div>
                             <div className="rounded-cards">
@@ -222,14 +221,14 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   <div className="pr-sm w-[40%]">
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>
-                                      {errand.facilities.map((estate, index) => (
+                                      {errand?.facilities?.map((estate, index) => (
                                         <Fragment key={`estate-${estate.id}`}>
                                           {index === 0
                                             ? estateToText(estate?.address?.propertyDesignation)
                                             : ', ' + estateToText(estate?.address?.propertyDesignation)}
                                         </Fragment>
                                       ))}
-                                      {errand.facilities.length === 0 ? '(saknas)' : null}
+                                      {errand?.facilities?.length === 0 ? '(saknas)' : null}
                                     </div>
                                   </div>
                                 ) : (

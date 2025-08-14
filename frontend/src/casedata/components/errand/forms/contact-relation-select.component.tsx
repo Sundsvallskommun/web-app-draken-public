@@ -23,7 +23,7 @@ export const ContactRelationSelect: React.FC<{
         <Select.Option key="" value="">
           Välj roll
         </Select.Option>
-        {Object.entries(isMEX ? MEXRelation : isPT ? PTRelation : [])
+        {Object.entries(isMEX() ? MEXRelation : isPT() ? PTRelation : [])
           .filter(([key]) => {
             if (key === Role.APPLICANT && contact.roles.includes(Role.CONTACT_PERSON)) {
               return false;

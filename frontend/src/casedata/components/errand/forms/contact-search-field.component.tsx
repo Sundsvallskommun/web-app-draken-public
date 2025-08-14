@@ -1,12 +1,12 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { AddressResult, fetchPersonId, searchOrganization, searchPerson } from '@common/services/adress-service';
+import { AddressResult, searchOrganization, searchPerson } from '@common/services/adress-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, isArray } from '@sk-web-gui/react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SearchFieldProps {
   searchMode: string;
-  disabled: boolean;
+  disabled?: boolean;
   form: UseFormReturn<CasedataOwnerOrContact>;
   manual: boolean;
   searchResult: boolean;
@@ -39,14 +39,14 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
   const personalNumber = form.watch(`personalNumber`);
   const organizationNumber = form.watch(`organizationNumber`);
 
-  const doSearch = (e) => {
+  const doSearch = () => {
     let search: () => Promise<AddressResult | AddressResult[]>;
     search =
-      searchMode === 'person'
+      searchMode === 'person' && personalNumber
         ? () => searchPerson(personalNumber)
-        : searchMode === 'enterprise' || searchMode === 'organization'
+        : (searchMode === 'enterprise' || searchMode === 'organization') && organizationNumber
         ? () => searchOrganization(organizationNumber)
-        : undefined;
+        : async () => [];
     setSearching(true);
     setSearchResult(false);
     setNotFound(false);
@@ -106,17 +106,12 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
                 aria-disabled={disabled}
                 readOnly={manual}
                 className="read-only:cursor-not-allowed"
-                onChange={() => setUnsaved(true)}
                 data-cy={`contact-personalNumber-${id}`}
-                onBlur={() => {
-                  personalNumber &&
-                    personalNumber !== '' &&
-                    fetchPersonId(personalNumber).then((res) => {
-                      setValue(`personId`, res.personId, { shouldDirty: true });
-                      trigger(`personalNumber`);
-                    });
-                }}
-                {...register(`personalNumber`)}
+                {...register(`personalNumber`, {
+                  onChange: () => {
+                    setUnsaved(true);
+                  },
+                })}
               />
               <Input.RightAddin icon>
                 {searchResult ? (
@@ -164,11 +159,12 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
                 aria-disabled={disabled}
                 readOnly={manual}
                 className="read-only:cursor-not-allowed"
-                onChange={() => {
-                  setUnsaved(true);
-                }}
                 data-cy={`contact-orgNumber-${id}`}
-                {...register(`organizationNumber`)}
+                {...register(`organizationNumber`, {
+                  onChange: () => {
+                    setUnsaved(true);
+                  },
+                })}
               />
               <Input.RightAddin icon>
                 {searchResult ? (

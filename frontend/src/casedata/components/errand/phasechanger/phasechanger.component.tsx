@@ -45,7 +45,6 @@ export const PhaseChanger = () => {
 
   const {
     handleSubmit,
-    watch,
     reset,
     setValue,
     getValues,
@@ -96,7 +95,7 @@ export const PhaseChanger = () => {
           ? 'Ärendet har fel status för att beslut ska kunna fattas.'
           : !validateStakeholdersForDecision(errand).valid
           ? 'Ärendet saknar ärendeägare.'
-          : null,
+          : undefined,
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ button: 'N/A', title: 'N/A?', message: '' });
@@ -111,11 +110,24 @@ export const PhaseChanger = () => {
     }
   }, [errand, uiPhase]);
 
-  const { admin } = watch();
+  const showSaveError = () => {
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: 'Något gick fel när handläggaren sparades',
+      status: 'error',
+    });
+    setIsLoading(false);
+  };
 
   const onSave = () => {
-    const admin = administrators.find((a) => a.displayName === getValues().admin);
     setIsLoading(true);
+    const admin = administrators.find((a) => a.displayName === getValues().admin);
+    if (!admin) {
+      console.log('No admin found with that name', admin);
+      showSaveError();
+      return;
+    }
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
         toastMessage(
@@ -129,14 +141,8 @@ export const PhaseChanger = () => {
         reset();
         pollDisplayPhase();
       })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när handläggaren sparades',
-          status: 'error',
-        });
-        setIsLoading(false);
+      .catch(() => {
+        showSaveError();
         return;
       });
   };
@@ -188,8 +194,9 @@ export const PhaseChanger = () => {
       variant="primary"
       color="vattjom"
       onClick={async () => {
-        const admin = administrators.find((a) => a.adAccount === user.username);
-        setValue('admin', admin.displayName);
+        console.log('user.username', user);
+        setValue('admin', user.username);
+        console.log('Saving errand before phase change', getValues().admin);
         await errandSave();
         handleSubmit(onSave, onError)();
       }}

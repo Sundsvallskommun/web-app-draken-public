@@ -9,8 +9,8 @@
     "allowJs": true,
     "skipLibCheck": true,
     //TODO: ENABLE STRICT MODE
-    "strict": false,
-    "strictNullChecks": false,
+    "strict": true,
+    "strictNullChecks": true,
     // "noFallthroughCasesInSwitch": false,
     // "noImplicitAny": false,
     // "strictFunctionTypes": false,
