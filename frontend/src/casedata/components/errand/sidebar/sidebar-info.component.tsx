@@ -221,8 +221,6 @@ export const SidebarInfo: React.FC<{}> = () => {
     }
   };
 
-  console.log('rendering sidebar info', getValues('status.statusType'));
-
   return (
     <>
       <div className="relative h-full flex flex-col justify-start">
