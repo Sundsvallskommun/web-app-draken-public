@@ -113,15 +113,15 @@ export const SidebarInfo: React.FC<{}> = () => {
     try {
       await errandSave();
       const admin = administrators.find((a) => a.adAccount === user.username);
-      await setAdministrator(municipalityId, errand, admin);
-
-      toastMessage(
-        getToastOptions({
-          message: 'Handläggare sparades',
-          status: 'success',
-        })
-      );
-
+      if (admin) {
+        await setAdministrator(municipalityId, errand, admin);
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggare sparades',
+            status: 'success',
+          })
+        );
+      }
       const updated = await getErrand(municipalityId, errand.id.toString());
       setErrand(updated.errand);
       reset();
@@ -144,7 +144,9 @@ export const SidebarInfo: React.FC<{}> = () => {
   const exitErrand = () => {
     let createNote = true;
 
-    if (getValues('publicNote').length === 0) {
+    const publicNoteValue = getValues('publicNote');
+
+    if (publicNoteValue?.length === 0 || typeof publicNoteValue === undefined) {
       createNote = false;
       setCauseIsEmpty(true);
     }
@@ -167,10 +169,10 @@ export const SidebarInfo: React.FC<{}> = () => {
       createNote = false;
     }
 
-    if (createNote) {
+    if (createNote && typeof publicNoteValue === 'string' && publicNoteValue?.length > 0) {
       const newNote: CreateErrandNoteDto = {
         title: '',
-        text: getValues('publicNote'),
+        text: publicNoteValue,
         noteType: 'PUBLIC',
         extraParameters: {},
       };
@@ -441,7 +443,6 @@ export const SidebarInfo: React.FC<{}> = () => {
         </Modal>
       </div>
       <MessageComposer
-        message={undefined}
         show={showMessageComposer}
         closeHandler={() => {
           setTimeout(() => {

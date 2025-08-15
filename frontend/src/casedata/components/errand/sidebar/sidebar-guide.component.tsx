@@ -7,7 +7,7 @@ export const SidebarGuide: React.FC<{}> = () => {
   const [showRightOfUse, setRightOfUse] = useState<boolean>(false);
   const [showLandAgreement, setLandAgreement] = useState<boolean>(false);
 
-  const selectGuide = (selectedValue) => {
+  const selectGuide = (selectedValue: string) => {
     // Close all
     setShowLandLeaseAgreement(false);
     setBuildingPermit(false);

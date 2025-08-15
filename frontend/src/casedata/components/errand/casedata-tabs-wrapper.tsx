@@ -30,6 +30,7 @@ import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-perm
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
 import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
 import CasedataForm from './tabs/overview/casedata-form.component';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -82,6 +83,7 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   useEffect(() => {
     if (errand && errand.errandNumber) {
+      const owner = getOwnerStakeholder(errand);
       fetchMessages(municipalityId, errand)
         .then(setMessages)
         .catch((e) => {
@@ -104,8 +106,8 @@ export const CasedataTabsWrapper: React.FC = () => {
         });
       handleConversation(municipalityId, errand.id);
       isPT() &&
-        errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT))?.personId &&
-        getAssets(errand.stakeholders.find((p) => p.roles.includes(Role.APPLICANT)).personId, 'PARKINGPERMIT')
+        owner?.personId &&
+        getAssets(owner.personId, 'PARKINGPERMIT')
           .then((res) => setAssets(res.data))
           .catch((e) => {
             toastMessage({

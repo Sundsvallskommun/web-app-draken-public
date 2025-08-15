@@ -819,8 +819,8 @@ export const setErrandStatus = async (
   errandId: number,
   municipalityId: string,
   status: ErrandStatus,
-  date: string,
-  comment: string
+  date?: string,
+  comment?: string
 ): Promise<Boolean> => {
   if (status === ErrandStatus.Parkerad && (date === '' || dayjs().isAfter(dayjs(date)))) {
     return Promise.reject('Invalid date');

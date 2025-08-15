@@ -4,12 +4,7 @@ import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import {
-  getProposedDecisonWithHighestId,
-  getProposedOrRecommendedDecision,
-  renderUtredningPdf,
-  saveDecision,
-} from '@casedata/services/casedata-decision-service';
+import { renderUtredningPdf, saveDecision } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
@@ -18,7 +13,7 @@ import { User } from '@common/interfaces/user';
 import { sanitized } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, cx, FormControl, FormErrorMessage, Input, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -64,14 +59,10 @@ export const SidebarUtredning: React.FC = () => {
   }: { municipalityId: string; errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
   const quillRefUtredning = useRef(null);
   const [richText, setRichText] = useState<string>('');
-  const [isSigned, setIsSigned] = useState<boolean>();
   const [textIsDirty, setTextIsDirty] = useState(false);
-  const [selectedLagrum, setSelectedLagrum] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
-  const outcomeChangeConfirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -80,10 +71,7 @@ export const SidebarUtredning: React.FC = () => {
 
   const {
     register,
-    control,
-    handleSubmit,
     watch,
-    reset,
     trigger,
     formState,
     setValue,
@@ -101,109 +89,32 @@ export const SidebarUtredning: React.FC = () => {
     try {
       setIsLoading(true);
       const rendered = await renderUtredningPdf(errand, data);
-      const saved = await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
-      const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
+      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);
-      setError(undefined);
+      setError(false);
       toastMessage(
         getToastOptions({
           message: 'Utredningen sparades',
           status: 'success',
         })
       );
-    } catch (error) {
+    } catch {
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: error.message,
+        message: 'Något gick fel när utredningen sparades',
         status: 'error',
       });
     } finally {
       setIsLoading(false);
-      setError(undefined);
-    }
-  };
-
-  const getPdfPreview = async () => {
-    const createAndClickLink = (d: { pdfBase64: string; error?: string }) => {
-      if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
-        const uri = `data:application/pdf;base64,${d.pdfBase64}`;
-        const link = document.createElement('a');
-        link.href = uri;
-        link.setAttribute('download', `Utredning-${errand.errandNumber}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        setIsPreviewLoading(false);
-      } else {
-        setIsPreviewLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel förhandsgranskningen skapades',
-          status: 'error',
-        });
-        console.error('Error when fetching preview');
-      }
-    };
-    try {
-      setIsPreviewLoading(true);
-      let data: UtredningFormModel;
-      if (isSigned) {
-        const decision = getProposedOrRecommendedDecision(errand.decisions);
-        data = {
-          id: decision.id.toString(),
-          description: decision.description,
-          law: decision.law[0],
-          outcome: DecisionOutcomeKey.Bifall,
-          validFrom: decision.validFrom,
-          validTo: decision.validTo,
-          extraParameters: decision.extraParameters,
-        };
-      } else {
-        data = getValues();
-      }
-      let pdfData: {
-        pdfBase64: string;
-        error?: string;
-      };
-      if (!isSigned) {
-        const rendered = await renderUtredningPdf(errand, data);
-        const saved = await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
-      }
-      const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-      const decision = getProposedDecisonWithHighestId(errand.decisions);
-      if (!decision) {
-        setIsPreviewLoading(false);
-        throw new Error('Inget beslut hittades');
-      }
-      const pdfBase64 = decision?.attachments?.[0]?.file;
-      if (!pdfBase64) {
-        throw new Error('Ingen PDF hittades');
-      }
-      pdfData = {
-        pdfBase64,
-        error: !pdfBase64 ? 'Error when fetching existing pdf data' : undefined,
-      };
-      createAndClickLink(pdfData);
-    } catch (error) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: error.message,
-        status: 'error',
-      });
-    } finally {
-      setIsPreviewLoading(false);
+      setError(false);
     }
   };
 
   const onSubmit = () => {
     const data = getValues();
     save(data);
-  };
-
-  const onError = (e) => {
-    console.error('Something went wrong when saving utredning', e);
   };
 
   const onRichTextChange = (delta) => {
@@ -246,7 +157,7 @@ export const SidebarUtredning: React.FC = () => {
               key={richText}
               ref={quillRefUtredning}
               defaultValue={richText}
-              readOnly={isSigned || !isErrandAdmin(errand, user)}
+              readOnly={!isErrandAdmin(errand, user)}
               onTextChange={(delta, oldDelta, source) => {
                 if (source === 'user') {
                   setTextIsDirty(true);

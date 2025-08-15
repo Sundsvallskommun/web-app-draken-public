@@ -1,6 +1,5 @@
 import {
   AddressResult,
-  fetchPersonId,
   searchADUser,
   searchADUserByPersonNumber,
   searchOrganization,
@@ -182,17 +181,12 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
                   aria-disabled={disabled}
                   readOnly={manual}
                   className="read-only:cursor-not-allowed"
-                  onChange={() => setUnsaved(true)}
                   data-cy={`contact-personNumber-${id}`}
-                  onBlur={() => {
-                    personNumber &&
-                      personNumber !== '' &&
-                      fetchPersonId(personNumber).then((res) => {
-                        form.setValue(`personId`, res.personId, { shouldDirty: true });
-                        form.trigger(`personNumber`);
-                      });
-                  }}
-                  {...form.register(`personNumber`)}
+                  {...form.register(`personNumber`, {
+                    onChange: () => {
+                      setUnsaved(true);
+                    },
+                  })}
                 />
                 <Input.RightAddin icon>
                   {searchResult ? (
