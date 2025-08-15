@@ -35,7 +35,7 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
   setNotFound,
   appendPhonenumber,
 }) => {
-  const { register, formState, setValue, reset, trigger, clearErrors } = form;
+  const { register, formState, setValue, reset, clearErrors } = form;
   const personalNumber = form.watch(`personalNumber`);
   const organizationNumber = form.watch(`organizationNumber`);
 

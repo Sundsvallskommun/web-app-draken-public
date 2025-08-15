@@ -155,7 +155,7 @@ let formSchema = yup
   .required();
 
 export const MessageComposer: React.FC<{
-  message: MessageNode;
+  message?: MessageNode;
   show: boolean;
   closeHandler: () => void;
   setUnsaved: (unsaved: boolean) => void;

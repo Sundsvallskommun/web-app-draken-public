@@ -122,9 +122,8 @@ export const PhaseChanger = () => {
 
   const onSave = () => {
     setIsLoading(true);
-    const admin = administrators.find((a) => a.displayName === getValues().admin);
+    const admin = administrators.find((a) => a.adAccount === getValues().admin);
     if (!admin) {
-      console.log('No admin found with that name', admin);
       showSaveError();
       return;
     }
@@ -194,9 +193,7 @@ export const PhaseChanger = () => {
       variant="primary"
       color="vattjom"
       onClick={async () => {
-        console.log('user.username', user);
         setValue('admin', user.username);
-        console.log('Saving errand before phase change', getValues().admin);
         await errandSave();
         handleSubmit(onSave, onError)();
       }}

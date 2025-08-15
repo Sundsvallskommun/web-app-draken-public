@@ -13,17 +13,28 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
 
+  const showSaveError = () => {
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: 'Något gick fel när ärendet skulle återupptas',
+      status: 'error',
+    });
+    setIsLoading(false);
+  };
+
   const activateErrand = () => {
     setIsLoading(true);
     const previousStatus = sortBy(errand.statuses, 'created').reverse()[1].statusType;
-    return setErrandStatus(
-      errand.id,
-      municipalityId,
-      Object.values(ErrandStatus).find((status) => status === previousStatus),
-      null,
-      null
-    )
-      .then((res) => {
+    const status = Object.values(ErrandStatus).find((status) => status === previousStatus);
+
+    if (!status) {
+      showSaveError();
+      return;
+    }
+
+    return setErrandStatus(errand.id, municipalityId, status)
+      .then(() => {
         toastMessage(
           getToastOptions({
             message: 'Ärendet återupptogs',
@@ -33,14 +44,8 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när ärendet skulle återupptas',
-          status: 'error',
-        });
-        setIsLoading(false);
+      .catch(() => {
+        showSaveError();
       });
   };
 

@@ -1,6 +1,5 @@
 import {
   AddressResult,
-  fetchPersonId,
   searchADUser,
   searchADUserByPersonNumber,
   searchOrganization,

@@ -116,7 +116,7 @@ export const SidebarGenericNotes: React.FC<{
 
   const text = watch().text;
 
-  const updateNote = (inNote) => {
+  const updateNote = (inNote: ErrandNote) => {
     setValue('text', inNote.text);
     setValue('id', inNote.id);
     setEditNote(true);
@@ -156,7 +156,7 @@ export const SidebarGenericNotes: React.FC<{
       });
   };
 
-  const removeNote = (inNote) => {
+  const removeNote = (inNote: ErrandNote) => {
     return deleteErrandNote(municipalityId, errand.id?.toString(), inNote.id?.toString())
       .then(() => {
         toastMessage(
