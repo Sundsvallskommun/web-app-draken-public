@@ -133,21 +133,16 @@ export const getOrCreateSupportConversationId = async (
   supportErrand: SupportErrand,
   contactMeans: string,
   selectedRelationId: string,
-  relationErrands: {
-    relation: Relation;
-    errandNumber: string;
-  }[],
+  relationErrands: Relation[],
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedRelation = relationErrands.find(
-    (relation) => relation.relation.target.resourceId === selectedRelationId
-  );
+  const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.relation?.id
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.id
   );
 
   let conversationId: string | undefined = undefined;
@@ -165,12 +160,16 @@ export const getOrCreateSupportConversationId = async (
   }
 
   if (!conversationId) {
+    const topic = `Ärende: #${supportErrand.errandNumber}${
+      selectedRelation ? ` - #${selectedRelation.target.type}` : ''
+    }`;
+
     const newConversation = await createSupportConversation(
       municipalityId,
       supportErrand.id,
-      `Ärende: #${supportErrand.errandNumber} - #${selectedRelation.errandNumber}`,
+      topic,
       conversationType,
-      selectedRelation?.relation?.id
+      selectedRelation?.id
     );
     conversationId = newConversation.data.id;
   }

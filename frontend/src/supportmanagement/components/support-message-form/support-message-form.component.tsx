@@ -7,7 +7,6 @@ import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isKA, isKC } from '@common/services/application-service';
-import { getErrandNumberfromId } from '@common/services/casestatus-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import { Relation, getRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -174,7 +173,7 @@ export const SupportMessageForm: React.FC<{
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
-  const [relationErrands, setRelationErrands] = useState<{ relation: Relation; errandNumber: string }[]>([]);
+  const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -455,26 +454,15 @@ export const SupportMessageForm: React.FC<{
   }, [props.message, props.message?.conversationId]);
 
   useEffect(() => {
-    getRelations(municipalityId, supportErrand.id, 'ASC').then(async (relations) => {
-      const numbers = await Promise.all(
-        relations?.map((relation) =>
-          getErrandNumberfromId(municipalityId, relation.target.namespace, relation.target.resourceId)
-        ) ?? []
-      );
-
-      const combined = relations.map((relation, idx) => ({
-        relation,
-        errandNumber: numbers[idx],
-      }));
-
-      setRelationErrands(combined);
+    getRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
+      setRelationErrands(res);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
 
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
-      setSelectedRelationId(relationErrands[0].relation.target.resourceId);
+      setSelectedRelationId(relationErrands[0].target.resourceId);
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
@@ -568,8 +556,8 @@ export const SupportMessageForm: React.FC<{
               }}
             >
               {relationErrands.map((item) => (
-                <Select.Option key={item.relation.target.resourceId} value={item.relation.target.resourceId}>
-                  {item.errandNumber}
+                <Select.Option key={item.target.resourceId} value={item.target.resourceId}>
+                  {item.target.type}
                 </Select.Option>
               ))}
             </Select>

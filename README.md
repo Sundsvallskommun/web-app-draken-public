@@ -6,20 +6,20 @@ Dessa APIer används i projektet, applikationsanvändaren i WSO2 måste prenumer
 
 För MEX (Mark och exploatering):
 
-| API               | Version |
-| ----------------- | ------: |
-| ActiveDirectory   |     2.0 |
-| Citizen           |     3.0 |
-| CaseData          |    11.5 |
-| Messaging         |     7.3 |
-| Templating        |     2.0 |
-| Contract          |     2.1 |
-| Employee          |     2.0 |
-| Party             |     2.0 |
-| SimulatorServer   |     2.0 |
-| LegalEntity       |     2.0 |
-| Relations         |     1.1 |
-| SupportManagement |    10.7 |
+| API             | Version |
+| --------------- | ------: |
+| ActiveDirectory |     2.0 |
+| Citizen         |     3.0 |
+| CaseData        |    11.5 |
+| Messaging       |     7.3 |
+| Templating      |     2.0 |
+| Contract        |     2.1 |
+| Employee        |     2.0 |
+| Party           |     2.0 |
+| SimulatorServer |     2.0 |
+| LegalEntity     |     2.0 |
+| Relations       |     1.1 |
+| CaseStatus      |     4.1 |
 
 För KS (Kontakt Sundsvall):
 
@@ -35,24 +35,24 @@ För KS (Kontakt Sundsvall):
 | SimulatorServer   |     2.0 |
 | LegalEntity       |     2.0 |
 | Relations         |     1.1 |
-| CaseStatus        |     4.0 |
+| CaseStatus        |     4.1 |
 | Employee          |     2.0 |
 
 För PT (Parkeringstillstånd):
 
-| API               | Version |
-| ----------------- | ------: |
-| ActiveDirectory   |     2.0 |
-| Citizen           |     3.0 |
-| CaseData          |    11.5 |
-| Messaging         |     7.3 |
-| Templating        |     2.0 |
-| Contract          |     2.1 |
-| Employee          |     2.0 |
-| SimulatorServer   |     2.0 |
-| LegalEntity       |     2.0 |
-| Relations         |     1.1 |
-| SupportManagement |    10.7 |
+| API             | Version |
+| --------------- | ------: |
+| ActiveDirectory |     2.0 |
+| Citizen         |     3.0 |
+| CaseData        |    11.5 |
+| Messaging       |     7.3 |
+| Templating      |     2.0 |
+| Contract        |     2.1 |
+| Employee        |     2.0 |
+| SimulatorServer |     2.0 |
+| LegalEntity     |     2.0 |
+| Relations       |     1.1 |
+| CaseStatus      |     4.1 |
 
 För LOP (Lön och pension):
 

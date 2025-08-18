@@ -1,9 +1,4 @@
-import {
-  CaseStatusResponse,
-  getErrandNumberfromId,
-  getErrandStatus,
-  getStatusesUsingPartyId,
-} from '@common/services/casestatus-service';
+import { CaseStatusResponse, getErrandStatus, getStatusesUsingPartyId } from '@common/services/casestatus-service';
 import { sortBy } from '@common/services/helper-service';
 import {
   createRelation,
@@ -18,7 +13,7 @@ import { Disclosure, SearchField, SortMode, Spinner, Table } from '@sk-web-gui/r
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
-import { ErrandsTable } from './relations-table.component';
+import { SupportRelationsTable } from './support-relations-table.component';
 
 export const SupportErrandBasicsRelationsDisclosure: React.FC<{
   supportErrand: SupportErrand;
@@ -37,6 +32,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
   useEffect(() => {
     const fetchErrands = async () => {
       try {
+        setIsLoading(true);
         const relatedPerson = getSupportOwnerStakeholder(supportErrand)?.externalId;
 
         const relatedErrands = await getRelations(municipalityId, supportErrand.id, sortOrder);
@@ -54,7 +50,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
 
     fetchErrands();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supportErrand]);
 
   const handleLinkClick = (id: string) => {
     if (relationErrands.some((relation) => relation.target.resourceId === id)) {
@@ -65,7 +61,8 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
         })
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
-      createRelation(municipalityId, supportErrand.id, id)
+      const errandNumber = [...linkedErrands, ...searchedErrands].find((errand) => errand.caseId === id)?.errandNumber;
+      createRelation(municipalityId, supportErrand.id, supportErrand.errandNumber, id, errandNumber)
         .then(async () => {
           const relatedErrands = await getRelations(municipalityId, supportErrand.id, 'ASC');
           setRelationErrands(relatedErrands);
@@ -100,12 +97,9 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
       const tmpOtherErrands = relationErrands.filter(
         (relation) => !linkedErrands.some((errand) => errand.caseId === relation.target.resourceId)
       );
-      const list = await Promise.all(
-        tmpOtherErrands.map((relation) =>
-          getErrandNumberfromId(municipalityId, relation.target.namespace, relation.target.resourceId)
-        )
+      const promises = await Promise.all(
+        tmpOtherErrands.map((relation) => getErrandStatus(municipalityId, relation.target.type))
       );
-      const promises = await Promise.all(list.map((_relation, key) => getErrandStatus(municipalityId, list[key])));
 
       setResolvedOtherErrands(promises.flat());
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,7 +154,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
             />
 
             {searchedErrands.length > 0 && (
-              <ErrandsTable
+              <SupportRelationsTable
                 errands={searchedErrands}
                 headers={headers}
                 linkedStates={relationErrands}
@@ -169,7 +163,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
                 dataCy="searchresults-table"
               />
             )}
-            <ErrandsTable
+            <SupportRelationsTable
               errands={ongoingErrands}
               headers={headers}
               linkedStates={relationErrands}
@@ -177,7 +171,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
               title="Pågående"
               dataCy="ongoingerrands-table"
             />
-            <ErrandsTable
+            <SupportRelationsTable
               errands={closedErrands}
               headers={headers}
               linkedStates={relationErrands}
@@ -185,7 +179,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
               title="Avslutade"
               dataCy="closederrands-table"
             />
-            <ErrandsTable
+            <SupportRelationsTable
               errands={resolvedOtherErrands}
               headers={headers}
               linkedStates={relationErrands}

@@ -57,17 +57,3 @@ export const getErrandStatus = (municipalityId: string, query: string) => {
       throw e;
     });
 };
-
-export const getErrandNumberfromId = (municipalityId: string, namespace: string, errandId: string) => {
-  const url = `${municipalityId}/errandbyid/${namespace}/${errandId}`;
-
-  return apiService
-    .get<string>(url)
-    .then((res) => {
-      return res.data;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching errand number: ' + e);
-      throw e;
-    });
-};

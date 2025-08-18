@@ -6,8 +6,9 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { findStatusLabelForStatusKey } from '@casedata/services/casedata-errand-service';
 import { Relation } from '@common/services/relations-service';
 import { CaseLabels } from '@casedata/interfaces/case-label';
+import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 
-interface ErrandsTableProps {
+interface SupportRelationsTableProps {
   errands: CaseStatusResponse[];
   headers: React.ReactNode;
   linkedStates: Relation[];
@@ -31,7 +32,7 @@ const LinkButtonComponent: React.FC<{ isLinked: boolean; onClick: () => void }> 
   );
 };
 
-export const ErrandsTable: React.FC<ErrandsTableProps> = ({
+export const SupportRelationsTable: React.FC<SupportRelationsTableProps> = ({
   errands,
   headers,
   linkedStates,
@@ -54,7 +55,7 @@ export const ErrandsTable: React.FC<ErrandsTableProps> = ({
               {errands.map((errand, index) => (
                 <Table.Row key={`row-${index}`}>
                   <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
-                    <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status)} />
+                    <CaseStatusLabelComponent status={errand.status} />
                   </Table.HeaderColumn>
                   <Table.Column className="w-[17rem]">
                     {CaseLabels.ALL[errand.caseType] ?? errand.caseType}

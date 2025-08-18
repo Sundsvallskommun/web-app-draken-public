@@ -38,20 +38,26 @@ interface RelationsResponse {
   meta: any;
 }
 
-export const createRelation = (municipalityId: string, sourceId: string, targetId: string) => {
+export const createRelation = (
+  municipalityId: string,
+  sourceId: string,
+  sourceErrandNumber: string,
+  targetId: string,
+  targetErrandNumber: string
+) => {
   const url = `${municipalityId}/relations`;
 
   const body: Partial<Relation> = {
     type: 'LINK',
     source: {
       resourceId: sourceId,
-      type: 'case',
+      type: sourceErrandNumber,
       service: 'supportmanagement',
       namespace: 'CONTACTSUNDSVALL',
     },
     target: {
       resourceId: targetId,
-      type: 'case',
+      type: targetErrandNumber,
       service: 'case-data',
       namespace: 'SBK_MEX',
     },
@@ -81,7 +87,7 @@ export const deleteRelation = (municipalityId: string, id: string) => {
 };
 
 export const getRelations = (municipalityId: string, sourceId: string, sort: string) => {
-  const url = `${municipalityId}/relations/${sourceId}/${sort}`;
+  const url = `${municipalityId}/relations/${sort}/${sourceId}`;
 
   return apiService
     .get<ApiResponse<RelationsResponse>>(url)
@@ -95,7 +101,7 @@ export const getRelations = (municipalityId: string, sourceId: string, sort: str
 };
 
 export const getTargetRelations = (municipalityId: string, targetId: string, sort: string) => {
-  const url = `${municipalityId}/targetrelations/${targetId}/${sort}`;
+  const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
 
   return apiService
     .get<ApiResponse<any>>(url)
