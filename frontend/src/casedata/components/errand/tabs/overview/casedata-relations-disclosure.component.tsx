@@ -69,13 +69,7 @@ export const CaseDataRelationsDisclosure: React.FC<{
           <Spinner />
         </div>
       ) : (
-        <RelationsTable
-          errands={relationErrands}
-          headers={headers}
-          linkedStates={relationErrands}
-          title="Ärenden"
-          dataCy="ongoingerrands-table"
-        />
+        <RelationsTable errands={relationErrands} headers={headers} title="Ärenden" dataCy="ongoingerrands-table" />
       )}
     </Disclosure>
   );
