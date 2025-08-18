@@ -333,7 +333,7 @@ export const SidebarInfo: React.FC<{
         return solutionComponent('Löst', 'avslutade ärendet genom att koppla.', 'check');
       }
       case Resolution.REGISTERED_EXTERNAL_SYSTEM: {
-        return solutionComponent('Överlämnat', 'eskalerade ärendet.', 'split');
+        return solutionComponent('Överlämnat', 'överlämnade ärendet.', 'split');
       }
       case Resolution.SELF_SERVICE: {
         return solutionComponent('Löst', 'hänvisade till självservice.', 'check');
