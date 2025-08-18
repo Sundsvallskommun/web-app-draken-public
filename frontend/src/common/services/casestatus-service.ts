@@ -58,8 +58,8 @@ export const getErrandStatus = (municipalityId: string, query: string) => {
     });
 };
 
-export const getErrandNumberfromId = (municipalityId: string, errandId: string) => {
-  const url = `${municipalityId}/errandbyid/${errandId}`;
+export const getErrandNumberfromId = (municipalityId: string, namespace: string, errandId: string) => {
+  const url = `${municipalityId}/errandbyid/${namespace}/${errandId}`;
 
   return apiService
     .get<string>(url)

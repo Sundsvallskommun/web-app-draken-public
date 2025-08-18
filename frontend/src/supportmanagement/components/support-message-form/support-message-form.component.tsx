@@ -457,7 +457,9 @@ export const SupportMessageForm: React.FC<{
   useEffect(() => {
     getRelations(municipalityId, supportErrand.id, 'ASC').then(async (relations) => {
       const numbers = await Promise.all(
-        relations?.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId)) ?? []
+        relations?.map((relation) =>
+          getErrandNumberfromId(municipalityId, relation.target.namespace, relation.target.resourceId)
+        ) ?? []
       );
 
       const combined = relations.map((relation, idx) => ({

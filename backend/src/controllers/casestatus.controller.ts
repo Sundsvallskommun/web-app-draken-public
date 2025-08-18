@@ -53,31 +53,26 @@ export class CaseStatusController {
     return { data: [...resErrandNumber.data, ...resPropertyDesignation.data], message: 'success' };
   }
 
-  @Get('/:municipalityId/errandbyid/:id')
+  @Get('/:municipalityId/errandbyid/:namespace/:id')
   @OpenAPI({ summary: 'Return an errandnumber by id' })
   @UseBefore(authMiddleware)
   async errand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
+    @Param('namespace') namespace: string,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<{ data: Errand; message: string }> {
-    //TODO: This is a temporary solution to get errand number from id.
-    // It should be replaced with a proper implementation that fetches the errand by id.
-    const namespaces = ['SBK_MEX', 'SBK_PARKING_PERMIT'];
     const baseURL = apiURL(apiServiceName('case-data'));
-
-    for (const ns of namespaces) {
-      const url = `${municipalityId}/${ns}/errands/${id}`;
-      try {
-        const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
-        const errandData = errandResponse.data;
-        if (errandData) {
-          return response.send(errandData.errandNumber);
-        }
-      } catch (e) {}
+    const url = `${municipalityId}/${namespace}/errands/${id}`;
+    try {
+      const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
+      const errandData = errandResponse.data;
+      if (errandData) {
+        return response.send(errandData.errandNumber);
+      }
+    } catch (e) {
+      return response.status(404).send({ message: 'Errand not found' });
     }
-
-    return response.status(404).send({ message: 'Errand not found' });
   }
 }

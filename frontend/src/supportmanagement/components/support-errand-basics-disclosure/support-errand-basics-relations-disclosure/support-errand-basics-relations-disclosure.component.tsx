@@ -101,7 +101,9 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
         (relation) => !linkedErrands.some((errand) => errand.caseId === relation.target.resourceId)
       );
       const list = await Promise.all(
-        tmpOtherErrands.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId))
+        tmpOtherErrands.map((relation) =>
+          getErrandNumberfromId(municipalityId, relation.target.namespace, relation.target.resourceId)
+        )
       );
       const promises = await Promise.all(list.map((_relation, key) => getErrandStatus(municipalityId, list[key])));
 
