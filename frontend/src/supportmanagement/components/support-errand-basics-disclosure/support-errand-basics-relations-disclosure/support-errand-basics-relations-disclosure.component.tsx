@@ -61,8 +61,8 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
         })
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
-      const errandNumber = [...linkedErrands, ...searchedErrands].find((errand) => errand.caseId === id)?.errandNumber;
-      createRelation(municipalityId, supportErrand.id, supportErrand.errandNumber, id, errandNumber)
+      const targetErrand = [...linkedErrands, ...searchedErrands].find((errand) => errand.caseId === id);
+      createRelation(municipalityId, supportErrand.id, supportErrand.errandNumber, targetErrand)
         .then(async () => {
           const relatedErrands = await getRelations(municipalityId, supportErrand.id, 'ASC');
           setRelationErrands(relatedErrands);

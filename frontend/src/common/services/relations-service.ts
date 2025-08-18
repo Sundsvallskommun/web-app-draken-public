@@ -1,5 +1,6 @@
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
+import { CaseStatusResponse } from './casestatus-service';
 
 export const relationsLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -42,8 +43,7 @@ export const createRelation = (
   municipalityId: string,
   sourceId: string,
   sourceErrandNumber: string,
-  targetId: string,
-  targetErrandNumber: string
+  targetErrand: CaseStatusResponse
 ) => {
   const url = `${municipalityId}/relations`;
 
@@ -56,10 +56,10 @@ export const createRelation = (
       namespace: 'CONTACTSUNDSVALL',
     },
     target: {
-      resourceId: targetId,
-      type: targetErrandNumber,
-      service: 'case-data',
-      namespace: 'SBK_MEX',
+      resourceId: targetErrand.caseId,
+      type: targetErrand.errandNumber,
+      service: targetErrand.system,
+      namespace: targetErrand.namespace,
     },
   };
 
