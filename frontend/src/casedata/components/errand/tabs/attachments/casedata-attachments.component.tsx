@@ -199,7 +199,11 @@ export const CasedataAttachments: React.FC = () => {
           setModalFetching(false);
         })
         .then((res) => openModal());
-    } else if (attachment.extension === 'msg') {
+    } else if (
+      attachment.extension?.toLowerCase() === 'msg' ||
+      attachment.extension?.toLowerCase() === 'heic' ||
+      attachment.extension?.toLowerCase() === 'heif'
+    ) {
       downloadDocument(attachment);
     } else {
       toastMessage({
