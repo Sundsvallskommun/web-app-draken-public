@@ -62,10 +62,22 @@ export class CaseStatusController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<{ data: Errand; message: string }> {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${id}`;
+    //TODO: This is a temporary solution to get errand number from id.
+    // It should be replaced with a proper implementation that fetches the errand by id.
+    const namespaces = ['SBK_MEX', 'SBK_PARKING_PERMIT'];
     const baseURL = apiURL(apiServiceName('case-data'));
-    const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
-    const errandData = errandResponse.data;
-    return response.send(errandData.errandNumber);
+
+    for (const ns of namespaces) {
+      const url = `${municipalityId}/${ns}/errands/${id}`;
+      try {
+        const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
+        const errandData = errandResponse.data;
+        if (errandData) {
+          return response.send(errandData.errandNumber);
+        }
+      } catch (e) {}
+    }
+
+    return response.status(404).send({ message: 'Errand not found' });
   }
 }

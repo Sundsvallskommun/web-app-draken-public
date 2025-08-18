@@ -9,7 +9,7 @@ import { User } from '@common/interfaces/user';
 import { isKA, isKC } from '@common/services/application-service';
 import { getErrandNumberfromId } from '@common/services/casestatus-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { Relations, getRelations } from '@common/services/relations-service';
+import { Relation, getRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -34,9 +34,7 @@ import {
   getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
-  createSupportConversation,
   getOrCreateSupportConversationId,
-  getSupportConversations,
   sendSupportConversationMessage,
 } from '@supportmanagement/services/support-conversation-service';
 import {
@@ -175,9 +173,8 @@ export const SupportMessageForm: React.FC<{
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
-  const [relationErrands, setRelationErrands] = useState<Relations[]>([]);
-  const [relationErrandsNumber, setRelationErrandsNumber] = useState<string[]>([]);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
+  const [relationErrands, setRelationErrands] = useState<{ relation: Relation; errandNumber: string }[]>([]);
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -426,11 +423,6 @@ export const SupportMessageForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.supportErrandId]);
 
-  const { fields, remove, append } = useFieldArray({
-    control,
-    name: 'emails',
-  });
-
   useEffect(() => {
     setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || !!props.message?.conversationId);
 
@@ -464,18 +456,23 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     getRelations(municipalityId, supportErrand.id, 'ASC').then(async (relations) => {
-      setRelationErrands(relations);
-      const errandNumbers = await Promise.all(
+      const numbers = await Promise.all(
         relations?.map((relation) => getErrandNumberfromId(municipalityId, relation.target.resourceId)) ?? []
       );
-      setRelationErrandsNumber(errandNumbers.toSorted());
+
+      const combined = relations.map((relation, idx) => ({
+        relation,
+        errandNumber: numbers[idx],
+      }));
+
+      setRelationErrands(combined);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
 
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
-      setSelectedRelationId(relationErrands[0].target.resourceId);
+      setSelectedRelationId(relationErrands[0].relation.target.resourceId);
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
@@ -495,8 +492,7 @@ export const SupportMessageForm: React.FC<{
                 name="contactMeans"
                 id="useEmail"
                 value="email"
-                checked={contactMeans === 'email'}
-                onChange={() => setValue('contactMeans', 'email')}
+                {...register('contactMeans')}
               >
                 E-post
               </RadioButton>
@@ -509,8 +505,7 @@ export const SupportMessageForm: React.FC<{
                 name="contactMeans"
                 id="useSms"
                 value="sms"
-                checked={contactMeans === 'sms'}
-                onChange={() => setValue('contactMeans', 'sms')}
+                {...register('contactMeans')}
               >
                 SMS
               </RadioButton>
@@ -524,8 +519,7 @@ export const SupportMessageForm: React.FC<{
                 name="contactMeans"
                 id="useWebmessage"
                 value="webmessage"
-                checked={contactMeans === 'webmessage'}
-                onChange={() => setValue('contactMeans', 'webmessage')}
+                {...register('contactMeans')}
               >
                 E-tjänst
               </RadioButton>
@@ -538,8 +532,7 @@ export const SupportMessageForm: React.FC<{
                 name="contactMeans"
                 id="useDraken"
                 value="draken"
-                checked={contactMeans === 'draken'}
-                onChange={() => setValue('contactMeans', 'draken')}
+                {...register('contactMeans')}
               >
                 Draken
               </RadioButton>
@@ -552,8 +545,7 @@ export const SupportMessageForm: React.FC<{
                 name="contactMeans"
                 id="useMinasidor"
                 value="minasidor"
-                checked={contactMeans === 'minasidor'}
-                onChange={() => setValue('contactMeans', 'minasidor')}
+                {...register('contactMeans')}
               >
                 Mina sidor
               </RadioButton>
@@ -566,10 +558,16 @@ export const SupportMessageForm: React.FC<{
         <div className="w-full pt-16">
           <strong className="text-md block mb-sm">Välj länkat ärende</strong>
           {relationErrands.length > 0 ? (
-            <Select value={selectedRelationId} onChange={(e) => setSelectedRelationId(e.currentTarget.value)}>
-              {relationErrands.map((relation, key) => (
-                <Select.Option key={relation.target.resourceId} value={relation.target.resourceId}>
-                  {relationErrandsNumber[key]}
+            <Select
+              value={selectedRelationId}
+              onChange={(e) => {
+                const selectedId = e.currentTarget.value;
+                setSelectedRelationId(selectedId);
+              }}
+            >
+              {relationErrands.map((item) => (
+                <Select.Option key={item.relation.target.resourceId} value={item.relation.target.resourceId}>
+                  {item.errandNumber}
                 </Select.Option>
               ))}
             </Select>

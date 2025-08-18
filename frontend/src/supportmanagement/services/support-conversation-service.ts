@@ -1,5 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { Relations, relationsLabels } from '@common/services/relations-service';
+import { Relation } from '@common/services/relations-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
 import { SupportErrand } from './support-errand-service';
 
@@ -133,16 +133,21 @@ export const getOrCreateSupportConversationId = async (
   supportErrand: SupportErrand,
   contactMeans: string,
   selectedRelationId: string,
-  relationErrands: Relations[],
+  relationErrands: {
+    relation: Relation;
+    errandNumber: string;
+  }[],
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+  const selectedRelation = relationErrands.find(
+    (relation) => relation.relation.target.resourceId === selectedRelationId
+  );
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.id
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.relation?.id
   );
 
   let conversationId: string | undefined = undefined;
@@ -163,9 +168,9 @@ export const getOrCreateSupportConversationId = async (
     const newConversation = await createSupportConversation(
       municipalityId,
       supportErrand.id,
-      `Ärende: #${supportErrand.errandNumber}`,
+      `Ärende: #${supportErrand.errandNumber} - #${selectedRelation.errandNumber}`,
       conversationType,
-      selectedRelation?.id
+      selectedRelation?.relation?.id
     );
     conversationId = newConversation.data.id;
   }

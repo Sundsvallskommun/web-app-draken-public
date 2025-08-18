@@ -9,38 +9,35 @@ import {
   createRelation,
   deleteRelation,
   getRelations,
-  Relations,
+  Relation,
   relationsLabels,
 } from '@common/services/relations-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, SearchField, SortMode, Spinner, Table } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ErrandsTable } from './relations-table.component';
 
 export const SupportErrandBasicsRelationsDisclosure: React.FC<{
   supportErrand: SupportErrand;
 }> = ({ supportErrand }) => {
-  const { watch, setValue } = useFormContext();
   const { municipalityId } = useAppContext();
 
-  const [relationErrands, setRelationErrands] = useState<Relations[]>([]);
+  const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
   const [linkedErrands, setLinkedErrands] = useState<CaseStatusResponse[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchedErrands, setSearchedErrands] = useState<CaseStatusResponse[]>([]);
 
-  const sortOrder = watch('sortOrder') || 'ASC';
+  const sortOrder = 'ASC';
 
   useEffect(() => {
     const fetchErrands = async () => {
       try {
-        const relatedPerson = supportErrand.stakeholders?.find(
-          (stakeholder) => stakeholder.role === 'PRIMARY'
-        )?.externalId;
+        const relatedPerson = getSupportOwnerStakeholder(supportErrand)?.externalId;
 
         const relatedErrands = await getRelations(municipalityId, supportErrand.id, sortOrder);
         setRelationErrands(relatedErrands);
@@ -56,7 +53,8 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
     };
 
     fetchErrands();
-  }, [municipalityId, supportErrand, sortOrder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLinkClick = (id: string) => {
     if (relationErrands.some((relation) => relation.target.resourceId === id)) {
@@ -68,7 +66,7 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
       createRelation(municipalityId, supportErrand.id, id)
-        .then(async (res) => {
+        .then(async () => {
           const relatedErrands = await getRelations(municipalityId, supportErrand.id, 'ASC');
           setRelationErrands(relatedErrands);
         })
@@ -76,16 +74,12 @@ export const SupportErrandBasicsRelationsDisclosure: React.FC<{
     }
   };
 
-  const handleSort = () => {
-    setValue('sortOrder', sortOrder === 'DESC' ? 'ASC' : 'DESC');
-  };
-
   const headers = relationsLabels.map((header, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
       {header.screenReaderOnly ? (
         <span className="sr-only">{header.label}</span>
       ) : header.sortable ? (
-        <Table.SortButton isActive={true} sortOrder={sortOrder as SortMode} onClick={handleSort}>
+        <Table.SortButton isActive={true} sortOrder={sortOrder as SortMode} onClick={() => {}}>
           {header.label}
         </Table.SortButton>
       ) : (

@@ -4,13 +4,13 @@ import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-cased
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { findStatusLabelForStatusKey } from '@casedata/services/casedata-errand-service';
-import { Relations } from '@common/services/relations-service';
+import { Relation } from '@common/services/relations-service';
 import { CaseLabels } from '@casedata/interfaces/case-label';
 
 interface ErrandsTableProps {
   errands: CaseStatusResponse[];
   headers: React.ReactNode;
-  linkedStates: Relations[];
+  linkedStates: Relation[];
   handleLinkClick: (index: string) => void;
   title: string;
   dataCy: string;

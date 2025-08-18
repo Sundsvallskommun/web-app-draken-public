@@ -392,7 +392,7 @@ export const MessageComposer: React.FC<{
       setValue(
         'emails',
         props.message.direction === 'OUTBOUND'
-          ? props.message?.recipients.map((email) => ({
+          ? props.message?.recipients?.map((email) => ({
               value: email,
             }))
           : [{ value: props.message.email }]

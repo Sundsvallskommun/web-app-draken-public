@@ -1,4 +1,4 @@
-import { Relations } from '@common/services/relations-service';
+import { Relation } from '@common/services/relations-service';
 import { Table } from '@sk-web-gui/react';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import React from 'react';
@@ -6,7 +6,7 @@ import React from 'react';
 interface ErrandsTableProps {
   errands: any[];
   headers: React.ReactNode;
-  linkedStates: Relations[];
+  linkedStates: Relation[];
   title: string;
   dataCy: string;
 }

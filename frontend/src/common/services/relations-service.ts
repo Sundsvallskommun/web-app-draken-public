@@ -16,7 +16,7 @@ export const relationsLabelsCaseData = [
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
-export interface Relations {
+export interface Relation {
   id?: string;
   type: string;
   source: {
@@ -34,14 +34,14 @@ export interface Relations {
 }
 
 interface RelationsResponse {
-  relations: Relations[];
+  relations: Relation[];
   meta: any;
 }
 
 export const createRelation = (municipalityId: string, sourceId: string, targetId: string) => {
   const url = `${municipalityId}/relations`;
 
-  const body: Partial<Relations> = {
+  const body: Partial<Relation> = {
     type: 'LINK',
     source: {
       resourceId: sourceId,
@@ -58,7 +58,7 @@ export const createRelation = (municipalityId: string, sourceId: string, targetI
   };
 
   return apiService
-    .post<ApiResponse<Relations>, Partial<Relations>>(url, body)
+    .post<ApiResponse<Relation>, Partial<Relation>>(url, body)
     .then((res) => {
       return res.data;
     })

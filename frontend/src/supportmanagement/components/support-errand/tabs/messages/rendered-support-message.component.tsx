@@ -117,7 +117,7 @@ export const RenderedSupportMessage: React.FC<{
                     }}
                   ></p>
                   <p className="mr-md break-all font-bold">
-                    Till : <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
+                    Till: <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
                   </p>
                 </div>
               </div>
