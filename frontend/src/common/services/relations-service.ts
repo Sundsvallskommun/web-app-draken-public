@@ -34,6 +34,10 @@ export interface Relation {
   };
 }
 
+const underscoreToHyphen = (str: string) => {
+  return str.replace(/_/g, '-').toLowerCase();
+};
+
 interface RelationsResponse {
   relations: Relation[];
   meta: any;
@@ -58,7 +62,7 @@ export const createRelation = (
     target: {
       resourceId: targetErrand.caseId,
       type: targetErrand.errandNumber,
-      service: targetErrand.system,
+      service: underscoreToHyphen(targetErrand.system),
       namespace: targetErrand.namespace,
     },
   };
