@@ -98,7 +98,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
 
       switch (resolution) {
         case Resolution.REGISTERED_EXTERNAL_SYSTEM:
-          return 'Eskalerat';
+          return 'Överlämnat';
         case Resolution.CLOSED:
           return 'Avslutat';
         case Resolution.BACK_TO_MANAGER:
