@@ -1,5 +1,3 @@
-import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
-import { Relation } from '@common/services/relations-service';
 import { Table } from '@sk-web-gui/react';
 import React from 'react';
 

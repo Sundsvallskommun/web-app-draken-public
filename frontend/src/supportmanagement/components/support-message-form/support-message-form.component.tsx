@@ -455,7 +455,8 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     getRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
-      setRelationErrands(res);
+      const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
+      setRelationErrands(sortedRelations);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
