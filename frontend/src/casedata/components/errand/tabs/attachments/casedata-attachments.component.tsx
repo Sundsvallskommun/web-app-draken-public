@@ -200,6 +200,7 @@ export const CasedataAttachments: React.FC = () => {
         })
         .then((res) => openModal());
     } else if (
+      //Temp: fix this code
       attachment.extension?.toLowerCase() === 'msg' ||
       attachment.extension?.toLowerCase() === 'heic' ||
       attachment.extension?.toLowerCase() === 'heif'
