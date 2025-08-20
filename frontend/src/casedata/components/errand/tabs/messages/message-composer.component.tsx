@@ -227,10 +227,11 @@ export const MessageComposer: React.FC<{
 
   const clearAndClose = () => {
     setTimeout(() => {
-      setValue('messageBody', '', { shouldDirty: true });
-      setValue('emails', [], { shouldDirty: true });
+      setValue('messageBody', defaultSignature(), { shouldDirty: false });
+      setValue('messageBodyPlaintext', defaultSignature(), { shouldDirty: false });
+      setValue('emails', [], { shouldDirty: false });
       removeNewAttachment();
-      setRichText('');
+      setRichText(defaultSignature());
       remove();
       props.closeHandler();
     }, 0);
@@ -353,8 +354,10 @@ export const MessageComposer: React.FC<{
   const { contactMeans } = watch();
 
   const onRichTextChange = (delta, oldDelta, source) => {
-    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getText());
+    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
+      shouldDirty: true,
+    });
+    setValue('messageBodyPlaintext', quillRef.current.getText(), { shouldDirty: true });
     trigger('messageBody');
   };
 
@@ -392,7 +395,7 @@ export const MessageComposer: React.FC<{
       setValue(
         'emails',
         props.message.direction === 'OUTBOUND'
-          ? props.message?.recipients.map((email) => ({
+          ? props.message?.recipients?.map((email) => ({
               value: email,
             }))
           : [{ value: props.message.email }]
@@ -407,7 +410,9 @@ export const MessageComposer: React.FC<{
           ? 'minasidor'
           : 'email'
       );
-      const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.email}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
+      const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
+        !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
+      }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
       setRichText(defaultSignature() + historyHeader + props.message.message);
       trigger();
     } else {

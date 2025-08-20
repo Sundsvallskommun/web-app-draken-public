@@ -18,6 +18,8 @@ För MEX (Mark och exploatering):
 | Party           |     2.0 |
 | SimulatorServer |     2.0 |
 | LegalEntity     |     2.0 |
+| Relations       |     1.1 |
+| CaseStatus      |     4.1 |
 
 För KS (Kontakt Sundsvall):
 
@@ -32,8 +34,8 @@ För KS (Kontakt Sundsvall):
 | Party             |     2.0 |
 | SimulatorServer   |     2.0 |
 | LegalEntity       |     2.0 |
-| Relations         |     1.0 |
-| CaseStatus        |     4.0 |
+| Relations         |     1.1 |
+| CaseStatus        |     4.1 |
 | Employee          |     2.0 |
 
 För PT (Parkeringstillstånd):
@@ -49,6 +51,8 @@ För PT (Parkeringstillstånd):
 | Employee        |     2.0 |
 | SimulatorServer |     2.0 |
 | LegalEntity     |     2.0 |
+| Relations       |     1.1 |
+| CaseStatus      |     4.1 |
 
 För LOP (Lön och pension):
 

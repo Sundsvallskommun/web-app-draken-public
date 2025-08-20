@@ -92,7 +92,7 @@ export const RenderedMessage: React.FC<{
                     }}
                   ></p>
                   <p className="mr-md break-all font-bold">
-                    Till : <RenderMessageReciever selectedMessage={message} errand={errand} />
+                    Till: <RenderMessageReciever selectedMessage={message} errand={errand} />
                   </p>
                 </div>
               </div>

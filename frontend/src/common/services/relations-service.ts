@@ -1,5 +1,6 @@
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
+import { CaseStatusResponse } from './casestatus-service';
 
 export const relationsLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -16,7 +17,7 @@ export const relationsLabelsCaseData = [
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
-export interface Relations {
+export interface Relation {
   id?: string;
   type: string;
   source: {
@@ -33,32 +34,41 @@ export interface Relations {
   };
 }
 
+const underscoreToHyphen = (str: string) => {
+  return str.replace(/_/g, '-').toLowerCase();
+};
+
 interface RelationsResponse {
-  relations: Relations[];
+  relations: Relation[];
   meta: any;
 }
 
-export const createRelation = (municipalityId: string, sourceId: string, targetId: string) => {
+export const createRelation = (
+  municipalityId: string,
+  sourceId: string,
+  sourceErrandNumber: string,
+  targetErrand: CaseStatusResponse
+) => {
   const url = `${municipalityId}/relations`;
 
-  const body: Partial<Relations> = {
+  const body: Partial<Relation> = {
     type: 'LINK',
     source: {
       resourceId: sourceId,
-      type: 'case',
+      type: sourceErrandNumber,
       service: 'supportmanagement',
       namespace: 'CONTACTSUNDSVALL',
     },
     target: {
-      resourceId: targetId,
-      type: 'case',
-      service: 'case-data',
-      namespace: 'SBK_MEX',
+      resourceId: targetErrand.caseId,
+      type: targetErrand.errandNumber,
+      service: underscoreToHyphen(targetErrand.system),
+      namespace: targetErrand.namespace,
     },
   };
 
   return apiService
-    .post<ApiResponse<Relations>, Partial<Relations>>(url, body)
+    .post<ApiResponse<Relation>, Partial<Relation>>(url, body)
     .then((res) => {
       return res.data;
     })
@@ -81,7 +91,7 @@ export const deleteRelation = (municipalityId: string, id: string) => {
 };
 
 export const getRelations = (municipalityId: string, sourceId: string, sort: string) => {
-  const url = `${municipalityId}/relations/${sourceId}/${sort}`;
+  const url = `${municipalityId}/relations/${sort}/${sourceId}`;
 
   return apiService
     .get<ApiResponse<RelationsResponse>>(url)
@@ -95,7 +105,7 @@ export const getRelations = (municipalityId: string, sourceId: string, sort: str
 };
 
 export const getTargetRelations = (municipalityId: string, targetId: string, sort: string) => {
-  const url = `${municipalityId}/targetrelations/${targetId}/${sort}`;
+  const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
 
   return apiService
     .get<ApiResponse<any>>(url)

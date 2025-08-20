@@ -1,11 +1,12 @@
 import { IErrand } from '@casedata/interfaces/errand';
+import { getErrandStatus } from '@common/services/casestatus-service';
 import { getTargetRelations, relationsLabelsCaseData } from '@common/services/relations-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, SortMode, Spinner, Table } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ErrandsTable } from './errand-table.component';
+import { RelationsTable } from './relations-table.component';
 
 export const CaseDataRelationsDisclosure: React.FC<{
   errand: IErrand;
@@ -21,7 +22,10 @@ export const CaseDataRelationsDisclosure: React.FC<{
     const fetchErrands = async () => {
       try {
         const relatedErrands = await getTargetRelations(municipalityId, errand.id.toString(), sortOrder);
-        setRelationErrands(relatedErrands);
+        const relatedErrandStatuses = await Promise.all(
+          relatedErrands?.data?.relations?.map((relation) => getErrandStatus(municipalityId, relation.source.type))
+        );
+        setRelationErrands(relatedErrandStatuses.flat());
 
         setIsLoading(false);
       } catch (error) {
@@ -65,13 +69,7 @@ export const CaseDataRelationsDisclosure: React.FC<{
           <Spinner />
         </div>
       ) : (
-        <ErrandsTable
-          errands={relationErrands}
-          headers={headers}
-          linkedStates={relationErrands}
-          title="Ärenden"
-          dataCy="ongoingerrands-table"
-        />
+        <RelationsTable errands={relationErrands} headers={headers} title="Ärenden" dataCy="ongoingerrands-table" />
       )}
     </Disclosure>
   );

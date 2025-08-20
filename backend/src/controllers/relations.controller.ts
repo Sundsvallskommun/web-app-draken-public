@@ -53,7 +53,7 @@ export class RelationsController {
     return { data: response.data, message: `Relation with id ${id} removed` };
   }
 
-  @Get('/:municipalityId/relations/:query/:sort')
+  @Get('/:municipalityId/relations/:sort/:query')
   @OpenAPI({ summary: 'Find matching relations' })
   @UseBefore(authMiddleware)
   async getRelations(
@@ -71,7 +71,7 @@ export class RelationsController {
     return { data: res.data, message: 'success' };
   }
 
-  @Get('/:municipalityId/targetrelations/:query/:sort')
+  @Get('/:municipalityId/targetrelations/:sort/:query')
   @OpenAPI({ summary: 'Find matching relations' })
   @UseBefore(authMiddleware)
   async getTargetRelations(
@@ -86,23 +86,6 @@ export class RelationsController {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-
-    const errands = await Promise.all(
-      (res.data.relations || []).map(async (relation: any) => {
-        const urlSupportManagement = `${this.SUPPORTMANAGEMENT_SERVICE}/${municipalityId}/${relation.source.namespace}/errands/${relation.source.resourceId}`;
-        const errandResponse = await this.apiService.get<SupportErrand>({ url: urlSupportManagement }, req.user);
-        return errandResponse.data;
-      }),
-    );
-
-    const modifiedErrandInformation = errands.map((errand: any) => ({
-      status: errand.status,
-      resolution: errand.resolution,
-      errandNumber: errand.errandNumber,
-      classification: errand.classification,
-      stakeholder: errand.stakeholders?.find((s: any) => s.role === 'PRIMARY'),
-    }));
-
-    return { data: modifiedErrandInformation, message: 'success' };
+    return { data: res, message: 'success' };
   }
 }

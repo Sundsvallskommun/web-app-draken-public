@@ -1,5 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { Relations, relationsLabels } from '@common/services/relations-service';
+import { Relation } from '@common/services/relations-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
 import { SupportErrand } from './support-errand-service';
 
@@ -133,7 +133,7 @@ export const getOrCreateSupportConversationId = async (
   supportErrand: SupportErrand,
   contactMeans: string,
   selectedRelationId: string,
-  relationErrands: Relations[],
+  relationErrands: Relation[],
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
@@ -160,10 +160,14 @@ export const getOrCreateSupportConversationId = async (
   }
 
   if (!conversationId) {
+    const topic = `Ärende: #${supportErrand.errandNumber}${
+      selectedRelation ? ` - #${selectedRelation.target.type}` : ''
+    }`;
+
     const newConversation = await createSupportConversation(
       municipalityId,
       supportErrand.id,
-      `Ärende: #${supportErrand.errandNumber}`,
+      topic,
       conversationType,
       selectedRelation?.id
     );

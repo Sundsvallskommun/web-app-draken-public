@@ -52,20 +52,4 @@ export class CaseStatusController {
     });
     return { data: [...resErrandNumber.data, ...resPropertyDesignation.data], message: 'success' };
   }
-
-  @Get('/:municipalityId/errandbyid/:id')
-  @OpenAPI({ summary: 'Return an errandnumber by id' })
-  @UseBefore(authMiddleware)
-  async errand(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<{ data: Errand; message: string }> {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${id}`;
-    const baseURL = apiURL(apiServiceName('case-data'));
-    const errandResponse = await this.apiService.get<Errand>({ url, baseURL }, req.user);
-    const errandData = errandResponse.data;
-    return response.send(errandData.errandNumber);
-  }
 }

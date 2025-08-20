@@ -34,8 +34,7 @@ export const getStatusesUsingPartyId = (municipalityId: string, partyId: string)
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
-      const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
-      const sortedData = sortBy(mexErrands, 'firstSubmitted').slice(0, 12);
+      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
       return sortedData;
     })
     .catch((e) => {
@@ -50,26 +49,11 @@ export const getErrandStatus = (municipalityId: string, query: string) => {
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
-      const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
-      const sortedData = sortBy(mexErrands, 'firstSubmitted').slice(0, 12);
+      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
       return sortedData;
     })
     .catch((e) => {
       console.error('Something went wrong when creating relation: ' + e);
-      throw e;
-    });
-};
-
-export const getErrandNumberfromId = (municipalityId: string, errandId: string) => {
-  const url = `${municipalityId}/errandbyid/${errandId}`;
-
-  return apiService
-    .get<string>(url)
-    .then((res) => {
-      return res.data;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching errand number: ' + e);
       throw e;
     });
 };

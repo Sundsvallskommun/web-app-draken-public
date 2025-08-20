@@ -27,7 +27,6 @@ export const SupportMessagesTab: React.FC<{
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
   const [allowed, setAllowed] = useState(false);
-  const [richText, setRichText] = useState<string>('');
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const [sortedMessages, setSortedMessages] = useState<Message[]>();
@@ -42,14 +41,6 @@ export const SupportMessagesTab: React.FC<{
     () => [...(props.messageTree || []), ...(props.conversationMessageTree || [])],
     [props.messageTree, props.conversationMessageTree]
   );
-
-  const emailBody = getDefaultEmailBody(user, t);
-  const smsBody = getDefaultSmsBody(user, t);
-
-  useEffect(() => {
-    setRichText(smsBody);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     const _a = validateAction(supportErrand, user);
@@ -197,7 +188,6 @@ export const SupportMessagesTab: React.FC<{
             onClick={() => {
               setSelectedMessage(undefined);
               setShowMessageForm(true);
-              setRichText(emailBody);
             }}
           >
             Nytt meddelande
@@ -240,10 +230,7 @@ export const SupportMessagesTab: React.FC<{
           <div data-cy="message-container">
             <MessageTreeComponent
               update={props.update}
-              setRichText={setRichText}
               setShowMessageForm={setShowMessageForm}
-              richText={richText}
-              emailBody={emailBody}
               nodes={sortedMessages}
               selected={selectedMessage?.communicationID}
               onSelect={(msg: Message) => {
@@ -272,14 +259,9 @@ export const SupportMessagesTab: React.FC<{
             setShowMessageForm={setShowMessageForm}
             prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
             prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
-            supportErrandId={supportErrand.id}
             setUnsaved={(val) => {
               props.setUnsaved(val);
             }}
-            emailBody={emailBody}
-            smsBody={smsBody}
-            richText={richText}
-            setRichText={setRichText}
             message={selectedMessage}
             update={props.update}
           />
