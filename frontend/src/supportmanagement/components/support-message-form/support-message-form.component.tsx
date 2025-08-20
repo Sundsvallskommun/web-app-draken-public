@@ -52,6 +52,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
+import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
@@ -137,19 +138,12 @@ export const SupportMessageForm: React.FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
-  supportErrandId: string;
   showMessageForm: boolean;
-  emailBody: string;
-  smsBody: string;
-  richText: string;
-  setRichText: React.Dispatch<React.SetStateAction<string>>;
   message: Message;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
   setUnsaved?: (boolean) => void;
   update?: () => void;
 }> = (props) => {
-  const { richText, setRichText, emailBody, smsBody } = props;
-
   const {
     municipalityId,
     user,
@@ -174,14 +168,18 @@ export const SupportMessageForm: React.FC<{
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
+  const [richText, setRichText] = useState<string>('');
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
   };
 
+  const emailBody = getDefaultEmailBody(user, t);
+  const smsBody = getDefaultSmsBody(user, t);
+
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
-      id: props.supportErrandId,
+      id: supportErrand.id,
       messageContact: true,
       contactMeans:
         Channels[supportErrand.channel] === Channels.ESERVICE ||
@@ -249,20 +247,13 @@ export const SupportMessageForm: React.FC<{
   });
 
   const onRichTextChange = (delta, oldDelta, source) => {
+    if (source === 'api') {
+      return;
+    }
+
     setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
     setValue('messageBodyPlaintext', quillRef.current.getText());
     trigger('messageBody');
-  };
-
-  const clearParameters = () => {
-    setValue('emails', []);
-    setValue('newEmail', props.prefillEmail);
-    setValue('phoneNumbers', []);
-    setValue('newPhoneNumber', props.prefillPhone);
-  };
-
-  const onSubmit = (data, event) => {
-    send();
   };
 
   const getSingleSupportAttachment = (attachment: SupportAttachment) => {
@@ -271,10 +262,13 @@ export const SupportMessageForm: React.FC<{
     });
   };
 
-  const send: () => void = async () => {
+  const onSubmit: () => void = async () => {
     setIsSending(true);
     setMessageError(false);
     const data = getValues();
+
+    let sendPromise: Promise<any>;
+
     if (contactMeans === 'draken' || contactMeans === 'minasidor') {
       const conversationId = await getOrCreateSupportConversationId(
         municipalityId,
@@ -285,47 +279,17 @@ export const SupportMessageForm: React.FC<{
         props?.message?.conversationId
       );
 
-      await sendSupportConversationMessage(
+      sendPromise = sendSupportConversationMessage(
         municipalityId,
         supportErrand.id,
         conversationId,
         data.messageBody,
         data.messageAttachments
-      )
-        .then(async () => {
-          setTimeout(() => {
-            props.setUnsaved(false);
-            setValue('messageBody', emailBody);
-            clearParameters();
-            clearErrors();
-            props.setShowMessageForm(false);
-          }, 0);
-
-          const updated = await getSupportErrandById(supportErrand.id, municipalityId);
-          setSupportErrand(updated.errand);
-
-          toastMessage(
-            getToastOptions({
-              message: 'Ditt meddelande skickades',
-              status: 'success',
-            })
-          );
-        })
-        .catch((e) => {
-          console.error(e);
-          setIsSending(false);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när meddelandet skulle skickas',
-            status: 'error',
-          });
-        });
-      setIsSending(false);
+      );
     } else {
       const messageData: MessageRequest = {
         municipalityId: municipalityId,
-        errandId: data.id,
+        errandId: supportErrand.id,
         contactMeans: data.contactMeans,
         emails: data.emails,
         recipientEmail: '',
@@ -344,83 +308,73 @@ export const SupportMessageForm: React.FC<{
       if (isKC() || isKA()) {
         messageData.senderName = appConfig.applicationName;
       }
-      sendMessage(messageData)
-        .then(async (success) => {
-          if (!success) {
-            throw new Error('');
-          }
-          setIsSending(false);
-          if (document.querySelector('input[name="useEmail"]:checked')) {
-            setRichText(emailBody);
-          } else if (document.querySelector('input[name="useSms"]:checked')) {
-            setRichText(smsBody);
-          }
-          setValue('emails', []);
-          setValue('phoneNumbers', []);
-          removeMessageAttachment();
-          removeExistingAttachment();
-          setTimeout(() => {
-            props.setUnsaved(false);
-            setValue('messageBody', emailBody);
-            clearParameters();
-            clearErrors();
-            props.setShowMessageForm(false);
-          }, 0);
-
-          if (typeOfMessage === 'infoCompletion') {
-            await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
-          } else if (typeOfMessage === 'internalCompletion') {
-            await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
-          }
-
-          const updated = await getSupportErrandById(supportErrand.id, municipalityId);
-          setSupportErrand(updated.errand);
-
-          toastMessage(
-            getToastOptions({
-              message:
-                data.emails.length + data.phoneNumbers.length === 1
-                  ? 'Ditt meddelande skickades'
-                  : 'Dina meddelanden skickades',
-              status: 'success',
-            })
-          );
-        })
-        .catch((e) => {
-          console.error(e);
-          setIsSending(false);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när meddelandet skulle skickas',
-            status: 'error',
-          });
-        });
+      sendPromise = sendMessage(messageData).then(async (success) => {
+        if (!success) {
+          throw new Error('');
+        }
+        return true;
+      });
     }
+
+    sendPromise
+      .then(async () => {
+        props.setShowMessageForm(false);
+        quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
+
+        if (typeOfMessage === 'infoCompletion') {
+          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
+        } else if (typeOfMessage === 'internalCompletion') {
+          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+        }
+
+        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+        setSupportErrand(updated.errand);
+
+        toastMessage(
+          getToastOptions({
+            message:
+              data.emails.length > 1 || data.phoneNumbers.length > 1
+                ? 'Dina meddelanden skickades'
+                : 'Ditt meddelande skickades',
+            status: 'success',
+          })
+        );
+      })
+      .catch((e) => {
+        console.error(e);
+        setIsSending(false);
+        setMessageError(true);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när meddelandet skulle skickas',
+          status: 'error',
+        });
+      })
+      .finally(() => {
+        props.setUnsaved(false);
+        setIsSending(false);
+        reset();
+        clearErrors();
+      });
   };
 
   useEffect(() => {
-    if (contactMeans === 'email') {
-      if (props.prefillEmail !== undefined) {
-        setValue('emails', [{ value: props.prefillEmail }]);
-      }
-      setRichText(emailBody);
-    } else if (contactMeans === 'sms') {
+    if (contactMeans === 'sms') {
       setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
       setRichText(smsBody);
-    } else if (contactMeans === 'webmessage') {
+      setValue('messageBody', sanitized(smsBody));
+      clearErrors();
+    } else {
       setRichText(emailBody);
+      setValue('messageBody', sanitized(emailBody));
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
     }
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.prefillEmail, props.prefillPhone]);
-
-  useEffect(() => {
-    setValue('id', props.supportErrandId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.supportErrandId]);
 
   useEffect(() => {
     setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || !!props.message?.conversationId);
@@ -480,7 +434,7 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useEmail-radiobutton-true"
                 className="mr-sm mt-4"
-                name="contactMeans"
+                name="useEmail"
                 id="useEmail"
                 value="email"
                 {...register('contactMeans')}
@@ -493,7 +447,7 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useSms-radiobutton-true"
                 className="mr-sm mt-4"
-                name="contactMeans"
+                name="useSms"
                 id="useSms"
                 value="sms"
                 {...register('contactMeans')}
@@ -507,7 +461,7 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
                 className="mr-sm mt-4"
-                name="contactMeans"
+                name="useWebmessage"
                 id="useWebmessage"
                 value="webmessage"
                 {...register('contactMeans')}
@@ -520,7 +474,7 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useDraken-radiobutton-true"
                 className="mr-sm mt-4"
-                name="contactMeans"
+                name="useDraken"
                 id="useDraken"
                 value="draken"
                 {...register('contactMeans')}
@@ -533,7 +487,7 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useMinasidor-radiobutton-true"
                 className="mr-sm mt-4"
-                name="contactMeans"
+                name="useMinasidor"
                 id="useMinasidor"
                 value="minasidor"
                 {...register('contactMeans')}
@@ -846,9 +800,14 @@ export const SupportMessageForm: React.FC<{
 
       <div className="flex my-md gap-md">
         <Button
+          disabled={isSending}
           onClick={() => {
             props.setShowMessageForm(false);
-            clearParameters();
+            quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
+            props.setUnsaved(false);
+            setIsSending(false);
+            reset();
+            clearErrors();
           }}
           variant="secondary"
           color="primary"

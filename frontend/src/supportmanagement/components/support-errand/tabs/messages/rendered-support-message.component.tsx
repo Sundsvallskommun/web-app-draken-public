@@ -18,10 +18,7 @@ import { RenderSupportMessageReciever } from './render-support-message-reciever.
 
 export const RenderedSupportMessage: React.FC<{
   update: () => void;
-  setRichText: React.Dispatch<React.SetStateAction<string>>;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
-  richText: string;
-  emailBody: string;
   message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;

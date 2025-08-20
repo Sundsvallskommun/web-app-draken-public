@@ -9,10 +9,7 @@ import {
 
 interface MessageTreeProps {
   update: () => void;
-  setRichText: React.Dispatch<React.SetStateAction<string>>;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
-  richText: string;
-  emailBody: string;
   nodes: MessageNode[];
   selected: string;
   onSelect: (node: MessageNode) => void;
@@ -29,15 +26,12 @@ const getId = (node: MessageNode): string => {
 
 const MessageNodeComponent: React.FC<{
   update: () => void;
-  setRichText: React.Dispatch<React.SetStateAction<string>>;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
-  richText: string;
-  emailBody: string;
   node: MessageNode;
   selected: string;
   onSelect: (node: MessageNode) => void;
   root?: boolean;
-}> = ({ update, setRichText, setShowMessageForm, richText, emailBody, node, selected, onSelect, root = false }) => {
+}> = ({ update, setShowMessageForm, node, selected, onSelect, root = false }) => {
   const [showChildren, setShowChildren] = useState(true);
 
   return (
@@ -47,9 +41,6 @@ const MessageNodeComponent: React.FC<{
           update={update}
           message={node}
           setShowMessageForm={setShowMessageForm}
-          setRichText={setRichText}
-          richText={richText}
-          emailBody={emailBody}
           selected={selected}
           onSelect={onSelect}
           root={root}
@@ -77,10 +68,7 @@ const MessageNodeComponent: React.FC<{
             {node.children.map((child, idx) => (
               <MessageNodeComponent
                 update={update}
-                setRichText={setRichText}
                 setShowMessageForm={setShowMessageForm}
-                richText={richText}
-                emailBody={emailBody}
                 key={`${idx}-${getId(child)}`}
                 node={child}
                 selected={selected}
@@ -96,10 +84,7 @@ const MessageNodeComponent: React.FC<{
 
 const MessageTreeComponent: React.FC<MessageTreeProps> = ({
   update,
-  setRichText,
   setShowMessageForm,
-  richText,
-  emailBody,
   nodes,
   selected,
   onSelect,
@@ -111,10 +96,7 @@ const MessageTreeComponent: React.FC<MessageTreeProps> = ({
           <Divider />
           <MessageNodeComponent
             update={update}
-            setRichText={setRichText}
             setShowMessageForm={setShowMessageForm}
-            richText={richText}
-            emailBody={emailBody}
             node={node}
             selected={selected}
             onSelect={onSelect}
