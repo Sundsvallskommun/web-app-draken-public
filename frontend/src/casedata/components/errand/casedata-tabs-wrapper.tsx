@@ -39,6 +39,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     setErrand,
     messages,
     setMessages,
+    conversation,
     setConversation,
     setConversationTree,
     setMessageTree,
@@ -199,7 +200,7 @@ export const CasedataTabsWrapper: React.FC = () => {
         : [],
     },
     {
-      label: `Meddelanden (${countUnreadMessages(messages)})`,
+      label: `Meddelanden (${countUnreadMessages(messages, conversation)})`,
       content: errand?.id && (
         <CasedataMessagesTab
           setUnsaved={() => {}}

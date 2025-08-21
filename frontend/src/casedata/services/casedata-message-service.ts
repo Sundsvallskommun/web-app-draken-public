@@ -163,14 +163,14 @@ export const countAllMessages = (tree: MessageNode[]): number => {
   return c;
 };
 
-export const countUnreadMessages = (tree: MessageNode[]): number => {
+export const countUnreadMessages = (tree: MessageNode[], conversationMessages: any): number => {
+  let c = conversationMessages?.filter((m) => !m.viewed)?.length ?? 0;
   if (!tree) {
     return 0;
   }
-  let c = 0;
   c += tree.filter((node) => !node.viewed).length;
   tree.forEach((root) => {
-    c += countUnreadMessages(root.children);
+    c += countUnreadMessages(root.children, []);
   });
   return c;
 };

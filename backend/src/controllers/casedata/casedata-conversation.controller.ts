@@ -1,4 +1,4 @@
-import { Conversation, ConversationType, Message, PageMessage } from '@/data-contracts/case-data/data-contracts';
+import { Conversation, ConversationType, Message, PageMessage, ReadBy } from '@/data-contracts/case-data/data-contracts';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
@@ -8,6 +8,7 @@ import { Body, Controller, Get, Param, Post, Req, UseBefore, UploadedFiles } fro
 import { OpenAPI } from 'routing-controllers-openapi';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { apiServiceName } from '@/config/api-config';
+import dayjs from 'dayjs';
 
 interface ResponseData {
   data: any;
@@ -57,16 +58,18 @@ export class CaseDataConversationController {
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);
 
     const mappedMessages = await Promise.all(
-      resPageMessage.data?.content?.map(async (msg: any) => {
+      resPageMessage.data?.content?.map(async (msg: Message) => {
         let firstName = undefined;
         let lastName = undefined;
         let direction = undefined;
         let viewed = undefined;
 
-        const isReadByCurrentUser = Array.isArray(msg.readBy) && msg.readBy.some((reader: any) => reader.identifier.value === req.user.username);
-        if (isReadByCurrentUser) {
-          viewed = 'true';
-        }
+        const isReadByCurrentUser =
+          Array.isArray(msg.readBy) &&
+          msg.readBy.some(
+            (reader: ReadBy) => reader.identifier.value === req.user.username && dayjs(reader.readAt).isBefore(dayjs().subtract(15, 'minute')),
+          );
+        viewed = isReadByCurrentUser;
 
         if (msg?.createdBy?.type === 'AD_ACCOUNT') {
           if (msg?.createdBy?.value === req.user.username) {
