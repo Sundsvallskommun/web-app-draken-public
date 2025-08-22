@@ -1,8 +1,9 @@
+import { CaseStatusResponse } from '@common/services/casestatus-service';
 import { Table } from '@sk-web-gui/react';
 import React from 'react';
 
 interface BaseRelationsTableProps {
-  errands: any[];
+  errands: CaseStatusResponse[];
   headers: React.ReactNode;
   title: string;
   dataCy: string;
@@ -18,7 +19,7 @@ export const BaseRelationsTable: React.FC<BaseRelationsTableProps> = ({
 }) => {
   return (
     <>
-      <h3 className="py-[1.2rem]">{title}</h3>
+      <h3 className="py-[1.2rem] text-h3-md">{title}</h3>
       <Table data-cy={dataCy} aria-describedby={`${dataCy}-table`} scrollable>
         {!errands.length ? (
           <caption id={`${dataCy}TableCaption`} className="my-32">

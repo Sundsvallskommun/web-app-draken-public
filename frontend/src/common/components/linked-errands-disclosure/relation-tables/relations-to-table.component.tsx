@@ -1,15 +1,14 @@
 import { CaseLabels } from '@casedata/interfaces/case-label';
-import { BaseRelationsTable } from '@common/components/base-relation-table/base-relation-table.component';
+import { BaseRelationsTable } from '@common/components/linked-errands-disclosure/relation-tables/base-relation-table.component';
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
-import { Relation } from '@common/services/relations-service';
+import { Relation, relationsToLabels } from '@common/services/relations-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Table } from '@sk-web-gui/react';
+import { Button, SortMode, Table } from '@sk-web-gui/react';
 import React from 'react';
 
-interface SupportRelationsTableProps {
+interface RelationsToTableProps {
   errands: CaseStatusResponse[];
-  headers: React.ReactNode;
   linkedStates: Relation[];
   handleLinkClick: (index: string) => void;
   title: string;
@@ -26,14 +25,27 @@ const LinkButtonComponent: React.FC<{ isLinked: boolean; onClick: () => void }> 
       onClick={onClick}
       leftIcon={<LucideIcon name={isLinked ? 'link-2-off' : 'link-2'} size={16} />}
     >
-      {isLinked ? 'Bryt länk' : 'Länka'}
+      {isLinked ? 'Bryt koppling' : 'Koppla'}
     </Button>
   );
 };
 
-export const SupportRelationsTable: React.FC<SupportRelationsTableProps> = ({
+const headers = relationsToLabels.map((header, index) => (
+  <Table.HeaderColumn key={`header-${index}`} sticky={true}>
+    {header.screenReaderOnly ? (
+      <span className="sr-only">{header.label}</span>
+    ) : header.sortable ? (
+      <Table.SortButton isActive={true} sortOrder={'ASC' as SortMode} onClick={() => {}}>
+        {header.label}
+      </Table.SortButton>
+    ) : (
+      header.label
+    )}
+  </Table.HeaderColumn>
+));
+
+export const RelationsToTable: React.FC<RelationsToTableProps> = ({
   errands,
-  headers,
   linkedStates,
   handleLinkClick,
   title,

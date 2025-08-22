@@ -1,10 +1,10 @@
+import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
-import { SupportErrandBasicsRelationsDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-relations-disclosure/support-errand-basics-relations-disclosure.component';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -44,8 +44,10 @@ export const SupportErrandBasicsTab: React.FC<{
         />
       ) : null}
 
-      {getApplicationEnvironment() === 'TEST' && appConfig.features.useRelations ? (
-        <SupportErrandBasicsRelationsDisclosure supportErrand={supportErrand} />
+      {getApplicationEnvironment() === 'TEST' ? (
+        <div className="mt-md">
+          <LinkedErrandsDisclosure errand={supportErrand} />
+        </div>
       ) : null}
     </div>
   );

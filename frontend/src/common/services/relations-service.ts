@@ -1,18 +1,20 @@
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
+import { appConfig } from '@config/appconfig';
 
-export const relationsLabels = [
-  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+export const relationsToLabels = [
+  { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
-export const relationsLabelsCaseData = [
-  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
-  { label: 'Ärendeägare', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+export const relationsFromLabels = [
+  { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Verksamhet', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
@@ -56,8 +58,8 @@ export const createRelation = (
     source: {
       resourceId: sourceId,
       type: sourceErrandNumber,
-      service: 'supportmanagement',
-      namespace: 'CONTACTSUNDSVALL',
+      service: appConfig.isSupportManagement ? 'supportmanagement' : 'case-data',
+      namespace: '',
     },
     target: {
       resourceId: targetErrand.caseId,
@@ -90,8 +92,8 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     });
 };
 
-export const getRelations = (municipalityId: string, sourceId: string, sort: string) => {
-  const url = `${municipalityId}/relations/${sort}/${sourceId}`;
+export const getSourceRelations = (municipalityId: string, sourceId: string, sort: string) => {
+  const url = `${municipalityId}/sourcerelations/${sort}/${sourceId}`;
 
   return apiService
     .get<ApiResponse<RelationsResponse>>(url)
