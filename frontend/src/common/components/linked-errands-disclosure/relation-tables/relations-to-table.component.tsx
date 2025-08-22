@@ -17,16 +17,18 @@ interface RelationsToTableProps {
 
 const LinkButtonComponent: React.FC<{ isLinked: boolean; onClick: () => void }> = ({ isLinked, onClick }) => {
   return (
-    <Button
-      variant={isLinked ? 'secondary' : 'primary'}
-      color={'primary'}
-      size="sm"
-      className="w-full"
-      onClick={onClick}
-      leftIcon={<LucideIcon name={isLinked ? 'link-2-off' : 'link-2'} size={16} />}
-    >
-      {isLinked ? 'Bryt koppling' : 'Koppla'}
-    </Button>
+    <div className="flex justify-center">
+      <Button
+        variant={isLinked ? 'secondary' : 'primary'}
+        color={'primary'}
+        size="sm"
+        className="w-full justify-start"
+        onClick={onClick}
+        leftIcon={<LucideIcon name={isLinked ? 'link-2-off' : 'link-2'} size={16} />}
+      >
+        {isLinked ? 'Bryt koppling' : 'Koppla'}
+      </Button>
+    </div>
   );
 };
 
@@ -62,16 +64,14 @@ export const RelationsToTable: React.FC<RelationsToTableProps> = ({
           <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
             <CaseStatusLabelComponent status={errand.status} />
           </Table.HeaderColumn>
-          <Table.Column className="w-[17rem]">{CaseLabels.ALL[errand.caseType] ?? errand.caseType}</Table.Column>
-          <Table.Column>{findOperationUsingNamespace(errand.namespace)}</Table.Column>
-          <Table.Column>{errand.errandNumber}</Table.Column>
-          <Table.Column className="w-[15.4rem]">
-            <div className="flex justify-center">
-              <LinkButtonComponent
-                isLinked={linkedStates.some((relation) => relation.target.resourceId === errand.caseId)}
-                onClick={() => handleLinkClick(errand.caseId)}
-              />
-            </div>
+          <Table.Column className="w-[16rem]">{CaseLabels.ALL[errand.caseType] ?? errand.caseType}</Table.Column>
+          <Table.Column className="w-[10rem]">{findOperationUsingNamespace(errand.namespace)}</Table.Column>
+          <Table.Column className="w-[14.5rem]">{errand.errandNumber}</Table.Column>
+          <Table.Column className="w-[16.4rem]">
+            <LinkButtonComponent
+              isLinked={linkedStates.some((relation) => relation.target.resourceId === errand.caseId)}
+              onClick={() => handleLinkClick(errand.caseId)}
+            />
           </Table.Column>
         </>
       )}
