@@ -24,8 +24,7 @@ export const findOperationUsingNamespace = (namespace: string) => {
     case 'CONTACTSUNDSVALL':
       return 'KS';
     default:
-      '(okänd)';
-      break;
+      return '(okänd)';
   }
 };
 
