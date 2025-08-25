@@ -17,6 +17,7 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { baseDetails } from '../../extraparameter-templates/base-template';
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -73,7 +74,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
-    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || [];
+    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || baseDetails;
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);

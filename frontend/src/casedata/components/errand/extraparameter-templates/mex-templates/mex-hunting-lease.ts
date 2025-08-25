@@ -1,7 +1,7 @@
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { baseDetails } from '../base-template';
 
-export const medTerminationOfHuntingLease_UppgiftFieldTemplate: UppgiftField[] = [
+export const mexHuntingLease_UppgiftFieldTemplate: UppgiftField[] = [
   ...baseDetails,
   {
     field: 'reason',

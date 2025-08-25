@@ -71,7 +71,7 @@ export enum MEXCaseLabel {
   'MEX_BUILDING_PERMIT' = 'Bygglov',
   'MEX_STORMWATER' = 'Dagvatten',
   'MEX_INVASIVE_SPECIES' = 'Invasiva arter',
-  'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL' = 'Markupplåtelseavtal /Värderingsprotokoll',
+  'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL' = 'Markupplåtelseavtal/Värderingsprotokoll',
   'MEX_LITTERING' = 'Nedskräpning',
   'MEX_REFERRAL_CONSULTATION' = 'Remiss/Samråd',
   'MEX_PUBLIC_SPACE_LEASE' = 'Upplåtelse av allmän/offentlig plats',
