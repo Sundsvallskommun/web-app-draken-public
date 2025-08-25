@@ -19,9 +19,12 @@ export const findOperationUsingNamespace = (namespace: string) => {
       return 'MEX';
     case 'SBK_PARKING_PERMIT':
       return 'PRH';
+    case 'SALARYANDPENSION':
+      return 'LOP';
+    case 'CONTACTSUNDSVALL':
+      return 'KS';
     default:
-      '';
-      break;
+      return '(okänd)';
   }
 };
 

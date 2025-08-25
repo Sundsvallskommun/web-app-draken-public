@@ -1,3 +1,4 @@
+import { apiServiceName } from '@/config/api-config';
 import { Relation } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -6,14 +7,11 @@ import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { Errand as SupportErrand } from '@/data-contracts/supportmanagement/data-contracts';
-import { apiServiceName } from '@/config/api-config';
 
 @Controller()
 export class RelationsController {
   private apiService = new ApiService();
   private SERVICE = apiServiceName('relations');
-  SUPPORTMANAGEMENT_SERVICE = apiServiceName('supportmanagement');
 
   @Post('/:municipalityId/relations')
   @HttpCode(201)
@@ -25,8 +23,15 @@ export class RelationsController {
     @Body() relationbody: Relation,
   ): Promise<{ data: any; message: string }> {
     const url = `${municipalityId}/relations`;
+    const modifiedRelationBody = {
+      ...relationbody,
+      source: {
+        ...relationbody.source,
+        namespace: relationbody.source.service === 'supportmanagement' ? process.env.SUPPORTMANAGEMENT_NAMESPACE : process.env.CASEDATA_NAMESPACE,
+      },
+    };
     const baseURL = apiURL(this.SERVICE);
-    const response = await this.apiService.post<any, any>({ url, baseURL, data: relationbody }, req.user).catch(e => {
+    const response = await this.apiService.post<any, any>({ url, baseURL, data: modifiedRelationBody }, req.user).catch(e => {
       console.log('Something went wrong when creating relation: ' + e);
       throw e;
     });
@@ -53,10 +58,10 @@ export class RelationsController {
     return { data: response.data, message: `Relation with id ${id} removed` };
   }
 
-  @Get('/:municipalityId/relations/:sort/:query')
+  @Get('/:municipalityId/sourcerelations/:sort/:query')
   @OpenAPI({ summary: 'Find matching relations' })
   @UseBefore(authMiddleware)
-  async getRelations(
+  async getSourceRelations(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Param('query') query: string,

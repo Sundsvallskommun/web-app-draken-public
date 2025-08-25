@@ -5,14 +5,14 @@ import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { getCaseLabels, isErrandLocked, municipalityIds } from '@casedata/services/casedata-errand-service';
+import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { appConfig } from '@config/appconfig';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
-import { CaseDataRelationsDisclosure } from './casedata-relations-disclosure.component';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -232,8 +232,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             update={() => {}}
           />
         ) : null}
-
-        {!registeringNewErrand && appConfig.features.useRelations && <CaseDataRelationsDisclosure errand={errand} />}
+        {!registeringNewErrand && getApplicationEnvironment() === 'TEST' && <LinkedErrandsDisclosure errand={errand} />}
       </div>
     </div>
   );

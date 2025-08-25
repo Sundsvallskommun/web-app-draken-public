@@ -8,7 +8,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isKA, isKC } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { Relation, getRelations } from '@common/services/relations-service';
+import { Relation, getSourceRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -408,7 +408,7 @@ export const SupportMessageForm: React.FC<{
   }, [props.message, props.message?.conversationId]);
 
   useEffect(() => {
-    getRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
+    getSourceRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
       const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
       setRelationErrands(sortedRelations);
     });
@@ -469,7 +469,7 @@ export const SupportMessageForm: React.FC<{
                 E-tjänst
               </RadioButton>
             ) : null}
-            {appConfig.features.useRelations && (
+            {appConfig.features.useStakeholderRelations && (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useDraken-radiobutton-true"

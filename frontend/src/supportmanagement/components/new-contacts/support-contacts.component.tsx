@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
@@ -38,7 +38,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
-  const toastMessage = useSnackbar();
 
   const { setStakeholderContacts, stakeholderContacts, setStakeholderCustomers, stakeholderCustomers } =
     useAppContext();
