@@ -350,7 +350,7 @@ export const MessageComposer: React.FC<{
   const addExisting = watch('addExisting');
   const existingAttachments = watch('existingAttachments');
   const newAttachments = watch('newAttachments');
-  const contactMeans = watch('contactMeans');
+  const { contactMeans } = watch();
 
   const onRichTextChange = (delta, oldDelta, source) => {
     setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
