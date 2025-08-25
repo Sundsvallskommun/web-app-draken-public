@@ -1,7 +1,9 @@
+import { baseDetails } from '@casedata/components/errand/extraparameter-templates/base-template';
 import { mexUnauthorizedResidence_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-anauthorized-residence';
 import { mexApplicationForRoadAllowance_UppgiftFieldTempalte } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-application-for-road-allowance';
 import { mexBuyLandFromTheMunicipality_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-buy-land-from-the-municipality';
 import { mexBuySmallHousePlot_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-buy-small-house-plot';
+import { mexHuntingLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-hunting-lease';
 import { mexInvoice_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-invoice';
 import { mexLandInstruction_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-land-instructions';
 import { mexLandRight_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-land-right';
@@ -13,7 +15,6 @@ import { mexReferralBuildingPermitEarlyDialoguePlanningNotice_UppgiftFieldTempla
 import { mexRequestForPublicDocument_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-request-public-document';
 import { mexSellLandToTheMunicipality_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-sell-land-to-the-municipality';
 import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-square-place';
-import { medTerminationOfHuntingLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-hunting-lease';
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
@@ -26,7 +27,6 @@ import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/e
 import { lostParkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-lost-parking-permit';
 import { parkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-parkingpermit';
 import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-renewal';
-import { FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
@@ -109,7 +109,7 @@ const template: ExtraParametersObject = {
   MEX_INVOICE: mexInvoice_UppgiftFieldTemplate,
   MEX_REQUEST_FOR_PUBLIC_DOCUMENT: mexRequestForPublicDocument_UppgiftFieldTemplate,
   MEX_TERMINATION_OF_LEASE: mexTerminationOfLease_UppgiftFieldTemplate,
-  MEX_TERMINATION_OF_HUNTING_LEASE: medTerminationOfHuntingLease_UppgiftFieldTemplate,
+  MEX_HUNTING_LEASE: mexHuntingLease_UppgiftFieldTemplate,
 
   PARKING_PERMIT: parkingPermit_UppgiftFieldTemplate,
   LOST_PARKING_PERMIT: lostParkingPermit_UppgiftFieldTemplate,
@@ -123,11 +123,6 @@ export const getExtraParametersLabels = (caseType: string): { [key: string]: str
     return acc;
   }, {});
 };
-
-const isSupportedCaseType = (caseType: string): boolean =>
-  [...Object.values(FTCaseType), ...Object.values(PTCaseType), ...Object.values(MEXCaseType)].includes(
-    caseType as FTCaseType | PTCaseType | MEXCaseType
-  );
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
   // Create base template encompassing all case types
@@ -144,33 +139,31 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
       const caseType = errand.caseType;
       const field = param['key'];
 
-      if (isSupportedCaseType(caseType)) {
-        const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-        const caseTypeTemplate = template[resolvedCaseType] as UppgiftField[];
-        const templateField = caseTypeTemplate?.find((f) => f.field === field);
+      const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
+      const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+      const templateField = caseTypeTemplate?.find((f) => f.field === field);
 
-        if (caseType && field && templateField) {
-          const { label, formField, section, dependsOn } = templateField;
-          const isCheckbox = formField.type === 'checkbox';
-          const value = isCheckbox ? param.values : param.values[0] || '';
+      if (caseType && field && templateField) {
+        const { label, formField, section, dependsOn } = templateField;
+        const isCheckbox = formField.type === 'checkbox';
+        const value = isCheckbox ? param.values : param.values[0] || '';
 
-          obj[caseType] = obj[caseType] || [];
-          const data: UppgiftField = {
-            field,
-            value,
-            label,
-            formField,
-            section,
-            dependsOn,
-          };
+        obj[caseType] = obj[caseType] || [];
+        const data: UppgiftField = {
+          field,
+          value,
+          label,
+          formField,
+          section,
+          dependsOn,
+        };
 
-          const a: UppgiftField[] = obj[caseType];
-          const i = a.findIndex((f) => f.field === field);
-          if (i > -1) {
-            obj[caseType][i] = data;
-          } else {
-            obj[caseType].push(data);
-          }
+        const a: UppgiftField[] = obj[caseType];
+        const i = a.findIndex((f) => f.field === field);
+        if (i > -1) {
+          obj[caseType][i] = data;
+        } else {
+          obj[caseType].push(data);
         }
       }
     } catch (error) {

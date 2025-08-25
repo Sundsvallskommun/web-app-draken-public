@@ -1,3 +1,4 @@
+import { baseDetails } from '@casedata/components/errand/extraparameter-templates/base-template';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, saveErrand, updateErrandStatus } from '@casedata/services/casedata-errand-service';
@@ -27,7 +28,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       return [];
     }
     const uppgifter = extraParametersToUppgiftMapper(data);
-    const uppgifterFields: UppgiftField[] = uppgifter[data.caseType] || [];
+    const uppgifterFields: UppgiftField[] = uppgifter[data.caseType] || baseDetails;
     const fieldNames = uppgifterFields.map((f) =>
       f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)
     ) as (keyof IErrand)[];
