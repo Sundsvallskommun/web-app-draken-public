@@ -176,6 +176,9 @@ export const SupportMessageForm: React.FC<{
 
   const emailBody = getDefaultEmailBody(user, t);
   const smsBody = getDefaultSmsBody(user, t);
+  const internalConversationSignature = t('messages:templates.conversation_default_signature', {
+    user: user.firstName + ' ' + user.lastName,
+  });
 
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
@@ -360,19 +363,31 @@ export const SupportMessageForm: React.FC<{
   };
 
   useEffect(() => {
-    if (contactMeans === 'sms') {
-      setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
-      setRichText(smsBody);
-      setValue('messageBody', sanitized(smsBody));
-      clearErrors();
-    } else {
-      setRichText(emailBody);
-      setValue('messageBody', sanitized(emailBody));
-      quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
+    let body: string;
+    let prefillPhone = props.prefillPhone || PREFILL_VALUE;
+
+    switch (contactMeans) {
+      case 'sms':
+        setValue('newPhoneNumber', prefillPhone);
+        body = smsBody;
+        clearErrors();
+        break;
+
+      case 'draken':
+        body = internalConversationSignature;
+        break;
+
+      default:
+        body = emailBody;
+        break;
     }
-    setTimeout(() => {
-      props.setUnsaved(false);
-    }, 0);
+
+    setRichText(body);
+    setValue('messageBody', sanitized(body));
+    quillRef.current?.clipboard?.dangerouslyPasteHTML(body);
+
+    setTimeout(() => props.setUnsaved(false), 0);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.prefillEmail, props.prefillPhone]);
 

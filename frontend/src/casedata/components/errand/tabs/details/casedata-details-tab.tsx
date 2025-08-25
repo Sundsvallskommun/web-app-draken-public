@@ -9,15 +9,15 @@ import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
 import { FacilityDTO } from '@common/interfaces/facilities';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Divider, FormControl, FormLabel, Input, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
+import { Disclosure, FormControl, FormLabel, Input, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import { baseDetails } from '../../extraparameter-templates/base-template';
+import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -103,40 +103,35 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Divider.Section className="w-full flex justify-between items-center flex-wrap h-40">
-          <div className="flex gap-sm items-center">
-            <LucideIcon name={icon} />
-            <h2 className="text-h4-sm md:text-h4-md">{label}</h2>
-          </div>
-        </Divider.Section>
+        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon} />}>
+          {isAppeal && label === 'Övergripande' && (
+            <div className="px-0">
+              <FormControl className="w-full" key="relatesTo">
+                <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
+                <Input
+                  type="text"
+                  value={errand.relatesTo[0]?.errandNumber}
+                  readOnly={true}
+                  className={cx('w-3/5')}
+                  data-cy="relatesTo-input"
+                  placeholder="t.ex. PRH-2024-000275"
+                />
+              </FormControl>
+            </div>
+          )}
 
-        {isAppeal && label === 'Övergripande' && (
           <div className="px-0">
-            <FormControl className="w-full" key="relatesTo">
-              <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
-              <Input
-                type="text"
-                value={errand.relatesTo[0]?.errandNumber}
-                readOnly={true}
-                className={cx('w-3/5')}
-                data-cy="relatesTo-input"
-                placeholder="t.ex. PRH-2024-000275"
+            {fields?.map((detail, idx) => (
+              <CasedataFormFieldRenderer
+                key={`${detail.field}-${idx}`}
+                detail={detail}
+                idx={idx}
+                form={form}
+                errand={errand}
               />
-            </FormControl>
+            ))}
           </div>
-        )}
-
-        <div className="px-0">
-          {fields?.map((detail, idx) => (
-            <CasedataFormFieldRenderer
-              key={`${detail.field}-${idx}`}
-              detail={detail}
-              idx={idx}
-              form={form}
-              errand={errand}
-            />
-          ))}
-        </div>
+        </Disclosure>
       </div>
     );
   };
@@ -166,19 +161,21 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="w-full py-24 px-32">
         <div className="flex">
           <div className="w-full">
-            <h2 className="text-h4-sm md:text-h4-md">Ärendeuppgifter</h2>
+            <h2 className="text-h4-sm md:text-h4-md mb-lg">Ärendeuppgifter</h2>
             {errand?.externalCaseId ? (
               <>
-                <strong>Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
+                <strong className="my-lg">Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
             {appConfig.features.useFacilities ? (
-              <Facilities
-                facilities={realEstates}
-                setUnsaved={props.setUnsaved}
-                setValue={setValue}
-                onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
-              />
+              <Disclosure variant="alt" header="Fastigheter" icon={<LucideIcon name="map-pin" />}>
+                <Facilities
+                  facilities={realEstates}
+                  setUnsaved={props.setUnsaved}
+                  setValue={setValue}
+                  onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
+                />
+              </Disclosure>
             ) : null}
             {sections.map(({ label, icon }, idx) => {
               const filtered = fields?.filter((f) => f.section === label);
