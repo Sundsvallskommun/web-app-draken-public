@@ -30,6 +30,7 @@ import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
@@ -325,7 +326,6 @@ export const SupportSimplifiedContactForm: React.FC<{
           <SupportContactSearchField
             disabled={props.disabled}
             form={form}
-            manual={manual}
             id={id}
             appendPhonenumber={appendPhonenumber}
             appendEmail={appendEmail}
@@ -354,7 +354,8 @@ export const SupportSimplifiedContactForm: React.FC<{
             data-cy={`add-manually-button-${id}`}
             color="vattjom"
             inverted
-            variant="link"
+            size="sm"
+            leftIcon={<LucideIcon name="pen" />}
             onClick={() => {
               reset({}, { keepErrors: false });
               setValue(

@@ -35,8 +35,6 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
   setSearchResultArray,
   replacePhonenumbers,
 }) => {
-  const stakeholderType = form.watch(`stakeholderType`);
-
   const clearCommonFields = () => {
     replacePhonenumbers([]);
     form.setValue('city', '');
@@ -63,6 +61,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
         form.setValue(`lastName`, '', { shouldDirty: false });
         form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
       }
+      form.clearErrors();
     }, 0);
   };
 

@@ -1,15 +1,14 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { AddressResult, searchOrganization, searchPerson } from '@common/services/adress-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, FormControl, FormErrorMessage, FormLabel, Input, isArray } from '@sk-web-gui/react';
+import { Button, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
+import { useState } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SearchFieldProps {
   searchMode: string;
   disabled?: boolean;
   form: UseFormReturn<CasedataOwnerOrContact>;
-  manual: boolean;
-  searchResult: boolean;
   notFound: boolean;
   setUnsaved: (unsaved: boolean) => void;
   id: string;
@@ -24,8 +23,6 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
   searchMode,
   disabled,
   form,
-  manual,
-  searchResult,
   notFound,
   setUnsaved = () => {},
   id,
@@ -85,9 +82,10 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
   return (
     <div className="flex gap-lg">
       <FormControl className="w-full">
-        <FormLabel>
-          Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
-        </FormLabel>
+        <div>
+          <FormLabel>Sök på {searchMode === 'person' ? 'personnummer ' : 'organisationsnummer '}</FormLabel>
+          <span>(Ange {searchMode === 'person' ? '12 siffror: ååååmmddxxxx' : '10 siffror: kkllmm-nnnn'})</span>
+        </div>
         <div>
           <Input
             data-cy={`contact-personId`}
@@ -97,106 +95,49 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
             className="w-full my-sm"
           />
           {searchMode === 'person' ? (
-            <Input.Group size="md" className="rounded-12" disabled={disabled || manual}>
-              <Input.LeftAddin icon>
-                <LucideIcon name="search" />
-              </Input.LeftAddin>
-              <Input
-                disabled={disabled}
-                aria-disabled={disabled}
-                readOnly={manual}
-                className="read-only:cursor-not-allowed"
-                data-cy={`contact-personalNumber-${id}`}
-                {...register(`personalNumber`, {
-                  onChange: () => {
-                    setUnsaved(true);
-                  },
-                })}
-              />
-              <Input.RightAddin icon>
-                {searchResult ? (
-                  <Button
-                    iconButton
-                    variant="primary"
-                    disabled={disabled || manual}
-                    inverted
-                    onClick={() => {
-                      reset();
-                      setValue('personalNumber', '');
-                      setSearchResult(false);
-                      setValue('stakeholderType', 'PERSON');
-                    }}
-                  >
-                    <LucideIcon name="x" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={
-                      disabled ||
-                      (searchMode === 'person' && manual) ||
-                      !!formState.errors?.personalNumber ||
-                      personalNumber === ''
-                    }
-                    data-cy={`search-button-${id}`}
-                    onClick={doSearch}
-                    loading={searching}
-                    loadingText="Söker"
-                  >
-                    Sök
-                  </Button>
-                )}
-              </Input.RightAddin>
-            </Input.Group>
+            <SearchField
+              disabled={disabled}
+              data-cy={`contact-personalNumber-${id}`}
+              {...form.register('personalNumber')}
+              size={'md'}
+              value={''}
+              onBlur={() => {
+                form.trigger(`personalNumber`);
+              }}
+              onSearch={() => {
+                if (form.formState.errors.personalNumber) return;
+                doSearch();
+              }}
+              onReset={() => {
+                reset();
+                setValue('personalNumber', '');
+                setSearchResult(false);
+                setValue('stakeholderType', 'PERSON');
+              }}
+              searchLabel={searching ? 'Söker' : 'Sök'}
+            />
           ) : (
-            <Input.Group size="md" disabled={disabled || manual}>
-              <Input.LeftAddin icon>
-                <LucideIcon name="search" />
-              </Input.LeftAddin>
-              <Input
-                disabled={disabled}
-                aria-disabled={disabled}
-                readOnly={manual}
-                className="read-only:cursor-not-allowed"
-                data-cy={`contact-orgNumber-${id}`}
-                {...register(`organizationNumber`, {
-                  onChange: () => {
-                    setUnsaved(true);
-                  },
-                })}
-              />
-              <Input.RightAddin icon>
-                {searchResult ? (
-                  <Button
-                    iconButton
-                    variant="primary"
-                    disabled={disabled || manual}
-                    inverted
-                    onClick={() => {
-                      reset();
-                      setValue('organizationNumber', '');
-                      setSearchResult(false);
-                      setValue('stakeholderType', 'ORGANIZATION');
-                    }}
-                  >
-                    <LucideIcon name="x" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={disabled || manual || !!formState.errors?.organizationNumber || organizationNumber === ''}
-                    data-cy={`search-button-${id}`}
-                    onClick={doSearch}
-                    loading={searching}
-                    loadingText="Söker"
-                  >
-                    Sök
-                  </Button>
-                )}
-              </Input.RightAddin>
-            </Input.Group>
+            <SearchField
+              disabled={disabled}
+              data-cy={`contact-personalNumber-${id}`}
+              {...form.register('organizationNumber')}
+              size={'md'}
+              value={''}
+              onBlur={() => {
+                form.trigger(`organizationNumber`);
+              }}
+              onSearch={() => {
+                if (form.formState.errors.organizationNumber) return;
+                doSearch();
+              }}
+              onReset={() => {
+                reset();
+                setValue('organizationNumber', '');
+                setSearchResult(false);
+                setValue('stakeholderType', 'ORGANIZATION');
+              }}
+              searchLabel={searching ? 'Söker' : 'Sök'}
+            />
           )}
         </div>
 

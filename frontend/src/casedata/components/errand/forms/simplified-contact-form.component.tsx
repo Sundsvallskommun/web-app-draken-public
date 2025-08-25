@@ -24,6 +24,7 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 
 const emptyContact: CasedataOwnerOrContact = {
   id: '',
@@ -322,8 +323,6 @@ export const SimplifiedContactForm: React.FC<{
           searchMode={searchMode}
           disabled={props.disabled}
           form={form}
-          manual={manual}
-          searchResult={searchResult}
           notFound={notFound}
           setNotFound={setNotFound}
           searching={searching}
@@ -352,9 +351,11 @@ export const SimplifiedContactForm: React.FC<{
           <Button
             className="mt-20"
             color="vattjom"
-            variant="link"
+            inverted
+            size="sm"
             onClick={() => setManual(true)}
             disabled={props.disabled}
+            leftIcon={<LucideIcon name="pen" />}
           >
             Lägg till manuellt
           </Button>
