@@ -320,16 +320,15 @@ export const MessageComposer: React.FC<{
           setIsLoading(false);
           return;
         });
-
-      if (
-        errand.status.statusType !== ErrandStatus.VantarPaKomplettering &&
-        errand.status.statusType !== ErrandStatus.InterntAterkoppling
-      ) {
-        if (typeOfMessage === 'infoCompletion') {
-          await setErrandStatus(errand.id, municipalityId, ErrandStatus.VantarPaKomplettering, null, null);
-        } else if (typeOfMessage === 'internalCompletion') {
-          await setErrandStatus(errand.id, municipalityId, ErrandStatus.InterntAterkoppling, null, null);
-        }
+    }
+    if (
+      errand.status.statusType !== ErrandStatus.VantarPaKomplettering &&
+      errand.status.statusType !== ErrandStatus.InterntAterkoppling
+    ) {
+      if (typeOfMessage === 'infoCompletion') {
+        await setErrandStatus(errand.id, municipalityId, ErrandStatus.VantarPaKomplettering, null, null);
+      } else if (typeOfMessage === 'internalCompletion') {
+        await setErrandStatus(errand.id, municipalityId, ErrandStatus.InterntAterkoppling, null, null);
       }
     }
   };
@@ -372,6 +371,9 @@ export const MessageComposer: React.FC<{
   }, [contactMeans]);
 
   const defaultSignature = () => {
+    if (getValues('contactMeans') === 'draken') {
+      return t('messages:templates.conversation_default_signature', { user: errand.administratorName });
+    }
     return t('messages:templates.case_data_default_signature', {
       user: errand.administratorName,
       department: isMEX()

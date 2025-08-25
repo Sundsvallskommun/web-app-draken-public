@@ -202,7 +202,7 @@ export const LinkedErrandsDisclosure: React.FC<{
             errands={resolvedOtherErrands}
             linkedStates={relations}
             handleLinkClick={(index) => handleLinkClick(index)}
-            title="Länkade, ej kopplat till ärendeägare"
+            title="Kopplingar till annan ärendeägare"
             dataCy="othererrands-table"
           />
         </>
