@@ -1,13 +1,13 @@
-import React from 'react';
-import { FormControl, FormLabel, Input, Select, Textarea, RadioButton, Checkbox, cx } from '@sk-web-gui/react';
-import { Controller, UseFormReturn, get } from 'react-hook-form';
-import dayjs from 'dayjs';
+import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import {
-  UppgiftField,
   EXTRAPARAMETER_SEPARATOR,
   OptionBase,
+  UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
-import { isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-string-handler-utils';
+import { Checkbox, FormControl, FormLabel, Input, RadioButton, Select, Textarea, cx } from '@sk-web-gui/react';
+import React from 'react';
+import { Controller, UseFormReturn, get } from 'react-hook-form';
 
 interface Props {
   detail: UppgiftField;
@@ -15,6 +15,37 @@ interface Props {
   form: UseFormReturn<any>;
   errand: any;
 }
+
+const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeof Input>> => {
+  switch (detail.formField.type) {
+    case 'date': {
+      const opts = detail.formField.options ?? {};
+      return {
+        min: resolveDateToken(opts.min),
+        max: resolveDateToken(opts.max),
+      };
+    }
+    case 'datetime-local': {
+      const opts = (detail.formField as any).options ?? {};
+      return {
+        min: resolveDateTimeToken(opts.min),
+        max: resolveDateTimeToken(opts.max),
+      };
+    }
+    case 'text': {
+      const opts = detail.formField.options ?? {};
+      const p: Partial<React.ComponentProps<typeof Input>> = {};
+
+      if (opts.placeholder) p.placeholder = opts.placeholder;
+      if (opts.minLength !== undefined) p.minLength = opts.minLength;
+      if (opts.maxLength !== undefined) p.maxLength = opts.maxLength;
+
+      return p;
+    }
+    default:
+      return {};
+  }
+};
 
 function getConditionalValidationRules(
   field: UppgiftField,
@@ -75,15 +106,10 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
             className={cx(
-              errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? `w-1/2` : 'w-full'
+              errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? 'w-1/2' : 'w-full'
             )}
             data-cy={`${detail.field}-input`}
-            max={detail.formField.type === 'date' ? dayjs().format('YYYY-MM-DD').toString() : undefined}
-            placeholder={
-              detail.formField.type === 'text' && 'options' in detail.formField
-                ? detail.formField.options?.placeholder
-                : undefined
-            }
+            {...getInputProps(detail)}
           />
           {error && <span className="text-error text-md">{error}</span>}
         </>

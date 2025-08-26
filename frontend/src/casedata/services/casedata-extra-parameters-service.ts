@@ -43,9 +43,9 @@ export interface UppgiftField {
   value: string | string[];
   label: string;
   formField:
-    | { type: 'text'; options?: { placeholder?: string } }
+    | { type: 'text'; options?: { placeholder?: string; minLength?: number; maxLength?: number } }
     | { type: 'date'; options?: { min?: string; max?: string } }
-    | { type: 'datetime-local' }
+    | { type: 'datetime-local'; options?: { min?: string; max?: string } }
     | { type: 'textarea'; options?: { placeholder?: string } }
     | { type: 'select'; options: OptionBase[] }
     | { type: 'radio'; options: OptionBase[]; inline?: boolean }
