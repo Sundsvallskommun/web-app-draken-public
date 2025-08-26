@@ -23,12 +23,12 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
+  Dialog,
   Divider,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Label,
-  Modal,
   Select,
   Textarea,
   useSnackbar,
@@ -52,7 +52,9 @@ export const SidebarInfo: React.FC<{}> = () => {
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
-  const [showMessageComposer, setShowMessageComposer] = useState(false);
+  const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
+  const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
+  const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
@@ -138,9 +140,6 @@ export const SidebarInfo: React.FC<{}> = () => {
     }
   };
 
-  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
-  const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
-
   const exitErrand = () => {
     let createNote = true;
 
@@ -193,7 +192,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                   status: 'success',
                 })
               );
-              setModalIsOpen(false);
+              setDialogIsOpen(false);
 
               //TODO add polling.
               getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
@@ -380,7 +379,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 color="primary"
                 variant="secondary"
                 onClick={() => {
-                  setModalIsOpen(true);
+                  setDialogIsOpen(true);
                   setCauseIsEmpty(false);
                 }}
                 disabled={
@@ -398,49 +397,32 @@ export const SidebarInfo: React.FC<{}> = () => {
               </Button>
             </>
           )}
+        <Dialog show={dialogIsOpen} className="w-[36rem]">
+          <Dialog.Content className="flex flex-col items-center text-center">
+            <LucideIcon name="archive-x" color="vattjom" size={32} />
 
-        <Modal
-          label="Avsluta ärendet"
-          show={modalIsOpen}
-          onClose={() => {
-            setModalIsOpen(false);
-          }}
-          className="min-w-[48rem]"
-        >
-          <Modal.Content className="pb-0">
-            <FormControl className="w-full">
-              <FormLabel>
-                Beskriv orsak till avslut<span aria-hidden="true">*</span>
-              </FormLabel>
-              <Textarea className="w-full" rows={4} {...register('publicNote')} />
-
-              {causeIsEmpty ? (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>Orsak till avslut måste anges.</FormErrorMessage>
-                </div>
-              ) : null}
-
-              <small className="my-0 text-dark-secondary">Texten sparas som en tjänsteanteckning på ärendet.</small>
-            </FormControl>
-          </Modal.Content>
-          <Modal.Footer>
-            <Button
-              variant="primary"
-              color="vattjom"
-              className="w-full mt-8"
-              disabled={
-                !(uiPhase === UiPhase.granskning || uiPhase === UiPhase.utredning || uiPhase === UiPhase.beslut) ||
-                isErrandLocked(errand) ||
-                !isErrandAdmin(errand, user)
-              }
-              onClick={() => {
-                exitErrand();
-              }}
-            >
-              Avsluta ärendet
+            <h1 className="text-h3-md">Avsluta ärendet?</h1>
+            <FormLabel>
+              Beskriv orsak till avslut<span aria-hidden="true">*</span>
+            </FormLabel>
+            <Textarea className="w-full" rows={4} {...register('publicNote')} />
+            {causeIsEmpty ? (
+              <div className="my-sm text-error">
+                <FormErrorMessage>Orsak till avslut måste anges.</FormErrorMessage>
+              </div>
+            ) : null}
+            <small className="my-0 text-dark-secondary">Texten sparas som en tjänsteanteckning på ärendet.</small>
+            <p>Du kommer nu att avsluta ärendet innan hela processen är komplett. Är du säker att du vill avsluta?</p>
+          </Dialog.Content>
+          <Dialog.Buttons className="flex justify-center">
+            <Button className="w-[12.8rem]" variant="secondary" onClick={() => setDialogIsOpen(false)}>
+              Nej
             </Button>
-          </Modal.Footer>
-        </Modal>
+            <Button className="w-[12.8rem]" variant="primary" onClick={() => exitErrand()}>
+              Ja
+            </Button>
+          </Dialog.Buttons>
+        </Dialog>
       </div>
       <MessageComposer
         show={showMessageComposer}
