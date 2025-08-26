@@ -5,7 +5,7 @@ import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
 import { isMEX, isPT } from '@common/services/application-service';
-import { sortBy } from '@common/services/helper-service';
+import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -136,9 +136,6 @@ export const ErrandsTable: React.FC = () => {
   const rows = (data.errands || []).map((errand: IErrand, index) => {
     const notification = findLatestNotification(errand);
     const caseMeaning = errand.extraParameters.find((param) => param.key === 'caseMeaning');
-    if (caseMeaning && caseMeaning.values?.[0].length > 27) {
-      caseMeaning.values[0] = `${caseMeaning.values[0].substring(0, 27)}...`;
-    }
     return (
       <Table.Row
         key={`row-${index}`}
@@ -164,7 +161,7 @@ export const ErrandsTable: React.FC = () => {
                   {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
                 </time>
               </div>
-              <div className="italic">{notification?.description ? notification?.description : ''}</div>
+              <div className="italic">{truncate(notification?.description, 30)}</div>
             </div>
           ) : (
             errand.updated
@@ -180,7 +177,7 @@ export const ErrandsTable: React.FC = () => {
             </div>
           )}
         </Table.Column>
-        {isMEX() && <Table.Column>{caseMeaning?.values}</Table.Column>}
+        {isMEX() && <Table.Column>{truncate(caseMeaning?.values?.[0], 30)}</Table.Column>}
         {isPT() && <Table.Column>{errand.errandNumber}</Table.Column>}
         <Table.Column>
           <PriorityComponent priority={errand.priority} />

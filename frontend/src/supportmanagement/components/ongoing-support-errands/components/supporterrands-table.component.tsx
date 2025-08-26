@@ -177,7 +177,7 @@ export const SupportErrandsTable: React.FC = () => {
                   {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
                 </time>
               </div>
-              <div className="italic">{notification?.description ? notification?.description : ''}</div>
+              <div className="italic">{truncate(notification?.description, 30)}</div>
             </div>
           ) : (
             dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
