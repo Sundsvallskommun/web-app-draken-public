@@ -62,6 +62,7 @@ import {
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -123,7 +124,7 @@ export const CasedataDecisionTab: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
+  const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const selectedBeslut = 1;
   const [richText, setRichText] = useState<string>('');
   const [error, setError] = useState<string>();
@@ -401,6 +402,12 @@ export const CasedataDecisionTab: React.FC<{
     }
   };
   const saveCasedataErrand = useSaveCasedataErrand(false);
+
+  const handleSaveAndSend = async () => {
+    const values = getValues();
+    await saveAndSend(values);
+    setDialogIsOpen(false);
+  };
 
   const onSubmit = () => {
     return saveConfirm
@@ -703,42 +710,10 @@ export const CasedataDecisionTab: React.FC<{
               !allowed
             }
             onClick={() => {
-              if (existingContract) {
-                if (existingContract.status === 'DRAFT') {
-                  setControlContractIsOpen(true);
-                } else {
-                  saveConfirm
-                    .showConfirmation(
-                      'Spara och skicka',
-                      'Vill du spara och skicka beslutet?',
-                      'Ja',
-                      'Nej',
-                      'info',
-                      'info'
-                    )
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        saveAndSend(getValues());
-                        return Promise.resolve(true);
-                      }
-                    });
-                }
+              if (existingContract && existingContract.status === 'DRAFT') {
+                setControlContractIsOpen(true);
               } else {
-                saveConfirm
-                  .showConfirmation(
-                    'Spara och skicka',
-                    'Vill du spara och skicka beslutet?',
-                    'Ja',
-                    'Nej',
-                    'info',
-                    'info'
-                  )
-                  .then((confirmed) => {
-                    if (confirmed) {
-                      saveAndSend(getValues());
-                      return Promise.resolve(true);
-                    }
-                  });
+                setDialogIsOpen(true);
               }
             }}
             rightIcon={<LucideIcon name="send-horizontal" />}
@@ -766,6 +741,12 @@ export const CasedataDecisionTab: React.FC<{
         )}
         <div className="mt-lg">{error && <FormErrorMessage>{error}</FormErrorMessage>}</div>
       </div>
+
+      <SendDecisionDialogComponent
+        dialogIsOpen={dialogIsOpen}
+        setDialogIsOpen={setDialogIsOpen}
+        saveAndSend={handleSaveAndSend}
+      />
 
       <Dialog show={controlContractIsOpen}>
         <Dialog.Content>

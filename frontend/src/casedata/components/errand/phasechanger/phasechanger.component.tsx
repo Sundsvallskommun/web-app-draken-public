@@ -19,9 +19,11 @@ import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, FormErrorMessage, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { IconName } from 'lucide-react/dynamic';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
+import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
 export const PhaseChanger = () => {
   const {
@@ -33,8 +35,8 @@ export const PhaseChanger = () => {
     uiPhase,
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
-  const phaseConfirm = useConfirm();
   const [isLoading, setIsLoading] = useState(false);
+  const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
   const [allowed, setAllowed] = useState(false);
@@ -52,31 +54,36 @@ export const PhaseChanger = () => {
   }: UseFormReturn<{ admin: string }, any, undefined> = useForm();
 
   const [phaseChangeText, setPhaseChangeText] = useState<{
+    icon: IconName;
     button: string;
     title: string;
-    message: string | JSX.Element;
+    message: JSX.Element;
     disabled?: boolean;
     disabledMessage?: string;
   }>({
+    icon: 'lightbulb',
     button: 'Inled fasbyte',
     title: 'Vill du byta fas?',
-    message: 'Vill du byta fas?',
+    message: <p>Vill du byta fas?</p>,
   });
   useEffect(() => {
-    if (uiPhase === UiPhase.granskning) {
+    if (uiPhase === UiPhase.registrerad) {
       setPhaseChangeText({
+        icon: 'lightbulb',
+        button: 'Gå ifrån registrerad',
+        title: 'Vill du gå vidare?',
+        message: <></>,
+      });
+    } else if (uiPhase === UiPhase.granskning) {
+      setPhaseChangeText({
+        icon: 'clipboard-list',
         button: 'Inled utredning',
         title: 'Inled utredning',
-        message: (
-          <>
-            <p className="my-md">Är du säker på att du vill fortsätta?</p>
-          </>
-        ),
+        message: <p>Är du säker på att du vill fortsätta?</p>,
       });
-    } else if (uiPhase === UiPhase.registrerad) {
-      setPhaseChangeText({ button: 'Gå ifrån registrerad', title: 'Vill du gå vidare?', message: '' });
     } else if (uiPhase === UiPhase.utredning) {
       setPhaseChangeText({
+        icon: 'scale',
         button: 'Redo för beslut',
         title: 'Redo för beslut',
         message: (
@@ -98,14 +105,25 @@ export const PhaseChanger = () => {
           : undefined,
       });
     } else if (uiPhase === UiPhase.beslut) {
-      setPhaseChangeText({ button: 'N/A', title: 'N/A?', message: '' });
+      setPhaseChangeText({ icon: 'lightbulb', button: 'N/A', title: 'N/A?', message: <></> });
     } else if (errand.phase === ErrandPhase.uppfoljning) {
-      setPhaseChangeText({ button: 'Avsluta ärende', title: 'Vill du avsluta ärendet?', message: '' });
+      setPhaseChangeText({
+        icon: 'folder-closed',
+        button: 'Avsluta ärende',
+        title: 'Avsluta ärendet?',
+        message: (
+          <p>
+            Kontrollera att du dokumenterat samtliga handlingar och uppgifter innan ärendet stängs. Vill du stänga
+            ärendet?
+          </p>
+        ),
+      });
     } else {
       setPhaseChangeText({
+        icon: 'circle',
         button: 'Inled fasbyte',
         title: 'Vill du byta fas?',
-        message: 'Vill du byta fas?',
+        message: <p>Vill du byta fas?</p>,
       });
     }
   }, [errand, uiPhase]);
@@ -152,36 +170,30 @@ export const PhaseChanger = () => {
 
   const errandSave = useSaveCasedataErrand(false);
 
-  const triggerPhaseChange = () => {
-    phaseConfirm
-      .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
-      .then(async (confirmed) => {
-        if (confirmed) {
-          await errandSave();
-          return triggerErrandPhaseChange(municipalityId, errand)
-            .then(() => getErrand(municipalityId, errand.id.toString()))
-            .then((res) => setErrand(res.errand))
-            .then(() => {
-              setIsLoading(false);
-              toastMessage(
-                getToastOptions({
-                  message: 'Fasbytet inleddes',
-                  status: 'success',
-                })
-              );
-              setIsLoading(false);
-            })
-            .catch(() => {
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Något gick fel när fasbytet inleddes',
-                status: 'error',
-              });
-              setIsLoading(false);
-            });
-        }
+  const triggerPhaseChange = async () => {
+    try {
+      setPhaseDialogOpen(false);
+      await errandSave();
+      await triggerErrandPhaseChange(municipalityId, errand);
+      const res = await getErrand(municipalityId, errand.id.toString());
+      setErrand(res.errand);
+
+      toastMessage(
+        getToastOptions({
+          message: 'Fasbytet inleddes',
+          status: 'success',
+        })
+      );
+    } catch (error) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när fasbytet inleddes',
+        status: 'error',
       });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return phaseChangeInProgress(errand) ? (
@@ -211,7 +223,9 @@ export const PhaseChanger = () => {
         color="vattjom"
         loadingText="Sparar"
         loading={isLoading}
-        onClick={triggerPhaseChange}
+        onClick={() => {
+          setPhaseDialogOpen(true);
+        }}
         rightIcon={<LucideIcon name="arrow-right" size={18} />}
       >
         {phaseChangeText?.button}
@@ -221,6 +235,14 @@ export const PhaseChanger = () => {
           {phaseChangeText.disabledMessage}
         </FormErrorMessage>
       ) : null}
+      <PhaseChangerDialogComponent
+        icon={phaseChangeText.icon}
+        title={phaseChangeText.title}
+        message={phaseChangeText.message}
+        dialogIsOpen={phaseDialogOpen}
+        setDialogIsOpen={setPhaseDialogOpen}
+        triggerPhaseChange={triggerPhaseChange}
+      />
     </>
   );
 };
