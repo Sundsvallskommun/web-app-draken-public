@@ -20,7 +20,7 @@ export const extractContactInfo = (c: SupportStakeholderFormModel) => {
 
 export const buildDefaultEscalationEmailContent = (e: SupportErrand, user: string): string => {
   const department = isKC() ? 'Sundsvalls kommun' : appConfig.applicationName;
-  const description = maybe(e?.description);
+  const description = maybe(e?.description).replace(/\n/g, '<br>');
   const channel = maybe(e?.channel && Channels[e?.channel]);
   const cus = e?.customer?.[0];
   const contacts = e?.contacts || [];

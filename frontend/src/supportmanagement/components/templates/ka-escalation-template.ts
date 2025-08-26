@@ -4,7 +4,7 @@ import { maybe, extractContactInfo } from './default-escalation-template';
 export const buildKAEscalationEmailContent = (e: SupportErrand, user: string): string => {
   const department = 'Kontaktcenter';
   const channel = maybe(e?.channel && Channels[e?.channel]);
-  const description = maybe(e?.description);
+  const description = maybe(e?.description).replace(/\n/g, '<br>');
   const customer = e?.customer?.[0];
   const contacts = e?.contacts || [];
   const subject = (e as any)?.emailHeaders?.subject || '';
