@@ -46,6 +46,24 @@ export const getStatusesUsingPartyId = (municipalityId: string, partyId: string)
     });
 };
 
+export const getStatusesUsingOrganizationNumber = (municipalityId: string, organizationNumber: string) => {
+  if (!municipalityId || !organizationNumber) {
+    return Promise.resolve([]);
+  }
+  const url = `${municipalityId}/${organizationNumber}/statuses`;
+
+  return apiService
+    .get<ApiResponse<any>>(url)
+    .then((res) => {
+      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
+      return sortedData;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when creating relation: ' + e);
+      throw e;
+    });
+};
+
 export const getErrandStatus = (municipalityId: string, query: string) => {
   const url = `${municipalityId}/errands/statuses/${query}`;
 

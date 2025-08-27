@@ -57,6 +57,7 @@ export class SupportConversationController {
 
     const mappedMessages = await Promise.all(
       resPageMessage.data?.content?.map(async (msg: any) => {
+        if (msg.type === 'SYSTEM_CREATED') return;
         let sender = undefined;
         let direction = undefined;
         let viewed = undefined;

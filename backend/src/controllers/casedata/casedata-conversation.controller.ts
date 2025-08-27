@@ -58,6 +58,7 @@ export class CaseDataConversationController {
 
     const mappedMessages = await Promise.all(
       resPageMessage.data?.content?.map(async (msg: any) => {
+        if (msg.type === 'SYSTEM_CREATED') return;
         let firstName = undefined;
         let lastName = undefined;
         let direction = undefined;
