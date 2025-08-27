@@ -2,7 +2,12 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
-import { CaseStatusResponse, getErrandStatus, getStatusesUsingPartyId } from '@common/services/casestatus-service';
+import {
+  CaseStatusResponse,
+  getErrandStatus,
+  getStatusesUsingOrganizationNumber,
+  getStatusesUsingPartyId,
+} from '@common/services/casestatus-service';
 import { sortBy } from '@common/services/helper-service';
 import {
   createRelation,
@@ -24,8 +29,8 @@ export const LinkedErrandsDisclosure: React.FC<{
   errand: SupportErrand | IErrand;
 }> = ({ errand }) => {
   const { municipalityId } = useAppContext();
-  const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(true);
-  const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(true);
+  const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(false);
+  const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(false);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [relations, setRelations] = useState<Relation[]>([]);
@@ -64,15 +69,40 @@ export const LinkedErrandsDisclosure: React.FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingToErrands(true);
-        const relatedPersonId = appConfig.isSupportManagement
-          ? getSupportOwnerStakeholder(errand as SupportErrand)?.externalId
-          : getOwnerStakeholder(errand as IErrand)?.personId;
-
         const sourceRelations = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
         setRelations(sourceRelations);
-        const fetchedErrands = await getStatusesUsingPartyId(municipalityId, relatedPersonId);
-        setRelationToErrands(sortBy(fetchedErrands, 'status'));
 
+        if (appConfig.features.useStakeholderRelations) {
+          let relatedPerson: {
+            id: string;
+            type: string;
+          } = { id: '', type: '' };
+
+          if (appConfig.isSupportManagement) {
+            const supportStakeholder = getSupportOwnerStakeholder(errand as SupportErrand);
+            if (!supportStakeholder) {
+              setIsLoadingToErrands(false);
+              return;
+            }
+            relatedPerson.id = supportStakeholder?.externalId;
+            relatedPerson.type = supportStakeholder?.stakeholderType;
+          }
+          if (appConfig.isCaseData) {
+            const caseDataStakeholder = getOwnerStakeholder(errand as IErrand);
+            if (!caseDataStakeholder) {
+              setIsLoadingToErrands(false);
+              return;
+            }
+            relatedPerson.id = caseDataStakeholder?.personId || caseDataStakeholder?.organizationNumber;
+            relatedPerson.type = caseDataStakeholder.stakeholderType;
+          }
+
+          const fetchedErrands =
+            relatedPerson.type === 'PERSON'
+              ? await getStatusesUsingPartyId(municipalityId, relatedPerson.id)
+              : await getStatusesUsingOrganizationNumber(municipalityId, relatedPerson.id);
+          setRelationToErrands(sortBy(fetchedErrands, 'status'));
+        }
         setIsLoadingToErrands(false);
       } catch (error) {
         console.error('Error fetching errands or relations:', error);

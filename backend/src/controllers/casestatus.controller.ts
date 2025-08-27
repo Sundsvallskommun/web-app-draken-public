@@ -31,6 +31,23 @@ export class CaseStatusController {
     return { data: res.data, message: 'success' };
   }
 
+  @Get('/:municipalityId/:organizationNumber/statuses')
+  @OpenAPI({ summary: 'Get all statuses connected to a organizationNumber' })
+  @UseBefore(authMiddleware)
+  async getStatusesUsingOrganizationNumber(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('organizationNumber') organizationNumber: string,
+  ): Promise<{ data: any; message: string }> {
+    const url = `${municipalityId}/${organizationNumber}/statuses`;
+    const baseURL = apiURL(this.SERVICE);
+    const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
+      logger.error('Error when fetching relations: ', e);
+      throw e;
+    });
+    return { data: res.data, message: 'success' };
+  }
+
   @Get('/:municipalityId/errands/statuses/:query')
   @OpenAPI({ summary: 'Get errand statuses by errandNumber and propertyDesignation' })
   @UseBefore(authMiddleware)
