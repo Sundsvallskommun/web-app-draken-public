@@ -507,7 +507,7 @@ export const MessageComposer: React.FC<{
                     defaultChecked={!!errand.externalCaseId}
                     {...register('contactMeans')}
                   >
-                    E-tjänst
+                    E-tjänst Intern
                   </RadioButton>
                 )}
                 {!!getOwnerStakeholder(errand)?.personalNumber && (
