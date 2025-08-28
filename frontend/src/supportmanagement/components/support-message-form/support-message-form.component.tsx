@@ -363,41 +363,19 @@ export const SupportMessageForm: React.FC<{
   };
 
   useEffect(() => {
-    let body: string;
-    let prefillPhone = props.prefillPhone || PREFILL_VALUE;
-
-    switch (contactMeans) {
-      case 'sms':
-        setValue('newPhoneNumber', prefillPhone);
-        body = smsBody;
-        clearErrors();
-        break;
-
-      case 'draken':
-        body = internalConversationSignature;
-        break;
-
-      default:
-        body = emailBody;
-        break;
-    }
-
-    setRichText(body);
-    setValue('messageBody', sanitized(body));
-    quillRef.current?.clipboard?.dangerouslyPasteHTML(body);
-
-    setTimeout(() => props.setUnsaved(false), 0);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans, props.prefillEmail, props.prefillPhone]);
-
-  useEffect(() => {
     setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || !!props.message?.conversationId);
 
-    if (!!props.message?.conversationId) {
-      setValue('contactMeans', 'draken');
-    }
     if (props.message) {
+      setValue(
+        'contactMeans',
+        props.message.communicationType === 'WEBMESSAGE'
+          ? 'webmessage'
+          : props.message.communicationType === 'DRAKEN'
+          ? 'draken'
+          : props.message.communicationType === 'MINASIDOR'
+          ? 'minasidor'
+          : 'email'
+      );
       const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
       const references = props.message?.emailHeaders?.['REFERENCES'] || [];
       references.push(replyTo);
@@ -409,18 +387,42 @@ export const SupportMessageForm: React.FC<{
       );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
 
-      setRichText(emailBody + historyHeader + props.message.messageBody);
+      const signature = !!props.message?.conversationId ? internalConversationSignature : emailBody;
 
+      setRichText(signature + historyHeader + props.message.messageBody);
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(signature + historyHeader + props.message.messageBody);
       trigger();
     } else {
-      setRichText(emailBody);
+      let body: string;
+      let prefillPhone = props.prefillPhone || PREFILL_VALUE;
+
+      switch (contactMeans) {
+        case 'sms':
+          setValue('newPhoneNumber', prefillPhone);
+          body = smsBody;
+          clearErrors();
+          break;
+
+        case 'draken':
+        case 'minasidor':
+          body = internalConversationSignature;
+          break;
+
+        default:
+          body = emailBody;
+          break;
+      }
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
       setValue('emails', []);
       setValue('phoneNumbers', []);
+
+      setRichText(body);
+      setValue('messageBody', sanitized(body));
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(body);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.message, props.message?.conversationId]);
+  }, [contactMeans, props.message]);
 
   useEffect(() => {
     getSourceRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
@@ -443,7 +445,7 @@ export const SupportMessageForm: React.FC<{
       {!replying ? (
         <div className="w-full pt-16">
           <strong className="text-md">Kontaktväg</strong>
-          <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
+          <RadioButton.Group inline data-cy="message-channel-radio-button-group" className="mt-8">
             {appConfig.features.useEmailContactChannel && (
               <RadioButton
                 disabled={props.locked}
@@ -470,8 +472,7 @@ export const SupportMessageForm: React.FC<{
                 SMS
               </RadioButton>
             )}
-            {Channels[supportErrand.channel] === Channels.ESERVICE ||
-            Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
+            {Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
@@ -481,7 +482,7 @@ export const SupportMessageForm: React.FC<{
                 value="webmessage"
                 {...register('contactMeans')}
               >
-                E-tjänst
+                E-tjänst Intern
               </RadioButton>
             ) : null}
             {appConfig.features.useStakeholderRelations && (

@@ -353,6 +353,9 @@ export const MessageComposer: React.FC<{
   const { contactMeans } = watch();
 
   const onRichTextChange = (delta, oldDelta, source) => {
+    if (source === 'api') {
+      return;
+    }
     setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
       shouldDirty: true,
     });
@@ -364,6 +367,8 @@ export const MessageComposer: React.FC<{
     if (contactMeans === 'sms') {
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '+46');
     }
+    setRichText(defaultSignature());
+    quillRef.current?.clipboard?.dangerouslyPasteHTML(defaultSignature());
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
@@ -371,8 +376,8 @@ export const MessageComposer: React.FC<{
   }, [contactMeans]);
 
   const defaultSignature = () => {
-    if (getValues('contactMeans') === 'draken') {
-      return t('messages:templates.conversation_default_signature', { user: errand.administratorName });
+    if (getValues('contactMeans') === 'draken' || getValues('contactMeans') === 'minasidor') {
+      return t('messages:templates.conversation_default_signature', { user: user.firstName + ' ' + user.lastName });
     }
     return t('messages:templates.case_data_default_signature', {
       user: errand.administratorName,
@@ -466,58 +471,60 @@ export const MessageComposer: React.FC<{
               <legend className="text-md my-sm">
                 <strong>Kontaktväg</strong>
               </legend>
-              <RadioButton
-                tabIndex={props.show ? 0 : -1}
-                data-cy="useEmail-radiobutton-true"
-                className="mr-sm"
-                name="useEmail"
-                id="useEmail"
-                value={'email'}
-                defaultChecked={!errand.externalCaseId}
-                {...register('contactMeans')}
-              >
-                E-post
-              </RadioButton>
-              <RadioButton
-                tabIndex={props.show ? 0 : -1}
-                data-cy="useSms-radiobutton-true"
-                className="mr-sm"
-                name="useSms"
-                id="useSms"
-                value={'sms'}
-                defaultChecked={false}
-                {...register('contactMeans')}
-              >
-                SMS
-              </RadioButton>
-              {!!errand.externalCaseId && (
+              <RadioButton.Group inline>
                 <RadioButton
                   tabIndex={props.show ? 0 : -1}
-                  data-cy="useWebMessage-radiobutton-true"
+                  data-cy="useEmail-radiobutton-true"
                   className="mr-sm"
-                  name="useWebMessage"
-                  id="useWebMessage"
-                  value={'webmessage'}
-                  defaultChecked={!!errand.externalCaseId}
+                  name="useEmail"
+                  id="useEmail"
+                  value={'email'}
+                  defaultChecked={!errand.externalCaseId}
                   {...register('contactMeans')}
                 >
-                  E-tjänst
+                  E-post
                 </RadioButton>
-              )}
-              {!!getOwnerStakeholder(errand)?.personalNumber && (
                 <RadioButton
                   tabIndex={props.show ? 0 : -1}
-                  data-cy="useMinaSidor-radiobutton-true"
+                  data-cy="useSms-radiobutton-true"
                   className="mr-sm"
-                  name="useMinaSidor"
-                  id="useMinaSidor"
-                  value={'minasidor'}
-                  defaultChecked={!!errand.externalCaseId}
+                  name="useSms"
+                  id="useSms"
+                  value={'sms'}
+                  defaultChecked={false}
                   {...register('contactMeans')}
                 >
-                  Mina sidor
+                  SMS
                 </RadioButton>
-              )}
+                {!!errand.externalCaseId && (
+                  <RadioButton
+                    tabIndex={props.show ? 0 : -1}
+                    data-cy="useWebMessage-radiobutton-true"
+                    className="mr-sm"
+                    name="useWebMessage"
+                    id="useWebMessage"
+                    value={'webmessage'}
+                    defaultChecked={!!errand.externalCaseId}
+                    {...register('contactMeans')}
+                  >
+                    E-tjänst
+                  </RadioButton>
+                )}
+                {!!getOwnerStakeholder(errand)?.personalNumber && (
+                  <RadioButton
+                    tabIndex={props.show ? 0 : -1}
+                    data-cy="useMinaSidor-radiobutton-true"
+                    className="mr-sm"
+                    name="useMinaSidor"
+                    id="useMinaSidor"
+                    value={'minasidor'}
+                    defaultChecked={!!errand.externalCaseId}
+                    {...register('contactMeans')}
+                  >
+                    Mina sidor
+                  </RadioButton>
+                )}
+              </RadioButton.Group>
             </fieldset>
           ) : null}
 
