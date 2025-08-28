@@ -37,7 +37,9 @@ export const getStatusesUsingPartyId = (municipalityId: string, partyId: string)
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
-      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
+      const excludedNamespaces = ['SALARYANDPENSION', 'INTERNALSERVICE'];
+      const filteredResponse = res.data.data.filter((item) => !excludedNamespaces.includes(item.namespace));
+      const sortedData = sortBy(filteredResponse, 'firstSubmitted').slice(0, 200);
       return sortedData;
     })
     .catch((e) => {
@@ -55,7 +57,9 @@ export const getStatusesUsingOrganizationNumber = (municipalityId: string, organ
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
-      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
+      const excludedNamespaces = ['SALARYANDPENSION', 'INTERNALSERVICE'];
+      const filteredResponse = res.data.data.filter((item) => !excludedNamespaces.includes(item.namespace));
+      const sortedData = sortBy(filteredResponse, 'firstSubmitted').slice(0, 200);
       return sortedData;
     })
     .catch((e) => {
