@@ -224,7 +224,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       });
 
       getEscalationMessage(latestErrand, `${user.firstName} ${user.lastName}`).then((text) => {
-        setRichText(text);
+        setRichText(text.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>'));
       });
     }
   }, [latestErrand, supportAttachments, supportMetadata, showModal, user.firstName, user.lastName, setValue]);

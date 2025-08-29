@@ -90,8 +90,18 @@ export const RenderedSupportMessage: React.FC<{
   }, [message, supportErrand]);
 
   const content = isHTML(message?.messageBody)
-    ? sanitized(extractBody(message?.messageBody))
-    : convertPlainTextToHTML(message?.messageBody);
+    ? sanitized(
+        extractBody(message?.messageBody).replace(
+          /([^\s<]+)<(https?:\/\/[^>]+)>/g,
+          '<a class="text-ring underline" href="$2" target="_blank">$1</a>'
+        )
+      )
+    : convertPlainTextToHTML(
+        message?.messageBody.replace(
+          /([^\s<]+)<(https?:\/\/[^>]+)>/g,
+          '<a class="text-ring underline" href="$2" target="_blank">$1</a>'
+        )
+      );
 
   return (
     <>
