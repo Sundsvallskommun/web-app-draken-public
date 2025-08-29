@@ -498,19 +498,20 @@ export const SupportMessageForm: React.FC<{
                 Draken
               </RadioButton>
             )}
-            {getSupportOwnerStakeholder(supportErrand)?.personNumber && (
-              <RadioButton
-                disabled={props.locked}
-                data-cy="useMinasidor-radiobutton-true"
-                className="mr-sm mt-4"
-                name="useMinasidor"
-                id="useMinasidor"
-                value="minasidor"
-                {...register('contactMeans')}
-              >
-                Mina sidor
-              </RadioButton>
-            )}
+            {getSupportOwnerStakeholder(supportErrand)?.personNumber &&
+              Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
+                <RadioButton
+                  disabled={props.locked}
+                  data-cy="useMinasidor-radiobutton-true"
+                  className="mr-sm mt-4"
+                  name="useMinasidor"
+                  id="useMinasidor"
+                  value="minasidor"
+                  {...register('contactMeans')}
+                >
+                  Mina sidor
+                </RadioButton>
+              )}
           </RadioButton.Group>
         </div>
       ) : null}

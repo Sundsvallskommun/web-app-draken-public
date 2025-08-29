@@ -510,7 +510,7 @@ export const MessageComposer: React.FC<{
                     E-tjänst Intern
                   </RadioButton>
                 )}
-                {!!getOwnerStakeholder(errand)?.personalNumber && (
+                {!!getOwnerStakeholder(errand)?.personalNumber && !errand.externalCaseId && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
                     data-cy="useMinaSidor-radiobutton-true"
