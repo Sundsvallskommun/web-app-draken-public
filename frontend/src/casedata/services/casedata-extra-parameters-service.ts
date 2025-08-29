@@ -150,7 +150,9 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
       if (caseType && field && templateField) {
         const { label, formField, section, dependsOn } = templateField;
         const isCheckbox = formField.type === 'checkbox';
-        const value = isCheckbox ? param.values : param.values[0] || '';
+        // If the field is a checkbox, its values are in a string formatted
+        // comma-separated list in the first element of the param.values array
+        const value = isCheckbox ? param.values[0].split(',').map((v) => v.trim()) : param.values[0] || '';
 
         obj[caseType] = obj[caseType] || [];
         const data: UppgiftField = {
