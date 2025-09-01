@@ -362,14 +362,17 @@ export const SidebarInfo: React.FC<{
       case Resolution.SENT_MESSAGE: {
         return solutionComponent('Meddelande', 'skickade ett meddelande.', 'check');
       }
-      case Resolution.RECRUITED: {
-        return solutionComponent('Rekryterad', 'avslutade ärendet.', 'check');
+      case Resolution.NEED_MET: {
+        return solutionComponent('Behov uppfyllt', 'avslutade ärendet.', 'check');
       }
-      case Resolution.ABORTED: {
-        return solutionComponent('Avbrutet', 'avslutade ärendet.', 'check');
+      case Resolution.RECRUITED_FEWER: {
+        return solutionComponent('Rekryterat färre', 'avslutade ärendet.', 'check');
       }
-      case Resolution.PARTLY: {
-        return solutionComponent('Delvis', 'avslutade ärendet.', 'check');
+      case Resolution.RECRUITED_MORE: {
+        return solutionComponent('Rekryterat fler', 'avslutade ärendet.', 'check');
+      }
+      case Resolution.CANCELLED: {
+        return solutionComponent('Avbruten', 'avslutade ärendet.', 'check');
       }
     }
   };
