@@ -301,9 +301,10 @@ export enum Resolution {
   REFER_TO_PHONE = 'REFER_TO_PHONE',
   REGISTERED = 'REGISTERED',
   SENT_MESSAGE = 'SENT_MESSAGE',
-  RECRUITED = 'RECRUITED',
-  ABORTED = 'ABORTED',
-  PARTLY = 'PARTLY',
+  NEED_MET = 'NEED_MET',
+  RECRUITED_FEWER = 'RECRUITED_FEWER',
+  RECRUITED_MORE = 'RECRUITED_MORE',
+  CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
 }
 
@@ -340,9 +341,10 @@ export enum ResolutionLabelKA {
   REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
 }
 export enum ResolutionLabelROB {
-  RECRUITED = 'Rekryterad',
-  ABORTED = 'Avbruten',
-  PARTLY = 'Delvis',
+  NEED_MET = 'Behov uppfyllt',
+  RECRUITED_FEWER = 'Rekryterat färre',
+  RECRUITED_MORE = 'Rekryterat fler',
+  CANCELLED = 'Avbruten',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;

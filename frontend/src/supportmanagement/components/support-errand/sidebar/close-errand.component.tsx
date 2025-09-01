@@ -38,7 +38,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedResolution, setSelectedResolution] = useState<Resolution>(
-    isROB() ? Resolution.RECRUITED : isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
+    isROB() ? Resolution.NEED_MET : isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
   );
 
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
