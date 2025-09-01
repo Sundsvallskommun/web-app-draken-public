@@ -81,7 +81,7 @@
     ".next-PT/types/**/*.ts",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
-    "src/common/components/localization-provider",
+    "src/common/components/localization-provider"
   ],
   "exclude": [
     "node_modules"

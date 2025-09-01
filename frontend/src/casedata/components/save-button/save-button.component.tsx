@@ -27,38 +27,10 @@ export const SaveButtonComponent: React.FC<{
     municipalityId: string;
   } = useAppContext();
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
-  const [isLoadingContinue, setIsLoadingContinue] = useState(false);
   const router = useRouter();
-  const [confirmContent, setConfirmContent] = useState<{ title: string; content: string | JSX.Element }>({
-    title: 'Spara ärendet',
-    content: 'Vill du spara ärendet?',
-  });
 
   const { registeringNewErrand } = props;
   const { handleSubmit, formState }: UseFormReturn<IErrand, any, undefined> = useFormContext();
-
-  useEffect(() => {
-    if (registeringNewErrand) {
-      setConfirmContent({
-        title: 'Registrera ärende',
-        content: (
-          <>
-            När du registrerar ett ärende kommer det automatiskt att placeras under kategorin &quot;Nya ärenden&quot;.
-            Därefter blir det tillgängligt för alla behöriga medarbetare inom din verksamhet.
-            <br />
-            <br />
-            Vill du fortsätta med registreringen?
-          </>
-        ),
-      });
-    } else {
-      setConfirmContent({
-        title: 'Spara ärendet',
-        content: 'Vill du spara ärendet?',
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -99,7 +71,7 @@ export const SaveButtonComponent: React.FC<{
             | 'juniskar') || 'primary'
         }
         rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
-        loading={isLoadingContinue || props.loading}
+        loading={props.loading}
         loadingText="Sparar"
       >
         {props.label || 'Spara'}

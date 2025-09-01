@@ -1,18 +1,19 @@
 /// <reference types="cypress" />
 
+import { appConfig } from '@config/appconfig';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockContract } from '../fixtures/mockContract';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
-import { mockPermits } from '../fixtures/mockPermits';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
-import { mockContract } from '../fixtures/mockContract';
-import { appConfig } from '@config/appconfig';
+import { mockRelations } from '../fixtures/mockRelations';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -22,8 +23,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
-      cy.intercept('GET', '**/parking-permits/', mockPermits);
-      cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
@@ -35,6 +34,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
       cy.visit('/arende/2281/MEX-2024-000280');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -50,7 +57,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get(`[aria-label="${mockSidebarButtons[5].label}"]`).should('exist');
     });
 
-    it('manages Information', () => {
+    it.only('manages Information', () => {
       cy.intercept('PATCH', '**/errands/*/stakeholders/*', mockMexErrand_base.data.stakeholders).as(
         'patchStakeholders'
       );

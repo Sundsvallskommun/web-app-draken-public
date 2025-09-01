@@ -1,5 +1,5 @@
 import React from 'react';
-import { AngeSymbol } from 'src/styles/ange-symbol';
+// import { AngeSymbol } from 'src/styles/ange-symbol';
 
 export interface AppConfig {
   symbol: React.ReactNode | null;
@@ -61,15 +61,15 @@ export const appConfig: AppConfig = {
   },
 };
 
-export function symbolByMunicipalityId(): React.ReactNode {
-  switch (process.env.NEXT_PUBLIC_MUNICIPALITY_ID) {
-    case '2260': {
-      //Ånge
-      return <AngeSymbol />;
-    }
-    default: {
-      //Sundsvall
-      return null;
-    }
+export function symbolByMunicipalityId(): React.ReactNode | null {
+  if (typeof window !== 'undefined' && window.Cypress) return null;
+
+  if (process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+    //Ånge
+    const modulePath = 'src/styles/ange-symbol';
+    const { AngeSymbol } = require(modulePath);
+    return React.createElement(AngeSymbol);
   }
+  //Sundsvall eller annat
+  return null;
 }
