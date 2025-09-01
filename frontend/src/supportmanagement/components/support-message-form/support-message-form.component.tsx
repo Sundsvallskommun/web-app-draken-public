@@ -363,12 +363,12 @@ export const SupportMessageForm: React.FC<{
   };
 
   useEffect(() => {
-    setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || !!props.message?.conversationId);
+    setReplying(!!props?.message?.communicationID);
 
     if (props.message) {
       setValue(
         'contactMeans',
-        props.message.communicationType === 'WEBMESSAGE'
+        props.message.communicationType === 'WEB_MESSAGE'
           ? 'webmessage'
           : props.message.communicationType === 'DRAKEN'
           ? 'draken'
