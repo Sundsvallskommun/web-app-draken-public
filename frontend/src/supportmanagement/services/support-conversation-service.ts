@@ -160,9 +160,12 @@ export const getOrCreateSupportConversationId = async (
   }
 
   if (!conversationId) {
-    const topic = `Ärende: #${supportErrand.errandNumber}${
-      selectedRelation ? ` - #${selectedRelation.target.type}` : ''
-    }`;
+    let topic;
+    if (conversationType === 'EXTERNAL') {
+      topic = `Mina sidor`;
+    } else {
+      topic = `${supportErrand.errandNumber}${selectedRelation ? ` - ${selectedRelation.target.type}` : ''}`;
+    }
 
     const newConversation = await createSupportConversation(
       municipalityId,
