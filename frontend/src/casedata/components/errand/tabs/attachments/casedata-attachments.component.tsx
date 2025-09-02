@@ -1,17 +1,15 @@
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { Attachment } from '@casedata/interfaces/attachment';
+import { Attachment, MEXAllAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
-  AttachmentLabels,
   deleteAttachment,
   documentMimeTypes,
   editAttachment,
   fetchAttachment,
-  getAttachmentKey,
+  getMEXAttachmentKey,
   getAttachmentLabel,
   getPTAttachmentKey,
   onlyOneAllowed,
-  PTAttachmentLabels,
   sendAttachments,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
@@ -165,7 +163,7 @@ export const CasedataAttachments: React.FC = () => {
     trigger();
     const vals: CasedataAttachmentFormModel | ({ newItem: FileList | undefined } & Record<string, any>) = getValues();
     const attachmentCategory = isMEX()
-      ? getAttachmentKey(vals.attachmentType)
+      ? getMEXAttachmentKey(vals.attachmentType)
       : getPTAttachmentKey(vals.attachmentType);
     const isSelectedAttachmentType = selectedAttachment?.category === attachmentCategory;
     setAttachmentTypeExists(
@@ -491,9 +489,9 @@ export const CasedataAttachments: React.FC = () => {
                     <p>
                       <strong>{attachment.name}</strong>{' '}
                       {attachment.category &&
-                      (AttachmentLabels[attachment.category] || PTAttachmentLabels[attachment.category])
+                      (MEXAllAttachmentLabels[attachment.category] || PTAttachmentLabels[attachment.category])
                         ? isMEX()
-                          ? '(' + AttachmentLabels[attachment.category] + ')'
+                          ? '(' + MEXAllAttachmentLabels[attachment.category] + ')'
                           : '(' + PTAttachmentLabels[attachment.category] + ')'
                         : ''}
                     </p>
