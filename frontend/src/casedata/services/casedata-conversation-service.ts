@@ -185,10 +185,20 @@ export const getOrCreateConversationId = async (
   }
 
   if (!conversationId) {
+    let topic;
+    if (conversationType === 'EXTERNAL') {
+      // At the time of coding, only EXTERNAL conversation can be initiated from MEX.
+      topic = `Mina sidor`;
+    } else {
+      // So this case will never be true, until support for initating INTERNAL conversations
+      // from MEX (to KS) is added
+      topic = `${errand.errandNumber}`; //${selectedRelation ? ` - ${selectedRelation.target.type}` : ''}`;
+    }
+
     const newConversation = await createConversation(
       municipalityId,
       errand.id,
-      `Ärende: #${errand.errandNumber}`,
+      topic,
       conversationType
       // selectedRelation?.id
     );
