@@ -71,7 +71,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   useEffect(() => {
     setRichText(
       convertPlainTextToHTML(
-        getValues().description.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>')
+        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
       )
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
