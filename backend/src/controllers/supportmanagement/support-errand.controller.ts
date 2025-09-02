@@ -41,6 +41,7 @@ import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck, toOffsetDateTime, withRetries } from '@/utils/util';
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { filter } from 'compression';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -336,6 +337,121 @@ export class SupportErrandController {
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
 
+  private async buildErrandFilter(
+    req: RequestWithUser,
+    query?: string,
+    stakeholders?: string,
+    priority?: string,
+    category?: string,
+    type?: string,
+    labelCategory?: string,
+    labelType?: string,
+    labelSubType?: string,
+    channel?: string,
+    status?: string,
+    resolution?: string,
+    start?: string,
+    end?: string,
+  ): Promise<string> {
+    const filterList = [];
+    if (query) {
+      let guidRes = null;
+      const isPersonNumber = luhnCheck(query);
+      if (isPersonNumber) {
+        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+      }
+      let queryFilter = `(`;
+      queryFilter += `description~'*${query}*'`;
+      queryFilter += ` or title~'*${query}*'`;
+      queryFilter += ` or errandNumber~'*${query}*'`;
+      queryFilter += ` or exists(stakeholders.firstName~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}')`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and stakeholders.contactChannels.type~'${
+        ContactChannelType.PHONE
+      }')`;
+      queryFilter += ` or exists(stakeholders.organizationName ~ '*${query}*')`;
+      queryFilter += ` or exists(stakeholders.externalId ~ '*${query}*')`;
+      queryFilter += ` or exists(parameters.values~'*${query}*')`;
+      if (guidRes !== null) {
+        queryFilter += ` or exists(stakeholders.externalId ~ '*${guidRes.data}*')`;
+      }
+      queryFilter += ')';
+      filterList.push(queryFilter);
+    }
+    if (stakeholders) {
+      filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
+    }
+    if (priority) {
+      const ss = priority.split(',').map(s => `priority:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
+    }
+    if (category) {
+      const ss = category.split(',').map(s => `category:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
+    }
+    if (type) {
+      const ss = type.split(',').map(s => `type:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
+    }
+    if (labelCategory || labelType || labelSubType) {
+      const labelCategoryList = labelCategory?.split(',');
+      const labelTypeList = labelType?.split(',');
+      const labelSubTypeList = labelSubType?.split(',');
+      if (labelCategory) {
+        if (labelCategoryList.length > 0) {
+          const ss = labelCategoryList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
+      }
+      if (labelType) {
+        if (labelTypeList.length > 0) {
+          const ss = labelTypeList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
+      }
+      if (labelSubType) {
+        if (labelSubTypeList.length > 0) {
+          const ss = labelSubTypeList
+            .join(',')
+            .split(',')
+            .map(s => `exists(labels:'${s}')`);
+          filterList.push(`(${ss.join(' or ')})`);
+        }
+      }
+    }
+    if (channel) {
+      filterList.push(`channel:'${channel}'`);
+    }
+    if (status) {
+      const ss = status.split(',').map(s => `status:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
+    }
+    if (resolution) {
+      filterList.push(`resolution:'${resolution}'`);
+    }
+    if (start) {
+      const s = toOffsetDateTime(dayjs(start).startOf('day'));
+      filterList.push(`created>'${s}'`);
+    }
+    if (end) {
+      const e = toOffsetDateTime(dayjs(end).endOf('day'));
+      filterList.push(`created<'${e}'`);
+    }
+    console.log('filterlist', filterList);
+    console.log('length', filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '');
+    return filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
+  }
+
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
     if (
@@ -427,108 +543,78 @@ export class SupportErrandController {
       logger.error('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
-    const filterList = [];
-    if (query) {
-      let guidRes = null;
-      const isPersonNumber = luhnCheck(query);
-      if (isPersonNumber) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
-      }
-      let queryFilter = `(`;
-      queryFilter += `description~'*${query}*'`;
-      queryFilter += ` or title~'*${query}*'`;
-      queryFilter += ` or errandNumber~'*${query}*'`;
-      queryFilter += ` or exists(stakeholders.firstName~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and stakeholders.contactChannels.type~'${
-        ContactChannelType.PHONE
-      }')`;
-      queryFilter += ` or exists(stakeholders.organizationName ~ '*${query}*')`;
-      queryFilter += ` or exists(stakeholders.externalId ~ '*${query}*')`;
-      queryFilter += ` or exists(parameters.values~'*${query}*')`;
-      if (guidRes !== null) {
-        queryFilter += ` or exists(stakeholders.externalId ~ '*${guidRes.data}*')`;
-      }
-      queryFilter += ')';
-      filterList.push(queryFilter);
-    }
-    if (stakeholders) {
-      filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
-    }
-    if (priority) {
-      const ss = priority.split(',').map(s => `priority:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (category) {
-      const ss = category.split(',').map(s => `category:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (type) {
-      const ss = type.split(',').map(s => `type:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (labelCategory || labelType || labelSubType) {
-      const labelCategoryList = labelCategory?.split(',');
-      const labelTypeList = labelType?.split(',');
-      const labelSubTypeList = labelSubType?.split(',');
-      if (labelCategory) {
-        if (labelCategoryList.length > 0) {
-          const ss = labelCategoryList
-            .join(',')
-            .split(',')
-            .map(s => `exists(labels:'${s}')`);
-          filterList.push(`(${ss.join(' or ')})`);
-        }
-      }
-      if (labelType) {
-        if (labelTypeList.length > 0) {
-          const ss = labelTypeList
-            .join(',')
-            .split(',')
-            .map(s => `exists(labels:'${s}')`);
-          filterList.push(`(${ss.join(' or ')})`);
-        }
-      }
-      if (labelSubType) {
-        if (labelSubTypeList.length > 0) {
-          const ss = labelSubTypeList
-            .join(',')
-            .split(',')
-            .map(s => `exists(labels:'${s}')`);
-          filterList.push(`(${ss.join(' or ')})`);
-        }
-      }
-      console.log('filterList', filterList);
-    }
-    if (channel) {
-      filterList.push(`channel:'${channel}'`);
-    }
-    if (status) {
-      const ss = status.split(',').map(s => `status:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (resolution) {
-      filterList.push(`resolution:'${resolution}'`);
-    }
-    if (start) {
-      const s = toOffsetDateTime(dayjs(start).startOf('day'));
-      filterList.push(`created>'${s}'`);
-    }
-    if (end) {
-      const e = toOffsetDateTime(dayjs(end).endOf('day'));
-      filterList.push(`created<'${e}'`);
-    }
 
-    const filter = filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
+    const filter = await this.buildErrandFilter(
+      req,
+      query,
+      stakeholders,
+      priority,
+      category,
+      type,
+      labelCategory,
+      labelType,
+      labelSubType,
+      channel,
+      status,
+      resolution,
+      start,
+      end,
+    );
     let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
     url += filter;
     if (sort) {
       url += `&sort=${sort}`;
     }
+    console.log('url', url);
+    const res = await this.apiService.get<PageErrand>({ url }, req.user);
+    const data = res.data;
+    return response.status(200).send(data);
+  }
+
+  @Get('/countsupporterrands/:municipalityId')
+  @OpenAPI({ summary: 'Counts errands based on the provided filters' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
+  async countErrands(
+    @Req() req: RequestWithUser,
+    @QueryParam('query') query: string,
+    @QueryParam('stakeholders') stakeholders: string,
+    @QueryParam('priority') priority: string,
+    @QueryParam('category') category: string,
+    @QueryParam('type') type: string,
+    @QueryParam('labelCategory') labelCategory: string,
+    @QueryParam('labelType') labelType: string,
+    @QueryParam('labelSubType') labelSubType: string,
+    @QueryParam('channel') channel: string,
+    @QueryParam('status') status: string,
+    @QueryParam('resolution') resolution: string,
+    @QueryParam('start') start: string,
+    @QueryParam('end') end: string,
+    @Param('municipalityId') municipalityId: string,
+    @Res() response: any,
+  ): Promise<any> {
+    if (!municipalityId) {
+      console.error('No municipality id found, needed to fetch errands.');
+      logger.error('No municipality id found, needed to fetch errands.');
+      return response.status(400).send('Municipality id missing');
+    }
+
+    const filter = await this.buildErrandFilter(
+      req,
+      query,
+      stakeholders,
+      priority,
+      category,
+      type,
+      labelCategory,
+      labelType,
+      labelSubType,
+      channel,
+      status,
+      resolution,
+      start,
+      end,
+    );
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count?${filter}`;
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
     const data = res.data;
     return response.status(200).send(data);
