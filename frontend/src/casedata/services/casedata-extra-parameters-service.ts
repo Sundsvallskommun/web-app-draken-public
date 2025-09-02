@@ -152,7 +152,13 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
         const isCheckbox = formField.type === 'checkbox';
         // If the field is a checkbox, its values are in a string formatted
         // comma-separated list in the first element of the param.values array
-        const value = isCheckbox ? param.values[0].split(',').map((v) => v.trim()) : param.values[0] || '';
+        const rawValues = Array.isArray(param.values) ? param.values : [];
+        const normalized = rawValues
+          .flatMap((v) => (typeof v === 'string' ? v.split(',') : []))
+          .map((v) => v.trim())
+          .filter(Boolean);
+
+        const value = isCheckbox ? normalized : rawValues[0] ?? '';
 
         obj[caseType] = obj[caseType] || [];
         const data: UppgiftField = {
