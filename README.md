@@ -26,7 +26,7 @@ För KS (Kontakt Sundsvall):
 | API               | Version |
 | ----------------- | ------: |
 | CaseData          |    11.5 |
-| SupportManagement |    10.6 |
+| SupportManagement |    10.7 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.0 |
@@ -58,7 +58,7 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    10.6 |
+| SupportManagement   |    10.7 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
@@ -77,14 +77,14 @@ För ROB (Rekrytering och bemanning):
 | Employee            |     2.0 |
 | LegalEntity         |     2.0 |
 | SimulatorServer     |     2.0 |
-| SupportManagement   |    10.6 |
+| SupportManagement   |    10.7 |
 | Templating          |     2.0 |
 
 För KA (Kontakt Ånge):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    10.6 |
+| SupportManagement   |    10.7 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.0 |
