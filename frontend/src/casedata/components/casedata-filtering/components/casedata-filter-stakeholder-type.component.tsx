@@ -19,7 +19,7 @@ export const CasedataStakeholderType: React.FC = () => {
     <PopupMenu>
       <PopupMenu.Button
         rightIcon={<LucideIcon name="chevron-down" />}
-        data-cy="Prioritet-filter"
+        data-cy="StakeholderType-filter"
         variant="tertiary"
         showBackground={false}
         size="sm"
@@ -44,7 +44,7 @@ export const CasedataStakeholderType: React.FC = () => {
               labelPosition="left"
               value={'ORGANIZATION'}
               {...register('stakeholderType')}
-              data-cy={`Prioritet-filter-ORGANIZATION`}
+              data-cy={`StakeholderType-ORGANIZATION`}
             >
               Företag/Förening
             </Checkbox>

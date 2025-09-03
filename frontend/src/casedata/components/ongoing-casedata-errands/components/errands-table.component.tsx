@@ -1,26 +1,15 @@
 import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { Priority } from '@casedata/interfaces/priority';
 import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { PriorityComponent } from '@common/components/priority/priority.component';
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Badge,
-  Button,
-  Callout,
-  Input,
-  Label,
-  Pagination,
-  Select,
-  Spinner,
-  Table,
-  cx,
-  useThemeQueries,
-} from '@sk-web-gui/react';
+import { Button, Input, Pagination, Select, Spinner, Table, cx, useThemeQueries } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
 import NextLink from 'next/link';
@@ -28,8 +17,6 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import { PriorityComponent } from '@common/components/priority/priority.component';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -135,7 +122,7 @@ export const ErrandsTable: React.FC = () => {
 
   const rows = (data.errands || []).map((errand: IErrand, index) => {
     const notification = findLatestNotification(errand);
-    const caseMeaning = errand.extraParameters.find((param) => param.key === 'caseMeaning');
+    const caseMeaning = errand.extraParameters?.find((param) => param.key === 'caseMeaning');
     return (
       <Table.Row
         key={`row-${index}`}

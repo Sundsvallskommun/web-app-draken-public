@@ -1,33 +1,32 @@
 /// <reference types="cypress" />
 
+import { MEXCaseLabel } from '@casedata/interfaces/case-label';
+import { MEXLegacyCaseType } from '@casedata/interfaces/case-type';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockErrands_base } from 'cypress/e2e/case-data/fixtures/mockErrands';
-import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockMe } from '../fixtures/mockMe';
-import { mockMessages } from '../fixtures/mockMessages';
-import { mockPermits } from '../fixtures/mockPermits';
-import { mockCaseTypes } from 'cypress/e2e/case-data/fixtures/mockCaseTypes';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockContract } from '../fixtures/mockContract';
+import { mockConversations } from '../fixtures/mockConversations';
+import { mockMe } from '../fixtures/mockMe';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
+import { mockNotifications } from '../fixtures/mockNotifications';
+import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Register errand', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/messages/*', mockMessages);
-      cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
-      cy.intercept('GET', '**/parking-permits/', mockPermits);
-      cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
-      cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', /2281\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
-      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
-      cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
       cy.visit('/registrera');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     });
@@ -41,31 +40,29 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="casetype-input"]').should('exist');
       cy.get('[data-cy="casetype-input"]').should('exist');
       cy.get('[data-cy="priority-input"]').should('exist');
-      cy.get('.sk-tabs-content button[data-cy="save-and-continue-button"]').contains('Registrera').should('exist');
+      cy.get('button[data-cy="save-and-continue-button"]').contains('Registrera').should('exist');
     });
 
     it('Manages select input and register', () => {
       cy.intercept('POST', '**/errands', mockMexErrand_base).as('postErrand');
       cy.get('[data-cy="municipality-input"]').should('be.disabled');
-      mockCaseTypes.data.forEach((type) => {
-        cy.get('[data-cy="casetype-input"]').select(type);
-      });
+
+      const legacyKeys = Object.keys(MEXLegacyCaseType);
+      Object.entries(MEXCaseLabel)
+        .filter(([key, value]) => !legacyKeys.includes(key))
+        .forEach(([key, value]) => {
+          cy.get('[data-cy="casetype-input"]').select(value);
+        });
 
       cy.get('[data-cy="priority-input"]').select('Hög');
       cy.get('[data-cy="priority-input"]').select('Medel');
       cy.get('[data-cy="priority-input"]').select('Låg');
 
-      cy.get('.sk-tabs-content button[data-cy="save-and-continue-button"]').contains('Registrera').click();
-      cy.get('.sk-modal-dialog').should('exist');
-      cy.get('.sk-modal-footer button.sk-btn-secondary').contains('Nej').should('exist').click();
-
-      cy.get('.sk-tabs-content button[data-cy="save-and-continue-button"]').contains('Registrera').click();
-      cy.get('.sk-modal-dialog').should('exist');
-      cy.get('.sk-modal-footer button.sk-btn-primary').contains('Ja').should('exist').click();
+      cy.get('button[data-cy="save-and-continue-button"]').contains('Registrera').click();
       cy.wait('@postErrand');
       cy.wait('@getErrandById');
       cy.wait('@getErrandAttachments');
-      cy.visit(`/arende/${mockMexErrand_base.data.id}`);
+      cy.visit(`/arende/2281/${mockMexErrand_base.data.errandNumber}`);
     });
 
     it('Can cancel the process, going back to overview', () => {

@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 export const emptyMockErrands = {
   data: {
     content: [],
@@ -225,12 +224,24 @@ export const mockErrands_base = {
         updatedByClient: Cypress.env('mockAdUsername'),
         createdBy: Cypress.env('mockAdUsername'),
         updatedBy: Cypress.env('mockAdUsername'),
-        extraParameters: {
-          'process.phaseStatus': 'CANCELED',
-          'process.phaseAction': 'CANCEL',
-          otherInformation: '',
-          'process.displayPhase': 'Beslut',
-        },
+        extraParameters: [
+          {
+            key: 'process.phaseStatus',
+            values: 'CANCELED',
+          },
+          {
+            key: 'process.phaseAction',
+            values: 'CANCEL',
+          },
+          {
+            key: 'process.displayPhase',
+            values: 'Beslut',
+          },
+          {
+            key: 'otherInformation',
+            values: '',
+          },
+        ],
       },
       {
         id: 942,
@@ -398,11 +409,20 @@ export const mockErrands_base = {
         updatedByClient: 'WSO2_Camunda',
         createdBy: Cypress.env('mockAdUsername'),
         updatedBy: 'UNKNOWN',
-        extraParameters: {
-          'process.phaseStatus': 'COMPLETED',
-          'process.phaseAction': 'UNKNOWN',
-          'process.displayPhase': 'Slutför',
-        },
+        extraParameters: [
+          {
+            key: 'process.phaseStatus',
+            values: 'COMPLETED',
+          },
+          {
+            key: 'process.phaseAction',
+            values: 'UNKNOWN',
+          },
+          {
+            key: 'process.displayPhase',
+            values: 'Slutför',
+          },
+        ],
       },
       {
         id: 932,
@@ -537,11 +557,20 @@ export const mockErrands_base = {
         updatedByClient: 'WSO2_Camunda',
         createdBy: Cypress.env('mockAdUsername'),
         updatedBy: 'UNKNOWN',
-        extraParameters: {
-          'process.phaseStatus': 'WAITING',
-          'process.phaseAction': 'UNKNOWN',
-          'process.displayPhase': 'Granskning',
-        },
+        extraParameters: [
+          {
+            key: 'process.phaseStatus',
+            values: 'WAITING',
+          },
+          {
+            key: 'process.phaseAction',
+            values: 'UNKNOWN',
+          },
+          {
+            key: 'process.displayPhase',
+            values: 'Granskning',
+          },
+        ],
       },
       {
         id: 928,
@@ -635,12 +664,24 @@ export const mockErrands_base = {
         updatedByClient: Cypress.env('mockAdUsername'),
         createdBy: Cypress.env('mockAdUsername'),
         updatedBy: Cypress.env('mockAdUsername'),
-        extraParameters: {
-          contractId: '2024-01005',
-          'process.phaseStatus': 'CANCELED',
-          'process.phaseAction': 'CANCEL',
-          'process.displayPhase': 'Granskning',
-        },
+        extraParameters: [
+          {
+            key: 'process.phaseStatus',
+            values: 'CANCELED',
+          },
+          {
+            key: 'process.phaseAction',
+            values: 'CANCEL',
+          },
+          {
+            key: 'process.displayPhase',
+            values: 'Granskning',
+          },
+          {
+            key: 'contractId',
+            values: '2024-01005',
+          },
+        ],
       },
     ],
     pageable: {
@@ -866,12 +907,24 @@ export const mockFilterErrandsByProperty = {
         updatedByClient: Cypress.env('mockAdUsername'),
         createdBy: Cypress.env('mockAdUsername'),
         updatedBy: Cypress.env('mockAdUsername'),
-        extraParameters: {
-          'process.phaseStatus': 'CANCELED',
-          'process.phaseAction': 'CANCEL',
-          otherInformation: '',
-          'process.displayPhase': 'Beslut',
-        },
+        extraParameters: [
+          {
+            key: 'process.phaseStatus',
+            values: 'CANCELED',
+          },
+          {
+            key: 'process.phaseAction',
+            values: 'CANCEL',
+          },
+          {
+            key: 'process.displayPhase',
+            values: 'Beslut',
+          },
+          {
+            key: 'otherInformation',
+            values: '',
+          },
+        ],
       },
       {
         id: 928,
@@ -965,12 +1018,24 @@ export const mockFilterErrandsByProperty = {
         updatedByClient: Cypress.env('mockAdUsername'),
         createdBy: Cypress.env('mockAdUsername'),
         updatedBy: Cypress.env('mockAdUsername'),
-        extraParameters: {
-          contractId: '2024-01005',
-          'process.phaseStatus': 'CANCELED',
-          'process.phaseAction': 'CANCEL',
-          'process.displayPhase': 'Granskning',
-        },
+        extraParameters: [
+          {
+            key: 'process.phaseStatus',
+            values: 'CANCELED',
+          },
+          {
+            key: 'process.phaseAction',
+            values: 'CANCEL',
+          },
+          {
+            key: 'process.displayPhase',
+            values: 'Granskning',
+          },
+          {
+            key: 'contractId',
+            values: '2024-01005',
+          },
+        ],
       },
     ],
     pageable: {

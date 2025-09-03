@@ -155,8 +155,8 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
       {stakeholderType &&
         stakeholderType.map((type, typeIndex) => (
           <Chip
-            data-cy={`tag-phase-${type}`}
-            key={`casePhase-${typeIndex}`}
+            data-cy={`tag-stakeholdertype-${type}`}
+            key={`stakeholdertype-${typeIndex}`}
             onClick={() => handleRemoveStakeholderType(type)}
           >
             {type === 'PERSON' ? 'Privat' : 'Företag/Förening'}
