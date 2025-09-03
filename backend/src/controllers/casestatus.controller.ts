@@ -1,5 +1,5 @@
 import { apiServiceName } from '@/config/api-config';
-import { Errand } from '@/data-contracts/case-data/data-contracts';
+import { CaseStatusResponse } from '@/data-contracts/casestatus/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
@@ -7,6 +7,14 @@ import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+const allowedNamespaces: string[] = ['SBK_MEX', 'SBK_PARKING_PERMIT', 'CONTACTSUNDSVALL'];
+const namespaceIsallowed = (c: CaseStatusResponse) => allowedNamespaces.includes(c.namespace);
+
+const allowedSystems: string[] = ['OPEN_E_PLATFORM', 'BYGGR'];
+const systemIsAllowed = (c: CaseStatusResponse) => allowedSystems.includes(c.system);
+
+const caseIsallowed = (c: CaseStatusResponse) => namespaceIsallowed(c) || (typeof c.namespace === 'undefined' && systemIsAllowed(c));
 
 @Controller()
 export class CaseStatusController {
@@ -28,7 +36,7 @@ export class CaseStatusController {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    return { data: res.data, message: 'success' };
+    return { data: res.data.filter(caseIsallowed), message: 'success' };
   }
 
   @Get('/:municipalityId/:organizationNumber/statuses')
@@ -45,7 +53,7 @@ export class CaseStatusController {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    return { data: res.data, message: 'success' };
+    return { data: res.data.filter(caseIsallowed), message: 'success' };
   }
 
   @Get('/:municipalityId/errands/statuses/:query')
