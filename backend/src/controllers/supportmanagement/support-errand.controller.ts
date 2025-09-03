@@ -447,8 +447,6 @@ export class SupportErrandController {
       const e = toOffsetDateTime(dayjs(end).endOf('day'));
       filterList.push(`created<'${e}'`);
     }
-    console.log('filterlist', filterList);
-    console.log('length', filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '');
     return filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
   }
 
@@ -565,7 +563,6 @@ export class SupportErrandController {
     if (sort) {
       url += `&sort=${sort}`;
     }
-    console.log('url', url);
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
     const data = res.data;
     return response.status(200).send(data);
