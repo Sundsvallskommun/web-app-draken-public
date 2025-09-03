@@ -8,7 +8,7 @@ import { attestationEnabled, isNotificicationEnabled } from '@common/services/fe
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
+import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
