@@ -13,6 +13,7 @@ import { Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select, cx
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
+import { appConfig } from '@config/appconfig';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;
@@ -232,7 +233,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             update={() => {}}
           />
         ) : null}
-        {!registeringNewErrand && getApplicationEnvironment() === 'TEST' && <LinkedErrandsDisclosure errand={errand} />}
+        {!registeringNewErrand && appConfig.features.useRelations && <LinkedErrandsDisclosure errand={errand} />}
       </div>
     </div>
   );

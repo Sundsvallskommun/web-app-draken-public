@@ -44,7 +44,7 @@ export const SupportErrandBasicsTab: React.FC<{
         />
       ) : null}
 
-      {getApplicationEnvironment() === 'TEST' ? (
+      {appConfig.features.useRelations ? (
         <div className="mt-md">
           <LinkedErrandsDisclosure errand={supportErrand} />
         </div>

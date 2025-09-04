@@ -30,6 +30,7 @@ interface AppConfigFeatures {
   useDetailsTab: boolean;
   useEscalation: boolean;
   useRequireContactChannel: boolean;
+  useRelations: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -58,6 +59,7 @@ export const appConfig: AppConfig = {
     useDetailsTab: process.env.NEXT_PUBLIC_USE_DETAILS_TAB === 'true',
     useEscalation: process.env.NEXT_PUBLIC_USE_ESCALATION === 'true',
     useRequireContactChannel: process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL === 'true',
+    useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true', //Temporary
   },
 };
 
