@@ -1,5 +1,5 @@
+import { AngeSymbol } from '@styles/ange-symbol';
 import React from 'react';
-// import { AngeSymbol } from 'src/styles/ange-symbol';
 
 export interface AppConfig {
   symbol: React.ReactNode | null;
@@ -66,9 +66,10 @@ export function symbolByMunicipalityId(): React.ReactNode | null {
 
   if (process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
     //Ånge
-    const modulePath = 'src/styles/ange-symbol';
-    const { AngeSymbol } = require(modulePath);
-    return React.createElement(AngeSymbol);
+    // const modulePath = 'src/styles/ange-symbol';
+    // const { AngeSymbol } = require(modulePath);
+    // return React.createElement(AngeSymbol);
+    return <AngeSymbol />;
   }
   //Sundsvall eller annat
   return null;
