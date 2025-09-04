@@ -498,7 +498,8 @@ export const SupportMessageForm: React.FC<{
                 Draken
               </RadioButton>
             )}
-            {getSupportOwnerStakeholder(supportErrand)?.personNumber &&
+            {appConfig.features.useRelations &&
+              getSupportOwnerStakeholder(supportErrand)?.personNumber &&
               Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
                   disabled={props.locked}

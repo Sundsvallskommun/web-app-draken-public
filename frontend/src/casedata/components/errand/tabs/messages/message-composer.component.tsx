@@ -28,6 +28,7 @@ import {
 } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -510,20 +511,22 @@ export const MessageComposer: React.FC<{
                     E-tjänst Intern
                   </RadioButton>
                 )}
-                {!!getOwnerStakeholder(errand)?.personalNumber && !errand.externalCaseId && (
-                  <RadioButton
-                    tabIndex={props.show ? 0 : -1}
-                    data-cy="useMinaSidor-radiobutton-true"
-                    className="mr-sm"
-                    name="useMinaSidor"
-                    id="useMinaSidor"
-                    value={'minasidor'}
-                    defaultChecked={!!errand.externalCaseId}
-                    {...register('contactMeans')}
-                  >
-                    Mina sidor
-                  </RadioButton>
-                )}
+                {appConfig.features.useRelations &&
+                  !!getOwnerStakeholder(errand)?.personalNumber &&
+                  !errand.externalCaseId && (
+                    <RadioButton
+                      tabIndex={props.show ? 0 : -1}
+                      data-cy="useMinaSidor-radiobutton-true"
+                      className="mr-sm"
+                      name="useMinaSidor"
+                      id="useMinaSidor"
+                      value={'minasidor'}
+                      defaultChecked={!!errand.externalCaseId}
+                      {...register('contactMeans')}
+                    >
+                      Mina sidor
+                    </RadioButton>
+                  )}
               </RadioButton.Group>
             </fieldset>
           ) : null}
