@@ -6,7 +6,7 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { isKA, isKC } from '@common/services/application-service';
+import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import { Relation, getSourceRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -482,7 +482,21 @@ export const SupportMessageForm: React.FC<{
                 value="webmessage"
                 {...register('contactMeans')}
               >
-                E-tjänst Intern
+                E-tjänst (intern)
+              </RadioButton>
+            ) : null}
+            {/* Only show webmessage option if errand is from e-service and LOP */}
+            {Channels[supportErrand.channel] === Channels.ESERVICE && isLOP() ? (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useWebmessage-radiobutton-true"
+                className="mr-sm mt-4"
+                name="useWebmessage"
+                id="useWebmessage"
+                value="webmessage"
+                {...register('contactMeans')}
+              >
+                E-tjänst (extern)
               </RadioButton>
             ) : null}
             {appConfig.features.useStakeholderRelations && (
