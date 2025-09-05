@@ -25,7 +25,7 @@ const config = {
     'sub',
   ],
   allowedAttributes: {
-    a: ['href', 'name', 'target'],
+    a: ['href', 'name', 'target', 'class'],
     img: ['src'],
   },
   // Lots of these won't come up by default because we don't allow them
