@@ -19,6 +19,7 @@ import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { should } from 'chai';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
@@ -86,7 +87,9 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   const checked = document.querySelector('#causecheckbox:checked') !== null;
 
   const onRichTextChange = (delta, oldDelta, source) => {
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
+      shouldDirty: true,
+    });
   };
 
   return (
@@ -203,6 +206,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         <FormControl id="description" className="w-full">
           <FormLabel>Ärendebeskrivning</FormLabel>
 
+          {/* {supportErrand.channel === ContactChannelType.EMAIL ? ( */}
           <TextEditor
             className="w-full h-[12rem]"
             readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
