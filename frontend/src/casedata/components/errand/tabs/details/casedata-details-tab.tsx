@@ -12,12 +12,14 @@ import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Disclosure, FormControl, FormLabel, Input, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
+import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -29,6 +31,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<boolean>();
+  const quillRef = useRef(null);
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
@@ -40,7 +43,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   const form = useFormContext<IErrand>();
 
-  const { register, setValue, trigger } = form;
+  const { register, setValue, trigger, getValues } = form;
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
@@ -185,14 +188,13 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               <FormControl id="description" className="w-full">
                 <FormLabel>Ärendebeskrivning</FormLabel>
 
-                <Textarea
-                  className="block w-full text-[1.6rem] h-full"
-                  data-cy="description-input"
-                  {...register('description')}
-                  placeholder="Beskriv ärendet"
+                <TextEditor
+                  key={getValues('description')}
+                  className={'h-[25rem]'}
                   readOnly={true}
-                  rows={7}
-                  id="description"
+                  disableToolbar={true}
+                  ref={quillRef}
+                  defaultValue={getValues('description')}
                 />
               </FormControl>
             </div>
