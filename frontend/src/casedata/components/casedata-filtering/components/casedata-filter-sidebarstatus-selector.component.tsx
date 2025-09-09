@@ -5,23 +5,16 @@ import {
   getStatusLabel,
   newStatuses,
   ongoingStatuses,
-  setSuspendedErrands,
   suspendedStatuses,
 } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { isSuspendEnabled } from '@common/services/feature-flag-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button, Spinner } from '@sk-web-gui/react';
+import { Badge, Button } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
-import { useMemo, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { CaseStatusFilter } from './casedata-filter-status.component';
+import { useMemo } from 'react';
 
 export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean }> = ({ iconButton }) => {
-  const { register } = useFormContext<CaseStatusFilter>();
-  const [query, setQuery] = useState<string>('');
-
   const {
     isLoading,
     setSelectedErrandStatuses,
@@ -36,7 +29,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
 
   const updateStatusFilter = (ss: ErrandStatus[]) => {
     try {
-      const labelsToKeys = {};
+      const labelsToKeys: Record<ErrandStatus, string> = {} as Record<ErrandStatus, string>;
       Object.entries(ErrandStatus).forEach(([k, v]) => {
         labelsToKeys[v] = k;
       });
@@ -98,7 +91,9 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
     <>
       {casedataSidebarButtons?.map((button) => {
         const buttonIsActive = button.statuses.some((s) => {
-          return selectedErrandStatuses.map((s) => ErrandStatus[s]).includes(s);
+          return selectedErrandStatuses
+            .map((s) => ErrandStatus[s as keyof typeof ErrandStatus])
+            .includes(s as ErrandStatus);
         });
         return (
           <Button

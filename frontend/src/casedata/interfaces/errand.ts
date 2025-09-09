@@ -91,7 +91,7 @@ export interface IErrand {
   channel: Channels;
   municipalityId: string;
   stakeholders: CasedataOwnerOrContact[];
-  facilities: FacilityDTO[];
+  facilities?: FacilityDTO[];
   created: string;
   updated: string;
   notes: ErrandNote[];
@@ -105,6 +105,7 @@ export interface IErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
+  publicNote?: string;
 }
 
 export interface ErrandsData extends Data {

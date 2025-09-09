@@ -1,21 +1,26 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
+import sanitized, { convertPlainTextToHTML } from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Channels,
+  ContactChannelType,
   SupportErrand,
   defaultSupportErrandInformation,
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { useTranslation } from 'next-i18next';
+import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState } from 'react';
+import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { should } from 'chai';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
@@ -34,11 +39,14 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   const { t } = useTranslation();
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();
+  const [richText, setRichText] = useState<string>('');
 
   const [causeDescriptionIsOpen, setCauseDescriptionIsOpen] = useState(
     supportErrand.contactReasonDescription !== undefined
   );
   const [typesList, setTypesList] = useState<SupportType[]>();
+
+  const quillRef = useRef(null);
 
   const {
     register,
@@ -61,6 +69,15 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     }
   }, [supportMetadata]);
 
+  useEffect(() => {
+    setRichText(
+      convertPlainTextToHTML(
+        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
+      )
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const { category, businessRelated } = watch();
 
   useEffect(() => {
@@ -68,6 +85,12 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   }, [category, categoriesList]);
 
   const checked = document.querySelector('#causecheckbox:checked') !== null;
+
+  const onRichTextChange = (delta, oldDelta, source) => {
+    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
+      shouldDirty: true,
+    });
+  };
 
   return (
     <>
@@ -183,15 +206,17 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         <FormControl id="description" className="w-full">
           <FormLabel>Ärendebeskrivning</FormLabel>
 
-          <Textarea
-            disabled={isSupportErrandLocked(supportErrand)}
-            className="block w-full text-[1.6rem] h-full"
-            data-cy="description-input"
-            {...register('description')}
-            placeholder="Beskriv ärendet"
-            rows={7}
-            id="description"
-            value={getValues().description}
+          {/* {supportErrand.channel === ContactChannelType.EMAIL ? ( */}
+          <TextEditor
+            className="w-full h-[12rem]"
+            readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
+            disableToolbar
+            key={richText}
+            ref={quillRef}
+            defaultValue={richText}
+            onTextChange={(delta, oldDelta, source) => {
+              return onRichTextChange(delta, oldDelta, source);
+            }}
           />
         </FormControl>
       </div>

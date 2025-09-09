@@ -1,4 +1,5 @@
 import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Contract } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
@@ -30,7 +31,7 @@ export interface CasedataContractAttachment {
 @Controller()
 export class CasedataContractsController {
   private apiService = new ApiService();
-  SERVICE = `contract/2.1`;
+  SERVICE = apiServiceName('contract');
 
   @Get('/contract/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
@@ -86,7 +87,7 @@ export class CasedataContractsController {
     }
     const url = `contracts/${MUNICIPALITY_ID}/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const putRes = await this.apiService.put<any, Contract>({ url, baseURL, data }, req.user).catch(e => {
+    await this.apiService.put<any, Contract>({ url, baseURL, data }, req.user).catch(e => {
       throw e;
     });
     const getRes = await this.apiService.get<Contract>({ url, baseURL }, req.user).catch(e => {

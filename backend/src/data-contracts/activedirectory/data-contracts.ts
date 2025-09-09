@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -8,6 +9,15 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+export enum SchemaFilter {
+  OrganizationalUnit = "organizationalUnit",
+  Container = "container",
+  Group = "group",
+  User = "user",
+  Computer = "computer",
+  All = "all",
+}
 
 export interface OUChildren {
   name?: string | null;
@@ -31,13 +41,4 @@ export interface ProblemDetails {
   detail?: string | null;
   instance?: string | null;
   [key: string]: any;
-}
-
-export enum SchemaFilter {
-  OrganizationalUnit = 'organizationalUnit',
-  Container = 'container',
-  Group = 'group',
-  User = 'user',
-  Computer = 'computer',
-  All = 'all',
 }

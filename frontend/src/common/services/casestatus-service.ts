@@ -19,20 +19,58 @@ export const findOperationUsingNamespace = (namespace: string) => {
       return 'MEX';
     case 'SBK_PARKING_PERMIT':
       return 'PRH';
+    case 'SALARYANDPENSION':
+      return 'LOP';
+    case 'CONTACTSUNDSVALL':
+      return 'KS';
     default:
-      '';
-      break;
+      return '(okänd)';
   }
 };
 
 export const getStatusesUsingPartyId = (municipalityId: string, partyId: string) => {
+  if (!municipalityId || !partyId) {
+    return Promise.resolve([]);
+  }
   const url = `${municipalityId}/party/${partyId}/statuses`;
 
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => {
-      const mexErrands = res.data.data.filter((item) => item.namespace === 'SBK_MEX');
-      const sortedData = sortBy(mexErrands, 'firstSubmitted').reverse().slice(0, 12);
+      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
+      return sortedData;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when creating relation: ' + e);
+      throw e;
+    });
+};
+
+export const getStatusesUsingOrganizationNumber = (municipalityId: string, organizationNumber: string) => {
+  if (!municipalityId || !organizationNumber) {
+    return Promise.resolve([]);
+  }
+  const url = `${municipalityId}/${organizationNumber}/statuses`;
+
+  return apiService
+    .get<ApiResponse<any>>(url)
+    .then((res) => {
+      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
+      return sortedData;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when creating relation: ' + e);
+      throw e;
+    });
+};
+
+export const getErrandStatus = (municipalityId: string, query: string) => {
+  const url = `${municipalityId}/errands/statuses/${query}`;
+
+  return apiService
+    .get<ApiResponse<any>>(url)
+    .then((res) => {
+      const sortedData = sortBy(res.data.data, 'firstSubmitted').slice(0, 200);
       return sortedData;
     })
     .catch((e) => {

@@ -1,15 +1,25 @@
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
+import { CaseStatusResponse } from './casestatus-service';
+import { appConfig } from '@config/appconfig';
 
-export const relationsLabels = [
-  { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
+export const relationsToLabels = [
+  { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Verksamhet', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
-export interface Relations {
+export const relationsFromLabels = [
+  { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Verksamhet', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+  { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
+];
+
+export interface Relation {
   id?: string;
   type: string;
   source: {
@@ -26,28 +36,43 @@ export interface Relations {
   };
 }
 
-export const createRelation = (municipalityId: string, sourceId: string, targetId: string) => {
+const formatServiceName = (str: string) => {
+  if (str === 'SUPPORT_MANAGEMENT') return 'supportmanagement';
+  if (str === 'CASE_DATA') return 'case-data';
+  return str.toLocaleLowerCase();
+};
+
+interface RelationsResponse {
+  relations: Relation[];
+  meta: any;
+}
+
+export const createRelation = (
+  municipalityId: string,
+  sourceId: string,
+  sourceErrandNumber: string,
+  targetErrand: CaseStatusResponse
+) => {
   const url = `${municipalityId}/relations`;
 
-  console.log('Creating relation with sourceId: ' + sourceId + ' and targetId: ' + targetId);
-  const body: Partial<Relations> = {
+  const body: Partial<Relation> = {
     type: 'LINK',
     source: {
       resourceId: sourceId,
-      type: 'case',
-      service: 'supportmanagement',
-      namespace: 'CONTACTSUNDSVALL',
+      type: sourceErrandNumber,
+      service: appConfig.isSupportManagement ? 'supportmanagement' : 'case-data',
+      namespace: '',
     },
     target: {
-      resourceId: targetId,
-      type: 'case',
-      service: 'casedata',
-      namespace: 'SBK_MEX',
+      resourceId: targetErrand.caseId,
+      type: targetErrand.errandNumber,
+      service: formatServiceName(targetErrand.system),
+      namespace: targetErrand.namespace,
     },
   };
 
   return apiService
-    .post<ApiResponse<Relations>, Partial<Relations>>(url, body)
+    .post<ApiResponse<Relation>, Partial<Relation>>(url, body)
     .then((res) => {
       return res.data;
     })
@@ -69,12 +94,28 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     });
 };
 
-export const getRelations = (municipalityId: string, sourceId: string) => {
-  const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${sourceId}%27`;
+export const getSourceRelations = (municipalityId: string, sourceId: string, sort: string) => {
+  const url = `${municipalityId}/sourcerelations/${sort}/${sourceId}`;
+
+  return apiService
+    .get<ApiResponse<RelationsResponse>>(url)
+    .then((res) => {
+      return res.data.data.relations;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when getting relation: ' + e);
+      throw e;
+    });
+};
+
+export const getTargetRelations = (municipalityId: string, targetId: string, sort: string) => {
+  const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
 
   return apiService
     .get<ApiResponse<any>>(url)
-    .then((res) => res.data)
+    .then((res) => {
+      return res.data.data;
+    })
     .catch((e) => {
       console.error('Something went wrong when getting relation: ' + e);
       throw e;

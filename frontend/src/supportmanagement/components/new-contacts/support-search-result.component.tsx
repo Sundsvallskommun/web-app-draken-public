@@ -2,6 +2,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFormReturn } from 'react-hook-form';
@@ -139,6 +140,7 @@ export const SupportSearchResult: React.FC<SupportSearchResultProps> = ({
             disabled={!form.formState.isValid}
             onClick={form.handleSubmit(onSubmit)}
             data-cy="submit-contact-person-button"
+            leftIcon={<LucideIcon name="plus" />}
           >
             Lägg till {label.toLowerCase()}
           </Button>

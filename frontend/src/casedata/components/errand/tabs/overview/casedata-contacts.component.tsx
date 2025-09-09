@@ -1,23 +1,19 @@
 import {
-  emptyContact,
+  createEmptyContact,
   SimplifiedContactForm,
 } from '@casedata/components/errand/forms/simplified-contact-form.component';
 import { IErrand } from '@casedata/interfaces/errand';
 import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
-import {
-  editStakeholder,
-  getOwnerStakeholder,
-  getStakeholderRelation,
-  removeStakeholder,
-} from '@casedata/services/casedata-stakeholder-service';
+import { isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { isPT } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Divider, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Disclosure, Divider, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CasedataContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -27,32 +23,23 @@ interface CasedataContactsProps {
 
 export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props) => {
   const [addContact, setAddContact] = useState(false);
-  const [addApplicant, setAddApplicant] = useState(false);
   const [selectedContact, setSelectedContact] = useState<CasedataOwnerOrContact>();
-  const { municipalityId, errand, setErrand, user } = useAppContext();
-  // const message = useMessage();
+  const { errand } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
-  const toastMessage = useSnackbar();
-
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
   useEffect(() => {
-    setAddApplicant(false);
     setAddContact(errand.status?.statusType !== 'Ärende avslutat');
     setSelectedContact(undefined);
   }, [errand]);
 
   const {
-    register,
     control,
-    handleSubmit,
-    watch,
     setValue,
-    trigger,
-    reset,
     getValues,
-    formState,
+    reset,
+    watch,
     formState: { errors },
   }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
@@ -71,76 +58,81 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
   useEffect(() => {
     reset(errand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  const onRemoveContact: (stakeholderId: string, index: number) => Promise<boolean> = (stakeholderId, index) => {
-    return removeStakeholder(municipalityId, errand?.id.toString(), stakeholderId)
-      .then((res) => {
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
-          setErrand(res.errand);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Intressenten togs bort',
-            status: 'success',
-          });
-        });
-        return !!res;
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Intressenten kunde inte tas bort',
-          status: 'error',
-        });
-        return false;
-      });
+  const onRemoveContact = (stakeholderId: string) => {
+    const currentStakeholders = getValues('stakeholders');
+    const updatedStakeholders = currentStakeholders.map((s) => (s.id === stakeholderId ? { ...s, removed: true } : s));
+    setValue('stakeholders', updatedStakeholders, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    props.update();
   };
 
-  const onMakeOwner: (stakeholder: CasedataOwnerOrContact, index: number) => Promise<boolean> = (
-    stakeholder,
-    index
-  ) => {
-    stakeholder.newRole = Role.APPLICANT;
-    return editStakeholder(municipalityId, errand?.id.toString(), stakeholder)
-      .then((res) => {
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
-          setErrand(res.errand);
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Ändringen sparades',
-            status: 'success',
-          });
-        });
-        return res ? true : false;
-      })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `Något gick fel när ändringen sparades`,
-          status: 'error',
-        });
-        return false;
-      });
+  const onMakeOwner = (stakeholder: CasedataOwnerOrContact): void => {
+    const updatedStakeholder: CasedataOwnerOrContact = {
+      ...stakeholder,
+      roles: stakeholder.roles.filter((role) => role !== Role.CONTACT_PERSON).concat(Role.APPLICANT),
+      newRole: Role.APPLICANT,
+    };
+    const index = stakeholdersFields.findIndex((s) => s.id === stakeholder.id);
+    if (index === -1) return;
+    const updatedStakeholders = [...getValues('stakeholders')];
+    updatedStakeholders[index] = updatedStakeholder;
+    setValue('stakeholders', updatedStakeholders, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    props.update();
   };
 
-  const renderContact = (contact: CasedataOwnerOrContact, index, label) => {
+  const isMatchingSelectedContact = (a: CasedataOwnerOrContact, b: CasedataOwnerOrContact) => {
+    if (a.id && b.id) return a.id === b.id;
+    return !a.id && !b.id && a.clientId && b.clientId && a.clientId === b.clientId;
+  };
+
+  const renderContact = (contact: CasedataOwnerOrContact, index: number, label: string) => {
+    if (contact.removed) return null;
+
     return (
-      <div className="w-full" key={`contact-${index}`}>
-        {selectedContact?.id === contact.id ? (
+      <div className="w-full" key={`rendered-${contact.clientId ?? contact.id ?? index}`}>
+        {selectedContact && isMatchingSelectedContact(selectedContact, contact) && (
           <SimplifiedContactForm
+            key={`form-${contact.clientId ?? contact.id ?? index}`}
             disabled={isErrandLocked(errand)}
-            allowRelation={true}
             setUnsaved={props.setUnsaved}
             contact={contact}
-            label={`Redigera ${label.toLowerCase()}`}
+            label={`${label.toLowerCase()}`}
+            editing={true}
+            onSave={(e) => {
+              let contactWithId = {
+                ...e,
+                clientId: e.clientId ?? uuidv4(),
+              };
+              if (stakeholdersFields.some((x) => x.clientId === contactWithId.clientId && x.id !== contactWithId.id)) {
+                contactWithId.clientId = uuidv4();
+              }
+              const matchingIndex = stakeholdersFields.findIndex((stakeholder) => {
+                if (contactWithId.id && stakeholder.id) return contactWithId.id === stakeholder.id;
+                if (!contactWithId.id && stakeholder.clientId && contactWithId.clientId)
+                  return stakeholder.clientId === contactWithId.clientId;
+                return false;
+              });
+
+              if (matchingIndex !== -1) {
+                const updated = { ...contactWithId };
+                if (updated.id) delete updated.clientId;
+                updateStakeholderItem(matchingIndex, updated);
+              }
+              props.setUnsaved(true);
+              setSelectedContact(undefined);
+            }}
             onClose={() => setSelectedContact(undefined)}
             id="edit"
           />
-        ) : null}
+        )}
 
         <div
           key={`rendered-${contact.id}-${contact.roles[0]}-${index}`}
@@ -153,7 +145,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 ? MEXRelation[getStakeholderRelation(contact)] || PTRelation[getStakeholderRelation(contact)]
                 : label}
             </div>
-
             <div className="flex flex-wrap gap-16 text-small">
               <Button
                 disabled={isErrandLocked(errand)}
@@ -173,10 +164,17 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 className="text-body"
                 onClick={() => {
                   return deleteConfirm
-                    .showConfirmation('Ta bort?', 'Vill du ta bort denna intressent?', 'Ja', 'Nej', 'info', 'info')
+                    .showConfirmation(
+                      'Ta bort?',
+                      `Vill du ta bort denna ${label?.toLowerCase() || 'intressent'}?`,
+                      'Ja',
+                      'Nej',
+                      'info',
+                      'info'
+                    )
                     .then((confirmed) => {
                       if (confirmed) {
-                        onRemoveContact(contact.id, index);
+                        onRemoveContact(contact.id);
                       }
                     });
                 }}
@@ -201,7 +199,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                       )
                       .then((confirmed) => {
                         if (confirmed) {
-                          onMakeOwner(contact, index);
+                          onMakeOwner(contact);
                         }
                       });
                   }}
@@ -211,7 +209,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               ) : null}
             </div>
           </div>
-
           <div className="md:flex md:gap-24 px-16 py-12">
             <div className="md:w-1/3 flex gap-8 items-center break-all">
               <Avatar
@@ -246,7 +243,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 )}
               </div>
             </div>
-
             <div className="md:w-1/3 md:mt-0 mt-md break-all">
               {contact.street || contact.zip || contact.city ? (
                 <p className="my-xs mt-0 text-small" data-cy={`stakeholder-adress`}>
@@ -256,7 +252,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 <p className="my-xs mt-0 text-small text-dark-disabled">(adress saknas)</p>
               )}
             </div>
-
             <div className="md:w-1/3 md:mt-0 mt-md text-small">
               <p data-cy={`stakeholder-phone`}>
                 {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
@@ -272,7 +267,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                   </Button>
                 )}
               </p>
-
               <p data-cy={`stakeholder-phone`}>
                 {contact.emails?.map((n) => n.value).join(', ') || (
                   <Button
@@ -294,72 +288,81 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
     );
   };
 
+  const watchedStakeholders = watch('stakeholders');
+
   return (
     <>
-      <div className="mt-md">
-        <Divider.Section>
-          <div className="flex gap-sm items-center">
-            <LucideIcon name="user"></LucideIcon>
-            <h2 className="text-h4-sm md:text-h4-md">Ärendeägare</h2>
-          </div>
-        </Divider.Section>
-        <div data-cy="registered-applicants" className="my-lg px-0 md:px-24 lg:px-40 pb-40 pt-0">
+      <Disclosure variant="alt" header="Ärendeägare" icon={<LucideIcon name="user" />} initalOpen={true}>
+        <div data-cy="registered-applicants" className="my-lg px-0 pt-0">
           <div className="w-full">
-            {stakeholdersFields.filter((stakeholder, idx) => stakeholder.roles.includes(Role.APPLICANT)).length ===
-            0 ? (
+            {watchedStakeholders?.filter((s) => s.roles.includes(Role.APPLICANT) && !s.removed).length === 0 ? (
               <SimplifiedContactForm
+                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 disabled={isErrandLocked(errand)}
-                allowRelation={true}
-                allowOrganization={!isPT()}
                 setUnsaved={props.setUnsaved}
-                contact={{ ...emptyContact, roles: [Role.APPLICANT] }}
-                label="Lägg till ärendeägare"
+                contact={createEmptyContact(Role.APPLICANT)}
+                onSave={(e) => {
+                  if (!e.clientId) {
+                    e.clientId = uuidv4();
+                  }
+                  appendStakeholderItem(e);
+                }}
+                label="Ärendeägare"
                 id="owner"
               />
             ) : null}
           </div>
-
           <div className="flex flex-row gap-md flex-wrap mt-20">
-            {[...(getOwnerStakeholder(errand) ? [getOwnerStakeholder(errand)] : [])].map((caseData, idx) =>
-              renderContact(caseData, idx, 'Ärendeägare')
-            )}
+            {stakeholdersFields
+              .filter((s) => s.roles.includes(Role.APPLICANT) && !s.removed)
+              .map((caseData, idx) => renderContact(caseData, idx, 'Ärendeägare'))}
           </div>
         </div>
+      </Disclosure>
 
-        <Divider.Section>
-          <div className="flex gap-sm items-center">
-            <LucideIcon name="users"></LucideIcon>
-            <h2 className="text-h4-sm md:text-h4-md">Övriga ärendeintressenter</h2>
-          </div>
-        </Divider.Section>
-        <div data-cy="registered-contacts" className="my-lg px-0 md:px-24 lg:px-40 pb-40 pt-0">
-          {addContact ? (
+      <Disclosure variant="alt" header="Övriga parter" icon={<LucideIcon name="user" />} initalOpen={true}>
+        <div data-cy="registered-contacts" className="my-lg px-0 pt-0">
+          {addContact && (
             <div className="w-full mt-md">
               <SimplifiedContactForm
+                key={Math.random()}
+                allowOrganization={appConfig.features.useOrganizationStakeholders}
                 disabled={isErrandLocked(errand)}
-                allowRelation={true}
-                allowOrganization={!isPT()}
                 setUnsaved={props.setUnsaved}
-                contact={{ ...emptyContact, roles: [Role.CONTACT_PERSON] }}
-                label="Lägg till ärendeintressent"
+                contact={createEmptyContact(Role.CONTACT_PERSON)}
+                onSave={(savedContact) => {
+                  if (!savedContact.clientId) {
+                    savedContact.clientId = uuidv4();
+                  }
+                  appendStakeholderItem(savedContact);
+                }}
+                label="Övrig part"
                 id="person"
               />
             </div>
-          ) : null}
-
-          {stakeholdersFields.map((stakeholder, idx) =>
-            !stakeholder.roles.includes(Role.APPLICANT) && !stakeholder.roles.includes(Role.ADMINISTRATOR) ? (
-              <FormControl className="mt-40 w-full" key={idx}>
-                <FormLabel>Tillagda parter</FormLabel>
-                <div className="flex flex-row gap-md flex-wrap">
-                  {renderContact(stakeholder, idx, 'Ärendeintressent')}
-                </div>
-              </FormControl>
-            ) : null
+          )}
+          {stakeholdersFields.filter(
+            (s) => !s.removed && !s.roles.includes(Role.APPLICANT) && !s.roles.includes(Role.ADMINISTRATOR)
+          ).length > 0 && (
+            <FormControl className="mt-40 w-full">
+              <FormLabel>Tillagda parter</FormLabel>
+              <div className="flex flex-col gap-md">
+                {stakeholdersFields
+                  .filter(
+                    (s) => !s.removed && !s.roles.includes(Role.APPLICANT) && !s.roles.includes(Role.ADMINISTRATOR)
+                  )
+                  .map((stakeholder, idx) => {
+                    return (
+                      <div key={`stakeholder-${stakeholder.clientId ?? stakeholder.id ?? idx}`}>
+                        {renderContact(stakeholder, idx, 'Kontaktperson')}
+                      </div>
+                    );
+                  })}
+              </div>
+            </FormControl>
           )}
         </div>
-        <div className="h-xl"></div>
-      </div>
+      </Disclosure>
     </>
   );
 };

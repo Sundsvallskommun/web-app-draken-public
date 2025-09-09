@@ -1,5 +1,6 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
+import { isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -10,6 +11,7 @@ import {
   Resolution,
   Status,
   StatusLabel,
+  StatusLabelROB,
   SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
@@ -20,7 +22,6 @@ import {
   supportErrandIsEmpty,
   updateSupportErrand,
   validateAction,
-  StatusLabelROB,
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
@@ -28,10 +29,9 @@ import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'r
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
-import { SuspendErrandComponent } from './suspend-errand.component';
-import { isROB } from '@common/services/application-service';
+import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { StartProcessComponent } from './start-process.component';
-import { ResumeErrand } from './resume-errand.component';
+import { SuspendErrandComponent } from './suspend-errand.component';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -333,7 +333,7 @@ export const SidebarInfo: React.FC<{
         return solutionComponent('Löst', 'avslutade ärendet genom att koppla.', 'check');
       }
       case Resolution.REGISTERED_EXTERNAL_SYSTEM: {
-        return solutionComponent('Överlämnat', 'eskalerade ärendet.', 'split');
+        return solutionComponent('Överlämnat', 'överlämnade ärendet.', 'split');
       }
       case Resolution.SELF_SERVICE: {
         return solutionComponent('Löst', 'hänvisade till självservice.', 'check');
@@ -362,14 +362,17 @@ export const SidebarInfo: React.FC<{
       case Resolution.SENT_MESSAGE: {
         return solutionComponent('Meddelande', 'skickade ett meddelande.', 'check');
       }
-      case Resolution.RECRUITED: {
-        return solutionComponent('Rekryterad', 'avslutade ärendet.', 'check');
+      case Resolution.NEED_MET: {
+        return solutionComponent('Behov uppfyllt', 'avslutade ärendet.', 'check');
       }
-      case Resolution.ABORTED: {
-        return solutionComponent('Avbrutet', 'avslutade ärendet.', 'check');
+      case Resolution.RECRUITED_FEWER: {
+        return solutionComponent('Rekryterat färre', 'avslutade ärendet.', 'check');
       }
-      case Resolution.PARTLY: {
-        return solutionComponent('Delvis', 'avslutade ärendet.', 'check');
+      case Resolution.RECRUITED_MORE: {
+        return solutionComponent('Rekryterat fler', 'avslutade ärendet.', 'check');
+      }
+      case Resolution.CANCELLED: {
+        return solutionComponent('Avbruten', 'avslutade ärendet.', 'check');
       }
     }
   };
@@ -555,13 +558,13 @@ export const SidebarInfo: React.FC<{
                   )}
                 </p>
 
-                <ResumeErrand disabled={!allowed} />
+                <SupportResumeErrandButton disabled={!allowed} />
               </>
             ) : (
               <div className="flex flex-col gap-8">
                 {allowed && !supportErrandIsEmpty(supportErrand) && (
                   <>
-                    <ResumeErrand disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                    <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
                     <StartProcessComponent
                       disabled={!allowed || supportErrandIsEmpty(supportErrand)}
                       onSubmit={onSubmit}
@@ -572,7 +575,7 @@ export const SidebarInfo: React.FC<{
                         leftIcon={<LucideIcon name="mail" />}
                         className="w-full"
                         color="vattjom"
-                        data-cy="suspend-button"
+                        data-cy="new-message-button"
                         variant="secondary"
                         onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
                       >

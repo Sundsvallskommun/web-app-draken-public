@@ -1,4 +1,3 @@
-import { formatOrgNr } from '@utils/util';
 import { NextFunction, Request, Response } from 'express';
 
 export const ensureLoggedIn = options => {

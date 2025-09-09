@@ -1,6 +1,5 @@
 import {
   AddressResult,
-  fetchPersonId,
   searchADUser,
   searchADUserByPersonNumber,
   searchOrganization,
@@ -8,18 +7,7 @@ import {
 } from '@common/services/adress-service';
 import { luhnCheck } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  cx,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  isArray,
-  SearchField,
-  Select,
-} from '@sk-web-gui/react';
+import { cx, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField, Select } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
@@ -27,8 +15,6 @@ interface SupportSearchFieldProps {
   searchMode: string;
   disabled: boolean;
   form: UseFormReturn<SupportStakeholderFormModel>;
-  manual: boolean;
-  searchResult: boolean;
   notFound: boolean;
   setUnsaved: (unsaved: boolean) => void;
   id: string;
@@ -49,8 +35,6 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
   searchMode,
   disabled,
   form,
-  manual,
-  searchResult,
   notFound,
   setUnsaved = () => {},
   id,
@@ -66,9 +50,6 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
   appendPhonenumber,
   appendEmail,
 }) => {
-  const personNumber = form.watch(`personNumber`);
-  const organizationNumber = form.watch(`organizationNumber`);
-
   const doSearch = (val: string) => {
     setSearchResult(false);
     let search: (val: string) => Promise<AddressResult | AddressResult[]>;
@@ -153,14 +134,15 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
     <div className="flex gap-lg">
       <FormControl className="w-full">
         {appConfig.features.useOrganizationStakeholders ? (
-          <FormLabel>
-            Sök på {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'organisationsnummer (kkllmm-nnnn)'}
-          </FormLabel>
+          <div>
+            <FormLabel>Sök på {searchMode === 'person' ? 'personnummer ' : 'organisationsnummer '}</FormLabel>
+            <span>(Ange {searchMode === 'person' ? '12 siffror: ååååmmddxxxx' : '10 siffror: kkllmm-nnnn'})</span>
+          </div>
         ) : (
-          <FormLabel>
-            Sök på{' '}
-            {searchMode === 'person' ? 'personnummer (ååååmmddxxxx)' : 'personnummer (ååååmmddxxxx) eller användarnamn'}
-          </FormLabel>
+          <div>
+            <FormLabel>Sök på personnummer </FormLabel>
+            <span>(Ange 12 siffror: ååååmmddxxxx{searchMode === 'employee' ? ' eller användarnamn' : ''})</span>
+          </div>
         )}
 
         <div>
@@ -171,70 +153,10 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
             readOnly
             className="w-full my-sm"
           />
-          {searchMode === 'person' ? (
-            <>
-              <Input.Group size="md" className="rounded-12" disabled={disabled || manual}>
-                <Input.LeftAddin icon>
-                  <LucideIcon name="search" />
-                </Input.LeftAddin>
-                <Input
-                  disabled={disabled}
-                  aria-disabled={disabled}
-                  readOnly={manual}
-                  className="read-only:cursor-not-allowed"
-                  onChange={() => setUnsaved(true)}
-                  data-cy={`contact-personNumber-${id}`}
-                  onBlur={() => {
-                    personNumber &&
-                      personNumber !== '' &&
-                      fetchPersonId(personNumber).then((res) => {
-                        form.setValue(`personId`, res.personId, { shouldDirty: true });
-                        form.trigger(`personNumber`);
-                      });
-                  }}
-                  {...form.register(`personNumber`)}
-                />
-                <Input.RightAddin icon>
-                  {searchResult ? (
-                    <Button
-                      iconButton
-                      variant="primary"
-                      disabled={disabled || manual}
-                      inverted
-                      onClick={() => {
-                        form.reset();
-                        form.setValue('personNumber', '');
-                        setSearchResultArray([]);
-                        setSearchResult(false);
-                        form.setValue('stakeholderType', 'PERSON');
-                      }}
-                    >
-                      <LucideIcon name="x" />
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      disabled={
-                        disabled ||
-                        (searchMode === 'person' && manual) ||
-                        !!form.formState.errors?.personNumber ||
-                        personNumber === ''
-                      }
-                      data-cy={`search-button-${id}`}
-                      onClick={() => doSearch(personNumber)}
-                      loading={searching}
-                      loadingText="Söker"
-                    >
-                      Sök
-                    </Button>
-                  )}
-                </Input.RightAddin>
-              </Input.Group>
-            </>
-          ) : searchMode === 'employee' ? (
+          {searchMode === 'person' || searchMode === 'employee' ? (
             <>
               <SearchField
+                disabled={disabled}
                 data-cy={`contact-personNumber-${id}`}
                 {...form.register('personNumber')}
                 size={'md'}
@@ -243,6 +165,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
                   form.trigger(`personNumber`);
                 }}
                 onSearch={(e) => {
+                  if (form.formState.errors.personNumber) return;
                   setSearching(true);
                   doSearch(e);
                 }}
@@ -274,56 +197,31 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
               ) : null}
             </>
           ) : (
-            <>
-              <Input.Group size="md" disabled={disabled || manual}>
-                <Input.LeftAddin icon>
-                  <LucideIcon name="search" />
-                </Input.LeftAddin>
-                <Input
-                  disabled={disabled}
-                  aria-disabled={disabled}
-                  readOnly={manual}
-                  className="read-only:cursor-not-allowed"
-                  onChange={() => {
-                    setUnsaved(true);
-                  }}
-                  data-cy={`contact-orgNumber-${id}`}
-                  {...form.register(`organizationNumber`)}
-                />
-                <Input.RightAddin icon>
-                  {searchResult ? (
-                    <Button
-                      iconButton
-                      variant="primary"
-                      disabled={disabled || manual}
-                      inverted
-                      onClick={() => {
-                        form.reset();
-                        form.setValue('organizationNumber', '');
-                        setSearchResult(false);
-                        form.setValue('stakeholderType', 'ORGANIZATION');
-                      }}
-                    >
-                      <LucideIcon name="x" />
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      disabled={
-                        disabled || manual || !!form.formState.errors?.organizationNumber || organizationNumber === ''
-                      }
-                      data-cy={`search-button-${id}`}
-                      onClick={() => doSearch(organizationNumber)}
-                      loading={searching}
-                      loadingText="Söker"
-                    >
-                      Sök
-                    </Button>
-                  )}
-                </Input.RightAddin>
-              </Input.Group>
-            </>
+            <SearchField
+              disabled={disabled}
+              data-cy={`contact-orgNumber-${id}`}
+              {...form.register('organizationNumber')}
+              size={'md'}
+              value={query}
+              onBlur={() => {
+                form.trigger(`organizationNumber`);
+              }}
+              onSearch={(e) => {
+                if (form.formState.errors.organizationNumber) return;
+                setSearching(true);
+                doSearch(e);
+              }}
+              onReset={() => {
+                form.reset();
+                setQuery('');
+                setSelectedUser(undefined);
+                form.setValue('organizationNumber', '');
+                setSearchResultArray([]);
+                setSearchResult(false);
+                form.setValue('stakeholderType', 'ORGANIZATION');
+              }}
+              searchLabel={searching ? 'Söker' : 'Sök'}
+            />
           )}
         </div>
 

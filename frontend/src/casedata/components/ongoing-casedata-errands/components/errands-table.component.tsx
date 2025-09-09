@@ -1,14 +1,15 @@
+import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { Priority } from '@casedata/interfaces/priority';
-import { findStatusLabelForStatusKey, getCaseLabels, isErrandClosed } from '@casedata/services/casedata-errand-service';
+import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
-import { isPT } from '@common/services/application-service';
-import { sortBy } from '@common/services/helper-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { PriorityComponent } from '@common/components/priority/priority.component';
+import { isMEX, isPT } from '@common/services/application-service';
+import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import { useMediaQuery } from '@mui/material';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button, Input, Label, Pagination, Select, Spinner, Table, cx, useGui } from '@sk-web-gui/react';
+import { Button, Input, Pagination, Select, Spinner, Table, cx, useThemeQueries } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
 import NextLink from 'next/link';
@@ -16,7 +17,6 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
-import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -27,8 +27,7 @@ export const ErrandsTable: React.FC = () => {
   const totalPages = watch('totalPages');
   const page = watch('page');
 
-  const { theme } = useGui();
-  const isMobile = useMediaQuery(`screen and (max-width: ${theme.screens.md})`);
+  const { isMaxMediumDevice } = useThemeQueries();
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',
@@ -39,10 +38,11 @@ export const ErrandsTable: React.FC = () => {
     0: 'facilities.address.propertyDesignation',
     1: 'updated',
     2: 'caseType',
-    3: 'priority',
-    4: 'created',
-    5: 'administrator',
-    6: 'status.statusType',
+    3: 'extraParameters.caseMeaning',
+    4: 'priority',
+    5: 'created',
+    6: 'administrator',
+    7: 'status.statusType',
   };
 
   const serverSideSortableColsPT: { [key: number]: string } = {
@@ -81,6 +81,21 @@ export const ErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.errandNumber}`, '_blank');
   };
 
+  const primaryStakeholderNameorEmail = (errand: IErrand) => {
+    const primaryStakeholder = getOwnerStakeholder(errand);
+
+    if (primaryStakeholder) {
+      const { firstName, lastName, organizationName } = primaryStakeholder;
+      if (firstName && lastName) return `${firstName} ${lastName}`;
+
+      if (organizationName) return `${organizationName}`;
+
+      const emailChannel = primaryStakeholder.emails?.[0]?.value;
+      if (!!emailChannel) return emailChannel;
+    }
+    return '';
+  };
+
   const findLatestNotification = (errand: IErrand) => {
     return sortBy(errand?.notifications, 'created').reverse()[0];
   };
@@ -107,6 +122,7 @@ export const ErrandsTable: React.FC = () => {
 
   const rows = (data.errands || []).map((errand: IErrand, index) => {
     const notification = findLatestNotification(errand);
+    const caseMeaning = errand.extraParameters?.find((param) => param.key === 'caseMeaning');
     return (
       <Table.Row
         key={`row-${index}`}
@@ -132,7 +148,7 @@ export const ErrandsTable: React.FC = () => {
                   {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
                 </time>
               </div>
-              <div className="italic">{notification?.description ? notification?.description : ''}</div>
+              <div className="italic">{truncate(notification?.description, 30)}</div>
             </div>
           ) : (
             errand.updated
@@ -148,40 +164,10 @@ export const ErrandsTable: React.FC = () => {
             </div>
           )}
         </Table.Column>
+        {isMEX() && <Table.Column>{truncate(caseMeaning?.values?.[0], 30)}</Table.Column>}
         {isPT() && <Table.Column>{errand.errandNumber}</Table.Column>}
         <Table.Column>
-          {isPT() ? (
-            <>
-              <Badge
-                className="w-[8px] h-[8px]"
-                color={
-                  errand.priority === Priority.HIGH
-                    ? 'error'
-                    : errand.priority === Priority.MEDIUM
-                    ? 'warning'
-                    : 'vattjom'
-                }
-                rounded
-              />
-              {errand.priority}
-            </>
-          ) : (
-            <Label
-              rounded={true}
-              inverted={true}
-              color={
-                errand.priority === Priority.HIGH
-                  ? 'error'
-                  : errand.priority === Priority.MEDIUM
-                  ? 'warning'
-                  : errand.priority === Priority.LOW
-                  ? 'info'
-                  : 'vattjom'
-              }
-            >
-              {errand.priority}
-            </Label>
-          )}
+          <PriorityComponent priority={errand.priority} />
         </Table.Column>
         {isPT() && (
           <Table.Column>
@@ -191,8 +177,13 @@ export const ErrandsTable: React.FC = () => {
             })}
           </Table.Column>
         )}
-        <Table.Column>
-          <time dateTime={errand.created}>{errand.created}</time>
+        <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+          <div>
+            <time dateTime={errand.created}>{errand.created}</time>
+          </div>
+          <div>
+            <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
+          </div>
         </Table.Column>
         <Table.Column>
           {`${errand.administrator?.firstName || ''} ${errand.administrator?.lastName || ''}`}
@@ -208,16 +199,16 @@ export const ErrandsTable: React.FC = () => {
               href={`/arende/${municipalityId}/${errand.errandNumber}`}
               onClick={(e) => e.stopPropagation()}
               target="_blank"
-              data-icon={isMobile}
-              title={isMobile ? `${isErrandClosed(errand) ? 'Visa' : 'Hantera'} ärende` : undefined}
+              data-icon={isMaxMediumDevice}
+              title={isMaxMediumDevice ? `${isErrandClosed(errand) ? 'Visa' : 'Hantera'} ärende` : undefined}
               className={cx(
                 'no-underline sk-btn max-lg:sk-btn-icon',
-                rowHeight === 'normal' && !isMobile && !isPT() ? 'sk-btn-md' : 'sk-btn-sm',
+                rowHeight === 'normal' && !isMaxMediumDevice && !isPT() ? 'sk-btn-md' : 'sk-btn-sm',
                 isPT() && 'sk-btn-sm bg-primary text-light-primary w-full hover:text-dark-secondary',
                 isErrandClosed(errand) && !isPT() ? 'sk-btn-secondary' : 'sk-btn-tertiary'
               )}
             >
-              <Button.Content rightIcon={!isMobile && !isPT() && <LucideIcon name="external-link" />}>
+              <Button.Content rightIcon={!isMaxMediumDevice && !isPT() && <LucideIcon name="external-link" />}>
                 {isPT() ? (
                   errand.administrator ? (
                     <>

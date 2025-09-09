@@ -1,4 +1,4 @@
-import { AttachmentLabels, MAX_FILE_SIZE_MB, PTAttachmentLabels } from '@casedata/services/casedata-attachment-service';
+import { MAX_FILE_SIZE_MB } from '@casedata/services/casedata-attachment-service';
 import { isIK, isKC, isLOP, isMEX } from '@common/services/application-service';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
@@ -8,6 +8,17 @@ import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { UploadCloud } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
+import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
+
+export const imageMimeTypes = [
+  'image/jpeg',
+  'image/gif',
+  'image/png',
+  'image/tiff',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
+];
 
 const FileUpload: React.FC<{
   dragDrop: boolean;
@@ -54,8 +65,6 @@ const FileUpload: React.FC<{
   const [added, setAdded] = useState<number>(0);
 
   const ref = useRef<HTMLLabelElement>(null);
-
-  const imageMimeTypes = ['image/jpeg', 'image/gif', 'image/png', 'image/tiff', 'image/bmp'];
 
   const appendNewItem = () => {
     setError(undefined);
@@ -108,10 +117,12 @@ const FileUpload: React.FC<{
       appendNewItem();
     }
     setFirstLoad(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newItem]);
 
   useEffect(() => {
     setValue(`${fieldName}-newItem`, undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -176,7 +187,7 @@ const FileUpload: React.FC<{
               {...register(dragDrop ? `attachments.${index}.attachmentType` : 'attachmentType')}
             >
               <Select.Option value="">Välj typ av bilaga</Select.Option>
-              {Object.entries(isMEX() ? AttachmentLabels : PTAttachmentLabels)
+              {Object.entries(isMEX() ? MEXAttachmentLabels : PTAttachmentLabels)
                 .sort((a, b) => a[1].localeCompare(b[1]))
                 .map(([key, label]) => {
                   return (

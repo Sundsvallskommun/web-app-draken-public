@@ -8,7 +8,7 @@ import { attestationEnabled, isNotificicationEnabled } from '@common/services/fe
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Badge, Button, cx, Divider, Logo } from '@sk-web-gui/react';
+import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
@@ -17,6 +17,7 @@ import {
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { userMenuGroups } from '../layout/userMenuGroups';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -67,11 +68,14 @@ export const MainErrandsSidebar: React.FC<{
         >
           {open && (
             <div className="flex gap-12 justify-between items-center">
-              <Avatar
+              <UserMenu
                 data-cy="avatar-aside"
-                className="flex-none"
-                size="md"
                 initials={`${user.firstName.charAt(0).toUpperCase()}${user.lastName.charAt(0).toUpperCase()}`}
+                menuTitle={`${user.firstName} ${user.lastName} (${user.username})`}
+                menuGroups={userMenuGroups}
+                buttonSize="md"
+                className="flex-shrink-0"
+                buttonRounded={false}
                 color="vattjom"
               />
               <span className="leading-tight h-fit font-bold mb-0" data-cy="userinfo">

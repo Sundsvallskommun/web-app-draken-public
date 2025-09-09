@@ -1,24 +1,25 @@
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import {
+  AddressAddressCategoryEnum,
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
-  Facility as FacilityDTO,
   Stakeholder as CasedataStakeholderDTO,
   StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
-  AddressAddressCategoryEnum,
   ContactInformationContactTypeEnum,
+  Facility as FacilityDTO,
 } from '@/data-contracts/case-data/data-contracts';
 import {
-  Errand as SupportErrand,
+  ContactChannel,
   ErrandAttachment,
+  ExternalTag,
+  Notification,
+  PageErrand,
+  Parameter,
+  Errand as SupportErrand,
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
-  PageErrand,
-  ExternalTag,
-  Parameter,
-  ContactChannel,
-  Notification,
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -34,15 +35,15 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
 import { checkIfSupportAdministrator } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck, toOffsetDateTime, withRetries } from '@/utils/util';
+import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { Type as TypeTransformer } from 'class-transformer';
-import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
 
 export enum CustomerType {
   PRIVATE,
@@ -332,7 +333,8 @@ export enum SupportStakeholderRole {
 export class SupportErrandController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.3`;
+  SERVICE = apiServiceName('supportmanagement');
+  CITIZEN_SERVICE = apiServiceName('citizen');
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
     const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
@@ -341,7 +343,7 @@ export class SupportErrandController {
       customer.externalId &&
       (customer.externalIdType === ExternalIdType.PRIVATE || customer.externalIdType === ExternalIdType.EMPLOYEE)
     ) {
-      const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${customer.externalId}/personnumber`;
+      const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${customer.externalId}/personnumber`;
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
@@ -356,7 +358,7 @@ export class SupportErrandController {
         contact.externalId &&
         (contact.externalIdType === ExternalIdType.PRIVATE || contact.externalIdType === ExternalIdType.EMPLOYEE)
       ) {
-        const personNumberUrl = `citizen/3.0/${MUNICIPALITY_ID}/${contact.externalId}/personnumber`;
+        const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${contact.externalId}/personnumber`;
         const getPersonalNumber = () =>
           this.apiService
             .get<string>({ url: personNumberUrl }, req.user)
@@ -430,7 +432,7 @@ export class SupportErrandController {
       let guidRes = null;
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
-        const guidUrl = `citizen/3.0/${MUNICIPALITY_ID}/${query}/guid`;
+        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
         guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
       }
       let queryFilter = `(`;
@@ -598,6 +600,7 @@ export class SupportErrandController {
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
+      channel: 'PHONE',
       resolution: Resolution.INFORMED,
       title: 'Empty errand',
     };
@@ -859,7 +862,7 @@ export class SupportErrandController {
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
-    const CASEDATA_SERVICE = `case-data/11.0`;
+    const CASEDATA_SERVICE = apiServiceName('case-data');
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
       .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand }, req.user)

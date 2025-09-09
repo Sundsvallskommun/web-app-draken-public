@@ -1,4 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -7,7 +8,6 @@ import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { Body, Controller, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { SupportErrandDto } from './support-errand.controller';
 
 type Parameters = {
   key: string;
@@ -19,7 +19,7 @@ type Parameters = {
 export class SupportFacilitiesController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.3`;
+  SERVICE = apiServiceName('supportmanagement');
 
   @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
   @OpenAPI({ summary: 'Save facilities by errand' })

@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -8,6 +9,43 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+/**
+ * ConversationType model
+ * @example "INTERNAL"
+ */
+export enum ConversationType {
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
+}
+
+/**
+ * An email header
+ * @example "MESSAGE_ID"
+ */
+export enum Header {
+  IN_REPLY_TO = "IN_REPLY_TO",
+  REFERENCES = "REFERENCES",
+  MESSAGE_ID = "MESSAGE_ID",
+}
+
+/** Message classification */
+export enum Classification {
+  INFORMATION = "INFORMATION",
+  COMPLETION_REQUEST = "COMPLETION_REQUEST",
+  OBTAIN_OPINION = "OBTAIN_OPINION",
+  INTERNAL_COMMUNICATION = "INTERNAL_COMMUNICATION",
+  OTHER = "OTHER",
+}
+
+/**
+ * The type of note
+ * @example "INTERNAL"
+ */
+export enum NoteType {
+  INTERNAL = "INTERNAL",
+  PUBLIC = "PUBLIC",
+}
 
 /** A stakeholder may have one or more addresses. For example, one POSTAL_ADDRESS and another INVOICE_ADDRESS. */
 export interface Address {
@@ -827,15 +865,6 @@ export interface Note {
   updated?: string;
 }
 
-/**
- * The type of note
- * @example "INTERNAL"
- */
-export enum NoteType {
-  INTERNAL = 'INTERNAL',
-  PUBLIC = 'PUBLIC',
-}
-
 /** List of notifications connected to this errand */
 export interface Notification {
   /**
@@ -997,15 +1026,6 @@ export interface Suspension {
   suspendedFrom?: string;
 }
 
-/** Message classification */
-export enum Classification {
-  INFORMATION = 'INFORMATION',
-  COMPLETION_REQUEST = 'COMPLETION_REQUEST',
-  OBTAIN_OPINION = 'OBTAIN_OPINION',
-  INTERNAL_COMMUNICATION = 'INTERNAL_COMMUNICATION',
-  OTHER = 'OTHER',
-}
-
 /** List of email headers on the message */
 export interface EmailHeader {
   /** An email header */
@@ -1015,16 +1035,6 @@ export interface EmailHeader {
    * @example ["<this-is-a-test@domain.com>"]
    */
   values?: string[];
-}
-
-/**
- * An email header
- * @example "MESSAGE_ID"
- */
-export enum Header {
-  IN_REPLY_TO = 'IN_REPLY_TO',
-  REFERENCES = 'REFERENCES',
-  MESSAGE_ID = 'MESSAGE_ID',
 }
 
 /** MessageResponse */
@@ -1157,15 +1167,6 @@ export interface Conversation {
   metadata?: KeyValues[];
 }
 
-/**
- * ConversationType model
- * @example "INTERNAL"
- */
-export enum ConversationType {
-  INTERNAL = 'INTERNAL',
-  EXTERNAL = 'EXTERNAL',
-}
-
 /** Identifier model */
 export interface Identifier {
   /**
@@ -1190,6 +1191,34 @@ export interface KeyValues {
    */
   key?: string;
   values?: string[];
+}
+
+/** ConversationAttachment model */
+export interface ConversationAttachment {
+  /**
+   * ConversationAttachment ID
+   * @example "cb20c51f-fcf3-42c0-b613-de563634a8ec"
+   */
+  id?: string;
+  /**
+   * Name of the file
+   * @example "my-file.txt"
+   */
+  fileName?: string;
+  /**
+   * Size of the file in bytes
+   * @format int32
+   * @example 1024
+   */
+  fileSize?: number;
+  /** Mime type of the file */
+  mimeType?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   * @example "2023-01-01T00:00:00+01:00"
+   */
+  created?: string;
 }
 
 /** Message model */
@@ -1218,7 +1247,7 @@ export interface Message {
    */
   content: string;
   readBy?: ReadBy[];
-  attachments?: Attachment[];
+  attachments?: ConversationAttachment[];
 }
 
 /** Readby model */
@@ -1410,6 +1439,7 @@ export interface PageErrand {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1420,20 +1450,19 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1625,6 +1654,7 @@ export interface PageMessage {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1635,7 +1665,6 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1644,9 +1673,9 @@ export interface PageMessage {
  * @example "RESIDENTIAL"
  */
 export enum AddressAddressCategoryEnum {
-  POSTAL_ADDRESS = 'POSTAL_ADDRESS',
-  INVOICE_ADDRESS = 'INVOICE_ADDRESS',
-  VISITING_ADDRESS = 'VISITING_ADDRESS',
+  POSTAL_ADDRESS = "POSTAL_ADDRESS",
+  INVOICE_ADDRESS = "INVOICE_ADDRESS",
+  VISITING_ADDRESS = "VISITING_ADDRESS",
 }
 
 /**
@@ -1654,9 +1683,9 @@ export enum AddressAddressCategoryEnum {
  * @example "EMAIL"
  */
 export enum ContactInformationContactTypeEnum {
-  CELLPHONE = 'CELLPHONE',
-  PHONE = 'PHONE',
-  EMAIL = 'EMAIL',
+  CELLPHONE = "CELLPHONE",
+  PHONE = "PHONE",
+  EMAIL = "EMAIL",
 }
 
 /**
@@ -1664,8 +1693,8 @@ export enum ContactInformationContactTypeEnum {
  * @example "PERSON"
  */
 export enum StakeholderTypeEnum {
-  PERSON = 'PERSON',
-  ORGANIZATION = 'ORGANIZATION',
+  PERSON = "PERSON",
+  ORGANIZATION = "ORGANIZATION",
 }
 
 /**
@@ -1673,9 +1702,9 @@ export enum StakeholderTypeEnum {
  * @example "APPROVAL"
  */
 export enum DecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
 /**
@@ -1683,10 +1712,10 @@ export enum DecisionDecisionTypeEnum {
  * @example "GRANTED"
  */
 export enum DecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
 /**
@@ -1694,12 +1723,12 @@ export enum DecisionDecisionOutcomeEnum {
  * @example "EMAIL"
  */
 export enum ErrandChannelEnum {
-  ESERVICE = 'ESERVICE',
-  ESERVICE_KATLA = 'ESERVICE_KATLA',
-  EMAIL = 'EMAIL',
-  WEB_UI = 'WEB_UI',
-  MOBILE = 'MOBILE',
-  SYSTEM = 'SYSTEM',
+  ESERVICE = "ESERVICE",
+  ESERVICE_KATLA = "ESERVICE_KATLA",
+  EMAIL = "EMAIL",
+  WEB_UI = "WEB_UI",
+  MOBILE = "MOBILE",
+  SYSTEM = "SYSTEM",
 }
 
 /**
@@ -1708,9 +1737,9 @@ export enum ErrandChannelEnum {
  * @example "HIGH"
  */
 export enum ErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 /**
@@ -1718,8 +1747,8 @@ export enum ErrandPriorityEnum {
  * @example "INBOUND"
  */
 export enum MessageRequestDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 /**
@@ -1727,9 +1756,9 @@ export enum MessageRequestDirectionEnum {
  * @example "MEDIUM"
  */
 export enum PatchErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 /**
@@ -1737,9 +1766,9 @@ export enum PatchErrandPriorityEnum {
  * @example "APPROVAL"
  */
 export enum PatchDecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
 /**
@@ -1747,10 +1776,10 @@ export enum PatchDecisionDecisionTypeEnum {
  * @example "GRANTED"
  */
 export enum PatchDecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
 /**
@@ -1758,6 +1787,6 @@ export enum PatchDecisionDecisionOutcomeEnum {
  * @example "INBOUND"
  */
 export enum MessageResponseDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }

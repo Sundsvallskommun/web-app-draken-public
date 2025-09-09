@@ -5,7 +5,7 @@ export const mockSidebarButtons: {
   key: SidebarButtonKey;
 }[] = [
   {
-    label: 'Information',
+    label: 'Handläggning',
     key: 'info',
   },
   {

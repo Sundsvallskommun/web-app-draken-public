@@ -1,5 +1,6 @@
 import { User } from '@common/interfaces/user';
 import { prettyTime } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -23,7 +24,7 @@ import {
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import {
   CBillingRecord,
   CBillingRecordStatusEnum,
@@ -117,23 +118,20 @@ export const SupportErrandInvoiceTab: React.FC<{
         resetManager(manager);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
 
   const formControls = useForm<CBillingRecord>({
     defaultValues: record,
-    resolver: yupResolver(billingFormSchema),
+    resolver: yupResolver(billingFormSchema) as unknown as Resolver<CBillingRecord>,
     mode: 'onSubmit',
   });
 
   const {
-    control,
-    register,
     handleSubmit,
     reset,
-    trigger,
     getValues,
     setValue,
-    watch,
     formState: { errors },
   } = formControls;
 
@@ -163,6 +161,7 @@ export const SupportErrandInvoiceTab: React.FC<{
   useEffect(() => {
     const _a = validateAction(supportErrand, user) && record?.status === CBillingRecordStatusEnum.NEW;
     setAllowed(_a);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
   const onError = (error) => {
@@ -174,12 +173,12 @@ export const SupportErrandInvoiceTab: React.FC<{
     return saveBillingRecord(supportErrand, municipalityId, getValues())
       .then(() => {
         setIsLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fakturan sparades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Fakturan sparades',
+            status: 'success',
+          })
+        );
         getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch(() => {

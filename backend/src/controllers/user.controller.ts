@@ -1,4 +1,5 @@
 import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -20,6 +21,7 @@ interface UserData {
 @Controller()
 export class UserController {
   private apiService = new ApiService();
+  EMPLOYEE_SERVICE = apiServiceName('employee');
 
   @Get('/me')
   @OpenAPI({ summary: 'Return current user' })
@@ -56,7 +58,7 @@ export class UserController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `employee/2.0/${MUNICIPALITY_ID}/${personId}/personimage`;
+    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/${personId}/personimage`;
     const res = await this.apiService.get<any>(
       {
         url,
@@ -81,7 +83,7 @@ export class UserController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `employee/2.0/${MUNICIPALITY_ID}/${personId}/personimage`;
+    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/${personId}/personimage`;
     const res = await this.apiService.get<any>(
       {
         url,
@@ -98,21 +100,19 @@ export class UserController {
   @Get('/user/:adaccount')
   @OpenAPI({ summary: 'Return employee info' })
   @UseBefore(authMiddleware)
-  @Header('Content-Type', 'image/jpeg')
-  @Header('Cross-Origin-Embedder-Policy', 'require-corp')
-  @Header('Cross-Origin-Resource-Policy', 'cross-origin')
-  async getEmployeeInfo(@Req() req: RequestWithUser, @Param('adaccount') adaccount: string, @QueryParam('width') width): Promise<any> {
+  @Header('Content-Type', 'application/json')
+  async getEmployeeInfo(@Req() req: RequestWithUser, @Param('adaccount') adaccount: string): Promise<any> {
     if (!adaccount) {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const url = `employee/2.0/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${adaccount}`;
+    const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${adaccount}`;
     const res = await this.apiService.get<PortalPersonData>(
       {
         url,
       },
       req.user,
     );
-    return res.data;
+    return res;
   }
 }

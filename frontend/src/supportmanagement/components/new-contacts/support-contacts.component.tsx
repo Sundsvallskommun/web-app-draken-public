@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
@@ -38,7 +38,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
-  const toastMessage = useSnackbar();
 
   const { setStakeholderContacts, stakeholderContacts, setStakeholderCustomers, stakeholderCustomers } =
     useAppContext();
@@ -56,25 +55,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const {
-    control,
-    setValue,
-    reset,
-    formState: { errors },
-  }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
-
-  const customerFieldArray = useFieldArray({
-    control,
-    keyName: 'arrayId',
-    name: 'customer',
-  });
-
-  const {
-    fields: customerFields,
-    append: appendCustomerItem,
-    remove: removeCustomerItem,
-    update: updateCustomerItem,
-  } = customerFieldArray;
+  const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
   const contactsFieldArray = useFieldArray({
     control,
@@ -82,12 +63,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     name: 'contacts',
   });
 
-  const {
-    fields: contactsFields,
-    append: appendContactItem,
-    remove: removeContactItem,
-    update: updateContactItem,
-  } = contactsFieldArray;
+  const { fields: contactsFields } = contactsFieldArray;
 
   const onRemove = async (c: SupportStakeholderFormModel) => {
     const customer = stakeholderCustomers.filter((cus) => cus.internalId !== c.internalId);

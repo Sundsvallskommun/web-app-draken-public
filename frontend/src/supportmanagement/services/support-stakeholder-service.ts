@@ -1,3 +1,4 @@
+import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { SupportAdmin } from './support-admin-service';
 import {
@@ -6,7 +7,6 @@ import {
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
-import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export const getAdminName = (a: SupportAdmin, r: SupportErrand) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;
@@ -16,6 +16,9 @@ export const getApplicantName = (r: SupportErrand) => {
   const applicant = r.stakeholders?.find((s) => s.role === 'PRIMARY');
   return applicant ? `${applicant.firstName} ${applicant.lastName}` : '(saknas)';
 };
+
+export const getSupportOwnerStakeholder: (e: SupportErrand) => SupportStakeholderFormModel = (e) =>
+  e.customer?.filter((s) => s.role.includes('PRIMARY'))?.[0];
 
 const trimPhoneNumber = (s: string) => s.trim().replace('-', '');
 

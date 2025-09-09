@@ -1,3 +1,5 @@
+import { CASEDATA_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import {
   Classification,
   EmailHeader,
@@ -24,7 +26,6 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
-import { CASEDATA_NAMESPACE } from '@/config';
 
 interface SmsMessage {
   party?: {
@@ -43,8 +44,8 @@ interface SmsMessage {
 }
 
 const NOTIFY_CONTACTS = false;
-const SERVICE = `case-data/11.0`;
-const MESSAGING_SERVICE = `messaging/6.0`;
+const SERVICE = apiServiceName('case-data');
+const MESSAGING_SERVICE = apiServiceName('messaging');
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
 
@@ -108,7 +109,7 @@ export const sendWebMessage = (municipalityId: string, message: WebMessageReques
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            const notify = await notifyContactPersons(municipalityId, errandData.data, req.user);
+            await notifyContactPersons(municipalityId, errandData.data, req.user);
             return { data: res.data, message: `Message sent` };
           } else {
             return { data: res.data, message: `Message sent` };
@@ -203,7 +204,7 @@ export const sendDigitalMail = (municipalityId, message, req, errandData, classi
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            const notify = await notifyContactPersons(municipalityId, errandData.data, req.user);
+            await notifyContactPersons(municipalityId, errandData.data, req.user);
             return { data: { messageId: id }, message: `Message sent` };
           } else {
             return { data: { messageId: id }, message: `Message sent` };
@@ -239,12 +240,23 @@ export const saveMessageOnErrand: (
   const apiService = new ApiService();
 
   // Fetch message info from Messaging and construct SaveMessage object
-  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/message/${message.id}`;
+  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
   const emailHeaders: EmailHeader[] = Object.entries(headers).map(h => ({ header: h[0] as Header, values: h[1] }));
-  const attachments = (messagingInfo.content.attachments || []) as ((WebMessageAttachment & EmailAttachment) | any)[];
+
+  const attachments: ((WebMessageAttachment & EmailAttachment) | any)[] = [];
+
+  if (messagingInfo?.content?.attachments && messagingInfo?.content?.attachments?.length > 0) {
+    for (const attachment of messagingInfo.content.attachments) {
+      const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments/${attachment.name}`;
+      const attachmentResponse = await apiService.get<ArrayBuffer>({ url: attachmentUrl, responseType: 'arraybuffer' }, user);
+      const attatchmentBase64 = Buffer.from(attachmentResponse.data).toString('base64');
+      attachments.push({ ...attachment, content: attatchmentBase64 });
+    }
+  }
+
   const saveMessage: MessageRequest = {
     messageId: message.id,
     messageType: message.messageType || '',
@@ -264,7 +276,7 @@ export const saveMessageOnErrand: (
     userId: '',
     attachments: attachments.map(a => ({
       content: a.content || a.base64Data,
-      name: a.name || a.filename || a.fileName,
+      name: a.name || a.fileName,
       contentType: a.contentType || a.mimeType,
     })),
     emailHeaders: emailHeaders,

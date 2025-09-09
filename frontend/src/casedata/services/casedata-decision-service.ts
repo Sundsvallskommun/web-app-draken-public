@@ -1,17 +1,18 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
 import { Attachment } from '@casedata/interfaces/attachment';
+import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { Law } from '@common/data-contracts/case-data/data-contracts';
+import { Law } from '@casedata/interfaces/decision';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
-import { getOwnerStakeholder } from './casedata-stakeholder-service';
 import { isFTErrand } from './casedata-errand-service';
+import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
   {
@@ -21,6 +22,31 @@ export const lawMapping: Law[] = [
     article: '8',
   },
 ];
+
+const lawMappingFT: Law[] = [
+  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '1' },
+  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '5' },
+  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '6' },
+  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '7' },
+  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '9' },
+  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '12' },
+  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '16' },
+];
+
+export const getLawMapping = (errand: IErrand): Law[] => {
+  if (isPT()) {
+    return isFTErrand(errand) ? lawMappingFT : lawMapping;
+  }
+
+  return [
+    {
+      heading: '',
+      sfs: '',
+      chapter: '',
+      article: '',
+    },
+  ];
+};
 
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
@@ -77,21 +103,7 @@ export const saveDecision: (
     decisionType,
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,
-    law: [
-      isPT() && !isFTErrand(errand)
-        ? {
-            heading: formData.law[0].heading,
-            sfs: formData.law[0].sfs,
-            chapter: formData.law[0].chapter,
-            article: formData.law[0].article,
-          }
-        : {
-            heading: '',
-            sfs: '',
-            chapter: '',
-            article: '',
-          },
-    ],
+    law: getLawMapping(errand),
     validFrom:
       isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : undefined,
     validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : undefined,
@@ -238,6 +250,8 @@ export const renderPdf: (
 
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && isFTErrand(errand)) {
+    identifier = 'sbk.ft.general';
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
@@ -251,6 +265,7 @@ export const renderPdf: (
         ? 'passenger'
         : // TODO Default to driver if capacity is missing?
           'driver';
+
     identifier = `sbk.rph.${outcome === 'cancellation' ? 'decision' : templateType}.${capacity}.${outcome}`;
   }
 
@@ -259,6 +274,8 @@ export const renderPdf: (
     identifier: identifier,
     parameters: {
       caseNumber: formData.errandNumber,
+      caseType: getLabelFromCaseType(formData.errandCaseType),
+      personalNumber: formData.personalNumber,
       addressLastname: owner?.lastName,
       addressFirstname: owner?.firstName,
       addressCo: owner?.careof,

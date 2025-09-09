@@ -1,4 +1,4 @@
-import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
+import { Sidebar, SidebarButtonKey } from '@common/components/sidebar/sidebar.component';
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarGuide } from './sidebar-guide.component';
 import { SidebarHistory } from './sidebar-history.component';
@@ -15,9 +15,9 @@ export const SidebarWrapper = () => {
     component: React.ReactNode;
   }[] = [
     {
-      label: 'Information',
+      label: 'Handläggning',
       key: 'info',
-      icon: 'info',
+      icon: 'user-cog',
       component: <SidebarInfo />,
     },
     {

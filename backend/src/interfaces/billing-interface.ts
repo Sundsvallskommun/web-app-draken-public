@@ -13,7 +13,6 @@ import {
 } from '@/data-contracts/billingpreprocessor/data-contracts';
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import e from 'express';
 
 export class CAccountInformation implements AccountInformation {
   @IsOptional()

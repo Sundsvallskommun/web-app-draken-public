@@ -1,4 +1,5 @@
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
@@ -18,7 +19,8 @@ interface ResponseData {
 @Controller()
 export class CasedataStakeholderController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = apiServiceName('case-data');
+  CITIZEN_SERVICE = apiServiceName('citizen');
 
   @Patch('/casedata/:municipalityId/errands/:errandId/stakeholders/:id')
   @HttpCode(201)
@@ -105,7 +107,7 @@ export class CasedataStakeholderController {
     @Param('municipalityId') municipalityId: string,
     @Body() body: { personId: string },
   ): Promise<{ data: string; message: string }> {
-    const url = `citizen/3.0/${MUNICIPALITY_ID}/${body.personId}/personnumber`;
+    const url = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${body.personId}/personnumber`;
     const personalNumber = await this.apiService
       .get<string>({ url }, req.user)
       .then(res => {

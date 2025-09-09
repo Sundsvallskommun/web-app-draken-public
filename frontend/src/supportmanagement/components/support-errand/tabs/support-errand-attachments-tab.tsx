@@ -1,8 +1,9 @@
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
-import FileUpload from '@common/components/file-upload/file-upload.component';
+import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
-import { Dialog, Transition } from '@headlessui/react';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -25,7 +26,6 @@ import {
   deleteSupportAttachment,
   documentMimeTypes,
   getSupportAttachment,
-  imageMimeTypes,
   saveSupportAttachments,
 } from '@supportmanagement/services/support-attachment-service';
 import {
@@ -123,7 +123,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
     formState,
     formState: { errors },
   } = useForm<SupportAttachmentFormModel>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     defaultValues: defaultAttachmentInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -161,6 +161,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
     if (vals.attachments) {
       trigger();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -214,12 +215,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
             setSelectedAttachment(null);
           })
           .then(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Bilagan togs bort',
-              status: 'success',
-            });
+            toastMessage(
+              getToastOptions({
+                message: 'Bilagan togs bort',
+                status: 'success',
+              })
+            );
             setIsLoading(false);
           })
           .catch((e) => {
@@ -239,7 +240,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="fixed inset-0 z-20 overflow-y-auto bg-opacity-50 bg-gray-500" onClose={closeModal}>
         <div className="min-h-screen px-4 text-center">
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0"
@@ -248,14 +249,14 @@ export const SupportErrandAttachmentsTab: React.FC<{
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0" />
-          </Transition.Child>
+            <DialogPanel className="fixed inset-0" />
+          </TransitionChild>
 
           {/* This element is to trick the browser into centering the modal contents. */}
           <span className="inline-block h-screen align-middle" aria-hidden="true">
             &#8203;
           </span>
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0 scale-95"
@@ -268,9 +269,9 @@ export const SupportErrandAttachmentsTab: React.FC<{
               <button ref={modalFocus} className="modal-close-btn" onClick={closeModal}>
                 <span className="material-icons-outlined">close</span>
               </button>
-              <Dialog.Title as="h1" className="text-xl my-sm">
+              <DialogTitle as="h1" className="text-xl my-sm">
                 {modalAttachment?.errandAttachmentHeader?.fileName}
-              </Dialog.Title>
+              </DialogTitle>
 
               <div className="flex flex-col justify-center items-center my-lg">
                 <>
@@ -290,7 +291,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                 </>
               </div>
             </div>
-          </Transition.Child>
+          </TransitionChild>
         </div>
       </Dialog>
     </Transition>
@@ -371,12 +372,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
                           reset();
                           setAddAttachmentWindowIsOpen(false);
                           setDragDrop(false);
-                          toastMessage({
-                            position: 'bottom',
-                            closeable: false,
-                            message: 'Bilagan sparades',
-                            status: 'success',
-                          });
+                          toastMessage(
+                            getToastOptions({
+                              message: 'Bilagan sparades',
+                              status: 'success',
+                            })
+                          );
                         })
                         .catch((e) => {
                           if (e.message === 'MAX_SIZE') {

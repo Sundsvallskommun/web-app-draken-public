@@ -35,17 +35,44 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
   setSearchResultArray,
   replacePhonenumbers,
 }) => {
-  const stakeholderType = form.watch(`stakeholderType`);
+  const clearCommonFields = () => {
+    replacePhonenumbers([]);
+    form.setValue('city', '');
+    form.setValue('zipCode', '');
+    form.setValue('careOf', '');
+    form.setValue('address', '');
+    setSearchResult(undefined);
+    setSearchResultArray([]);
+    setSelectedUser(undefined);
+  };
+
+  const clearFields = (type: 'PERSON' | 'ORGANIZATION') => {
+    clearCommonFields();
+    setTimeout(() => {
+      form.clearErrors(['phoneNumbers']);
+      form.setValue(`personId`, '', { shouldDirty: false });
+      form.setValue(`personNumber`, '', { shouldDirty: false });
+      if (type === 'PERSON') {
+        form.setValue(`organizationName`, '', { shouldDirty: false });
+        form.setValue(`organizationNumber`, '', { shouldDirty: false });
+        form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
+      } else {
+        form.setValue(`firstName`, '', { shouldDirty: false });
+        form.setValue(`lastName`, '', { shouldDirty: false });
+        form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
+      }
+      form.clearErrors();
+    }, 0);
+  };
 
   return (
     <fieldset
-      className="flex mx-md mt-ms mb-md gap-lg justify-start"
+      className="flex mt-ms mb-md gap-lg justify-start"
       data-cy={`searchmode-selector-${inName}`}
       disabled={disabled}
     >
       <legend className="text-md my-sm contents"></legend>
       <Input type="hidden" {...form.register(`stakeholderType`)} />
-
       {appConfig.features.useEmployeeSearch ? (
         <RadioButton
           data-cy={`search-employee-${inName}-${contact.role}`}
@@ -57,27 +84,13 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
           checked={searchMode === 'employee'}
           onChange={() => {
             setSearchMode('employee');
-            replacePhonenumbers([]);
-            form.setValue('city', '');
-            form.setValue('zipCode', '');
-            form.setValue('careOf', '');
-            form.setValue('address', '');
-            form.clearErrors(['organizationNumber']);
-            setSearchResult(undefined);
-            setSelectedUser(undefined);
             form.setValue(`externalIdType`, ExternalIdType.EMPLOYEE);
-            setTimeout(() => {
-              form.setValue(`organizationName`, '', { shouldDirty: false });
-              form.setValue(`organizationNumber`, '', { shouldDirty: false });
-              form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
-              form.clearErrors(['phoneNumbers']);
-            }, 0);
+            clearFields('PERSON');
           }}
         >
           Anställd
         </RadioButton>
       ) : null}
-
       <RadioButton
         data-cy={`search-person-${inName}-${contact.role}`}
         size="lg"
@@ -88,22 +101,8 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
         checked={searchMode === 'person'}
         onChange={() => {
           setSearchMode('person');
-          replacePhonenumbers([]);
-          form.setValue('city', '');
-          form.setValue('zipCode', '');
-          form.setValue('careOf', '');
-          form.setValue('address', '');
-          form.clearErrors(['organizationNumber']);
-          setSearchResult(undefined);
-          setSearchResultArray([]);
-          setSelectedUser(undefined);
           form.setValue(`externalIdType`, ExternalIdType.PRIVATE);
-          setTimeout(() => {
-            form.setValue(`organizationName`, '', { shouldDirty: false });
-            form.setValue(`organizationNumber`, '', { shouldDirty: false });
-            form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
-            form.clearErrors(['phoneNumbers']);
-          }, 0);
+          clearFields('PERSON');
         }}
       >
         Privat
@@ -121,26 +120,8 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
             checked={searchMode === 'enterprise'}
             onChange={() => {
               setSearchMode('enterprise');
-              form.setValue('city', '');
-              form.setValue('zipCode', '');
-              form.setValue('careOf', '');
-              form.setValue('address', '');
-              replacePhonenumbers([]);
-              setSearchResult(undefined);
-              setSearchResultArray([]);
-              setSelectedUser(undefined);
               form.setValue(`externalIdType`, ExternalIdType.COMPANY);
-              if (stakeholderType === 'PERSON') {
-                form.clearErrors(['personNumber']);
-                setTimeout(() => {
-                  form.setValue(`personNumber`, '', { shouldDirty: false });
-                  form.setValue(`personId`, '', { shouldDirty: false });
-                  form.setValue(`firstName`, '', { shouldDirty: false });
-                  form.setValue(`lastName`, '', { shouldDirty: false });
-                  form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
-                  form.clearErrors(['phoneNumbers']);
-                }, 0);
-              }
+              clearFields('ORGANIZATION');
             }}
           >
             Företag
@@ -155,26 +136,8 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
             checked={searchMode === 'organization'}
             onChange={() => {
               setSearchMode('organization');
-              form.setValue('city', '');
-              form.setValue('zipCode', '');
-              form.setValue('careOf', '');
-              form.setValue('address', '');
-              replacePhonenumbers([]);
-              form.clearErrors(['personNumber']);
-              setSearchResult(undefined);
-              setSearchResultArray([]);
-              setSelectedUser(undefined);
               form.setValue(`externalIdType`, ExternalIdType.COMPANY);
-              if (stakeholderType === 'PERSON') {
-                setTimeout(() => {
-                  form.setValue(`personNumber`, '', { shouldDirty: false });
-                  form.setValue(`personId`, '', { shouldDirty: false });
-                  form.setValue(`firstName`, '', { shouldDirty: false });
-                  form.setValue(`lastName`, '', { shouldDirty: false });
-                  form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
-                  form.clearErrors(['phoneNumbers']);
-                }, 0);
-              }
+              clearFields('ORGANIZATION');
             }}
           >
             Förening

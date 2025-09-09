@@ -1,29 +1,28 @@
 import { MessageNode, countAllMessages, countUnreadMessages } from '@casedata/services/casedata-message-service';
 import React, { Fragment, useState } from 'react';
 import { RenderedMessage } from './rendered-message.component';
-import { Divider } from '@mui/material';
-import { Button, cx } from '@sk-web-gui/react';
+import { Button, cx, Divider } from '@sk-web-gui/react';
 
 interface MessageTreeProps {
   nodes: MessageNode[];
-  selected: string;
   onSelect: (node: MessageNode) => void;
+  setShowMessageComposer: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const getId = (node: MessageNode): string => node.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
+const getId = (node: MessageNode): string => node.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
 
 const MessageNodeComponent: React.FC<{
   node: MessageNode;
-  selected: string;
   onSelect: (node: MessageNode) => void;
+  setShowMessageComposer: React.Dispatch<React.SetStateAction<boolean>>;
   root?: boolean;
-}> = ({ node, selected, onSelect, root = false }) => {
+}> = ({ node, onSelect, setShowMessageComposer, root = false }) => {
   const [showChildren, setShowChildren] = useState(true);
 
   return (
     <>
       <div className="m-md mr-0" id={`node-${getId(node)}`}>
-        <RenderedMessage message={node} selected={selected} onSelect={onSelect} root={root}>
+        <RenderedMessage message={node} onSelect={onSelect} setShowMessageComposer={setShowMessageComposer} root={root}>
           {root && node.children?.length ? (
             <Button
               size="sm"
@@ -48,8 +47,8 @@ const MessageNodeComponent: React.FC<{
               <MessageNodeComponent
                 key={`${idx}-${getId(child)}`}
                 node={child}
-                selected={selected}
                 onSelect={onSelect}
+                setShowMessageComposer={setShowMessageComposer}
               />
             ))}
           </div>
@@ -59,13 +58,18 @@ const MessageNodeComponent: React.FC<{
   );
 };
 
-const MessageTreeComponent: React.FC<MessageTreeProps> = ({ nodes, selected, onSelect }) => {
+const MessageTreeComponent: React.FC<MessageTreeProps> = ({ nodes, onSelect, setShowMessageComposer }) => {
   return (
     <div className="my-lg" data-cy="message-container">
       {nodes.map((node, idx) => (
         <Fragment key={`${idx}-${getId(node)}`}>
           <Divider />
-          <MessageNodeComponent node={node} selected={selected} onSelect={onSelect} root={true} />
+          <MessageNodeComponent
+            node={node}
+            onSelect={onSelect}
+            setShowMessageComposer={setShowMessageComposer}
+            root={true}
+          />
         </Fragment>
       ))}
     </div>

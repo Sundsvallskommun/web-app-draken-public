@@ -1,4 +1,8 @@
 import { config } from 'dotenv';
+import { APIS } from './api-config';
+
+export { APIS };
+
 config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 
 export const CREDENTIALS = process.env.CREDENTIALS === 'true';

@@ -1,4 +1,5 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -16,20 +17,13 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Modal,
-  Select,
-  Spinner,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { IconName } from 'lucide-react/dynamic';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
+import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
 export const PhaseChanger = () => {
   const {
@@ -41,10 +35,8 @@ export const PhaseChanger = () => {
     uiPhase,
   }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
     useAppContext();
-  const phaseConfirm = useConfirm();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [selectingAdmin, setSelectingAdmin] = useState(false);
+  const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
   const [allowed, setAllowed] = useState(false);
@@ -54,43 +46,44 @@ export const PhaseChanger = () => {
   }, [user, errand]);
 
   const {
-    register,
-    control,
     handleSubmit,
-    watch,
     reset,
     setValue,
     getValues,
-    formState,
     formState: { errors },
   }: UseFormReturn<{ admin: string }, any, undefined> = useForm();
 
   const [phaseChangeText, setPhaseChangeText] = useState<{
+    icon: IconName;
     button: string;
     title: string;
-    message: string | JSX.Element;
+    message: JSX.Element;
     disabled?: boolean;
     disabledMessage?: string;
   }>({
+    icon: 'lightbulb',
     button: 'Inled fasbyte',
     title: 'Vill du byta fas?',
-    message: 'Vill du byta fas?',
+    message: <p>Vill du byta fas?</p>,
   });
   useEffect(() => {
-    if (uiPhase === UiPhase.granskning) {
+    if (uiPhase === UiPhase.registrerad) {
       setPhaseChangeText({
+        icon: 'lightbulb',
+        button: 'Gå ifrån registrerad',
+        title: 'Vill du gå vidare?',
+        message: <></>,
+      });
+    } else if (uiPhase === UiPhase.granskning) {
+      setPhaseChangeText({
+        icon: 'clipboard-list',
         button: 'Inled utredning',
         title: 'Inled utredning',
-        message: (
-          <>
-            <p className="my-md">Är du säker på att du vill fortsätta?</p>
-          </>
-        ),
+        message: <p>Är du säker på att du vill fortsätta?</p>,
       });
-    } else if (uiPhase === UiPhase.registrerad) {
-      setPhaseChangeText({ button: 'Gå ifrån registrerad', title: 'Vill du gå vidare?', message: '' });
     } else if (uiPhase === UiPhase.utredning) {
       setPhaseChangeText({
+        icon: 'scale',
         button: 'Redo för beslut',
         title: 'Redo för beslut',
         message: (
@@ -109,50 +102,64 @@ export const PhaseChanger = () => {
           ? 'Ärendet har fel status för att beslut ska kunna fattas.'
           : !validateStakeholdersForDecision(errand).valid
           ? 'Ärendet saknar ärendeägare.'
-          : null,
+          : undefined,
       });
     } else if (uiPhase === UiPhase.beslut) {
-      setPhaseChangeText({ button: 'N/A', title: 'N/A?', message: '' });
+      setPhaseChangeText({ icon: 'lightbulb', button: 'N/A', title: 'N/A?', message: <></> });
     } else if (errand.phase === ErrandPhase.uppfoljning) {
-      setPhaseChangeText({ button: 'Avsluta ärende', title: 'Vill du avsluta ärendet?', message: '' });
+      setPhaseChangeText({
+        icon: 'folder-closed',
+        button: 'Avsluta ärende',
+        title: 'Avsluta ärendet?',
+        message: (
+          <p>
+            Kontrollera att du dokumenterat samtliga handlingar och uppgifter innan ärendet stängs. Vill du stänga
+            ärendet?
+          </p>
+        ),
+      });
     } else {
       setPhaseChangeText({
+        icon: 'circle',
         button: 'Inled fasbyte',
         title: 'Vill du byta fas?',
-        message: 'Vill du byta fas?',
+        message: <p>Vill du byta fas?</p>,
       });
     }
   }, [errand, uiPhase]);
 
-  const { admin } = watch();
+  const showSaveError = () => {
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: 'Något gick fel när handläggaren sparades',
+      status: 'error',
+    });
+    setIsLoading(false);
+  };
 
   const onSave = () => {
-    const admin = administrators.find((a) => a.displayName === getValues().admin);
     setIsLoading(true);
-    setError(false);
+    const admin = administrators.find((a) => a.adAccount === getValues().admin);
+    if (!admin) {
+      showSaveError();
+      return;
+    }
     return setAdministrator(municipalityId, errand, admin)
       .then(() => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Handläggaren sparades, går vidare till granskning',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Handläggaren sparades, går vidare till granskning',
+            status: 'success',
+          })
+        );
         setIsLoading(false);
         getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        setSelectingAdmin(false);
         pollDisplayPhase();
       })
-      .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när handläggaren sparades',
-          status: 'error',
-        });
-        setError(true);
-        setIsLoading(false);
+      .catch(() => {
+        showSaveError();
         return;
       });
   };
@@ -161,37 +168,32 @@ export const PhaseChanger = () => {
     console.error('Something went wrong when saving');
   };
 
-  const triggerPhaseChange = () => {
-    phaseConfirm
-      .showConfirmation(phaseChangeText.title, phaseChangeText.message, 'Ja', 'Nej', 'info', 'info')
-      .then((confirmed) => {
-        if (confirmed) {
-          return triggerErrandPhaseChange(municipalityId, errand)
-            .then(() => getErrand(municipalityId, errand.id.toString()))
-            .then((res) => setErrand(res.errand))
-            .then(() => {
-              setIsLoading(false);
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Fasbytet inleddes',
-                status: 'success',
-              });
-              setError(true);
-              setIsLoading(false);
-            })
-            .catch(() => {
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Något gick fel när fasbytet inleddes',
-                status: 'error',
-              });
-              setError(true);
-              setIsLoading(false);
-            });
-        }
+  const errandSave = useSaveCasedataErrand(false);
+
+  const triggerPhaseChange = async () => {
+    try {
+      setPhaseDialogOpen(false);
+      await errandSave();
+      await triggerErrandPhaseChange(municipalityId, errand);
+      const res = await getErrand(municipalityId, errand.id.toString());
+      setErrand(res.errand);
+
+      toastMessage(
+        getToastOptions({
+          message: 'Fasbytet inleddes',
+          status: 'success',
+        })
+      );
+    } catch (error) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när fasbytet inleddes',
+        status: 'error',
       });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return phaseChangeInProgress(errand) ? (
@@ -199,75 +201,18 @@ export const PhaseChanger = () => {
       Fasbyte pågår
     </Button>
   ) : uiPhase === UiPhase.registrerad ? (
-    <>
-      <Button
-        variant="primary"
-        color="vattjom"
-        onClick={() => {
-          setSelectingAdmin(true);
-        }}
-        rightIcon={<LucideIcon name="arrow-right" size={18} />}
-      >
-        Tilldela handläggare
-      </Button>
-      <Modal
-        show={selectingAdmin}
-        className="w-[43rem]"
-        onClose={() => {
-          setSelectingAdmin(false);
-          setValue('admin', 'Välj handläggare');
-        }}
-        label={'Tilldela handläggare'}
-      >
-        <Modal.Content>
-          <p>
-            För att inleda utredning behöver ärendet tilldelas en ansvarig handläggare. Du kan utse dig själv eller
-            någon annan i ditt team.
-          </p>
-          <FormControl id="administrator" className="w-full" required>
-            <FormLabel>Ansvarig handläggare</FormLabel>
-            <Select
-              className="w-full"
-              size="sm"
-              data-cy="admin-input"
-              placeholder="Välj handläggare"
-              aria-label="Välj handläggare"
-              {...register('admin')}
-              value={admin}
-            >
-              {!errand?.administrator?.adAccount ? <Select.Option>Välj handläggare</Select.Option> : null}
-              {administrators.map((a) => (
-                <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-        </Modal.Content>
-        <Modal.Footer>
-          <Button
-            variant="tertiary"
-            size="sm"
-            onClick={() => {
-              setSelectingAdmin(false);
-              setValue('admin', 'Välj handläggare');
-            }}
-          >
-            Avbryt
-          </Button>
-          {errand?.id && formState.dirtyFields.admin && admin !== 'Välj handläggare' ? (
-            <Button
-              variant="primary"
-              disabled={!errand?.id || !formState.dirtyFields.admin || admin === 'Välj handläggare'}
-              loadingText="Sparar"
-              loading={isLoading}
-              size="sm"
-              onClick={handleSubmit(onSave, onError)}
-            >
-              Tilldela
-            </Button>
-          ) : null}
-        </Modal.Footer>
-      </Modal>
-    </>
+    <Button
+      variant="primary"
+      color="vattjom"
+      onClick={async () => {
+        setValue('admin', user.username);
+        await errandSave();
+        handleSubmit(onSave, onError)();
+      }}
+      rightIcon={<LucideIcon name="arrow-right" size={18} />}
+    >
+      Inled granskning
+    </Button>
   ) : uiPhase === UiPhase.beslut ||
     errand.phase === ErrandPhase.verkstalla ||
     errand.status?.statusType === ErrandStatus.ArendeAvslutat ? null : (
@@ -278,7 +223,9 @@ export const PhaseChanger = () => {
         color="vattjom"
         loadingText="Sparar"
         loading={isLoading}
-        onClick={triggerPhaseChange}
+        onClick={() => {
+          setPhaseDialogOpen(true);
+        }}
         rightIcon={<LucideIcon name="arrow-right" size={18} />}
       >
         {phaseChangeText?.button}
@@ -288,6 +235,14 @@ export const PhaseChanger = () => {
           {phaseChangeText.disabledMessage}
         </FormErrorMessage>
       ) : null}
+      <PhaseChangerDialogComponent
+        icon={phaseChangeText.icon}
+        title={phaseChangeText.title}
+        message={phaseChangeText.message}
+        dialogIsOpen={phaseDialogOpen}
+        setDialogIsOpen={setPhaseDialogOpen}
+        triggerPhaseChange={triggerPhaseChange}
+      />
     </>
   );
 };

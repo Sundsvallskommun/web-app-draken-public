@@ -1,10 +1,9 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
-import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 interface SupportType {
@@ -55,7 +54,7 @@ interface SupportRoles {
 export class SupportMetadataController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.3`;
+  private SERVICE = apiServiceName('supportmanagement');
 
   @Get('/supportmetadata/:municipalityId')
   @OpenAPI({ summary: 'Get support metadata' })

@@ -1,4 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -75,7 +76,7 @@ export interface SupportNoteData {
 export class SupportNoteController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = `supportmanagement/10.3`;
+  private SERVICE = apiServiceName('supportmanagement');
 
   @Get('/supportnotes/:municipalityId/:id')
   @OpenAPI({ summary: 'Get notes for errand' })

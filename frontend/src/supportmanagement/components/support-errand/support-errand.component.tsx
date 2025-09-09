@@ -11,7 +11,7 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -40,21 +40,19 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
     municipalityId,
     supportErrand,
     setSupportErrand,
-    supportAdmins,
     setSupportAdmins,
     supportMetadata,
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: (e: any) => void;
-    supportAdmins: SupportAdmin[];
     setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
   } = useAppContext();
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as any,
     defaultValues: defaultSupportErrandInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -72,6 +70,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   useEffect(() => {
     getSupportAdmins().then(setSupportAdmins);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -80,9 +79,11 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   useEffect(() => {
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     if (props.id) {
       setIsLoading(true);
       getSupportErrandById(props.id, municipalityId)
@@ -99,7 +100,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           methods.reset(res.errand);
           setIsLoading(false);
         })
-        .catch((e) => {
+        .catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -114,9 +115,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
         initiateSupportErrand(municipalityId)
           .then((result) =>
             setTimeout(() => {
-              router.push(`/arende/${municipalityId}/${result.id}`, undefined, {
-                shallow: true,
-              });
+              router.push(`/arende/${municipalityId}/${result.id}`);
             }, 10)
           )
           .catch((e) => {
@@ -131,6 +130,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, props.id]);
 
   return (

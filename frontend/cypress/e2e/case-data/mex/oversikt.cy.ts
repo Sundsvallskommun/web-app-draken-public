@@ -3,29 +3,17 @@ import { CaseLabels } from '@casedata/interfaces/case-label';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { appConfig } from '@config/appconfig';
 import { onlyOn } from '@cypress/skip-test';
-import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockAttachments } from '../fixtures/mockAttachments';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
-import { mockMessages } from '../fixtures/mockMessages';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockPermits } from '../fixtures/mockPermits';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Overview page', () => {
     beforeEach(() => {
-      cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
-      cy.intercept('GET', '**/parking-permits/', mockPermits);
-      cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
-      cy.intercept('POST', '**/personid*', mockPersonId).as('personIdSearch');
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
-      cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
-      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
-      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
       cy.visit('/oversikt');
       cy.wait('@getErrands');
@@ -49,10 +37,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       headerRow.get('th').eq(0).find('span').first().should('have.text', 'Fast.bet');
       headerRow.get('th').eq(1).find('span').first().should('have.text', 'Senaste aktivitet');
       headerRow.get('th').eq(2).find('span').first().should('have.text', 'Ärendetyp');
-      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Prio');
-      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Registrerat');
-      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Handläggare');
-      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Status');
+      headerRow.get('th').eq(3).find('span').first().should('have.text', 'Ärendemening');
+      headerRow.get('th').eq(4).find('span').first().should('have.text', 'Prio');
+      headerRow.get('th').eq(5).find('span').first().should('have.text', 'Registrerat');
+      headerRow.get('th').eq(6).find('span').first().should('have.text', 'Handläggare');
+      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Status');
     });
 
     it('displays the filters', () => {
@@ -197,6 +186,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="Status-filter"]').click();
     });
 
+    it('allows filtering by stakeholder type', () => {
+      cy.get('[data-cy="Show-filters-button"]').should('exist');
+      const labels = ['PERSON', 'ORGANIZATION'];
+      cy.get('[data-cy="StakeholderType-filter"]').click();
+      cy.intercept('GET', '**/errands*').as(`${labels[0]}-filterSearch`);
+      cy.get(`[data-cy="StakeholderType-filter-${labels[0]}"]`).click();
+      cy.wait(`@${labels[0]}-filterSearch`).should(({ request, response }) => {
+        expect([200, 304]).to.include(response && response.statusCode);
+      });
+      cy.get('[data-cy="StakeholderType-filter"]').click();
+      cy.get(`[data-cy="tag-stakeholdertype-${labels[0]}"]`).click();
+    });
+
     it('allows filtering only my errands', () => {
       cy.intercept('GET', '**/errands*').as(`myErrands-filterSearch`);
       cy.get('[data-cy="myErrands-filter"]').should('exist').check({ force: true });
@@ -207,7 +209,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('Can use searchfield', () => {
-      // cy.intercept('GET', '**/errands*').as(`query-filterSearch`);
       cy.get('[data-cy="query-filter"]').should('exist').type('Text goes here');
       cy.intercept('GET', '**/errands*', emptyMockErrands).as(`emptyQuery-filterSearch`);
       cy.wait(`@emptyQuery-filterSearch`);

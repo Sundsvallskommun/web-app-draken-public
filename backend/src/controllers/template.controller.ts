@@ -6,6 +6,7 @@ import { IsObject, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 
 interface ResponseData {
   data: any;
@@ -50,12 +51,13 @@ interface Template {
 @Controller()
 export class TemplateController {
   private apiService = new ApiService();
+  SERVICE = apiServiceName('templating');
 
   @Post('/templates/phrases')
   @OpenAPI({ summary: 'Fetch phrases for decision' })
   @UseBefore(authMiddleware)
   async templatePhrases(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<ResponseData> {
-    const url = `templating/2.0/${MUNICIPALITY_ID}/templates/${templateSelector.identifier}`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/templates/${templateSelector.identifier}`;
     const res = await this.apiService.get<Template>({ url }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
@@ -65,7 +67,7 @@ export class TemplateController {
   @UseBefore(authMiddleware)
   async templateDecisionDriverApproval(@Req() req: RequestWithUser): Promise<ResponseData> {
     const templateIdentifier = 'sbk.rph.decision.driver.approval';
-    const url = `templating/2.0/${MUNICIPALITY_ID}/templates/${templateIdentifier}`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/templates/${templateIdentifier}`;
     const res = await this.apiService.get<Template>({ url }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
@@ -75,7 +77,7 @@ export class TemplateController {
   @OpenAPI({ summary: 'Render html preview of decision from stored template' })
   @UseBefore(authMiddleware, validationMiddleware(TemplateSelector, 'body'))
   async decisionPreviewHtml(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<{ data: PdfRender; message: string }> {
-    const url = `templating/2.0/${MUNICIPALITY_ID}/render`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render`;
     const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
       throw e;
     });
@@ -87,7 +89,7 @@ export class TemplateController {
   @OpenAPI({ summary: 'Render pdf preview of decision from stored template' })
   @UseBefore(authMiddleware, validationMiddleware(TemplateSelector, 'body'))
   async decisionPreviewPdf(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<{ data: PdfRender; message: string }> {
-    const url = `templating/2.0/${MUNICIPALITY_ID}/render/pdf`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/pdf`;
     const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
       throw e;
     });
@@ -102,7 +104,7 @@ export class TemplateController {
     @Req() req: RequestWithUser,
     @Body() templateSelector: TemplateSelector,
   ): Promise<{ data: PdfRender; message: string }> {
-    const url = `templating/2.0/${MUNICIPALITY_ID}/render/direct/pdf`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render/direct/pdf`;
     const response = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
       throw e;
     });

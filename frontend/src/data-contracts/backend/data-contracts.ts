@@ -18,28 +18,6 @@ export interface OrgNrPayload {
   orgNr: string;
 }
 
-export interface CLegalForm {
-  legalFormCode: string;
-  legalFormDescription: string;
-}
-
-export interface CAddress {
-  city?: string;
-  street?: string;
-  postcode?: string;
-  careOf?: string;
-}
-
-export interface CMunicipality {
-  municipalityCode: string;
-  municipalityName: string;
-}
-
-export interface CCounty {
-  countyCode: string;
-  countyName: string;
-}
-
 export interface CLEPostAddress {
   coAdress: string;
   country: string;
@@ -600,6 +578,7 @@ export interface SupportNotificationDto {
   globalAcknowledged?: boolean;
   errandId: string;
   errandNumber: string;
+  subtype: string;
 }
 
 export interface TemplateSelector {

@@ -1,4 +1,5 @@
 import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Errand, MessageResponse as IMessageResponse } from '@/data-contracts/case-data/data-contracts';
 import { RenderRequest, RenderResponse } from '@/data-contracts/templating/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -13,7 +14,8 @@ import { OpenAPI } from 'routing-controllers-openapi';
 @Controller()
 export class ExportController {
   private apiService = new ApiService();
-  SERVICE = `case-data/11.0`;
+  SERVICE = apiServiceName('case-data');
+  TEMPLATING_SERVICE = apiServiceName('templating');
 
   @Post('/:municipalityId/export')
   @OpenAPI({ summary: 'Export list of errands' })
@@ -36,7 +38,7 @@ export class ExportController {
       },
     };
 
-    const url = `templating/2.0/${MUNICIPALITY_ID}/render/pdf`;
+    const url = `${this.TEMPLATING_SERVICE}/${MUNICIPALITY_ID}/render/pdf`;
     const response = await this.apiService.post<RenderResponse, RenderRequest>({ url, data: renderRequest }, req.user).catch(e => {
       throw e;
     });
@@ -126,7 +128,7 @@ export class ExportController {
       },
     };
 
-    const url = `templating/2.0/${MUNICIPALITY_ID}/render/pdf`;
+    const url = `${this.TEMPLATING_SERVICE}/${MUNICIPALITY_ID}/render/pdf`;
     const response = await this.apiService.post<RenderResponse, RenderRequest>({ url, data: renderRequest }, req.user).catch(e => {
       throw e;
     });

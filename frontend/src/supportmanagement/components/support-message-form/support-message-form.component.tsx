@@ -1,15 +1,18 @@
+'use client';
+
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { EditorModal } from '@common/components/rich-text-editor/editor-modal.component';
-import { RichTextEditor } from '@common/components/rich-text-editor/rich-text-editor.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
+import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
+import { Relation, getSourceRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Paperclip, File, X } from 'lucide-react';
 import {
   Button,
   Chip,
@@ -22,7 +25,6 @@ import {
   RadioButton,
   Select,
   cx,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import {
@@ -30,6 +32,10 @@ import {
   SupportAttachment,
   getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
+import {
+  getOrCreateSupportConversationId,
+  sendSupportConversationMessage,
+} from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
   Status,
@@ -39,12 +45,14 @@ import {
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
+import { File, Paperclip, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
-import * as yup from 'yup';
-import { isKA, isKC } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import * as yup from 'yup';
+import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
 
@@ -75,22 +83,22 @@ let formSchema = yup
       .string()
       .email('E-postadress har fel format')
       .when(['emails', 'contactMeans'], {
-        is: (emails: [], means: string) => {
-          return !emails.length && means === 'email';
-        },
-        then: yup.string().min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+        is: (emails: any[], means: string) => (!emails || emails.length === 0) && means === 'email',
+        then: (schema) => schema.min(1, 'Ange minst en e-postadress').required('Ange minst en e-postadress'),
+        otherwise: (schema) => schema,
       }),
     emails: yup.array().when('contactMeans', {
       is: (means: string) => means === 'email',
-      then: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup.string().email('E-postadress har fel format'),
-          })
-        )
-        .min(1, 'Ange minst en e-postadress')
-        .required('Ange minst en e-postadress'),
+      then: (schema) =>
+        schema
+          .of(
+            yup.object().shape({
+              value: yup.string().email('E-postadress har fel format'),
+            })
+          )
+          .min(1, 'Ange minst en e-postadress')
+          .required('Ange minst en e-postadress'),
+      otherwise: (schema) => schema,
     }),
     newPhoneNumber: yup.string(),
     // .trim()
@@ -98,20 +106,21 @@ let formSchema = yup
     // .matches(supportManagementPhonePattern, invalidPhoneMessage),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
-      then: yup
-        .array()
-        .of(
-          yup.object().shape({
-            value: yup
-              .string()
-              .required('Telefonnummer måste anges för sms-meddelande')
-              .trim()
-              .transform((val) => val && val.replace('-', ''))
-              .matches(supportManagementPhonePattern, invalidPhoneMessage),
-          })
-        )
-        .min(1, 'Ange minst ett telefonnummer')
-        .required('Ange minst ett telefonnummer'),
+      then: (schema) =>
+        schema
+          .of(
+            yup.object().shape({
+              value: yup
+                .string()
+                .required('Telefonnummer måste anges för sms-meddelande')
+                .trim()
+                .transform((val) => val && val.replace('-', ''))
+                .matches(supportManagementPhonePattern, invalidPhoneMessage),
+            })
+          )
+          .min(1, 'Ange minst ett telefonnummer')
+          .required('Ange minst ett telefonnummer'),
+      otherwise: (schema) => schema,
     }),
     messageBody: yup.string().required('Meddelandetext måste anges'),
     messageBodyPlaintext: yup.string(),
@@ -128,15 +137,9 @@ export const SupportMessageForm: React.FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
-  supportErrandId: string;
   showMessageForm: boolean;
-  emailBody: string;
-  smsBody: string;
-  richText: string;
-  setRichText: React.Dispatch<React.SetStateAction<string>>;
   message: Message;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
-  showSelectedMessage: boolean;
   setUnsaved?: (boolean) => void;
   update?: () => void;
 }> = (props) => {
@@ -145,37 +148,40 @@ export const SupportMessageForm: React.FC<{
     user,
     supportErrand,
     supportAttachments,
+    setSupportErrand,
   }: {
     municipalityId: string;
     user: User;
     supportErrand: SupportErrand;
     supportAttachments: SupportAttachment[];
+    setSupportErrand: (errand: SupportErrand) => void;
   } = useAppContext();
 
-  const { richText, setRichText, emailBody, smsBody, showSelectedMessage } = props;
   const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
-  const confirm = useConfirm();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
   const quillRef = useRef(null);
-  const [textIsDirty, setTextIsDirty] = useState(false);
-  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
-  const [modalAction, setModalAction] = useState<() => Promise<any>>();
-  const [messageVerification, setMessageVerification] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
-  const { setSupportErrand } = useAppContext();
-  const [messageEmailValidated, setMessageEmailValidated] = useState<boolean>(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
+  const [selectedRelationId, setSelectedRelationId] = useState<string>('');
+  const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
+  const [richText, setRichText] = useState<string>('');
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
   };
 
+  const emailBody = getDefaultEmailBody(user, t);
+  const smsBody = getDefaultSmsBody(user, t);
+  const internalConversationSignature = t('messages:templates.conversation_default_signature', {
+    user: user.firstName + ' ' + user.lastName,
+  });
+
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
-      id: props.supportErrandId,
+      id: supportErrand.id,
       messageContact: true,
       contactMeans:
         Channels[supportErrand.channel] === Channels.ESERVICE ||
@@ -195,7 +201,7 @@ export const SupportMessageForm: React.FC<{
       addExisting: '',
       existingAttachments: [],
     },
-    resolver: yupResolver(formSchema),
+    resolver: yupResolver(formSchema) as unknown as Resolver<SupportMessageFormModel>,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -242,24 +248,14 @@ export const SupportMessageForm: React.FC<{
     name: 'existingAttachments',
   });
 
-  const onRichTextChange = (val) => {
-    const editor = quillRef.current.getEditor();
-    const length = editor.getLength();
-    setRichText(val);
-    setValue('messageBody', sanitized(length > 1 ? val : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getEditor().getText());
+  const onRichTextChange = (delta, oldDelta, source) => {
+    if (source === 'api') {
+      return;
+    }
+
+    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
+    setValue('messageBodyPlaintext', quillRef.current.getText());
     trigger('messageBody');
-  };
-
-  const clearParameters = () => {
-    setValue('emails', []);
-    setValue('newEmail', props.prefillEmail);
-    setValue('phoneNumbers', []);
-    setValue('newPhoneNumber', props.prefillPhone);
-  };
-
-  const onSubmit = (data, event) => {
-    send();
   };
 
   const getSingleSupportAttachment = (attachment: SupportAttachment) => {
@@ -268,51 +264,64 @@ export const SupportMessageForm: React.FC<{
     });
   };
 
-  const send: () => void = async () => {
+  const onSubmit: () => void = async () => {
     setIsSending(true);
     setMessageError(false);
     const data = getValues();
-    const messageData: MessageRequest = {
-      municipalityId: municipalityId,
-      errandId: data.id,
-      contactMeans: data.contactMeans,
-      emails: data.emails,
-      recipientEmail: '',
-      phoneNumbers: data.phoneNumbers,
-      plaintextMessage: data.messageBodyPlaintext,
-      htmlMessage: data.messageBody,
-      senderName: user.name,
-      subject: `Ärende #${supportErrand.errandNumber}`,
-      headerReplyTo: data.headerReplyTo,
-      headerReferences: data.headerReferences,
-      ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
-      ...((contactMeans === 'email' || contactMeans === 'webmessage') && { existingAttachments: existingAttachments }),
-    };
-    if (isKC() || isKA()) {
-      messageData.senderName = appConfig.applicationName;
-    }
-    sendMessage(messageData)
-      .then(async (success) => {
+
+    let sendPromise: Promise<any>;
+
+    if (contactMeans === 'draken' || contactMeans === 'minasidor') {
+      const conversationId = await getOrCreateSupportConversationId(
+        municipalityId,
+        supportErrand,
+        contactMeans,
+        selectedRelationId,
+        relationErrands,
+        props?.message?.conversationId
+      );
+
+      sendPromise = sendSupportConversationMessage(
+        municipalityId,
+        supportErrand.id,
+        conversationId,
+        data.messageBody,
+        data.messageAttachments
+      );
+    } else {
+      const messageData: MessageRequest = {
+        municipalityId: municipalityId,
+        errandId: supportErrand.id,
+        contactMeans: data.contactMeans,
+        emails: data.emails,
+        recipientEmail: '',
+        phoneNumbers: data.phoneNumbers,
+        plaintextMessage: data.messageBodyPlaintext,
+        htmlMessage: data.messageBody,
+        senderName: user.name,
+        subject: `Ärende #${supportErrand.errandNumber}`,
+        headerReplyTo: data.headerReplyTo,
+        headerReferences: data.headerReferences,
+        ...((contactMeans === 'email' || contactMeans === 'webmessage') && { attachments: messageAttachments }),
+        ...((contactMeans === 'email' || contactMeans === 'webmessage') && {
+          existingAttachments: existingAttachments,
+        }),
+      };
+      if (isKC() || isKA()) {
+        messageData.senderName = appConfig.applicationName;
+      }
+      sendPromise = sendMessage(messageData).then(async (success) => {
         if (!success) {
           throw new Error('');
         }
-        setIsSending(false);
-        if (document.querySelector('input[name="useEmail"]:checked')) {
-          setRichText(emailBody);
-        } else if (document.querySelector('input[name="useSms"]:checked')) {
-          setRichText(smsBody);
-        }
-        setValue('emails', []);
-        setValue('phoneNumbers', []);
-        removeMessageAttachment();
-        removeExistingAttachment();
-        setTimeout(() => {
-          props.setUnsaved(false);
-          setValue('messageBody', emailBody);
-          clearParameters();
-          clearErrors();
-          props.setShowMessageForm(false);
-        }, 0);
+        return true;
+      });
+    }
+
+    sendPromise
+      .then(async () => {
+        props.setShowMessageForm(false);
+        quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
 
         if (typeOfMessage === 'infoCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
@@ -323,132 +332,230 @@ export const SupportMessageForm: React.FC<{
         const updated = await getSupportErrandById(supportErrand.id, municipalityId);
         setSupportErrand(updated.errand);
 
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message:
-            data.emails.length + data.phoneNumbers.length === 1
-              ? 'Ditt meddelande skickades'
-              : 'Dina meddelanden skickades',
-          status: 'success',
-        });
+        toastMessage(
+          getToastOptions({
+            message:
+              data.emails.length > 1 || data.phoneNumbers.length > 1
+                ? 'Dina meddelanden skickades'
+                : 'Ditt meddelande skickades',
+            status: 'success',
+          })
+        );
       })
       .catch((e) => {
         console.error(e);
         setIsSending(false);
+        setMessageError(true);
         toastMessage({
           position: 'bottom',
           closeable: false,
           message: 'Något gick fel när meddelandet skulle skickas',
           status: 'error',
         });
+      })
+      .finally(() => {
+        props.setUnsaved(false);
+        setIsSending(false);
+        reset();
+        clearErrors();
       });
   };
 
   useEffect(() => {
-    if (contactMeans === 'email') {
-      if (props.prefillEmail !== undefined) {
-        setValue('emails', [{ value: props.prefillEmail }]);
-      }
-      setRichText(emailBody);
-    } else if (contactMeans === 'sms') {
-      setValue('newPhoneNumber', props.prefillPhone || PREFILL_VALUE);
-      setRichText(smsBody);
-    } else if (contactMeans === 'webmessage') {
-      setRichText(emailBody);
-    }
-    setTimeout(() => {
-      props.setUnsaved(false);
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans, props.prefillEmail, props.prefillPhone]);
+    setReplying(!!props?.message?.communicationID);
 
-  useEffect(() => {
-    setValue('id', props.supportErrandId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.supportErrandId]);
-
-  const { fields, remove, append } = useFieldArray({
-    control,
-    name: 'emails',
-  });
-
-  useEffect(() => {
-    setReplying(!!props.message?.emailHeaders?.['MESSAGE_ID']?.[0]);
     if (props.message) {
+      setValue(
+        'contactMeans',
+        props.message.communicationType === 'WEB_MESSAGE'
+          ? 'webmessage'
+          : props.message.communicationType === 'DRAKEN'
+          ? 'draken'
+          : props.message.communicationType === 'MINASIDOR'
+          ? 'minasidor'
+          : 'email'
+      );
       const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
       const references = props.message?.emailHeaders?.['REFERENCES'] || [];
       references.push(replyTo);
       setValue('headerReplyTo', replyTo);
       setValue('headerReferences', references.join(','));
-      setValue('emails', [{ value: props.message.sender }]);
+      setValue(
+        'emails',
+        props.message.direction === 'OUTBOUND' ? [{ value: props.message?.target }] : [{ value: props.message.sender }]
+      );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
 
-      setRichText(emailBody + historyHeader + props.message.messageBody);
+      const signature = !!props.message?.conversationId ? internalConversationSignature : emailBody;
 
+      setRichText(signature + historyHeader + props.message.messageBody);
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(signature + historyHeader + props.message.messageBody);
       trigger();
     } else {
-      setRichText(emailBody);
+      let body: string;
+      let prefillPhone = props.prefillPhone || PREFILL_VALUE;
+
+      switch (contactMeans) {
+        case 'sms':
+          setValue('newPhoneNumber', prefillPhone);
+          body = smsBody;
+          clearErrors();
+          break;
+
+        case 'draken':
+        case 'minasidor':
+          body = internalConversationSignature;
+          break;
+
+        default:
+          body = emailBody;
+          break;
+      }
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
       setValue('emails', []);
       setValue('phoneNumbers', []);
+
+      setRichText(body);
+      setValue('messageBody', sanitized(body));
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(body);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.message]);
+  }, [contactMeans, props.message]);
+
+  useEffect(() => {
+    getSourceRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
+      const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
+      setRelationErrands(sortedRelations);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.showMessageForm]);
+
+  useEffect(() => {
+    if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
+      setSelectedRelationId(relationErrands[0].target.resourceId);
+    }
+  }, [relationErrands, contactMeans, selectedRelationId]);
 
   return (
     <div className="px-40 py-8 gap-24">
       <input type="hidden" {...register('id')} />
 
-      <div className="w-full pt-16">
-        <strong className="text-md">Kontaktväg</strong>
-        <RadioButton.Group inline={true} data-cy="message-channel-radio-button-group" className="mt-8">
-          {appConfig.features.useEmailContactChannel && (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useEmail-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useEmail"
-              value="email"
-              checked={contactMeans === 'email'}
-              onChange={() => setValue('contactMeans', 'email')}
+      {!replying ? (
+        <div className="w-full pt-16">
+          <strong className="text-md">Kontaktväg</strong>
+          <RadioButton.Group inline data-cy="message-channel-radio-button-group" className="mt-8">
+            {appConfig.features.useEmailContactChannel && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useEmail-radiobutton-true"
+                className="mr-sm mt-4"
+                name="useEmail"
+                id="useEmail"
+                value="email"
+                {...register('contactMeans')}
+              >
+                E-post
+              </RadioButton>
+            )}
+            {appConfig.features.useSmsContactChannel && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useSms-radiobutton-true"
+                className="mr-sm mt-4"
+                name="useSms"
+                id="useSms"
+                value="sms"
+                {...register('contactMeans')}
+              >
+                SMS
+              </RadioButton>
+            )}
+            {Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useWebmessage-radiobutton-true"
+                className="mr-sm mt-4"
+                name="useWebmessage"
+                id="useWebmessage"
+                value="webmessage"
+                {...register('contactMeans')}
+              >
+                E-tjänst (intern)
+              </RadioButton>
+            ) : null}
+            {/* Only show webmessage option if errand is from e-service and LOP */}
+            {Channels[supportErrand.channel] === Channels.ESERVICE && isLOP() ? (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useWebmessage-radiobutton-true"
+                className="mr-sm mt-4"
+                name="useWebmessage"
+                id="useWebmessage"
+                value="webmessage"
+                {...register('contactMeans')}
+              >
+                E-tjänst (extern)
+              </RadioButton>
+            ) : null}
+            {appConfig.features.useStakeholderRelations && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useDraken-radiobutton-true"
+                className="mr-sm mt-4"
+                name="useDraken"
+                id="useDraken"
+                value="draken"
+                {...register('contactMeans')}
+              >
+                Draken
+              </RadioButton>
+            )}
+            {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
+
+            {/* {appConfig.features.useRelations &&
+              getSupportOwnerStakeholder(supportErrand)?.personNumber &&
+              Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
+                <RadioButton
+                  disabled={props.locked}
+                  data-cy="useMinasidor-radiobutton-true"
+                  className="mr-sm mt-4"
+                  name="useMinasidor"
+                  id="useMinasidor"
+                  value="minasidor"
+                  {...register('contactMeans')}
+                >
+                  Mina sidor
+                </RadioButton>
+              )} */}
+          </RadioButton.Group>
+        </div>
+      ) : null}
+
+      {contactMeans === 'draken' && !replying && (
+        <div className="w-full pt-16">
+          <strong className="text-md block mb-sm">Välj länkat ärende</strong>
+          {relationErrands.length > 0 ? (
+            <Select
+              value={selectedRelationId}
+              onChange={(e) => {
+                const selectedId = e.currentTarget.value;
+                setSelectedRelationId(selectedId);
+              }}
             >
-              E-post
-            </RadioButton>
+              {relationErrands.map((item) => (
+                <Select.Option key={item.target.resourceId} value={item.target.resourceId}>
+                  {item.target.type}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : (
+            <Select disabled value="">
+              <Select.Option value="">Laddar ärenden...</Select.Option>
+            </Select>
           )}
-          {appConfig.features.useSmsContactChannel && (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useSms-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useSms"
-              value="sms"
-              checked={contactMeans === 'sms'}
-              onChange={() => setValue('contactMeans', 'sms')}
-            >
-              SMS
-            </RadioButton>
-          )}
-          {Channels[supportErrand.channel] === Channels.ESERVICE ||
-          Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
-            <RadioButton
-              disabled={props.locked}
-              data-cy="useWebmessage-radiobutton-true"
-              className="mr-sm mt-4"
-              name="contactMeans"
-              id="useWebmessage"
-              value="webmessage"
-              checked={contactMeans === 'webmessage'}
-              onChange={() => setValue('contactMeans', 'webmessage')}
-            >
-              E-tjänst
-            </RadioButton>
-          ) : null}
-        </RadioButton.Group>
-      </div>
+        </div>
+      )}
 
       <div className="w-full pt-16">
         <strong className="text-md">Typ av meddelande</strong>
@@ -535,21 +642,15 @@ export const SupportMessageForm: React.FC<{
           <Input data-cy="message-body-input" type="hidden" {...register('messageBody')} />
           <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
           <div className={cx(`h-[26rem] mb-16`)} data-cy="decision-richtext-wrapper">
-            <RichTextEditor
+            <TextEditor
+              key={richText}
+              className={cx(`mb-md h-[80%]`)}
               readOnly={props.locked}
               ref={quillRef}
-              value={richText}
-              isMaximizable={true}
-              errors={!!errors.messageBody}
-              toggleModal={() => {
-                setIsEditorModalOpen(!isEditorModalOpen);
-              }}
-              onChange={(value, delta, source, editor) => {
+              defaultValue={richText}
+              onTextChange={(delta, oldDelta, source) => {
                 props.setUnsaved(true);
-                if (source === 'user') {
-                  setTextIsDirty(true);
-                }
-                return onRichTextChange(value);
+                return onRichTextChange(delta, oldDelta, source);
               }}
             />
           </div>
@@ -587,56 +688,58 @@ export const SupportMessageForm: React.FC<{
                   </div>
                 ))
             : null}
-          <FormControl id="addExisting" className="w-full mt-md">
-            <FormLabel>Bilagor från ärendet</FormLabel>
-            <div className="flex items-center justify-between">
-              {/*<Input type="hidden" {...register('addExisting')} />*/}
-              <Select
-                {...register('addExisting')}
-                className="w-full"
-                size="md"
-                placeholder="Välj bilaga"
-                onChange={(r) => {
-                  setValue('addExisting', r.currentTarget.value);
-                }}
-                value={getValues('addExisting')}
-                data-cy="select-errand-attachment"
-              >
-                <Select.Option value="">Välj bilaga</Select.Option>
-                {supportAttachments?.map((attachment, index) => {
-                  return (
-                    <Select.Option key={`attachmentId-${index}`} value={attachment?.fileName}>
-                      {attachment?.fileName}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                disabled={!addExisting}
-                color="primary"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (addExisting) {
-                    const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
-                    getSingleSupportAttachment(attachment);
-                    setValue(`addExisting`, undefined);
-                  }
-                }}
-                className="rounded-button ml-16"
-                data-cy="add-selected-attachment"
-              >
-                Lägg till
-              </Button>
-            </div>
-            {errors.addExisting && (
-              <div className="my-sm">
-                <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
+          {contactMeans === 'email' || contactMeans === 'webmessage' ? (
+            <FormControl id="addExisting" className="w-full mt-md">
+              <FormLabel>Bilagor från ärendet</FormLabel>
+              <div className="flex items-center justify-between">
+                {/*<Input type="hidden" {...register('addExisting')} />*/}
+                <Select
+                  {...register('addExisting')}
+                  className="w-full"
+                  size="md"
+                  placeholder="Välj bilaga"
+                  onChange={(r) => {
+                    setValue('addExisting', r.currentTarget.value);
+                  }}
+                  value={getValues('addExisting')}
+                  data-cy="select-errand-attachment"
+                >
+                  <Select.Option value="">Välj bilaga</Select.Option>
+                  {supportAttachments?.map((attachment, index) => {
+                    return (
+                      <Select.Option key={`attachmentId-${index}`} value={attachment?.fileName}>
+                        {attachment?.fileName}
+                      </Select.Option>
+                    );
+                  })}
+                </Select>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  disabled={!addExisting}
+                  color="primary"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (addExisting) {
+                      const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
+                      getSingleSupportAttachment(attachment);
+                      setValue(`addExisting`, undefined);
+                    }
+                  }}
+                  className="rounded-button ml-16"
+                  data-cy="add-selected-attachment"
+                >
+                  Lägg till
+                </Button>
               </div>
-            )}
-          </FormControl>
+              {errors.addExisting && (
+                <div className="my-sm">
+                  <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
+                </div>
+              )}
+            </FormControl>
+          ) : null}
           {existingAttachmentFields.length > 0 ? (
             <div className="flex items-center w-full flex-wrap justify-start gap-md mt-16">
               {existingAttachmentFields.map((field, k) => {
@@ -677,7 +780,10 @@ export const SupportMessageForm: React.FC<{
         </div>
       ) : null}
 
-      {(!props.locked && contactMeans === 'email') || contactMeans === 'webmessage' ? (
+      {(!props.locked && contactMeans === 'email') ||
+      contactMeans === 'webmessage' ||
+      contactMeans === 'draken' ||
+      contactMeans === 'minasidor' ? (
         <div className="flex mb-24">
           <Button
             variant="tertiary"
@@ -726,63 +832,39 @@ export const SupportMessageForm: React.FC<{
       ) : null}
 
       <div className="flex my-md gap-md">
-        {messageVerification ? (
-          <div className="text-md text-secondary my-sm">
-            {/* TODO FIX */}
-            {/* <LucideIcon name="check" fontSize="inherit" className="ml-sm mr-sm" /> */}
-            <span>Meddelandet har skickats</span>
-          </div>
-        ) : (
-          <>
-            <Button
-              onClick={() => {
-                props.setShowMessageForm(false);
-                clearParameters();
-              }}
-              variant="secondary"
-              color="primary"
-            >
-              Avbryt
-            </Button>
-            <Button
-              variant="primary"
-              color="primary"
-              type="button"
-              loading={isSending}
-              loadingText="Skickar meddelande"
-              disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
-              onClick={handleSubmit(onSubmit)}
-              data-cy="send-message-button"
-            >
-              Skicka meddelande
-            </Button>
-          </>
-        )}
+        <Button
+          disabled={isSending}
+          onClick={() => {
+            props.setShowMessageForm(false);
+            quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
+            props.setUnsaved(false);
+            setIsSending(false);
+            reset();
+            clearErrors();
+          }}
+          variant="secondary"
+          color="primary"
+        >
+          Avbryt
+        </Button>
+        <Button
+          variant="primary"
+          color="primary"
+          type="button"
+          loading={isSending}
+          loadingText="Skickar meddelande"
+          disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
+          onClick={handleSubmit(onSubmit)}
+          data-cy="send-message-button"
+        >
+          Skicka meddelande
+        </Button>
       </div>
       <div className="my-sm">
         {messageError && (
           <FormErrorMessage className="text-error">Något gick fel när meddelandet skulle skickas</FormErrorMessage>
         )}
       </div>
-      {isEditorModalOpen && (
-        <EditorModal
-          isOpen={isEditorModalOpen}
-          readOnly={props.locked}
-          modalHeader="Ditt meddelande"
-          modalBody={quillRef.current.getEditor().getContents()}
-          onChange={(delta) => {
-            setTextIsDirty(true);
-            return onRichTextChange(delta);
-          }}
-          onClose={() => {
-            setIsEditorModalOpen(false);
-          }}
-          onCancel={() => {
-            setIsEditorModalOpen(false);
-          }}
-          onContinue={modalAction}
-        />
-      )}
 
       <Modal show={isAttachmentModalOpen} onClose={closeAttachmentModal} label="Ladda upp bilaga" className="w-[40rem]">
         <Modal.Content>

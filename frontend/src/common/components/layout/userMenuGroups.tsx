@@ -1,28 +1,8 @@
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Link, PopupMenu } from '@sk-web-gui/react';
+import { Button, PopupMenu } from '@sk-web-gui/react';
 import { ColorSchemeItems } from './color-scheme-items.component';
 
 export const userMenuGroups = [
-  // {
-  //   label: 'Main',
-  //   showLabel: false,
-  //   showOnDesktop: false,
-  //   showOnMobile: true,
-  //   elements: [
-  //     {
-  //       label: 'Översikt',
-  //       element: (active: boolean) => (
-  //         <Link
-  //           key={'oversikt'}
-  //           href={`${process.env.NEXT_PUBLIC_BASEPATH}/oversikt`}
-  //           className={`usermenu-item ${active ? 'active' : ''} block lg:hidden`}
-  //         >
-  //           Översikt
-  //         </Link>
-  //       ),
-  //     },
-  //   ],
-  // },
   {
     label: 'Annat',
     showLabel: false,
@@ -34,7 +14,8 @@ export const userMenuGroups = [
         element: () => (
           <PopupMenu.Item>
             <PopupMenu position="right" align="start">
-              <PopupMenu.Button className="justify-between w-full" leftIcon={<LucideIcon name="palette" />}>
+              <PopupMenu.Button className="justify-between w-full">
+                <LucideIcon name="palette" />
                 <span className="w-full flex justify-between">
                   Färgläge
                   <LucideIcon name="chevron-right" />
@@ -51,12 +32,16 @@ export const userMenuGroups = [
         label: 'Logga ut',
         element: () => (
           <PopupMenu.Item>
-            <Link key={'logout'} href={`${process.env.NEXT_PUBLIC_API_URL}/saml/logout`} className={`usermenu-item`}>
-              <span className="material-icons-outlined align-middle mr-sm" aria-hidden="true">
-                logout
-              </span>
-              <span className="inline">Logga ut</span>
-            </Link>
+            <Button
+              type="button"
+              className="usermenu-item w-full text-left inline-flex items-center gap-2"
+              onClick={() => {
+                window.location.assign(`${process.env.NEXT_PUBLIC_BASEPATH}/logout`);
+              }}
+            >
+              <LucideIcon name="log-out" />
+              <span>Logga ut</span>
+            </Button>
           </PopupMenu.Item>
         ),
       },

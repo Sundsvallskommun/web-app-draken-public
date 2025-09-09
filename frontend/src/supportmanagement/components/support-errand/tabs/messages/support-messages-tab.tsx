@@ -1,45 +1,46 @@
-import { MessageWrapper } from '@casedata/components/errand/tabs/messages/message-wrapper.component';
-import { useAppContext } from '@contexts/app.context';
-import { Mail } from 'lucide-react';
-import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
-import { isSupportErrandLocked, validateAction, Status } from '@supportmanagement/services/support-errand-service';
-import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
-import React, { useEffect, useState } from 'react';
-import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
-import MessageTreeComponent from './support-messages-tree.component';
+import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useTranslation } from 'next-i18next';
+import { useAppContext } from '@contexts/app.context';
+import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import {
   getDefaultEmailBody,
   getDefaultSmsBody,
 } from '@supportmanagement/components/templates/default-message-template';
+import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
+import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
+import { Mail } from 'lucide-react';
+import { useTranslation } from 'next-i18next';
+import React, { useEffect, useState } from 'react';
+import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
+import MessageTreeComponent from './support-messages-tree.component';
 
 export const SupportMessagesTab: React.FC<{
   messages: Message[];
   messageTree: Message[];
+  supportConversations: Message[];
+  conversationMessageTree: Message[];
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   municipalityId: string;
 }> = (props) => {
   const { supportErrand, municipalityId, user } = useAppContext();
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
-  const [selected, setSelected] = useState<string>(null);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
-  const [showSelectedMessage, setShowSelectedMessage] = useState<boolean>();
   const [allowed, setAllowed] = useState(false);
-  const [richText, setRichText] = useState<string>('');
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
-  const [sortedMessages, setSortedMessages] = useState(props.messages);
+  const [sortedMessages, setSortedMessages] = useState<Message[]>();
   const { t } = useTranslation();
 
-  const emailBody = getDefaultEmailBody(user, t);
-  const smsBody = getDefaultSmsBody(user, t);
+  const allMessages = React.useMemo(
+    () => [...(props.messages || []), ...(props.supportConversations || [])],
+    [props.messages, props.supportConversations]
+  );
 
-  useEffect(() => {
-    setRichText(smsBody);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const allMessagesTree = React.useMemo(
+    () => [...(props.messageTree || []), ...(props.conversationMessageTree || [])],
+    [props.messageTree, props.conversationMessageTree]
+  );
 
   useEffect(() => {
     const _a = validateAction(supportErrand, user);
@@ -47,15 +48,16 @@ export const SupportMessagesTab: React.FC<{
   }, [user, supportErrand]);
 
   const onSelect = (message: Message) => {
-    if (!message.viewed && supportErrand.assignedUserId === user.username) {
+    if (message.conversationId && message.conversationId !== '') {
+      console.warn('Not implemented');
+      props.update();
+    } else if (!message.viewed && supportErrand.assignedUserId === user.username) {
       setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
         props.update();
       });
     }
 
-    setSelected(message.communicationID);
     setSelectedMessage(message);
-    setShowSelectedMessage(true);
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(true);
@@ -64,9 +66,9 @@ export const SupportMessagesTab: React.FC<{
   };
 
   useEffect(() => {
-    if (props.messages && props.messageTree) {
+    if (allMessages && allMessagesTree) {
       if (sortSendingTypeMessages === 'INBOUND') {
-        let filteredMessages = props.messages.filter(
+        let filteredMessages = allMessages.filter(
           (message: Message) =>
             message.direction === 'INBOUND' &&
             (sortChannelMessages !== 'allchannels'
@@ -75,7 +77,7 @@ export const SupportMessagesTab: React.FC<{
         );
         setSortedMessages(filteredMessages);
       } else if (sortSendingTypeMessages === 'OUTBOUND') {
-        let filteredMessages = props.messages.filter(
+        let filteredMessages = allMessages.filter(
           (message: Message) =>
             message.direction === 'OUTBOUND' &&
             (sortChannelMessages !== 'allchannels'
@@ -86,20 +88,20 @@ export const SupportMessagesTab: React.FC<{
       } else {
         setSortedMessages(
           sortChannelMessages !== 'allchannels'
-            ? props.messageTree.filter((x) => x.communicationType === sortChannelMessages)
-            : props.messageTree
+            ? allMessagesTree.filter((x) => x.communicationType === sortChannelMessages)
+            : allMessagesTree
         );
       }
     }
-  }, [props.messages, props.messageTree, sortSendingTypeMessages, sortChannelMessages]);
+  }, [allMessages, allMessagesTree, sortSendingTypeMessages, sortChannelMessages]);
 
   useEffect(() => {
-    if (props.messages && props.messageTree) {
+    if (allMessages && allMessagesTree) {
       if (sortChannelMessages === CommunicationCommunicationTypeEnum.WEB_MESSAGE) {
-        let filteredMessages = props.messages.filter(
+        let filteredMessages = allMessages.filter(
           (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.WEB_MESSAGE
         );
-        let filteredMessageTree = props.messageTree.filter((m) => {
+        let filteredMessageTree = allMessagesTree.filter((m) => {
           return filteredMessages.find(
             (x) =>
               x.communicationType === m.communicationType &&
@@ -108,14 +110,14 @@ export const SupportMessagesTab: React.FC<{
         });
         setSortedMessages(filteredMessageTree);
       } else if (sortChannelMessages === CommunicationCommunicationTypeEnum.EMAIL) {
-        let filteredMessages = props.messages.filter(
+        let filteredMessages = allMessages.filter(
           (message: Message) =>
             message.communicationType === CommunicationCommunicationTypeEnum.EMAIL &&
             (sortSendingTypeMessages !== 'ALL_SEND_TYPES'
               ? message.direction === sortSendingTypeMessages
               : message.direction)
         );
-        let filteredMessageTree = props.messageTree.filter((m) => {
+        let filteredMessageTree = allMessagesTree.filter((m) => {
           return filteredMessages.find(
             (x) =>
               x.communicationType === m.communicationType &&
@@ -128,10 +130,10 @@ export const SupportMessagesTab: React.FC<{
             : filteredMessageTree
         );
       } else if (sortChannelMessages === CommunicationCommunicationTypeEnum.SMS) {
-        let filteredMessages = props.messages.filter(
+        let filteredMessages = allMessages.filter(
           (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.SMS
         );
-        let filteredMessageTree = props.messageTree.filter((m) => {
+        let filteredMessageTree = allMessagesTree.filter((m) => {
           return filteredMessages.find(
             (x) =>
               x.communicationType === m.communicationType &&
@@ -139,15 +141,33 @@ export const SupportMessagesTab: React.FC<{
           );
         });
         setSortedMessages(filteredMessageTree);
+      } else if (sortChannelMessages === 'DRAKEN') {
+        let filteredMessages = allMessages.filter((message: Message) => message.communicationType === 'DRAKEN');
+        allMessagesTree.filter((m) => {
+          return filteredMessages.find(
+            (x) =>
+              x.communicationID === m.communicationID &&
+              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : true)
+          );
+        });
+      } else if (sortChannelMessages === 'MINASIDOR') {
+        let filteredMessages = allMessages.filter((message: Message) => message.communicationType === 'MINASIDOR');
+        allMessagesTree.filter((m) => {
+          return filteredMessages.find(
+            (x) =>
+              x.communicationID === m.communicationID &&
+              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : true)
+          );
+        });
       } else {
         setSortedMessages(
           sortSendingTypeMessages !== 'ALL_SEND_TYPES'
-            ? props.messages.filter((x) => x.direction === sortSendingTypeMessages)
-            : props.messageTree
+            ? allMessages.filter((x) => x.direction === sortSendingTypeMessages)
+            : allMessagesTree
         );
       }
     }
-  }, [props.messages, props.messageTree, sortChannelMessages, sortSendingTypeMessages]);
+  }, [allMessages, allMessagesTree, sortChannelMessages, sortSendingTypeMessages]);
 
   return (
     <>
@@ -167,9 +187,7 @@ export const SupportMessagesTab: React.FC<{
             rightIcon={<Icon icon={<Mail />} size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
-              setShowSelectedMessage(false);
               setShowMessageForm(true);
-              setRichText(emailBody);
             }}
           >
             Nytt meddelande
@@ -199,8 +217,10 @@ export const SupportMessagesTab: React.FC<{
               <Select.Option defaultChecked={true} value={'allchannels'}>
                 Alla kanaler
               </Select.Option>
+              <Select.Option value={'DRAKEN'}>Draken</Select.Option>
               <Select.Option value={CommunicationCommunicationTypeEnum.WEB_MESSAGE}>E-tjänst</Select.Option>
               <Select.Option value={CommunicationCommunicationTypeEnum.EMAIL}>E-post</Select.Option>
+              <Select.Option value={'MINASIDOR'}>Mina sidor</Select.Option>
               <Select.Option value={CommunicationCommunicationTypeEnum.SMS}>SMS</Select.Option>
             </Select>
           </FormControl>
@@ -210,10 +230,7 @@ export const SupportMessagesTab: React.FC<{
           <div data-cy="message-container">
             <MessageTreeComponent
               update={props.update}
-              setRichText={setRichText}
               setShowMessageForm={setShowMessageForm}
-              richText={richText}
-              emailBody={emailBody}
               nodes={sortedMessages}
               selected={selectedMessage?.communicationID}
               onSelect={(msg: Message) => {
@@ -239,18 +256,12 @@ export const SupportMessagesTab: React.FC<{
           <SupportMessageForm
             locked={isSupportErrandLocked(supportErrand)}
             showMessageForm={showMessageForm}
-            showSelectedMessage={showSelectedMessage}
             setShowMessageForm={setShowMessageForm}
             prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
             prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
-            supportErrandId={supportErrand.id}
             setUnsaved={(val) => {
               props.setUnsaved(val);
             }}
-            emailBody={emailBody}
-            smsBody={smsBody}
-            richText={richText}
-            setRichText={setRichText}
             message={selectedMessage}
             update={props.update}
           />

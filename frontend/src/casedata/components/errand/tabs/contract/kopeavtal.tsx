@@ -37,8 +37,6 @@ export const KopeAvtal: React.FC<{
     KopeavtalsTemplate & KopeAvtalsData
   >();
 
-  const [timeOfAccess, setTimeOfAccess] = useState<'onDate' | 'whenPaid'>('onDate');
-
   const [showOverlatelse, setShowOverlatelse] = useState(false);
   const [editOverlatelse, setEditOverlatelse] = useState(false);
   const quillRefOverlatelse = useRef(null);
@@ -85,8 +83,6 @@ export const KopeAvtal: React.FC<{
   const [other, setOther] = useState<string>('');
 
   const [showSignature, setShowSignature] = useState(false);
-  const [editSignature, setEditSignature] = useState(false);
-  const quillRefSignature = useRef(null);
   const [signature, setSignature] = useState<string>('');
 
   const [textIsDirty, setTextIsDirty] = useState(false);
@@ -108,6 +104,7 @@ export const KopeAvtal: React.FC<{
       b.personalNumber = ssn;
       setValue('buyers', buyers);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyers]);
 
   const { fields: buyersFields, replace: replaceBuyers } = useFieldArray({
@@ -122,6 +119,7 @@ export const KopeAvtal: React.FC<{
       s.personalNumber = ssn;
       setValue('sellers', sellers);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sellers]);
 
   const { fields: sellersFields, replace: replaceSellers } = useFieldArray({
@@ -132,11 +130,13 @@ export const KopeAvtal: React.FC<{
 
   useEffect(() => {
     setValue('propertyDesignations', getErrandPropertyDesignations(errand));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   useEffect(() => {
     replaceSellers(sellers);
     replaceBuyers(buyers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyers, sellers]);
 
   useEffect(() => {
@@ -152,52 +152,64 @@ export const KopeAvtal: React.FC<{
       setValue('other', existingContract.other);
       setValue('signature', existingContract.signature);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
   useEffect(() => {
     setOverlatelseforklaring(watch().overlatelseforklaring);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().overlatelseforklaring]);
 
   useEffect(() => {
     setKopeskilling(watch().kopeskilling);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().kopeskilling]);
 
   useEffect(() => {
     setTilltrade(watch().tilltrade);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().tilltrade]);
 
   useEffect(() => {
     setMarkfororeningar(watch().markfororeningar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().markfororeningar]);
 
   useEffect(() => {
     setSkog(watch().skog);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().skog]);
 
   useEffect(() => {
     setForpliktelser(watch().forpliktelser);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().forpliktelser]);
 
   useEffect(() => {
     setUtgifter(watch().utgifter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().utgifter]);
 
   useEffect(() => {
     setFastighetsbildning(watch().fastighetsbildning);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().fastighetsbildning]);
 
   useEffect(() => {
     setOther(watch().other);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().other]);
 
   useEffect(() => {
     setSignature(watch().signature);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().signature]);
 
   useEffect(() => {
     const doneMarkedElements =
       errand.extraParameters.find((parameters) => parameters.key === 'kopeavtal')?.values || [];
     setDoneMark(doneMarkedElements);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -205,6 +217,7 @@ export const KopeAvtal: React.FC<{
       saveDoneMarksOnErrande(municipalityId, errand, 'kopeavtal', doneMark);
       setUnsaved(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneMark]);
 
   const markSectionAsDone = (inSection: string) => {
@@ -547,7 +560,11 @@ Referenser till hur området skrafferat och märkt i bilagan/or: ${
 Ska byggnader belägna på området ingå i överlåtelsen? ${
                     getValues().overlatelseforklaringTerms.includeBuildingsInArea === 'true' ? 'Ja' : 'Nej'
                   }`;
-                  setOverlatelseforklaring(content);
+                  const delta = quillRefOverlatelse.current.clipboard.convert({ html: content });
+                  quillRefOverlatelse.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOverlatelse.current.getSemanticHTML();
+                  setOverlatelseforklaring(semanticText);
+                  setValue('overlatelseforklaring', semanticText);
                   setShowOverlatelse(false);
                 }}
               >
@@ -694,7 +711,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
 <br /><br /><p>${getValues().kopeskillingTerms.condition?.conditionText || '(saknas)'}</p>
                     
                     `;
-                  setKopeskilling(content);
+                  const delta = quillRefKopeskilling.current.clipboard.convert({ html: content });
+                  quillRefKopeskilling.current.setContents(delta, 'silent');
+                  const semanticText = quillRefKopeskilling.current.getSemanticHTML();
+                  setKopeskilling(semanticText);
+                  setValue('kopeskilling', semanticText);
                   setShowKopeskilling(false);
                 }}
               >
@@ -759,18 +780,12 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
           >
             <Modal.Content>
               <FormControl id="timeOfAccess">
-                <RadioButton.Group
-                  data-cy="timeOfAccess-radioGroup"
-                  onChange={(e) => {
-                    setTimeOfAccess(e.target.value as 'onDate' | 'whenPaid');
-                  }}
-                >
+                <RadioButton.Group data-cy="timeOfAccess-radioGroup" onChange={(e) => {}}>
                   <RadioButton
                     checked={getValues().tilltradeTerms?.timeOfAccess === 'onDate'}
                     name="timeOfAccess"
                     value="onDate"
                     onClick={() => {
-                      setTimeOfAccess('onDate');
                       setValue('tilltradeTerms.timeOfAccess', 'onDate');
                     }}
                   >
@@ -781,7 +796,6 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                     name="timeOfAccess"
                     value="whenPaid"
                     onClick={() => {
-                      setTimeOfAccess('whenPaid');
                       setValue('tilltradeTerms.timeOfAccess', 'whenPaid');
                       setValue('tilltradeTerms.accessDate', '');
                     }}
@@ -815,7 +829,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       ? 'på datum: ' + getValues().tilltradeTerms?.accessDate
                       : 'när köpeskillingen erlagts'
                   }</p>`;
-                  setTilltrade(content);
+                  const delta = quillRefTilltrade.current.clipboard.convert({ html: content });
+                  quillRefTilltrade.current.setContents(delta, 'silent');
+                  const semanticText = quillRefTilltrade.current.getSemanticHTML();
+                  setTilltrade(semanticText);
+                  setValue('tilltrade', semanticText);
                   setShowTilltrade(false);
                 }}
               >
@@ -954,7 +972,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                   }
                   `;
 
-                  setMarkfororeningar(content);
+                  const delta = quillRefMarkfororeningar.current.clipboard.convert({ html: content });
+                  quillRefMarkfororeningar.current.setContents(delta, 'silent');
+                  const semanticText = quillRefMarkfororeningar.current.getSemanticHTML();
+                  setMarkfororeningar(semanticText);
+                  setValue('markfororeningar', semanticText);
                   setShowMarkfororeningar(false);
                 }}
               >
@@ -1096,7 +1118,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  setSkog(content);
+                  const delta = quillRefSkog.current.clipboard.convert({ html: content });
+                  quillRefSkog.current.setContents(delta, 'silent');
+                  const semanticText = quillRefSkog.current.getSemanticHTML();
+                  setSkog(semanticText);
+                  setValue('skog', semanticText);
                   setShowSkog(false);
                 }}
               >
@@ -1211,7 +1237,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  setForpliktelser(content);
+                  const delta = quillRefForpliktelser.current.clipboard.convert({ html: content });
+                  quillRefForpliktelser.current.setContents(delta, 'silent');
+                  const semanticText = quillRefForpliktelser.current.getSemanticHTML();
+                  setForpliktelser(semanticText);
+                  setValue('forpliktelser', semanticText);
                   setShowForpliktelser(false);
                 }}
               >
@@ -1343,7 +1373,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  setUtgifter(content);
+                  const delta = quillRefUtgifter.current.clipboard.convert({ html: content });
+                  quillRefUtgifter.current.setContents(delta, 'silent');
+                  const semanticText = quillRefUtgifter.current.getSemanticHTML();
+                  setUtgifter(semanticText);
+                  setValue('utgifter', semanticText);
                   setShowUtgifter(false);
                 }}
               >
@@ -1467,7 +1501,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                                     }</p><br />`
                                   : ''
                               }`;
-                  setFastighetsbildning(content);
+                  const delta = quillRefFastighetsbildning.current.clipboard.convert({ html: content });
+                  quillRefFastighetsbildning.current.setContents(delta, 'silent');
+                  const semanticText = quillRefFastighetsbildning.current.getSemanticHTML();
+                  setFastighetsbildning(semanticText);
+                  setValue('fastighetsbildning', semanticText);
                   setShowFastighetsbildning(false);
                 }}
               >
@@ -1605,7 +1643,11 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                         }</p><br />`
                       : ''
                   }`;
-                  setOther(content);
+                  const delta = quillRefOther.current.clipboard.convert({ html: content });
+                  quillRefOther.current.setContents(delta, 'silent');
+                  const semanticText = quillRefOther.current.getSemanticHTML();
+                  setOther(semanticText);
+                  setValue('other', semanticText);
                   setShowOther(false);
                 }}
               >

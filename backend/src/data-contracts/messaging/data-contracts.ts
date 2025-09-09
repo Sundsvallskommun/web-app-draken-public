@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -8,6 +9,30 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+/** Message type */
+export enum MessageType {
+  MESSAGE = "MESSAGE",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+  WEB_MESSAGE = "WEB_MESSAGE",
+  DIGITAL_MAIL = "DIGITAL_MAIL",
+  DIGITAL_INVOICE = "DIGITAL_INVOICE",
+  SNAIL_MAIL = "SNAIL_MAIL",
+  LETTER = "LETTER",
+  SLACK = "SLACK",
+}
+
+/** Status */
+export enum MessageStatus {
+  PENDING = "PENDING",
+  AWAITING_FEEDBACK = "AWAITING_FEEDBACK",
+  SENT = "SENT",
+  NOT_SENT = "NOT_SENT",
+  FAILED = "FAILED",
+  NO_CONTACT_SETTINGS_FOUND = "NO_CONTACT_SETTINGS_FOUND",
+  NO_CONTACT_WANTED = "NO_CONTACT_WANTED",
+}
 
 /** External references */
 export interface ExternalReference {
@@ -121,30 +146,6 @@ export interface MessageResult {
   messageId?: string;
   /** The message deliveries */
   deliveries?: DeliveryResult[];
-}
-
-/** Status */
-export enum MessageStatus {
-  PENDING = 'PENDING',
-  AWAITING_FEEDBACK = 'AWAITING_FEEDBACK',
-  SENT = 'SENT',
-  NOT_SENT = 'NOT_SENT',
-  FAILED = 'FAILED',
-  NO_CONTACT_SETTINGS_FOUND = 'NO_CONTACT_SETTINGS_FOUND',
-  NO_CONTACT_WANTED = 'NO_CONTACT_WANTED',
-}
-
-/** Message type */
-export enum MessageType {
-  MESSAGE = 'MESSAGE',
-  EMAIL = 'EMAIL',
-  SMS = 'SMS',
-  WEB_MESSAGE = 'WEB_MESSAGE',
-  DIGITAL_MAIL = 'DIGITAL_MAIL',
-  DIGITAL_INVOICE = 'DIGITAL_INVOICE',
-  SNAIL_MAIL = 'SNAIL_MAIL',
-  LETTER = 'LETTER',
-  SLACK = 'SLACK',
 }
 
 export interface SmsRequest {
@@ -898,6 +899,67 @@ export interface UserMessages {
   messages?: UserMessage[];
 }
 
+/** Batch information model */
+export interface Batch {
+  /**
+   * The batch id
+   * @example "b971e0f8-2942-4b45-9fa3-bd2cc22ed76b"
+   */
+  batchId?: string;
+  /**
+   * The original message type
+   * @example "LETTER"
+   */
+  messageType?: string;
+  /**
+   * Message subject if such exists for message(s) attached to the batch
+   * @example "Important message"
+   */
+  subject?: string;
+  /**
+   * Timestamp when the batch was sent
+   * @format date-time
+   */
+  sent?: string;
+  /**
+   * The amount of documents attached to message(s) in the batch
+   * @format int32
+   * @example 3
+   */
+  attachmentCount?: number;
+  /**
+   * The amount of recipients included in the batch
+   * @format int32
+   * @example 15
+   */
+  recipientCount?: number;
+  /** Batch status model */
+  status?: Status;
+}
+
+/** Batch status model */
+export interface Status {
+  /**
+   * Amount of successfully sent messages
+   * @format int32
+   * @example 13
+   */
+  successful?: number;
+  /**
+   * Amount of failed messages
+   * @format int32
+   * @example 2
+   */
+  unsuccessful?: number;
+}
+
+/** User batches model */
+export interface UserBatches {
+  /** PagingMetaData model */
+  _meta?: PagingMetaData;
+  batches?: Batch[];
+}
+
 export interface LetterStatistics {
   SNAIL_MAIL?: StatisticsCounter;
   DIGITAL_MAIL?: StatisticsCounter;
@@ -959,20 +1021,20 @@ export interface HistoryResponse {
  * @example "INTERNAL"
  */
 export enum WebMessageRequestOepInstanceEnum {
-  INTERNAL = 'INTERNAL',
-  EXTERNAL = 'EXTERNAL',
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
 }
 
 /** Priority (optional, will be defaulted to NORMAL if not present) */
 export enum SmsRequestPriorityEnum {
-  HIGH = 'HIGH',
-  NORMAL = 'NORMAL',
+  HIGH = "HIGH",
+  NORMAL = "NORMAL",
 }
 
 /** Priority (optional, will be defaulted to NORMAL if not present) */
 export enum SmsBatchRequestPriorityEnum {
-  HIGH = 'HIGH',
-  NORMAL = 'NORMAL',
+  HIGH = "HIGH",
+  NORMAL = "NORMAL",
 }
 
 /**
@@ -980,25 +1042,25 @@ export enum SmsBatchRequestPriorityEnum {
  * digital mail, snail-mail or any of them
  */
 export enum LetterAttachmentDeliveryModeEnum {
-  ANY = 'ANY',
-  DIGITAL_MAIL = 'DIGITAL_MAIL',
-  SNAIL_MAIL = 'SNAIL_MAIL',
+  ANY = "ANY",
+  DIGITAL_MAIL = "DIGITAL_MAIL",
+  SNAIL_MAIL = "SNAIL_MAIL",
 }
 
 /** Content type */
 export enum LetterAttachmentContentTypeEnum {
-  ApplicationPdf = 'application/pdf',
+  ApplicationPdf = "application/pdf",
 }
 
 /** Content type */
 export enum LetterRequestContentTypeEnum {
-  TextPlain = 'text/plain',
-  TextHtml = 'text/html',
+  TextPlain = "text/plain",
+  TextHtml = "text/html",
 }
 
 /** Content type */
 export enum DigitalMailAttachmentContentTypeEnum {
-  ApplicationPdf = 'application/pdf',
+  ApplicationPdf = "application/pdf",
 }
 
 /**
@@ -1006,62 +1068,62 @@ export enum DigitalMailAttachmentContentTypeEnum {
  * @minLength 1
  */
 export enum DigitalMailRequestContentTypeEnum {
-  TextPlain = 'text/plain',
-  TextHtml = 'text/html',
+  TextPlain = "text/plain",
+  TextHtml = "text/html",
 }
 
 export enum DetailsPaymentReferenceTypeEnum {
-  SE_OCR = 'SE_OCR',
-  TENANT_REF = 'TENANT_REF',
+  SE_OCR = "SE_OCR",
+  TENANT_REF = "TENANT_REF",
 }
 
 export enum DetailsAccountTypeEnum {
-  BANKGIRO = 'BANKGIRO',
-  PLUSGIRO = 'PLUSGIRO',
+  BANKGIRO = "BANKGIRO",
+  PLUSGIRO = "PLUSGIRO",
 }
 
 /** Content type */
 export enum DigitalInvoiceFileContentTypeEnum {
-  ApplicationPdf = 'application/pdf',
+  ApplicationPdf = "application/pdf",
 }
 
 /** Invoice type */
 export enum DigitalInvoiceRequestTypeEnum {
-  INVOICE = 'INVOICE',
-  REMINDER = 'REMINDER',
+  INVOICE = "INVOICE",
+  REMINDER = "REMINDER",
 }
 
 export enum HistoryResponseMessageTypeEnum {
-  MESSAGE = 'MESSAGE',
-  EMAIL = 'EMAIL',
-  SMS = 'SMS',
-  WEB_MESSAGE = 'WEB_MESSAGE',
-  DIGITAL_MAIL = 'DIGITAL_MAIL',
-  DIGITAL_INVOICE = 'DIGITAL_INVOICE',
-  SNAIL_MAIL = 'SNAIL_MAIL',
-  LETTER = 'LETTER',
-  SLACK = 'SLACK',
+  MESSAGE = "MESSAGE",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+  WEB_MESSAGE = "WEB_MESSAGE",
+  DIGITAL_MAIL = "DIGITAL_MAIL",
+  DIGITAL_INVOICE = "DIGITAL_INVOICE",
+  SNAIL_MAIL = "SNAIL_MAIL",
+  LETTER = "LETTER",
+  SLACK = "SLACK",
 }
 
 export enum HistoryResponseStatusEnum {
-  PENDING = 'PENDING',
-  AWAITING_FEEDBACK = 'AWAITING_FEEDBACK',
-  SENT = 'SENT',
-  NOT_SENT = 'NOT_SENT',
-  FAILED = 'FAILED',
-  NO_CONTACT_SETTINGS_FOUND = 'NO_CONTACT_SETTINGS_FOUND',
-  NO_CONTACT_WANTED = 'NO_CONTACT_WANTED',
+  PENDING = "PENDING",
+  AWAITING_FEEDBACK = "AWAITING_FEEDBACK",
+  SENT = "SENT",
+  NOT_SENT = "NOT_SENT",
+  FAILED = "FAILED",
+  NO_CONTACT_SETTINGS_FOUND = "NO_CONTACT_SETTINGS_FOUND",
+  NO_CONTACT_WANTED = "NO_CONTACT_WANTED",
 }
 
 /** Message type */
 export enum GetStatisticsParamsMessageTypeEnum {
-  MESSAGE = 'MESSAGE',
-  EMAIL = 'EMAIL',
-  SMS = 'SMS',
-  WEB_MESSAGE = 'WEB_MESSAGE',
-  DIGITAL_MAIL = 'DIGITAL_MAIL',
-  DIGITAL_INVOICE = 'DIGITAL_INVOICE',
-  SNAIL_MAIL = 'SNAIL_MAIL',
-  LETTER = 'LETTER',
-  SLACK = 'SLACK',
+  MESSAGE = "MESSAGE",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+  WEB_MESSAGE = "WEB_MESSAGE",
+  DIGITAL_MAIL = "DIGITAL_MAIL",
+  DIGITAL_INVOICE = "DIGITAL_INVOICE",
+  SNAIL_MAIL = "SNAIL_MAIL",
+  LETTER = "LETTER",
+  SLACK = "SLACK",
 }

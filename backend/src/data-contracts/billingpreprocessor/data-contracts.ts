@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -8,6 +9,23 @@
  * ## SOURCE: https://github.com/acacode/swagger-typescript-api ##
  * ---------------------------------------------------------------
  */
+
+/** Billing type model */
+export enum Type {
+  EXTERNAL = "EXTERNAL",
+  INTERNAL = "INTERNAL",
+}
+
+/**
+ * Billing status model
+ * @example "APPROVED"
+ */
+export enum Status {
+  NEW = "NEW",
+  APPROVED = "APPROVED",
+  INVOICED = "INVOICED",
+  REJECTED = "REJECTED",
+}
 
 export interface Problem {
   /** @format uri */
@@ -346,28 +364,13 @@ export interface Recipient {
   addressDetails: AddressDetails;
 }
 
-/**
- * Billing status model
- * @example "APPROVED"
- */
-export enum Status {
-  NEW = 'NEW',
-  APPROVED = 'APPROVED',
-  INVOICED = 'INVOICED',
-  REJECTED = 'REJECTED',
-}
-
-/** Billing type model */
-export enum Type {
-  EXTERNAL = 'EXTERNAL',
-  INTERNAL = 'INTERNAL',
-}
-
 export interface PageBillingRecord {
   /** @format int32 */
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -375,8 +378,6 @@ export interface PageBillingRecord {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   empty?: boolean;
@@ -388,10 +389,10 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {

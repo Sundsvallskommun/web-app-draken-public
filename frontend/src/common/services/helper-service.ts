@@ -10,7 +10,7 @@ export const supportManagementPhonePatternOrCountryCode = /^\+46$|^\+[1-9]\d{3,1
 export const invalidPhoneMessage = 'Ej giltigt telefonnummer';
 // export const invalidPhoneMessage = 'Ej giltigt telefonnummer (ange i formatet 07NNNNNNNN)';
 
-export const ssnPattern = /^$|^((19|20)[0-9]{6}-?[0-9]{4})$/gi;
+export const ssnPattern = /^$|^(19|20)[0-9]{10}$/gi;
 export const usernamePattern = /.*/;
 
 export const invalidSsnMessage = 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)';

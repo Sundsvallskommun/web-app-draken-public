@@ -1,10 +1,12 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
+import { attestationEnabled } from '@common/services/feature-flag-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { Disclosure } from '@headlessui/react';
+import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
+import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
   getLabelTypeFromName,
@@ -12,7 +14,7 @@ import {
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import SupportManagementFiltering, {
@@ -20,8 +22,6 @@ import SupportManagementFiltering, {
   SupportManagementValues,
 } from '../supportmanagement-filtering/supportmanagement-filtering.component';
 import { SupportErrandsTable } from './components/supporterrands-table.component';
-import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
-import { attestationEnabled } from '@common/services/feature-flag-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
@@ -91,6 +91,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   useEffect(() => {
     setValue('status', selectedSupportErrandStatuses);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSupportErrandStatuses]);
 
   const setInitialFocus = () => {
@@ -171,6 +172,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
       resetFilter(storedFilters);
       triggerFilter();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
 
   useEffect(() => {
@@ -190,6 +192,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         store.set('sort', JSON.stringify({}));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -202,9 +205,11 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe().then((user) => {
-      setUser(user);
-    });
+    getMe()
+      .then((user) => {
+        setUser(user);
+      })
+      .catch((e) => {});
     setSupportErrand(undefined);
     //eslint-disable-next-line
   }, [router]);
@@ -365,11 +370,11 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
                   : null}
               </h1>
             </div>
-            <Disclosure.Panel static>
+            <DisclosurePanel static>
               <FormProvider {...tableForm}>
                 <SupportErrandsTable />
               </FormProvider>
-            </Disclosure.Panel>
+            </DisclosurePanel>
           </Disclosure>
         </div>
       </main>

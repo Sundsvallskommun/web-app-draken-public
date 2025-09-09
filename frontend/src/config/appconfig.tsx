@@ -1,4 +1,4 @@
-import { AngeSymbol } from 'src/styles/ange-symbol';
+import { AngeSymbol } from '@styles/ange-symbol';
 import React from 'react';
 
 export interface AppConfig {
@@ -25,10 +25,12 @@ interface AppConfigFeatures {
   useRecruitment: boolean;
   useEmailContactChannel: boolean;
   useSmsContactChannel: boolean;
-  useRelations: boolean;
+  useStakeholderRelations: boolean;
   useRolesForStakeholders: boolean;
   useDetailsTab: boolean;
   useEscalation: boolean;
+  useRequireContactChannel: boolean;
+  useRelations: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -52,22 +54,25 @@ export const appConfig: AppConfig = {
     useRecruitment: process.env.NEXT_PUBLIC_USE_RECRUITMENT === 'true',
     useEmailContactChannel: process.env.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL === 'true',
     useSmsContactChannel: process.env.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL === 'true',
-    useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true',
+    useStakeholderRelations: process.env.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS === 'true',
     useRolesForStakeholders: process.env.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS === 'true',
     useDetailsTab: process.env.NEXT_PUBLIC_USE_DETAILS_TAB === 'true',
     useEscalation: process.env.NEXT_PUBLIC_USE_ESCALATION === 'true',
+    useRequireContactChannel: process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL === 'true',
+    useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true', //Temporary
   },
 };
 
-export function symbolByMunicipalityId(): React.ReactNode {
-  switch (process.env.NEXT_PUBLIC_MUNICIPALITY_ID) {
-    case '2260': {
-      //Ånge
-      return <AngeSymbol />;
-    }
-    default: {
-      //Sundsvall
-      return null;
-    }
+export function symbolByMunicipalityId(): React.ReactNode | null {
+  if (typeof window !== 'undefined' && window.Cypress) return null;
+
+  if (process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+    //Ånge
+    // const modulePath = 'src/styles/ange-symbol';
+    // const { AngeSymbol } = require(modulePath);
+    // return React.createElement(AngeSymbol);
+    return <AngeSymbol />;
   }
+  //Sundsvall eller annat
+  return null;
 }

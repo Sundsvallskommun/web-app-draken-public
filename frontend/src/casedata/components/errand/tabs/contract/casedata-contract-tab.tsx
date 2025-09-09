@@ -46,6 +46,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { ContractNavigation } from './contract-navigation';
 import { KopeAvtal } from './kopeavtal';
 import { Lagenhetsarrende } from './lagenhetsarrende';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 interface CasedataContractProps {
   update: () => void;
@@ -73,7 +74,6 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     user,
   }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
     useAppContext();
-  const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<string>();
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
@@ -132,6 +132,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     } else {
       updateStakeholdersFromErrand();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, existingContract]);
 
   const contractForm = useForm<ContractData & ContractStatus & KopeavtalsTemplate & LagenhetsArendeTemplate>({
@@ -168,12 +169,12 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
         getErrand(municipalityId, errand.id.toString())
           .then((res) => {
             setErrand(res.errand);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Avtalet sparades',
-              status: 'success',
-            });
+            toastMessage(
+              getToastOptions({
+                message: 'Avtalet sparades',
+                status: 'success',
+              })
+            );
             setIsLoading(undefined);
           })
           .catch((e) => {
@@ -248,6 +249,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           contractForm.setValue('externalReferenceId', errand.id.toString());
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const contractType = contractForm.watch('contractType') as ContractType;
@@ -261,8 +263,6 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     document.body.appendChild(link);
     link.click();
   };
-
-  const { status } = contractForm.watch();
 
   return (
     <FormProvider {...contractForm}>
@@ -364,12 +364,12 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                                   });
                                 })
                                 .then(() => {
-                                  toastMessage({
-                                    position: 'bottom',
-                                    closeable: false,
-                                    message: 'Bilagan togs bort',
-                                    status: 'success',
-                                  });
+                                  toastMessage(
+                                    getToastOptions({
+                                      message: 'Bilagan togs bort',
+                                      status: 'success',
+                                    })
+                                  );
                                 })
                                 .catch(() => {
                                   toastMessage({

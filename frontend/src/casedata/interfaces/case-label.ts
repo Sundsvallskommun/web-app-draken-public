@@ -47,21 +47,17 @@ export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>>
 };
 
 export enum MEXCaseLabel {
-  'MEX_SQUARE_PLACE' = 'Ansökan torgplats',
+  'MEX_SQUARE_PLACE' = 'Torgplats',
   'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' = 'Begäran om allmän handling',
   'MEX_INVOICE' = 'Faktura',
   'MEX_LEASE_REQUEST' = 'Arrende/Nyttjanderätt',
-  'MEX_BUY_LAND_FROM_THE_MUNICIPALITY' = 'Köpa kommunal mark',
-  'MEX_BUY_SMALL_HOUSE_PLOT' = 'Köpa småhustomt',
   'MEX_LAND_SURVEYING_OFFICE' = 'Lantmäteriförrättning',
   'MEX_LAND_INSTRUCTION' = 'Markanvisning',
   'MEX_UNAUTHORIZED_RESIDENCE' = 'Otillåten bosättning',
-  'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE' = 'Remiss/Bygglov/Tidig dialog planbesked',
   'MEX_PROTECTIVE_HUNTING' = 'Skyddsjakt',
   'MEX_SELL_LAND_TO_THE_MUNICIPALITY' = 'Kommunens inköp av mark',
-  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_PRIVATE' = 'Köpa kommunal mark, privatperson',
-  'MEX_SELL_LAND_TO_THE_MUNICIPALITY_BUSINESS' = 'Köpa kommunal mark, företag',
-  'MEX_EARLY_DIALOG_PLAN_NOTIFICATION' = 'Tidig dialog planbesked',
+  'MEX_BUY_LAND_FROM_THE_MUNICIPALITY_PRIVATE' = 'Köpa kommunal mark, privatperson',
+  'MEX_BUY_LAND_FROM_THE_MUNICIPALITY_BUSINESS' = 'Köpa kommunal mark, företag',
   'MEX_LAND_RIGHT' = 'Tomträtt',
   'MEX_TERMINATION_OF_LEASE' = 'Arrende/Nyttjanderätt, uppsägning',
   'MEX_HUNTING_LEASE' = 'Jakträtt',
@@ -71,7 +67,7 @@ export enum MEXCaseLabel {
   'MEX_BUILDING_PERMIT' = 'Bygglov',
   'MEX_STORMWATER' = 'Dagvatten',
   'MEX_INVASIVE_SPECIES' = 'Invasiva arter',
-  'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL' = 'Markupplåtelseavtal /Värderingsprotokoll',
+  'MEX_LAND_USE_AGREEMENT_VALUATION_PROTOCOL' = 'Markupplåtelseavtal/Värderingsprotokoll',
   'MEX_LITTERING' = 'Nedskräpning',
   'MEX_REFERRAL_CONSULTATION' = 'Remiss/Samråd',
   'MEX_PUBLIC_SPACE_LEASE' = 'Upplåtelse av allmän/offentlig plats',
@@ -82,6 +78,12 @@ export enum MEXCaseLabel {
   'MEX_SMALL_BOAT_HARBOR_DOCK_PORT' = 'Småbåtshamn/Kaj/Hamn',
   'MEX_TRAINING_SEMINAR' = 'Utbildning/seminarium',
   'MEX_LAND_RESERVATION' = 'Markreservation',
+
+  //Legacy
+  'MEX_BUY_LAND_FROM_THE_MUNICIPALITY' = 'Köpa kommunal mark',
+  'MEX_BUY_SMALL_HOUSE_PLOT' = 'Köpa småhustomt',
+  'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE' = 'Remiss/Bygglov/Tidig dialog planbesked',
+  'MEX_EARLY_DIALOG_PLAN_NOTIFICATION' = 'Tidig dialog planbesked',
 }
 
 export const CaseLabels = {
@@ -98,4 +100,22 @@ export const getShortLabel = (caseType: string): string => {
     CaseLabels.ALL[caseType] ??
     ''
   );
+};
+
+export const ALL_LABELS = {
+  ...PTCaseLabel,
+  ...FTCaseLabel,
+  ...MEXCaseLabel,
+} as const;
+
+export type AnyCaseType = keyof typeof ALL_LABELS;
+
+const ALL_SHORT_LABELS: Partial<Record<AnyCaseType, string>> = {
+  ...PTCaseShortLabel,
+  ...FTCaseShortLabel,
+} as const;
+
+export const getLabelFromCaseType = (caseType?: string | null): string => {
+  if (!caseType) return '';
+  return ALL_LABELS[caseType as AnyCaseType] ?? '';
 };

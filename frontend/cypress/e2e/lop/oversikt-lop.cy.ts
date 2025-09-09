@@ -181,15 +181,15 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="overview-aside"]').should('exist');
       cy.get('[data-cy="avatar-aside"]').should('exist');
       cy.get('[aria-label="Notifieringar"]').should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[0].name}"]`).should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[1].name}"]`).should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[2].name}"]`).should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[3].name}"]`).should('exist');
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[0].name}"]`).should('exist');
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[1].name}"]`).should('exist');
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[2].name}"]`).should('exist');
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[3].name}"]`).should('exist');
     });
 
     //SIDEBAR USE
     it('allows to switch between errand statuses in sidebar', () => {
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[1].name}"]`).click();
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[1].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockOngoingSupportErrands).as('getOngoingErrands');
       cy.wait('@getOngoingErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -197,7 +197,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockOngoingSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[2].name}"]`).click();
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[2].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSuspendedSupportErrands).as('getSuspendedErrands');
       cy.wait('@getSuspendedErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -205,7 +205,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockSuspendedSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[3].name}"]`).click();
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[3].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSolvedSupportErrands).as('getSolvedErrands');
       cy.wait('@getSolvedErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -213,7 +213,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockSolvedSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[0].name}"]`).click();
+      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[0].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSupportErrands).as('getNewErrands');
       cy.wait('@getNewErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);

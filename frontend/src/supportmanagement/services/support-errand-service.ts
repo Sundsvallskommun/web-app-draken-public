@@ -248,7 +248,6 @@ export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadat
 
 export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata) => {
   const types = getLabelCategory(errand, metadata)?.labels;
-  const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
   const matchingType = types?.find((t) => errand.labels.includes(t.name));
   if (matchingType) {
     return matchingType;
@@ -302,9 +301,11 @@ export enum Resolution {
   REFER_TO_PHONE = 'REFER_TO_PHONE',
   REGISTERED = 'REGISTERED',
   SENT_MESSAGE = 'SENT_MESSAGE',
-  RECRUITED = 'RECRUITED',
-  ABORTED = 'ABORTED',
-  PARTLY = 'PARTLY',
+  NEED_MET = 'NEED_MET',
+  RECRUITED_FEWER = 'RECRUITED_FEWER',
+  RECRUITED_MORE = 'RECRUITED_MORE',
+  CANCELLED = 'CANCELLED',
+  SECURE_APPBOX = 'SECURE_APPBOX',
 }
 
 export enum ResolutionLabelLOP {
@@ -332,6 +333,7 @@ export enum ResolutionLabelKS {
   SELF_SERVICE = 'Hänvisat till självservice',
   INTERNAL_SERVICE = 'Hänvisat till intern service',
   REFERRED_TO_RETURN = 'Hänvisat att återkomma',
+  SECURE_APPBOX = 'SecureAppbox',
 }
 
 export enum ResolutionLabelKA {
@@ -339,9 +341,10 @@ export enum ResolutionLabelKA {
   REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
 }
 export enum ResolutionLabelROB {
-  RECRUITED = 'Rekryterad',
-  ABORTED = 'Avbruten',
-  PARTLY = 'Delvis',
+  NEED_MET = 'Behov uppfyllt',
+  RECRUITED_FEWER = 'Rekryterat färre',
+  RECRUITED_MORE = 'Rekryterat fler',
+  CANCELLED = 'Avbruten',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
@@ -400,7 +403,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedUserId: undefined,
   assignedGroupId: undefined,
   resolution: 'INFORMED',
-  channel: ContactChannelType.PHONE,
+  channel: 'PHONE',
   municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',
@@ -787,6 +790,7 @@ export const updateSupportErrand: (
   } else {
     responseObj.attachments = true;
   }
+
   const stakeholders = buildStakeholdersList(formdata);
 
   const data: Partial<SupportErrandDto> = {

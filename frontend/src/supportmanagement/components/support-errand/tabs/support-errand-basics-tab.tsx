@@ -1,27 +1,12 @@
+import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
-import { SupportErrandBasicsRelationsDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-relations-disclosure/support-errand-basics-relations-disclosure.component';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
-import { ApiSupportErrand, Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, SetStateAction } from 'react';
-
-export interface EscalationFormModel {
-  id: string;
-  assignedUserId?: string;
-  status: Status;
-  category: string;
-  type: string;
-  resolution: string;
-  escalationEmail: string;
-  escalationMessageBody: string;
-  escalationMessageBodyPlaintext: string;
-  existingAttachments: SupportAttachment[];
-  addExisting: string;
-}
 
 export const SupportErrandBasicsTab: React.FC<{
   errand: ApiSupportErrand;
@@ -32,9 +17,7 @@ export const SupportErrandBasicsTab: React.FC<{
   const {
     supportErrand,
   }: {
-    municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (e: SupportErrand) => void;
   } = useAppContext();
 
   return (
@@ -61,8 +44,10 @@ export const SupportErrandBasicsTab: React.FC<{
         />
       ) : null}
 
-      {getApplicationEnvironment() === 'TEST' && appConfig.features.useRelations ? (
-        <SupportErrandBasicsRelationsDisclosure supportErrand={supportErrand} />
+      {appConfig.features.useRelations ? (
+        <div className="mt-md">
+          <LinkedErrandsDisclosure errand={supportErrand} />
+        </div>
       ) : null}
     </div>
   );

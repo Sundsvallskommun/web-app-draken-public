@@ -30,6 +30,7 @@ import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
@@ -52,15 +53,14 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const yupContact = yup.object().shape(
     {
-      id: yup.string(),
       personNumber: appConfig.features.useOrganizationStakeholders
         ? yup.string().when('stakeholderType', {
             is: (type: string) => type === 'PERSON',
-            then: yup
-              .string()
-              .trim()
-              .matches(ssnPattern, invalidSsnMessage)
-              .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+            then: (schema) =>
+              schema
+                .trim()
+                .matches(ssnPattern, invalidSsnMessage)
+                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
           })
         : yup.string().when('stakeholderType', {
             is: (type: string) => {
@@ -84,23 +84,23 @@ export const SupportSimplifiedContactForm: React.FC<{
       organizationName: yup.string().when(['stakeholderType', 'lastName'], {
         is: (sType: string, lastName: string) =>
           sType === 'ORGANIZATION' && (searchMode === 'organization' || searchMode === 'enterprise'),
-        then: yup.string().required('Organisationsnamn måste anges'),
+        then: (schema) => schema.required('Organisationsnamn måste anges'),
       }),
       organizationNumber: yup.string().when('stakeholderType', {
         is: (type: string) => type === 'ORGANIZATION',
-        then: yup
-          .string()
-          .trim()
-          .matches(orgNumberPattern, invalidOrgNumberMessage)
-          .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+        then: (schema) =>
+          schema
+            .trim()
+            .matches(orgNumberPattern, invalidOrgNumberMessage)
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
       }),
       firstName: yup.string().when('organizationName', {
         is: (_: string) => searchMode === 'person' || searchMode === 'employee',
-        then: yup.string().required('Förnamn måste anges'),
+        then: (schema) => schema.required('Förnamn måste anges'),
       }),
       lastName: yup.string().when('organizationName', {
         is: (sType: string) => searchMode === 'person' || searchMode === 'employee',
-        then: yup.string().required('Efternamn måste anges'),
+        then: (schema) => schema.required('Efternamn måste anges'),
       }),
       address: yup.string(),
       careOf: yup.string(),
@@ -110,7 +110,7 @@ export const SupportSimplifiedContactForm: React.FC<{
       administrationCode: yup.string(),
       administrationName: yup.string(),
       department: yup.string(),
-      referencenumber: yup.string(),
+      referencenumber: yup.string().optional(),
       title: yup.string(),
       newPhoneNumber: yup
         .string()
@@ -195,7 +195,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     name: `phoneNumbers`,
   });
 
-  const { append: appendEmail, replace: replaceEmails } = useFieldArray({ control, name: 'emails' });
+  const { append: appendEmail } = useFieldArray({ control, name: 'emails' });
 
   const editing = props.editing;
 
@@ -326,7 +326,6 @@ export const SupportSimplifiedContactForm: React.FC<{
           <SupportContactSearchField
             disabled={props.disabled}
             form={form}
-            manual={manual}
             id={id}
             appendPhonenumber={appendPhonenumber}
             appendEmail={appendEmail}
@@ -351,11 +350,12 @@ export const SupportSimplifiedContactForm: React.FC<{
         <div className="">
           <Button
             disabled={props.disabled}
-            className="my-20"
+            className="mt-20"
             data-cy={`add-manually-button-${id}`}
             color="vattjom"
             inverted
-            variant="link"
+            size="sm"
+            leftIcon={<LucideIcon name="pen" />}
             onClick={() => {
               reset({}, { keepErrors: false });
               setValue(

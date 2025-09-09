@@ -1,4 +1,5 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Notification as SupportNotification } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -58,7 +59,7 @@ export class SupportNotificationDto {
 export class SupportNotificationController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  SERVICE = `supportmanagement/10.3`;
+  SERVICE = apiServiceName('supportmanagement');
 
   @Get('/supportnotifications/:municipalityId')
   @OpenAPI({ summary: 'Get support notifications' })
