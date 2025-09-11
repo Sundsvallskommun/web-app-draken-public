@@ -1,20 +1,16 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
-import { Role } from '@casedata/interfaces/role';
 import { getAssets } from '@casedata/services/asset-service';
-import {
-  getErrand,
-  isErrandLocked,
-  isFTErrand,
-  phaseChangeInProgress,
-} from '@casedata/services/casedata-errand-service';
+import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
+import { getErrand, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
 import {
   countUnreadMessages,
   fetchMessages,
   fetchMessagesTree,
   groupByConversationIdSortedTree,
 } from '@casedata/services/casedata-message-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
@@ -26,11 +22,9 @@ import { CasedataContractTab } from './tabs/contract/casedata-contract-tab';
 import { CasedataDecisionTab } from './tabs/decision/casedata-decision-tab';
 import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
 import { CasedataInvestigationTab } from './tabs/investigation/casedata-investigation-tab';
+import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
-import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
-import CasedataForm from './tabs/overview/casedata-form.component';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -139,10 +133,6 @@ export const CasedataTabsWrapper: React.FC = () => {
   }, [errand]);
 
   const unlockedTabs = ['Meddelanden', 'Beslut'];
-  const shouldDisableTab = (tabLabel: string): boolean => {
-    if (!isErrandLocked(errand)) return false;
-    return !unlockedTabs.some((label) => tabLabel.startsWith(label));
-  };
 
   const tabs: {
     label: string;
@@ -424,7 +414,7 @@ export const CasedataTabsWrapper: React.FC = () => {
                   {tab.label}
                 </Tabs.Button>
                 <Tabs.Content>
-                  <fieldset disabled={shouldDisableTab(tab.label)}>{tab.content}</fieldset>
+                  <fieldset>{tab.content}</fieldset>
                 </Tabs.Content>
               </Tabs.Item>
             ))}
