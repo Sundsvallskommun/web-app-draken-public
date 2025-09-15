@@ -45,6 +45,7 @@ import {
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
@@ -511,9 +512,7 @@ export const SupportMessageForm: React.FC<{
                 Draken
               </RadioButton>
             )}
-            {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
-
-            {/* {appConfig.features.useRelations &&
+            {appConfig.features.useRelations &&
               getSupportOwnerStakeholder(supportErrand)?.personNumber &&
               Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
@@ -527,7 +526,7 @@ export const SupportMessageForm: React.FC<{
                 >
                   Mina sidor
                 </RadioButton>
-              )} */}
+              )}
           </RadioButton.Group>
         </div>
       ) : null}
