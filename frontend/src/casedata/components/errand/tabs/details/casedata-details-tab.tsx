@@ -19,6 +19,7 @@ import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 're
 import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
+import { convertPlainTextToHTML } from '@common/services/sanitizer-service';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
@@ -32,6 +33,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<boolean>();
   const quillRef = useRef(null);
+  const [richText, setRichText] = useState<string>('');
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
@@ -74,6 +76,15 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         });
     });
   };
+
+  useEffect(() => {
+    setRichText(
+      convertPlainTextToHTML(
+        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
+      )
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
@@ -189,12 +200,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <FormLabel>Ärendebeskrivning</FormLabel>
 
                 <TextEditor
-                  key={getValues('description')}
-                  className={'h-[25rem]'}
+                  key={richText}
+                  className={'h-[25rem] case-description-editor'}
                   readOnly={true}
                   disableToolbar={true}
                   ref={quillRef}
-                  defaultValue={getValues('description')}
+                  defaultValue={richText}
                 />
               </FormControl>
             </div>

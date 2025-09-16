@@ -19,7 +19,6 @@ import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
-import { should } from 'chai';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
@@ -205,10 +204,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       <div className="flex my-24 gap-xl">
         <FormControl id="description" className="w-full">
           <FormLabel>Ärendebeskrivning</FormLabel>
-
-          {/* {supportErrand.channel === ContactChannelType.EMAIL ? ( */}
           <TextEditor
-            className="w-full h-[12rem]"
+            className="w-full h-[15rem] case-description-editor"
             readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
             disableToolbar
             key={richText}
