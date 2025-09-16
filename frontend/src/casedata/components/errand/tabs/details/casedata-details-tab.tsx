@@ -202,8 +202,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <TextEditor
                   key={richText}
                   className={'h-[25rem] case-description-editor'}
-                  readOnly={true}
-                  disableToolbar={true}
+                  readOnly
+                  disableToolbar
                   ref={quillRef}
                   defaultValue={richText}
                 />

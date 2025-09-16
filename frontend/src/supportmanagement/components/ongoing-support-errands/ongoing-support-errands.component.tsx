@@ -3,7 +3,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { attestationEnabled } from '@common/services/feature-flag-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import store from '@supportmanagement/services/storage-service';
 import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
@@ -361,7 +360,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
       <main className="px-24 md:px-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
-          <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
+          <div className="mt-32 flex flex-col gap-16">
             <div>
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
@@ -370,12 +369,12 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
                   : null}
               </h1>
             </div>
-            <DisclosurePanel static>
+            <div>
               <FormProvider {...tableForm}>
                 <SupportErrandsTable />
               </FormProvider>
-            </DisclosurePanel>
-          </Disclosure>
+            </div>
+          </div>
         </div>
       </main>
     </div>

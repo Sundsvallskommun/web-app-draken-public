@@ -60,7 +60,6 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@headlessui/react": "^2.2.7",
     "@hookform/resolvers": "^2.8.8",
     "@next/bundle-analyzer": "15.4.6",
     "@sk-web-gui/core": "3.14.0",

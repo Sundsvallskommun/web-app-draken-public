@@ -6,8 +6,8 @@ import {
   documentMimeTypes,
   editAttachment,
   fetchAttachment,
-  getMEXAttachmentKey,
   getAttachmentLabel,
+  getMEXAttachmentKey,
   getPTAttachmentKey,
   onlyOneAllowed,
   sendAttachments,
@@ -18,7 +18,6 @@ import { CommonImageCropper } from '@common/components/image-cropper/common-imag
 import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Dialog, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -76,13 +75,6 @@ export const CasedataAttachments: React.FC = () => {
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
 
-  const modalFocus = useRef(null);
-  const setModalFocus = () => {
-    setTimeout(() => {
-      modalFocus.current && modalFocus.current.focus();
-    });
-  };
-
   const closeModal = () => {
     getErrand(municipalityId, errand.id.toString())
       .then((data) => setErrand(data.errand))
@@ -100,7 +92,6 @@ export const CasedataAttachments: React.FC = () => {
   };
   const openModal = () => {
     setIsOpen(true);
-    setModalFocus();
   };
 
   let formSchema = dragDrop
@@ -215,81 +206,47 @@ export const CasedataAttachments: React.FC = () => {
   };
 
   const editAttachmentModal = (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="fixed inset-0 z-20 overflow-y-auto bg-opacity-50 bg-gray-500" onClose={closeModal}>
-        <div className="min-h-screen px-4 text-center">
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true" />
-          </TransitionChild>
-
-          {/* This element is to trick the browser into centering the modal contents. */}
-          <span className="inline-block h-screen align-middle" aria-hidden="true">
-            &#8203;
-          </span>
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0 scale-95"
-            enterTo="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100 scale-100"
-            leaveTo="opacity-0 scale-95"
-          >
-            <div className="inline-block w-[840px] p-xl py-lg my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-              <button ref={modalFocus} className="modal-close-btn" onClick={closeModal}>
-                <span className="material-icons-outlined">close</span>
-              </button>
-              <DialogTitle as="h1" className="text-xl my-sm">
-                {isCropping ? 'Beskär' : ''} {modalAttachment?.name}
-              </DialogTitle>
-
+    <Modal
+      className="w-[84rem]"
+      show={isOpen}
+      onClose={closeModal}
+      label={`${isCropping ? 'Beskär ' : ''}${modalAttachment?.name}`}
+    >
+      <div className="flex flex-col justify-center items-center my-lg">
+        {isCropping ? (
+          <CommonImageCropper errand={errand} attachment={modalAttachment} onClose={closeModal} />
+        ) : (
+          <>
+            <div className="flex-grow-0 my-md">
               <div className="flex flex-col justify-center items-center my-lg">
-                {isCropping ? (
-                  <CommonImageCropper errand={errand} attachment={modalAttachment} onClose={closeModal} />
+                {modalFetching ? (
+                  <Spinner size={24} />
                 ) : (
-                  <>
-                    <div className="flex-grow-0 my-md">
-                      <div className="flex flex-col justify-center items-center my-lg">
-                        {modalFetching ? (
-                          <Spinner size={24} />
-                        ) : (
-                          <Image
-                            alt={getAttachmentLabel(modalAttachment)}
-                            key={modalAttachment?.id}
-                            src={`data:${modalAttachment?.mimeType};base64,${modalAttachment?.file}`}
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <div className="my-md">
-                      <Button
-                        variant="primary"
-                        disabled={isErrandLocked(errand)}
-                        color="primary"
-                        onClick={() => {
-                          setIsCropping(!isCropping);
-                        }}
-                        leftIcon={<LucideIcon name="crop" />}
-                      >
-                        {isCropping ? 'Spara' : 'Beskär bild'}
-                      </Button>
-                    </div>
-                  </>
+                  <Image
+                    alt={getAttachmentLabel(modalAttachment)}
+                    key={modalAttachment?.id}
+                    src={`data:${modalAttachment?.mimeType};base64,${modalAttachment?.file}`}
+                  />
                 )}
               </div>
             </div>
-          </TransitionChild>
-        </div>
-      </Dialog>
-    </Transition>
+            <div className="my-md">
+              <Button
+                variant="primary"
+                disabled={isErrandLocked(errand)}
+                color="primary"
+                onClick={() => {
+                  setIsCropping(!isCropping);
+                }}
+                leftIcon={<LucideIcon name="crop" />}
+              >
+                {isCropping ? 'Spara' : 'Beskär bild'}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 
   return (
