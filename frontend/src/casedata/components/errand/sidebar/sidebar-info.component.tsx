@@ -330,13 +330,13 @@ export const SidebarInfo: React.FC<{}> = () => {
                 </span>
               )}
             </p>
-            <ResumeErrandButton disabled={!isErrandAdmin(errand, user)} />
+            <ResumeErrandButton disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand as IErrand)} />
           </>
         ) : (
           <>
             {errand?.status?.statusType === ErrandStatus.InterntAterkoppling ||
             errand?.status?.statusType === ErrandStatus.VantarPaKomplettering ? (
-              <ResumeErrandButton disabled={!isErrandAdmin(errand, user)} />
+              <ResumeErrandButton disabled={!isErrandAdmin(errand, user) || phaseChangeInProgress(errand as IErrand)} />
             ) : (
               <PhaseChanger />
             )}

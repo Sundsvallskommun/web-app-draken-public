@@ -1,11 +1,11 @@
-import { useAppContext } from '@contexts/app.context';
-import { useConfirm, useSnackbar, Button } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { useState } from 'react';
-import { sortBy } from '@common/services/helper-service';
-import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
+import { sortBy } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useState } from 'react';
 
 export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, errand, setErrand } = useAppContext();
@@ -23,10 +23,22 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
     setIsLoading(false);
   };
 
+  //List used to prevent activateErrand status loop.
+  const pausedStatuses: ErrandStatus[] = [
+    ErrandStatus.Parkerad,
+    ErrandStatus.InterntAterkoppling,
+    ErrandStatus.Tilldelat,
+    ErrandStatus.UnderUtredning,
+    ErrandStatus.VantarPaKomplettering,
+  ];
+
   const activateErrand = () => {
     setIsLoading(true);
-    const previousStatus = sortBy(errand.statuses, 'created').reverse()[1].statusType;
-    const status = Object.values(ErrandStatus).find((status) => status === previousStatus);
+    const previousAcceptedStatus = sortBy(errand.statuses, 'created')
+      .reverse()
+      .map((s) => s.statusType)
+      .find((status) => !pausedStatuses.includes(status));
+    const status = Object.values(ErrandStatus).find((status) => status === previousAcceptedStatus);
 
     if (!status) {
       showSaveError();
