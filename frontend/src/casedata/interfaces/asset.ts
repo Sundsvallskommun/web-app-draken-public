@@ -8,6 +8,13 @@ export enum assetStatusLabels {
 export enum assetTypeLabels {
   PARKINGPERMIT = 'P-tillstånd',
 }
+
+export interface JsonParameter {
+  key: string;
+  value: string;
+  schemaId: string;
+}
+
 export interface Asset {
   id: string;
   assetId: string;
@@ -21,6 +28,7 @@ export interface Asset {
   statusReason: string;
   description: string;
   additionalParameters: { [key: string]: string };
+  jsonParameters: JsonParameter[];
 }
 
 export interface UpdateAsset {

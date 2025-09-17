@@ -1,6 +1,8 @@
 import { baseDetails } from '@casedata/components/errand/extraparameter-templates/base-template';
+import { saveOrUpdateServicesToBackend } from '@casedata/components/errand/tabs/services/casedata-service-domain';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Role } from '@casedata/interfaces/role';
 import { getErrand, saveErrand, updateErrandStatus } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
@@ -150,6 +152,26 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
         await removeStakeholder(municipalityId, res.errandId.toString(), removed.id);
       }
       const saved2 = await getErrand(municipalityId, res.errandId.toString());
+
+      if (data.services && data.services.length > 0) {
+        const partyId = data.stakeholders?.find((s) => s.roles.includes(Role.APPLICANT))?.personId;
+        if (partyId) {
+          try {
+            await saveOrUpdateServicesToBackend(data);
+          } catch (e) {
+            console.error('Kunde inte spara insatser:', e);
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Insatser kunde inte sparas',
+              status: 'error',
+            });
+          }
+        } else {
+          console.warn('Ingen partyId för insatser');
+        }
+      }
+
       setErrand(saved2.errand);
 
       if (registeringNewErrand) {

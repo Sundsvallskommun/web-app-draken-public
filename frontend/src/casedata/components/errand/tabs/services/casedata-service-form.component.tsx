@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { FormControl, FormLabel, Select, Combobox, RadioButton, Checkbox, DatePicker, Button } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, Checkbox, Combobox, DatePicker, FormControl, FormLabel, RadioButton, Select } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { serviceTravelTypes, serviceModeOfTransportation, serviceAids, serviceAddons } from './service';
-import { Service } from './casedata-service-item.component';
+import { AidOrAddon, Service } from './casedata-service-item.component';
+import { serviceAddons, serviceAids, serviceModeOfTransportation, serviceTravelTypes } from './service';
+
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
+
 interface Props {
   initialService?: Service;
   onSubmit: (service: Service) => void;
@@ -18,14 +20,16 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
   const [serviceText, setServiceText] = useState('');
   const [selectedRestyp, setSelectedRestyp] = useState('');
   const [selectedTransport, setSelectedTransport] = useState('');
-  const [selectedAids, setSelectedAids] = useState<string[]>([]);
-  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
+  const [selectedAids, setSelectedAids] = useState<AidOrAddon[]>([]);
+  const [selectedAddons, setSelectedAddons] = useState<AidOrAddon[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [winter, setWinter] = useState(false);
   const [validityType, setValidityType] = useState<'tidsbegransad' | 'tillsvidare'>('tidsbegransad');
   const [searchValueAddons, setSearchValueAddons] = useState('');
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const quillRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +46,12 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
       }, 0);
     }
   }, [initialService]);
+
+  useEffect(() => {
+    if (!initialService) return;
+    setServiceText(initialService.comment ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialService?.id]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -69,6 +79,28 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
     setHasAttemptedSubmit(false);
   };
 
+  const handleAidChange = (event: { target: { value: string | string[] } }) => {
+    const selectedLabels = Array.isArray(event.target.value) ? event.target.value : [event.target.value];
+    const mapped = selectedLabels
+      .map((label) => {
+        const match = serviceAids.find((a) => a.value === label);
+        return match ? { key: match.key, value: match.value, approved: undefined } : null;
+      })
+      .filter(Boolean) as AidOrAddon[];
+    setSelectedAids(mapped);
+  };
+
+  const handleAddonChange = (event: { target: { value: string | string[] } }) => {
+    const selectedLabels = Array.isArray(event.target.value) ? event.target.value : [event.target.value];
+    const mapped = selectedLabels
+      .map((label) => {
+        const match = serviceAddons.find((a) => a.value === label);
+        return match ? { key: match.key, value: match.value, approved: undefined } : null;
+      })
+      .filter(Boolean) as AidOrAddon[];
+    setSelectedAddons(mapped);
+  };
+
   const handleSubmit = () => {
     setHasAttemptedSubmit(true);
     const errors = validate();
@@ -86,6 +118,7 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
       startDate,
       endDate,
       validityType,
+      winter,
     };
 
     onSubmit(service);
@@ -93,12 +126,6 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
       resetForm();
     }
   };
-
-  const handleComboboxChange =
-    (setter: React.Dispatch<React.SetStateAction<string[]>>) => (event: { target: { value: string | string[] } }) => {
-      const value = event.target.value;
-      setter(Array.isArray(value) ? value : [value]);
-    };
 
   return (
     <div className="w-full py-24 px-32">
@@ -117,8 +144,8 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
               Välj restyp
             </Select.Option>
             {serviceTravelTypes.map((typ) => (
-              <Select.Option key={typ.value} value={typ.label}>
-                {typ.label}
+              <Select.Option key={typ.value} value={typ.value}>
+                {typ.value}
               </Select.Option>
             ))}
           </Select>
@@ -139,8 +166,8 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
               Välj färdsätt
             </Select.Option>
             {serviceModeOfTransportation.map((typ) => (
-              <Select.Option key={typ.value} value={typ.label}>
-                {typ.label}
+              <Select.Option key={typ.value} value={typ.value}>
+                {typ.value}
               </Select.Option>
             ))}
           </Select>
@@ -149,12 +176,12 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
 
         <FormControl className="w-full max-w-[44.6rem]">
           <FormLabel>Hjälpmedel</FormLabel>
-          <Combobox multiple value={selectedAids} onChange={handleComboboxChange(setSelectedAids)}>
+          <Combobox multiple value={selectedAids.map((a) => a.value)} onChange={handleAidChange}>
             <Combobox.Input placeholder="Välj hjälpmedel" className="w-full" />
             <Combobox.List>
               {serviceAids.map((typ) => (
-                <Combobox.Option key={typ.value} value={typ.label}>
-                  {typ.label}
+                <Combobox.Option key={typ.value} value={typ.value}>
+                  {typ.value}
                 </Combobox.Option>
               ))}
             </Combobox.List>
@@ -165,16 +192,16 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
           <FormLabel>Tillägg</FormLabel>
           <Combobox
             multiple
-            value={selectedAddons}
-            onChange={handleComboboxChange(setSelectedAddons)}
+            value={selectedAddons.map((a) => a.value)}
+            onChange={handleAddonChange}
             searchValue={searchValueAddons}
             onChangeSearch={(event) => setSearchValueAddons(event.target.value)}
           >
             <Combobox.Input placeholder="Välj tillägg" className="w-full" />
             <Combobox.List>
               {serviceAddons.map((typ) => (
-                <Combobox.Option key={typ.value} value={typ.label}>
-                  {typ.label}
+                <Combobox.Option key={typ.value} value={typ.value}>
+                  {typ.value}
                 </Combobox.Option>
               ))}
             </Combobox.List>
@@ -206,7 +233,13 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
             Tillsvidare
           </RadioButton>
 
-          <Checkbox name="vinterfardtjanst" value="true" size="md">
+          <Checkbox
+            name="vinterfardtjanst"
+            value="true"
+            size="md"
+            checked={winter}
+            onChange={(e) => setWinter(e.target.checked)}
+          >
             Vinterfärdtjänst
           </Checkbox>
         </div>
@@ -253,7 +286,7 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
         <TextEditor
           className="mb-md h-[80%]"
           ref={quillRef}
-          defaultValue={serviceText}
+          defaultValue={initialService?.comment ?? ''}
           onTextChange={(_delta, _oldDelta, source) => {
             if (quillRef.current) {
               const html = quillRef.current.root.innerHTML;
@@ -262,6 +295,7 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
           }}
         />
       </div>
+
       <div className="mt-24 pt-24">
         <Button leftIcon={<LucideIcon name="check" />} variant="primary" size="md" onClick={handleSubmit}>
           {initialService ? 'Spara ändringar' : 'Lägg till insats'}

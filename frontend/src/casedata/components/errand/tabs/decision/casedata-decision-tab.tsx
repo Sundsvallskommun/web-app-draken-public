@@ -62,6 +62,7 @@ import {
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
@@ -660,7 +661,10 @@ export const CasedataDecisionTab: React.FC<{
             <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
           )}
         </div>
-
+        <div className="pb-20">
+          <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
+          <ServiceListComponent errand={errand} readOnly />
+        </div>
         <div className="flex justify-start gap-md">
           <Button
             data-cy="save-decision-button"
@@ -723,6 +727,7 @@ export const CasedataDecisionTab: React.FC<{
             Skicka beslut
           </Button>
         </div>
+
         {!validateOwnerForSendingDecision(errand) ? (
           <FormErrorMessage data-cy="attachment-error-message" className="mt-md text-error">
             För att skicka beslut måste ärendeägaren ha en giltig e-postadress eller ha registrerats med sitt

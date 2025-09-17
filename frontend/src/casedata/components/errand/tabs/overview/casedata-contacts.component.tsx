@@ -10,7 +10,7 @@ import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-
 import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Disclosure, Divider, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';

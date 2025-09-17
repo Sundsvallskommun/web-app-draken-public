@@ -1,28 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { IErrand } from '@casedata/interfaces/errand';
 import { Modal } from '@sk-web-gui/react';
+import { useState } from 'react';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CasedataServiceForm } from './casedata-service-form.component';
-import { ServiceListComponent } from './casedata-service-list.component';
 import { Service } from './casedata-service-item.component';
-import { v4 as uuidv4 } from 'uuid';
+import { ServiceListComponent } from './casedata-service-list.component';
 
 export const CasedataServicesTab: React.FC = () => {
-  const [services, setServices] = useState<Service[]>([]);
+  const { control, getValues } = useFormContext<IErrand>();
+
+  const {
+    fields: services,
+    append,
+    update,
+    remove,
+  } = useFieldArray<IErrand, 'services', 'fieldId'>({
+    control,
+    name: 'services',
+    keyName: 'fieldId',
+  });
+
   const [modalOpen, setModalOpen] = useState(false);
   const [serviceBeingEdited, setServiceBeingEdited] = useState<Service | null>(null);
 
   const handleAddService = (service: Service) => {
-    setServices((prev) => [...prev, { ...service, id: uuidv4() }]);
+    append({ ...service });
   };
 
   const handleEditService = (updated: Service) => {
-    setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    const index = (services as Array<Service & { fieldId: string }>).findIndex((s) => s.id === updated.id);
+    if (index !== -1) {
+      update(index, updated);
+    }
     setModalOpen(false);
   };
 
-  const handleRemoveService = (id: number | string) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
+  const handleRemoveService = (id: string | number) => {
+    const index = (services as Array<Service & { fieldId: string }>).findIndex((s) => s.id === id);
+    if (index !== -1) {
+      remove(index);
+    }
   };
 
   return (
@@ -32,15 +51,18 @@ export const CasedataServicesTab: React.FC = () => {
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
         service kunden har rätt till vid sina resor.
       </p>
+
       <div className="mt-24">
         <CasedataServiceForm onSubmit={handleAddService} onCancel={() => {}} />
       </div>
+
       <div className="mt-32 pt-24">
         <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
         <ServiceListComponent
+          errand={getValues()}
+          append={append}
           services={services}
           onRemove={handleRemoveService}
-          onOrder={(id) => console.log('Beställ insats med id:', id)} //TODO: implement onOrder logic when ready.
           onEdit={(service) => {
             setServiceBeingEdited(service);
             setModalOpen(true);

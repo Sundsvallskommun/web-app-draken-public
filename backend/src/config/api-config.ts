@@ -58,7 +58,7 @@ export const APIS = [
   },
   {
     name: 'partyassets',
-    version: '3.0',
+    version: '3.1',
   },
 ];
 
