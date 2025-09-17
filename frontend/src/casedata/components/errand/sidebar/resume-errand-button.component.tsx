@@ -1,4 +1,4 @@
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ErrandStatus, pausedStatuses } from '@casedata/interfaces/errand-status';
 import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { sortBy } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -22,15 +22,6 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
     });
     setIsLoading(false);
   };
-
-  //List used to prevent activateErrand status loop.
-  const pausedStatuses: ErrandStatus[] = [
-    ErrandStatus.Parkerad,
-    ErrandStatus.InterntAterkoppling,
-    ErrandStatus.Tilldelat,
-    ErrandStatus.UnderUtredning,
-    ErrandStatus.VantarPaKomplettering,
-  ];
 
   const activateErrand = () => {
     setIsLoading(true);
