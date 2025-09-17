@@ -5,7 +5,6 @@ import { AppContextInterface, useAppContext } from '@common/contexts/app.context
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
-import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -265,7 +264,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
       <main className="px-24 md:px-40 pb-40 w-full h-full">
         <div className="container mx-auto p-0 w-full">
-          <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
+          <div className="mt-32 flex flex-col gap-16">
             <div className="flex justify-between">
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
@@ -275,13 +274,12 @@ export const OngoingCaseDataErrands: React.FC = () => {
               </h1>
               {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
-
-            <DisclosurePanel static>
+            <div>
               <FormProvider {...tableForm}>
                 <ErrandsTable />
               </FormProvider>
-            </DisclosurePanel>
-          </Disclosure>
+            </div>
+          </div>
         </div>
       </main>
     </div>
