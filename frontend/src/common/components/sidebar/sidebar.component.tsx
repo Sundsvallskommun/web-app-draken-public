@@ -118,7 +118,7 @@ export const Sidebar: React.FC<{
                   iconButton
                   leftIcon={
                     <>
-                      <LucideIcon name={b.icon as keyof typeof dynamicIconImports} />
+                      <LucideIcon name={b.icon as any} />
                     </>
                   }
                 />

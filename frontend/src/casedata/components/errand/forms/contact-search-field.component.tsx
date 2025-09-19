@@ -96,6 +96,7 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
           />
           {searchMode === 'person' ? (
             <SearchField
+              className="w-full"
               disabled={disabled}
               data-cy={`contact-personalNumber-${id}`}
               {...form.register('personalNumber')}

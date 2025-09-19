@@ -117,7 +117,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon} />}>
+        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon as any} />}>
           {isAppeal && label === 'Övergripande' && (
             <div className="px-0">
               <FormControl className="w-full" key="relatesTo">
