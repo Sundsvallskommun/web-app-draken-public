@@ -5,6 +5,7 @@ import { User } from '@common/interfaces/user';
 import { isKA } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -33,11 +34,10 @@ import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/se
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import dynamic from 'next/dynamic';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
@@ -224,7 +224,14 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       });
 
       getEscalationMessage(latestErrand, `${user.firstName} ${user.lastName}`).then((text) => {
-        setRichText(text.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>'));
+        const html = text.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>');
+        setRichText(html);
+
+        setValue('message', sanitized(html), { shouldValidate: true, shouldDirty: false });
+
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        setValue('messageBodyPlaintext', tmp.textContent || tmp.innerText || '', { shouldValidate: false });
       });
     }
   }, [latestErrand, supportAttachments, supportMetadata, showModal, user.firstName, user.lastName, setValue]);
