@@ -15,6 +15,15 @@ export enum ErrandStatus {
   Parkerad = 'Parkerad',
 }
 
+//List used to prevent activateErrand status loop.
+export const pausedStatuses: ErrandStatus[] = [
+  ErrandStatus.Parkerad,
+  ErrandStatus.InterntAterkoppling,
+  ErrandStatus.Tilldelat,
+  ErrandStatus.UnderUtredning,
+  ErrandStatus.VantarPaKomplettering,
+];
+
 export interface ApiErrandStatus {
   statusType?: string;
   description?: string;
