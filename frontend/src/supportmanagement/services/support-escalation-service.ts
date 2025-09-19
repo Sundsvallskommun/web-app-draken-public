@@ -1,9 +1,8 @@
+import { TenantKey } from '@common/interfaces/tenant';
 import { isKA } from '@common/services/application-service';
+import { buildEscalationEmailContent } from '@supportmanagement/components/templates/escalation-template';
 import { ContactChannelType, SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
-import { buildDefaultEscalationEmailContent } from '@supportmanagement/components/templates/default-escalation-template';
-import { buildKAEscalationEmailContent } from '@supportmanagement/components/templates/ka-escalation-template';
-
 export const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 
 export const extractContactInfo = (c: SupportStakeholderFormModel) => {
@@ -34,10 +33,8 @@ export const extractContactInfo = (c: SupportStakeholderFormModel) => {
 };
 
 export const getEscalationMessage: (e: Partial<SupportErrand>, user: string) => Promise<string> = async (e, user) => {
-  if (isKA()) {
-    return buildKAEscalationEmailContent(e as SupportErrand, user);
-  }
-  return buildDefaultEscalationEmailContent(e as SupportErrand, user);
+  const tenant: TenantKey = isKA() ? TenantKey.Ange : TenantKey.Sundsvall;
+  return buildEscalationEmailContent(e as SupportErrand, user, tenant);
 };
 
 export const getEscalationEmails: (
