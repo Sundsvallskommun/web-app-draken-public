@@ -2,13 +2,13 @@ import { Channels } from '@casedata/interfaces/channels';
 import { Decision } from '@casedata/interfaces/decision';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { All, Priority } from '@casedata/interfaces/priority';
+import { ExtraParameter, Notification } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { Data } from '@common/services/api-service';
 import { Attachment } from './attachment';
 import { ApiErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
-import { ExtraParameter, Notification } from '@common/data-contracts/case-data/data-contracts';
 
 export interface ApiErrand {
   id: number;
