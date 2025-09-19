@@ -13,6 +13,7 @@ import {
   sendAttachments,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
 import { useAppContext } from '@common/contexts/app.context';
@@ -37,7 +38,6 @@ import dayjs from 'dayjs';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { FileUploadWrapper } from '../../../../../common/components/file-upload/file-upload-dragdrop-context';
 
 export interface SingleAttachment {
   file: File | undefined;
