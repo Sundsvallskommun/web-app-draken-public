@@ -223,10 +223,11 @@ export const CasedataAttachments: React.FC = () => {
           <p className="py-8">Här samlas bilagor som är kopplade till ärendet.</p>
         </div>
 
-        <div className="mt-md flex flex-col" data-cy="casedataAttachments-list">
+        <div className="mt-md" data-cy="casedataAttachments-list">
           <FileUpload.List name="files">
             {files?.map((file, i) => (
               <FileUpload.ListItem
+                className="flex flex-wrap wrapping-list-item"
                 key={file.id}
                 index={i}
                 isEdit={editIndex === i}
