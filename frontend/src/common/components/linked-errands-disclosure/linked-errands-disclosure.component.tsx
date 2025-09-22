@@ -1,5 +1,4 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
 import {
@@ -158,11 +157,7 @@ export const LinkedErrandsDisclosure: React.FC<{
 
   return (
     <Disclosure
-      disabled={
-        appConfig.isSupportManagement
-          ? supportErrandIsEmpty(errand as SupportErrand)
-          : isErrandLocked(errand as IErrand)
-      }
+      disabled={appConfig.isSupportManagement ? supportErrandIsEmpty(errand as SupportErrand) : false}
       variant="alt"
       icon={<LucideIcon name="link-2" />}
       header="Kopplade ärenden"
