@@ -296,20 +296,29 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         <div data-cy="registered-applicants" className="my-lg px-0 pt-0">
           <div className="w-full">
             {watchedStakeholders?.filter((s) => s.roles.includes(Role.APPLICANT) && !s.removed).length === 0 ? (
-              <SimplifiedContactForm
-                allowOrganization={appConfig.features.useOrganizationStakeholders}
-                disabled={isErrandLocked(errand)}
-                setUnsaved={props.setUnsaved}
-                contact={createEmptyContact(Role.APPLICANT)}
-                onSave={(e) => {
-                  if (!e.clientId) {
-                    e.clientId = uuidv4();
-                  }
-                  appendStakeholderItem(e);
-                }}
-                label="Ärendeägare"
-                id="owner"
-              />
+              <>
+                <div className="flex h-auto w-full gap-12 rounded-2xl bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
+                  <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+                  <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
+                    Ange den person eller organisation som startade ärendet. Om du anger ett personnummer visas ärendet
+                    på deras Mina sidor.
+                  </span>
+                </div>
+                <SimplifiedContactForm
+                  allowOrganization={appConfig.features.useOrganizationStakeholders}
+                  disabled={isErrandLocked(errand)}
+                  setUnsaved={props.setUnsaved}
+                  contact={createEmptyContact(Role.APPLICANT)}
+                  onSave={(e) => {
+                    if (!e.clientId) {
+                      e.clientId = uuidv4();
+                    }
+                    appendStakeholderItem(e);
+                  }}
+                  label="Ärendeägare"
+                  id="owner"
+                />
+              </>
             ) : null}
           </div>
           <div className="flex flex-row gap-md flex-wrap mt-20">
