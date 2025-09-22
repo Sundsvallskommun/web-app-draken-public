@@ -1,6 +1,7 @@
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
+import { UploadFile } from '@sk-web-gui/react';
 
 export interface SupportAttachment {
   id: string;
@@ -134,7 +135,6 @@ export const getSupportAttachments: (errandId: string, municipalityId: string) =
   errandId,
   municipalityId
 ) => {
-  // return Promise.resolve([]);
   return apiService
     .get<SupportAttachment[]>(`supportattachments/${municipalityId}/errands/${errandId}/attachments`)
     .then((res) => {
@@ -172,9 +172,8 @@ export const saveSupportAttachments: (
   municipalityId,
   attachments
 ) => {
+  console.log('inside savesupportattachments', attachments);
   const attachmentPromises = attachments.map(async (attachment, idx) => {
-    // await delay(idx * 500);
-
     const fileItem = attachment.file[0];
     if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
       throw new Error('MAX_SIZE');

@@ -331,7 +331,6 @@ export const CasedataAttachments: React.FC = () => {
         newFiles={newFiles}
         attachmentTypeExists={attachmentTypeExists}
         errand={errand}
-        municipalityId={municipalityId}
         saveErrand={saveErrand}
         setErrand={setErrand}
         closeHandler={closeHandler}

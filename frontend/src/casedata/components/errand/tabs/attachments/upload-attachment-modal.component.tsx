@@ -3,6 +3,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ACCEPTED_UPLOAD_FILETYPES, sendAttachments } from '@casedata/services/casedata-attachment-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { isMEX } from '@common/services/application-service';
+import { useAppContext } from '@contexts/app.context';
 import { Button, FileUpload, FormErrorMessage, Modal, UploadFile, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 
@@ -11,7 +12,6 @@ interface UploadAttachmentModalProps {
   newFiles: UploadFile[];
   attachmentTypeExists: boolean;
   errand: IErrand;
-  municipalityId: string;
   saveErrand: () => Promise<boolean>;
   setErrand: (errand: IErrand) => void;
   closeHandler: () => void;
@@ -22,11 +22,11 @@ export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
   newFiles,
   attachmentTypeExists,
   errand,
-  municipalityId,
   saveErrand,
   setErrand,
   closeHandler,
 }) => {
+  const { municipalityId } = useAppContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const toastMessage = useSnackbar();
 
