@@ -100,7 +100,6 @@ export const CasedataAttachments: React.FC = () => {
   } = methods;
 
   const files = watch('files');
-  const newFiles = watch('newFiles');
   const saveErrand = useSaveCasedataErrand(false);
 
   useEffect(() => {
@@ -328,7 +327,6 @@ export const CasedataAttachments: React.FC = () => {
       </div>
       <UploadAttachmentModal
         isOpen={addAttachmentWindowIsOpen}
-        newFiles={newFiles}
         attachmentTypeExists={attachmentTypeExists}
         errand={errand}
         municipalityId={municipalityId}

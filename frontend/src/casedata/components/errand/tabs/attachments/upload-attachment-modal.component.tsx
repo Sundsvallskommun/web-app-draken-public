@@ -5,10 +5,11 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { isMEX } from '@common/services/application-service';
 import { Button, FileUpload, FormErrorMessage, Modal, UploadFile, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+import { CasedataAttachmentFormModel } from './casedata-attachments.component';
 
 interface UploadAttachmentModalProps {
   isOpen: boolean;
-  newFiles: UploadFile[];
   attachmentTypeExists: boolean;
   errand: IErrand;
   municipalityId: string;
@@ -19,7 +20,6 @@ interface UploadAttachmentModalProps {
 
 export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
   isOpen,
-  newFiles,
   attachmentTypeExists,
   errand,
   municipalityId,
@@ -27,13 +27,16 @@ export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
   setErrand,
   closeHandler,
 }) => {
+  const method = useFormContext<CasedataAttachmentFormModel>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const toastMessage = useSnackbar();
 
+  const newFiles = method.watch('newFiles');
+
   const handleUpload = async () => {
     if (!newFiles || newFiles.length === 0) return;
-
     setIsLoading(true);
+
     try {
       const saved = await saveErrand();
       if (!saved) return;
