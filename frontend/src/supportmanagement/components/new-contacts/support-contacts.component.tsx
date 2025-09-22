@@ -2,7 +2,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
   SupportErrand,
@@ -32,9 +31,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     user: User;
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: any;
     supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();

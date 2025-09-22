@@ -23,7 +23,7 @@ import {
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
-import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
+import { SupportErrandAttachmentsTab } from './tabs/attachments/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 

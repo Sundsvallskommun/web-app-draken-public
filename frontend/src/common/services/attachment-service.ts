@@ -1,5 +1,6 @@
 import { Attachment } from '@casedata/interfaces/attachment';
 import { UploadFile } from '@sk-web-gui/react';
+import { getSupportAttachment, SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 
 export function base64ToFile(base64: string, fileName: string, mimeType: string): File {
   const byteString = atob(base64);
@@ -37,4 +38,39 @@ export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
       ...((attachment.extraParameters ?? {}) as TExtraMeta),
     },
   };
+}
+
+export async function mapSupportAttachmentsToUploadFiles<TExtraMeta extends object = object>(
+  errandId: string,
+  municipalityId: string,
+  attachments: SupportAttachment[]
+): Promise<UploadFile<TExtraMeta>[]> {
+  return Promise.all(
+    attachments?.map(async (attachment) => {
+      let base64: string | undefined;
+
+      try {
+        const singleAtt = await getSupportAttachment(errandId, municipalityId, attachment);
+        base64 = singleAtt.base64EncodedString;
+      } catch (e) {
+        console.warn(`Could not fetch content for attachment ${attachment.id}, creating empty file.`);
+      }
+
+      const file =
+        base64 && base64.trim().length > 0
+          ? base64ToFile(base64, attachment.fileName, attachment.mimeType)
+          : new File([], attachment.fileName, { type: attachment.mimeType });
+
+      return {
+        id: attachment.id ?? crypto.randomUUID(),
+        file,
+        meta: {
+          name: attachment.fileName.replace(/\.[^/.]+$/, ''),
+          ending: attachment.fileName.split('.').pop() ?? '',
+          mimeType: attachment.mimeType,
+          ...({} as TExtraMeta),
+        },
+      };
+    })
+  );
 }
