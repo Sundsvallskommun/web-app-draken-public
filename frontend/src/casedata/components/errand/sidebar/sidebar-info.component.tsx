@@ -238,7 +238,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                   variant="link"
                   className="font-normal text-small"
                   size="sm"
-                  disabled={errand?.administrator?.adAccount === user.username}
+                  disabled={errand?.administrator?.adAccount === user.username || phaseChangeInProgress(errand)}
                   onClick={() => {
                     selfAssignErrand();
                   }}
