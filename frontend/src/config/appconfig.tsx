@@ -31,6 +31,7 @@ interface AppConfigFeatures {
   useEscalation: boolean;
   useRequireContactChannel: boolean;
   useRelations: boolean;
+  useMyPages: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -60,6 +61,7 @@ export const appConfig: AppConfig = {
     useEscalation: process.env.NEXT_PUBLIC_USE_ESCALATION === 'true',
     useRequireContactChannel: process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL === 'true',
     useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true', //Temporary
+    useMyPages: process.env.NEXT_PUBLIC_USE_MY_PAGES === 'true',
   },
 };
 

@@ -1,5 +1,5 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { Input, RadioButton } from '@sk-web-gui/react';
+import { FormLabel, Input, RadioButton } from '@sk-web-gui/react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
 interface SearchModeSelectorProps {
@@ -7,6 +7,7 @@ interface SearchModeSelectorProps {
   searchMode: string;
   form: UseFormReturn<CasedataOwnerOrContact>;
   id: string;
+  label: string;
   setSearchMode: React.Dispatch<React.SetStateAction<string>>;
   setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
   replacePhonenumbers: UseFieldArrayReplace<CasedataOwnerOrContact, 'phoneNumbers'>;
@@ -17,6 +18,7 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
   searchMode,
   form,
   id,
+  label,
   setSearchMode,
   setSearchResult,
   replacePhonenumbers,
@@ -55,62 +57,66 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
 
   return (
     <fieldset className="flex mt-ms mb-md gap-lg justify-start">
-      <legend className="text-md my-sm contents"></legend>
       <Input type="hidden" {...register(`stakeholderType`)} />
-      <RadioButton
-        data-cy={`search-person-${inName}`}
-        size="lg"
-        className="mr-sm"
-        name={`stakeholderType-${id}`}
-        id={`searchPerson-${id}-${inName}`}
-        value={'PERSON'}
-        checked={searchMode === 'person'}
-        onChange={() => {}}
-        onClick={(e) => {
-          setSearchMode('person');
-          if (stakeholderType === 'ORGANIZATION') {
-            clearFields('PERSON');
-          }
-        }}
-      >
-        Privat
-      </RadioButton>
-      <RadioButton
-        data-cy={`search-enterprise-${id}-${inName}`}
-        size="lg"
-        className="mr-sm"
-        name={`stakeholderType-${id}`}
-        id={`searchEnterprise-${id}-${inName}`}
-        value={'ENTERPRISE'}
-        onChange={() => {}}
-        checked={searchMode === 'enterprise'}
-        onClick={(e) => {
-          setSearchMode('enterprise');
-          if (stakeholderType === 'PERSON') {
-            clearFields('ORGANIZATION');
-          }
-        }}
-      >
-        Företag
-      </RadioButton>
-      <RadioButton
-        data-cy={`search-organization-${inName}`}
-        size="lg"
-        className="mr-sm"
-        name={`stakeholderType-${id}`}
-        id={`searchOrganization-${id}-${inName}`}
-        value={'ORGANIZATION'}
-        onChange={() => {}}
-        checked={searchMode === 'organization'}
-        onClick={(e) => {
-          setSearchMode('organization');
-          if (stakeholderType === 'PERSON') {
-            clearFields('ORGANIZATION');
-          }
-        }}
-      >
-        Förening
-      </RadioButton>
+      <div className="flex flex-col">
+        <FormLabel className="mb-12">Välj typ av {label.toLocaleLowerCase()}</FormLabel>
+        <RadioButton.Group inline>
+          <RadioButton
+            data-cy={`search-person-${inName}`}
+            size="sm"
+            className="mr-sm"
+            name={`stakeholderType-${id}`}
+            id={`searchPerson-${id}-${inName}`}
+            value={'PERSON'}
+            checked={searchMode === 'person'}
+            onChange={() => {}}
+            onClick={(e) => {
+              setSearchMode('person');
+              if (stakeholderType === 'ORGANIZATION') {
+                clearFields('PERSON');
+              }
+            }}
+          >
+            Privat
+          </RadioButton>
+          <RadioButton
+            data-cy={`search-enterprise-${id}-${inName}`}
+            size="sm"
+            className="mr-sm"
+            name={`stakeholderType-${id}`}
+            id={`searchEnterprise-${id}-${inName}`}
+            value={'ENTERPRISE'}
+            onChange={() => {}}
+            checked={searchMode === 'enterprise'}
+            onClick={(e) => {
+              setSearchMode('enterprise');
+              if (stakeholderType === 'PERSON') {
+                clearFields('ORGANIZATION');
+              }
+            }}
+          >
+            Företag
+          </RadioButton>
+          <RadioButton
+            data-cy={`search-organization-${inName}`}
+            size="sm"
+            className="mr-sm"
+            name={`stakeholderType-${id}`}
+            id={`searchOrganization-${id}-${inName}`}
+            value={'ORGANIZATION'}
+            onChange={() => {}}
+            checked={searchMode === 'organization'}
+            onClick={(e) => {
+              setSearchMode('organization');
+              if (stakeholderType === 'PERSON') {
+                clearFields('ORGANIZATION');
+              }
+            }}
+          >
+            Förening
+          </RadioButton>
+        </RadioButton.Group>
+      </div>
     </fieldset>
   );
 };

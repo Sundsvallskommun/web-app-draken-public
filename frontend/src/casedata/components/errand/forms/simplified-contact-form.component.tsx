@@ -315,6 +315,7 @@ export const SimplifiedContactForm: React.FC<{
           setSearchMode={setSearchMode}
           replacePhonenumbers={replacePhonenumbers}
           setSearchResult={setSearchResult}
+          label={label}
         />
       ) : null}
 
