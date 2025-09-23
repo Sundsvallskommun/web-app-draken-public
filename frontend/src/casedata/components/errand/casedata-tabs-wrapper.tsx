@@ -3,7 +3,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
 import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
-import { getErrand, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
+import { getErrand, getUiPhase, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
 import {
   countUnreadMessages,
   fetchMessages,
@@ -131,8 +131,6 @@ export const CasedataTabsWrapper: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
-
-  const unlockedTabs = ['Meddelanden', 'Beslut'];
 
   const tabs: {
     label: string;
@@ -307,7 +305,7 @@ export const CasedataTabsWrapper: React.FC = () => {
       content: errand?.id && <CasedataServicesTab />,
       disabled: !errand?.id,
       visibleFor:
-        isFTErrand(errand) && errand?.id
+        isFTErrand(errand) && errand?.id && getUiPhase(errand) != UiPhase.registrerad
           ? [
               ErrandPhase.aktualisering,
               ErrandPhase.utredning,
@@ -407,7 +405,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           size={'sm'}
         >
           {tabs
-            .filter((tab) => tab.visibleFor.includes(errand.phase) || !errand.phase)
+            .filter((tab) => tab?.visibleFor?.includes(errand.phase) || !errand.phase)
             .map((tab, index) => (
               <Tabs.Item key={tab.label}>
                 <Tabs.Button disabled={tab.disabled} className="text-small">
