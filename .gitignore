@@ -4,4 +4,3 @@ node_modules
 .DS_Store
 frontend/tsconfig.tsbuildinfo
 frontend/public/deploy-info.json
-frontend/next-env.d.ts

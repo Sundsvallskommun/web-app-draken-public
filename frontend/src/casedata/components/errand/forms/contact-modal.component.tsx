@@ -62,6 +62,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
             id={id}
             inName="modal"
             form={form}
+            label={label}
             searchMode={searchMode}
             setSearchMode={setSearchMode}
             replacePhonenumbers={replacePhonenumbers}
