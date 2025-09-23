@@ -58,3 +58,7 @@ main.container {
 .case-description-editor .ql-editor {
   font-size: 16px;
 }
+
+.wrapping-list-item .sk-form-file-upload-list-item-innerwrapper {
+ @apply flex-wrap
+}
