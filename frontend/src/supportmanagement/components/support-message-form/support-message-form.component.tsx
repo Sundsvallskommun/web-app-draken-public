@@ -513,7 +513,7 @@ export const SupportMessageForm: React.FC<{
             )}
             {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
 
-            {/* {appConfig.features.useRelations &&
+            {/* {appConfig.features.useMyPages &&
               getSupportOwnerStakeholder(supportErrand)?.personNumber &&
               Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
