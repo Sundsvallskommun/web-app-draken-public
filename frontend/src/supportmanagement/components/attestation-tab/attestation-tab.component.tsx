@@ -1,7 +1,6 @@
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
-import { Disclosure, DisclosurePanel } from '@headlessui/react';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
@@ -177,19 +176,19 @@ export const AttestationTab = () => {
 
       <main className="px-24 md:px-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
-          <Disclosure as="div" defaultOpen={false} className="mt-32 flex flex-col gap-16">
+          <div className="mt-32 flex flex-col gap-16">
             <div>
               <h1 className="p-0 m-0">Godkänn fakturaunderlag</h1>
             </div>
-            <DisclosurePanel static>
+            <div>
               <FormProvider {...tableForm}>
                 <AttestationsTable
                   setSelectedRecord={setSelectedRecord}
                   setShowSelectedRecord={setShowSelectedRecord}
                 />
               </FormProvider>
-            </DisclosurePanel>
-          </Disclosure>
+            </div>
+          </div>
         </div>
       </main>
 

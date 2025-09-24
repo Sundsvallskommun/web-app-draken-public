@@ -29,8 +29,8 @@ import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'r
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
-import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { StartProcessComponent } from './start-process.component';
+import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 
 export const SidebarInfo: React.FC<{

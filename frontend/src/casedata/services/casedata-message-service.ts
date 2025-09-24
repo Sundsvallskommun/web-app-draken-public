@@ -8,6 +8,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { toBase64 } from '@common/utils/toBase64';
+import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
@@ -97,16 +98,21 @@ export const sendMessage: (
           .post<boolean, FormData>(url, messageFormData, { headers: { 'Content-Type': 'multipart/form-data' } })
           .then(() => {
             if (data.newAttachments.length) {
-              const attachmentsToSave: { type: string; file: FileList; attachmentName: string }[] =
-                data.newAttachments?.map((f) => {
-                  return {
-                    type: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
-                    file: f.file,
-                    attachmentName: f.file[0].name,
-                  };
-                });
+              const uploadFiles: UploadFile[] = data.newAttachments.map((fObj) => {
+                if (!fObj.file || fObj.file.length === 0) return null;
+                const file = fObj.file[0];
+                return {
+                  id: '',
+                  file,
+                  meta: {
+                    name: file.name,
+                    ending: file.name.split('.').pop() || '',
+                    category: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
+                  },
+                };
+              });
 
-              sendAttachments(municipalityId, errand.id, errand.errandNumber, attachmentsToSave);
+              sendAttachments(municipalityId, errand.id, errand.errandNumber, uploadFiles);
             }
             data.newAttachments = [];
 
@@ -174,22 +180,6 @@ export const countUnreadMessages = (tree: MessageNode[]): number => {
   });
   return c;
 };
-
-// export const countAllChildren = (node: MessageNode): number => {
-//   let c = node.children?.length || 0;
-//   node.children?.forEach((n) => {
-//     c += countAllChildren(n);
-//   });
-//   return c;
-// };
-
-// export const countUnreadChildren = (node: MessageNode): number => {
-//   let c = node.children.filter((c) => !c.viewed)?.length || 0;
-//   node.children?.forEach((n) => {
-//     c += countUnreadChildren(n);
-//   });
-//   return c;
-// };
 
 export interface MessageNode extends MessageResponse {
   children?: MessageNode[];

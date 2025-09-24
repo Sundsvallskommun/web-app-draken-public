@@ -103,19 +103,19 @@ export interface AppContextInterface {
   setSupportErrands: (supportErrands: SupportErrandsData) => void;
 
   newSupportErrands;
-  setNewSupportErrands: (supportErrands: SupportErrandsData) => void;
+  setNewSupportErrands: (count: number) => void;
 
   ongoingSupportErrands;
-  setOngoingSupportErrands: (supportErrands: SupportErrandsData) => void;
+  setOngoingSupportErrands: (count: number) => void;
 
   suspendedSupportErrands;
-  setSuspendedSupportErrands: (supportErrands: SupportErrandsData) => void;
+  setSuspendedSupportErrands: (count: number) => void;
 
   assignedSupportErrands;
-  setAssignedSupportErrands: (SupportErrand: SupportErrandsData) => void;
+  setAssignedSupportErrands: (count: number) => void;
 
   solvedSupportErrands;
-  setSolvedSupportErrands: (supportErrands: SupportErrandsData) => void;
+  setSolvedSupportErrands: (count: number) => void;
 
   sidebarLabel;
   setSidebarLabel: (sidebarLabel: string) => void;
@@ -147,11 +147,11 @@ export function AppWrapper({ children }) {
   const [assignedErrands, setAssignedErrands] = useState<ErrandsData>(emptyErrandList);
   const [closedErrands, setClosedErrands] = useState<ErrandsData>(emptyErrandList);
   const [supportErrands, setSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
-  const [newSupportErrands, setNewSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
-  const [ongoingSupportErrands, setOngoingSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
-  const [suspendedSupportErrands, setSuspendedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
-  const [assignedSupportErrands, setAssignedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
-  const [solvedSupportErrands, setSolvedSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
+  const [newSupportErrands, setNewSupportErrands] = useState<number>(0);
+  const [ongoingSupportErrands, setOngoingSupportErrands] = useState<number>(0);
+  const [suspendedSupportErrands, setSuspendedSupportErrands] = useState<number>(0);
+  const [assignedSupportErrands, setAssignedSupportErrands] = useState<number>(0);
+  const [solvedSupportErrands, setSolvedSupportErrands] = useState<number>(0);
   const [errand, setErrand] = useState<IErrand>();
   const [messages, setMessages] = useState<MessageNode[]>();
   const [messageTree, setMessageTree] = useState<MessageNode[]>();
@@ -260,19 +260,19 @@ export function AppWrapper({ children }) {
         setSupportErrands: (errands: SupportErrandsData) => setSupportErrands(errands),
 
         newSupportErrands,
-        setNewSupportErrands: (supportErrands: SupportErrandsData) => setNewSupportErrands(supportErrands),
+        setNewSupportErrands: (count: number) => setNewSupportErrands(count),
 
         ongoingSupportErrands,
-        setOngoingSupportErrands: (supportErrands: SupportErrandsData) => setOngoingSupportErrands(supportErrands),
+        setOngoingSupportErrands: (count: number) => setOngoingSupportErrands(count),
 
         suspendedSupportErrands,
-        setSuspendedSupportErrands: (supportErrands: SupportErrandsData) => setSuspendedSupportErrands(supportErrands),
+        setSuspendedSupportErrands: (count: number) => setSuspendedSupportErrands(count),
 
         assignedSupportErrands,
-        setAssignedSupportErrands: (supportErrand: SupportErrandsData) => setAssignedSupportErrands(supportErrand),
+        setAssignedSupportErrands: (count: number) => setAssignedSupportErrands(count),
 
         solvedSupportErrands,
-        setSolvedSupportErrands: (supportErrands: SupportErrandsData) => setSolvedSupportErrands(supportErrands),
+        setSolvedSupportErrands: (count: number) => setSolvedSupportErrands(count),
 
         sidebarLabel,
         setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),

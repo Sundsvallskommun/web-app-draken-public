@@ -320,6 +320,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             form={form}
             contact={contact}
             id={id}
+            label={label}
             replacePhonenumbers={replacePhonenumbers}
             {...searchProps}
           />

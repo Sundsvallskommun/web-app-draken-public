@@ -512,7 +512,7 @@ export const MessageComposer: React.FC<{
                 )}
                 {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
 
-                {/* {appConfig.features.useRelations &&
+                {/* {appConfig.features.useMyPages &&
                   !!getOwnerStakeholder(errand)?.personalNumber &&
                   !errand.externalCaseId && (
                     <RadioButton

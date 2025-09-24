@@ -12,7 +12,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
-import { toBase64 } from '@common/utils/toBase64';
+import { UploadFile } from '@sk-web-gui/react';
 
 export const MAX_FILE_SIZE_MB = 50;
 
@@ -223,50 +223,51 @@ export const sendAttachments = (
   municipalityId: string,
   errandId: number,
   errandNumber: string,
-  attachmentData: { type: string; file: FileList; attachmentName: string }[]
+  attachmentData: UploadFile[]
 ) => {
-  const attachmentPromises = attachmentData.map(async (attachment, idx) => {
-    const fileItem = attachment.file[0];
+  const attachmentPromises = attachmentData.map(async (attachment) => {
+    const fileItem = attachment.file;
+
+    if (!fileItem) {
+      throw new Error('FILE_MISSING');
+    }
+
     if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
       throw new Error('MAX_SIZE');
     }
-    if (!attachment.type) {
+
+    if (!attachment.meta?.category) {
       throw new Error('TYPE_MISSING');
     }
-    const fileData = await toBase64(fileItem);
+
     const extension = fileItem.name.split('.').pop();
+
     const obj: Attachment = {
-      category: attachment.type,
-      name: fileItem.name,
+      category: attachment.meta.category,
+      name: `${fileItem.name}`,
       note: '',
       extension,
-      // msg files not handled properly by the browser, so we need to set the mime type manually
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
-      file: fileData,
+      file: '',
     };
-    console.log(obj);
-    const buf = Buffer.from(obj.file, 'base64');
-    const blob = new Blob([buf], { type: obj.mimeType });
 
-    // Building form data
+    const attachmentName = attachment.meta.name + '.' + attachment.meta.ending;
+
     const formData = new FormData();
-    formData.append(`files`, blob, obj.name);
-    formData.append(`category`, attachment.type);
-    formData.append(`name`, attachment.attachmentName);
-    formData.append(`note`, '');
-    formData.append(`extension`, obj.extension);
-    formData.append(`mimeType`, obj.mimeType);
-    formData.append(`errandNumber`, errandNumber);
-    console.log('formData', formData);
+    formData.append('files', fileItem, fileItem.name);
+    formData.append('category', obj.category);
+    formData.append('name', attachmentName);
+    formData.append('note', obj.note);
+    formData.append('extension', obj.extension || '');
+    formData.append('mimeType', obj.mimeType);
+    formData.append('errandNumber', errandNumber);
 
     const postAttachment = () =>
       apiService
         .post<boolean, FormData>(`casedata/${municipalityId}/errands/${errandId}/attachments`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        .then((res) => {
-          return res;
-        })
+        .then((res) => res)
         .catch((e) => {
           console.error('Something went wrong when creating attachment ', obj.category);
           throw e;
@@ -275,12 +276,10 @@ export const sendAttachments = (
     return withRetries(3, postAttachment);
   });
 
-  return Promise.all(attachmentPromises).then((res) => {
-    return true;
-  });
+  return Promise.all(attachmentPromises).then(() => true);
 };
 
-export const deleteAttachment = (municipalityId: string, errandId: number, attachment: Attachment) => {
+export const deleteAttachment = (municipalityId: string, errandId: number, attachment: UploadFile) => {
   if (!attachment.id) {
     console.error('No id found, cannot continue.');
     return;

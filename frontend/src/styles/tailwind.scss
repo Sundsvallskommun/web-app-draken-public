@@ -41,3 +41,24 @@ body,
 main.container {
   flex: 1 0 auto;
 }
+
+// Custom styles for the rich text editor used in errand description field
+.case-description-editor {
+  min-height: 15rem;
+  max-height: 60rem;
+  resize: vertical;
+  overflow: hidden;
+}
+
+.case-description-editor .ql-container {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.case-description-editor .ql-editor {
+  font-size: 16px;
+}
+
+.wrapping-list-item .sk-form-file-upload-list-item-innerwrapper {
+ @apply flex-wrap
+}
