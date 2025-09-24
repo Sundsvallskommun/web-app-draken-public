@@ -13,7 +13,6 @@ import {
   deleteRelation,
   getSourceRelations,
   getTargetRelations,
-  Relation,
 } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
@@ -23,6 +22,7 @@ import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { RelationsToTable } from './relation-tables/relations-to-table.component';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 
 export const LinkedErrandsDisclosure: React.FC<{
   errand: SupportErrand | IErrand;
@@ -118,9 +118,9 @@ export const LinkedErrandsDisclosure: React.FC<{
       try {
         setIsLoadingFromErrands(true);
 
-        const relatedErrands = await getTargetRelations(municipalityId, errand.id.toString(), sortOrder);
+        const relatedErrands = (await getTargetRelations(municipalityId, errand.id.toString(), sortOrder)) ?? [];
         const relatedErrandStatuses = await Promise.all(
-          relatedErrands?.data?.relations?.map((relation) => getErrandStatus(municipalityId, relation.source.type))
+          relatedErrands?.map((relation) => getErrandStatus(municipalityId, relation.source.type))
         );
         setRelationFromErrands(relatedErrandStatuses.flat());
 

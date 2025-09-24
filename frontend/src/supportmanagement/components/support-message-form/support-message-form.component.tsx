@@ -8,7 +8,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { Relation, getSourceRelations } from '@common/services/relations-service';
+import { getSourceRelations } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -52,6 +52,7 @@ import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const PREFILL_VALUE = '+46';
