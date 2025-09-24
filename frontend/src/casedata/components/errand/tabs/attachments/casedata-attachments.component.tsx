@@ -22,7 +22,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { EditAttachmentModal } from './edit-attachment-modal.component';
@@ -270,7 +270,7 @@ export const CasedataAttachments: React.FC = () => {
                   showEditSave: editIndex === i,
                   showEditCancel: editIndex === i,
                   extraActions: [
-                    <>
+                    <Fragment key={`item-${i}`}>
                       {editIndex !== i && (
                         <Button
                           key="view"
@@ -285,7 +285,7 @@ export const CasedataAttachments: React.FC = () => {
                           Öppna
                         </Button>
                       )}
-                    </>,
+                    </Fragment>,
                   ],
                   showMore: !isErrandLocked(errand),
                   morePopupMenuPanel: (
