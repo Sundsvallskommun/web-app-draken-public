@@ -101,7 +101,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
               phaseChangeInProgress(errand) ||
               errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
               !errand?.administrator ||
-              user.username.toLocaleLowerCase() !== errand?.administrator.adAccount.toLocaleLowerCase()
+              user.username.toLocaleLowerCase() !== errand?.administrator?.adAccount?.toLocaleLowerCase()
             }
             onClick={() => setShowModal(true)}
           >
