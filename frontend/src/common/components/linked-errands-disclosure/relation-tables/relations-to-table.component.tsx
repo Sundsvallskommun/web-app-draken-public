@@ -2,10 +2,11 @@ import { CaseLabels } from '@casedata/interfaces/case-label';
 import { BaseRelationsTable } from '@common/components/linked-errands-disclosure/relation-tables/base-relation-table.component';
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
-import { Relation, relationsToLabels } from '@common/services/relations-service';
+import { relationsToLabels } from '@common/services/relations-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, SortMode, Table } from '@sk-web-gui/react';
 import React from 'react';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 
 interface RelationsToTableProps {
   errands: CaseStatusResponse[];
