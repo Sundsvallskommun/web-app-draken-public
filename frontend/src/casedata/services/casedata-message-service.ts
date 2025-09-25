@@ -101,12 +101,15 @@ export const sendMessage: (
               const uploadFiles: UploadFile[] = data.newAttachments.map((fObj) => {
                 if (!fObj.file || fObj.file.length === 0) return null;
                 const file = fObj.file[0];
+                const parts = file.name.split('.');
+                const ending = parts.length > 1 ? parts.pop() : '';
+                const name = parts.join('.');
                 return {
                   id: '',
                   file,
                   meta: {
-                    name: file.name,
-                    ending: file.name.split('.').pop() || '',
+                    name: name,
+                    ending: ending,
                     category: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
                   },
                 };
