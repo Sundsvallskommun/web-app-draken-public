@@ -245,7 +245,7 @@ export const sendAttachments = (
 
     const obj: Attachment = {
       category: attachment.meta.category,
-      name: `${fileItem.name}`,
+      name: `${attachment.meta.name}.${attachment.meta.ending}`,
       note: '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
