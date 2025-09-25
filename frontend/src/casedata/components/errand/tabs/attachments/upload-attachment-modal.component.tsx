@@ -7,7 +7,7 @@ import {
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { isMEX } from '@common/services/application-service';
-import { Button, FileUpload, FormErrorMessage, Modal, UploadFile, useSnackbar } from '@sk-web-gui/react';
+import { Button, FileUpload, FormErrorMessage, Modal, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CasedataAttachmentFormModel } from './casedata-attachments.component';
