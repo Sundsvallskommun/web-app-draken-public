@@ -55,6 +55,7 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   'msg',
   'heic',
   'heif',
+  '',
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];
