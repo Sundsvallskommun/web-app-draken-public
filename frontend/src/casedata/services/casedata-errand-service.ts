@@ -811,10 +811,6 @@ export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, 
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
 };
 
-export const isAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
-  return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
-};
-
 export const setErrandStatus = async (
   errandId: number,
   municipalityId: string,
