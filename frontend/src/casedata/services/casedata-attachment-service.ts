@@ -252,12 +252,10 @@ export const sendAttachments = (
       file: '',
     };
 
-    const attachmentName = attachment.meta.name + '.' + attachment.meta.ending;
-
     const formData = new FormData();
     formData.append('files', fileItem, fileItem.name);
     formData.append('category', obj.category);
-    formData.append('name', attachmentName);
+    formData.append('name', obj.name);
     formData.append('note', obj.note);
     formData.append('extension', obj.extension || '');
     formData.append('mimeType', obj.mimeType);
