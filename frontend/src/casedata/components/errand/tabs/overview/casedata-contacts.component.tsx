@@ -304,7 +304,6 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                       <p className="mt-0">
                         Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
                       </p>
-                      <p className="mt-sm mb-0">Undvik personnummer för VOF-ärenden, t ex anmälningar.</p>
                     </span>
                   </div>
                 )}
