@@ -1,6 +1,6 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { convertPlainTextToHTML, extractBody, isHTML } from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
@@ -88,20 +88,6 @@ export const RenderedSupportMessage: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, supportErrand]);
-
-  const content = isHTML(message?.messageBody)
-    ? sanitized(
-        extractBody(message?.messageBody).replace(
-          /([^\s<]+)<(https?:\/\/[^>]+)>/g,
-          '<a class="text-ring underline" href="$2" target="_blank">$1</a>'
-        )
-      )
-    : convertPlainTextToHTML(
-        message?.messageBody.replace(
-          /([^\s<]+)<(https?:\/\/[^>]+)>/g,
-          '<a class="text-ring underline" href="$2" target="_blank">$1</a>'
-        )
-      );
 
   return (
     <>
@@ -325,15 +311,7 @@ export const RenderedSupportMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: sanitized(message.messageBody?.replace(/\r\n/g, '<br>') || '')
-                  .replace(/\n/g, '<br>')
-                  // Normalize both <br> and <br/>
-                  .replace(/<br\s*\/?>/gi, '<br/>')
-                  // Remove all <br/>s before the first non-<br/> tag/content
-                  .replace(/^(<br\/>\s*)+/i, '')
-                  // Remove all <br/>s after the last non-<br/> tag/content
-                  .replace(/(<br\/>\s*)+$/i, '')
-                  .replace(/<a /gi, '<a class="text-blue-600 underline hover:text-blue-800" '),
+                __html: formatMessage(sanitized(message.messageBody?.replace(/\r\n/g, '<br>') || '')),
               }}
             />
           </div>

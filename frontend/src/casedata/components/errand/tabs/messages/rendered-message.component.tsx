@@ -5,7 +5,7 @@ import { isErrandLocked, validateAction } from '@casedata/services/casedata-erra
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { convertPlainTextToHTML, extractBody, isHTML } from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -290,15 +290,7 @@ export const RenderedMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: sanitized(message?.message?.replace(/\r\n/g, '<br>') || '')
-                  .replace(/\n/g, '<br>')
-                  // Normalize both <br> and <br/>
-                  .replace(/<br\s*\/?>/gi, '<br/>')
-                  // Remove all <br/>s before the first non-<br/> tag/content
-                  .replace(/^(<br\/>\s*)+/i, '')
-                  // Remove all <br/>s after the last non-<br/> tag/content
-                  .replace(/(<br\/>\s*)+$/i, '')
-                  .replace(/<a /gi, '<a class="text-blue-600 underline hover:text-blue-800" '),
+                __html: formatMessage(sanitized(message?.message?.replace(/\r\n/g, '<br>') || '')),
               }}
             />
           </div>
