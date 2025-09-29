@@ -123,6 +123,7 @@ export default function SchemaForm({ schema, uiSchema, formData, onChange, onSub
       }}
       transformErrors={createJsonErrorTransformer(schema)}
       noHtml5Validate
+      showErrorList={false}
     />
   );
 }

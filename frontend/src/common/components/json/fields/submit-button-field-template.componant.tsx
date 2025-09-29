@@ -3,7 +3,7 @@ import { Button } from '@sk-web-gui/react';
 
 export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any>) {
   return (
-    <Button type="submit" variant="primary">
+    <Button type="submit" variant="primary" color="vattjom">
       Lägg till
     </Button>
   );
