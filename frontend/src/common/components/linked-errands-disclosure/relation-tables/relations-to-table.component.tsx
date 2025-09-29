@@ -63,7 +63,7 @@ export const RelationsToTable: React.FC<RelationsToTableProps> = ({
       renderRow={(errand) => (
         <>
           <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
-            <CaseStatusLabelComponent status={errand.status} />
+            <CaseStatusLabelComponent externalStatus={errand?.externalStatus} />
           </Table.HeaderColumn>
           <Table.Column className="w-[16rem]">{CaseLabels.ALL[errand.caseType] ?? errand.caseType}</Table.Column>
           <Table.Column className="w-[10rem]">{findOperationUsingNamespace(errand.namespace)}</Table.Column>

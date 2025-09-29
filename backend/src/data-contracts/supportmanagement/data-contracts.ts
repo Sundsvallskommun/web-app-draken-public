@@ -32,14 +32,14 @@ export enum Priority {
 }
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
 }
 
 export interface StatusType {
@@ -67,10 +67,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -103,14 +103,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -275,6 +275,35 @@ export interface EmailIntegration {
    * @example "2000-10-31T01:30:00+02:00"
    */
   modified?: string;
+}
+
+/** Message-Exchange sync configuration */
+export interface MessageExchangeSync {
+  /**
+   * Unique id
+   * @format int64
+   * @example 1
+   */
+  id?: number;
+  /**
+   * Message exchange namespace to search in. Does not map to supporManagement namespace.
+   * @example "support"
+   */
+  namespace?: string;
+  /**
+   * Latest synced sequence number
+   * @format int64
+   * @example 333
+   */
+  latestSyncedSequenceNumber?: number;
+  /**
+   * Timestamp when the configuration was last modified
+   * @format date-time
+   * @example "2024-12-24T01:30:00+02:00"
+   */
+  modified?: string;
+  /** If set to true conversations will be synced */
+  active: boolean;
 }
 
 /** Status model */
@@ -1139,12 +1168,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  first?: boolean;
-  last?: boolean;
+  /** @format int32 */
+  totalPages?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1154,6 +1181,8 @@ export interface PageErrand {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1171,8 +1200,8 @@ export interface PageableObject {
 
 export interface SortObject {
   sorted?: boolean;
-  empty?: boolean;
   unsorted?: boolean;
+  empty?: boolean;
 }
 
 /** Revision model */
@@ -1360,12 +1389,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  first?: boolean;
-  last?: boolean;
+  /** @format int32 */
+  totalPages?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1375,6 +1402,8 @@ export interface PageEvent {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1410,12 +1439,12 @@ export interface Communication {
    */
   sent?: string;
   /**
-   * The email-subject of the message
+   * The email-subject of the communication
    * @example "Hello world"
    */
   subject?: string;
   /**
-   * The message was delivered by
+   * The communication was delivered by
    * @example "EMAIL"
    */
   communicationType?: CommunicationCommunicationTypeEnum;
@@ -1425,12 +1454,17 @@ export interface Communication {
    */
   target?: string;
   /**
-   * Indicates if the message is internal
+   * The recipients of the communication, if email
+   * @example ["kalle.anka@ankeborg.se"]
+   */
+  recipients?: string[];
+  /**
+   * Indicates if the communication is internal
    * @example false
    */
   internal?: boolean;
   /**
-   * Signal if the message has been viewed or not
+   * Signal if the communication has been viewed or not
    * @example true
    */
   viewed?: boolean;
@@ -1516,15 +1550,18 @@ export interface Message {
   content?: string;
   readBy?: ReadBy[];
   attachments?: Attachment[];
+  /**
+   * Type of message (user or system created)
+   * @example "USER_CREATED"
+   */
+  type?: MessageTypeEnum;
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  first?: boolean;
-  last?: boolean;
+  /** @format int32 */
+  totalPages?: number;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1534,6 +1571,8 @@ export interface PageMessage {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1586,11 +1625,20 @@ export enum CommunicationDirectionEnum {
 }
 
 /**
- * The message was delivered by
+ * The communication was delivered by
  * @example "EMAIL"
  */
 export enum CommunicationCommunicationTypeEnum {
   SMS = "SMS",
   EMAIL = "EMAIL",
   WEB_MESSAGE = "WEB_MESSAGE",
+}
+
+/**
+ * Type of message (user or system created)
+ * @example "USER_CREATED"
+ */
+export enum MessageTypeEnum {
+  USER_CREATED = "USER_CREATED",
+  SYSTEM_CREATED = "SYSTEM_CREATED",
 }
