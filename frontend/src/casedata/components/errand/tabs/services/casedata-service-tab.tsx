@@ -1,29 +1,171 @@
 'use client';
 
-import { Modal } from '@sk-web-gui/react';
-import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { CasedataServiceForm } from './casedata-service-form.component';
-import { Service } from './casedata-service-item.component';
+import {
+  buildCreateAssetPayload,
+  buildUpdateAssetPayload,
+  createAsset,
+  getAssets,
+  updateAsset,
+} from '@casedata/services/asset-service';
+import { getOwnerStakeholderPartyId } from '@casedata/services/casedata-stakeholder-service';
+import SchemaForm from '@common/components/json/schema/schema-form.compontant';
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { useAppContext } from '@contexts/app.context';
+import type { RJSFSchema } from '@rjsf/utils';
+import { useSnackbar } from '@sk-web-gui/react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
+import { Service } from './casedata-service-mapper';
+import { useErrandServices } from './useErrandService';
+
+const fromCompositeId = (id: string) => {
+  const [assetUuid, idxStr] = id.split('#');
+  return { assetUuid, paramIndex: Number(idxStr) };
+};
 
 export const CasedataServicesTab: React.FC = () => {
-  const [services, setServices] = useState<Service[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [serviceBeingEdited, setServiceBeingEdited] = useState<Service | null>(null);
+  const { municipalityId, errand } = useAppContext();
+  const [schema, setSchema] = useState<RJSFSchema | null>(null);
+  const [formData, setFormData] = useState<any>({});
+  const [editing, setEditing] = useState<Service | null>(null);
+  const [schemaId, setSchemaId] = useState<string>('');
+  const toast = useSnackbar();
 
-  const handleAddService = (service: Service) => {
-    setServices((prev) => [...prev, { ...service, id: uuidv4() }]);
-  };
+  const assetType = 'FTErrandAssets';
 
-  const handleEditService = (updated: Service) => {
-    setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    setModalOpen(false);
-  };
+  const partyId = getOwnerStakeholderPartyId(errand);
+  const errandNr = errand.errandNumber!;
 
-  const handleRemoveService = (id: number | string) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
-  };
+  useEffect(() => {
+    (async () => {
+      const { schema, schemaId } = await getLatestRjsfSchema(municipalityId, assetType);
+      setSchema(schema);
+      setSchemaId(schemaId);
+    })();
+  }, [municipalityId, assetType]);
+  const { services, loading, error, refetch } = useErrandServices({
+    municipalityId,
+    partyId,
+    errandNumber: errandNr,
+    assetType,
+    status: 'ACTIVE',
+    schema,
+  });
+
+  const removeService = useCallback(
+    async (compositeId: string) => {
+      try {
+        const { assetUuid, paramIndex } = fromCompositeId(compositeId);
+
+        const res = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+        const asset = (res?.data ?? []).find((a) => a.id === assetUuid);
+        if (!asset) {
+          await refetch();
+          return;
+        }
+
+        const params = Array.isArray(asset.jsonParameters) ? asset.jsonParameters : [];
+        if (paramIndex < 0 || paramIndex >= params.length) {
+          await refetch();
+          return;
+        }
+
+        const newParams = params.filter((_, i) => i !== paramIndex);
+
+        await updateAsset(municipalityId, asset.id, {
+          origin: asset.origin,
+          partyId: asset.partyId,
+          assetId: asset.assetId,
+          type: asset.type,
+          issued: asset.issued ?? null,
+          validTo: asset.validTo ?? null,
+          status: asset.status,
+          description: asset.description ?? '',
+          additionalParameters: asset.additionalParameters ?? {},
+          jsonParameters: newParams,
+        });
+
+        await refetch();
+        toast(
+          getToastOptions({
+            message: 'Insatsen togs bort.',
+            status: 'success',
+          })
+        );
+      } catch (e: any) {
+        toast(
+          getToastOptions({
+            message: e?.message ?? 'Något gick fel när insatsen skulle tas bort.',
+            status: 'error',
+          })
+        );
+      }
+    },
+    [municipalityId, partyId, errandNr, assetType, refetch, toast]
+  );
+
+  const handleSubmit = useCallback(
+    async (payload: any) => {
+      if (!schema || !municipalityId || !schemaId) return;
+      try {
+        const list = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+        const existingFull = (list?.data ?? [])[0];
+
+        if (editing || existingFull) {
+          const targetId = editing?.id ?? existingFull!.id;
+          const fullForMerge =
+            editing?.id === existingFull?.id && existingFull
+              ? existingFull
+              : existingFull ??
+                (await (async () => {
+                  const refetchFull = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+                  return (refetchFull?.data ?? [])[0];
+                })());
+
+          await updateAsset(
+            municipalityId,
+            targetId,
+            buildUpdateAssetPayload(
+              payload,
+              schema,
+              { schemaId, assetType, partyId, assetId: errandNr },
+              fullForMerge as any
+            )
+          );
+        } else {
+          await createAsset(
+            municipalityId,
+            buildCreateAssetPayload(payload, schema, {
+              schemaId,
+              assetType,
+              partyId,
+              assetId: errandNr,
+            })
+          );
+
+          toast(
+            getToastOptions({
+              message: 'Ny insats tillagd.',
+              status: 'success',
+            })
+          );
+        }
+
+        await refetch();
+        setEditing(null);
+        setFormData({});
+      } catch (e: any) {
+        toast(
+          getToastOptions({
+            message: e?.message ?? 'Något gick fel när insatsen skulle sparas.',
+            status: 'error',
+          })
+        );
+      }
+    },
+    [schema, municipalityId, editing, schemaId, assetType, partyId, errandNr, refetch, toast]
+  );
 
   return (
     <div className="w-full py-24 px-32">
@@ -32,30 +174,21 @@ export const CasedataServicesTab: React.FC = () => {
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
         service kunden har rätt till vid sina resor.
       </p>
+
       <div className="mt-24">
-        <CasedataServiceForm onSubmit={handleAddService} onCancel={() => {}} />
-      </div>
-      <div className="mt-32 pt-24">
-        <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
-        <ServiceListComponent
-          services={services}
-          onRemove={handleRemoveService}
-          onOrder={(id) => console.log('Beställ insats med id:', id)} //TODO: implement onOrder logic when ready.
-          onEdit={(service) => {
-            setServiceBeingEdited(service);
-            setModalOpen(true);
-          }}
-        />
+        <SchemaForm schema={schema} formData={formData} onChange={(fd) => setFormData(fd)} onSubmit={handleSubmit} />
       </div>
 
-      <Modal show={modalOpen} onClose={() => setModalOpen(false)}>
-        <CasedataServiceForm
-          key={serviceBeingEdited?.id ?? 'new'}
-          initialService={serviceBeingEdited ?? undefined}
-          onSubmit={handleEditService}
-          onCancel={() => setModalOpen(false)}
-        />
-      </Modal>
+      <div className="mt-32 pt-24">
+        <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
+        {loading ? (
+          <div>Hämtar insatser…</div>
+        ) : error ? (
+          <div className="text-error">{error}</div>
+        ) : (
+          <ServiceListComponent services={services} onRemove={removeService} />
+        )}
+      </div>
     </div>
   );
 };

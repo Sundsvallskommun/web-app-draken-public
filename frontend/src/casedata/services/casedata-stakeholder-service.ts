@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { MEXRelation, PrettyRole, PTRelation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import {
   CasedataOwnerOrContact,
   ContactInfoType,
@@ -8,7 +8,7 @@ import {
   StakeholderType,
 } from '@casedata/interfaces/stakeholder';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { OrgNumberFormat, formatOrgNr, latestBy } from '@common/services/helper-service';
+import { formatOrgNr, latestBy, OrgNumberFormat } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { getErrand } from './casedata-errand-service';
 
@@ -263,6 +263,9 @@ export const getFellowApplicants: (e: IErrand) => CasedataOwnerOrContact[] = (e)
 
 export const getOwnerStakeholder: (e: IErrand) => CasedataOwnerOrContact = (e) =>
   e.stakeholders?.filter((s) => s.roles.includes(Role.APPLICANT))?.[0];
+
+export const getOwnerStakeholderPartyId: (e: IErrand) => string = (e) =>
+  e.stakeholders?.filter((s) => s.roles.includes(Role.APPLICANT))?.[0]?.personId;
 
 export const getStakeholdersByRelation: (e: IErrand, relation: Role) => CasedataOwnerOrContact[] = (e, relation) =>
   e.stakeholders?.filter((s) => s.roles.includes(relation));

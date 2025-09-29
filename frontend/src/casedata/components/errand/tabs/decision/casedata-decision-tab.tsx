@@ -35,6 +35,7 @@ import { validateErrandForDecision, validateStatusForDecision } from '@casedata/
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
+  getOwnerStakeholderPartyId,
   validateOwnerForSendingDecision,
   validateOwnerForSendingDecisionByEmail,
   validateOwnerForSendingDecisionByLetter,
@@ -62,6 +63,8 @@ import {
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
+import { ServiceListComponent } from '../services/casedata-service-list.component';
+import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
@@ -136,6 +139,16 @@ export const CasedataDecisionTab: React.FC<{
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   const [textIsDirty, setTextIsDirty] = useState(false);
+
+  const ownerPartyId = getOwnerStakeholderPartyId(errand);
+
+  const { services } = useErrandServices({
+    municipalityId,
+    partyId: ownerPartyId,
+    errandNumber: errand.errandNumber,
+    assetType: 'FTErrandAssets',
+  });
+
   useEffect(() => {
     const laws = getValues('law')?.map((law) => law.heading) ?? [];
     setSelectedLaws(laws);
@@ -659,6 +672,11 @@ export const CasedataDecisionTab: React.FC<{
           {errors.description && formState.isDirty && (
             <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
           )}
+        </div>
+
+        <div className="pb-20">
+          <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
+          <ServiceListComponent services={services} readOnly />
         </div>
 
         <div className="flex justify-start gap-md">

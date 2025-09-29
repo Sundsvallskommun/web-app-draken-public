@@ -101,7 +101,7 @@ export const CasedataTabsWrapper: React.FC = () => {
       handleConversation(municipalityId, errand.id);
       isPT() &&
         owner?.personId &&
-        getAssets(owner.personId, 'PARKINGPERMIT')
+        getAssets({ partyId: owner.personId, type: 'PARKINGPERMIT' })
           .then((res) => setAssets(res.data))
           .catch((e) => {
             toastMessage({
