@@ -109,6 +109,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       contact.username ||
       contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values[0] ||
       null;
+    const migratedContact = contact.parameters?.find((param) => param.key === 'corrected')?.displayName;
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -144,7 +145,9 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         ) : null}
 
         <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
-          <div className="font-bold text-small">{header}</div>
+          <div className="font-bold text-small">
+            {header} {!!migratedContact && `(${migratedContact})`}
+          </div>
 
           {!isSupportErrandLocked(supportErrand) && (
             <div className="flex flex-wrap gap-16 text-small">
