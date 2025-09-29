@@ -31,11 +31,6 @@ export const RenderedMessage: React.FC<{
 
   const toastMessage = useSnackbar();
 
-  if (message.messageType === 'EMAIL') {
-    const match = sanitized(message.message).match(/<div[^>]*>[\s\S]*?<\/div>/i);
-    message.message = match ? match[0] : message.message;
-  }
-
   // We truncate reply messages at the first occurence of "Från: " and
   // the first "-----Ursprungligt meddelande-----" line, so that only the
   // last message body is shown.
@@ -66,10 +61,6 @@ export const RenderedMessage: React.FC<{
       }
     }
   };
-
-  const content = isHTML(message?.message)
-    ? sanitized(extractBody(message?.message))
-    : convertPlainTextToHTML(message?.message);
 
   return (
     <>
@@ -287,7 +278,7 @@ export const RenderedMessage: React.FC<{
                   }}
                   role="listitem"
                   // eslint-disable-next-line jsx-a11y/alt-text
-                  leftIcon={a.name.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
+                  leftIcon={a?.name?.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
                   variant="tertiary"
                 >
                   {a.name}
@@ -296,21 +287,20 @@ export const RenderedMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {message.messageType === 'EMAIL' ? (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(answerMessage || ''),
-                }}
-              ></p>
-            ) : (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(content || ''),
-                }}
-              ></p>
-            )}
+            <span
+              className="text"
+              dangerouslySetInnerHTML={{
+                __html: sanitized(message?.message?.replace(/\r\n/g, '<br>') || '')
+                  .replace(/\n/g, '<br>')
+                  // Normalize both <br> and <br/>
+                  .replace(/<br\s*\/?>/gi, '<br/>')
+                  // Remove all <br/>s before the first non-<br/> tag/content
+                  .replace(/^(<br\/>\s*)+/i, '')
+                  // Remove all <br/>s after the last non-<br/> tag/content
+                  .replace(/(<br\/>\s*)+$/i, '')
+                  .replace(/<a /gi, '<a class="text-blue-600 underline hover:text-blue-800" '),
+              }}
+            />
           </div>
         </div>
       </div>

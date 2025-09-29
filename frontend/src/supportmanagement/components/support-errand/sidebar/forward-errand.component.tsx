@@ -107,7 +107,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [recipient, setRecipient] = useState<RECIPIENT>(
-    appConfig.features.useDepartmentEscalation ? undefined : 'EMAIL'
+    appConfig.features.useDepartmentEscalation ? 'DEPARTMENT' : 'EMAIL'
   );
   const [richText, setRichText] = useState<string>('');
   const [textIsDirty, setTextIsDirty] = useState(false);
@@ -223,18 +223,15 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         }
       });
 
-      getEscalationMessage(latestErrand, `${user.firstName} ${user.lastName}`).then((text) => {
-        const html = text.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>');
-        setRichText(html);
-
-        setValue('message', sanitized(html), { shouldValidate: true, shouldDirty: false });
-
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        setValue('messageBodyPlaintext', tmp.textContent || tmp.innerText || '', { shouldValidate: false });
+      getEscalationMessage(latestErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
+        quillRef?.current?.setContents(text);
+        setRichText(text);
+        setValue('message', sanitized(text), { shouldValidate: true, shouldDirty: false });
+        setValue('messageBodyPlaintext', text, { shouldValidate: false });
       });
     }
-  }, [latestErrand, supportAttachments, supportMetadata, showModal, user.firstName, user.lastName, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipient]);
 
   if (!appConfig.features.useEscalation) {
     return null;
@@ -354,6 +351,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                 <Input data-cy="message-body-input" type="hidden" {...register('message')} />
                 <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
                   <TextEditor
+                    readOnly={!formState.isValid}
                     className={cx(`mb-md h-[80%]`)}
                     key={richText}
                     ref={quillRef}

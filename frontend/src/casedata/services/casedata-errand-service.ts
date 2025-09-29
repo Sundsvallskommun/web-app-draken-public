@@ -217,7 +217,10 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       errandNumber: e.errandNumber,
       caseType: e.caseType,
       label: findCaseLabelForCaseType(CaseTypes.ALL[e.caseType]),
-      description: e.description || '',
+      description:
+        e?.description
+          ?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>')
+          .replace(/\n/g, '<br>') || '',
       administrator: administrator,
       administratorName: administrator ? `${administrator.firstName} ${administrator.lastName}` : '',
       priority: Priority[e.priority as Priority],

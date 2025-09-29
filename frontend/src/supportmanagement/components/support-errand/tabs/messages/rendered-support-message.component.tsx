@@ -322,21 +322,20 @@ export const RenderedSupportMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {Array.isArray(message.emailHeaders?.IN_REPLY_TO) ? (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(answerMessage.toString() || ''),
-                }}
-              ></p>
-            ) : (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(content || ''),
-                }}
-              ></p>
-            )}
+            <span
+              className="text"
+              dangerouslySetInnerHTML={{
+                __html: sanitized(message.messageBody?.replace(/\r\n/g, '<br>') || '')
+                  .replace(/\n/g, '<br>')
+                  // Normalize both <br> and <br/>
+                  .replace(/<br\s*\/?>/gi, '<br/>')
+                  // Remove all <br/>s before the first non-<br/> tag/content
+                  .replace(/^(<br\/>\s*)+/i, '')
+                  // Remove all <br/>s after the last non-<br/> tag/content
+                  .replace(/(<br\/>\s*)+$/i, '')
+                  .replace(/<a /gi, '<a class="text-blue-600 underline hover:text-blue-800" '),
+              }}
+            />
           </div>
         </div>
       </div>

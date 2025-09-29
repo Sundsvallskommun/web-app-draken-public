@@ -1,5 +1,6 @@
 import { TenantKey } from '@common/interfaces/tenant';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { maybe } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import {
   Channels,
@@ -7,8 +8,6 @@ import {
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
-
-export const maybe: (s: any) => string = (s) => (s ? String(s) : '(saknas)');
 
 const normalizeAddress = (address?: string, zip?: string, city?: string) => {
   const s = `${address || ''}, ${zip || ''} ${city || ''}`.trim();
@@ -43,12 +42,7 @@ export const extractContactInfo = (c: SupportStakeholderFormModel | undefined) =
 
 const renderContactBlock = (label: string, c?: SupportStakeholderFormModel) => {
   const info = extractContactInfo(c);
-  return `
-<p><b>${label}</b></p><br>
-<p><b>Namn:</b> ${info.name}<br>
-<b>Adress:</b> ${info.adress}<br>
-<b>Telefonnummer:</b> ${info.phone}<br>
-<b>E-postadress:</b> ${info.email}</p>`;
+  return `<p><b>${label}</b></p><br><p><b>Namn:</b> ${info.name}<br><b>Adress:</b> ${info.adress}<br><b>Telefonnummer:</b> ${info.phone}<br><b>E-postadress:</b> ${info.email}</p>`;
 };
 
 const renderOtherContacts = (contacts: SupportStakeholderFormModel[] = []) => {
@@ -81,7 +75,7 @@ const kcRole = () => (isLOP() ? 'Handläggare' : isKC() ? 'Kommunvägledare' : i
 const TENANTS: Record<TenantKey, TenantConfig> = {
   sundsvall: {
     departmentName: (e) => (isKC() ? 'Sundsvalls kommun' : appConfig.applicationName),
-    roleLabel: () => kcRole(),
+    roleLabel: (user) => kcRole() + ` ${user}`,
     phoneNumber: '+46 60 19 10 00',
     showMetaRows: true,
     showPropertyDesignations: true,
@@ -91,7 +85,7 @@ const TENANTS: Record<TenantKey, TenantConfig> = {
   },
   ange: {
     departmentName: () => 'Kontaktcenter',
-    roleLabel: () => 'Handläggare',
+    roleLabel: (user) => `Handläggare ${user}`,
     phoneNumber: '0690-25 01 00 (växel)',
     showMetaRows: true,
     showPropertyDesignations: false,
@@ -106,7 +100,7 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
 
   const department = cfg.departmentName(e);
   const channel = maybe(e?.channel && Channels[e?.channel]);
-  const description = maybe(e?.description).replace(/\n/g, '<br>');
+  const description = maybe(e?.description);
   const customer = e?.customer?.[0];
   const contacts = e?.contacts || [];
   const subject = cfg.subjectResolver?.(e);
@@ -119,41 +113,59 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
   ).replace('${department}', department);
 
   const metaRows = cfg.showMetaRows
-    ? `
-<p><b>Inkom via:</b> ${channel}</p>
-${subject ? `<p><b>Ämnesrad:</b> ${subject}</p>` : ''}
-<p><b>Ärendet registrerades:</b> ${dayjs(e.created).format('YYYY-MM-DD HH:mm')}</p>
-<p><b>Ärendenummer i Draken:</b> ${e.errandNumber}</p>
-`
+    ? `<p><b>Inkom via:</b> ${channel}</p>${
+        subject ? `<p><b>Ämnesrad:</b> ${subject}</p>` : ''
+      }<p><b>Ärendet registrerades:</b> ${dayjs(e.created).format(
+        'YYYY-MM-DD HH:mm'
+      )}</p><p><b>Ärendenummer i Draken:</b> ${e.errandNumber}</p>`
     : `<p><b>Inkom via:</b> ${channel}</p>`;
 
   const propertyBlock =
     cfg.showPropertyDesignations && propertyDesignations.length
-      ? `<br><p><b>Fastighetsbeteckningar:</b> ${propertyDesignations.join(', ')}</p>`
+      ? `<br><p><b>Fastighetsbeteckningar:</b> ${propertyDesignations.join(', ')}</p><br>`
       : '';
 
-  return `
-<p>Hej,</p>
-<br>
-<p>${introLine}</p>
-<br>
-${metaRows}
-<br>
-${description ? `<p><b>Ärendebeskrivning</b><br>${description}</p>` : ''}
-${propertyBlock}
-<br>
-${customer ? renderContactBlock('Kontaktuppgifter', customer) : ''}
-${renderOtherContacts(contacts)}
-<br>
-<p>Har detta meddelande inte hamnat rätt?</p>
-<br>
-<p>Hjälp oss gärna att så snabbt som möjligt guida meddelandet till rätt verksamhet eller person. Om du inte vet vem som äger frågan så svarar du på detta mail.</p>
-<br>
-<p>${cfg.closingLine}</p>
-<br>
-<p>Med vänliga hälsningar,</p>
-<p><b>${department}</b></p>
-<p>${cfg.roleLabel(user)} ${user}</p>
-<p>Telefon: ${cfg.phoneNumber}</p>
-`.trim();
+  return (
+    '<p>Hej,</p><br><p>' +
+    introLine +
+    '</p><br>' +
+    metaRows +
+    '<br><p><b>Ärendebeskrivning</b></p>' +
+    description +
+    '<br>' +
+    propertyBlock +
+    (customer ? renderContactBlock('Kontaktuppgifter', customer) : '') +
+    renderOtherContacts(contacts) +
+    '<br><p>Har detta meddelande inte hamnat rätt?</p><br><p>Hjälp oss gärna att så snabbt som möjligt guida meddelandet till rätt verksamhet eller person. Om du inte vet vem som äger frågan så svarar du på detta mail.</p><br><p>' +
+    cfg.closingLine +
+    '</p><br><p>Med vänliga hälsningar,</p><p><b>' +
+    department +
+    '</b></p><p>' +
+    cfg.roleLabel(user) +
+    '</p><p>Telefon: ' +
+    cfg.phoneNumber +
+    '</p>'
+  );
+};
+
+export const buildEscalationTextContent = (e: SupportErrand, user: string, tenant: TenantKey): string => {
+  const cfg = TENANTS[tenant];
+
+  const department = cfg.departmentName(e);
+  const channel = maybe(e?.channel && Channels[e?.channel]);
+  const description = maybe(e?.description);
+  const subject = cfg.subjectResolver?.(e);
+  const introLine = (
+    cfg.introRecipientLine || 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'
+  ).replace('${department}', department);
+
+  const metaRows = cfg.showMetaRows
+    ? `<p><b>Inkom via:</b> ${channel}</p>${
+        subject ? `<p><b>Ämnesrad:</b> ${subject}</p>` : ''
+      }<p><b>Ärendet registrerades:</b> ${dayjs(e.created).format(
+        'YYYY-MM-DD HH:mm'
+      )}</p><p><b>Ärendenummer i Draken:</b> ${e.errandNumber}</p>`
+    : `<p><b>Inkom via:</b> ${channel}</p>`;
+
+  return '<p>Hej,</p><br><p>' + introLine + '</p><br>' + metaRows + '<br><p><b>Ärendebeskrivning</b></p>' + description;
 };

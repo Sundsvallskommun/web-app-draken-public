@@ -154,3 +154,5 @@ export function formatCurrency(value) {
 export function twoDecimals(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
+
+export const maybe: (s: any) => string = (s) => (s ? String(s) : '(saknas)');

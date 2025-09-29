@@ -624,6 +624,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
+      description: e?.description
+        ?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>')
+        .replace(/\n/g, '<br>'),
       customer:
         e.stakeholders
           ?.filter((s) => s.role === 'PRIMARY')
