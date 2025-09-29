@@ -146,7 +146,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
 
         <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
           <div className="font-bold text-small">
-            {header} {`(${migratedContact})`}
+            {header} {!!migratedContact && `(${migratedContact})`}
           </div>
 
           {!isSupportErrandLocked(supportErrand) && (
