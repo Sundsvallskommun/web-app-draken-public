@@ -931,7 +931,7 @@ export class SupportErrandController {
       caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
       channel: casedataChannel,
-      description: existingSupportErrand.data.description,
+      description: !!data?.message ? data?.message : existingSupportErrand.data.description,
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: facilities,
