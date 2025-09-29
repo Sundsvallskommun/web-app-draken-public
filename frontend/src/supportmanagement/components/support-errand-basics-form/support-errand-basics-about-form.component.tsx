@@ -69,11 +69,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   }, [supportMetadata]);
 
   useEffect(() => {
-    setRichText(
-      convertPlainTextToHTML(
-        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
-      )
-    );
+    setRichText(getValues()?.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

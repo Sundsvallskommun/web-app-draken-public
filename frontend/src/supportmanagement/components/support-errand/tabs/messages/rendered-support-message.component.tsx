@@ -1,6 +1,6 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { convertPlainTextToHTML, extractBody, isHTML } from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
@@ -88,20 +88,6 @@ export const RenderedSupportMessage: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, supportErrand]);
-
-  const content = isHTML(message?.messageBody)
-    ? sanitized(
-        extractBody(message?.messageBody).replace(
-          /([^\s<]+)<(https?:\/\/[^>]+)>/g,
-          '<a class="text-ring underline" href="$2" target="_blank">$1</a>'
-        )
-      )
-    : convertPlainTextToHTML(
-        message?.messageBody.replace(
-          /([^\s<]+)<(https?:\/\/[^>]+)>/g,
-          '<a class="text-ring underline" href="$2" target="_blank">$1</a>'
-        )
-      );
 
   return (
     <>
@@ -322,21 +308,12 @@ export const RenderedSupportMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {Array.isArray(message.emailHeaders?.IN_REPLY_TO) ? (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(answerMessage.toString() || ''),
-                }}
-              ></p>
-            ) : (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(content || ''),
-                }}
-              ></p>
-            )}
+            <span
+              className="text"
+              dangerouslySetInnerHTML={{
+                __html: formatMessage(sanitized(message.messageBody?.replace(/\r\n/g, '<br>') || '')),
+              }}
+            />
           </div>
         </div>
       </div>
