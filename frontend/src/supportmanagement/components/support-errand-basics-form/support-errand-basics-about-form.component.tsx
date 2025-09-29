@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import sanitized, { convertPlainTextToHTML } from '@common/services/sanitizer-service';
+import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
