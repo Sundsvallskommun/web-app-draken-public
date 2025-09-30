@@ -70,7 +70,7 @@ export const Sidebar: React.FC<{
     <aside
       data-cy="manage-sidebar"
       className={cx(
-        'transition-all ease-in-out duration-150 absolute lg:static flex bg-background-content h-full max-w-full  max-h-full',
+        'transition-all ease-in-out duration-150 absolute lg:static flex bg-background-content h-full max-h-[calc(100vh-7.2rem)] max-w-full',
         open ? 'max-lg:shadow-100 w-full sm:w-[40rem] sm:min-w-[40rem]' : 'w-[5.6rem]'
       )}
     >
