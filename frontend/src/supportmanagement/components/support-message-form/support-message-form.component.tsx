@@ -9,7 +9,7 @@ import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import { getSourceRelations } from '@common/services/relations-service';
-import sanitized from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -389,8 +389,10 @@ export const SupportMessageForm: React.FC<{
 
       const signature = !!props.message?.conversationId ? internalConversationSignature : emailBody;
 
-      setRichText(signature + historyHeader + props.message.messageBody);
-      quillRef.current?.clipboard?.dangerouslyPasteHTML(signature + historyHeader + props.message.messageBody);
+      setRichText(formatMessage(signature + historyHeader + props.message.messageBody));
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(
+        formatMessage(signature + historyHeader + props.message.messageBody)
+      );
       trigger();
     } else {
       let body: string;
