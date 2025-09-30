@@ -4,6 +4,7 @@ import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -30,11 +31,10 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import dynamic from 'next/dynamic';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupRequestFeedbackForm = yup.object().shape(
@@ -167,7 +167,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     if (contactMeans === 'email') {
       setValue('email', _email || '');
     } else if (contactMeans === 'sms') {
-      setValue('phone', _phone || '+46');
+      setValue('phone', _phone || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, contactMeans]);

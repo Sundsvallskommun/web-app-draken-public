@@ -365,7 +365,7 @@ export const MessageComposer: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'sms') {
-      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '+46');
+      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
     setRichText(defaultSignature());
     quillRef.current?.clipboard?.dangerouslyPasteHTML(defaultSignature());
@@ -687,6 +687,7 @@ export const MessageComposer: React.FC<{
                       {...register('addExisting')}
                       className="w-full"
                       placeholder="Välj bilaga"
+                      size="sm"
                       onChange={(r) => {
                         setValue('addExisting', r.currentTarget.value);
                       }}
@@ -713,6 +714,7 @@ export const MessageComposer: React.FC<{
                       tabIndex={props.show ? 0 : -1}
                       type="button"
                       variant="tertiary"
+                      size="sm"
                       disabled={!addExisting}
                       onClick={(e) => {
                         e.preventDefault();
