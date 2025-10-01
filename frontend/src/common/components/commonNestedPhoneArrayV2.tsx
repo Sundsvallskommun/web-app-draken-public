@@ -1,17 +1,19 @@
-import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Chip } from '@sk-web-gui/react';
+import { phoneNumberFormatter } from '@common/utils/phoneNumberFormatter-utils';
+import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
 import { useFieldArray } from 'react-hook-form';
 
-const PREFILL_VALUE = '+46';
+type size = 'sm' | 'md' | 'lg';
+
 const CommonNestedPhoneArrayV2 = ({
   control,
   register,
   errors,
   watch,
-  setValue,
   trigger,
   disabled = false,
   required = false,
   error = false,
+  size = 'sm',
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
@@ -21,38 +23,36 @@ const CommonNestedPhoneArrayV2 = ({
   const { newPhoneNumber } = watch();
 
   return (
-    <FormControl id={`phoneNumbers`} className="w-full">
-      <FormLabel>
-        Lägg till telefonnummer (t ex +46701740635){required ? <span aria-hidden="true">*</span> : null}
-      </FormLabel>
+    <FormControl id={`phoneNumbers`} className="w-full" size={size as size}>
+      <FormLabel>Lägg till telefonnummer {required ? <span aria-hidden="true">*</span> : null}</FormLabel>
       <div className="flex items-center w-full justify-between">
-        <Input
-          disabled={disabled}
-          size="md"
-          data-cy={`newPhoneNumber`}
-          className={cx(error ? 'border-error' : null, 'w-full mr-16')}
-          placeholder="+4670-..."
-          defaultValue={newPhoneNumber ? '' : PREFILL_VALUE}
-          {...register(`newPhoneNumber`)}
-        />
+        <div className="w-full mr-16">
+          <Input
+            disabled={disabled}
+            data-cy={`newPhoneNumber`}
+            placeholder="Till exempel 0731234567 eller +46731234567."
+            className={cx(error ? 'border-error' : null, 'w-full mr-16')}
+            {...register(`newPhoneNumber`)}
+          />
+        </div>
+
         <Button
           type="button"
           variant="tertiary"
+          size={size as size}
           data-cy={`newPhoneNumber-button`}
-          size="md"
           color="primary"
           onClick={() => {
-            append({ value: newPhoneNumber });
-            setValue(`newPhoneNumber`, newPhoneNumber ? '' : PREFILL_VALUE);
+            append({ value: phoneNumberFormatter(newPhoneNumber) });
             trigger();
           }}
-          disabled={newPhoneNumber === '' || newPhoneNumber === PREFILL_VALUE || (errors && !!errors.newPhoneNumber)}
+          disabled={newPhoneNumber === '' || (errors && !!errors.newPhoneNumber)}
           className="rounded-button"
         >
           Lägg till
         </Button>
       </div>
-
+      <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
       {fields.length > 0 ? (
         <div className="flex items-center w-full flex-wrap justify-start gap-md py-sm">
           {fields.map((field: { id: string; value: string }, k) => {

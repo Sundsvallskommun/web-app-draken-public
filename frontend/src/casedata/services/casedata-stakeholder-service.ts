@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { MEXRelation, PrettyRole, PTRelation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import {
   CasedataOwnerOrContact,
   ContactInfoType,
@@ -8,7 +8,7 @@ import {
   StakeholderType,
 } from '@casedata/interfaces/stakeholder';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { OrgNumberFormat, formatOrgNr, latestBy } from '@common/services/helper-service';
+import { formatOrgNr, latestBy, OrgNumberFormat } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { getErrand } from './casedata-errand-service';
 
@@ -240,7 +240,7 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
     careof: s.addresses?.[0]?.careOf || '',
     zip: s.addresses?.[0]?.postalCode,
     city: s.addresses?.[0]?.city,
-    newPhoneNumber: '+46',
+    newPhoneNumber: '',
     phoneNumbers: s.contactInformation
       .filter((c) => c.contactType === 'PHONE')
       .map((c) => ({

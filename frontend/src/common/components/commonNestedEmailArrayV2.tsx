@@ -1,10 +1,12 @@
 import { PrettyRole } from '@casedata/interfaces/role';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Button, Chip, cx, FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
+
+type size = 'sm' | 'md' | 'lg';
 
 const CommonNestedEmailArrayV2 = ({
   errand,
@@ -18,6 +20,7 @@ const CommonNestedEmailArrayV2 = ({
   required = false,
   error = false,
   addingStakeholder = false,
+  size = 'sm',
 }) => {
   const { emails, existingEmail, newEmail } = watch();
   const { supportMetadata }: AppContextInterface = useAppContext();
@@ -63,7 +66,7 @@ const CommonNestedEmailArrayV2 = ({
   }, [errand?.stakeholders]);
 
   return (
-    <FormControl id={'emails'} className="w-full mb-16">
+    <FormControl id={'emails'} className="w-full" size={size as size}>
       {!addingStakeholder ? (
         <>
           <FormLabel>Lägg till befintlig e-postadress</FormLabel>
@@ -87,7 +90,7 @@ const CommonNestedEmailArrayV2 = ({
               type="button"
               data-cy={`add-email-button`}
               variant="tertiary"
-              size="md"
+              size={size as size}
               onClick={() => {
                 append({ value: existingEmail });
                 trigger();
@@ -109,11 +112,12 @@ const CommonNestedEmailArrayV2 = ({
           {...register('newEmail')}
           className={cx(error ? 'border-error' : null, `w-full`)}
         />
+
         <Button
           type="button"
           data-cy={`add-new-email-button`}
           variant="tertiary"
-          size="md"
+          size={size as size}
           onClick={() => {
             append({ value: newEmail });
             setValue('newEmail', '');
@@ -125,10 +129,10 @@ const CommonNestedEmailArrayV2 = ({
           Lägg till
         </Button>
       </div>
-
+      <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
       {fields?.length > 0 ? (
         <>
-          {!addingStakeholder && <strong className="mt-16">Ditt meddelande har {emails?.length} mottagare</strong>}
+          {!addingStakeholder && <strong>Ditt meddelande har {emails?.length} mottagare</strong>}
           <div className="flex items-center w-full flex-wrap justify-start gap-md">
             {fields?.map((field: { id: string; value: string }, index: number) => {
               return (

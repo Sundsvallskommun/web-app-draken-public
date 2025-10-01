@@ -5,6 +5,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
@@ -52,10 +53,7 @@ import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
-
-const PREFILL_VALUE = '+46';
 
 export interface SupportMessageFormModel {
   id: string;
@@ -102,9 +100,6 @@ let formSchema = yup
       otherwise: (schema) => schema,
     }),
     newPhoneNumber: yup.string(),
-    // .trim()
-    // .transform((val) => val && val.replace('-', ''))
-    // .matches(supportManagementPhonePattern, invalidPhoneMessage),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
       then: (schema) =>
@@ -396,7 +391,7 @@ export const SupportMessageForm: React.FC<{
       trigger();
     } else {
       let body: string;
-      let prefillPhone = props.prefillPhone || PREFILL_VALUE;
+      let prefillPhone = props.prefillPhone || '';
 
       switch (contactMeans) {
         case 'sms':
@@ -699,7 +694,7 @@ export const SupportMessageForm: React.FC<{
                 <Select
                   {...register('addExisting')}
                   className="w-full"
-                  size="md"
+                  size="sm"
                   placeholder="Välj bilaga"
                   onChange={(r) => {
                     setValue('addExisting', r.currentTarget.value);
@@ -719,7 +714,7 @@ export const SupportMessageForm: React.FC<{
                 <Button
                   type="button"
                   variant="primary"
-                  size="md"
+                  size="sm"
                   disabled={!addExisting}
                   color="primary"
                   onClick={(e) => {
