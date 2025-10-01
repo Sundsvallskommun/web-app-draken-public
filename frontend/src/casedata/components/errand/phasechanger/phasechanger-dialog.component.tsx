@@ -13,7 +13,7 @@ export const PhaseChangerDialogComponent: React.FC<{
   return (
     <Dialog show={dialogIsOpen} className="w-[36rem]">
       <Dialog.Content className="flex flex-col items-center text-center">
-        <LucideIcon name={icon} color="vattjom" size={32} />
+        <LucideIcon name={icon as any} color="vattjom" size={32} />
         <h1 className="text-h3-md">{title}</h1>
         {message}
       </Dialog.Content>

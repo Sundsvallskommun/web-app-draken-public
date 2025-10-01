@@ -32,6 +32,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<boolean>();
   const quillRef = useRef(null);
+  const [richText, setRichText] = useState<string>('');
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
@@ -76,6 +77,11 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
+    setRichText(getValues()?.description);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
     const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || baseDetails;
 
@@ -106,7 +112,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon} />}>
+        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon as any} />}>
           {isAppeal && label === 'Övergripande' && (
             <div className="px-0">
               <FormControl className="w-full" key="relatesTo">
@@ -189,12 +195,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <FormLabel>Ärendebeskrivning</FormLabel>
 
                 <TextEditor
-                  key={getValues('description')}
-                  className={'h-[25rem]'}
-                  readOnly={true}
-                  disableToolbar={true}
+                  key={richText}
+                  className={'h-[25rem] case-description-editor'}
+                  readOnly
+                  disableToolbar
                   ref={quillRef}
-                  defaultValue={getValues('description')}
+                  defaultValue={richText}
                 />
               </FormControl>
             </div>

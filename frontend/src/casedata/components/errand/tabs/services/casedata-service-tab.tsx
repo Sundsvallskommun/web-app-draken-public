@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { Modal } from '@sk-web-gui/react';
-import { CasedataServiceForm } from './casedata-service-form.component';
-import { ServiceListComponent } from './casedata-service-list.component';
-import { Service } from './casedata-service-item.component';
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { CasedataServiceForm } from './casedata-service-form.component';
+import { Service } from './casedata-service-item.component';
+import { ServiceListComponent } from './casedata-service-list.component';
 
 export const CasedataServicesTab: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);

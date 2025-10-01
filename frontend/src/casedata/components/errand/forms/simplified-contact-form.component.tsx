@@ -16,6 +16,7 @@ import {
 } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -24,7 +25,6 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 
 const emptyContact: CasedataOwnerOrContact = {
   id: '',
@@ -42,7 +42,7 @@ const emptyContact: CasedataOwnerOrContact = {
   careof: '',
   zip: '',
   city: '',
-  newPhoneNumber: '+46',
+  newPhoneNumber: '',
   phoneNumbers: [],
   newEmail: '',
   emails: [],
@@ -315,6 +315,7 @@ export const SimplifiedContactForm: React.FC<{
           setSearchMode={setSearchMode}
           replacePhonenumbers={replacePhonenumbers}
           setSearchResult={setSearchResult}
+          label={label}
         />
       ) : null}
 

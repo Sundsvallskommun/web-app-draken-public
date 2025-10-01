@@ -5,7 +5,7 @@ import { isErrandLocked, validateAction } from '@casedata/services/casedata-erra
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { convertPlainTextToHTML, extractBody, isHTML } from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -30,11 +30,6 @@ export const RenderedMessage: React.FC<{
   }, [user, errand]);
 
   const toastMessage = useSnackbar();
-
-  if (message.messageType === 'EMAIL') {
-    const match = sanitized(message.message).match(/<div[^>]*>[\s\S]*?<\/div>/i);
-    message.message = match ? match[0] : message.message;
-  }
 
   // We truncate reply messages at the first occurence of "Från: " and
   // the first "-----Ursprungligt meddelande-----" line, so that only the
@@ -66,10 +61,6 @@ export const RenderedMessage: React.FC<{
       }
     }
   };
-
-  const content = isHTML(message?.message)
-    ? sanitized(extractBody(message?.message))
-    : convertPlainTextToHTML(message?.message);
 
   return (
     <>
@@ -287,7 +278,7 @@ export const RenderedMessage: React.FC<{
                   }}
                   role="listitem"
                   // eslint-disable-next-line jsx-a11y/alt-text
-                  leftIcon={a.name.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
+                  leftIcon={a?.name?.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
                   variant="tertiary"
                 >
                   {a.name}
@@ -296,21 +287,12 @@ export const RenderedMessage: React.FC<{
             </ul>
           ) : null}
           <div className="my-18">
-            {message.messageType === 'EMAIL' ? (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(answerMessage || ''),
-                }}
-              ></p>
-            ) : (
-              <p
-                className="my-0 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:ml-lg [&>ol]:ml-lg"
-                dangerouslySetInnerHTML={{
-                  __html: sanitized(content || ''),
-                }}
-              ></p>
-            )}
+            <span
+              className="text"
+              dangerouslySetInnerHTML={{
+                __html: formatMessage(sanitized(message?.message?.replace(/\r\n/g, '<br>') || '')),
+              }}
+            />
           </div>
         </div>
       </div>

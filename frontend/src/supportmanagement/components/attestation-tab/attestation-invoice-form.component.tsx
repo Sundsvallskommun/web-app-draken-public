@@ -1,6 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { prettyTime } from '@common/services/helper-service';
+import { maybe, prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
@@ -157,8 +157,6 @@ export const AttestationInvoiceForm: React.FC<{
       </div>
     );
   };
-
-  const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 
   return (
     <div className="px-40 my-lg gap-24">

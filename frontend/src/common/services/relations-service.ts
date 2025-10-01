@@ -2,6 +2,7 @@ import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
 import { appConfig } from '@config/appconfig';
+import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
 
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -19,33 +20,11 @@ export const relationsFromLabels = [
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
 
-export interface Relation {
-  id?: string;
-  type: string;
-  source: {
-    resourceId: string;
-    type: string;
-    service: string;
-    namespace: string;
-  };
-  target: {
-    resourceId: string;
-    type: string;
-    service: string;
-    namespace: string;
-  };
-}
-
 const formatServiceName = (str: string) => {
   if (str === 'SUPPORT_MANAGEMENT') return 'supportmanagement';
   if (str === 'CASE_DATA') return 'case-data';
   return str.toLocaleLowerCase();
 };
-
-interface RelationsResponse {
-  relations: Relation[];
-  meta: any;
-}
 
 export const createRelation = (
   municipalityId: string,
@@ -94,30 +73,28 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     });
 };
 
-export const getSourceRelations = (municipalityId: string, sourceId: string, sort: string) => {
+export const getSourceRelations = (municipalityId: string, sourceId: string, sort: string): Promise<Relation[]> => {
   const url = `${municipalityId}/sourcerelations/${sort}/${sourceId}`;
 
   return apiService
-    .get<ApiResponse<RelationsResponse>>(url)
+    .get<ApiResponse<RelationPagedResponse>>(url)
     .then((res) => {
       return res.data.data.relations;
     })
-    .catch((e) => {
-      console.error('Something went wrong when getting relation: ' + e);
-      throw e;
+    .catch(() => {
+      return [] as Relation[];
     });
 };
 
-export const getTargetRelations = (municipalityId: string, targetId: string, sort: string) => {
+export const getTargetRelations = (municipalityId: string, targetId: string, sort: string): Promise<Relation[]> => {
   const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
 
   return apiService
-    .get<ApiResponse<any>>(url)
+    .get<ApiResponse<RelationPagedResponse>>(url)
     .then((res) => {
-      return res.data.data;
+      return res.data.data.relations;
     })
-    .catch((e) => {
-      console.error('Something went wrong when getting relation: ' + e);
-      throw e;
+    .catch(() => {
+      return [] as Relation[];
     });
 };

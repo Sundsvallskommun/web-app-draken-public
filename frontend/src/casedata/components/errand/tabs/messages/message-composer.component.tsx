@@ -26,7 +26,7 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -366,7 +366,7 @@ export const MessageComposer: React.FC<{
 
   useEffect(() => {
     if (contactMeans === 'sms') {
-      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '+46');
+      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
     setRichText(defaultSignature());
     quillRef.current?.clipboard?.dangerouslyPasteHTML(defaultSignature());
@@ -421,7 +421,7 @@ export const MessageComposer: React.FC<{
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
         !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
       }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setRichText(defaultSignature() + historyHeader + props.message.message);
+      setRichText(formatMessage(defaultSignature() + historyHeader + props.message.message));
       trigger();
     } else {
       setRichText(defaultSignature());
@@ -511,7 +511,7 @@ export const MessageComposer: React.FC<{
                     E-tjänst Intern
                   </RadioButton>
                 )}
-                {appConfig.features.useRelations &&
+                {appConfig.features.useMyPages &&
                   !!getOwnerStakeholder(errand)?.personalNumber &&
                   !errand.externalCaseId && (
                     <RadioButton
@@ -686,6 +686,7 @@ export const MessageComposer: React.FC<{
                       {...register('addExisting')}
                       className="w-full"
                       placeholder="Välj bilaga"
+                      size="sm"
                       onChange={(r) => {
                         setValue('addExisting', r.currentTarget.value);
                       }}
@@ -712,6 +713,7 @@ export const MessageComposer: React.FC<{
                       tabIndex={props.show ? 0 : -1}
                       type="button"
                       variant="tertiary"
+                      size="sm"
                       disabled={!addExisting}
                       onClick={(e) => {
                         e.preventDefault();

@@ -6,6 +6,7 @@ export interface CaseStatusResponse {
   externalCaseId?: string;
   caseType?: string;
   status?: string;
+  externalStatus?: string;
   firstSubmitted?: string;
   lastStatusChange?: string;
   system?: string;

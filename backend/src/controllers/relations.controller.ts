@@ -1,8 +1,8 @@
 import { apiServiceName } from '@/config/api-config';
-import { Relation } from '@/data-contracts/relations/data-contracts';
+import { Relation, RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
-import ApiService from '@/services/api.service';
+import ApiService, { ApiResponse } from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseBefore } from 'routing-controllers';
@@ -84,10 +84,10 @@ export class RelationsController {
     @Param('municipalityId') municipalityId: string,
     @Param('query') query: string,
     @Param('sort') sort: string,
-  ): Promise<{ data: any; message: string }> {
+  ): Promise<{ data: ApiResponse<RelationPagedResponse>; message: string }> {
     const url = `${municipalityId}/relations?filter=target.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
+    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });

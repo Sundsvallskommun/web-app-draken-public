@@ -1,43 +1,21 @@
+import { TenantKey } from '@common/interfaces/tenant';
 import { isKA } from '@common/services/application-service';
-import { ContactChannelType, SupportErrand, SupportStakeholderFormModel } from './support-errand-service';
+import {
+  buildEscalationEmailContent,
+  buildEscalationTextContent,
+} from '@supportmanagement/components/templates/escalation-template';
+import { SupportErrand } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
-import { buildDefaultEscalationEmailContent } from '@supportmanagement/components/templates/default-escalation-template';
-import { buildKAEscalationEmailContent } from '@supportmanagement/components/templates/ka-escalation-template';
 
-export const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
-
-export const extractContactInfo = (c: SupportStakeholderFormModel) => {
-  const name = maybe(c && `${c?.firstName || ''} ${c?.lastName || ''}`);
-  const adress = maybe((c && `${c?.address || ''} ${c?.zipCode || ''}`)?.replace('w', '').trim());
-  const phone = maybe(
-    c &&
-      (c?.contactChannels
-        ?.filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
-        .map((c) => c.value)
-        .join(', ') ||
-        c?.phoneNumbers?.map((c) => c.value).join(', '))
-  );
-  const email = maybe(
-    c &&
-      (c?.contactChannels
-        ?.filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
-        .map((c) => c.value)
-        .join(', ') ||
-        c?.emails?.map((c) => c.value).join(', '))
-  );
-  return {
-    name,
-    adress,
-    phone,
-    email,
-  };
-};
-
-export const getEscalationMessage: (e: Partial<SupportErrand>, user: string) => Promise<string> = async (e, user) => {
-  if (isKA()) {
-    return buildKAEscalationEmailContent(e as SupportErrand, user);
-  }
-  return buildDefaultEscalationEmailContent(e as SupportErrand, user);
+export const getEscalationMessage: (
+  e: Partial<SupportErrand>,
+  version: string,
+  user?: string
+) => Promise<string> = async (e, version, user) => {
+  const tenant: TenantKey = isKA() ? TenantKey.Ange : TenantKey.Sundsvall;
+  return version === 'EMAIL'
+    ? buildEscalationEmailContent(e as SupportErrand, user, tenant)
+    : buildEscalationTextContent(e as SupportErrand, user, tenant);
 };
 
 export const getEscalationEmails: (

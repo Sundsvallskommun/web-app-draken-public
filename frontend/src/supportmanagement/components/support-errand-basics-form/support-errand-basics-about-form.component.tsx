@@ -1,7 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import sanitized, { convertPlainTextToHTML } from '@common/services/sanitizer-service';
+import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
@@ -19,7 +19,6 @@ import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
-import { should } from 'chai';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
@@ -70,11 +69,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   }, [supportMetadata]);
 
   useEffect(() => {
-    setRichText(
-      convertPlainTextToHTML(
-        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
-      )
-    );
+    setRichText(getValues()?.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -205,10 +200,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       <div className="flex my-24 gap-xl">
         <FormControl id="description" className="w-full">
           <FormLabel>Ärendebeskrivning</FormLabel>
-
-          {/* {supportErrand.channel === ContactChannelType.EMAIL ? ( */}
           <TextEditor
-            className="w-full h-[12rem]"
+            className="w-full h-[15rem] case-description-editor"
             readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
             disableToolbar
             key={richText}

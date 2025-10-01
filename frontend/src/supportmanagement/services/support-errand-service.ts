@@ -18,6 +18,7 @@ import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 import store from '@supportmanagement/services/storage-service';
+import { formatErrandDescription } from '@common/services/sanitizer-service';
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -452,31 +453,24 @@ export const useSupportErrands = (
   const unparsedStoredFilter = store.get('filter');
   const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
 
-  //Fix for slow loading of errands, can be removed when backend is fixed
-  const currentRequestId = useRef<string | null>(null);
-
   const fetchErrands = useCallback(
     async (page: number = 0) => {
-      const requestId = uuidv4();
-      currentRequestId.current = requestId;
       setIsLoading(true);
-      if (currentRequestId.current === requestId) {
-        await getSupportErrands(municipalityId, page, size, filter, sort)
-          .then((res) => {
-            setSupportErrands({ ...res, isLoading: false });
-          })
-          .catch(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Ärenden kunde inte hämtas',
-              status: 'error',
-            });
+      await getSupportErrands(municipalityId, page, size, filter, sort)
+        .then((res) => {
+          setSupportErrands({ ...res, isLoading: false });
+        })
+        .catch(() => {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Ärenden kunde inte hämtas',
+            status: 'error',
           });
-      }
+        });
 
       const sidebarUpdatePromises = [
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.NEW })
+        getSupportErrandsCount(municipalityId, { ...filter, status: Status.NEW })
           .then((res) => {
             setNewSupportErrands(res);
           })
@@ -489,7 +483,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, {
+        getSupportErrandsCount(municipalityId, {
           ...filter,
           status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
         })
@@ -505,11 +499,8 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.SUSPENDED}` })
+        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.SUSPENDED}` })
           .then((res) => {
-            if (res.error) {
-              throw new Error('Error occurred when fetching errands');
-            }
             setSuspendedSupportErrands(res);
           })
           .catch(() => {
@@ -521,11 +512,8 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: `${Status.ASSIGNED}` })
+        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.ASSIGNED}` })
           .then((res) => {
-            if (res.error) {
-              throw new Error('Error occurred when fetching errands');
-            }
             setAssignedSupportErrands(res);
           })
           .catch(() => {
@@ -537,7 +525,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrands(municipalityId, page, 1, { ...filter, status: Status.SOLVED })
+        getSupportErrandsCount(municipalityId, { ...filter, status: Status.SOLVED })
           .then((res) => {
             setSolvedSupportErrands(res);
           })
@@ -550,9 +538,8 @@ export const useSupportErrands = (
             });
           }),
       ];
-      if (currentRequestId.current == requestId) {
-        return Promise.allSettled(sidebarUpdatePromises);
-      }
+
+      return Promise.allSettled(sidebarUpdatePromises);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -638,6 +625,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
+      description: formatErrandDescription(e?.description),
       customer:
         e.stakeholders
           ?.filter((s) => s.role === 'PRIMARY')
@@ -730,6 +718,27 @@ export const getSupportErrands: (
     })
     .catch((e) => {
       return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
+    });
+};
+
+export const getSupportErrandsCount: (
+  municipalityId: string,
+  filter?: { [key: string]: string | boolean | number }
+) => Promise<any> = (municipalityId, filter = {}) => {
+  if (!municipalityId) {
+    return Promise.reject('Municipality id missing');
+  }
+  const filterQuery = Object.keys(filter)
+    .map((key) => key + '=' + filter[key])
+    .join('&');
+  const url = `countsupporterrands/${municipalityId}?${filterQuery}`;
+  return apiService
+    .get<any>(url)
+    .then((res) => {
+      return res.data.count;
+    })
+    .catch((e) => {
+      return null;
     });
 };
 

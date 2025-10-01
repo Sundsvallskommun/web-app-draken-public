@@ -15,6 +15,7 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
+import { appConfig } from '@config/appconfig';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -108,6 +109,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       contact.username ||
       contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values[0] ||
       null;
+    const migratedContact = contact.parameters?.find((param) => param.key === 'corrected')?.displayName;
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -143,7 +145,9 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         ) : null}
 
         <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
-          <div className="font-bold text-small">{header}</div>
+          <div className="font-bold text-small">
+            {header} {!!migratedContact && `(${migratedContact})`}
+          </div>
 
           {!isSupportErrandLocked(supportErrand) && (
             <div className="flex flex-wrap gap-16 text-small">
@@ -343,6 +347,17 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       <div className="mt-md">
         <Disclosure variant="alt" icon={<LucideIcon name="users" />} header="Ärendeägare" initalOpen={true}>
           <div data-cy="registered-applicants">
+            {stakeholderCustomers.length === 0 && appConfig.features.useMyPages && (
+              <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
+                <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+                <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
+                  <p className="mt-0">
+                    Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
+                  </p>
+                  <p className="mt-sm mb-0">Undvik personnummer för VOF-ärenden, t ex anmälningar.</p>
+                </span>
+              </div>
+            )}
             <div className="flex flex-row gap-12 flex-wrap">
               {stakeholderCustomers.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Ärendeägare'))}
             </div>
@@ -366,6 +381,14 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         <Disclosure variant="alt" icon={<LucideIcon name="users" />} header="Övriga parter" initalOpen={true}>
           <div data-cy="registered-contacts">
             <div className="w-full mt-md">
+              {appConfig.features.useMyPages && (
+                <div className="pb-[2.5rem]">
+                  <span className="text-dark-secondary">
+                    Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte se
+                    ärendet på Mina sidor.
+                  </span>
+                </div>
+              )}
               <SupportSimplifiedContactForm
                 disabled={isSupportErrandLocked(supportErrand)}
                 setUnsaved={props.setUnsaved}
