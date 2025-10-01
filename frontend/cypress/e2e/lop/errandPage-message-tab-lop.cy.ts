@@ -1,6 +1,11 @@
 /// <reference types="cypress" />
 
+import { onlyOn } from '@cypress/skip-test';
+import { interceptFormData } from 'cypress-intercept-formdata';
+import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
+import { mockMetaData } from './fixtures/mockMetadata';
+import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockMissingRootMessage,
   mockSupportAttachments,
@@ -8,11 +13,6 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { mockAdmins } from '../case-data/fixtures/mockAdmins';
-import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
-import { mockMetaData } from './fixtures/mockMetadata';
-import { onlyOn } from '@cypress/skip-test';
-import { interceptFormData } from 'cypress-intercept-formdata';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Message tab', () => {
@@ -116,7 +116,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
       cy.get('[data-cy="send-message-button"]').should('exist').click();
       cy.wait('@sendMessage').should(({ request }) => {
-        const data = interceptFormData(request);
+        const data = interceptFormData(request as any);
         expect(data['contactMeans']).to.equal('sms');
         expect(data['plaintextMessage']).to.equal('Mock message');
         expect(data['recipientPhone']).to.equal('+46701740635');
@@ -146,7 +146,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
       cy.get('[data-cy="send-message-button"]').should('exist').click();
       cy.wait('@sendMessage').should(({ request }) => {
-        const data = interceptFormData(request);
+        const data = interceptFormData(request as any);
         expect(data['contactMeans']).to.equal('email');
         expect(data['plaintextMessage']).to.equal('Mock message');
         expect(data['files']).to.equal('attachment.txt');
