@@ -193,7 +193,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipient]);
+  }, [recipient, showModal]);
 
   if (!appConfig.features.useEscalation) {
     return null;
