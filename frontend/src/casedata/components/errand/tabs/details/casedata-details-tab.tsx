@@ -19,7 +19,6 @@ import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 're
 import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
-import { convertPlainTextToHTML } from '@common/services/sanitizer-service';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
@@ -78,11 +77,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
-    setRichText(
-      convertPlainTextToHTML(
-        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
-      )
-    );
+    setRichText(getValues()?.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -18,6 +18,7 @@ import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 import store from '@supportmanagement/services/storage-service';
+import { formatErrandDescription } from '@common/services/sanitizer-service';
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -624,6 +625,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
+      description: formatErrandDescription(e?.description),
       customer:
         e.stakeholders
           ?.filter((s) => s.role === 'PRIMARY')

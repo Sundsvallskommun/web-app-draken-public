@@ -18,7 +18,6 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (e: SupportErrand) => void;
     supportAttachments: SupportAttachment[];
     user: User;
   } = useAppContext();

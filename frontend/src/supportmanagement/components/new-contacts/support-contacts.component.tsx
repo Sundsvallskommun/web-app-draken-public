@@ -109,6 +109,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       contact.username ||
       contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values[0] ||
       null;
+    const migratedContact = contact.parameters?.find((param) => param.key === 'corrected')?.displayName;
     return (
       <div
         key={`rendered-${contact.internalId}-${contact.role}-${index}`}
@@ -144,7 +145,9 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         ) : null}
 
         <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
-          <div className="font-bold text-small">{header}</div>
+          <div className="font-bold text-small">
+            {header} {!!migratedContact && `(${migratedContact})`}
+          </div>
 
           {!isSupportErrandLocked(supportErrand) && (
             <div className="flex flex-wrap gap-16 text-small">
@@ -348,8 +351,10 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
                 <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
                 <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
-                  Ange den person eller organisation som startade ärendet. Om du anger ett personnummer visas ärendet på
-                  deras Mina sidor.
+                  <p className="mt-0">
+                    Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
+                  </p>
+                  <p className="mt-sm mb-0">Undvik personnummer för VOF-ärenden, t ex anmälningar.</p>
                 </span>
               </div>
             )}

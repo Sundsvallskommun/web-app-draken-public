@@ -5,11 +5,12 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { Relation, getSourceRelations } from '@common/services/relations-service';
-import sanitized from '@common/services/sanitizer-service';
+import { getSourceRelations } from '@common/services/relations-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -45,6 +46,7 @@ import {
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
@@ -53,8 +55,6 @@ import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
-
-const PREFILL_VALUE = '+46';
 
 export interface SupportMessageFormModel {
   id: string;
@@ -101,9 +101,6 @@ let formSchema = yup
       otherwise: (schema) => schema,
     }),
     newPhoneNumber: yup.string(),
-    // .trim()
-    // .transform((val) => val && val.replace('-', ''))
-    // .matches(supportManagementPhonePattern, invalidPhoneMessage),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
       then: (schema) =>
@@ -388,12 +385,14 @@ export const SupportMessageForm: React.FC<{
 
       const signature = !!props.message?.conversationId ? internalConversationSignature : emailBody;
 
-      setRichText(signature + historyHeader + props.message.messageBody);
-      quillRef.current?.clipboard?.dangerouslyPasteHTML(signature + historyHeader + props.message.messageBody);
+      setRichText(formatMessage(signature + historyHeader + props.message.messageBody));
+      quillRef.current?.clipboard?.dangerouslyPasteHTML(
+        formatMessage(signature + historyHeader + props.message.messageBody)
+      );
       trigger();
     } else {
       let body: string;
-      let prefillPhone = props.prefillPhone || PREFILL_VALUE;
+      let prefillPhone = props.prefillPhone || '';
 
       switch (contactMeans) {
         case 'sms':
@@ -511,9 +510,7 @@ export const SupportMessageForm: React.FC<{
                 Draken
               </RadioButton>
             )}
-            {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
-
-            {/* {appConfig.features.useMyPages &&
+            {appConfig.features.useMyPages &&
               getSupportOwnerStakeholder(supportErrand)?.personNumber &&
               Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
@@ -527,7 +524,7 @@ export const SupportMessageForm: React.FC<{
                 >
                   Mina sidor
                 </RadioButton>
-              )} */}
+              )}
           </RadioButton.Group>
         </div>
       ) : null}
@@ -696,7 +693,7 @@ export const SupportMessageForm: React.FC<{
                 <Select
                   {...register('addExisting')}
                   className="w-full"
-                  size="md"
+                  size="sm"
                   placeholder="Välj bilaga"
                   onChange={(r) => {
                     setValue('addExisting', r.currentTarget.value);
@@ -716,7 +713,7 @@ export const SupportMessageForm: React.FC<{
                 <Button
                   type="button"
                   variant="primary"
-                  size="md"
+                  size="sm"
                   disabled={!addExisting}
                   color="primary"
                   onClick={(e) => {

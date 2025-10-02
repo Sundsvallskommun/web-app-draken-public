@@ -60,9 +60,9 @@ const Arende: React.FC = () => {
         </NextLink>
 
         {appConfig.isCaseData
-          ? errandId && <CasedataErrandComponent id={errandId} />
+          ? !!errandId && <CasedataErrandComponent id={errandId} />
           : appConfig.isSupportManagement
-          ? errandId && municipalityId && <SupportErrandComponent id={errandId} />
+          ? !!errandId && !!municipalityId && <SupportErrandComponent id={errandId} />
           : null}
       </Layout>
     </div>

@@ -301,8 +301,9 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                   <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
                     <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
                     <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
-                      Ange den person eller organisation som startade ärendet. Om du anger ett personnummer visas
-                      ärendet på deras Mina sidor.
+                      <p className="mt-0">
+                        Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
+                      </p>
                     </span>
                   </div>
                 )}

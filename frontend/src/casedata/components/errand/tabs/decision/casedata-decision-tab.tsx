@@ -187,7 +187,9 @@ export const CasedataDecisionTab: React.FC<{
             setExistingContract(res);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          setExistingContract(undefined);
+        });
     }
   }, [errand]);
 

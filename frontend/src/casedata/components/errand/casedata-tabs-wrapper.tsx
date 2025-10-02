@@ -228,7 +228,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     },
     {
       label: `Bilagor (${(errand?.attachments && errand?.attachments.length) || 0})`,
-      content: errand && <CasedataAttachments />,
+      content: errand && <CasedataAttachments key={`attachments-tab`} />,
       disabled: !errand?.id,
       visibleFor: errand?.id
         ? [

@@ -45,18 +45,23 @@ export const sanitizedInline: (unsafe: string) => string = (unsafe) => {
   return SanitizeHTML(unsafe.replace('</', ' </'), inlineConfig);
 };
 
-export function isHTML(str: string): boolean {
-  return /<\/?[a-z][\s\S]*>/i.test(str);
-}
+export const formatErrandDescription: (text: string) => string = (text) => {
+  return text?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
+};
 
-export function extractBody(html: string): string {
-  const match = html.match(/<body[^>]*>((.|[\n\r])*)<\/body>/im);
-  return match ? match[1] : html;
-}
-
-export function convertPlainTextToHTML(text: string): string {
-  const escaped = SanitizeHTML(text);
-  return escaped.replace(/\r?\n/g, '<br>');
-}
+export const formatMessage: (text: string) => string = (text) => {
+  return (
+    text
+      ?.replace(/\n/g, '<br>')
+      // Normalize both <br> and <br/>
+      .replace(/<br\s*\/?>/gi, '<br/>')
+      // Remove all <br/>s before the first non-<br/> tag/content
+      .replace(/^(<br\/>\s*)+/i, '')
+      // Remove all <br/>s after the last non-<br/> tag/content
+      .replace(/(<br\/>\s*)+$/i, '')
+      // Styling for links
+      .replace(/<a /gi, '<a class="text-vattjom-surface-primary underline hover:text-vattjom-surface-primary-hover" ')
+  );
+};
 
 export default sanitized;

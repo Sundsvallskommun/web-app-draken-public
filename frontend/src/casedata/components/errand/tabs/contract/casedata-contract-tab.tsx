@@ -244,7 +244,9 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
             contractForm.reset(res);
           }
         })
-        .catch(console.error)
+        .catch(() => {
+          setExistingContract(undefined);
+        })
         .finally(() => {
           contractForm.setValue('externalReferenceId', errand.id.toString());
         });

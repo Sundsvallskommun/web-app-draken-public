@@ -34,6 +34,104 @@ export enum MessageStatus {
   NO_CONTACT_WANTED = "NO_CONTACT_WANTED",
 }
 
+export interface Problem {
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  parameters?: Record<string, object>;
+  status?: StatusType;
+  title?: string;
+  detail?: string;
+}
+
+export interface StatusType {
+  /** @format int32 */
+  statusCode?: number;
+  reasonPhrase?: string;
+}
+
+/** Response model for a mailbox */
+export interface Mailbox {
+  /** partyId for the person the mailbox belongs to */
+  partyId?: string;
+  /** Name of the mailbox, e.g. Kivra */
+  supplier?: string;
+  /** If it's possible to send messages to this mailbox */
+  reachable?: boolean;
+}
+
+/** Attachment */
+export interface DigitalMailAttachment {
+  /** Content type */
+  contentType?: DigitalMailAttachmentContentTypeEnum;
+  /**
+   * Content (BASE64-encoded)
+   * @minLength 1
+   */
+  content: string;
+  /**
+   * Filename
+   * @minLength 1
+   */
+  filename: string;
+}
+
+/** Party */
+export interface DigitalMailParty {
+  /** @minItems 1 */
+  partyIds: string[];
+  /** External references */
+  externalReferences?: ExternalReference[];
+}
+
+export interface DigitalMailRequest {
+  /** Party */
+  party: DigitalMailParty;
+  /** Sender */
+  sender?: DigitalMailSender;
+  /** Subject */
+  subject?: string | null;
+  /**
+   * Department and unit that should be billed for the message
+   * @example "SBK(Gatuavdelningen, Trafiksektionen)"
+   */
+  department?: string | null;
+  /**
+   * Content type
+   * @minLength 1
+   */
+  contentType: DigitalMailRequestContentTypeEnum;
+  /**
+   * Body (plain text if contentType is set to 'text/plain', BASE64-encoded if contentType is set to 'application/html')
+   * @minLength 1
+   */
+  body: string;
+  /** Attachments */
+  attachments?: DigitalMailAttachment[];
+}
+
+/** Sender */
+export interface DigitalMailSender {
+  /** Support info */
+  supportInfo: DigitalMailSenderSupportInfo;
+}
+
+/** Support info */
+export interface DigitalMailSenderSupportInfo {
+  /**
+   * Text
+   * @minLength 1
+   */
+  text: string;
+  /** E-mail address */
+  emailAddress?: string;
+  /** Phone number */
+  phoneNumber?: string;
+  /** URL */
+  url?: string;
+}
+
 /** External references */
 export interface ExternalReference {
   /**
@@ -48,6 +146,41 @@ export interface ExternalReference {
    * @example "356t4r34f"
    */
   value: string;
+}
+
+/** Delivery result */
+export interface DeliveryResult {
+  /**
+   * The delivery id
+   * @format uuid
+   */
+  deliveryId?: string;
+  /** Message type */
+  messageType?: MessageType;
+  /** Status */
+  status?: MessageStatus;
+}
+
+/** Message batch result */
+export interface MessageBatchResult {
+  /**
+   * The batch id
+   * @format uuid
+   */
+  batchId?: string;
+  /** The individual message results */
+  messages?: MessageResult[];
+}
+
+/** Message result */
+export interface MessageResult {
+  /**
+   * The message id
+   * @format uuid
+   */
+  messageId?: string;
+  /** The message deliveries */
+  deliveries?: DeliveryResult[];
 }
 
 /** Attachment */
@@ -107,45 +240,99 @@ export interface WebMessageSender {
   userId?: string;
 }
 
-export interface Problem {
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
-}
-
-export interface StatusType {
-  /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
-}
-
-/** Delivery result */
-export interface DeliveryResult {
+/** Address */
+export interface Address {
   /**
-   * The delivery id
-   * @format uuid
+   * The first name of the recipient
+   * @example "John"
    */
-  deliveryId?: string;
-  /** Message type */
-  messageType?: MessageType;
-  /** Status */
-  status?: MessageStatus;
+  firstName?: string;
+  /**
+   * The last name of the recipient
+   * @example "Doe"
+   */
+  lastName?: string;
+  /**
+   * The address
+   * @example "Main Street 1"
+   */
+  address?: string;
+  /**
+   * The apartment number
+   * @example "1101"
+   */
+  apartmentNumber?: string;
+  /**
+   * The care of
+   * @example "c/o John Doe"
+   */
+  careOf?: string;
+  /**
+   * The zip code
+   * @example "12345"
+   */
+  zipCode?: string;
+  /**
+   * The city
+   * @example "Main Street"
+   */
+  city?: string;
+  /**
+   * The country
+   * @example "Sweden"
+   */
+  country?: string;
 }
 
-/** Message result */
-export interface MessageResult {
+/** Attachment */
+export interface SnailmailAttachment {
   /**
-   * The message id
-   * @format uuid
+   * The attachment filename
+   * @minLength 1
+   * @example "test.txt"
    */
-  messageId?: string;
-  /** The message deliveries */
-  deliveries?: DeliveryResult[];
+  filename: string;
+  /**
+   * The attachment content type
+   * @example "text/plain"
+   */
+  contentType?: string;
+  /**
+   * The attachment (file) content as a BASE64-encoded string
+   * @example "aGVsbG8gd29ybGQK"
+   */
+  content: string;
+}
+
+/** Party */
+export interface SnailmailParty {
+  /**
+   * The message party id
+   * @example "f427952b-247c-4d3b-b081-675a467b3619"
+   */
+  partyId?: string;
+  /** External references */
+  externalReferences?: ExternalReference[];
+}
+
+export interface SnailmailRequest {
+  /** Party */
+  party?: SnailmailParty;
+  /** Address */
+  address?: Address;
+  /**
+   * Department and unit that should be billed
+   * @minLength 1
+   * @example "SBK(Gatuavdelningen, Trafiksektionen)"
+   */
+  department: string;
+  /**
+   * If the letter to send deviates from the standard
+   * @example "A3 Ritning"
+   */
+  deviation?: string;
+  /** @minItems 1 */
+  attachments?: SnailmailAttachment[];
 }
 
 export interface SmsRequest {
@@ -221,17 +408,6 @@ export interface SmsBatchRequestParty {
   partyId?: string;
   /** Mobile number, which should start with +467x */
   mobileNumber: string;
-}
-
-/** Message batch result */
-export interface MessageBatchResult {
-  /**
-   * The batch id
-   * @format uuid
-   */
-  batchId?: string;
-  /** The individual message results */
-  messages?: MessageResult[];
 }
 
 export interface SlackRequest {
@@ -326,50 +502,6 @@ export interface Sms {
    * @example "sender"
    */
   name: string;
-}
-
-/** Addresses that gets a letter copy */
-export interface Address {
-  /**
-   * The first name of the recipient
-   * @example "John"
-   */
-  firstName?: string;
-  /**
-   * The last name of the recipient
-   * @example "Doe"
-   */
-  lastName?: string;
-  /**
-   * The address
-   * @example "Main Street 1"
-   */
-  address?: string;
-  /**
-   * The apartment number
-   * @example "1101"
-   */
-  apartmentNumber?: string;
-  /**
-   * The care of
-   * @example "c/o John Doe"
-   */
-  careOf?: string;
-  /**
-   * The zip code
-   * @example "12345"
-   */
-  zipCode?: string;
-  /**
-   * The city
-   * @example "Main Street"
-   */
-  city?: string;
-  /**
-   * The country
-   * @example "Sweden"
-   */
-  country?: string;
 }
 
 /** Attachment */
@@ -555,77 +687,6 @@ export interface Party {
    * @example "someone@somewhere.com"
    */
   emailAddress: string;
-}
-
-/** Attachment */
-export interface DigitalMailAttachment {
-  /** Content type */
-  contentType?: DigitalMailAttachmentContentTypeEnum;
-  /**
-   * Content (BASE64-encoded)
-   * @minLength 1
-   */
-  content: string;
-  /**
-   * Filename
-   * @minLength 1
-   */
-  filename: string;
-}
-
-/** Party */
-export interface DigitalMailParty {
-  /** @minItems 1 */
-  partyIds: string[];
-  /** External references */
-  externalReferences?: ExternalReference[];
-}
-
-export interface DigitalMailRequest {
-  /** Party */
-  party: DigitalMailParty;
-  /** Sender */
-  sender?: DigitalMailSender;
-  /** Subject */
-  subject?: string | null;
-  /**
-   * Department and unit that should be billed for the message
-   * @example "SBK(Gatuavdelningen, Trafiksektionen)"
-   */
-  department?: string | null;
-  /**
-   * Content type
-   * @minLength 1
-   */
-  contentType: DigitalMailRequestContentTypeEnum;
-  /**
-   * Body (plain text if contentType is set to 'text/plain', BASE64-encoded if contentType is set to 'application/html')
-   * @minLength 1
-   */
-  body: string;
-  /** Attachments */
-  attachments?: DigitalMailAttachment[];
-}
-
-/** Sender */
-export interface DigitalMailSender {
-  /** Support info */
-  supportInfo: DigitalMailSenderSupportInfo;
-}
-
-/** Support info */
-export interface DigitalMailSenderSupportInfo {
-  /**
-   * Text
-   * @minLength 1
-   */
-  text: string;
-  /** E-mail address */
-  emailAddress?: string;
-  /** Phone number */
-  phoneNumber?: string;
-  /** URL */
-  url?: string;
 }
 
 /** Invoice details */
@@ -842,7 +903,7 @@ export interface PagingMetaData {
 
 /** Recipient model */
 export interface Recipient {
-  /** Addresses that gets a letter copy */
+  /** Address */
   address?: Address;
   /**
    * The person identifier
@@ -1016,6 +1077,20 @@ export interface HistoryResponse {
   timestamp?: string;
 }
 
+/** Content type */
+export enum DigitalMailAttachmentContentTypeEnum {
+  ApplicationPdf = "application/pdf",
+}
+
+/**
+ * Content type
+ * @minLength 1
+ */
+export enum DigitalMailRequestContentTypeEnum {
+  TextPlain = "text/plain",
+  TextHtml = "text/html",
+}
+
 /**
  * Determines if the message should be added to the internal or external OeP instance
  * @example "INTERNAL"
@@ -1054,20 +1129,6 @@ export enum LetterAttachmentContentTypeEnum {
 
 /** Content type */
 export enum LetterRequestContentTypeEnum {
-  TextPlain = "text/plain",
-  TextHtml = "text/html",
-}
-
-/** Content type */
-export enum DigitalMailAttachmentContentTypeEnum {
-  ApplicationPdf = "application/pdf",
-}
-
-/**
- * Content type
- * @minLength 1
- */
-export enum DigitalMailRequestContentTypeEnum {
   TextPlain = "text/plain",
   TextHtml = "text/html",
 }

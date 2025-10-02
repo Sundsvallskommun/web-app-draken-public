@@ -55,6 +55,7 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   'msg',
   'heic',
   'heif',
+  '',
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];
@@ -244,19 +245,17 @@ export const sendAttachments = (
 
     const obj: Attachment = {
       category: attachment.meta.category,
-      name: `${fileItem.name}`,
+      name: `${attachment.meta.name}.${attachment.meta.ending}`,
       note: '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
       file: '',
     };
 
-    const attachmentName = attachment.meta.name + '.' + attachment.meta.ending;
-
     const formData = new FormData();
     formData.append('files', fileItem, fileItem.name);
     formData.append('category', obj.category);
-    formData.append('name', attachmentName);
+    formData.append('name', obj.name);
     formData.append('note', obj.note);
     formData.append('extension', obj.extension || '');
     formData.append('mimeType', obj.mimeType);

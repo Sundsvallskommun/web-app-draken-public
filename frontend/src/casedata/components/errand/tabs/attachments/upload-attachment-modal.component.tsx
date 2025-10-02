@@ -1,9 +1,13 @@
 import { MEXAllAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
-import { ACCEPTED_UPLOAD_FILETYPES, sendAttachments } from '@casedata/services/casedata-attachment-service';
+import {
+  ACCEPTED_UPLOAD_FILETYPES,
+  MAX_FILE_SIZE_MB,
+  sendAttachments,
+} from '@casedata/services/casedata-attachment-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { isMEX } from '@common/services/application-service';
-import { Button, FileUpload, FormErrorMessage, Modal, UploadFile, useSnackbar } from '@sk-web-gui/react';
+import { Button, FileUpload, FormErrorMessage, Modal, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CasedataAttachmentFormModel } from './casedata-attachments.component';
@@ -104,7 +108,7 @@ export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
               accept={ACCEPTED_UPLOAD_FILETYPES}
               variant="horizontal"
               name="newFiles"
-              maxFileSizeMB={50}
+              maxFileSizeMB={MAX_FILE_SIZE_MB}
             />
           )}
         </div>

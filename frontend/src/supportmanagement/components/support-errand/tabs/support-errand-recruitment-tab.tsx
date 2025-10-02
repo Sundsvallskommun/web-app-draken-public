@@ -89,7 +89,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                         value={val.displayName}
                         hidden
                       />
-                      <FormLabel className="pb-16" {...recruitmentForm.register(`${key}.${index}.values.0`)}>
+                      <FormLabel className="block pb-16" {...recruitmentForm.register(`${key}.${index}.values.0`)}>
                         {val.group}
                       </FormLabel>
                       <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
@@ -102,7 +102,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                               e.currentTarget.checked === true ? 'true' : 'false'
                             );
                           }}
-                          className="block py-16"
+                          className="mb-16"
                         >
                           {val.values[0]}
                         </Checkbox>
