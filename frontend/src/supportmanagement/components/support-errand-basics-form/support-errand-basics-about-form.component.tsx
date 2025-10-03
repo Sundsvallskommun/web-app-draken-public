@@ -1,7 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
-import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
@@ -17,14 +16,14 @@ import {
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
   registeringNewErrand?: boolean;
-  formControls: any;
 }> = (props) => {
   const {
     supportMetadata,
@@ -38,14 +37,12 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   const { t } = useTranslation();
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();
-  const [richText, setRichText] = useState<string>('');
-
   const [causeDescriptionIsOpen, setCauseDescriptionIsOpen] = useState(
     supportErrand.contactReasonDescription !== undefined
   );
   const [typesList, setTypesList] = useState<SupportType[]>();
 
-  const quillRef = useRef(null);
+  const formControls: UseFormReturn<SupportErrand> = useFormContext();
 
   const {
     register,
@@ -54,7 +51,9 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     getValues,
     trigger,
     formState: { errors },
-  } = props.formControls;
+  } = formControls;
+
+  const { description, category } = watch();
 
   useEffect(() => {
     if (supportMetadata) {
@@ -69,23 +68,10 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   }, [supportMetadata]);
 
   useEffect(() => {
-    setRichText(getValues()?.description);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const { category, businessRelated } = watch();
-
-  useEffect(() => {
     setTypesList(categoriesList?.find((c) => c.name === category)?.types || []);
   }, [category, categoriesList]);
 
   const checked = document.querySelector('#causecheckbox:checked') !== null;
-
-  const onRichTextChange = (delta, oldDelta, source) => {
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
-      shouldDirty: true,
-    });
-  };
 
   return (
     <>
@@ -180,17 +166,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       {appConfig.features.useBusinessCase ? (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
-            <Checkbox
-              disabled={isSupportErrandLocked(supportErrand)}
-              {...register('businessRelated')}
-              checked={businessRelated ? true : false}
-              onChange={() => {
-                businessRelated === 'true' || businessRelated
-                  ? setValue('businessRelated', false, { shouldDirty: true })
-                  : setValue('businessRelated', true, { shouldDirty: true });
-                trigger('businessRelated');
-              }}
-            >
+            <Checkbox disabled={isSupportErrandLocked(supportErrand)} {...register('businessRelated')}>
               Företagsärende
             </Checkbox>
           </FormControl>
@@ -204,12 +180,8 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             className="w-full h-[15rem] case-description-editor"
             readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
             disableToolbar
-            key={richText}
-            ref={quillRef}
-            defaultValue={richText}
-            onTextChange={(delta, oldDelta, source) => {
-              return onRichTextChange(delta, oldDelta, source);
-            }}
+            onChange={(e) => setValue('description', e.target.value.markup, { shouldDirty: true })}
+            value={{ markup: description }}
           />
         </FormControl>
       </div>
