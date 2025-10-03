@@ -1776,10 +1776,10 @@
     "@sk-web-gui/divider" "1.1.6"
     "@sk-web-gui/utils" "2.2.2"
 
-"@sk-web-gui/text-editor@2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@sk-web-gui/text-editor/-/text-editor-2.0.1.tgz#6c08a21e37ea742d6b76349e9e0b6388e6f940a5"
-  integrity sha512-bxpOthsPaNa8/MEZ1K0uNt28K1jQtTYkqVI0l70M3iOETkv/Fl6utkRW6T27b8YTn2r/Fkig7rvgYDyDs5SWdQ==
+"@sk-web-gui/text-editor@2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@sk-web-gui/text-editor/-/text-editor-2.0.2.tgz#284ca2a2383b02ee7a99895223739cbb6c8dbf2f"
+  integrity sha512-QuYjLO0N4P3Pq5HXRsIzl7XUH02K4nA7+0oW5OWHWE3N6Ys67HgYUf7r+f7d9/PLCU+A9OUWESXFk14/og39IA==
   dependencies:
     "@sk-web-gui/tooltip" "1.1.2"
     "@sk-web-gui/utils" "2.2.2"
