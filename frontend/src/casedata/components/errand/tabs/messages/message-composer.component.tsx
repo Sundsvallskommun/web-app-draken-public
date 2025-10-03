@@ -28,6 +28,7 @@ import {
 } from '@common/services/helper-service';
 import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -495,9 +496,7 @@ export const MessageComposer: React.FC<{
                     E-tjänst Intern
                   </RadioButton>
                 )}
-                {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
-
-                {/* {appConfig.features.useMyPages &&
+                {appConfig.features.useMyPages &&
                   !!getOwnerStakeholder(errand)?.personalNumber &&
                   !errand.externalCaseId && (
                     <RadioButton
@@ -512,7 +511,7 @@ export const MessageComposer: React.FC<{
                     >
                       Mina sidor
                     </RadioButton>
-                  )} */}
+                  )}
               </RadioButton.Group>
             </fieldset>
           ) : null}
