@@ -65,7 +65,7 @@
     "@sk-web-gui/core": "4.1.0",
     "@sk-web-gui/react": "3.0.3",
     "@sk-web-gui/lucide-icon": "^1.1.3",
-    "@sk-web-gui/text-editor": "2.0.1",
+    "@sk-web-gui/text-editor": "2.0.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.10",
     "axios": "^1.11.0",
