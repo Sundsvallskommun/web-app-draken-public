@@ -111,7 +111,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
     resolver: yupResolver(yupForwardForm) as any,
     defaultValues: {
-      recipient: isKA() ? 'EMAIL' : '',
+      recipient: '',
       emails: [],
       department: 'MEX',
       message: '',
@@ -240,6 +240,13 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                     </RadioButton.Group>
                   </FormControl>
                 </>
+              )}
+              {/* Temporary fix for KA 
+              TODO: Fix me */}
+              {isKA() && (
+                <RadioButton value="EMAIL" {...register('recipient')}>
+                  E-post
+                </RadioButton>
               )}
               {recipient === 'EMAIL' ? (
                 <FormControl id="email" className="w-full mb-md">
