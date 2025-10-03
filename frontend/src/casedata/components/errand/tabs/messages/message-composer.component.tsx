@@ -482,36 +482,20 @@ export const MessageComposer: React.FC<{
                 >
                   SMS
                 </RadioButton>
-                {!!errand.externalCaseId && (
+                {appConfig.features.useMyPages && !!getOwnerStakeholder(errand)?.personalNumber && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
-                    data-cy="useWebMessage-radiobutton-true"
+                    data-cy="useMinaSidor-radiobutton-true"
                     className="mr-sm"
-                    name="useWebMessage"
-                    id="useWebMessage"
-                    value={'webmessage'}
+                    name="useMinaSidor"
+                    id="useMinaSidor"
+                    value={'minasidor'}
                     defaultChecked={!!errand.externalCaseId}
                     {...register('contactMeans')}
                   >
-                    E-tjänst Intern
+                    Mina sidor
                   </RadioButton>
                 )}
-                {appConfig.features.useMyPages &&
-                  !!getOwnerStakeholder(errand)?.personalNumber &&
-                  !errand.externalCaseId && (
-                    <RadioButton
-                      tabIndex={props.show ? 0 : -1}
-                      data-cy="useMinaSidor-radiobutton-true"
-                      className="mr-sm"
-                      name="useMinaSidor"
-                      id="useMinaSidor"
-                      value={'minasidor'}
-                      defaultChecked={!!errand.externalCaseId}
-                      {...register('contactMeans')}
-                    >
-                      Mina sidor
-                    </RadioButton>
-                  )}
               </RadioButton.Group>
             </fieldset>
           ) : null}
