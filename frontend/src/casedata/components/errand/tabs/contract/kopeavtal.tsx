@@ -39,48 +39,30 @@ export const KopeAvtal: React.FC<{
 
   const [showOverlatelse, setShowOverlatelse] = useState(false);
   const [editOverlatelse, setEditOverlatelse] = useState(false);
-  const quillRefOverlatelse = useRef(null);
-  const [overlatelseforklaring, setOverlatelseforklaring] = useState<string>('');
 
   const [showKopeskilling, setShowKopeskilling] = useState(false);
   const [editKopeskilling, setEditKopeskilling] = useState(false);
-  const quillRefKopeskilling = useRef(null);
-  const [kopeskilling, setKopeskilling] = useState<string>('');
 
   const [showTilltrade, setShowTilltrade] = useState(false);
   const [editTilltrade, setEditTilltrade] = useState(false);
-  const quillRefTilltrade = useRef(null);
-  const [tilltrade, setTilltrade] = useState<string>('');
 
   const [showMarkfororeningar, setShowMarkfororeningar] = useState(false);
   const [editMarkfororeningar, setEditMarkfororeningar] = useState(false);
-  const quillRefMarkfororeningar = useRef(null);
-  const [markfororeningar, setMarkfororeningar] = useState<string>('');
 
   const [showSkog, setShowSkog] = useState(false);
   const [editSkog, setEditSkog] = useState(false);
-  const quillRefSkog = useRef(null);
-  const [skog, setSkog] = useState<string>('');
 
   const [showForpliktelser, setShowForpliktelser] = useState(false);
   const [editForpliktelser, setEditForpliktelser] = useState(false);
-  const quillRefForpliktelser = useRef(null);
-  const [forpliktelser, setForpliktelser] = useState<string>('');
 
   const [showUtgifter, setShowUtgifter] = useState(false);
   const [editUtgifter, setEditUtgifter] = useState(false);
-  const quillRefUtgifter = useRef(null);
-  const [utgifter, setUtgifter] = useState<string>('');
 
   const [showFastighetsbildning, setShowFastighetsbildning] = useState(false);
   const [editFastighetsbildning, setEditFastighetsbildning] = useState(false);
-  const quillRefFastighetsbildning = useRef(null);
-  const [fastighetsbildning, setFastighetsbildning] = useState<string>('');
 
   const [showOther, setShowOther] = useState(false);
   const [editOther, setEditOther] = useState(false);
-  const quillRefOther = useRef(null);
-  const [other, setOther] = useState<string>('');
 
   const [showSignature, setShowSignature] = useState(false);
   const [signature, setSignature] = useState<string>('');
@@ -155,50 +137,17 @@ export const KopeAvtal: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
-  useEffect(() => {
-    setOverlatelseforklaring(watch().overlatelseforklaring);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().overlatelseforklaring]);
-
-  useEffect(() => {
-    setKopeskilling(watch().kopeskilling);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().kopeskilling]);
-
-  useEffect(() => {
-    setTilltrade(watch().tilltrade);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().tilltrade]);
-
-  useEffect(() => {
-    setMarkfororeningar(watch().markfororeningar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().markfororeningar]);
-
-  useEffect(() => {
-    setSkog(watch().skog);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().skog]);
-
-  useEffect(() => {
-    setForpliktelser(watch().forpliktelser);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().forpliktelser]);
-
-  useEffect(() => {
-    setUtgifter(watch().utgifter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().utgifter]);
-
-  useEffect(() => {
-    setFastighetsbildning(watch().fastighetsbildning);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().fastighetsbildning]);
-
-  useEffect(() => {
-    setOther(watch().other);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().other]);
+  const {
+    overlatelseforklaring,
+    kopeskilling,
+    tilltrade,
+    markfororeningar,
+    skog,
+    forpliktelser,
+    utgifter,
+    fastighetsbildning,
+    other,
+  } = watch();
 
   useEffect(() => {
     setSignature(watch().signature);
@@ -560,11 +509,7 @@ Referenser till hur området skrafferat och märkt i bilagan/or: ${
 Ska byggnader belägna på området ingå i överlåtelsen? ${
                     getValues().overlatelseforklaringTerms.includeBuildingsInArea === 'true' ? 'Ja' : 'Nej'
                   }`;
-                  const delta = quillRefOverlatelse.current.clipboard.convert({ html: content });
-                  quillRefOverlatelse.current.setContents(delta, 'silent');
-                  const semanticText = quillRefOverlatelse.current.getSemanticHTML();
-                  setOverlatelseforklaring(semanticText);
-                  setValue('overlatelseforklaring', semanticText);
+                  setValue('overlatelseforklaring', content);
                   setShowOverlatelse(false);
                 }}
               >
@@ -582,9 +527,7 @@ Ska byggnader belägna på området ingå i överlåtelsen? ${
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setOverlatelseforklaring}
                 readOnly={!editOverlatelse}
-                editorRef={quillRefOverlatelse}
               />
             </div>
           </FormControl>
@@ -711,11 +654,8 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
 <br /><br /><p>${getValues().kopeskillingTerms.condition?.conditionText || '(saknas)'}</p>
                     
                     `;
-                  const delta = quillRefKopeskilling.current.clipboard.convert({ html: content });
-                  quillRefKopeskilling.current.setContents(delta, 'silent');
-                  const semanticText = quillRefKopeskilling.current.getSemanticHTML();
-                  setKopeskilling(semanticText);
-                  setValue('kopeskilling', semanticText);
+
+                  setValue('kopeskilling', content);
                   setShowKopeskilling(false);
                 }}
               >
@@ -732,9 +672,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setKopeskilling}
                 readOnly={!editKopeskilling}
-                editorRef={quillRefKopeskilling}
               />
             </div>
           </FormControl>
@@ -829,11 +767,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       ? 'på datum: ' + getValues().tilltradeTerms?.accessDate
                       : 'när köpeskillingen erlagts'
                   }</p>`;
-                  const delta = quillRefTilltrade.current.clipboard.convert({ html: content });
-                  quillRefTilltrade.current.setContents(delta, 'silent');
-                  const semanticText = quillRefTilltrade.current.getSemanticHTML();
-                  setTilltrade(semanticText);
-                  setValue('tilltrade', semanticText);
+                  setValue('tilltrade', content);
                   setShowTilltrade(false);
                 }}
               >
@@ -850,9 +784,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setTilltrade}
                 readOnly={!editTilltrade}
-                editorRef={quillRefTilltrade}
               />
             </div>
           </FormControl>
@@ -972,11 +904,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                   }
                   `;
 
-                  const delta = quillRefMarkfororeningar.current.clipboard.convert({ html: content });
-                  quillRefMarkfororeningar.current.setContents(delta, 'silent');
-                  const semanticText = quillRefMarkfororeningar.current.getSemanticHTML();
-                  setMarkfororeningar(semanticText);
-                  setValue('markfororeningar', semanticText);
+                  setValue('markfororeningar', content);
                   setShowMarkfororeningar(false);
                 }}
               >
@@ -993,9 +921,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setMarkfororeningar}
                 readOnly={!editMarkfororeningar}
-                editorRef={quillRefMarkfororeningar}
               />
             </div>
           </FormControl>
@@ -1118,11 +1044,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  const delta = quillRefSkog.current.clipboard.convert({ html: content });
-                  quillRefSkog.current.setContents(delta, 'silent');
-                  const semanticText = quillRefSkog.current.getSemanticHTML();
-                  setSkog(semanticText);
-                  setValue('skog', semanticText);
+                  setValue('skog', content);
                   setShowSkog(false);
                 }}
               >
@@ -1139,9 +1061,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setSkog}
                 readOnly={!editSkog}
-                editorRef={quillRefSkog}
               />
             </div>
           </FormControl>
@@ -1237,11 +1157,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  const delta = quillRefForpliktelser.current.clipboard.convert({ html: content });
-                  quillRefForpliktelser.current.setContents(delta, 'silent');
-                  const semanticText = quillRefForpliktelser.current.getSemanticHTML();
-                  setForpliktelser(semanticText);
-                  setValue('forpliktelser', semanticText);
+                  setValue('forpliktelser', content);
                   setShowForpliktelser(false);
                 }}
               >
@@ -1258,9 +1174,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setForpliktelser}
                 readOnly={!editForpliktelser}
-                editorRef={quillRefForpliktelser}
               />
             </div>
           </FormControl>
@@ -1373,11 +1287,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                       : ''
                   }`;
 
-                  const delta = quillRefUtgifter.current.clipboard.convert({ html: content });
-                  quillRefUtgifter.current.setContents(delta, 'silent');
-                  const semanticText = quillRefUtgifter.current.getSemanticHTML();
-                  setUtgifter(semanticText);
-                  setValue('utgifter', semanticText);
+                  setValue('utgifter', content);
                   setShowUtgifter(false);
                 }}
               >
@@ -1394,9 +1304,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setUtgifter}
                 readOnly={!editUtgifter}
-                editorRef={quillRefUtgifter}
               />
             </div>
           </FormControl>
@@ -1501,11 +1409,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                                     }</p><br />`
                                   : ''
                               }`;
-                  const delta = quillRefFastighetsbildning.current.clipboard.convert({ html: content });
-                  quillRefFastighetsbildning.current.setContents(delta, 'silent');
-                  const semanticText = quillRefFastighetsbildning.current.getSemanticHTML();
-                  setFastighetsbildning(semanticText);
-                  setValue('fastighetsbildning', semanticText);
+                  setValue('fastighetsbildning', content);
                   setShowFastighetsbildning(false);
                 }}
               >
@@ -1522,9 +1426,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setFastighetsbildning}
                 readOnly={!editFastighetsbildning}
-                editorRef={quillRefFastighetsbildning}
               />
             </div>
           </FormControl>
@@ -1643,11 +1545,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                         }</p><br />`
                       : ''
                   }`;
-                  const delta = quillRefOther.current.clipboard.convert({ html: content });
-                  quillRefOther.current.setContents(delta, 'silent');
-                  const semanticText = quillRefOther.current.getSemanticHTML();
-                  setOther(semanticText);
-                  setValue('other', semanticText);
+                  setValue('other', content);
                   setShowOther(false);
                 }}
               >
@@ -1664,9 +1562,7 @@ Villkor för köpeskilling: <strong>${getValues().kopeskillingTerms.condition?.h
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setOther}
                 readOnly={!editOther}
-                editorRef={quillRefOther}
               />
             </div>
           </FormControl>

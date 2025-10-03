@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FormControl, FormLabel, Select, Combobox, RadioButton, Checkbox, DatePicker, Button } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import dynamic from 'next/dynamic';
@@ -26,7 +26,6 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
   const [searchValueAddons, setSearchValueAddons] = useState('');
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const quillRef = useRef(null);
 
   useEffect(() => {
     if (initialService) {
@@ -252,14 +251,10 @@ export const CasedataServiceForm: React.FC<Props> = ({ initialService, onSubmit,
       <div className="mt-24 h-[19rem]">
         <TextEditor
           className="mb-md h-[80%]"
-          ref={quillRef}
-          defaultValue={serviceText}
-          onTextChange={(_delta, _oldDelta, source) => {
-            if (quillRef.current) {
-              const html = quillRef.current.root.innerHTML;
-              setServiceText(html);
-            }
+          onChange={(e) => {
+            setServiceText(e.target.value.markup);
           }}
+          value={{ markup: serviceText }}
         />
       </div>
       <div className="mt-24 pt-24">
