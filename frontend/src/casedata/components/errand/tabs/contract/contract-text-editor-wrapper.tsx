@@ -8,33 +8,33 @@ const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false
 import { cx } from '@sk-web-gui/react';
 
 export interface ContractTextEditorWrapperProps {
-  editorRef: MutableRefObject<any>;
   readOnly: boolean;
   val: string;
   label: string;
   setDirty: (dirty: boolean) => void;
   setValue: (label: string, value: string) => void;
   trigger: UseFormTrigger<any>;
-  setState: (state: any) => void;
+  setState?: (state: any) => void;
 }
 
 export const ContractTextEditorWrapper: React.FC<ContractTextEditorWrapperProps> = (props) => {
-  const { editorRef, readOnly, val, label, setDirty, setValue, trigger, setState } = props;
+  const { readOnly, val, label, setDirty, setValue, trigger, setState } = props;
   return (
     <TextEditor
       className={cx(`mb-md h-[80%]`)}
-      ref={editorRef}
       readOnly={readOnly}
-      defaultValue={val}
+      value={{ markup: val }}
+      onChange={(e) => {
+        setValue(label, e.target.value.markup);
+        trigger(label);
+        if (setState) {
+          setState(e.target.value.markup);
+        }
+      }}
       onTextChange={(delta, oldDelta, source) => {
         if (source === 'user') {
           setDirty(true);
         }
-        const text = editorRef.current.getSemanticHTML();
-        setState(text);
-        setValue(label, sanitized((delta.ops[0].retain as any) > 1 ? editorRef.current.getSemanticHTML() : undefined));
-        trigger(label);
-        return;
       }}
     />
   );

@@ -15,7 +15,9 @@ export const getEscalationMessage: (
   const tenant: TenantKey = isKA() ? TenantKey.Ange : TenantKey.Sundsvall;
   return version === 'EMAIL'
     ? buildEscalationEmailContent(e as SupportErrand, user, tenant)
-    : buildEscalationTextContent(e as SupportErrand, user, tenant);
+    : version === 'DEPARTMENT'
+    ? buildEscalationTextContent(e as SupportErrand, user, tenant)
+    : ' ';
 };
 
 export const getEscalationEmails: (

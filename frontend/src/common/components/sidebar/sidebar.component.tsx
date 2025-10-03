@@ -4,7 +4,6 @@ import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, useGui } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
@@ -142,24 +141,7 @@ export const Sidebar: React.FC<{
         </div>
       </div>
       <div className={cx(`overflow-x-hidden overflow-y-auto`, open ? 'w-full px-20' : 'w-0 px-0')}>
-        <div className="h-fit w-full py-32">
-          {buttons.find((b) => b.key === selected)?.component || <></>}
-          {/* {selected === 'info' ? (
-            <SidebarInfo />
-          ) : selected === 'notes' ? (
-            <SidebarNotes />
-          ) : selected === 'comments' ? (
-            <SidebarComments />
-          ) : selected === 'guides' ? (
-            <SidebarGuide />
-          ) : selected === 'investigation' ? (
-            <SidebarUtredning />
-          ) : selected === 'history' ? (
-            <SidebarHistory />
-          ) : (
-            <></>
-          )} */}
-        </div>
+        <div className="h-fit w-full py-32">{buttons.find((b) => b.key === selected)?.component || <></>}</div>
       </div>
     </aside>
   );

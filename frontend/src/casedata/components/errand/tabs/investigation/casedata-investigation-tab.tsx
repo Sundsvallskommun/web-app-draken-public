@@ -81,7 +81,6 @@ export const CasedataInvestigationTab: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [previewError, setPreviewError] = useState(false);
-  const [richText, setRichText] = useState<string>('');
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [firstDescriptionChange, setFirstDescriptionChange] = useState(true);
   const [firstOutcomeChange, setFirstOutcomeChange] = useState(true);
@@ -95,11 +94,10 @@ export const CasedataInvestigationTab: React.FC<{
     title: 'Återställ mall',
     content: 'Vill du återställa den här mallen?',
   };
-  const quillRef = useRef(null);
 
   useEffect(() => {
     if (isFTErrand(props.errand)) {
-      setRichText(FT_INVESTIGATION_TEXT);
+      setValue('description', FT_INVESTIGATION_TEXT);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -126,8 +124,7 @@ export const CasedataInvestigationTab: React.FC<{
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
-  const description = watch().description;
-  const outcome = watch().outcome;
+  const { description, outcome } = watch();
   const saveCasedataErrand = useSaveCasedataErrand();
   const save = async (data: UtredningFormModel) => {
     try {
@@ -192,7 +189,7 @@ export const CasedataInvestigationTab: React.FC<{
 
   const outcomeModalCallback = async (outcome) => {
     const { phrases } = await getUtredningPhrases(props.errand, outcome as DecisionOutcome);
-    setRichText(phrases);
+    setValue('description', phrases);
     setTextIsDirty(true);
     props.setUnsaved(true);
   };
@@ -220,14 +217,9 @@ export const CasedataInvestigationTab: React.FC<{
     }
   };
 
-  const onRichTextChange = (delta) => {
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
-    trigger('description');
-  };
-
   const appendPhrases = async () => {
     const { phrases } = await getUtredningPhrases(props.errand, 'REJECTION');
-    setRichText(phrases);
+    setValue('description', phrases);
     setPhrasesAppended(true);
   };
 
@@ -247,7 +239,6 @@ export const CasedataInvestigationTab: React.FC<{
       }
       if (decision.decisionType === 'PROPOSED' || decision?.decisionOutcome === 'APPROVAL') {
         setValue('description', decision.description);
-        setRichText((_) => decision?.description);
       } else if (
         !phrasesAppended &&
         decision?.decisionType === 'RECOMMENDED' &&
@@ -418,15 +409,11 @@ export const CasedataInvestigationTab: React.FC<{
             <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
               <TextEditor
                 className={cx(`mb-md h-[80%]`)}
-                key={richText}
-                ref={quillRef}
-                defaultValue={richText}
-                onTextChange={(delta, oldDelta, source) => {
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(delta);
+                onChange={(e) => {
+                  setValue('description', e.target.value.markup);
+                  trigger('description');
                 }}
+                value={{ markup: description }}
               />
             </div>
             <div className="my-sm">

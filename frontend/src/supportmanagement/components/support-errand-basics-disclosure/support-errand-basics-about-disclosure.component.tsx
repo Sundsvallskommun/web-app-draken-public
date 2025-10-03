@@ -36,7 +36,7 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   useEffect(() => {});
   return (
     <Disclosure variant="alt" header="Om ärendet" icon={<LucideIcon name="info" />} initalOpen={true}>
-      <SupportErrandBasicsAboutForm supportErrand={supportErrand} formControls={formControls} />
+      <SupportErrandBasicsAboutForm supportErrand={supportErrand} />
     </Disclosure>
   );
 };
