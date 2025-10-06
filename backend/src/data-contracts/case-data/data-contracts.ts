@@ -270,14 +270,14 @@ export interface Stakeholder {
 }
 
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
 }
 
 export interface StatusType {
@@ -305,10 +305,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -341,14 +341,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -631,6 +631,19 @@ export interface Law {
    * @example "1"
    */
   article?: string;
+}
+
+export interface CaseType {
+  /**
+   * The case type
+   * @example "PARATRANSIT"
+   */
+  type?: string;
+  /**
+   * The display name of the case type
+   * @example "Färdtjänst"
+   */
+  displayName?: string;
 }
 
 export interface Errand {
@@ -1248,6 +1261,11 @@ export interface Message {
   content: string;
   readBy?: ReadBy[];
   attachments?: ConversationAttachment[];
+  /**
+   * Type of message (user or system created)
+   * @example "USER_CREATED"
+   */
+  type?: MessageTypeEnum;
 }
 
 /** Readby model */
@@ -1435,10 +1453,12 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1446,8 +1466,6 @@ export interface PageErrand {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   empty?: boolean;
@@ -1650,10 +1668,12 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
+  first?: boolean;
+  last?: boolean;
   pageable?: PageableObject;
   /** @format int32 */
   size?: number;
@@ -1661,8 +1681,6 @@ export interface PageMessage {
   /** @format int32 */
   number?: number;
   sort?: SortObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   empty?: boolean;
@@ -1749,6 +1767,15 @@ export enum ErrandPriorityEnum {
 export enum MessageRequestDirectionEnum {
   INBOUND = "INBOUND",
   OUTBOUND = "OUTBOUND",
+}
+
+/**
+ * Type of message (user or system created)
+ * @example "USER_CREATED"
+ */
+export enum MessageTypeEnum {
+  USER_CREATED = "USER_CREATED",
+  SYSTEM_CREATED = "SYSTEM_CREATED",
 }
 
 /**

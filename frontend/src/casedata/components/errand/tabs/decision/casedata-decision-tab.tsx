@@ -187,10 +187,7 @@ export const CasedataDecisionTab: React.FC<{
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
-  const description = watch().description;
-  const outcome = watch().outcome as DecisionOutcome;
-  const validFrom = watch().validFrom;
-  const validTo = watch().validTo;
+  const { description, descriptionPlaintext, outcome, validFrom, validTo } = watch();
 
   useEffect(() => {
     if (errand) {
@@ -200,7 +197,9 @@ export const CasedataDecisionTab: React.FC<{
             setExistingContract(res);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          setExistingContract(undefined);
+        });
     }
   }, [errand]);
 
@@ -657,15 +656,14 @@ export const CasedataDecisionTab: React.FC<{
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
           <TextEditor
             className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
-            key={richText}
-            ref={quillRef}
-            defaultValue={richText}
-            onTextChange={(delta, oldDelta, source) => {
-              if (source === 'user') {
-                setTextIsDirty(true);
-              }
-              return onRichTextChange(delta);
+            onChange={(e) => {
+              setValue('description', e.target.value.markup, {
+                shouldDirty: true,
+              });
+              setValue('descriptionPlaintext', e.target.value.plainText);
+              trigger('description');
             }}
+            value={{ markup: description, plainText: descriptionPlaintext }}
           />
         </div>
         <div className="my-sm text-error">

@@ -29,7 +29,7 @@ import {
   Select,
   Table,
 } from '@sk-web-gui/react';
-import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
 import sanitized from '@common/services/sanitizer-service';
@@ -51,81 +51,50 @@ export const Lagenhetsarrende: React.FC<{
 
   const [showOmrade, setShowOmrade] = useState(false);
   const [editOmrade, setEditOmrade] = useState(false);
-  const quillRefOmrade = useRef(null);
-  const [omrade, setOmrade] = useState<string>('');
 
   const [showAndamal, setShowAndamal] = useState(false);
   const [editAndamal, setEditAndamal] = useState(false);
-  const quillRefAndamal = useRef(null);
-  const [andamal, setAndamal] = useState<string>('');
 
   const [showArrendetid, setShowArrendetid] = useState(false);
   const [editArrendetid, setEditArrendetid] = useState(false);
-  const quillRefArrendetid = useRef(null);
-  const [arrendetid, setArrendetid] = useState<string>('');
 
   const [showArrendeavgift, setShowArrendeavgift] = useState(false);
   const [editArrendeavgift, setEditArrendeavgift] = useState(false);
-  const quillRefArrendeavgift = useRef(null);
-  const [arrendeavgift, setArrendeavgift] = useState<string>('');
 
   const [showBygglov, setShowBygglov] = useState(false);
   const [editBygglov, setEditBygglov] = useState(false);
-  const quillRefBygglov = useRef(null);
-  const [bygglov, setBygglov] = useState<string>('');
 
   const [showOverlatelse, setShowOverlatelse] = useState(false);
   const [editOverlatelse, setEditOverlatelse] = useState(false);
-  const quillRefOverlatelse = useRef(null);
-  const [overlatelse, setOverlatelse] = useState<string>('');
 
   const [showInskrivning, setShowInskrivning] = useState(false);
   const [editInskrivning, setEditInskrivning] = useState(false);
-  const quillRefInskrivning = useRef(null);
-  const [inskrivning, setInskrivning] = useState<string>('');
 
   const [showSkick, setShowSkick] = useState(false);
   const [editSkick, setEditSkick] = useState(false);
-  const quillRefSkick = useRef(null);
-  const [skick, setSkick] = useState<string>('');
 
   const [showLedningar, setShowLedningar] = useState(false);
   const [editLedningar, setEditLedningar] = useState(false);
-  const quillRefLedningar = useRef(null);
-  const [ledningar, setLedningar] = useState<string>('');
 
   const [showKostnader, setShowKostnader] = useState(false);
   const [editKostnader, setEditKostnader] = useState(false);
-  const quillRefKostnader = useRef(null);
-  const [kostnader, setKostnader] = useState<string>('');
 
   const [showMarkfororeningar, setShowMarkfororeningar] = useState(false);
   const [editMarkfororeningar, setEditMarkfororeningar] = useState(false);
-  const quillRefMarkfororeningar = useRef(null);
-  const [markfororeningar, setMarkfororeningar] = useState<string>('');
 
   const [showUpphorande, setShowUpphorande] = useState(false);
   const [editUpphorande, setEditUpphorande] = useState(false);
-  const quillRefUpphorande = useRef(null);
-  const [upphorande, setUpphorande] = useState<string>('');
 
   const [showSkadaansvar, setShowSkadaansvar] = useState(false);
   const [editSkadaansvar, setEditSkadaansvar] = useState(false);
-  const quillRefSkadaansvar = useRef(null);
-  const [skadaansvar, setSkadaansvar] = useState<string>('');
 
-  const quillRefAdditionalTerms = useRef(null);
   const [additionalTerms, setAdditionalTerms] = useState<TermGroup[]>([]);
 
   const [showSarskilda, setShowSarskilda] = useState(false);
   const [editSarskilda, setEditSarskilda] = useState(false);
-  const quillRefSarskilda = useRef(null);
-  const [sarskilda, setSarskilda] = useState<string>('');
 
   const [showJordabalken, setShowJordabalken] = useState(false);
   const [editJordabalken, setEditJordabalken] = useState(false);
-  const quillRefJordabalken = useRef(null);
-  const [jordabalken, setJordabalken] = useState<string>('');
 
   const [showSignature, setShowSignature] = useState(false);
   const [signature, setSignature] = useState<string>('');
@@ -207,85 +176,28 @@ export const Lagenhetsarrende: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
-  useEffect(() => {
-    setOmrade(watch().omrade);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().omrade]);
-
-  useEffect(() => {
-    setAndamal(watch().andamal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().andamal]);
-
-  useEffect(() => {
-    setArrendetid(watch().arrendetid);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().arrendetid]);
-
-  useEffect(() => {
-    setArrendeavgift(watch().arrendeavgift);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().arrendeavgift]);
-
-  useEffect(() => {
-    setBygglov(watch().bygglov);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().bygglov]);
-
-  useEffect(() => {
-    setOverlatelse(watch().overlatelse);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().overlatelse]);
-
-  useEffect(() => {
-    setInskrivning(watch().inskrivning);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().inskrivning]);
-
-  useEffect(() => {
-    setSkick(watch().skick);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().skick]);
-
-  useEffect(() => {
-    setLedningar(watch().ledningar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().ledningar]);
-
-  useEffect(() => {
-    setKostnader(watch().kostnader);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().kostnader]);
-
-  useEffect(() => {
-    setMarkfororeningar(watch().markfororeningar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().markfororeningar]);
-
-  useEffect(() => {
-    setUpphorande(watch().upphorande);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().upphorande]);
+  const {
+    omrade,
+    andamal,
+    arrendetid,
+    arrendeavgift,
+    bygglov,
+    overlatelse,
+    inskrivning,
+    skick,
+    ledningar,
+    kostnader,
+    markfororeningar,
+    upphorande,
+    skadaansvar,
+    sarskilda,
+    jordabalken,
+  } = watch();
 
   useEffect(() => {
     setAdditionalTerms(watch().additionalTerms);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watch().additionalTerms]);
-
-  useEffect(() => {
-    setSkadaansvar(watch().skadaansvar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().skadaansvar]);
-
-  useEffect(() => {
-    setSarskilda(watch().sarskilda);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().sarskilda]);
-
-  useEffect(() => {
-    setJordabalken(watch().jordabalken);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch().jordabalken]);
 
   useEffect(() => {
     setSignature(watch().signature);
@@ -546,33 +458,6 @@ export const Lagenhetsarrende: React.FC<{
             label={'Område och upplåtelse'}
           >
             <Modal.Content>
-              {/* <FormControl id="areaType" className="my-md">
-                <FormLabel>Typ av område</FormLabel>
-                <FormControl id="areaType">
-                  <RadioButton.Group data-cy="areacheck-group" className="space-x-4" inline>
-                    <RadioButton
-                      checked={getValues().omradeTerms?.areaType === 'land'}
-                      name="areaType"
-                      value="land"
-                      onClick={() => {
-                        setValue('omradeTerms.areaType', 'land');
-                      }}
-                    >
-                      Mark
-                    </RadioButton>
-                    <RadioButton
-                      checked={getValues().omradeTerms?.areaType === 'landAndWater'}
-                      name="areaType"
-                      value="whenPaid"
-                      onClick={() => {
-                        setValue('omradeTerms.areaType', 'landAndWater');
-                      }}
-                    >
-                      Mark och vatten
-                    </RadioButton>
-                  </RadioButton.Group>
-                </FormControl>
-              </FormControl> */}
               <FormControl>
                 <FormLabel>Ange vilka fastighet/er som avtalet omfattar</FormLabel>
                 {errand.facilities?.length > 0 ? (
@@ -644,11 +529,7 @@ export const Lagenhetsarrende: React.FC<{
                     getValues().omradeTerms?.mapAttachments
                   } enligt kartbilaga ${getValues().omradeTerms?.mapAttachmentReference}.</p><br />`;
 
-                  const delta = quillRefOmrade.current.clipboard.convert({ html: content });
-                  quillRefOmrade.current.setContents(delta, 'silent');
-                  const semanticText = quillRefOmrade.current.getSemanticHTML();
-                  setOmrade(semanticText);
-                  setValue('omrade', semanticText);
+                  setValue('omrade', content);
                   setShowOmrade(false);
                 }}
               >
@@ -659,19 +540,14 @@ export const Lagenhetsarrende: React.FC<{
           <FormControl id="kopeskilling" className="w-full">
             <Input type="hidden" {...register('omrade')} />
             <div className="h-[42rem] -mb-48" data-cy="area-richtext-wrapper">
-              {omrade && (
-                <ContractTextEditorWrapper
-                  // key={omrade}
-                  val={omrade}
-                  label="omrade"
-                  setDirty={setTextIsDirty}
-                  setValue={setValue}
-                  trigger={trigger}
-                  setState={setOmrade}
-                  readOnly={!editOmrade}
-                  editorRef={quillRefOmrade}
-                />
-              )}
+              <ContractTextEditorWrapper
+                val={omrade}
+                label="omrade"
+                setDirty={setTextIsDirty}
+                setValue={setValue}
+                trigger={trigger}
+                readOnly={!editOmrade}
+              />
             </div>
           </FormControl>
           {saveButton('omrade')}
@@ -849,40 +725,6 @@ export const Lagenhetsarrende: React.FC<{
                   </div>
                 </div>
               </FormControl>
-              {/* <FormControl id="purposeOtherInformation" className="w-full">
-                <FormLabel>Förtydligande ändamålsinformation</FormLabel>
-                <Textarea
-                  rows={4}
-                  className="w-full"
-                  value={getValues('andamalTerms.clarification')}
-                  {...register('andamalTerms.clarification')}
-                ></Textarea>
-              </FormControl> */}
-              {/* <FormControl id="permitExists" className="my-md">
-                <FormLabel>Finns bygglov?</FormLabel>
-                <RadioButton.Group className="space-x-4" inline data-cy="bygglov-checkgroup">
-                  <RadioButton
-                    checked={getValues().andamalTerms.bygglovExists === 'true'}
-                    name="bygglovExists"
-                    value="true"
-                    onClick={() => {
-                      setValue('andamalTerms.bygglovExists', 'true');
-                    }}
-                  >
-                    Ja
-                  </RadioButton>
-                  <RadioButton
-                    checked={getValues().andamalTerms.bygglovExists === 'false'}
-                    name="bygglovExists"
-                    value="false"
-                    onClick={() => {
-                      setValue('andamalTerms.bygglovExists', 'false');
-                    }}
-                  >
-                    Nej
-                  </RadioButton>
-                </RadioButton.Group>
-              </FormControl> */}
               <Table dense background data-cy="buildPermits-table">
                 <Table.Header>
                   <Table.HeaderColumn>Välj villkor för ändamål</Table.HeaderColumn>
@@ -908,30 +750,30 @@ export const Lagenhetsarrende: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                    const conditions = [
-                      { key: 'byggnad', label: 'Byggnad' },
-                      { key: 'batplats', label: 'Båtplats' },
-                      { key: 'idrattsandamal', label: 'Idrottsändamål' },
-                      { key: 'led', label: 'Led' },
-                      { key: 'parkering', label: 'Parkering' },
-                      { key: 'skylt', label: 'Skylt' },
-                      { key: 'snotipp', label: 'Snötipp' },
-                      { key: 'tomtkomplement', label: 'Tomtkomplement' },
-                      { key: 'upplag', label: 'Upplag' },
-                      { key: 'uppstallning', label: 'Uppställning' },
-                      { key: 'ytjordvarme', label: 'Ytjordvärme' },
-                      { key: 'vag', label: 'Väg' },
-                      { key: 'atervinningsstation', label: 'Återvinningsstation' },
-                      { key: 'other', label: 'XXXX' },
-                    ];
+                  const conditions = [
+                    { key: 'byggnad', label: 'Byggnad' },
+                    { key: 'batplats', label: 'Båtplats' },
+                    { key: 'idrattsandamal', label: 'Idrottsändamål' },
+                    { key: 'led', label: 'Led' },
+                    { key: 'parkering', label: 'Parkering' },
+                    { key: 'skylt', label: 'Skylt' },
+                    { key: 'snotipp', label: 'Snötipp' },
+                    { key: 'tomtkomplement', label: 'Tomtkomplement' },
+                    { key: 'upplag', label: 'Upplag' },
+                    { key: 'uppstallning', label: 'Uppställning' },
+                    { key: 'ytjordvarme', label: 'Ytjordvärme' },
+                    { key: 'vag', label: 'Väg' },
+                    { key: 'atervinningsstation', label: 'Återvinningsstation' },
+                    { key: 'other', label: 'XXXX' },
+                  ];
 
-                    let content = `Området får användas till följande ändamål<ul>`;
-                    conditions.forEach(({ key, label }) => {
-                      if (getValues(`andamalTerms.condition.${key}` as keyof typeof getValues)) {
-                        content += `<li>${label}</li>`;
-                      }
-                    });
-                    content += `</ul>`;
+                  let content = `Området får användas till följande ändamål<ul>`;
+                  conditions.forEach(({ key, label }) => {
+                    if (getValues(`andamalTerms.condition.${key}` as keyof typeof getValues)) {
+                      content += `<li>${label}</li>`;
+                    }
+                  });
+                  content += `</ul>`;
 
                   getValues('andamalTerms.condition.consent')
                     ? (content += `<p>${getValues('andamalTerms.condition.consent').conditionText}</p>`)
@@ -940,11 +782,7 @@ export const Lagenhetsarrende: React.FC<{
                     ? (content += `<p>${getValues('andamalTerms.condition.detailedplan').conditionText}</p>`)
                     : null;
 
-                  const delta = quillRefAndamal.current.clipboard.convert({ html: content });
-                  quillRefAndamal.current.setContents(delta, 'silent');
-                  const semanticText = quillRefAndamal.current.getSemanticHTML();
-                  setAndamal(semanticText);
-                  setValue('andamal', semanticText);
+                  setValue('andamal', content);
                   setShowAndamal(false);
                 }}
               >
@@ -955,18 +793,14 @@ export const Lagenhetsarrende: React.FC<{
           <FormControl id="skog" className="w-full">
             <Input type="hidden" {...register('andamal')} />
             <div className="h-[42rem] -mb-48" data-cy="purpose-richtext-wrapper">
-              {andamal && (
-                <ContractTextEditorWrapper
-                  val={andamal}
-                  label="andamal"
-                  setDirty={setTextIsDirty}
-                  setValue={setValue}
-                  trigger={trigger}
-                  setState={setAndamal}
-                  readOnly={!editAndamal}
-                  editorRef={quillRefAndamal}
-                />
-              )}
+              <ContractTextEditorWrapper
+                val={andamal}
+                label="andamal"
+                setDirty={setTextIsDirty}
+                setValue={setValue}
+                trigger={trigger}
+                readOnly={!editAndamal}
+              />
             </div>
           </FormControl>
           {saveButton('andamal')}
@@ -1132,11 +966,7 @@ export const Lagenhetsarrende: React.FC<{
                   }
                    `;
 
-                  const delta = quillRefArrendetid.current.clipboard.convert({ html: content });
-                  quillRefArrendetid.current.setContents(delta, 'silent');
-                  const semanticText = quillRefArrendetid.current.getSemanticHTML();
-                  setArrendetid(semanticText);
-                  setValue('arrendetid', semanticText);
+                  setValue('arrendetid', content);
                   setShowArrendetid(false);
                 }}
               >
@@ -1153,9 +983,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setArrendetid}
                 readOnly={!editArrendetid}
-                editorRef={quillRefArrendetid}
               />
             </div>
           </FormControl>
@@ -1493,11 +1321,7 @@ export const Lagenhetsarrende: React.FC<{
                     getValues('arrendeavgiftTerms.yearOrQuarter') === 'year' ? 'årsvis' : 'kvartalsvis'
                   } i ${getValues('arrendeavgiftTerms.preOrPost') === 'pre' ? 'förskott' : 'efterskott'}.</p>`;
 
-                  const delta = quillRefArrendeavgift.current.clipboard.convert({ html: content });
-                  quillRefArrendeavgift.current.setContents(delta, 'silent');
-                  const semanticText = quillRefArrendeavgift.current.getSemanticHTML();
-                  setArrendeavgift(semanticText);
-                  setValue('arrendeavgift', semanticText);
+                  setValue('arrendeavgift', content);
                   setShowArrendeavgift(false);
                 }}
               >
@@ -1514,9 +1338,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setArrendeavgift}
                 readOnly={!editArrendeavgift}
-                editorRef={quillRefArrendeavgift}
               />
             </div>
           </FormControl>
@@ -1600,11 +1422,7 @@ export const Lagenhetsarrende: React.FC<{
                   }<br />
                   `;
 
-                  const delta = quillRefBygglov.current.clipboard.convert({ html: content });
-                  quillRefBygglov.current.setContents(delta, 'silent');
-                  const semanticText = quillRefBygglov.current.getSemanticHTML();
-                  setBygglov(semanticText);
-                  setValue('bygglov', semanticText);
+                  setValue('bygglov', content);
                   setShowBygglov(false);
                 }}
               >
@@ -1621,9 +1439,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setBygglov}
                 readOnly={!editBygglov}
-                editorRef={quillRefBygglov}
               />
             </div>
           </FormControl>
@@ -1698,11 +1514,8 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   
               `;
-                  const delta = quillRefOverlatelse.current.clipboard.convert({ html: content });
-                  quillRefOverlatelse.current.setContents(delta, 'silent');
-                  const semanticText = quillRefOverlatelse.current.getSemanticHTML();
-                  setOverlatelse(semanticText);
-                  setValue('overlatelse', semanticText);
+
+                  setValue('overlatelse', content);
                   setShowOverlatelse(false);
                 }}
               >
@@ -1719,9 +1532,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setOverlatelse}
                 readOnly={!editOverlatelse}
-                editorRef={quillRefOverlatelse}
               />
             </div>
           </FormControl>
@@ -1795,11 +1606,7 @@ export const Lagenhetsarrende: React.FC<{
                   }
                   
               `;
-                  const delta = quillRefInskrivning.current.clipboard.convert({ html: content });
-                  quillRefInskrivning.current.setContents(delta, 'silent');
-                  const semanticText = quillRefInskrivning.current.getSemanticHTML();
-                  setInskrivning(semanticText);
-                  setValue('inskrivning', semanticText);
+                  setValue('inskrivning', content);
                   setShowInskrivning(false);
                 }}
               >
@@ -1816,9 +1623,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setInskrivning}
                 readOnly={!editInskrivning}
-                editorRef={quillRefInskrivning}
               />
             </div>
           </FormControl>
@@ -1897,11 +1702,8 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
               `;
-                  const delta = quillRefSkick.current.clipboard.convert({ html: content });
-                  quillRefSkick.current.setContents(delta, 'silent');
-                  const semanticText = quillRefSkick.current.getSemanticHTML();
-                  setSkick(semanticText);
-                  setValue('skick', semanticText);
+
+                  setValue('skick', content);
                   setShowSkick(false);
                 }}
               >
@@ -1918,9 +1720,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setSkick}
                 readOnly={!editSkick}
-                editorRef={quillRefSkick}
               />
             </div>
           </FormControl>
@@ -1990,11 +1790,7 @@ export const Lagenhetsarrende: React.FC<{
                   }
 
               `;
-                  const delta = quillRefLedningar.current.clipboard.convert({ html: content });
-                  quillRefLedningar.current.setContents(delta, 'silent');
-                  const semanticText = quillRefLedningar.current.getSemanticHTML();
-                  setLedningar(semanticText);
-                  setValue('ledningar', semanticText);
+                  setValue('ledningar', content);
                   setShowLedningar(false);
                 }}
               >
@@ -2011,9 +1807,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setLedningar}
                 readOnly={!editLedningar}
-                editorRef={quillRefLedningar}
               />
             </div>
           </FormControl>
@@ -2082,11 +1876,7 @@ export const Lagenhetsarrende: React.FC<{
                   }
 
               `;
-                  const delta = quillRefKostnader.current.clipboard.convert({ html: content });
-                  quillRefKostnader.current.setContents(delta, 'silent');
-                  const semanticText = quillRefKostnader.current.getSemanticHTML();
-                  setKostnader(semanticText);
-                  setValue('kostnader', semanticText);
+                  setValue('kostnader', content);
                   setShowKostnader(false);
                 }}
               >
@@ -2103,9 +1893,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setKostnader}
                 readOnly={!editKostnader}
-                editorRef={quillRefKostnader}
               />
             </div>
           </FormControl>
@@ -2225,11 +2013,7 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  const delta = quillRefMarkfororeningar.current.clipboard.convert({ html: content });
-                  quillRefMarkfororeningar.current.setContents(delta, 'silent');
-                  const semanticText = quillRefMarkfororeningar.current.getSemanticHTML();
-                  setMarkfororeningar(semanticText);
-                  setValue('markfororeningar', semanticText);
+                  setValue('markfororeningar', content);
                   setShowMarkfororeningar(false);
                 }}
               >
@@ -2246,9 +2030,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setMarkfororeningar}
                 readOnly={!editMarkfororeningar}
-                editorRef={quillRefMarkfororeningar}
               />
             </div>
           </FormControl>
@@ -2365,11 +2147,7 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  const delta = quillRefUpphorande.current.clipboard.convert({ html: content });
-                  quillRefUpphorande.current.setContents(delta, 'silent');
-                  const semanticText = quillRefUpphorande.current.getSemanticHTML();
-                  setUpphorande(semanticText);
-                  setValue('upphorande', semanticText);
+                  setValue('upphorande', content);
                   setShowUpphorande(false);
                 }}
               >
@@ -2386,9 +2164,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setUpphorande}
                 readOnly={!editUpphorande}
-                editorRef={quillRefUpphorande}
               />
             </div>
           </FormControl>
@@ -2461,11 +2237,7 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  const delta = quillRefSkadaansvar.current.clipboard.convert({ html: content });
-                  quillRefSkadaansvar.current.setContents(delta, 'silent');
-                  const semanticText = quillRefSkadaansvar.current.getSemanticHTML();
-                  setSkadaansvar(semanticText);
-                  setValue('skadaansvar', semanticText);
+                  setValue('skadaansvar', content);
                   setShowSkadaansvar(false);
                 }}
               >
@@ -2482,9 +2254,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setSkadaansvar}
                 readOnly={!editSkadaansvar}
-                editorRef={quillRefSkadaansvar}
               />
             </div>
           </FormControl>
@@ -2536,7 +2306,6 @@ export const Lagenhetsarrende: React.FC<{
                   setAdditionalTerms([{ header: getValues('additionalTerms.0.header'), terms: [{ term: value }] }]);
                 }}
                 readOnly={false}
-                editorRef={quillRefAdditionalTerms}
               />
             </div>
           </FormControl>
@@ -2612,11 +2381,7 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  const delta = quillRefSarskilda.current.clipboard.convert({ html: content });
-                  quillRefSarskilda.current.setContents(delta, 'silent');
-                  const semanticText = quillRefSarskilda.current.getSemanticHTML();
-                  setSarskilda(semanticText);
-                  setValue('sarskilda', semanticText);
+                  setValue('sarskilda', content);
                   setShowSarskilda(false);
                 }}
               >
@@ -2633,9 +2398,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setSarskilda}
                 readOnly={!editSarskilda}
-                editorRef={quillRefSarskilda}
               />
             </div>
           </FormControl>
@@ -2769,11 +2532,7 @@ export const Lagenhetsarrende: React.FC<{
                       : ''
                   }
                   `;
-                  const delta = quillRefJordabalken.current.clipboard.convert({ html: content });
-                  quillRefJordabalken.current.setContents(delta, 'silent');
-                  const semanticText = quillRefJordabalken.current.getSemanticHTML();
-                  setJordabalken(semanticText);
-                  setValue('jordabalken', semanticText);
+                  setValue('jordabalken', content);
                   setShowJordabalken(false);
                 }}
               >
@@ -2790,9 +2549,7 @@ export const Lagenhetsarrende: React.FC<{
                 setDirty={setTextIsDirty}
                 setValue={setValue}
                 trigger={trigger}
-                setState={setJordabalken}
                 readOnly={!editJordabalken}
-                editorRef={quillRefJordabalken}
               />
             </div>
           </FormControl>

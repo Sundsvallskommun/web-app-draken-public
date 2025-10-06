@@ -5,11 +5,12 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { Relation, getSourceRelations } from '@common/services/relations-service';
-import sanitized from '@common/services/sanitizer-service';
+import { getSourceRelations } from '@common/services/relations-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -45,16 +46,15 @@ import {
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
-
-const PREFILL_VALUE = '+46';
 
 export interface SupportMessageFormModel {
   id: string;
@@ -101,9 +101,6 @@ let formSchema = yup
       otherwise: (schema) => schema,
     }),
     newPhoneNumber: yup.string(),
-    // .trim()
-    // .transform((val) => val && val.replace('-', ''))
-    // .matches(supportManagementPhonePattern, invalidPhoneMessage),
     phoneNumbers: yup.array().when('contactMeans', {
       is: (means: string) => means === 'sms',
       then: (schema) =>
@@ -161,13 +158,11 @@ export const SupportMessageForm: React.FC<{
   const toastMessage = useSnackbar();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
-  const quillRef = useRef(null);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
-  const [richText, setRichText] = useState<string>('');
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -219,7 +214,15 @@ export const SupportMessageForm: React.FC<{
     formState: { errors },
   } = formControls;
 
-  const { contactMeans, messageAttachments, newMessageAttachments, addExisting, existingAttachments } = watch();
+  const {
+    contactMeans,
+    messageAttachments,
+    newMessageAttachments,
+    addExisting,
+    existingAttachments,
+    messageBody,
+    messageBodyPlaintext,
+  } = watch();
 
   const {
     fields: messageAttachmentFields,
@@ -247,16 +250,6 @@ export const SupportMessageForm: React.FC<{
     control,
     name: 'existingAttachments',
   });
-
-  const onRichTextChange = (delta, oldDelta, source) => {
-    if (source === 'api') {
-      return;
-    }
-
-    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getText());
-    trigger('messageBody');
-  };
 
   const getSingleSupportAttachment = (attachment: SupportAttachment) => {
     getSupportAttachment(supportErrand?.id, municipalityId, attachment).then((res) => {
@@ -321,7 +314,7 @@ export const SupportMessageForm: React.FC<{
     sendPromise
       .then(async () => {
         props.setShowMessageForm(false);
-        quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
+        setValue('messageBody', emailBody);
 
         if (typeOfMessage === 'infoCompletion') {
           await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
@@ -388,12 +381,11 @@ export const SupportMessageForm: React.FC<{
 
       const signature = !!props.message?.conversationId ? internalConversationSignature : emailBody;
 
-      setRichText(signature + historyHeader + props.message.messageBody);
-      quillRef.current?.clipboard?.dangerouslyPasteHTML(signature + historyHeader + props.message.messageBody);
+      setValue('messageBody', formatMessage(signature + historyHeader + props.message.messageBody));
       trigger();
     } else {
       let body: string;
-      let prefillPhone = props.prefillPhone || PREFILL_VALUE;
+      let prefillPhone = props.prefillPhone || '';
 
       switch (contactMeans) {
         case 'sms':
@@ -416,9 +408,7 @@ export const SupportMessageForm: React.FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
 
-      setRichText(body);
       setValue('messageBody', sanitized(body));
-      quillRef.current?.clipboard?.dangerouslyPasteHTML(body);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.message]);
@@ -511,9 +501,7 @@ export const SupportMessageForm: React.FC<{
                 Draken
               </RadioButton>
             )}
-            {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
-
-            {/* {appConfig.features.useMyPages &&
+            {appConfig.features.useMyPages &&
               getSupportOwnerStakeholder(supportErrand)?.personNumber &&
               Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
@@ -527,7 +515,7 @@ export const SupportMessageForm: React.FC<{
                 >
                   Mina sidor
                 </RadioButton>
-              )} */}
+              )}
           </RadioButton.Group>
         </div>
       ) : null}
@@ -605,15 +593,15 @@ export const SupportMessageForm: React.FC<{
               setValue('messageTemplate', template);
 
               if (template === 'ka-email-normal') {
-                setRichText(t('messages:templates.email.KA.normal'));
+                setValue('messageBody', t('messages:templates.email.KA.normal'));
               } else if (template === 'ka-email-request_completion') {
-                setRichText(t('messages:templates.email.KA.request_completion'));
+                setValue('messageBody', t('messages:templates.email.KA.request_completion'));
               } else if (template === 'ka-sms-normal') {
-                setRichText(t('messages:templates.sms.KA.normal'));
+                setValue('messageBody', t('messages:templates.sms.KA.normal'));
               } else if (template === 'ka-sms-request_completion') {
-                setRichText(t('messages:templates.sms.KA.request_completion'));
+                setValue('messageBody', t('messages:templates.sms.KA.request_completion'));
               } else {
-                setRichText(emailBody);
+                setValue('messageBody', emailBody);
               }
             }}
           >
@@ -643,20 +631,19 @@ export const SupportMessageForm: React.FC<{
           <Input data-cy="message-body-input" type="hidden" {...register('messageBodyPlaintext')} />
           <div className={cx(`h-[26rem] mb-16`)} data-cy="decision-richtext-wrapper">
             <TextEditor
-              key={richText}
               className={cx(`mb-md h-[80%]`)}
               readOnly={props.locked}
-              ref={quillRef}
-              defaultValue={richText}
-              onTextChange={(delta, oldDelta, source) => {
-                props.setUnsaved(true);
-                return onRichTextChange(delta, oldDelta, source);
+              value={{ plainText: messageBodyPlaintext, markup: messageBody }}
+              onChange={(e) => {
+                setValue('messageBody', e.target.value.markup);
+                setValue('messageBodyPlaintext', e.target.value.plainText);
+                trigger('messageBody');
               }}
             />
           </div>
-          {!!errors.messageBody && (
+          {!!errors.messageBodyPlaintext && (
             <div className="-mt-lg mb-lg">
-              <FormErrorMessage className="text-error">{errors.messageBody?.message}</FormErrorMessage>
+              <FormErrorMessage className="text-error">{errors.messageBodyPlaintext?.message}</FormErrorMessage>
             </div>
           )}
         </div>
@@ -696,7 +683,7 @@ export const SupportMessageForm: React.FC<{
                 <Select
                   {...register('addExisting')}
                   className="w-full"
-                  size="md"
+                  size="sm"
                   placeholder="Välj bilaga"
                   onChange={(r) => {
                     setValue('addExisting', r.currentTarget.value);
@@ -716,7 +703,7 @@ export const SupportMessageForm: React.FC<{
                 <Button
                   type="button"
                   variant="primary"
-                  size="md"
+                  size="sm"
                   disabled={!addExisting}
                   color="primary"
                   onClick={(e) => {
@@ -836,7 +823,7 @@ export const SupportMessageForm: React.FC<{
           disabled={isSending}
           onClick={() => {
             props.setShowMessageForm(false);
-            quillRef.current?.clipboard?.dangerouslyPasteHTML(emailBody);
+            setValue('messageBody', emailBody);
             props.setUnsaved(false);
             setIsSending(false);
             reset();

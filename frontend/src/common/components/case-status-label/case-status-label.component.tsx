@@ -1,57 +1,31 @@
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
 
-export const CaseStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
+export const CaseStatusLabelComponent: React.FC<{ externalStatus: string }> = ({ externalStatus }) => {
   let color,
-    inverted = false,
-    icon = null;
-  switch (status) {
-    case ErrandStatus.ArendeAvslutat:
-      color = 'primary';
-      icon = 'check';
-      break;
-    case ErrandStatus.BeslutOverklagat:
-    case ErrandStatus.BeslutVerkstallt:
-    case ErrandStatus.Beslutad:
-    case ErrandStatus.UnderGranskning:
-    case ErrandStatus.UnderUtredning:
-    case ErrandStatus.UnderBeslut:
-    case 'Pågående':
-      color = 'gronsta';
-      icon = 'pen';
-      break;
+    inverted = true;
+  switch (externalStatus) {
     case 'Inskickat':
-    case ErrandStatus.ArendeInkommit:
-      color = 'vattjom';
+      color = 'tertiary';
       break;
-    case ErrandStatus.VantarPaKomplettering:
-    case ErrandStatus.InterntAterkoppling:
-      color = 'gronsta';
-      inverted = true;
-      icon = 'clock-10';
+    case 'Handläggning pågår':
+    case 'Kompletterad':
+    case 'Kompletterat':
+      color = 'info';
       break;
-    case ErrandStatus.Parkerad:
+    case 'Komplettering behövs':
       color = 'warning';
-      inverted = true;
-      icon = 'circle-pause';
       break;
-    case ErrandStatus.Tilldelat:
-      color = 'warning';
-      inverted = false;
-      icon = 'circle-pause';
-      break;
-    case 'Under behandling':
+    case 'Avslutat':
       color = 'gronsta';
       break;
     default:
-      color = 'tertiary';
+      color = 'info';
       break;
   }
 
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-      {icon ? <LucideIcon name={icon} size={16} /> : null} {status}
+      {externalStatus}
     </Label>
   );
 };

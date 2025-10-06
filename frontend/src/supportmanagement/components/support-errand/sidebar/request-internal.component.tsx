@@ -3,7 +3,7 @@
 import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -30,11 +30,10 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import dynamic from 'next/dynamic';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupRequestFeedbackForm = yup.object().shape(
@@ -96,15 +95,13 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
   const confirm = useConfirm();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
-  const quillRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [contactMeans, setContactMeans] = useState<ContactMeans>('email');
-  const [richText, setRichText] = useState<string>('');
-  const [textIsDirty, setTextIsDirty] = useState(false);
   const [isAttachmentSelected, setIsAttachmentSelected] = useState<SupportAttachment>();
   const [addedAttachment, setAddedAttachment] = useState<SupportAttachment[]>([]);
   const {
+    watch,
     register,
     reset,
     setValue,
@@ -118,11 +115,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     mode: 'onChange',
   });
 
-  const onRichTextChange = (delta, oldDelta, source) => {
-    setValue('message', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getText());
-    trigger('message');
-  };
+  const { message, messageBodyPlaintext } = watch();
 
   const handleRequestInternal = (data: RequestInternalFormProps) => {
     setIsLoading(true);
@@ -167,7 +160,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
     if (contactMeans === 'email') {
       setValue('email', _email || '');
     } else if (contactMeans === 'sms') {
-      setValue('phone', _phone || '+46');
+      setValue('phone', _phone || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, contactMeans]);
@@ -184,7 +177,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
             ? `Hej,<br><br>Intern Kundtjänst har tagit emot ett ärende/meddelande enligt nedan:<br><br><br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br>Intern Kundtjänst`
             : `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br>Begäran om intern återkoppling`
         }.`;
-        setRichText(emailBody);
+        setValue('message', emailBody);
       }, 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -275,15 +268,12 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
             <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
               <TextEditor
                 className={cx(`mb-md h-[80%]`)}
-                key={richText}
-                ref={quillRef}
-                defaultValue={richText}
-                onTextChange={(delta, oldDelta, source) => {
-                  if (source === 'user') {
-                    setTextIsDirty(true);
-                  }
-                  return onRichTextChange(delta, oldDelta, source);
+                onChange={(e) => {
+                  setValue('message', e.target.value.markup);
+                  setValue('messageBodyPlaintext', e.target.value.plainText);
+                  trigger('message');
                 }}
+                value={{ markup: message, plainText: messageBodyPlaintext }}
               />
             </div>
           </FormControl>

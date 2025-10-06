@@ -1,4 +1,4 @@
-import { formatCurrency, prettyTime } from '@common/services/helper-service';
+import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
@@ -126,8 +126,6 @@ export const AttestationsTable: React.FC<{
       </Button>
     );
   };
-
-  const maybe: (s: any) => string = (s) => (s ? s : '(saknas)');
 
   const rows = (billingRecords?.content || []).map((record: CBillingRecord, index) => {
     return (

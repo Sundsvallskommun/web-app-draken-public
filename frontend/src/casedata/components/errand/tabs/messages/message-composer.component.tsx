@@ -26,8 +26,9 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
+import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -46,7 +47,7 @@ import {
 } from '@sk-web-gui/react';
 import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -162,8 +163,6 @@ export const MessageComposer: React.FC<{
   update: () => void;
 }> = (props) => {
   const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
-  const quillRef = useRef(null);
-  const [richText, setRichText] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -231,7 +230,7 @@ export const MessageComposer: React.FC<{
       setValue('messageBodyPlaintext', defaultSignature(), { shouldDirty: false });
       setValue('emails', [], { shouldDirty: false });
       removeNewAttachment();
-      setRichText(defaultSignature());
+      setValue('messageBody', defaultSignature());
       remove();
       props.closeHandler();
     }, 0);
@@ -347,28 +346,13 @@ export const MessageComposer: React.FC<{
     }
   };
 
-  const addExisting = watch('addExisting');
-  const existingAttachments = watch('existingAttachments');
-  const newAttachments = watch('newAttachments');
-  const { contactMeans } = watch();
-
-  const onRichTextChange = (delta, oldDelta, source) => {
-    if (source === 'api') {
-      return;
-    }
-    setValue('messageBody', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
-      shouldDirty: true,
-    });
-    setValue('messageBodyPlaintext', quillRef.current.getText(), { shouldDirty: true });
-    trigger('messageBody');
-  };
+  const { contactMeans, addExisting, existingAttachments, newAttachments, messageBody, messageBodyPlaintext } = watch();
 
   useEffect(() => {
     if (contactMeans === 'sms') {
-      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '+46');
+      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
-    setRichText(defaultSignature());
-    quillRef.current?.clipboard?.dangerouslyPasteHTML(defaultSignature());
+    setValue('messageBody', defaultSignature());
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
@@ -420,10 +404,10 @@ export const MessageComposer: React.FC<{
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
         !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
       }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setRichText(defaultSignature() + historyHeader + props.message.message);
+      setValue('messageBody', formatMessage(defaultSignature() + historyHeader + props.message.message));
       trigger();
     } else {
-      setRichText(defaultSignature());
+      setValue('messageBody', defaultSignature());
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
       setValue('contactMeans', !!errand.externalCaseId ? 'webmessage' : 'email');
@@ -433,29 +417,31 @@ export const MessageComposer: React.FC<{
 
   const changeTemplate = (inTemplateValue: string) => {
     if (inTemplateValue === 'mex-feedbackPrio') {
-      setRichText(
+      setValue(
+        'messageBody',
         t('messages:templates.email.MEX.priority') +
           defaultSignature() +
           t('messages:templates.email.MEX.public_documents')
       );
     } else if (inTemplateValue === 'mex-feedbackNormal') {
-      setRichText(
+      setValue(
+        'messageBody',
         t('messages:templates.email.MEX.normal') +
           defaultSignature() +
           t('messages:templates.email.MEX.public_documents')
       );
     } else if (inTemplateValue === 'mex-additionalInformation') {
-      setRichText(t('messages:templates.email.MEX.additional_information') + defaultSignature());
+      setValue('messageBody', t('messages:templates.email.MEX.additional_information') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralBuildingPermit') {
-      setRichText(t('messages:templates.email.MEX.internal_referral_building_permit') + defaultSignature());
+      setValue('messageBody', t('messages:templates.email.MEX.internal_referral_building_permit') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralWire') {
-      setRichText(t('messages:templates.email.MEX.internal_referral_wire') + defaultSignature());
+      setValue('messageBody', t('messages:templates.email.MEX.internal_referral_wire') + defaultSignature());
     } else if (inTemplateValue === 'mex-internalReferralWireCheck') {
-      setRichText(t('messages:templates.email.MEX.internal_referral_wire_check') + defaultSignature());
+      setValue('messageBody', t('messages:templates.email.MEX.internal_referral_wire_check') + defaultSignature());
     } else if (inTemplateValue === 'mex-treeRemovalRequestRejection') {
-      setRichText(t('messages:templates.email.MEX.tree_removal_request_rejection') + defaultSignature());
+      setValue('messageBody', t('messages:templates.email.MEX.tree_removal_request_rejection') + defaultSignature());
     } else {
-      setRichText(t('messages:templates.email.default') + defaultSignature());
+      setValue('messageBody', t('messages:templates.email.default') + defaultSignature());
     }
   };
 
@@ -496,38 +482,20 @@ export const MessageComposer: React.FC<{
                 >
                   SMS
                 </RadioButton>
-                {!!errand.externalCaseId && (
+                {appConfig.features.useMyPages && !!getOwnerStakeholder(errand)?.personalNumber && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
-                    data-cy="useWebMessage-radiobutton-true"
+                    data-cy="useMinaSidor-radiobutton-true"
                     className="mr-sm"
-                    name="useWebMessage"
-                    id="useWebMessage"
-                    value={'webmessage'}
+                    name="useMinaSidor"
+                    id="useMinaSidor"
+                    value={'minasidor'}
                     defaultChecked={!!errand.externalCaseId}
                     {...register('contactMeans')}
                   >
-                    E-tjänst Intern
+                    Mina sidor
                   </RadioButton>
                 )}
-                {/* This section can be activated 2025-09-16 when Mina sidor privat is released */}
-
-                {/* {appConfig.features.useMyPages &&
-                  !!getOwnerStakeholder(errand)?.personalNumber &&
-                  !errand.externalCaseId && (
-                    <RadioButton
-                      tabIndex={props.show ? 0 : -1}
-                      data-cy="useMinaSidor-radiobutton-true"
-                      className="mr-sm"
-                      name="useMinaSidor"
-                      id="useMinaSidor"
-                      value={'minasidor'}
-                      defaultChecked={!!errand.externalCaseId}
-                      {...register('contactMeans')}
-                    >
-                      Mina sidor
-                    </RadioButton>
-                  )} */}
               </RadioButton.Group>
             </fieldset>
           ) : null}
@@ -608,13 +576,14 @@ export const MessageComposer: React.FC<{
               <div className={cx(`h-[28rem] mb-12`)} data-cy="decision-richtext-wrapper">
                 <TextEditor
                   className={cx(`mb-md h-[80%]`)}
-                  key={richText}
-                  ref={quillRef}
-                  defaultValue={richText}
-                  onTextChange={(delta, oldDelta, source) => {
-                    props.setUnsaved(true);
-                    return onRichTextChange(delta, oldDelta, source);
+                  onChange={(e) => {
+                    setValue('messageBody', e.target.value.markup, {
+                      shouldDirty: true,
+                    });
+                    setValue('messageBodyPlaintext', e.target.value.plainText, { shouldDirty: true });
+                    trigger('messageBody');
                   }}
+                  value={{ markup: messageBody, plainText: messageBodyPlaintext }}
                 />
               </div>
               {!!errors.messageBody && (
@@ -687,6 +656,7 @@ export const MessageComposer: React.FC<{
                       {...register('addExisting')}
                       className="w-full"
                       placeholder="Välj bilaga"
+                      size="sm"
                       onChange={(r) => {
                         setValue('addExisting', r.currentTarget.value);
                       }}
@@ -713,6 +683,7 @@ export const MessageComposer: React.FC<{
                       tabIndex={props.show ? 0 : -1}
                       type="button"
                       variant="tertiary"
+                      size="sm"
                       disabled={!addExisting}
                       onClick={(e) => {
                         e.preventDefault();

@@ -18,7 +18,6 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: (e: SupportErrand) => void;
     supportAttachments: SupportAttachment[];
     user: User;
   } = useAppContext();
@@ -37,7 +36,7 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   useEffect(() => {});
   return (
     <Disclosure variant="alt" header="Om ärendet" icon={<LucideIcon name="info" />} initalOpen={true}>
-      <SupportErrandBasicsAboutForm supportErrand={supportErrand} formControls={formControls} />
+      <SupportErrandBasicsAboutForm supportErrand={supportErrand} />
     </Disclosure>
   );
 };

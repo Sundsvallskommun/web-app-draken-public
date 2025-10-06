@@ -2,10 +2,11 @@ import { CaseLabels } from '@casedata/interfaces/case-label';
 import { BaseRelationsTable } from '@common/components/linked-errands-disclosure/relation-tables/base-relation-table.component';
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
-import { Relation, relationsToLabels } from '@common/services/relations-service';
+import { relationsToLabels } from '@common/services/relations-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, SortMode, Table } from '@sk-web-gui/react';
 import React from 'react';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 
 interface RelationsToTableProps {
   errands: CaseStatusResponse[];
@@ -62,7 +63,7 @@ export const RelationsToTable: React.FC<RelationsToTableProps> = ({
       renderRow={(errand) => (
         <>
           <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
-            <CaseStatusLabelComponent status={errand.status} />
+            <CaseStatusLabelComponent externalStatus={errand?.externalStatus} />
           </Table.HeaderColumn>
           <Table.Column className="w-[16rem]">{CaseLabels.ALL[errand.caseType] ?? errand.caseType}</Table.Column>
           <Table.Column className="w-[10rem]">{findOperationUsingNamespace(errand.namespace)}</Table.Column>

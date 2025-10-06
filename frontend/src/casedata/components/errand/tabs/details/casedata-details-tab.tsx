@@ -15,11 +15,10 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
 import dynamic from 'next/dynamic';
-import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
-import { convertPlainTextToHTML } from '@common/services/sanitizer-service';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
@@ -32,8 +31,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<boolean>();
-  const quillRef = useRef(null);
-  const [richText, setRichText] = useState<string>('');
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
@@ -45,7 +42,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   const form = useFormContext<IErrand>();
 
-  const { register, setValue, trigger, getValues } = form;
+  const { watch, setValue, trigger } = form;
+
+  const { description } = watch();
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
@@ -76,15 +75,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         });
     });
   };
-
-  useEffect(() => {
-    setRichText(
-      convertPlainTextToHTML(
-        getValues()?.description?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>') ?? ''
-      )
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     const uppgifter = extraParametersToUppgiftMapper(errand);
@@ -200,12 +190,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <FormLabel>Ärendebeskrivning</FormLabel>
 
                 <TextEditor
-                  key={richText}
                   className={'h-[25rem] case-description-editor'}
                   readOnly
                   disableToolbar
-                  ref={quillRef}
-                  defaultValue={richText}
+                  value={{ markup: description }}
                 />
               </FormControl>
             </div>

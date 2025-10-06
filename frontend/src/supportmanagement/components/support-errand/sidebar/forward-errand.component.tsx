@@ -23,7 +23,6 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   forwardSupportErrand,
@@ -31,11 +30,9 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
-import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -69,8 +66,6 @@ const yupForwardForm = yup.object().shape(
   [['emails', 'recipient']]
 );
 
-export type RECIPIENT = 'DEPARTMENT' | 'EMAIL';
-
 export interface ForwardFormProps {
   recipient: string;
   emails: { value: string }[];
@@ -87,7 +82,6 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     municipalityId,
     supportErrand,
     setSupportErrand,
-    supportAdmins,
     supportMetadata,
     supportAttachments,
   }: {
@@ -95,24 +89,14 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
-    supportAdmins: SupportAdmin[];
     supportMetadata: SupportMetadata;
     supportAttachments: SupportAttachment[];
   } = useAppContext();
   const confirm = useConfirm();
   const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
-  const [error, setError] = useState(false);
-  const toastMessage = useSnackbar();
-  const quillRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [recipient, setRecipient] = useState<RECIPIENT>(
-    appConfig.features.useDepartmentEscalation ? undefined : 'EMAIL'
-  );
-  const [richText, setRichText] = useState<string>('');
-  const [textIsDirty, setTextIsDirty] = useState(false);
-  const [closingMessage, setClosingMessage] = useState<boolean>(false);
-  const [latestErrand, setLatestErrand] = useState<SupportErrand>(supportErrand);
+  const toastMessage = useSnackbar();
 
   const {
     register,
@@ -127,7 +111,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
     resolver: yupResolver(yupForwardForm) as any,
     defaultValues: {
-      recipient: isKA() ? 'EMAIL' : 'DEPARTMENT',
+      recipient: isKA() ? 'EMAIL' : '',
       emails: [],
       department: 'MEX',
       message: '',
@@ -136,41 +120,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     mode: 'onChange',
   });
 
-  useEffect(() => {
-    if (showModal) {
-      if (isKA()) {
-        setRecipient('EMAIL');
-        setValue('recipient', 'EMAIL');
-      } else if (!appConfig.features.useDepartmentEscalation) {
-        setRecipient('EMAIL');
-        setValue('recipient', 'EMAIL');
-      } else {
-        setRecipient(undefined);
-        setValue('recipient', undefined);
-      }
+  const { recipient, message, messageBodyPlaintext } = watch();
 
-      setValue('emails', []);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showModal]);
-
-  const onRichTextChange = (delta, oldDelta, source) => {
-    setValue('message', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined));
-    setValue('messageBodyPlaintext', quillRef.current.getText());
-    trigger('message');
-  };
-  const handleForwardErrand = (data: ForwardFormProps, msg: boolean) => {
+  const handleForwardErrand = (data: ForwardFormProps) => {
     setIsLoading(true);
-    setError(false);
 
     return forwardSupportErrand(user, supportErrand, municipalityId, data, supportAttachments)
-      .then(() => {
-        if (msg) {
-          const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
-          const adminName = getAdminName(admin, supportErrand);
-          return sendClosingMessage(adminName, supportErrand, municipalityId);
-        }
-      })
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -201,40 +156,30 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
               : 'Något gick fel när ärendet skulle vidarebefordras',
           status: 'error',
         });
-        setError(true);
         setIsLoading(false);
         return;
       });
   };
 
   useEffect(() => {
-    if (!showModal || !supportErrand?.id) return;
-
-    getSupportErrandById(supportErrand.id, municipalityId)
-      .then(({ errand }) => setLatestErrand(errand))
-      .catch(console.error);
-  }, [showModal, supportErrand?.id, municipalityId]);
-
-  useEffect(() => {
-    if (latestErrand && supportAttachments && supportMetadata && showModal) {
-      getEscalationEmails(latestErrand, supportMetadata).then((emails) => {
+    if (supportErrand) {
+      getEscalationEmails(supportErrand, supportMetadata).then((emails) => {
         if (emails.length > 0) {
           setValue('emails', [{ value: emails[0].value }]);
         }
       });
 
-      getEscalationMessage(latestErrand, `${user.firstName} ${user.lastName}`).then((text) => {
-        const html = text.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>');
-        setRichText(html);
-
-        setValue('message', sanitized(html), { shouldValidate: true, shouldDirty: false });
-
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        setValue('messageBodyPlaintext', tmp.textContent || tmp.innerText || '', { shouldValidate: false });
+      getEscalationMessage(supportErrand, recipient, `${user.firstName} ${user.lastName}`).then((text) => {
+        setValue('message', sanitized(text), { shouldValidate: true, shouldDirty: false });
       });
     }
-  }, [latestErrand, supportAttachments, supportMetadata, showModal, user.firstName, user.lastName, setValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipient, showModal]);
+
+  const handleModal = () => {
+    setShowModal(!showModal);
+    reset();
+  };
 
   if (!appConfig.features.useEscalation) {
     return null;
@@ -249,14 +194,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         leftIcon={<LucideIcon name="forward" />}
         variant="secondary"
         disabled={disabled}
-        onClick={() => {
-          if (appConfig.features.useDepartmentEscalation) {
-            setRecipient(undefined);
-            setValue('recipient', undefined);
-          }
-          setValue('emails', []);
-          setShowModal(true);
-        }}
+        onClick={() => handleModal()}
       >
         Överlämna ärendet
       </Button>
@@ -268,7 +206,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             : 'Överlämna ärendet'
         }
         className="w-[52rem]"
-        onClose={() => setShowModal(false)}
+        onClose={() => handleModal()}
       >
         {Object.values(deepFlattenToObject(errandFormControls.formState.dirtyFields)).some((v) => v) ? (
           <>
@@ -284,45 +222,29 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         ) : (
           <>
             <Modal.Content>
-              {appConfig.features.useDepartmentEscalation &&
-                (isKA() ? (
-                  <Input type="hidden" {...register('recipient')} value="EMAIL" />
-                ) : (
-                  <>
-                    <p className="text-content font-semibold">Överlämna via:</p>
-                    <small>
-                      Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa
-                      fall.
-                    </small>
-                    <FormControl id="resolution" className="w-full mb-md" required>
-                      <RadioButton.Group inline>
-                        <RadioButton
-                          value="DEPARTMENT"
-                          defaultChecked={recipient === 'DEPARTMENT'}
-                          onClick={(e) => {
-                            setRecipient('DEPARTMENT');
-                            setValue('recipient', 'DEPARTMENT');
-                          }}
-                        >
-                          Draken
-                        </RadioButton>
-                        <RadioButton
-                          value="EMAIL"
-                          defaultChecked={recipient === 'EMAIL'}
-                          onClick={(e) => {
-                            setRecipient('EMAIL');
-                            setValue('recipient', 'EMAIL');
-                          }}
-                        >
-                          E-post
-                        </RadioButton>
-                      </RadioButton.Group>
-                    </FormControl>
-                  </>
-                ))}
-              {getValues().recipient === 'EMAIL' ? (
+              {appConfig.features.useDepartmentEscalation && (
+                <>
+                  <small>
+                    Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa
+                    fall.
+                  </small>
+                  <p className="text-content font-semibold">Överlämna via</p>
+                  <FormControl id="resolution" className="w-full mb-md" required>
+                    <RadioButton.Group inline>
+                      <RadioButton value="DEPARTMENT" {...register('recipient')}>
+                        Draken
+                      </RadioButton>
+                      <RadioButton value="EMAIL" {...register('recipient')}>
+                        E-post
+                      </RadioButton>
+                    </RadioButton.Group>
+                  </FormControl>
+                </>
+              )}
+              {recipient === 'EMAIL' ? (
                 <FormControl id="email" className="w-full mb-md">
                   <CommonNestedEmailArrayV2
+                    size="md"
                     errand={supportErrand}
                     data-cy="email-input"
                     disabled={disabled}
@@ -334,8 +256,8 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                     </div>
                   )}
                 </FormControl>
-              ) : getValues().recipient === 'DEPARTMENT' ? (
-                <FormControl id="resolution" className="w-full mb-md" required={getValues().recipient === 'EMAIL'}>
+              ) : recipient === 'DEPARTMENT' ? (
+                <FormControl id="resolution" className="w-full mb-md">
                   <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
                   <Select
                     className="w-full"
@@ -354,15 +276,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                 <Input data-cy="message-body-input" type="hidden" {...register('message')} />
                 <div className={cx(`h-[40rem]`)} data-cy="decision-richtext-wrapper">
                   <TextEditor
+                    readOnly={!formState.isValid}
                     className={cx(`mb-md h-[80%]`)}
-                    key={richText}
-                    ref={quillRef}
-                    defaultValue={richText}
-                    onTextChange={(delta, oldDelta, source) => {
-                      if (source === 'user') {
-                        setTextIsDirty(true);
-                      }
-                      return onRichTextChange(delta, oldDelta, source);
+                    value={{ plainText: messageBodyPlaintext, markup: message }}
+                    onChange={(e) => {
+                      setValue('message', e.target.value.markup);
+                      setValue('messageBodyPlaintext', e.target.value.plainText);
                     }}
                   />
                 </div>
@@ -392,7 +311,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                     .showConfirmation('Överlämna ärendet', 'Vill du överlämna ärendet?', 'Ja', 'Nej', 'info', 'info')
                     .then((confirmed) => {
                       if (confirmed) {
-                        handleForwardErrand(getValues(), closingMessage);
+                        handleForwardErrand(getValues());
                       }
                     });
                 }}

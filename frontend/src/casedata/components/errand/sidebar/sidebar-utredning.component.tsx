@@ -15,7 +15,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -57,9 +57,6 @@ export const SidebarUtredning: React.FC = () => {
     setErrand,
     user,
   }: { municipalityId: string; errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
-  const quillRefUtredning = useRef(null);
-  const [richText, setRichText] = useState<string>('');
-  const [textIsDirty, setTextIsDirty] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -82,8 +79,7 @@ export const SidebarUtredning: React.FC = () => {
     mode: 'onChange',
   });
 
-  const description = watch().description;
-  const outcome = watch().outcome;
+  const { description, outcome } = watch();
 
   const save = async (data: UtredningFormModel) => {
     try {
@@ -117,11 +113,6 @@ export const SidebarUtredning: React.FC = () => {
     save(data);
   };
 
-  const onRichTextChange = (delta) => {
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRefUtredning.current.root.innerHTML : undefined));
-    trigger('description');
-  };
-
   useEffect(() => {
     const existingUtredning = errand.decisions?.find((d) => d.decisionType === 'PROPOSED');
     setValue('errandNumber', errand.errandNumber);
@@ -131,7 +122,6 @@ export const SidebarUtredning: React.FC = () => {
     if (existingUtredning) {
       setValue('id', existingUtredning.id.toString());
       setValue('description', existingUtredning.description);
-      setRichText(existingUtredning.description);
       setValue('outcome', existingUtredning.decisionOutcome);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,16 +144,11 @@ export const SidebarUtredning: React.FC = () => {
           <div className="h-[42rem] -mb-48" data-cy="utredning-richtext-wrapper">
             <TextEditor
               className={cx(`mb-md h-[80%]`)}
-              key={richText}
-              ref={quillRefUtredning}
-              defaultValue={richText}
-              readOnly={!isErrandAdmin(errand, user)}
-              onTextChange={(delta, oldDelta, source) => {
-                if (source === 'user') {
-                  setTextIsDirty(true);
-                }
-                return onRichTextChange(delta);
+              onChange={(e) => {
+                setValue('description', e.target.value.markup);
+                trigger('description');
               }}
+              value={{ markup: description }}
             />
           </div>
           <div className="my-sm">

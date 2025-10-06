@@ -2,15 +2,12 @@ import { Attachment } from '@casedata/interfaces/attachment';
 import { UploadFile } from '@sk-web-gui/react';
 
 export function base64ToFile(base64: string, fileName: string, mimeType: string): File {
-  const byteString = atob(base64);
-  const arrayBuffer = new ArrayBuffer(byteString.length);
-  const uint8Array = new Uint8Array(arrayBuffer);
-
-  for (let i = 0; i < byteString.length; i++) {
-    uint8Array[i] = byteString.charCodeAt(i);
+  try {
+    const arr = Buffer.from(base64, 'base64');
+    return new File([arr], fileName, { type: mimeType });
+  } catch {
+    return new File([], fileName, { type: mimeType });
   }
-
-  return new File([uint8Array], fileName, { type: mimeType });
 }
 
 export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(

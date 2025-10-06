@@ -41,7 +41,6 @@ import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck, toOffsetDateTime, withRetries } from '@/utils/util';
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { filter } from 'compression';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -931,7 +930,7 @@ export class SupportErrandController {
       caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
       channel: casedataChannel,
-      description: existingSupportErrand.data.description,
+      description: !!data?.message ? data?.message : existingSupportErrand.data.description,
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: facilities,

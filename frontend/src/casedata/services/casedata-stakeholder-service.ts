@@ -240,7 +240,7 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
     careof: s.addresses?.[0]?.careOf || '',
     zip: s.addresses?.[0]?.postalCode,
     city: s.addresses?.[0]?.city,
-    newPhoneNumber: '+46',
+    newPhoneNumber: '',
     phoneNumbers: s.contactInformation
       .filter((c) => c.contactType === 'PHONE')
       .map((c) => ({
