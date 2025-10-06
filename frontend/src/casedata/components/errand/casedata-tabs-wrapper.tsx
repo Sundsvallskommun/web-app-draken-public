@@ -305,7 +305,7 @@ export const CasedataTabsWrapper: React.FC = () => {
       content: errand?.id && <CasedataServicesTab />,
       disabled: !errand?.id,
       visibleFor:
-        isFTErrand(errand) && errand?.id && getUiPhase(errand) != UiPhase.registrerad
+        isFTErrand(errand) && errand?.id && getUiPhase(errand) != UiPhase.registrerad && !!getOwnerStakeholder(errand)
           ? [
               ErrandPhase.aktualisering,
               ErrandPhase.utredning,
