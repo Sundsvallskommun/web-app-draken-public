@@ -73,7 +73,7 @@ export function symbolByMunicipalityId(): React.ReactNode | null {
     // const modulePath = 'src/styles/ange-symbol';
     // const { AngeSymbol } = require(modulePath);
     // return React.createElement(AngeSymbol);
-    return <AngeSymbol />;
+    return null; //<AngeSymbol />;
   }
   //Sundsvall eller annat
   return null;
