@@ -52,6 +52,9 @@
       ],
       "@styles/*": [
         "src/styles/*"
+      ],
+      "@cypress/*": [
+        "cypress/*"
       ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],

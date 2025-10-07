@@ -24,9 +24,6 @@ export interface AppContextInterface {
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
 
-  subPage: string;
-  setSubPage: (subPage: string) => void;
-
   user: User;
   setUser: (user: User) => void;
 
@@ -137,7 +134,6 @@ const AppContext = createContext<AppContextInterface>(null);
 
 export function AppWrapper({ children }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [subPage, setSubPage] = useState('');
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
   const [errands, setErrands] = useState<ErrandsData>(emptyErrandList);
@@ -179,9 +175,6 @@ export function AppWrapper({ children }) {
       value={{
         isLoading,
         setIsLoading: (isLoading: boolean) => setIsLoading(isLoading),
-
-        subPage,
-        setSubPage: (subPage: string) => setSubPage(subPage),
 
         user,
         setUser: (user: User) => setUser(user),
