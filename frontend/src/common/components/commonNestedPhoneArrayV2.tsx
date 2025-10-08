@@ -30,7 +30,7 @@ const CommonNestedPhoneArrayV2 = ({
           <Input
             disabled={disabled}
             data-cy={`newPhoneNumber`}
-            placeholder="Till exempel 0731234567 eller +46731234567."
+            placeholder="Till exempel 0701740605 eller +46701740605."
             className={cx(error ? 'border-error' : null, 'w-full mr-16')}
             {...register(`newPhoneNumber`)}
           />
