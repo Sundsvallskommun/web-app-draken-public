@@ -137,3 +137,5 @@ database.db
 
 # certs
 cert/
+
+/src/generated/prisma

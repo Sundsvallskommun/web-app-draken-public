@@ -12,7 +12,8 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import { useEffect, useState } from 'react';
 
 const Oversikt: React.FC = () => {
-  const { user, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
+  const { user, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata, featureFlags } =
+    useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ const Oversikt: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    appConfig.isSupportManagement &&
+    featureFlags.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -30,13 +31,13 @@ const Oversikt: React.FC = () => {
 
   return (
     <>
-      {appConfig.isSupportManagement ? (
+      {featureFlags.isSupportManagement ? (
         <SidebarLayout
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
         >
-          {appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
+          {featureFlags.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
             <AttestationTab />
           ) : municipalityId ? (
             <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
@@ -44,7 +45,7 @@ const Oversikt: React.FC = () => {
         </SidebarLayout>
       ) : null}
 
-      {appConfig.isCaseData ? (
+      {featureFlags.isCaseData ? (
         <SidebarLayout
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}

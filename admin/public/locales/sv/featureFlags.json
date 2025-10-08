@@ -1,0 +1,14 @@
+{
+  "name_zero": "feature flaggor",
+  "name_one": "feature flagga",
+  "name_many": "feature flaggor",
+  "name_other": "feature flaggor",
+  "properties": {
+    "id": "ID",
+    "name": "Namn",
+    "enabled": "Aktiverad",
+    "application": "Applikation",
+    "createdAt": "Skapad",
+    "updatedAt": "Uppdaterad"
+  }
+}

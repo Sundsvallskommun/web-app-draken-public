@@ -32,6 +32,7 @@ import { SupportNotificationController } from './controllers/supportmanagement/s
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
+import { FeatureFlagController } from './controllers/featureflags.controller';
 
 validateEnv();
 
@@ -68,6 +69,7 @@ const app = new App([
   CaseStatusController,
   CaseDataConversationController,
   SupportConversationController,
+  FeatureFlagController,
 ]);
 
 app.listen();

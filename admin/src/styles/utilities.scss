@@ -1,0 +1,11 @@
+@layer utilities {
+    .MuiSvgIcon-root.material-icon {
+        user-select: none;
+        font-size: 1.25em;
+        width: 1em;
+        height: 1em;
+        display: inline-block;
+        fill: currentColor;
+        flex-shrink: 0;
+    }
+}

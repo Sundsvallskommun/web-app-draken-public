@@ -48,6 +48,9 @@ import { authorizeGroups, getPermissions, getRole } from './services/authorizati
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidUrl } from './utils/util';
 import { isValidOrigin } from './utils/isValidateOrigin';
+
+const corsWhitelist = ORIGIN.split(',');
+
 const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
 const sessionTTL = 4 * 24 * 60 * 60;
 // NOTE: memory uses ms while file uses seconds
@@ -361,7 +364,17 @@ class App {
     useExpressServer(this.app, {
       routePrefix: BASE_URL_PREFIX,
       cors: {
-        origin: ORIGIN,
+        origin: function (origin, callback) {
+          if (origin === undefined || corsWhitelist.indexOf(origin) !== -1) {
+            callback(null, true);
+          } else {
+            if (NODE_ENV == 'development') {
+              callback(null, true);
+            } else {
+              callback(new Error('Not allowed by CORS'));
+            }
+          }
+        },
         credentials: CREDENTIALS,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       },

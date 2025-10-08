@@ -1,0 +1,20 @@
+{
+  "get_one": {
+    "error": "Kunde inte hämta {{resource}}"
+  },
+  "get_many": {
+    "error": "Kunde inte hämta {{resource}}"
+  },
+  "create": {
+    "success": "{{resource}} sparades",
+    "error": "Kunde inte spara {{resource}}"
+  },
+  "update": {
+    "success": "{{resource}} sparades",
+    "error": "Kunde inte spara {{resource}}"
+  },
+  "remove": {
+    "success": "Tog bort {{resource}}",
+    "error": "Kunde inte ta bort {{resource}}"
+  }
+}

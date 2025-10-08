@@ -15,6 +15,11 @@
     "start:lop": "cross-env NODE_ENV=production dotenv -e .env.lop.development.local -e .env.lop.production.local node dist/server.js",
     "dev:ik": "dotenv -e .env.ik.development.local -- cross-env NODE_ENV=development nodemon",
     "dev:kc": "dotenv -e .env.kc.development.local -- cross-env NODE_ENV=development nodemon",
+    "prisma:createdb": "dotenv -e .env.kc.development.local -- prisma migrate dev --name init",
+    "prisma:kc": "dotenv -e .env.kc.development.local -- prisma",
+    "seed:kc": "dotenv -e .env.kc.development.local -- cross-env NODE_ENV=development ts-node prisma/seed.ts",
+    "migrate:kc": "dotenv -e .env.kc.development.local prisma migrate deploy",
+    "generate:kc": "dotenv -e .env.kc.development.local prisma generate",
     "dev:ka": "dotenv -e .env.ka.development.local -- cross-env NODE_ENV=development nodemon",
     "dev:lop": "dotenv -e .env.lop.development.local -- cross-env NODE_ENV=development nodemon",
     "dev:mex": "dotenv -e .env.mex.development.local -- cross-env NODE_ENV=development nodemon",
@@ -51,6 +56,7 @@
     "form-data": "^4.0.4"
   },
   "dependencies": {
+    "@prisma/client": "5.13.0",
     "@node-saml/passport-saml": "^5.1.0",
     "axios": "^1.11.0",
     "class-transformer": "^0.5.1",
@@ -118,6 +124,7 @@
     "nodemon": "^2.0.22",
     "pm2": "^5.4.3",
     "prettier": "^2.8.8",
+    "prisma": "5.13.0",
     "swagger-typescript-api": "^13.2.7",
     "ts-jest": "^27.1.5",
     "ts-node": "^10.9.2",

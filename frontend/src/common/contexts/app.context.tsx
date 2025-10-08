@@ -17,10 +17,15 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
+import { getFeatureFlags } from '@common/services/featureflags-service';
+import { FeatureFlags } from '@config/feature-flags';
 
 export interface AppContextInterface {
+  featureFlags: FeatureFlags;
+  setFeatureFlags: (flags: FeatureFlags) => void;
+
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
 
@@ -136,6 +141,7 @@ export interface AppContextInterface {
 const AppContext = createContext<AppContextInterface>(null);
 
 export function AppWrapper({ children }) {
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>();
   const [isLoading, setIsLoading] = useState(false);
   const [subPage, setSubPage] = useState('');
   const [user, setUser] = useState<User>(emptyUser);
@@ -174,9 +180,16 @@ export function AppWrapper({ children }) {
   const [uiPhase, setUiPhase] = useState<UiPhase>();
   const [billingRecords, setBillingRecords] = useState<CPageBillingRecord>({ content: [] });
 
+  useEffect(() => {
+    getFeatureFlags().then((res) => setFeatureFlags(res));
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
+        featureFlags,
+        setFeatureFlags: (featureFlags: FeatureFlags) => setFeatureFlags(featureFlags),
+
         isLoading,
         setIsLoading: (isLoading: boolean) => setIsLoading(isLoading),
 
