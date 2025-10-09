@@ -2,14 +2,19 @@ import { ApiResponse, apiService } from '../api-service';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { __DEV__ } from '@sk-web-gui/react';
-import { emptyUser } from './defaults';
+import { emptyUser, UserPermissions } from './defaults';
 import { ServiceResponse } from '@interfaces/services';
-import { User } from '@data-contracts/backend/data-contracts';
+
+export interface User {
+  name: string;
+  username: string;
+  permissions: UserPermissions;
+}
 
 const handleSetUserResponse: (res: ApiResponse<User>) => User = (res) => ({
   name: res.data.name,
   username: res.data.username,
-  // permissions: res.data.permissions,
+  permissions: res.data.permissions,
 });
 
 const getMe: () => Promise<ServiceResponse<User>> = () => {

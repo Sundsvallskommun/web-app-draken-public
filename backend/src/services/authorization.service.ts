@@ -16,6 +16,7 @@ export const defaultPermissions: () => Permissions = () => ({
   canEditSupportManagement: false,
   canViewAttestations: false,
   canEditAttestations: false,
+  canUseAdminPanel: false,
 });
 
 enum RoleOrderEnum {

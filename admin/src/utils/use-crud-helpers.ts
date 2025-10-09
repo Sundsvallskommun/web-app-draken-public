@@ -23,7 +23,6 @@ export const useCrudHelper = (resource: string) => {
     const name = t(`${resource}:name_many`);
     try {
       const result = await getMany();
-      console.log('result', result);
       return Promise.resolve(result.data.data);
     } catch {
       message({ message: capitalize(t('crud:get_one.error', { resource: name })), status: 'error' });

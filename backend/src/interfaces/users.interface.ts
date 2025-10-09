@@ -15,6 +15,7 @@ export interface Permissions {
   canEditSupportManagement: boolean;
   canViewAttestations: boolean;
   canEditAttestations: boolean;
+  canUseAdminPanel: boolean;
 }
 
 /** Internal roles */

@@ -21,7 +21,6 @@ const featureFlags: Resource<FeatureFlag> = {
       path: `${process.env.NEXT_PUBLIC_API_PATH}/flags/id/${id}`,
       method: 'GET',
     });
-    console.log(res);
     return res;
   },
   update: async (id: ID, data: Partial<FeatureFlag>) => {
