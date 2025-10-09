@@ -15,7 +15,7 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
-import { appConfig } from '@config/appconfig';
+import { FeatureFlags } from '@config/feature-flags';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -29,13 +29,12 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     supportErrand,
     user,
     supportMetadata,
+    featureFlags,
   }: {
     user: User;
-    municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: any;
     supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
+    featureFlags: FeatureFlags;
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
@@ -347,7 +346,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       <div className="mt-md">
         <Disclosure variant="alt" icon={<LucideIcon name="users" />} header="Ärendeägare" initalOpen={true}>
           <div data-cy="registered-applicants">
-            {stakeholderCustomers.length === 0 && appConfig.features.useMyPages && (
+            {stakeholderCustomers.length === 0 && featureFlags?.useMyPages && (
               <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
                 <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
                 <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
@@ -381,7 +380,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
         <Disclosure variant="alt" icon={<LucideIcon name="users" />} header="Övriga parter" initalOpen={true}>
           <div data-cy="registered-contacts">
             <div className="w-full mt-md">
-              {appConfig.features.useMyPages && (
+              {featureFlags?.useMyPages && (
                 <div className="pb-[2.5rem]">
                   <span className="text-dark-secondary">
                     Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte se

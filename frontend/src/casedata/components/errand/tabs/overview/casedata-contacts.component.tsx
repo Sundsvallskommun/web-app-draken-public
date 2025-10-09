@@ -8,9 +8,8 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Avatar, Button, Disclosure, Divider, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,7 +23,7 @@ interface CasedataContactsProps {
 export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props) => {
   const [addContact, setAddContact] = useState(false);
   const [selectedContact, setSelectedContact] = useState<CasedataOwnerOrContact>();
-  const { errand } = useAppContext();
+  const { errand, featureFlags } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
@@ -297,7 +296,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
           <div className="w-full">
             {watchedStakeholders?.filter((s) => s.roles.includes(Role.APPLICANT) && !s.removed).length === 0 ? (
               <>
-                {appConfig.features.useMyPages && (
+                {featureFlags?.useMyPages && (
                   <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
                     <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
                     <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
@@ -308,7 +307,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                   </div>
                 )}
                 <SimplifiedContactForm
-                  allowOrganization={appConfig.features.useOrganizationStakeholders}
+                  allowOrganization={featureFlags?.useOrganizationStakeholders}
                   disabled={isErrandLocked(errand)}
                   setUnsaved={props.setUnsaved}
                   contact={createEmptyContact(Role.APPLICANT)}
@@ -336,7 +335,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         <div data-cy="registered-contacts" className="my-lg px-0 pt-0">
           {addContact && (
             <div className="w-full mt-md">
-              {appConfig.features.useMyPages && (
+              {featureFlags?.useMyPages && (
                 <div className="pb-[2.5rem]">
                   <span className="text-dark-secondary">
                     Lägg till andra personer eller organisationer som är berörda av ärendet. Övriga parter kan inte se
@@ -346,7 +345,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               )}
               <SimplifiedContactForm
                 key={Math.random()}
-                allowOrganization={appConfig.features.useOrganizationStakeholders}
+                allowOrganization={featureFlags?.useOrganizationStakeholders}
                 disabled={isErrandLocked(errand)}
                 setUnsaved={props.setUnsaved}
                 contact={createEmptyContact(Role.CONTACT_PERSON)}

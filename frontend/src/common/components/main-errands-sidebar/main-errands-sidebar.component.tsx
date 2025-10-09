@@ -27,7 +27,7 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
+  const { user, billingRecords, isLoading, featureFlags }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
 
@@ -89,7 +89,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {appConfig.isSupportManagement ? (
+          {featureFlags?.isSupportManagement ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
@@ -98,7 +98,7 @@ export const MainErrandsSidebar: React.FC<{
               />
             </FormProvider>
           ) : null}
-          {appConfig.isCaseData ? (
+          {featureFlags?.isCaseData ? (
             <FormProvider {...casedataFilterForm}>
               <CasedataFilterSidebarStatusSelector iconButton={!open} />
             </FormProvider>

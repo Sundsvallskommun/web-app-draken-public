@@ -6,7 +6,6 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
-import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import { getSourceRelations } from '@common/services/relations-service';
@@ -40,7 +39,6 @@ import {
 import {
   Channels,
   Status,
-  SupportErrand,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
@@ -140,19 +138,7 @@ export const SupportMessageForm: React.FC<{
   setUnsaved?: (boolean) => void;
   update?: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-    supportErrand,
-    supportAttachments,
-    setSupportErrand,
-  }: {
-    municipalityId: string;
-    user: User;
-    supportErrand: SupportErrand;
-    supportAttachments: SupportAttachment[];
-    setSupportErrand: (errand: SupportErrand) => void;
-  } = useAppContext();
+  const { municipalityId, user, supportErrand, supportAttachments, setSupportErrand, featureFlags } = useAppContext();
 
   const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
@@ -435,7 +421,7 @@ export const SupportMessageForm: React.FC<{
         <div className="w-full pt-16">
           <strong className="text-md">Kontaktväg</strong>
           <RadioButton.Group inline data-cy="message-channel-radio-button-group" className="mt-8">
-            {appConfig.features.useEmailContactChannel && (
+            {featureFlags?.useEmailContactChannel && (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useEmail-radiobutton-true"
@@ -448,7 +434,7 @@ export const SupportMessageForm: React.FC<{
                 E-post
               </RadioButton>
             )}
-            {appConfig.features.useSmsContactChannel && (
+            {featureFlags?.useSmsContactChannel && (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useSms-radiobutton-true"
@@ -488,7 +474,7 @@ export const SupportMessageForm: React.FC<{
                 E-tjänst (extern)
               </RadioButton>
             ) : null}
-            {appConfig.features.useStakeholderRelations && (
+            {featureFlags?.useStakeholderRelations && (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useDraken-radiobutton-true"
@@ -501,7 +487,7 @@ export const SupportMessageForm: React.FC<{
                 Draken
               </RadioButton>
             )}
-            {appConfig.features.useMyPages &&
+            {featureFlags?.useMyPages &&
               getSupportOwnerStakeholder(supportErrand)?.personNumber &&
               Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton

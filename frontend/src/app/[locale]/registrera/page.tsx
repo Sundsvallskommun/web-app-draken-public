@@ -7,11 +7,10 @@ import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { default as NextLink } from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 const Registrera: React.FC = () => {
-  const { setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
+  const { setAdministrators, setSubPage, setMunicipalityId, featureFlags } = useAppContext();
 
   useEffect(() => {
     getAdminUsers().then((data) => {
@@ -45,8 +44,8 @@ const Registrera: React.FC = () => {
         >
           Hoppa till innehåll
         </NextLink>
-        {appConfig.isSupportManagement ? <SupportErrandComponent /> : null}
-        {appConfig.isCaseData ? <CasedataErrandComponent /> : null}
+        {featureFlags?.isSupportManagement ? <SupportErrandComponent /> : null}
+        {featureFlags?.isCaseData ? <CasedataErrandComponent /> : null}
       </Layout>
     </div>
   );

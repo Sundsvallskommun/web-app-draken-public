@@ -26,9 +26,9 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
+import { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
+import { FeatureFlags } from '@config/feature-flags';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -162,7 +162,12 @@ export const MessageComposer: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
+  const {
+    municipalityId,
+    errand,
+    user,
+    featureFlags,
+  }: { municipalityId: string; errand: IErrand; user: User; featureFlags: FeatureFlags } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -482,7 +487,7 @@ export const MessageComposer: React.FC<{
                 >
                   SMS
                 </RadioButton>
-                {appConfig.features.useMyPages && !!getOwnerStakeholder(errand)?.personalNumber && (
+                {featureFlags?.useMyPages && !!getOwnerStakeholder(errand)?.personalNumber && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
                     data-cy="useMinaSidor-radiobutton-true"

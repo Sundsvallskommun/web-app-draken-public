@@ -12,7 +12,6 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
@@ -22,6 +21,7 @@ import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
+import { FeatureFlags } from '@config/feature-flags';
 
 type IErrandFormData = Pick<
   IErrand,
@@ -53,12 +53,14 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     setErrand,
     setAdministrators,
     setUiPhase,
+    featureFlags,
   }: {
     municipalityId: string;
     errand: IErrand;
     setErrand: any;
     setAdministrators: (admins: Admin[]) => void;
     setUiPhase: (phase: UiPhase) => void;
+    featureFlags: FeatureFlags;
   } = useAppContext();
   const toastMessage = useSnackbar();
 
@@ -217,7 +219,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
                                   </div>
                                 </div>
 
-                                {appConfig.features.useFacilities ? (
+                                {featureFlags?.useFacilities ? (
                                   <div className="pr-sm w-[40%]">
                                     <div className="font-bold">Fastighetsbeteckning</div>
                                     <div>

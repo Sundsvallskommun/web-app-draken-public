@@ -16,6 +16,7 @@ import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
+import { FeatureFlags } from '@config/feature-flags';
 
 export default function Layout({ title, children }) {
   const {
@@ -23,13 +24,20 @@ export default function Layout({ title, children }) {
     errand,
     supportErrand,
     supportMetadata,
-  }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
+    featureFlags,
+  }: {
+    user: User;
+    errand: IErrand;
+    supportErrand: SupportErrand;
+    supportMetadata: SupportMetadata;
+    featureFlags: FeatureFlags;
+  } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
   const pathName = usePathname();
-  const errandNumber = appConfig.isCaseData
+  const errandNumber = featureFlags?.isCaseData
     ? errand?.errandNumber
-    : appConfig.isSupportManagement
+    : featureFlags?.isSupportManagement
     ? supportErrand?.errandNumber
     : undefined;
   const hostName = window.location.hostname;
@@ -62,7 +70,7 @@ export default function Layout({ title, children }) {
         <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
       </a>
       <span className="text-large">
-        {appConfig.isSupportManagement ? (
+        {featureFlags?.isSupportManagement ? (
           <>
             <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
             <span className="font-bold ml-8">
@@ -74,7 +82,7 @@ export default function Layout({ title, children }) {
             <span className="text-small">({errandNumber})</span>
           </>
         ) : null}
-        {appConfig.isCaseData ? (
+        {featureFlags?.isCaseData ? (
           <>
             <CasedataStatusLabelComponent status={errand?.status?.statusType} />
             <span className="font-bold ml-8">Ärende: </span>

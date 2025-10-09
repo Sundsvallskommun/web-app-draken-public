@@ -23,7 +23,7 @@ const Oversikt: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    featureFlags.isSupportManagement &&
+    featureFlags?.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -31,13 +31,13 @@ const Oversikt: React.FC = () => {
 
   return (
     <>
-      {featureFlags.isSupportManagement ? (
+      {featureFlags?.isSupportManagement ? (
         <SidebarLayout
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
         >
-          {featureFlags.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
+          {featureFlags?.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
             <AttestationTab />
           ) : municipalityId ? (
             <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
@@ -45,7 +45,7 @@ const Oversikt: React.FC = () => {
         </SidebarLayout>
       ) : null}
 
-      {featureFlags.isCaseData ? (
+      {featureFlags?.isCaseData ? (
         <SidebarLayout
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}

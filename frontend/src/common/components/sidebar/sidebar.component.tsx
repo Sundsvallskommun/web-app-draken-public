@@ -1,5 +1,4 @@
 import { isPT } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, useGui } from '@sk-web-gui/react';
@@ -35,6 +34,8 @@ export const Sidebar: React.FC<{
   const menuRef = useRef<HTMLDivElement>(null);
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
+
+  const { featureFlags } = useAppContext();
 
   const {
     supportErrand,
@@ -78,7 +79,7 @@ export const Sidebar: React.FC<{
         style={{ marginTop: `-${scrolled}px` }}
       >
         {buttons.map((b, idx) =>
-          (isPT() && b.key === 'guides') || (!appConfig.features.useErrandExport && b.key === 'export') ? null : (
+          (isPT() && b.key === 'guides') || (!featureFlags?.useErrandExport && b.key === 'export') ? null : (
             <SidebarTooltip key={`sidebartooltip-${idx}`} open={hover === b.key}>
               {b.label}
             </SidebarTooltip>
@@ -95,7 +96,7 @@ export const Sidebar: React.FC<{
         <div role="none" className="flex flex-col pt-18 lg:pt-32 gap-12 pb-12 items-center w-full px-8">
           {buttons.map((b, idx) =>
             (isPT() && (b.key === 'guides' || b.key === 'investigation')) ||
-            (!appConfig.features.useErrandExport && b.key === 'export') ? null : (
+            (!featureFlags?.useErrandExport && b.key === 'export') ? null : (
               <div key={`sidebarkey-${idx}`} className="relative w-full flex justify-center" role="none">
                 <Button
                   role="menuitem"
@@ -107,7 +108,9 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
+                  disabled={
+                    featureFlags?.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false
+                  }
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}

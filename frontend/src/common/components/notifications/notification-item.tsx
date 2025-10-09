@@ -5,7 +5,6 @@ import {
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { prettyTime } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { cx, useSnackbar } from '@sk-web-gui/react';
 import {
@@ -17,18 +16,18 @@ import { NotificationRenderIcon } from './notification-render-icon';
 import { NotificationType, getNotificationKey, labelBySubType, senderFallback } from './notification-utils';
 
 export const NotificationItem: React.FC<{ notification: NotificationType }> = ({ notification }) => {
-  const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
+  const { municipalityId, setNotifications, featureFlags }: AppContextInterface = useAppContext();
   const toastMessage = useSnackbar();
 
   const handleAcknowledge = async () => {
     try {
-      if (appConfig.isCaseData) {
+      if (featureFlags?.isCaseData) {
         await acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification);
       } else {
         await acknowledgeSupportNotification(municipalityId, notification as SupportNotification);
       }
 
-      const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
+      const getNotifications = featureFlags?.isCaseData ? getCasedataNotifications : getSupportNotifications;
 
       const notifications = await getNotifications(municipalityId);
       setNotifications(notifications);
@@ -54,7 +53,7 @@ export const NotificationItem: React.FC<{ notification: NotificationType }> = ({
           <strong>{notification.description + ' › '}</strong>
           <NextLink
             href={
-              appConfig.isCaseData
+              featureFlags?.isCaseData
                 ? `/arende/${municipalityId}/${notification.errandNumber}`
                 : `/arende/${municipalityId}/${notification.errandId}`
             }

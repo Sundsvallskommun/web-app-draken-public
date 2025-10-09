@@ -4,7 +4,6 @@ import { ExportButton } from '@common/components/export-button/export-button.com
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { appConfig } from '@config/appconfig';
 import store from '@supportmanagement/services/storage-service';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -69,7 +68,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   }, [selectedErrandStatuses]);
 
   const router = useRouter();
-  const { user, setUser } = useAppContext();
+  const { user, setUser, featureFlags } = useAppContext();
 
   useEffect(() => {
     const filterdata = store.get('filter');
@@ -272,7 +271,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
                   ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
                   : null}
               </h1>
-              {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
+              {featureFlags?.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
             <div>
               <FormProvider {...tableForm}>

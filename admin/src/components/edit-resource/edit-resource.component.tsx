@@ -9,6 +9,7 @@ import { EditResourceInput } from './edit-resource-input.component';
 import { EditResourceObject } from './edit-resource-object.component';
 import { ResourceName } from '@interfaces/resource-name';
 import { Resource } from '@interfaces/resource';
+import Link from 'next/link';
 
 interface EditResourceProps {
   resource: ResourceName;
@@ -45,6 +46,12 @@ export const EditResource: React.FC<EditResourceProps> = ({ resource }) => {
               </Fragment>
             );
           })}
+        <Link
+          target="_blank"
+          href="https://confluence.sundsvall.se/pages/viewpage.action?pageId=1259405457&spaceKey=OA&title=Feature%2Bflaggor%2Balla%2Bdrakar"
+        >
+          Länk till dokumentation för flaggor
+        </Link>
       </div>
       <div className="flex flex-col gap-32 grow mb-32">
         {Object.keys(formdata)

@@ -10,7 +10,6 @@ import Facilities from '@common/components/facilities/facilities';
 import { useAppContext } from '@common/contexts/app.context';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
@@ -28,7 +27,7 @@ interface CasedataDetailsProps {
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { municipalityId, errand, setErrand, user, featureFlags } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const [loading, setIsLoading] = useState<boolean>();
   const toastMessage = useSnackbar();
@@ -171,7 +170,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 <strong className="my-lg">Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
               </>
             ) : null}
-            {appConfig.features.useFacilities ? (
+            {featureFlags?.useFacilities ? (
               <Disclosure variant="alt" header="Fastigheter" icon={<LucideIcon name="map-pin" />}>
                 <Facilities
                   facilities={realEstates}

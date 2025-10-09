@@ -14,7 +14,8 @@ import { useEffect, useRef, useState } from 'react';
 const Arende: React.FC = () => {
   const pathName = usePathname();
   const [errandId, setErrandId] = useState<string>();
-  const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
+  const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata, featureFlags } =
+    useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
@@ -40,7 +41,7 @@ const Arende: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    appConfig.isSupportManagement &&
+    featureFlags?.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,9 +60,9 @@ const Arende: React.FC = () => {
           Hoppa till innehåll
         </NextLink>
 
-        {appConfig.isCaseData
+        {featureFlags?.isCaseData
           ? !!errandId && <CasedataErrandComponent id={errandId} />
-          : appConfig.isSupportManagement
+          : featureFlags?.isSupportManagement
           ? !!errandId && !!municipalityId && <SupportErrandComponent id={errandId} />
           : null}
       </Layout>

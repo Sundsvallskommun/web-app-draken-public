@@ -1,5 +1,4 @@
 import { PrettyRole } from '@casedata/interfaces/role';
-import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
@@ -29,12 +28,14 @@ const CommonNestedEmailArrayV2 = ({
     name: 'emails',
   });
 
+  const { featureFlags } = useAppContext();
+
   const [listedEmails, setListedEmails] = useState<{ email: string; role: string[] }[]>([]);
 
   useEffect(() => {
     const stakeholders: { email: string; role: string[] }[] = [];
 
-    if (appConfig.isCaseData) {
+    if (featureFlags?.isCaseData) {
       errand?.stakeholders?.map((stakeholder) => {
         if (stakeholder?.emails?.length) {
           stakeholder?.emails?.map((email) => {

@@ -1,14 +1,15 @@
 /// <reference types="cypress" />
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { appConfig } from '@config/appconfig';
 import { onlyOn } from '@cypress/skip-test';
 import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { useAppContext } from '@contexts/app.context';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
+  const { featureFlags } = useAppContext();
   describe('Overview page', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/users/admins', mockAdmins);
@@ -224,7 +225,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('Can use export', () => {
-      if (appConfig.features.useErrandExport) {
+      if (featureFlags?.useErrandExport) {
         cy.get('[data-cy="export-button"]').should('exist').click();
         cy.get('p').should('exist').contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?');
       } else {

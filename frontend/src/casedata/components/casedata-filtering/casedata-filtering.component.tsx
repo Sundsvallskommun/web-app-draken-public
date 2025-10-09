@@ -5,8 +5,9 @@ import {
 } from '@casedata/components/casedata-filtering/components/casedata-filter-phase.component';
 import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
+import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
+import { Button, Checkbox, Link, cx } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import {
@@ -32,18 +33,16 @@ import {
 } from './components/casedata-filter-propertyDesignation';
 import { CaseQueryFilter, CaseQueryValues, CasedataFilterQuery } from './components/casedata-filter-query.component';
 import {
+  CaseStakeholderTypeFilter,
+  CaseStakeholderTypeValues,
+  CasedataStakeholderType,
+} from './components/casedata-filter-stakeholder-type.component';
+import {
   CaseStatusFilter,
   CaseStatusValues,
   CasedataFilterStatus,
 } from './components/casedata-filter-status.component';
 import { CasedataFilterTags } from './components/casedata-filter-tags.component';
-import { useAppContext } from '@contexts/app.context';
-import { appConfig } from '@config/appconfig';
-import {
-  CasedataStakeholderType,
-  CaseStakeholderTypeFilter,
-  CaseStakeholderTypeValues,
-} from './components/casedata-filter-stakeholder-type.component';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -73,7 +72,7 @@ const CaseDataFiltering: React.FC<{
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);
-  const { selectedErrandStatuses } = useAppContext();
+  const { selectedErrandStatuses, featureFlags } = useAppContext();
 
   return (
     <>
@@ -139,7 +138,7 @@ const CaseDataFiltering: React.FC<{
                   <CasedataFilterPhase />
                 </div>
               )}
-              {appConfig.features.useOrganizationStakeholders && (
+              {featureFlags?.useOrganizationStakeholders && (
                 <div className="relative max-md:w-full">
                   <CasedataStakeholderType />
                 </div>

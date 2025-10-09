@@ -1,5 +1,5 @@
 import { AddressResult } from '@common/services/adress-service';
-import { appConfig } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import { FormLabel, Input, RadioButton } from '@sk-web-gui/react';
 import {
   ExternalIdType,
@@ -67,6 +67,8 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
     }, 0);
   };
 
+  const { featureFlags } = useAppContext();
+
   return (
     <fieldset
       className="flex mt-ms mb-md gap-lg justify-start"
@@ -77,7 +79,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
       <div className="flex flex-col">
         <FormLabel className="mb-12">Välj typ av {label.toLocaleLowerCase()}</FormLabel>
         <RadioButton.Group inline>
-          {appConfig.features.useEmployeeSearch ? (
+          {featureFlags?.useEmployeeSearch ? (
             <RadioButton
               data-cy={`search-employee-${inName}-${contact.role}`}
               size="sm"
@@ -112,7 +114,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
             Privat
           </RadioButton>
 
-          {appConfig.features.useOrganizationStakeholders ? (
+          {featureFlags?.useOrganizationStakeholders ? (
             <>
               <RadioButton
                 data-cy={`search-enterprise-${inName}-${contact.role}`}
