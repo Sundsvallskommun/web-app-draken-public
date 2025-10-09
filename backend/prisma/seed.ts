@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { defaultFeatureFlags } from '../../frontend/src/config/feature-flags';
+import { defaultFeatureFlags } from '../../frontend/src/common/utils/feature-flags';
 
 const prisma = new PrismaClient();
 const application = process.env.APPLICATION || 'default';

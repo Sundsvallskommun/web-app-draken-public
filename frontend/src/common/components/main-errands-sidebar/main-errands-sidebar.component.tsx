@@ -5,7 +5,7 @@ import { NotificationsBell } from '@common/components/notifications/notification
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
-import { appConfig } from '@config/appconfig';
+import { SymbolByMunicipalityId } from '@common/utils/municiplaity-symbol';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
@@ -36,15 +36,17 @@ export const MainErrandsSidebar: React.FC<{
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
         className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
-        symbol={appConfig.symbol}
+        symbol={SymbolByMunicipalityId()}
         title={'Draken'}
-        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        subtitle={
+          process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        }
       />
     </NextLink>
   );

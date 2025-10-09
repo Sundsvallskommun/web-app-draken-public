@@ -1,7 +1,6 @@
 import { TenantKey } from '@common/interfaces/tenant';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { maybe } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import {
   Channels,
   SupportErrand,
@@ -74,7 +73,7 @@ const kcRole = () => (isLOP() ? 'Handläggare' : isKC() ? 'Kommunvägledare' : i
 
 const TENANTS: Record<TenantKey, TenantConfig> = {
   sundsvall: {
-    departmentName: (e) => (isKC() ? 'Sundsvalls kommun' : appConfig.applicationName),
+    departmentName: (e) => (isKC() ? 'Sundsvalls kommun' : process.env.NEXT_PUBLIC_APPLICATION_NAME),
     roleLabel: (user) => kcRole() + ` ${user}`,
     phoneNumber: '+46 60 19 10 00',
     showMetaRows: true,

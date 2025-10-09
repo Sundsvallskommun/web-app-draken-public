@@ -1,4 +1,4 @@
-import { FeatureFlags } from '@config/feature-flags';
+import { FeatureFlags } from '@common/utils/feature-flags';
 import { ApiResponse, apiService } from './api-service';
 
 function mapFeatureFlagsGeneric(data: Array<{ name: string; enabled: boolean }>): FeatureFlags {

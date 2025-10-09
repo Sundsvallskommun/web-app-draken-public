@@ -25,7 +25,7 @@ import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
-import { FeatureFlags } from '@config/feature-flags';
+import { FeatureFlags } from '@common/utils/feature-flags';
 
 export const SupportTabsWrapper: React.FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;

@@ -11,7 +11,6 @@ import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/serv
 import { getSourceRelations } from '@common/services/relations-service';
 import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -287,7 +286,7 @@ export const SupportMessageForm: React.FC<{
         }),
       };
       if (isKC() || isKA()) {
-        messageData.senderName = appConfig.applicationName;
+        messageData.senderName = process.env.NEXT_PUBLIC_APPLICATION_NAME;
       }
       sendPromise = sendMessage(messageData).then(async (success) => {
         if (!success) {

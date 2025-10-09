@@ -1,9 +1,11 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
+import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
+import { FeatureFlags } from '@common/utils/feature-flags';
+import { SymbolByMunicipalityId } from '@common/utils/municiplaity-symbol';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -15,8 +17,6 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
-import { FeatureFlags } from '@config/feature-flags';
 
 export default function Layout({ title, children }) {
   const {
@@ -47,14 +47,16 @@ export default function Layout({ title, children }) {
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
         variant="service"
         title={'Draken'}
-        symbol={appConfig.symbol}
-        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        symbol={SymbolByMunicipalityId()}
+        subtitle={
+          process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        }
       />
     </NextLink>
   );
@@ -64,10 +66,10 @@ export default function Layout({ title, children }) {
       <a
         href={`${process.env.NEXT_PUBLIC_BASEPATH}`}
         title={`Draken - ${
-          appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+          process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
+        <Logo variant="symbol" symbol={SymbolByMunicipalityId()} className="h-40" />
       </a>
       <span className="text-large">
         {featureFlags?.isSupportManagement ? (
@@ -97,7 +99,7 @@ export default function Layout({ title, children }) {
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={appConfig.applicationName} />
+        <meta name="description" content={process.env.NEXT_PUBLIC_APPLICATION_NAME} />
       </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader

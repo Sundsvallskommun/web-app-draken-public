@@ -28,7 +28,7 @@ import {
 } from '@common/services/helper-service';
 import { formatMessage } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { FeatureFlags } from '@config/feature-flags';
+import { FeatureFlags } from '@common/utils/feature-flags';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {

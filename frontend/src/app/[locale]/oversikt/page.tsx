@@ -5,7 +5,6 @@ import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers } from '@common/services/user-service';
 import { DeployInfoBanner } from '@common/utils/deploy-info-banner';
-import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -33,7 +32,7 @@ const Oversikt: React.FC = () => {
     <>
       {featureFlags?.isSupportManagement ? (
         <SidebarLayout
-          title={`${appConfig.applicationName} - Översikt`}
+          title={`${process.env.NEXT_PUBLIC_APPLICATION_NAME} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
         >
@@ -47,7 +46,7 @@ const Oversikt: React.FC = () => {
 
       {featureFlags?.isCaseData ? (
         <SidebarLayout
-          title={`${appConfig.applicationName} - Översikt`}
+          title={`${process.env.NEXT_PUBLIC_APPLICATION_NAME} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
         >

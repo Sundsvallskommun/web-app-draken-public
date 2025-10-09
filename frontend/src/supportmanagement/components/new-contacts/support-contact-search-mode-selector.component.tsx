@@ -115,7 +115,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
           </RadioButton>
 
           {featureFlags?.useOrganizationStakeholders ? (
-            <>
+            <div>
               <RadioButton
                 data-cy={`search-enterprise-${inName}-${contact.role}`}
                 size="sm"
@@ -148,7 +148,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
               >
                 Förening
               </RadioButton>
-            </>
+            </div>
           ) : null}
         </RadioButton.Group>
       </div>

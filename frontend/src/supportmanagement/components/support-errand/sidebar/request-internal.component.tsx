@@ -4,7 +4,6 @@ import { User } from '@common/interfaces/user';
 import { isIK, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -120,7 +119,14 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
   const handleRequestInternal = (data: RequestInternalFormProps) => {
     setIsLoading(true);
     setError(false);
-    return requestInternal(user, supportErrand, municipalityId, data, addedAttachment, appConfig.applicationName)
+    return requestInternal(
+      user,
+      supportErrand,
+      municipalityId,
+      data,
+      addedAttachment,
+      process.env.NEXT_PUBLIC_APPLICATION_NAME
+    )
       .then(() => {
         toastMessage(
           getToastOptions({

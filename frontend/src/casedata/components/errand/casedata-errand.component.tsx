@@ -21,7 +21,7 @@ import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
-import { FeatureFlags } from '@config/feature-flags';
+import { FeatureFlags } from '@common/utils/feature-flags';
 
 type IErrandFormData = Pick<
   IErrand,

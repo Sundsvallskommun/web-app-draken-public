@@ -20,7 +20,7 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { createContext, useContext, useEffect, useState } from 'react';
 import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
 import { getFeatureFlags } from '@common/services/featureflags-service';
-import { FeatureFlags } from '@config/feature-flags';
+import { FeatureFlags } from '@common/utils/feature-flags';
 
 export interface AppContextInterface {
   featureFlags: FeatureFlags;
