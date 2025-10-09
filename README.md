@@ -108,13 +108,16 @@ För KA (Kontakt Ånge):
 git clone git clone git@github.com:Sundsvallskommun/web-app-parking-permit.git
 ```
 
-2. Installera dependencies för både `backend` och `frontend`
+2. Installera dependencies för `frontend`, `backend` och `admin`
 
 ```
 cd frontend
 yarn install
 
 cd backend
+yarn install
+
+cd admin
 yarn install
 ```
 
@@ -205,3 +208,92 @@ redigera env-filer efter behov. URLer, nycklar och cert behöver fyllas i korrek
 - `SAML_ENTRY_SSO` behöver pekas till en SAML IDP
 - `SAML_IDP_PUBLIC_CERT` ska stämma överens med IDPens cert
 - `SAML_PRIVATE_KEY` och `SAML_PUBLIC_KEY` behöver bara fyllas i korrekt om man kör mot en riktig IDP
+
+5. Skapa .env-filer för `admin`
+
+För KS:
+
+```
+cd frontend
+cp .env.kc-example .env.kc
+```
+
+För MEX:
+
+```
+cd frontend
+cp .env.mex-example .env.mex
+```
+
+För PT:
+
+```
+cd frontend
+cp .env.pt-example .env.pt
+```
+
+För LOP:
+
+```
+cd frontend
+cp .env.lop-example .env.lop
+```
+
+För ROB:
+
+```
+cd frontend
+cp .env.rob-example .env.rob
+```
+
+6. Initiera databas för backend
+
+För KS:
+
+```
+cd backend
+yarn prisma:createdb:ks
+yarn prisma:generate:ks
+yarn prisma:migrate:ks
+yarn prisma:seed:ks
+```
+
+För MEX:
+
+```
+cd backend
+yarn prisma:createdb:mex
+yarn prisma:generate:mex
+yarn prisma:migrate:mex
+yarn prisma:seed:mex
+```
+
+För PT:
+
+```
+cd backend
+yarn prisma:createdb:pt
+yarn prisma:generate:pt
+yarn prisma:migrate:pt
+yarn prisma:seed:pt
+```
+
+För LOP:
+
+```
+cd backend
+yarn prisma:createdb:lop
+yarn prisma:generate:lop
+yarn prisma:migrate:lop
+yarn prisma:seed:lop
+```
+
+För ROB:
+
+```
+cd backend
+yarn prisma:createdb:rob
+yarn prisma:generate:rob
+yarn prisma:migrate:rob
+yarn prisma:seed:rob
+```
