@@ -66,10 +66,10 @@ export class RelationsController {
     @Param('municipalityId') municipalityId: string,
     @Param('query') query: string,
     @Param('sort') sort: string,
-  ): Promise<{ data: any; message: string }> {
+  ): Promise<{ data: RelationPagedResponse; message: string }> {
     const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
+    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
@@ -84,13 +84,13 @@ export class RelationsController {
     @Param('municipalityId') municipalityId: string,
     @Param('query') query: string,
     @Param('sort') sort: string,
-  ): Promise<{ data: ApiResponse<RelationPagedResponse>; message: string }> {
+  ): Promise<{ data: RelationPagedResponse; message: string }> {
     const url = `${municipalityId}/relations?filter=target.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    return { data: res, message: 'success' };
+    return { data: res.data, message: 'success' };
   }
 }
