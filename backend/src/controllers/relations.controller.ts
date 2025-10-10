@@ -2,7 +2,7 @@ import { apiServiceName } from '@/config/api-config';
 import { Relation, RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
-import ApiService, { ApiResponse } from '@/services/api.service';
+import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseBefore } from 'routing-controllers';
