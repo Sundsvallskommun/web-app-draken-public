@@ -1,20 +1,23 @@
-import { Service, ServiceListItem } from './casedata-service-item.component';
+import { ServiceListItem } from './casedata-service-item.component';
+import { Service } from './casedata-service-mapper';
 
-export const ServiceListComponent = ({
-  services,
-  onRemove,
-  onOrder,
-  onEdit,
-}: {
-  services: Service[];
-  onRemove: (id: string) => void;
-  onOrder: (id: string) => void;
-  onEdit: (service: Service) => void;
-}) => {
+type ServiceListComponentProps = {
+  services?: Service[];
+  onRemove?: (id: string) => void;
+  readOnly?: boolean;
+};
+
+export const ServiceListComponent = ({ services, onRemove, readOnly }: ServiceListComponentProps) => {
+  const list = services ?? [];
   return (
     <div className="mt-32">
-      {services.map((service) => (
-        <ServiceListItem key={service.id} service={service} onRemove={onRemove} onOrder={onOrder} onEdit={onEdit} />
+      {list.map((service) => (
+        <ServiceListItem
+          key={service.id}
+          service={service}
+          readOnly={readOnly}
+          onRemove={readOnly ? undefined : onRemove}
+        />
       ))}
     </div>
   );
