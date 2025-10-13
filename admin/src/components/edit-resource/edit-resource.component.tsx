@@ -33,8 +33,7 @@ export const EditResource: React.FC<EditResourceProps> = ({ resource }) => {
         {Object.keys(formdata)
           .filter((key) => !defaultInformationFields.includes(key))
           .map((key, index) => {
-            const isRequired = requiredFields ? requiredFields.includes(key as (typeof requiredFields)[number]) : false;
-
+            const isRequired = requiredFields ? (requiredFields as string[]).includes(key) : false;
             return (
               <Fragment key={`formc-${index}`}>
                 <EditResourceInput

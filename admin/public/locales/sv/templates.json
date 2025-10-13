@@ -1,0 +1,22 @@
+{
+  "name_zero": "mallar",
+  "name_one": "mall",
+  "name_many": "mallar",
+  "name_other": "mallar",
+  "properties": {
+    "id": "id",
+    "identifier": "identifierare",
+    "name": "namn",
+    "description": "beskrivning",
+    "metadata": "metadata",
+    "defaultValues": "standardvärden",
+    "content": "innehåll",
+    "versionIncrement": "versionsökning",
+    "changeLog": "ändringslogg",
+    "enabled": "aktiverad",
+    "application": "applikation",
+    "createdAt": "skapad",
+    "updatedAt": "uppdaterad",
+    "version": "version"
+  }
+}

@@ -5,6 +5,8 @@ import { useCallback, useEffect } from 'react';
 import { useCrudHelper } from './use-crud-helpers';
 import { useLocalStorage } from './use-localstorage.hook';
 import { useShallow } from 'zustand/react/shallow';
+import { Template } from '@services/templating/templating-service';
+import { FeatureFlag } from '@interfaces/featureFlag';
 
 export const useResource = (resource: ResourceName) => {
   const [resourceData, setData, setLoaded, setLoading] = useLocalStorage(
@@ -21,9 +23,8 @@ export const useResource = (resource: ResourceName) => {
   const refresh = useCallback(() => {
     if (getMany) {
       setLoading(resource, true);
-      handleGetMany(getMany)
+      handleGetMany<Template | FeatureFlag>(() => getMany())
         .then((res) => {
-          console.log('resdata', res);
           if (res) {
             setData(resource, res);
             setLoaded(resource, true);

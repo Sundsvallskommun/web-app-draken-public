@@ -16,7 +16,7 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { capitalize } from 'underscore.string';
 
-export const Exempelsida: React.FC = () => {
+export const ListResource: React.FC = () => {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -40,8 +40,6 @@ export const Exempelsida: React.FC = () => {
         })
       : undefined;
   };
-
-  console.log('resource', resource, data);
 
   return (
     resource && (
@@ -67,4 +65,4 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => ({
   },
 });
 
-export default Exempelsida;
+export default ListResource;

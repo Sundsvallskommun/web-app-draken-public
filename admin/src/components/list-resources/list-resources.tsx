@@ -12,12 +12,20 @@ import { capitalize } from 'underscore.string';
 import { useShallow } from 'zustand/react/shallow';
 
 interface ListResourcesProps {
+  properties?: string[];
   resource: ResourceName;
   headers?: AutoTableHeader[];
   data?: Array<Record<string, unknown>>;
+  editProperty?: string;
 }
 
-export const ListResources: React.FC<ListResourcesProps> = ({ resource, headers: _headers, data }) => {
+export const ListResources: React.FC<ListResourcesProps> = ({
+  properties,
+  resource,
+  headers: _headers,
+  data,
+  editProperty = 'id',
+}) => {
   const { update } = resources[resource];
   const { t } = useTranslation();
   const [{ [resource]: storeHeaders }, setHeaders] = useLocalStorage(
@@ -26,22 +34,22 @@ export const ListResources: React.FC<ListResourcesProps> = ({ resource, headers:
 
   useEffect(() => {
     if (!storeHeaders && data) {
+      const newHeaders = properties ?? [
+        ...(data?.[0] ? Object.keys(data[0]).filter((field) => typeof data[0][field] !== 'object') : []),
+        ...(defaultInformationFields || ['id']),
+      ];
       setHeaders({
-        [resource]: [
-          ...(defaultInformationFields || ['id']),
-          ...(data?.[0] ? Object.keys(data[0]).filter((field) => typeof data[0][field] !== 'object') : []),
-        ],
+        [resource]: newHeaders,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeHeaders, data]);
+  }, [storeHeaders, data, properties]);
 
   const headers = useMemo(
     () =>
       _headers ||
       storeHeaders?.reduce<AutoTableHeader[]>((headers, key) => {
         if (data) {
-          console.log(data);
           const type = typeof data?.[0]?.[key];
           switch (type) {
             case 'string':
@@ -91,7 +99,7 @@ export const ListResources: React.FC<ListResourcesProps> = ({ resource, headers:
 
   const editHeader: AutoTableHeader = {
     label: 'edit',
-    property: 'id',
+    property: editProperty,
     isColumnSortable: false,
     screenReaderOnly: true,
     sticky: true,
@@ -116,13 +124,19 @@ export const ListResources: React.FC<ListResourcesProps> = ({ resource, headers:
 
   const formattedData = useMemo(() => data?.map((row) => getFormattedFields(row)), [data]);
 
+  const autoHeaders = [...translatedHeaders, ...(update ? [editHeader] : [])];
+
   return (
     <div>
       {formattedData && formattedData?.length > 0 ?
         <AutoTable
           pageSize={15}
           autodata={formattedData}
-          autoheaders={[...translatedHeaders, ...(update ? [editHeader] : [])]}
+          autoheaders={autoHeaders.filter(
+            (header, index) =>
+              autoHeaders.map((head) => head.label).indexOf(header.label) === index &&
+              Object.keys(formattedData[0]).includes(header.property as string)
+          )}
         />
       : <h3>{capitalize(t('common:no_resources', { resources: t(`${resource}:name_zero`) }))}</h3>}
     </div>

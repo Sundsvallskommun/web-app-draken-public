@@ -1,11 +1,9 @@
 'use client';
 
-import sanitized from '@common/services/sanitizer-service';
-import { MutableRefObject } from 'react';
-import { UseFormTrigger } from 'react-hook-form';
-import dynamic from 'next/dynamic';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 import { cx } from '@sk-web-gui/react';
+import dynamic from 'next/dynamic';
+import { UseFormTrigger } from 'react-hook-form';
+const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface ContractTextEditorWrapperProps {
   readOnly: boolean;
