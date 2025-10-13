@@ -53,7 +53,7 @@ import { useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
-import { getDefaultEmailBody, getDefaultSmsBody } from '../templates/default-message-template';
+import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface SupportMessageFormModel {
@@ -170,7 +170,7 @@ export const SupportMessageForm: React.FC<{
 
   const emailBody = getDefaultEmailBody(user, t);
   const smsBody = getDefaultSmsBody(user, t);
-  const internalConversationSignature = t('messages:templates.conversation_default_signature', {
+  const internalConversationSignature = t('messages:templates.internal_conversation_default_signature', {
     user: user.firstName + ' ' + user.lastName,
   });
 
@@ -379,7 +379,10 @@ export const SupportMessageForm: React.FC<{
       );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
 
-      const signature = !!props.message?.conversationId ? internalConversationSignature : emailBody;
+      let signature =
+        contactMeans === 'draken' ? internalConversationSignature : removeEmailInformation(contactMeans, emailBody);
+
+      removeEmailInformation;
 
       setValue('messageBody', formatMessage(signature + historyHeader + props.message.messageBody));
       trigger();
@@ -395,14 +398,14 @@ export const SupportMessageForm: React.FC<{
           break;
 
         case 'draken':
-        case 'minasidor':
           body = internalConversationSignature;
           break;
 
         default:
-          body = emailBody;
+          body = removeEmailInformation(contactMeans, emailBody);
           break;
       }
+
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
       setValue('emails', []);
