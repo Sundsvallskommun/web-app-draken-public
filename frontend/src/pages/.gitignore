@@ -1,0 +1,7 @@
+# This folder is used for component testing using cypress
+# Can be removed when a fix for cypress is available
+
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore

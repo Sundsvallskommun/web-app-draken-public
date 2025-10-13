@@ -30,6 +30,11 @@ export const mockErrand_base = {
     caseTitleAddition: 'Nytt parkeringstillstånd',
     diaryNumber: '',
     phase: 'Aktualisering',
+    status: {
+      statusType: 'Under beslut',
+      description: 'Ärendet beslutas',
+      created: '2024-05-21T13:37:11.359765+02:00',
+    },
     statuses: [
       {
         statusType: 'Under granskning',

@@ -7,17 +7,15 @@ import { getAdminUsers } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { default as NextLink } from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 const Registrera: React.FC = () => {
-  const { setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
+  const { setAdministrators, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
     getAdminUsers().then((data) => {
       setAdministrators(data);
     });
-    setSubPage('Registrera ärende');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

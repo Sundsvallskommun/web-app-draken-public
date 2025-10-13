@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 const Arende: React.FC = () => {
   const pathName = usePathname();
   const [errandId, setErrandId] = useState<string>();
-  const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
+  const { setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
@@ -35,7 +35,6 @@ const Arende: React.FC = () => {
     getAdminUsers().then((data) => {
       setAdministrators(data);
     });
-    setSubPage('Pågående ärende');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
