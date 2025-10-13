@@ -1,6 +1,5 @@
 'use client';
 
-import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
@@ -35,7 +34,6 @@ import { validateErrandForDecision, validateStatusForDecision } from '@casedata/
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
-  getOwnerStakeholderPartyId,
   validateOwnerForSendingDecision,
   validateOwnerForSendingDecisionByEmail,
   validateOwnerForSendingDecisionByLetter,
@@ -140,7 +138,7 @@ export const CasedataDecisionTab: React.FC<{
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   const [textIsDirty, setTextIsDirty] = useState(false);
 
-  const ownerPartyId = getOwnerStakeholderPartyId(errand);
+  const ownerPartyId = getOwnerStakeholder(errand).personId;
 
   const { services } = useErrandServices({
     municipalityId,

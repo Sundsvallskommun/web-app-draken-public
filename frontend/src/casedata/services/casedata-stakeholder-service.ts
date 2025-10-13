@@ -264,9 +264,6 @@ export const getFellowApplicants: (e: IErrand) => CasedataOwnerOrContact[] = (e)
 export const getOwnerStakeholder: (e: IErrand) => CasedataOwnerOrContact = (e) =>
   e.stakeholders?.filter((s) => s.roles.includes(Role.APPLICANT))?.[0];
 
-export const getOwnerStakeholderPartyId: (e: IErrand) => string = (e) =>
-  e.stakeholders?.filter((s) => s.roles.includes(Role.APPLICANT))?.[0]?.personId;
-
 export const getStakeholdersByRelation: (e: IErrand, relation: Role) => CasedataOwnerOrContact[] = (e, relation) =>
   e.stakeholders?.filter((s) => s.roles.includes(relation));
 

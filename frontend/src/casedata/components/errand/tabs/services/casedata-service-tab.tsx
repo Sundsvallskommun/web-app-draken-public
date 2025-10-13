@@ -7,7 +7,7 @@ import {
   getAssets,
   updateAsset,
 } from '@casedata/services/asset-service';
-import { getOwnerStakeholderPartyId } from '@casedata/services/casedata-stakeholder-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import SchemaForm from '@common/components/json/schema/schema-form.compontant';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -34,7 +34,7 @@ export const CasedataServicesTab: React.FC = () => {
 
   const assetType = 'FTErrandAssets';
 
-  const partyId = getOwnerStakeholderPartyId(errand);
+  const partyId = getOwnerStakeholder(errand).personId;
   const errandNr = errand.errandNumber!;
 
   useEffect(() => {
