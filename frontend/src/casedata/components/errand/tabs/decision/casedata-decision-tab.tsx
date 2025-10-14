@@ -315,8 +315,10 @@ export const CasedataDecisionTab: React.FC<{
       if (isMEX()) {
         await sendMessage(municipalityId, errand, messageData);
       } else if (isPT() && municipalityId === '2260') {
+        console.log("PT Ånge - beslut skickas ej manuellt");
         // PT Ånge - do nothing, they handle sending themselves
       } else if (isPT()) {
+        console.log("PT Sundsvall - sending decision by letter or email");
         await sendDecisionMessage(municipalityId, errand);
       } else {
         throw new Error('Kontaktsätt saknas');
