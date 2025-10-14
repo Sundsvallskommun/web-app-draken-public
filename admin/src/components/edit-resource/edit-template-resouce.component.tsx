@@ -85,7 +85,7 @@ export const EditTemplateResource: React.FC<EditResourceProps> = ({ isNew }) => 
       </FormControl>
       <FormControl>
         <FormLabel>Standardvärden</FormLabel>
-        <Textarea rows={25} className="w-[130rem]" />
+        <Textarea {...register('defaultValues')} rows={25} className="w-[130rem]" />
       </FormControl>
       <FormControl>
         <FormLabel>Versionsökning</FormLabel>
