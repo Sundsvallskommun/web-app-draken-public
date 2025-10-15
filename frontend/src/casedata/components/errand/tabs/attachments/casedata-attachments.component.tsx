@@ -16,7 +16,7 @@ import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-se
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';
-import { mapAttachmentToUploadFile } from '@common/services/attachment-service';
+import { mapAttachmentToUploadFile, validAttachment } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -231,7 +231,9 @@ export const CasedataAttachments: React.FC = () => {
                 index={i}
                 isEdit={editIndex === i}
                 nameProps={{
-                  description: `Uppladdad: ${dayjs(file?.meta?.created as string).format('YYYY-MM-DD HH:mm')}`,
+                  description: `Uppladdad: ${dayjs(file?.meta?.created as string).format('YYYY-MM-DD HH:mm')}${
+                    file.meta.isValidAttachment ? '' : ' (ogiltig fil)'
+                  }`,
                 }}
                 categoryProps={{
                   categories: isMEX() ? MEXAllAttachmentLabels : PTAttachmentLabels,

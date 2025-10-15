@@ -13,13 +13,15 @@ export function base64ToFile(base64: string, fileName: string, mimeType: string)
 export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
   attachment: Attachment
 ): UploadFile<TExtraMeta> {
+  let file: File;
   if (!attachment.file) {
-    throw new Error(`Attachment "${attachment.name}" saknar base64-innehåll och kan inte konverteras till File`);
+    // throw new Error(`Attachment "${attachment.name}" saknar base64-innehåll och kan inte konverteras till File`);
+    file = new File([], `${attachment.name}`, { type: attachment.mimeType });
+  } else {
+    file = base64ToFile(attachment.file, `${attachment.name}`, attachment.mimeType);
   }
 
-  const file = base64ToFile(attachment.file, `${attachment.name}`, attachment.mimeType);
-
-  return {
+  const a: UploadFile<TExtraMeta> = {
     id: attachment.id?.toString() ?? crypto.randomUUID(),
     file,
     meta: {
@@ -32,6 +34,13 @@ export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
       created: attachment.created,
       updated: attachment.updated,
       ...((attachment.extraParameters ?? {}) as TExtraMeta),
+      isValidAttachment: validAttachment(attachment),
     },
   };
+  console.log('Mapped attachment to upload file:', a);
+  return a;
+}
+
+export function validAttachment(attachment: Attachment): boolean {
+  return !!attachment.file;
 }
