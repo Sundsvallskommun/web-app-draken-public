@@ -311,7 +311,7 @@ export const RenderedSupportMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: formatMessage(sanitized(message.messageBody?.replace(/\r\n/g, '<br>') || '')),
+                __html: message.htmlMessageBody ? message.htmlMessageBody : message.messageBody,
               }}
             />
           </div>

@@ -290,7 +290,7 @@ export const RenderedMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: formatMessage(sanitized(message?.message?.replace(/\r\n/g, '<br>') || '')),
+                __html: message.htmlMessage ? message.htmlMessage : formatMessage(sanitized(message.message)),
               }}
             />
           </div>

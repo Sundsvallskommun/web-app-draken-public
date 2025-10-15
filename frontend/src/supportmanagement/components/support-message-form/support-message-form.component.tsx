@@ -10,7 +10,7 @@ import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import { getSourceRelations } from '@common/services/relations-service';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
+import sanitized, { sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -384,7 +384,14 @@ export const SupportMessageForm: React.FC<{
 
       removeEmailInformation;
 
-      setValue('messageBody', formatMessage(signature + historyHeader + props.message.messageBody));
+      setValue(
+        'messageBody',
+        signature +
+          historyHeader +
+          (props.message.htmlMessageBody
+            ? sanitizeHtmlMessageBody(props.message.htmlMessageBody)
+            : props.message.messageBody)
+      );
       trigger();
     } else {
       let body: string;
