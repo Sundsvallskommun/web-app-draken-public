@@ -1169,6 +1169,3 @@ export const requestInternal: (
   }
   return setSupportErrandStatus(errand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
 };
-function SanitizeHTML(description: string): string {
-  throw new Error('Function not implemented.');
-}
