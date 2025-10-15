@@ -2,14 +2,16 @@ import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isROB } from '@common/services/application-service';
+import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
+import store from '@supportmanagement/services/storage-service';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
@@ -17,8 +19,6 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-import store from '@supportmanagement/services/storage-service';
-import { formatErrandDescription } from '@common/services/sanitizer-service';
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -625,7 +625,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
-      description: formatErrandDescription(e?.description),
+      description: sanitized(e?.description),
       customer:
         e.stakeholders
           ?.filter((s) => s.role === 'PRIMARY')
@@ -1169,3 +1169,6 @@ export const requestInternal: (
   }
   return setSupportErrandStatus(errand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
 };
+function SanitizeHTML(description: string): string {
+  throw new Error('Function not implemented.');
+}

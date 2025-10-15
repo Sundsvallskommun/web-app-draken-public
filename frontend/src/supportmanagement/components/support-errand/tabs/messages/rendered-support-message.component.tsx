@@ -311,7 +311,7 @@ export const RenderedSupportMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: message.htmlMessageBody ? message.htmlMessageBody : message.messageBody,
+                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : message.messageBody,
               }}
             />
           </div>
