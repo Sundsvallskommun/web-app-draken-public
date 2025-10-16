@@ -31,10 +31,11 @@
       "LOP": "Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br><br><br>Vi önskar dig en fortsatt fin dag!<br><br>Med vänlig hälsning<br><strong>Lön och pension</strong>",
       "IK": "Hej,<br><br>Här kommer informationen vi pratade om:<br><br><br>Med vänliga hälsningar {{user}}<br><strong>Intern Kundtjänst</strong>",
       "ROB": "",
+      "case_data": "Hej,<br><br><br><br>Detta sms går inte att svara på.<br><br>Med vänlig hälsning<br>{{user}}<br>Sundsvalls kommun<br>Mark- och exploateringsavdelningen",
       "default": "Hej,<br><br>"
     },
-    "case_data_default_signature": "<br><br>Med vänlig hälsning<br><br><b>{{user}} </b><br><br><b>Sundsvalls kommun</b><br>{{department}} <p>851 85 Sundsvall</p><p>Besöksadress: Norrmalmsgatan 4</p><p>Telefon: +46 60 19 10 00</p><a href=\"http://www.sundsvall.se/\" target=\"_blank\">www.sundsvall.se</a><br><br><p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br> <p>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR).</p><br> <p>Läs mer på <a href=\"http://www.sundsvall.se/personuppgifter\" target=\"_blank\">www.sundsvall.se/personuppgifter</a>.</p>",
-    "conversation_default_signature": "<br><br>Med vänlig hälsning<br>{{user}}",
+    "case_data_default_signature": "<br><br>Med vänlig hälsning<br><br><b>{{user}} </b><br><br><b>Sundsvalls kommun</b><br>{{department}} <p>851 85 Sundsvall</p><p>Besöksadress: Norrmalmsgatan 4</p><p>Telefon: +46 60 19 10 00</p><a href=\"http://www.sundsvall.se/\" target=\"_blank\">www.sundsvall.se</a><br><br>{{email_information}}<p>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR).</p><br> <p>Läs mer på <a href=\"http://www.sundsvall.se/personuppgifter\" target=\"_blank\">www.sundsvall.se/personuppgifter</a>.</p>",
+    "internal_conversation_default_signature": "<br><br>Med vänlig hälsning<br>{{user}}",
     "newline": "<br>"
   }
 }

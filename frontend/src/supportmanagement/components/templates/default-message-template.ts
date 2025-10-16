@@ -31,3 +31,15 @@ export function getDefaultSmsBody(user: User, t: TFunction): string {
     defaultValue: t('messages:templates.sms.default'),
   });
 }
+
+export function removeEmailInformation(contactMeans: string, template: string): string {
+  let temporaryTemplate = template;
+  if (contactMeans !== 'email' && template.includes('Vänligen ändra inte ämnesraden')) {
+    temporaryTemplate = temporaryTemplate.replace(
+      /Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>?/gi,
+      ''
+    );
+    temporaryTemplate = temporaryTemplate.replace(/Vänligen ändra inte ämnesraden om du besvarar mejlet.<br>?/gi, '');
+  }
+  return temporaryTemplate;
+}

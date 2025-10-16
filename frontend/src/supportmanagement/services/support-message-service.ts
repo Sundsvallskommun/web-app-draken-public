@@ -1,13 +1,13 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isIK, isKA, isLOP } from '@common/services/application-service';
+import sanitized from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
+import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
-import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
 
 export interface MessageRequest {
   municipalityId: string;
@@ -34,6 +34,7 @@ export interface Message {
   direction: string;
   errandNumber: string;
   messageBody: string;
+  htmlMessageBody?: string;
   sent: string;
   subject: string;
   sender: string;

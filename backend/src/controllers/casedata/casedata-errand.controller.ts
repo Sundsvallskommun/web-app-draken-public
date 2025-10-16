@@ -270,18 +270,18 @@ export class CaseDataErrandController {
 
     const administratorCheckedData = errandData;
 
-    const data = makeErrandApiData(administratorCheckedData, errandId.toString());
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}`;
+    const errandApiData = makeErrandApiData(administratorCheckedData, errandId.toString());
+    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}`;
     const baseURL = apiURL(this.SERVICE);
-    const strippedStakeholders = { ...data, stakeholders: [] };
+    const strippedStakeholders = { ...errandApiData, stakeholders: [] };
     const patchResponse = await this.apiService
       .patch<ErrandDTO, Partial<PatchErrandDTO>>({ url, baseURL, data: strippedStakeholders }, req.user)
       .then(errandPatchResponse => {
         const stakeholderPatchPromises =
-          data.stakeholders
+          errandApiData.stakeholders
             ?.filter(s => !s.id)
             .map(async (stakeholder, idx) => {
-              const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/stakeholders`;
+              const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}/stakeholders`;
               const baseURL = apiURL(this.SERVICE);
               const patchStakeholder = () =>
                 this.apiService.patch<any, StakeholderDTO>({ url, baseURL, data: stakeholder }, req.user).catch(e => {
@@ -293,14 +293,13 @@ export class CaseDataErrandController {
             }) || [];
 
         const stakeholderPutPromises =
-          data.stakeholders
+          errandApiData.stakeholders
             ?.filter(s => s.id)
             .map(async (stakeholder, idx) => {
-              const data = stakeholder;
-              const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/stakeholders/${stakeholder.id}`;
+              const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}/stakeholders/${stakeholder.id}`;
               const baseURL = apiURL(this.SERVICE);
               const putStakeholder = () =>
-                this.apiService.put<any, StakeholderDTO>({ url, baseURL, data }, req.user).catch(e => {
+                this.apiService.put<any, StakeholderDTO>({ url, baseURL, data: stakeholder }, req.user).catch(e => {
                   logger.error('Something went wrong when putting stakeholder');
                   logger.error(e);
                   throw e;
