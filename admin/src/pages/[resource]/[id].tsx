@@ -7,6 +7,7 @@ import { Resource, ResourceResponse } from '@interfaces/resource';
 import { ResourceName } from '@interfaces/resource-name';
 import EditLayout from '@layouts/edit-layout/edit-layout.component';
 import { getFormattedFields } from '@utils/formatted-field';
+import { useRouteGuard } from '@utils/routeguard.hook';
 import { stringToResourceName } from '@utils/stringToResourceName';
 import { useCrudHelper } from '@utils/use-crud-helpers';
 import { useResource } from '@utils/use-resource';
@@ -56,8 +57,7 @@ export const EditAssistant: React.FC = () => {
 
   const formdata = getFormattedFields(watch());
 
-  //TODO: Fix route guard
-  // useRouteGuard(isDirty);
+  useRouteGuard(isDirty);
 
   useEffect(() => {
     setNavigate(false);

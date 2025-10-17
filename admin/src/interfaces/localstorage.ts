@@ -19,6 +19,8 @@ export interface LocalStorage {
   setColorScheme: (color: ColorSchemeMode) => void;
   headers: Headers;
   setHeaders: (headers: Headers) => void;
+  basePath: string;
+  setBasePath: (basePath: string) => void;
   resourceData: ResourceData;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setData: (resource: ResourceName, data: Record<string, any>[]) => void;

@@ -16,7 +16,7 @@ export const defaultPermissions: () => Permissions = () => ({
   canEditSupportManagement: false,
   canViewAttestations: false,
   canEditAttestations: false,
-  canUseAdminPanel: true,
+  canUseAdminPanel: false,
 });
 
 enum RoleOrderEnum {
@@ -29,9 +29,16 @@ enum RoleOrderEnum {
   'draken_ks_developer',
   'draken_mex_developer',
   'draken_pt_developer',
+  'admin_panel_group',
 }
 
 const roles = new Map<InternalRole, Partial<Permissions>>([
+  [
+    'admin_panel_group',
+    {
+      canUseAdminPanel: true,
+    },
+  ],
   [
     'draken_pt_developer',
     {

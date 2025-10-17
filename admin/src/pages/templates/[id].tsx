@@ -8,6 +8,7 @@ import { ResourceName } from '@interfaces/resource-name';
 import { ID } from '@interfaces/resource-services';
 import EditLayout from '@layouts/edit-layout/edit-layout.component';
 import { getFormattedFields } from '@utils/formatted-field';
+import { useRouteGuard } from '@utils/routeguard.hook';
 import { useCrudHelper } from '@utils/use-crud-helpers';
 import { useResource } from '@utils/use-resource';
 import { GetServerSideProps } from 'next';
@@ -56,8 +57,7 @@ export const EditTemplates: React.FC = () => {
 
   const formdata = getFormattedFields(watch());
 
-  //TODO: Fix route guard
-  // useRouteGuard(isDirty);
+  useRouteGuard(isDirty);
 
   useEffect(() => {
     setNavigate(false);

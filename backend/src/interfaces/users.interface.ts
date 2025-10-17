@@ -30,7 +30,8 @@ export type InternalRole =
   | 'draken_mex_developer'
   | 'draken_ks_developer'
   | 'draken_ka_developer'
-  | 'draken_lop_developer';
+  | 'draken_lop_developer'
+  | 'admin_panel_group';
 export enum InternalRoleEnum {
   'draken_pt_admin',
   'draken_mex_admin',
@@ -43,6 +44,7 @@ export enum InternalRoleEnum {
   'draken_ks_developer',
   'draken_ka_developer',
   'draken_lop_developer',
+  'admin_panel_group',
 }
 
 export type InternalRoleMap = Map<InternalRole, Partial<Permissions>>;

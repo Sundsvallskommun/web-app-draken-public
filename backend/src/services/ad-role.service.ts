@@ -39,4 +39,6 @@ if (isMEX()) {
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_lop_developer';
 }
 
+mapping[process.env.ADMIN_PANEL_GROUP.toLocaleLowerCase()] = 'admin_panel_group';
+
 export const roleADMapping: RoleADMapping = mapping;

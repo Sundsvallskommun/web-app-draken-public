@@ -23,12 +23,10 @@ export const LoginGuard: React.FC<{ children?: React.ReactNode }> = ({ children 
   }
 
   // Routes by permissions
-  // if (
-  //   (router.pathname == '/route-by-permission' && !user.permissions.canEditSystemMessages)
-  // ) {
-  //   router.push('/');
-  //   return <LoaderFullScreen />;
-  // }
+  if (!user.permissions.canUseAdminPanel) {
+    router.push('/');
+    return <LoaderFullScreen />;
+  }
 
   return <>{children}</>;
 };

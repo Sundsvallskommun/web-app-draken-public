@@ -7,6 +7,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Req, Res, UseBefore } fro
 import { OpenAPI } from 'routing-controllers-openapi';
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
 
 interface ResponseData {
   data: any;
@@ -196,7 +197,7 @@ export class TemplateController {
   @Post('/templates')
   @HttpCode(201)
   @OpenAPI({ summary: 'Store a template' })
-  @UseBefore(authMiddleware)
+  @UseBefore(authMiddleware, hasPermissions(['canUseAdminPanel']))
   async decisionPreviewDirectPdf(@Req() req: RequestWithUser, @Body() template: Template): Promise<{ data: PdfRender; message: string }> {
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/templates`;
 

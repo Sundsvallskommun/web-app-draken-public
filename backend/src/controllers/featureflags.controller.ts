@@ -2,6 +2,7 @@ import { Controller, Get, Put, Param, Body, Req, UseBefore } from 'routing-contr
 import { PrismaClient } from '@prisma/client';
 import authMiddleware from '@middlewares/auth.middleware';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
 
 const prisma = new PrismaClient();
 const application = process.env.APPLICATION || 'KC';
@@ -54,8 +55,8 @@ export class FeatureFlagController {
   }
 
   @Put('/flags/:id')
+  @UseBefore(hasPermissions(['canUseAdminPanel']))
   async updateFlag(@Param('id') id: number, @Body() body: { enabled: boolean }) {
-    console.log(body);
     const updated = await prisma.featureFlags.update({
       where: { id },
       data: { enabled: body.enabled },
