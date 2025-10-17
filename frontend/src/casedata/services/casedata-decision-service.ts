@@ -194,6 +194,13 @@ export const getPhrases: (
   const identifier = `sbk.rph.${templateType}.phrases.${capacity}.${outcome.toLowerCase()}`;
   const selector: TemplateSelector = {
     identifier: identifier,
+    parameters: {
+      walkingDistance:
+        errand.extraParameters.find((p) => p.key === 'disability.walkingDistance.max')?.values?.[0] ?? 'NNN',
+      disabilityAid:
+        errand.extraParameters.find((p) => p.key === 'disability.aid')?.values?.[0].toLocaleLowerCase() ?? '(saknas)',
+      disabilityReason: errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '(saknas)',
+    },
   };
   return apiService
     .post<ApiResponse<{ content: string }>, TemplateSelector>('templates/phrases', selector)

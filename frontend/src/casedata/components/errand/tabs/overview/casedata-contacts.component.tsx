@@ -2,6 +2,7 @@ import {
   createEmptyContact,
   SimplifiedContactForm,
 } from '@casedata/components/errand/forms/simplified-contact-form.component';
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
@@ -27,6 +28,9 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
+  const isStakeholderModificationLocked = (stakeholder: CasedataOwnerOrContact) =>
+    isErrandLocked(errand) ||
+    (errand?.channel === Channels.ESERVICE_KATLA && stakeholder.roles.includes(Role.APPLICANT));
 
   useEffect(() => {
     setAddContact(errand.status?.statusType !== 'Ärende avslutat');
@@ -94,6 +98,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
   const renderContact = (contact: CasedataOwnerOrContact, index: number, label: string) => {
     if (contact.removed) return null;
+    const stakeholderModificationLocked = isStakeholderModificationLocked(contact);
 
     return (
       <div className="w-full" key={`rendered-${contact.clientId ?? contact.id ?? index}`}>
@@ -156,33 +161,36 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               >
                 Redigera uppgifter
               </Button>
-              <Button
-                disabled={isErrandLocked(errand)}
-                data-cy="delete-stakeholder-button"
-                variant="link"
-                className="text-body"
-                onClick={() => {
-                  return deleteConfirm
-                    .showConfirmation(
-                      'Ta bort?',
-                      `Vill du ta bort denna ${label?.toLowerCase() || 'intressent'}?`,
-                      'Ja',
-                      'Nej',
-                      'info',
-                      'info'
-                    )
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        onRemoveContact(contact.id);
-                      }
-                    });
-                }}
-              >
-                Ta bort
-              </Button>
+              {!stakeholderModificationLocked && (
+                <Button
+                  data-cy="delete-stakeholder-button"
+                  variant="link"
+                  className="text-body"
+                  onClick={() => {
+                    return deleteConfirm
+                      .showConfirmation(
+                        'Ta bort?',
+                        `Vill du ta bort denna ${label?.toLowerCase() || 'intressent'}?`,
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      )
+                      .then((confirmed) => {
+                        if (confirmed) {
+                          onRemoveContact(contact.id);
+                        }
+                      });
+                  }}
+                >
+                  Ta bort
+                </Button>
+              )}
+
               {!contact.roles.includes(Role.APPLICANT) &&
               !stakeholdersFields.some((s) => s.roles.includes(Role.APPLICANT)) ? (
                 <Button
+                  disabled={stakeholderModificationLocked}
                   data-cy="make-stakeholder-owner-button"
                   variant="link"
                   className="text-body"

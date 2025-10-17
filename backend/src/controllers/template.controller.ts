@@ -59,9 +59,11 @@ export class TemplateController {
   @OpenAPI({ summary: 'Fetch phrases for decision' })
   @UseBefore(authMiddleware)
   async templatePhrases(@Req() req: RequestWithUser, @Body() templateSelector: TemplateSelector): Promise<ResponseData> {
-    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/templates/${templateSelector.identifier}`;
-    const res = await this.apiService.get<Template>({ url }, req.user);
-    return { data: res.data, message: 'success' } as ResponseData;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/render`;
+    const res = await this.apiService.post<PdfRender, TemplateSelector>({ url, data: templateSelector }, req.user).catch(e => {
+      throw e;
+    });
+    return { data: { content: res.data.output }, message: 'success' } as ResponseData;
   }
 
   @Get('/templates/decision/driver/approval')
