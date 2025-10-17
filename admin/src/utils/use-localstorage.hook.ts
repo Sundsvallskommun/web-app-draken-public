@@ -17,6 +17,8 @@ export const useLocalStorage = create(
       setColorScheme: (colorScheme) => set(() => ({ colorScheme })),
       headers: {},
       setHeaders: (headers) => set((state) => ({ headers: { ...state.headers, ...headers } })),
+      basePath: '',
+      setBasePath: (basePath) => set(() => ({ basePath })),
       resourceData: {},
       setData: (resource, data) =>
         set((state) => {
