@@ -252,10 +252,10 @@ För KS:
 
 ```
 cd backend
-yarn prisma:createdb:ks
-yarn prisma:generate:ks
-yarn prisma:migrate:ks
-yarn prisma:seed:ks
+yarn prisma:createdb:kc
+yarn prisma:generate:kc
+yarn prisma:migrate:kc
+yarn prisma:seed:kc
 ```
 
 För MEX:

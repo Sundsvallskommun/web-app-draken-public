@@ -26,7 +26,7 @@
     "prisma:migrate:ik": "dotenv -e .env.ik.development.local -e .env.ik.production.local prisma migrate deploy",
     "prisma:seed:ik": "dotenv -e .env.ik.development.local -e .env.ik.production.local ts-node prisma/seed.ts",
     "prisma:createdb:kc": "dotenv -e .env.kc.development.local -e .env.kc.production.local -- prisma migrate dev --name init",
-    "prisma:prisma::kc": "dotenv -e .env.kc.development.local -e .env.kc.production.local prisma generate",
+    "prisma:generate:kc": "dotenv -e .env.kc.development.local -e .env.kc.production.local prisma generate",
     "prisma:migrate:kc": "dotenv -e .env.kc.development.local -e .env.kc.production.local prisma migrate deploy",
     "prisma:seed:kc": "dotenv -e .env.kc.development.local -e .env.kc.production.local ts-node prisma/seed.ts",
     "prisma:createdb:ka": "dotenv -e .env.ka.development.local -e .env.ka.production.local -- prisma migrate dev --name init",
