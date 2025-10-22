@@ -5,13 +5,23 @@ import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { getCaseLabels, isErrandLocked, municipalityIds } from '@casedata/services/casedata-errand-service';
+import { EXTRAPARAMETER_SEPARATOR } from '@casedata/services/casedata-extra-parameters-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
+import {
+  cx,
+  Disclosure,
+  FormControl,
+  FormErrorMessage,
+  FormHelperText,
+  FormLabel,
+  Input,
+  Select,
+} from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { useFormContext, UseFormReturn, useWatch } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
 export interface CasedataFormModel {
   id: string;
@@ -49,6 +59,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
+  const form = useFormContext<IErrand>();
+
   const {
     register,
     watch,
@@ -71,6 +83,10 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
 
   const { caseType, priority } = watch();
   const caseTypesHiddenFromRegistation = Object.keys(CaseTypesHiddenFromRegistration);
+  const diagnoses = useWatch<string[]>({
+    name: `medical${EXTRAPARAMETER_SEPARATOR}diagnoses` as any,
+  });
+  const priorityForcedByDiagnoses = Array.isArray(diagnoses) && diagnoses.includes('PALLIATIVE_CARE');
 
   return (
     <div className="w-full py-24 px-32">
@@ -192,7 +208,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 <FormLabel>Prioritet</FormLabel>
                 <Select
                   {...register('priority')}
-                  disabled={isErrandLocked(errand)}
+                  disabled={isErrandLocked(errand) || priorityForcedByDiagnoses}
                   data-cy="priority-input"
                   value={priority}
                   className="w-full text-dark-primary"
@@ -216,6 +232,11 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                     );
                   })}
                 </Select>
+                {priorityForcedByDiagnoses && (
+                  <FormHelperText className="mt-xs text-dark-secondary">
+                    Prioriteten är låst till Hög när ärendet gäller palliativ vård.
+                  </FormHelperText>
+                )}
                 {errors.priority && (
                   <div className="my-sm text-error">
                     <FormErrorMessage>{'errors.priority?.message'}</FormErrorMessage>

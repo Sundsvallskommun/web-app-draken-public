@@ -1,5 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { getErrand, validateAction } from '@casedata/services/casedata-errand-service';
+import { Priority } from '@casedata/interfaces/priority';
+import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
@@ -16,7 +17,7 @@ import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-
 import { IconName } from 'lucide-react/dynamic';
 import dynamic from 'next/dynamic';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -30,25 +31,21 @@ interface CasedataDetailsProps {
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
-  const [loading, setIsLoading] = useState<boolean>();
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
-  }, [user, errand]);
-
   const form = useFormContext<IErrand>();
 
   const { watch, setValue, trigger } = form;
 
-  const { description } = watch();
+  const description = watch('description');
+  const priority = watch('priority');
+  const diagnoses = useWatch<string[]>({
+    name: `medical${EXTRAPARAMETER_SEPARATOR}diagnoses` as any,
+  });
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
-      setIsLoading(undefined);
       props.setUnsaved(false);
       return getErrand(municipalityId, errand.id.toString())
         .then((res) => {
@@ -59,10 +56,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               status: 'success',
             })
           );
-          setIsLoading(undefined);
         })
         .catch(() => {
-          setIsLoading(undefined);
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -90,7 +85,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         const normalizedArray = Array.isArray(rawValue)
           ? rawValue
           : typeof rawValue === 'string'
-          ? rawValue.split(',').map((v) => v.trim()).filter((v) => v !== '')
+          ? rawValue
+              .split(',')
+              .map((v) => v.trim())
+              .filter((v) => v !== '')
           : [];
         setValue<any>(key, normalizedArray, { shouldDirty: false });
       } else {
@@ -101,6 +99,14 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     setValue('description', errand.description || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
+
+  useEffect(() => {
+    if (!Array.isArray(diagnoses)) return;
+    if (!diagnoses.includes('PALLIATIVE_CARE')) return;
+    if (priority === Priority.HIGH) return;
+
+    setValue('priority', Priority.HIGH, { shouldDirty: true });
+  }, [diagnoses, priority, setValue]);
 
   const renderSection = (fields: UppgiftField[], label: string, icon: IconName) => {
     const isAppeal = errand.caseType === 'APPEAL';
