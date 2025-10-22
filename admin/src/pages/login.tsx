@@ -31,7 +31,10 @@ export default function Start() {
   };
 
   const onLogin = () => {
-    const path = router.query.path || new URLSearchParams(window.location.search).get('path') || '';
+    let path = router.query.path || new URLSearchParams(window.location.search).get('path') || '';
+    if (typeof path === 'string' && !path.startsWith(process.env.NEXT_PUBLIC_BASE_PATH ?? '')) {
+      path = process.env.NEXT_PUBLIC_BASE_PATH + path;
+    }
 
     const url = new URL(apiURL('/saml/login'));
     const queries = new URLSearchParams({
@@ -47,13 +50,7 @@ export default function Start() {
     setInitalFocus();
     if (!router.isReady) return;
     if (isLoggedOut) {
-      router.push(
-        {
-          pathname: '/login',
-        },
-        '/login',
-        { shallow: true }
-      );
+      router.push('/login', '/login', { shallow: true });
       setIsLoading(false);
     } else {
       if (failMessage === 'NOT_AUTHORIZED' && autoLogin) {

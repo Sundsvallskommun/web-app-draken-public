@@ -25,7 +25,6 @@ export const LoginGuard: React.FC<{ children?: React.ReactNode }> = ({ children 
   // Routes by permissions
   if (!user.permissions.canUseAdminPanel) {
     router.push('/');
-    return <LoaderFullScreen />;
   }
 
   return <>{children}</>;
