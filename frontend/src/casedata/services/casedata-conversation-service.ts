@@ -159,16 +159,19 @@ export const getOrCreateConversationId = async (
   // relationErrands: Relations[],
   messageConversationId: string
 ): Promise<string> => {
-  const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
+  const conversationType = contactMeans === 'draken' || contactMeans === 'katla' ? 'INTERNAL' : 'EXTERNAL';
 
   // const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
 
   const conversations = await getConversations(municipalityId, errand.id);
+  console.log('conversations', conversations);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
 
   // const existingInternalConversation = conversations.data.find(
   //   (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation.id
   // );
+
+  const existingRelationlessConversation = conversations.data.find((c) => c.relationIds.length === 0);
 
   let conversationId: string | undefined = undefined;
 
@@ -178,6 +181,10 @@ export const getOrCreateConversationId = async (
 
   if (contactMeans === 'minasidor' && existingExternalConversation) {
     conversationId = existingExternalConversation.id;
+  }
+
+  if (contactMeans === 'katla' && existingRelationlessConversation) {
+    conversationId = existingRelationlessConversation.id;
   }
 
   if (messageConversationId) {
