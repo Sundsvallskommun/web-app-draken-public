@@ -27,14 +27,12 @@ import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
 export const PhaseChanger = () => {
   const {
-    municipalityId,
     user,
     errand,
     setErrand,
     administrators,
     uiPhase,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  }: { user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
@@ -145,7 +143,7 @@ export const PhaseChanger = () => {
       showSaveError();
       return;
     }
-    return setAdministrator(municipalityId, errand, admin)
+    return setAdministrator(errand, admin)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -154,7 +152,7 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
         reset();
         pollDisplayPhase();
       })
@@ -174,8 +172,8 @@ export const PhaseChanger = () => {
     try {
       setPhaseDialogOpen(false);
       await errandSave();
-      await triggerErrandPhaseChange(municipalityId, errand);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await triggerErrandPhaseChange(errand);
+      const res = await getErrand(errand.id.toString());
       setErrand(res.errand);
 
       toastMessage(

@@ -5,6 +5,7 @@ import { getErrandPropertyDesignations } from '@casedata/services/casedata-facil
 import { getSSNFromPersonId, getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import renderContractTermCheckboxList from '@casedata/services/contract-render-service';
 import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
+import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -19,10 +20,9 @@ import {
   RadioButton,
   Table,
 } from '@sk-web-gui/react';
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
-import sanitized from '@common/services/sanitizer-service';
 
 export const KopeAvtal: React.FC<{
   changeBadgeColor;
@@ -32,7 +32,7 @@ export const KopeAvtal: React.FC<{
   buyers: KopeavtalStakeholder[];
   updateStakeholders: () => void;
 }> = ({ changeBadgeColor, onSave, existingContract, sellers, buyers, updateStakeholders }) => {
-  const { municipalityId, errand, user } = useAppContext();
+  const { errand, user } = useAppContext();
   const { register, watch, setValue, control, getValues, trigger } = useFormContext<
     KopeavtalsTemplate & KopeAvtalsData
   >();
@@ -82,7 +82,7 @@ export const KopeAvtal: React.FC<{
 
   useEffect(() => {
     buyers.forEach(async (b: KopeavtalStakeholder, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, b.partyId);
+      const ssn = await getSSNFromPersonId(b.partyId);
       b.personalNumber = ssn;
       setValue('buyers', buyers);
     });
@@ -97,7 +97,7 @@ export const KopeAvtal: React.FC<{
 
   useEffect(() => {
     sellers.forEach(async (s: KopeavtalStakeholder, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(s.partyId);
       s.personalNumber = ssn;
       setValue('sellers', sellers);
     });
@@ -163,7 +163,7 @@ export const KopeAvtal: React.FC<{
 
   useEffect(() => {
     if (unsaved) {
-      saveDoneMarksOnErrande(municipalityId, errand, 'kopeavtal', doneMark);
+      saveDoneMarksOnErrande(errand, 'kopeavtal', doneMark);
       setUnsaved(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

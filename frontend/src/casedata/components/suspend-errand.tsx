@@ -25,12 +25,10 @@ export interface SuspendFormProps {
 
 export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    municipalityId,
     errand,
     setErrand,
     user,
   }: {
-    municipalityId: string;
     errand: IErrand;
     setErrand: any;
     user;
@@ -54,7 +52,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
     setError(false);
-    return setErrandStatus(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
+    return setErrandStatus(errand.id, ErrandStatus.Parkerad, data.date, data.comment)
       .then((res) => {
         toastMessage(
           getToastOptions({
@@ -64,7 +62,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         );
         setIsLoading(false);
         setShowModal(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
       })
       .catch((e) => {
         toastMessage({

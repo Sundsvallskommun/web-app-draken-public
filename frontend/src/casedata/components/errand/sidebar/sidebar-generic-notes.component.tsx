@@ -22,7 +22,7 @@ export const SidebarGenericNotes: React.FC<{
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
+  const { user, errand, setErrand, administrators, uiPhase } = useAppContext();
   const [selectedNote, setSelectedNote] = useState<ErrandNote>();
   const [notes, setNotes] = useState<ErrandNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +70,7 @@ export const SidebarGenericNotes: React.FC<{
       }
     }
     if (createNote) {
-      return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
+      return saveErrandNote(errand.id?.toString(), newNote)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -79,7 +79,7 @@ export const SidebarGenericNotes: React.FC<{
             })
           );
           setIsLoading(false);
-          getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+          getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
           setValue('text', '');
         })
         .catch(() => {
@@ -131,7 +131,7 @@ export const SidebarGenericNotes: React.FC<{
       extraParameters: {},
     };
 
-    return saveErrandNote(municipalityId, errand.id?.toString(), editNote)
+    return saveErrandNote(errand.id?.toString(), editNote)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -139,7 +139,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
         setEditNote(false);
       })
@@ -157,7 +157,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   const removeNote = (inNote: ErrandNote) => {
-    return deleteErrandNote(municipalityId, errand.id?.toString(), inNote.id?.toString())
+    return deleteErrandNote(errand.id?.toString(), inNote.id?.toString())
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -165,7 +165,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
       })
       .catch(() => {

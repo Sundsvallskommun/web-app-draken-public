@@ -1,12 +1,4 @@
-import { Priority } from '@supportmanagement/interfaces/priority';
-import { ApiResponse, apiService } from '@common/services/api-service';
-import dayjs from 'dayjs';
-import { fetchNote } from './casedata-errand-notes-service';
-import { fetchStakeholder } from './casedata-stakeholder-service';
-import { fetchAttachment, getAttachmentLabel } from './casedata-attachment-service';
-import { fetchDecision, getDecisionLabel } from './casedata-decision-service';
-import { fetchMessage } from './casedata-message-service';
-import { EmployeeInfo, getUserInfo } from '@common/services/user-service';
+import { CaseLabels } from '@casedata/interfaces/case-label';
 import {
   ErrandChange,
   ErrandHistory,
@@ -15,7 +7,15 @@ import {
   ParsedErrandHistory,
 } from '@casedata/interfaces/history';
 import { PrettyRole } from '@casedata/interfaces/role';
-import { CaseLabels } from '@casedata/interfaces/case-label';
+import { ApiResponse, apiService } from '@common/services/api-service';
+import { getUserInfo } from '@common/services/user-service';
+import { Priority } from '@supportmanagement/interfaces/priority';
+import dayjs from 'dayjs';
+import { fetchAttachment, getAttachmentLabel } from './casedata-attachment-service';
+import { fetchDecision, getDecisionLabel } from './casedata-decision-service';
+import { fetchNote } from './casedata-errand-notes-service';
+import { fetchMessage } from './casedata-message-service';
+import { fetchStakeholder } from './casedata-stakeholder-service';
 
 const relevantProperties = [
   'caseType',
@@ -34,11 +34,8 @@ const relevantProperties = [
   'attachments',
 ];
 
-export const getErrandHistory: (municipalityId: string, errandId: string) => Promise<ParsedErrandHistory> = (
-  municipalityId,
-  errandId
-) => {
-  const url = `${municipalityId}/errands/${errandId}/history`;
+export const getErrandHistory: (errandId: string) => Promise<ParsedErrandHistory> = (errandId) => {
+  const url = `casedata/errands/${errandId}/history`;
   return apiService
     .get<ApiResponse<ErrandHistory>>(url)
     .then((res) =>
@@ -247,16 +244,15 @@ const genericFailedFetch = () => {
   return data;
 };
 
-export const fetchChangeData: (
-  municipalityId: string,
-  errandId: number,
-  c: ParsedErrandChange
-) => Promise<GenericChangeData> = (municipalityId, errandId, c) => {
+export const fetchChangeData: (errandId: number, c: ParsedErrandChange) => Promise<GenericChangeData> = (
+  errandId,
+  c
+) => {
   if (c?.changeType === 'ListChange') {
     if (c.elementChanges?.[0].elementChangeType === 'ValueAdded') {
       switch (c.property) {
         case 'notes':
-          return fetchNote(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchNote(errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: res.data.extraParameters['type'] === 'comment' ? 'Ny kommentar' : 'Ny tjänsteanteckning',
@@ -268,7 +264,7 @@ export const fetchChangeData: (
             })
             .catch(genericFailedFetch);
         case 'stakeholders':
-          return fetchStakeholder(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchStakeholder(errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny handläggare/intressent',
@@ -282,7 +278,7 @@ export const fetchChangeData: (
             })
             .catch(genericFailedFetch);
         case 'attachments':
-          return fetchAttachment(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
+          return fetchAttachment(errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny bilaga',
@@ -346,7 +342,7 @@ export const fetchChangeData: (
     };
     return Promise.resolve(details);
   } else if (c?.changeType === 'MapChange' && c?.property === 'messageIds') {
-    return fetchMessage(municipalityId, c.entryChanges?.[0]?.key as any)
+    return fetchMessage(c.entryChanges?.[0]?.key as any)
       .then((res) => {
         const data: GenericChangeData = {
           type: 'Nytt meddelande',

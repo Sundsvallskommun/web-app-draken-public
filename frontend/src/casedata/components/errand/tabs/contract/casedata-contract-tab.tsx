@@ -9,7 +9,6 @@ import {
 } from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {
   CasedataContractAttachment,
@@ -28,6 +27,7 @@ import {
   saveContractToErrand,
 } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -46,7 +46,6 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { ContractNavigation } from './contract-navigation';
 import { KopeAvtal } from './kopeavtal';
 import { Lagenhetsarrende } from './lagenhetsarrende';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 
 interface CasedataContractProps {
   update: () => void;
@@ -67,12 +66,7 @@ interface ContractStatus {
 // generates the form fields based on this interface.
 
 export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
+  const { errand, setErrand, user }: { errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
     useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
@@ -160,13 +154,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     setIsLoading('Sparar avtal...');
     return saveContract(data)
       .then(async (res: Contract) => {
-        await saveContractToErrand(municipalityId, res.contractId, errand);
+        await saveContractToErrand(res.contractId, errand);
         return res;
       })
       .then((res) => {
         setIsLoading(undefined);
         props.setUnsaved(false);
-        getErrand(municipalityId, errand.id.toString())
+        getErrand(errand.id.toString())
           .then((res) => {
             setErrand(res.errand);
             toastMessage(
@@ -195,7 +189,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     const saved =
       allowed && !isErrandLocked(errand) ? await saveContract(contractData) : getContractType(existingContract);
     if (allowed && !isErrandLocked(errand)) {
-      await saveContractToErrand(municipalityId, saved.contractId, errand);
+      await saveContractToErrand(saved.contractId, errand);
     }
 
     const pdf = await renderContractPdf(errand, saved, existingContract?.status === 'DRAFT' ? true : false);
@@ -327,7 +321,6 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                       className="mr-8"
                       onClick={() => {
                         const attachment = fetchSignedContractAttachment(
-                          municipalityId,
                           existingContract?.contractId,
                           existingContract?.attachmentMetaData[0].id
                         );
@@ -356,12 +349,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                           .then((confirmed) => {
                             if (confirmed) {
                               deleteSignedContractAttachment(
-                                municipalityId,
                                 existingContract?.contractId,
                                 existingContract?.attachmentMetaData[0].id
                               )
                                 .then(() => {
-                                  getErrand(municipalityId, errand.id.toString()).then((res) => {
+                                  getErrand(errand.id.toString()).then((res) => {
                                     setErrand(res.errand);
                                   });
                                 })

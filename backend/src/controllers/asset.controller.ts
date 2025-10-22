@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { CreateAssetDto, PatchAssetDto } from '@/dtos/assets-dto';
 import { RequestWithUser } from '@interfaces/auth.interface';
@@ -31,7 +32,7 @@ export class AssetController {
     @QueryParam('issued') issued?: string,
     @QueryParam('validTo') validTo?: string,
   ): Promise<ResponseData<Asset[]>> {
-    municipalityId ??= '2281';
+    municipalityId ??= MUNICIPALITY_ID;
     const params = new URLSearchParams();
     if (partyId) params.set('partyId', partyId);
     if (type) params.set('type', type);
@@ -54,7 +55,7 @@ export class AssetController {
     @QueryParam('municipalityId') municipalityId?: string,
     @Body() body?: CreateAssetDto,
   ): Promise<ResponseData<Asset>> {
-    municipalityId ??= '2281';
+    municipalityId ??= MUNICIPALITY_ID;
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets`;
     const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
     return { data: res.data, message: 'created' };
@@ -69,7 +70,7 @@ export class AssetController {
     @QueryParam('municipalityId') municipalityId?: string,
     @Body() body?: PatchAssetDto,
   ): Promise<ResponseData<Asset>> {
-    municipalityId ??= '2281';
+    municipalityId ??= MUNICIPALITY_ID;
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
     const res = await this.apiService.patch<any, any>({ url, data: body }, req.user);
     return { data: res.data, message: 'updated' };

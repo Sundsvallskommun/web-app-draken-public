@@ -53,16 +53,15 @@ export function normalizeToRJSFSchema(input: unknown): RJSFSchema {
   throw new Error('Okänt schemaformat från backend');
 }
 
-export async function getRjsfSchema(municipalityId: string, schemaId: string): Promise<RJSFSchema> {
-  const resp = await getMetadataSchema(municipalityId, schemaId);
+export async function getRjsfSchema(schemaId: string): Promise<RJSFSchema> {
+  const resp = await getMetadataSchema(schemaId);
   return normalizeToRJSFSchema(resp);
 }
 
 export async function getLatestRjsfSchema(
-  municipalityId: string,
   schemaName: string
 ): Promise<{ schema: RJSFSchema; schemaId: string; name?: string; version?: string }> {
-  const resp = await getLatestMetadataSchema(municipalityId, schemaName);
+  const resp = await getLatestMetadataSchema(schemaName);
   const meta = unwrap<MetaPayload>(resp);
   const schema = normalizeToRJSFSchema(meta);
   const schemaId = meta.id ?? '';

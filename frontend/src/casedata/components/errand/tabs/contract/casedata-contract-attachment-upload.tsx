@@ -19,7 +19,7 @@ export interface CasedataSignedContractAttachmentFormModel {
 }
 
 export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> = ({ contractId }) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { errand, setErrand, user } = useAppContext();
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
 
   const toastMessage = useSnackbar();
@@ -121,15 +121,10 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
               loadingText="Laddar upp"
               onClick={(e) => {
                 e.preventDefault();
-                const apiCall = saveSignedContractAttachment(
-                  municipalityId,
-                  contractId,
-                  contractAttachmentFields,
-                  getValues('note')
-                );
+                const apiCall = saveSignedContractAttachment(contractId, contractAttachmentFields, getValues('note'));
                 apiCall
                   .then(() =>
-                    getErrand(municipalityId, errand.id.toString())
+                    getErrand(errand.id.toString())
                       .then((res) => setErrand(res.errand))
                       .then(() => {
                         toastMessage(

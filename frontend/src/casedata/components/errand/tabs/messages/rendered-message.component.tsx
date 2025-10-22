@@ -20,7 +20,7 @@ export const RenderedMessage: React.FC<{
   root?: boolean;
   children: any;
 }> = ({ message, onSelect, setShowMessageComposer, root = false, children }) => {
-  const { user, errand, municipalityId } = useAppContext();
+  const { user, errand } = useAppContext();
   const [allowed, setAllowed] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<boolean>(!message?.children?.length ? true : false);
 
@@ -213,13 +213,7 @@ export const RenderedMessage: React.FC<{
                   key={`${a.fileName}-${idx}`}
                   onClick={() => {
                     if (message.conversationId) {
-                      getConversationAttachment(
-                        municipalityId,
-                        errand.id,
-                        message.conversationId,
-                        message.messageId,
-                        a.attachmentId
-                      )
+                      getConversationAttachment(errand.id, message.conversationId, message.messageId, a.attachmentId)
                         .then((res) => {
                           if (res.data.length !== 0) {
                             const uri = `data:${a.contentType};base64,${res.data}`;
@@ -247,7 +241,7 @@ export const RenderedMessage: React.FC<{
                           });
                         });
                     } else {
-                      messageAttachment(municipalityId, errand.id, message.messageId, a.attachmentId)
+                      messageAttachment(errand.id, message.messageId, a.attachmentId)
                         .then((res) => {
                           if (res.data.length !== 0) {
                             const uri = `data:${a.contentType};base64,${res.data}`;
@@ -266,7 +260,7 @@ export const RenderedMessage: React.FC<{
                             });
                           }
                         })
-                        .catch((error) => {
+                        .catch(() => {
                           toastMessage({
                             position: 'bottom',
                             closeable: false,

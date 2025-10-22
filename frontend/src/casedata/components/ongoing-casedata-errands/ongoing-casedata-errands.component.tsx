@@ -54,7 +54,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
-  const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
+  const errands = useErrands(page, pageSize, filterObject, sortObject, extraFilter);
   const initialFocus = useRef(null);
 
   const setInitialFocus = () => {

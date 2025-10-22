@@ -13,6 +13,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { MEXRelation } from '@casedata/interfaces/role';
 import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
+import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -29,11 +30,10 @@ import {
   Select,
   Table,
 } from '@sk-web-gui/react';
+import dayjs from 'dayjs';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractTextEditorWrapper } from './contract-text-editor-wrapper';
-import sanitized from '@common/services/sanitizer-service';
-import dayjs from 'dayjs';
 
 export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
@@ -43,7 +43,7 @@ export const Lagenhetsarrende: React.FC<{
   grantors: LagenhetsArrendeStakeholder[];
   updateStakeholders: () => void;
 }> = ({ changeBadgeColor, onSave, existingContract, leaseholders, grantors, updateStakeholders }) => {
-  const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
+  const { errand, user }: { errand: IErrand; user: User } = useAppContext();
   const { register, watch, setValue, control, getValues, trigger } = useFormContext<
     LagenhetsArendeTemplate & LagenhetsArrendeData
   >();
@@ -114,7 +114,7 @@ export const Lagenhetsarrende: React.FC<{
 
   useEffect(() => {
     leaseholders.forEach(async (s: LagenhetsArrendeStakeholder, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(s.partyId);
       s.personalNumber = ssn;
       setValue('leaseholders', leaseholders);
     });
@@ -129,7 +129,7 @@ export const Lagenhetsarrende: React.FC<{
 
   useEffect(() => {
     grantors.forEach(async (s: LagenhetsArrendeStakeholder, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(s.partyId);
       s.personalNumber = ssn;
       setValue('grantors', grantors);
     });
@@ -213,7 +213,7 @@ export const Lagenhetsarrende: React.FC<{
 
   useEffect(() => {
     if (unsaved) {
-      saveDoneMarksOnErrande(municipalityId, errand, 'lagenhetsarrende', doneMark);
+      saveDoneMarksOnErrande(errand, 'lagenhetsarrende', doneMark);
       setUnsaved(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -186,7 +186,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
   return obj;
 };
 
-export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
+export const saveExtraParameters = (data: ExtraParameter[], errand: IErrand) => {
   const nullFilteredData: ExtraParameter[] = data
     .filter((d) => d.values[0] !== null && typeof d.values[0] !== 'undefined')
     .map((param) => ({
@@ -198,13 +198,10 @@ export const saveExtraParameters = (municipalityId: string, data: ExtraParameter
   nullFilteredData.forEach((p) => {
     newExtraParameters = replaceExtraParameter(newExtraParameters, p);
   });
-  return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(
-    `casedata/${municipalityId}/errands/${errand.id}`,
-    {
-      id: errand.id.toString(),
-      extraParameters: newExtraParameters,
-    }
-  );
+  return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(`casedata/errands/${errand.id}`, {
+    id: errand.id.toString(),
+    extraParameters: newExtraParameters,
+  });
 };
 
 // If parameter exists, replace the existing one, otherwise append to list

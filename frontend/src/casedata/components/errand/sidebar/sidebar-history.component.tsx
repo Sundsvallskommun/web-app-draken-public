@@ -10,11 +10,8 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
-  const {
-    municipalityId,
-    errand,
-    administrators,
-  }: { municipalityId: string; errand: IErrand; administrators: Admin[] } = useAppContext();
+  const { errand, administrators }: { errand: IErrand; administrators: Admin[] } = useAppContext();
+  useAppContext();
   const [history, setHistory] = useState<ParsedErrandHistory>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +22,7 @@ export const SidebarHistory: React.FC<{}> = () => {
   useEffect(() => {
     if (errand) {
       setIsLoading(true);
-      getErrandHistory(municipalityId, errand?.id.toString()).then((res) => {
+      getErrandHistory(errand?.id.toString()).then((res) => {
         setHistory(res);
         setIsLoading(false);
       });
@@ -35,7 +32,7 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     if (selectedChange) {
-      fetchChangeData(municipalityId, errand?.id, selectedChange)
+      fetchChangeData(errand?.id, selectedChange)
         .then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);
