@@ -374,6 +374,9 @@ export const SidebarInfo: React.FC<{
       case Resolution.CANCELLED: {
         return solutionComponent('Avbruten', 'avslutade ärendet.', 'check');
       }
+      case Resolution.SUB_PACKAGE_READY: {
+        return solutionComponent('Delpaket klart', 'avslutade ärendet.', 'check');
+      }
     }
   };
 
