@@ -192,22 +192,22 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
 };
 
 export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
-  const nullFilteredData: ExtraParameter[] = data
-    .filter((d) => d.values[0] !== null && typeof d.values[0] !== 'undefined')
-    .map((param) => ({
-      ...param,
-      values: param.values.flatMap((v) => (typeof v === 'string' ? [v] : [])),
-    }));
+  const sanitizedData: ExtraParameter[] = data.map((param) => ({
+    ...param,
+    values: (param.values ?? [])
+      .map((value) => (value === null || typeof value === 'undefined' ? '' : String(value).trim()))
+      .filter((value) => value !== ''),
+  }));
 
-  let newExtraParameters = [...errand.extraParameters];
-  nullFilteredData.forEach((p) => {
-    newExtraParameters = replaceExtraParameter(newExtraParameters, p);
-  });
+  const mergedExtraParameters = errand.extraParameters
+    .filter((existing) => !sanitizedData.some((param) => param.key === existing.key))
+    .concat(sanitizedData);
+
   return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(
     `casedata/${municipalityId}/errands/${errand.id}`,
     {
       id: errand.id.toString(),
-      extraParameters: newExtraParameters,
+      extraParameters: mergedExtraParameters,
     }
   );
 };

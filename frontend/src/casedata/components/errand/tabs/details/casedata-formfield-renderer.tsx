@@ -165,6 +165,17 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
     : [];
   const comboboxWatchValue = isComboboxField ? watch(fieldKey) : undefined;
   const isComboboxMulti = isComboboxField && (Array.isArray(detail.value) || Array.isArray(comboboxWatchValue));
+  const initialComboboxValue = useMemo<string | string[]>(() => {
+    if (!isComboboxField) {
+      return '';
+    }
+
+    if (isComboboxMulti) {
+      return Array.isArray(detail.value) ? detail.value.map((item) => `${item}`.trim()).filter(Boolean) : [];
+    }
+
+    return typeof detail.value === 'string' ? detail.value.trim() : '';
+  }, [detail.value, isComboboxField, isComboboxMulti]);
 
   const comboboxValue = useMemo<string | string[]>(() => {
     if (!isComboboxField) {
@@ -173,17 +184,22 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
     if (isComboboxMulti) {
       if (Array.isArray(comboboxWatchValue)) {
-        const watched = toTrimmedArray(comboboxWatchValue);
-        if (watched.length) {
-          return watched;
-        }
+        return toTrimmedArray(comboboxWatchValue);
       }
 
-      return Array.isArray(detail.value) ? detail.value.map((item) => `${item}`.trim()).filter(Boolean) : [];
+      if (comboboxWatchValue === undefined) {
+        return initialComboboxValue as string[];
+      }
+
+      return toTrimmedArray(comboboxWatchValue);
     }
 
-    return Array.isArray(detail.value) ? '' : toTrimmedString(detail.value);
-  }, [comboboxWatchValue, detail.value, isComboboxField, isComboboxMulti]);
+    if (comboboxWatchValue === undefined) {
+      return initialComboboxValue as string;
+    }
+
+    return toTrimmedString(comboboxWatchValue);
+  }, [comboboxWatchValue, initialComboboxValue, isComboboxField, isComboboxMulti]);
 
   const handleComboboxChange = useCallback(
     (event: { target?: { value?: unknown } }) => {
@@ -226,17 +242,18 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
     if (!isCheckboxField) return [];
 
     if (Array.isArray(checkboxWatchValue)) {
-      const watched = toTrimmedArray(checkboxWatchValue);
-      if (watched.length) {
-        return watched;
+      return toTrimmedArray(checkboxWatchValue);
+    }
+
+    if (checkboxWatchValue === undefined) {
+      if (Array.isArray(detail.value)) {
+        return detail.value.map((val) => `${val}`.trim()).filter(Boolean);
       }
+
+      return toTrimmedArray(detail.value);
     }
 
-    if (Array.isArray(detail.value)) {
-      return detail.value.map((val) => `${val}`.trim()).filter(Boolean);
-    }
-
-    return toTrimmedArray(detail.value);
+    return toTrimmedArray(checkboxWatchValue);
   }, [checkboxWatchValue, detail.value, isCheckboxField]);
 
   const handleCheckboxChange = useCallback(
