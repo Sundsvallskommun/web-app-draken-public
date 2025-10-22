@@ -4,245 +4,229 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'external.currentHousing',
     value: '',
-    label: 'Aktuellt boendeform',
-    description: 'Ange boendeform och ev. namn på t.ex. äldreboendet',
-    formField: {
-      type: 'text',
-    },
-    section: 'Yttre omständigheter',
-  },
-  {
-    field: 'external.requiredVehicleType',
-    value: '',
-    label: 'Vilken typ av fordonstyp bedöms behövas',
-    formField: {
-      type: 'radio',
-      options: [
-        { label: 'Taxibil', value: 'TAXI' },
-        { label: 'Litet specialfordon', value: 'SMALL_SPECIAL' },
-        { label: 'Stort specialfordon', value: 'LARGE_SPECIAL' },
-      ],
-    },
-    section: 'Yttre omständigheter',
-  },
-  {
-    field: 'external.typeOfTravel',
-    value: '',
-    label: 'Vilken typ av resor gäller ärendet',
+    label: 'Välj bostadstyp',
     formField: {
       type: 'select',
       options: [
-        { label: 'Utbildningsresor', value: 'EDUCATION' },
-        { label: 'Arbetsresor', value: 'WORK' },
-        { label: 'Personliga resor', value: 'PERSONAL' },
+        { label: 'Korttidsboende', value: 'SHORT_TERM_HOUSING' },
+        { label: 'Äldreboende', value: 'ELDERLY_HOUSING' },
+        { label: 'Gruppboende', value: 'GROUP_HOUSING' },
+        { label: 'Serviceboende', value: 'SERVICE_HOUSING' },
+        { label: 'Eget hus (villa, radhus)', value: 'OWN_HOUSING' },
+        { label: 'Lägenhet', value: 'APARTMENT_HOUSING' },
       ],
     },
     section: 'Yttre omständigheter',
   },
   {
-    field: 'external.housingSituationDescription',
+    field: 'external.currentHousingNameAndAddress',
     value: '',
-    label: 'Beskriv den sökandes boendesituation',
+    label: 'Ange namn och adress på aktuellt boende',
     formField: {
       type: 'textarea',
     },
-    description: 'T.ex. finns det hiss, trappor eller trappor mellan lägenheten och ytterentré.',
     section: 'Yttre omständigheter',
-  },
-  {
-    field: 'external.canReachBusStop',
-    value: '',
-    label: 'Kan gå till och från busshållplats',
-    formField: {
-      type: 'radio',
-      options: [
-        { label: 'Ja', value: 'YES' },
-        { label: 'Nej', value: 'NO' },
-        { label: 'Ibland', value: 'SOMETIMES' },
-      ],
-    },
-    section: 'Yttre omständigheter',
-  },
-  {
-    field: 'external.canTravelIndependently',
-    value: '',
-    label: 'Kan självständigt, utan hjälp av annan person resa med buss',
-    formField: {
-      type: 'radio',
-      options: [
-        { label: 'Ja', value: 'YES' },
-        { label: 'Nej', value: 'NO' },
-        { label: 'Ibland', value: 'SOMETIMES' },
-      ],
-    },
-    section: 'Yttre omständigheter',
-  },
-  {
-    field: 'external.canTravelWithHelp',
-    value: '',
-    label: 'Kan med hjälp av annan person resa med buss',
-    formField: {
-      type: 'radio',
-      options: [
-        { label: 'Ja', value: 'YES' },
-        { label: 'Nej', value: 'NO' },
-        { label: 'Ibland', value: 'SOMETIMES' },
-      ],
-    },
-    section: 'Yttre omständigheter',
-  },
-  {
-    field: 'personal.disabilityDescription',
-    value: '',
-    label: 'Beskriv funktionsnedsättningen',
-    formField: { type: 'textarea' },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.disabilityImpact',
-    value: '',
-    label: 'Beskriv de besvär som funktionsnedsättningen/-arna orsakar',
-    formField: { type: 'textarea' },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.travelAbilityAndAids',
-    value: '',
-    label: 'Ange reseförmåga och behov av hjälpmedel',
-    description: 'T.ex. behöver hjälp att kommunicera, medicinsk hjälp',
-    formField: {
-      type: 'text',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.disabilitySince',
-    value: '',
-    label: 'När i tid (ungefär) uppstod funktionsnedsättningen',
-    description: 'T.ex. uppstod för ca 1 år sedan',
-    formField: {
-      type: 'text',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.disabilityDuration',
-    value: '',
-    label: 'Funktionsnedsättning ungefärliga varaktighet',
-    description: 'T.ex. bedömer att den vara i ytterligare 5 månader',
-    formField: {
-      type: 'text',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.needForEscort',
-    value: '',
-    label: 'Ange om ansökan omfattar behov av ledsagare',
-    formField: {
-      type: 'radio',
-      options: [
-        { label: 'Ja', value: 'YES', name: 'needForEscort' },
-        { label: 'Nej', value: 'NO', name: 'needForEscort' },
-      ],
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.escortHelpInCar',
-    value: '',
-    label: 'Beskriv varför ledsagare behövs under resan',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Personlig information',
-    dependsOn: [
-      { field: 'personal.needForEscort', value: 'YES', validationMessage: 'Vänligen beskriv behovet av ledsagare.' },
-    ],
-  },
-  {
-    field: 'medical.basisOfApplication',
-    value: '',
-    label: 'Uppgifter i ansökan baseras på',
-    formField: {
-      type: 'checkbox',
-      options: [
-        { label: 'Kontakt med anhöriga', value: 'FAMILY_CONTACT', name: 'basisOfApplication' },
-        { label: 'Direkt kontakt med den sökande', value: 'APPLICANT_CONTACT', name: 'basisOfApplication' },
-        { label: 'Journalanteckningar', value: 'MEDICAL_NOTES', name: 'basisOfApplication' },
-        { label: 'Annan orsak', value: 'OTHER', name: 'basisOfApplication' },
-      ],
-    },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.basisOfApplicationOther',
-    value: '',
-    label: 'Annan orsak - beskrivning',
-    formField: { type: 'textarea' },
-    section: 'Medicinskt utlåtande',
     dependsOn: [
       {
-        field: 'medical.basisOfApplication',
-        value: 'OTHER',
-        validationMessage: 'Vänligen beskriv vilka uppgifter ansökan baseras på.',
+        field: 'external.currentHousing',
+        value: ['SHORT_TERM_HOUSING', 'ELDERLY_HOUSING', 'GROUP_HOUSING', 'SERVICE_HOUSING'],
+        validationMessage: 'Ange namn och adress för boendet.',
       },
     ],
   },
   {
-    field: 'medical.knownSince',
+    field: 'external.canReachNearestBusStop',
     value: '',
-    label: 'Kännedom om den sökande sedan',
-    formField: { type: 'date' },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.mainDiagnosis',
-    value: '',
-    label: 'Huvuddiagnos',
-    formField: { type: 'text' },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.otherDiagnoses',
-    value: '',
-    label: 'Övriga diagnoser',
-    formField: { type: 'textarea' },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.treatments',
-    value: '',
-    label: 'Aktuella utredningar, behandlingar och/eller rehabilitering',
-    formField: { type: 'textarea' },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.additionalInfo',
-    value: '',
-    label: 'Annan information',
-    formField: { type: 'textarea' },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.certifiedByLicensedPersonnel',
-    value: '',
-    description: 'Med legitimerad personal avses personal med minst sjuksköterskeutbildning och giltig legitimation.',
-    label: 'Jag intygar som legitimerad personal, att uppgifterna är riktiga',
+    label: 'Klarar den sökande att gå till och från busshållplatsen närmast bostaden?',
     formField: {
       type: 'radio',
       options: [
-        {
-          label: 'Ja, jag är legitimerad och intygar att uppgifterna är riktiga',
-          value: 'LICENSED',
-          name: 'certification',
-        },
-        {
-          label: 'Nej, jag är inte legitimerad',
-          value: 'NOT_LICENSED',
-          name: 'certification',
-        },
+        { label: 'Ja', value: 'YES' },
+        { label: 'Nej', value: 'NO' },
+        { label: 'Ibland', value: 'SOMETIMES' },
       ],
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'external.currentHousing',
+        value: ['OWN_HOUSING', 'APARTMENT_HOUSING'],
+        validationMessage: 'Besvara frågan om gång till busshållplats.',
+      },
+    ],
+  },
+  {
+    field: 'external.housingAccessibility',
+    value: '',
+    label: 'Ange tillgängligheten till bostaden',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Hiss finns', value: 'ELEVATOR_AVAILABLE' },
+        { label: 'Ingen hiss, trappa till bostaden', value: 'NO_ELEVATOR' },
+        { label: 'Markplan', value: 'GROUND_FLOOR' },
+      ],
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'external.currentHousing',
+        value: 'APARTMENT_HOUSING',
+        validationMessage: 'Besvara frågan om tillgänglighet till bostaden.',
+      },
+    ],
+  },
+  {
+    field: 'external.travelTypes',
+    value: [],
+    label: 'Välj resetyper anmälan gäller',
+    formField: {
+      type: 'checkbox',
+      options: [
+        { label: 'Privatresor/fritidsresor', value: 'PRIVATE', name: 'travelTypes' },
+        { label: 'Arbetsresor', value: 'WORK', name: 'travelTypes' },
+        { label: 'Utbildningsresor', value: 'EDUCATION', name: 'travelTypes' },
+        { label: 'Gymnasieresor', value: 'GYMNASIUM', name: 'travelTypes' },
+      ],
+    },
+    section: 'Yttre omständigheter',
+  },
+  {
+    field: 'external.travelDestinationAddress',
+    value: '',
+    label: 'Ange adressen till arbetsplatsen/utbildningsplatsen/gymnasiet',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'external.travelTypes',
+        value: ['WORK', 'EDUCATION', 'GYMNASIUM'],
+        validationMessage: 'Ange adressen till arbetsplatsen/utbildningsplatsen/gymnasiet.',
+      },
+    ],
+  },
+  {
+    field: 'external.mobilityAids',
+    value: [],
+    label: 'Välj förflyttningshjälpmedel som den sökande är beroende av',
+    formField: {
+      type: 'combobox',
+      options: [
+        { label: 'Rollator', value: 'WALKER', name: 'mobilityAids' },
+        { label: 'Krycka, käpp, stavar', value: 'CRUTCH_CANE_POLES', name: 'mobilityAids' },
+        { label: 'Hopfällbar rullstol', value: 'FOLDABLE_WHEELCHAIR', name: 'mobilityAids' },
+        { label: 'Komfortrullstol eller motsvarande', value: 'COMFORT_WHEELCHAIR', name: 'mobilityAids' },
+        { label: 'Elrullstol', value: 'ELECTRIC_WHEELCHAIR', name: 'mobilityAids' },
+        { label: 'Elscooter/elmoped', value: 'ELECTRIC_SCOOTER', name: 'mobilityAids' },
+        { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
+      ],
+    },
+    required: false,
+    section: 'Yttre omständigheter',
+  },
+  {
+    field: 'external.assistanceDuringTravel',
+    value: '',
+    label: 'Behöver den sökande aktiv hjälp under själva resan? (T.ex. hjälp med betalning eller kommunicering)',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Ja', value: 'YES' },
+        { label: 'Nej', value: 'NO' },
+      ],
+    },
+    section: 'Yttre omständigheter',
+  },
+  {
+    field: 'external.inVehicleAssistanceDescription',
+    value: '',
+    label: 'Beskriv hjälpbehovet i fordonet',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'external.assistanceDuringTravel',
+        value: 'YES',
+        validationMessage: 'Beskriv hjälpbehovet under resan.',
+      },
+    ],
+  },
+  {
+    field: 'medical.diagnoses',
+    value: [],
+    label: 'Ange medicinska diagnoser',
+    formField: {
+      type: 'combobox',
+      options: [
+        { label: 'Synskada', value: 'VISION_IMPAIRMENT', name: 'diagnoses' },
+        { label: 'Fysisk, nedsatt rörelseförmåga', value: 'PHYSICAL_MOBILITY_IMPAIRMENT', name: 'diagnoses' },
+        { label: 'Demenssjukdom', value: 'DEMENTIA', name: 'diagnoses' },
+        {
+          label: 'Kognitiv, neuropsykiatrisk eller intellektuell funktionsnedsättning',
+          value: 'COGNITIVE_NEUROPSYCHIATRIC',
+          name: 'diagnoses',
+        },
+        {
+          label: 'Medicinsk, kronisk och långvarig sjukdom',
+          value: 'CHRONIC_MEDICAL_CONDITION',
+          name: 'diagnoses',
+        },
+        { label: 'Psykisk sjukdom', value: 'MENTAL_ILLNESS', name: 'diagnoses' },
+        { label: 'Palliativ vård', value: 'PALLIATIVE_CARE', name: 'diagnoses' },
+      ],
+    },
+    required: false,
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.onsetTime',
+    value: '',
+    label: 'När i tiden (ungefär) uppstod funktionsnedsättningen?',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Cirka 1 månad sedan eller mindre', value: 'LESS_THAN_ONE_MONTH' },
+        { label: 'Inom de senaste 6 månaderna', value: 'LAST_SIX_MONTHS' },
+        { label: 'Har pågått i 1 år eller mer', value: 'ONE_YEAR_OR_MORE' },
+        { label: 'Medfödd', value: 'CONGENITAL' },
+      ],
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.duration',
+    value: '',
+    label: 'Funktionsnedsättningens ungefärliga varaktighet',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Mindre än 3 månader', value: 'LESS_THAN_THREE_MONTHS' },
+        { label: 'Minst 3 månader, men inte mer än 1 år', value: 'THREE_MONTHS_TO_ONE_YEAR' },
+        { label: '1 år eller mer', value: 'MORE_THAN_ONE_YEAR' },
+      ],
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.consequencesDescription',
+    value: '',
+    label:
+      'Beskriv vilken konsekvens sjukdomen/funktionsnedsättningen medför vid förflyttning och/eller resor med allmänna kommunikationer (buss)',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.treatmentsDescription',
+    value: '',
+    label: 'Beskriv aktuella medicinska utredningar, behandling och rehabilitering',
+    formField: {
+      type: 'textarea',
     },
     section: 'Medicinskt utlåtande',
   },

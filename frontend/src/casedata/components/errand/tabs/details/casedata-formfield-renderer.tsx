@@ -5,9 +5,19 @@ import {
   UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-string-handler-utils';
-import { Checkbox, FormControl, FormLabel, Input, RadioButton, Select, Textarea, cx } from '@sk-web-gui/react';
-import React from 'react';
-import { Controller, UseFormReturn, get } from 'react-hook-form';
+import {
+  Checkbox,
+  Combobox,
+  FormControl,
+  FormLabel,
+  Input,
+  RadioButton,
+  Select,
+  Textarea,
+  cx,
+} from '@sk-web-gui/react';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { UseFormReturn, get } from 'react-hook-form';
 
 interface Props {
   detail: UppgiftField;
@@ -47,6 +57,41 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
   }
 };
 
+const dependencyMatches = (candidate: unknown, expected: string | string[]) => {
+  const expectedValues = Array.isArray(expected) ? expected : [expected];
+
+  if (Array.isArray(candidate)) {
+    return candidate.some((value) => expectedValues.includes(String(value)));
+  }
+
+  if (candidate === null || candidate === undefined) {
+    return false;
+  }
+
+  return expectedValues.includes(String(candidate));
+};
+
+const toTrimmedString = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  return `${value}`.trim();
+};
+
+const toTrimmedArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map(toTrimmedString).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  const single = toTrimmedString(value);
+  return single ? [single] : [];
+};
+
 function getConditionalValidationRules(
   field: UppgiftField,
   getValues: () => any
@@ -62,7 +107,7 @@ function getConditionalValidationRules(
       const shouldValidate = field.dependsOn?.some((dep) => {
         const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
         const depValue = allValues[depName];
-        return Array.isArray(depValue) ? depValue.includes(dep.value) : depValue === dep.value;
+        return dependencyMatches(depValue, dep.value);
       });
 
       if (!shouldValidate) return true;
@@ -75,24 +120,155 @@ function getConditionalValidationRules(
 export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, errand }) => {
   const {
     register,
-    control,
     getValues,
     formState: { errors },
     setError,
     clearErrors,
+    watch,
+    setValue,
   } = form;
 
+  const dependencyFieldKeys = useMemo(
+    () => detail.dependsOn?.map((dep) => dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)) ?? [],
+    [detail.dependsOn]
+  );
+
+  const dependencyValues = dependencyFieldKeys.length ? watch(dependencyFieldKeys) : undefined;
+
   const dependentSatisfied =
-    detail.dependsOn?.every((dep) => {
-      const depValue = getValues(dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR));
-      return Array.isArray(depValue) ? depValue.includes(dep.value) : depValue === dep.value;
+    detail.dependsOn?.every((dep, index) => {
+      const depKey = dependencyFieldKeys[index];
+      const watchedValue =
+        Array.isArray(dependencyValues) && dependencyFieldKeys.length > 1
+          ? dependencyValues[index]
+          : dependencyFieldKeys.length === 1
+          ? dependencyValues
+          : undefined;
+      const depValue = watchedValue === undefined ? getValues(depKey) : watchedValue;
+
+      return dependencyMatches(depValue, dep.value);
     }) ?? true;
 
-  if (!dependentSatisfied) return null;
+  const isVisible = dependentSatisfied;
 
   const fieldKey = detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
+  const isComboboxField = detail.formField.type === 'combobox';
+
+  if (detail.formField.type === 'checkbox' && isVisible) {
+    register(fieldKey, validationRules);
+  }
+
+  const comboboxOptions: OptionBase[] = isComboboxField
+    ? (detail.formField as { options?: OptionBase[] }).options ?? []
+    : [];
+  const comboboxWatchValue = isComboboxField ? watch(fieldKey) : undefined;
+  const isComboboxMulti = isComboboxField && (Array.isArray(detail.value) || Array.isArray(comboboxWatchValue));
+
+  const comboboxValue = useMemo<string | string[]>(() => {
+    if (!isComboboxField) {
+      return '';
+    }
+
+    if (isComboboxMulti) {
+      if (Array.isArray(comboboxWatchValue)) {
+        const watched = toTrimmedArray(comboboxWatchValue);
+        if (watched.length) {
+          return watched;
+        }
+      }
+
+      return Array.isArray(detail.value) ? detail.value.map((item) => `${item}`.trim()).filter(Boolean) : [];
+    }
+
+    return Array.isArray(detail.value) ? '' : toTrimmedString(detail.value);
+  }, [comboboxWatchValue, detail.value, isComboboxField, isComboboxMulti]);
+
+  const handleComboboxChange = useCallback(
+    (event: { target?: { value?: unknown } }) => {
+      if (!isVisible || !isComboboxField) return;
+
+      const nextValue = event?.target?.value;
+
+      if (isComboboxMulti) {
+        const normalized = toTrimmedArray(nextValue);
+        setValue(fieldKey, normalized, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true,
+        });
+        return;
+      }
+
+      const normalized = toTrimmedString(nextValue);
+      setValue(fieldKey, normalized, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    },
+    [fieldKey, isComboboxField, isComboboxMulti, isVisible, setValue]
+  );
+
+  useEffect(() => {
+    if (!isVisible) return;
+    if (!isComboboxField) return;
+    if (comboboxWatchValue !== undefined) return;
+
+    setValue(fieldKey, comboboxValue as any, { shouldDirty: false });
+  }, [comboboxValue, comboboxWatchValue, fieldKey, isComboboxField, isVisible, setValue]);
+
+  const isCheckboxField = detail.formField.type === 'checkbox';
+  const checkboxOptions: OptionBase[] = isCheckboxField ? (detail.formField as { options: OptionBase[] }).options : [];
+  const checkboxWatchValue = isCheckboxField ? watch(fieldKey) : undefined;
+  const checkboxValue = useMemo<string[]>(() => {
+    if (!isCheckboxField) return [];
+
+    if (Array.isArray(checkboxWatchValue)) {
+      const watched = toTrimmedArray(checkboxWatchValue);
+      if (watched.length) {
+        return watched;
+      }
+    }
+
+    if (Array.isArray(detail.value)) {
+      return detail.value.map((val) => `${val}`.trim()).filter(Boolean);
+    }
+
+    return toTrimmedArray(detail.value);
+  }, [checkboxWatchValue, detail.value, isCheckboxField]);
+
+  const handleCheckboxChange = useCallback(
+    (values: string[]) => {
+      if (!isVisible || !isCheckboxField) return;
+
+      const normalized = toTrimmedArray(values);
+      setValue(fieldKey, normalized, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+
+      const validationResult = validationRules?.validate?.(normalized);
+      if (validationResult !== undefined && validationResult !== true) {
+        setError(fieldKey, { type: 'manual', message: validationResult as string });
+      } else {
+        clearErrors(fieldKey);
+      }
+    },
+    [clearErrors, fieldKey, isCheckboxField, isVisible, setError, setValue, validationRules]
+  );
+
+  useEffect(() => {
+    if (!isVisible) return;
+    if (!isCheckboxField) return;
+    if (checkboxWatchValue !== undefined) return;
+
+    setValue(fieldKey, checkboxValue, { shouldDirty: false });
+  }, [checkboxValue, checkboxWatchValue, fieldKey, isCheckboxField, isVisible, setValue]);
+
+  if (!isVisible) return null;
 
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
@@ -117,7 +293,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'select' && (
         <>
-          <Select {...register(fieldKey, validationRules)} className="w-content" data-cy={`${detail.field}-select`}>
+          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`}>
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, i) => (
               <Select.Option key={`${o}-${i}`} value={o.value}>
@@ -164,42 +340,58 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
       )}
 
       {detail.formField.type === 'checkbox' && (
-        <Controller
-          name={fieldKey}
-          control={control}
-          defaultValue={[]}
-          rules={validationRules}
-          render={({ field: { value, onChange } }) => {
-            const options = (detail.formField as { options: OptionBase[] }).options;
-
-            return (
-              <Checkbox.Group
-                direction="row"
-                value={Array.isArray(value) ? value : []}
-                onChange={(val) => {
-                  onChange(val);
-                  const result = validationRules?.validate?.(val);
-                  if (result !== true) {
-                    setError(fieldKey, { type: 'manual', message: result as string });
-                  } else {
-                    clearErrors(fieldKey);
-                  }
-                }}
+        <>
+          <Checkbox.Group direction="row" value={checkboxValue} onChange={handleCheckboxChange}>
+            {checkboxOptions.map((option, index) => (
+              <Checkbox
+                key={`${option.value}-${index}`}
+                value={option.value}
+                data-cy={`${detail.field}-checkbox-${index}`}
               >
-                {options.map((option, index) => (
-                  <Checkbox
-                    key={`${option.value}-${index}`}
-                    value={option.value}
-                    data-cy={`${detail.field}-checkbox-${index}`}
-                  >
-                    {option.label}
-                  </Checkbox>
-                ))}
-              </Checkbox.Group>
-            );
-          }}
-        />
+                {option.label}
+              </Checkbox>
+            ))}
+          </Checkbox.Group>
+          {error && <span className="text-error text-md">{error}</span>}
+        </>
       )}
+
+      {detail.formField.type === 'combobox' &&
+        (() => {
+          const registration = register(fieldKey, validationRules);
+
+          return (
+            <>
+              <Combobox
+                className="w-full"
+                data-cy={`${detail.field}-combobox`}
+                multiple={isComboboxMulti}
+                value={comboboxValue as any}
+                onChange={handleComboboxChange}
+                onSelect={!isComboboxMulti ? handleComboboxChange : undefined}
+              >
+                <Combobox.Input
+                  className="w-full"
+                  placeholder="Sök eller välj"
+                  name={registration.name}
+                  ref={registration.ref}
+                />
+                <Combobox.List>
+                  {comboboxOptions.map((option, index) => (
+                    <Combobox.Option
+                      key={`${option.value}-${index}`}
+                      value={option.value}
+                      data-cy={`${detail.field}-combobox-option-${index}`}
+                    >
+                      {option.label}
+                    </Combobox.Option>
+                  ))}
+                </Combobox.List>
+              </Combobox>
+              {error && <span className="text-error text-md">{error}</span>}
+            </>
+          );
+        })()}
     </FormControl>
   );
 };

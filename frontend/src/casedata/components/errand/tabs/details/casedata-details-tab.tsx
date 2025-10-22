@@ -85,17 +85,17 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     uppgifterFields?.forEach((f) => {
       const key = f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-      const isCheckbox = f.formField.type === 'checkbox';
       const rawValue = f.value;
-
-      setValue<any>(
-        key,
-        isCheckbox
-          ? Array.isArray(rawValue)
-            ? rawValue
-            : rawValue?.split(',').filter((v) => v !== '') ?? []
-          : rawValue
-      );
+      if (f.formField.type === 'checkbox' || Array.isArray(rawValue)) {
+        const normalizedArray = Array.isArray(rawValue)
+          ? rawValue
+          : typeof rawValue === 'string'
+          ? rawValue.split(',').map((v) => v.trim()).filter((v) => v !== '')
+          : [];
+        setValue<any>(key, normalizedArray, { shouldDirty: false });
+      } else {
+        setValue<any>(key, rawValue, { shouldDirty: false });
+      }
     });
 
     setValue('description', errand.description || '');
