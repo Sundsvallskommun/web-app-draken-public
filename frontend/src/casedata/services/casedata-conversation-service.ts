@@ -164,7 +164,6 @@ export const getOrCreateConversationId = async (
   // const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
 
   const conversations = await getConversations(municipalityId, errand.id);
-  console.log('conversations', conversations);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
 
   // const existingInternalConversation = conversations.data.find(
