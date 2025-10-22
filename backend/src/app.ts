@@ -195,7 +195,7 @@ class App {
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());
-    this.app.use(express.json({ limit: '500kb' }));
+    this.app.use(express.json({ limit: '2mb' }));
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
 
