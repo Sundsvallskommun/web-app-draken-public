@@ -1,6 +1,7 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
   CaseStatusResponse,
   getErrandStatus,
@@ -9,12 +10,11 @@ import {
 } from '@common/services/casestatus-service';
 import { sortBy } from '@common/services/helper-service';
 import {
-  createRelation,
+  CreateRelation,
   deleteRelation,
   getSourceRelations,
   getTargetRelations,
 } from '@common/services/relations-service';
-import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
@@ -22,12 +22,11 @@ import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { RelationsToTable } from './relation-tables/relations-to-table.component';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 
 export const LinkedErrandsDisclosure: React.FC<{
   errand: SupportErrand | IErrand;
 }> = ({ errand }) => {
-  const { municipalityId } = useAppContext();
+  const { municipalityId, featureFlags } = useAppContext();
   const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(false);
   const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(false);
   const [query, setQuery] = useState('');
@@ -55,7 +54,7 @@ export const LinkedErrandsDisclosure: React.FC<{
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
       const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
-      createRelation(municipalityId, errand.id.toString(), errand.errandNumber, targetErrand)
+      CreateRelation(municipalityId, errand.id.toString(), errand.errandNumber, targetErrand)
         .then(async () => {
           const relatedErrands = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
           setRelations(relatedErrands);
@@ -71,13 +70,13 @@ export const LinkedErrandsDisclosure: React.FC<{
         const sourceRelations = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
         setRelations(sourceRelations);
 
-        if (appConfig.features.useStakeholderRelations) {
+        if (featureFlags?.useStakeholderRelations) {
           let relatedPerson: {
             id: string;
             type: string;
           } = { id: '', type: '' };
 
-          if (appConfig.isSupportManagement) {
+          if (featureFlags?.isSupportManagement) {
             const supportStakeholder = getSupportOwnerStakeholder(errand as SupportErrand);
             if (!supportStakeholder) {
               setIsLoadingToErrands(false);
@@ -86,7 +85,7 @@ export const LinkedErrandsDisclosure: React.FC<{
             relatedPerson.id = supportStakeholder?.externalId;
             relatedPerson.type = supportStakeholder?.stakeholderType;
           }
-          if (appConfig.isCaseData) {
+          if (featureFlags?.isCaseData) {
             const caseDataStakeholder = getOwnerStakeholder(errand as IErrand);
             if (!caseDataStakeholder) {
               setIsLoadingToErrands(false);
@@ -157,7 +156,7 @@ export const LinkedErrandsDisclosure: React.FC<{
 
   return (
     <Disclosure
-      disabled={appConfig.isSupportManagement ? supportErrandIsEmpty(errand as SupportErrand) : false}
+      disabled={featureFlags?.isSupportManagement ? supportErrandIsEmpty(errand as SupportErrand) : false}
       variant="alt"
       icon={<LucideIcon name="link-2" />}
       header="Kopplade ärenden"
@@ -204,7 +203,7 @@ export const LinkedErrandsDisclosure: React.FC<{
               dataCy="searchresults-table"
             />
           )}
-          {appConfig.features.useStakeholderRelations && (
+          {featureFlags?.useStakeholderRelations && (
             <>
               <RelationsToTable
                 errands={ongoingErrands}

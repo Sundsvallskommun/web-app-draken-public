@@ -1,4 +1,6 @@
 import { Admin } from '@common/services/user-service';
+import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
@@ -13,27 +15,15 @@ import {
   SupportManagementFilterCategory,
 } from './components/supportmanagement-filter-category.component';
 import {
-  SupportManagementDatesFilter,
-  SupportManagementDatesValues,
-  SupportManagementFilterDates,
-} from './components/supportmanagement-filter-dates.component';
-import {
-  SupportManagementFilterPriority,
-  SupportManagementPriorityFilter,
-  SupportManagementPriorityValues,
-} from './components/supportmanagement-filter-priority.component';
-import {
-  SupportManagementFilterQuery,
-  SupportManagementQueryFilter,
-  SupportManagementQueryValues,
-} from './components/supportmanagement-filter-query.component';
-import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
   ChannelFilter,
   ChannelValues,
   SupportManagementFilterChannel,
 } from './components/supportmanagement-filter-channel.component';
+import {
+  SupportManagementDatesFilter,
+  SupportManagementDatesValues,
+  SupportManagementFilterDates,
+} from './components/supportmanagement-filter-dates.component';
 import {
   LabelCategoryFilter,
   LabelCategoryValues,
@@ -49,6 +39,16 @@ import {
   LabelTypeValues,
   SupportManagementFilterLabelType,
 } from './components/supportmanagement-filter-labelType.component';
+import {
+  SupportManagementFilterPriority,
+  SupportManagementPriorityFilter,
+  SupportManagementPriorityValues,
+} from './components/supportmanagement-filter-priority.component';
+import {
+  SupportManagementFilterQuery,
+  SupportManagementQueryFilter,
+  SupportManagementQueryValues,
+} from './components/supportmanagement-filter-query.component';
 import {
   SupportManagementStatusFilter,
   SupportManagementStatusValues,
@@ -93,6 +93,8 @@ const SupportManagementFiltering: React.FC<{
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);
 
+  const { featureFlags } = useAppContext();
+
   return (
     <>
       <div className="flex flex-col w-full gap-16 py-19">
@@ -124,7 +126,7 @@ const SupportManagementFiltering: React.FC<{
         <div className={cx(show ? 'visible' : 'hidden')}>
           <div className="flex gap-16 items-center">
             <div className="flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
-              {appConfig.features.useTwoLevelCategorization ? (
+              {featureFlags?.useTwoLevelCategorization ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterCategory />
@@ -135,7 +137,7 @@ const SupportManagementFiltering: React.FC<{
                 </>
               ) : null}
 
-              {appConfig.features.useThreeLevelCategorization ? (
+              {featureFlags?.useThreeLevelCategorization ? (
                 <>
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelCategory />

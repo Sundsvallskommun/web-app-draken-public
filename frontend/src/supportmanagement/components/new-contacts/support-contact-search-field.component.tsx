@@ -6,7 +6,7 @@ import {
   searchPerson,
 } from '@common/services/adress-service';
 import { luhnCheck } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import { cx, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField, Select } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
@@ -130,10 +130,12 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
     setQuery('');
   };
 
+  const { featureFlags } = useAppContext();
+
   return (
     <div className="flex gap-lg">
       <FormControl className="w-full">
-        {appConfig.features.useOrganizationStakeholders ? (
+        {featureFlags?.useOrganizationStakeholders ? (
           <div>
             <FormLabel>Sök på {searchMode === 'person' ? 'personnummer ' : 'organisationsnummer '}</FormLabel>
             <span>(Ange {searchMode === 'person' ? '12 siffror: ååååmmddxxxx' : '10 siffror: kkllmm-nnnn'})</span>

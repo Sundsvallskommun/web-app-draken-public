@@ -4,7 +4,6 @@ import EmptyLayout from '@common/components/empty-layout/empty-layout.component'
 import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { apiURL } from '@common/utils/api-url';
 import { appURL } from '@common/utils/app-url';
-import { appConfig } from '@config/appconfig';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
@@ -91,7 +90,7 @@ const Login: React.FC = () => {
           <div className="text-center">
             <h3 className="mb-20">
               Logga in till <br aria-hidden />
-              {appConfig.applicationName}
+              {process.env.NEXT_PUBLIC_APPLICATION_NAME}
             </h3>
             {errorMessage && (
               <FormErrorMessage className="mt-lg">

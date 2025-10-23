@@ -4,7 +4,6 @@ import { CasedataErrandComponent } from '@casedata/components/errand/casedata-er
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getAdminUsers } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
@@ -14,7 +13,8 @@ import { useEffect, useRef, useState } from 'react';
 const Arende: React.FC = () => {
   const pathName = usePathname();
   const [errandId, setErrandId] = useState<string>();
-  const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
+  const { setAdministrators, setSubPage, municipalityId, setMunicipalityId, setSupportMetadata, featureFlags } =
+    useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
@@ -40,7 +40,7 @@ const Arende: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    appConfig.isSupportManagement &&
+    featureFlags?.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,7 +48,7 @@ const Arende: React.FC = () => {
 
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
-      <Layout title={`${appConfig.applicationName} - Pågående ärende`}>
+      <Layout title={`${process.env.NEXT_PUBLIC_APPLICATION_NAME} - Pågående ärende`}>
         <NextLink
           href="#content"
           passHref
@@ -59,9 +59,9 @@ const Arende: React.FC = () => {
           Hoppa till innehåll
         </NextLink>
 
-        {appConfig.isCaseData
+        {featureFlags?.isCaseData
           ? !!errandId && <CasedataErrandComponent id={errandId} />
-          : appConfig.isSupportManagement
+          : featureFlags?.isSupportManagement
           ? !!errandId && !!municipalityId && <SupportErrandComponent id={errandId} />
           : null}
       </Layout>

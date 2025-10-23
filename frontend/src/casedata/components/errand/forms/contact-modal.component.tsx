@@ -2,7 +2,6 @@ import { SearchModeSelector } from '@casedata/components/errand/forms/search-mod
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal } from '@sk-web-gui/react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
@@ -47,7 +46,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
 }) => {
   const { control, register, formState, watch, setValue, trigger } = form;
   const errors = formState.errors;
-  const { errand } = useAppContext();
+  const { errand, featureFlags } = useAppContext();
 
   return (
     <Modal
@@ -272,7 +271,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
               )}
             </FormControl>
           </div>
-          {appConfig.features.useExtraInformationStakeholders ? (
+          {featureFlags?.useExtraInformationStakeholders ? (
             <div className="flex gap-lg">
               <FormControl id={`extrainfo`} className="w-[244px]">
                 <FormLabel>Extra Information</FormLabel>

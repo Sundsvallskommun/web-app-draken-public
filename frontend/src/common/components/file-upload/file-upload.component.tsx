@@ -3,12 +3,11 @@ import { isIK, isKC, isLOP, isMEX } from '@common/services/application-service';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister } from 'react-hook-form';
-
-import { appConfig } from '@config/appconfig';
+import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
+import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { UploadCloud } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
-import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 
 export const imageMimeTypes = [
   'image/jpeg',
@@ -65,6 +64,8 @@ const FileUpload: React.FC<{
   const [added, setAdded] = useState<number>(0);
 
   const ref = useRef<HTMLLabelElement>(null);
+
+  const { featureFlags } = useAppContext();
 
   const appendNewItem = () => {
     setError(undefined);
@@ -158,7 +159,7 @@ const FileUpload: React.FC<{
   };
 
   const editFields = (index?: number) =>
-    appConfig.isCaseData && (
+    featureFlags?.isCaseData && (
       <>
         {!dragDrop && editing && (
           <FormControl id="name" className="w-full">

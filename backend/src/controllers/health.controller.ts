@@ -25,7 +25,13 @@ export class HealthController {
       password: '',
       username: '',
       groups: '',
-      permissions: { canEditCasedata: false, canEditSupportManagement: false, canViewAttestations: false, canEditAttestations: false },
+      permissions: {
+        canEditCasedata: false,
+        canEditSupportManagement: false,
+        canViewAttestations: false,
+        canEditAttestations: false,
+        canUseAdminPanel: false,
+      },
     };
     const res = await this.apiService.post<{ status: string }, { status: string }>({ url, data }, dummyUser).catch(e => {
       logger.error('Error when doing health check:', e);

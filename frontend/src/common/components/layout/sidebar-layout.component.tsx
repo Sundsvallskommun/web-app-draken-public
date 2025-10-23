@@ -1,4 +1,3 @@
-import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent } from '@sk-web-gui/react';
 import Head from 'next/head';
 import NextLink from 'next/link';
@@ -14,7 +13,7 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={appConfig.applicationName} />
+        <meta name="description" content={process.env.NEXT_PUBLIC_APPLICATION_NAME} />
       </Head>
       <div className="min-h-screen w-full">
         <div className="flex grow w-full">

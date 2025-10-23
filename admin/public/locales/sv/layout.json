@@ -1,0 +1,11 @@
+{
+  "header": {
+    "goto_content": "Hoppa till innehåll"
+  },
+  "color_scheme": "färgläge",
+  "color_schemes": {
+    "dark": "mörkt läge",
+    "light": "ljust läge",
+    "system": "följ system"
+  }
+}

@@ -133,7 +133,10 @@ dist
 sessions/
 
 # Prisma
+prisma/*.db
+prisma/migrations/*
 database.db
 
 # certs
 cert/
+

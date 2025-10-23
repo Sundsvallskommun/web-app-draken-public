@@ -1,8 +1,8 @@
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
-import { appConfig } from '@config/appconfig';
 import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
+import { useAppContext } from '@contexts/app.context';
 
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -26,12 +26,13 @@ const formatServiceName = (str: string) => {
   return str.toLocaleLowerCase();
 };
 
-export const createRelation = (
+export function CreateRelation(
   municipalityId: string,
   sourceId: string,
   sourceErrandNumber: string,
   targetErrand: CaseStatusResponse
-) => {
+) {
+  const { featureFlags } = useAppContext();
   const url = `${municipalityId}/relations`;
 
   const body: Partial<Relation> = {
@@ -39,7 +40,7 @@ export const createRelation = (
     source: {
       resourceId: sourceId,
       type: sourceErrandNumber,
-      service: appConfig.isSupportManagement ? 'supportmanagement' : 'case-data',
+      service: featureFlags?.isSupportManagement ? 'supportmanagement' : 'case-data',
       namespace: '',
     },
     target: {
@@ -59,7 +60,7 @@ export const createRelation = (
       console.error('Something went wrong when creating relation: ' + e);
       throw e;
     });
-};
+}
 
 export const deleteRelation = (municipalityId: string, id: string) => {
   const url = `${municipalityId}/relations/${id}`;

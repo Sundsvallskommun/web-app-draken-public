@@ -11,7 +11,6 @@ import {
   ssnPattern,
   usernamePattern,
 } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
@@ -51,9 +50,11 @@ export const SupportSimplifiedContactForm: React.FC<{
     id,
   } = props;
 
+  const { municipalityId, setSupportMetadata, featureFlags }: AppContextInterface = useAppContext();
+
   const yupContact = yup.object().shape(
     {
-      personNumber: appConfig.features.useOrganizationStakeholders
+      personNumber: featureFlags?.useOrganizationStakeholders
         ? yup.string().when('stakeholderType', {
             is: (type: string) => type === 'PERSON',
             then: (schema) =>
@@ -143,7 +144,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -211,7 +211,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [manual]);
 
   useEffect(() => {
-    if (appConfig.features.useOrganizationStakeholders) {
+    if (featureFlags?.useOrganizationStakeholders) {
       setSearchMode(contact.stakeholderType === SupportStakeholderTypeEnum.PERSON ? 'person' : 'enterprise');
     } else {
       setSearchMode('employee');
@@ -241,7 +241,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [organizationNumber, personNumber]);
 
   useEffect(() => {
-    appConfig.isSupportManagement &&
+    featureFlags?.isSupportManagement &&
       municipalityId &&
       getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,7 +255,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     onSave(e);
     setManual(false);
     setSearchResult(false);
-    if (appConfig.features.useOrganizationStakeholders) {
+    if (featureFlags?.useOrganizationStakeholders) {
       setSearchMode('person');
     } else {
       setSearchMode('employee');

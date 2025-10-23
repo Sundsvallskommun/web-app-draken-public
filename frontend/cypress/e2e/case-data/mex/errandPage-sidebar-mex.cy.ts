@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { appConfig } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
@@ -8,14 +8,15 @@ import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockContract } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
+  const { featureFlags } = useAppContext();
   describe('Errand page', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/messages/*', mockMessages);
@@ -210,7 +211,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('manages Exports', () => {
-      if (appConfig.features.useErrandExport) {
+      if (featureFlags?.useErrandExport) {
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
         cy.get('[data-cy="basicInformation"]').should('exist');
         cy.get('[data-cy="export-button"]').should('exist').click();

@@ -1,0 +1,27 @@
+import { FeatureFlags } from '@common/utils/feature-flags';
+import { ApiResponse, apiService } from './api-service';
+import { getApplicationEnvironment, isLOP, isPT } from './application-service';
+import { User } from '@common/interfaces/user';
+
+function mapFeatureFlagsGeneric(data: Array<{ name: string; enabled: boolean }>): FeatureFlags {
+  return data.reduce((acc, { name, enabled }) => {
+    acc[name] = enabled;
+    return acc;
+  }, {} as FeatureFlags);
+}
+
+export const getFeatureFlags = async () => {
+  return await apiService
+    .get<ApiResponse<any>>('flags')
+    .then((res) => {
+      return mapFeatureFlagsGeneric(res.data.data);
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching feature flags: ' + e);
+      throw e;
+    });
+};
+
+//TODO: Add as feature flag in db
+export const isAppealEnabled = () => isPT() && getApplicationEnvironment() === 'TEST';
+export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;

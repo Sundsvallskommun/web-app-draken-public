@@ -1,10 +1,6 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { User } from '@common/interfaces/user';
-import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Channels,
   ContactChannelType,
@@ -25,14 +21,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
   registeringNewErrand?: boolean;
 }> = (props) => {
-  const {
-    supportMetadata,
-  }: {
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
-  } = useAppContext();
+  const { supportMetadata, featureFlags } = useAppContext();
   const { supportErrand } = props;
   const { t } = useTranslation();
   const [categoriesList, setCategoriesList] = useState<Category[]>();
@@ -83,7 +72,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </FormControl>
       ) : null}
 
-      {appConfig.features.useTwoLevelCategorization ? (
+      {featureFlags?.useTwoLevelCategorization ? (
         <div className="flex gap-24">
           <div className="flex my-md gap-xl w-1/2">
             <FormControl id="category" className="w-full">
@@ -157,13 +146,13 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       ) : null}
 
-      {appConfig.features.useThreeLevelCategorization ? (
+      {featureFlags?.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} />
         </div>
       ) : null}
 
-      {appConfig.features.useBusinessCase ? (
+      {featureFlags?.useBusinessCase ? (
         <div className="flex gap-24">
           <FormControl id="iscompanyerrand">
             <Checkbox disabled={isSupportErrandLocked(supportErrand)} {...register('businessRelated')}>
@@ -187,7 +176,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       </div>
 
       <div className="flex gap-24">
-        {appConfig.features.useReasonForContact ? (
+        {featureFlags?.useReasonForContact ? (
           <div className="flex gap-xl w-1/2">
             <FormControl id="cause" className="w-full">
               <FormLabel>
@@ -268,7 +257,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         </div>
       </div>
 
-      {appConfig.features.useExplanationOfTheCause ? (
+      {featureFlags?.useExplanationOfTheCause ? (
         <div className="w-full mt-md mb-lg">
           <Checkbox
             id="causecheckbox"

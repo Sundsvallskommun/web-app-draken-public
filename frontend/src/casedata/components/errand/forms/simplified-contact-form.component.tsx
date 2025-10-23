@@ -14,7 +14,6 @@ import {
   phonePattern,
   ssnPattern,
 } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
@@ -146,7 +145,7 @@ export const SimplifiedContactForm: React.FC<{
           'contact-channel-required-phone',
           'Ange minst en godkänd e-postadress eller ett telefonnummer',
           function (phoneNumbers) {
-            if (!appConfig.features.useRequireContactChannel) return true;
+            if (!featureFlags?.useRequireContactChannel) return true;
             const emails = this.parent.emails || [];
             const hasValidPhone = (phoneNumbers || []).some(
               (p) => p.value && yup.string().matches(phonePattern).isValidSync(p.value)
@@ -168,7 +167,7 @@ export const SimplifiedContactForm: React.FC<{
           'contact-channel-required',
           'Ange minst en godkänd e-postadress eller ett telefonnummer',
           function (emails) {
-            if (!appConfig.features.useRequireContactChannel) return true;
+            if (!featureFlags?.useRequireContactChannel) return true;
             const phoneNumbers = this.parent.phoneNumbers || [];
             const hasValidEmail = (emails || []).some((e) => e.value && yup.string().email().isValidSync(e.value));
             const hasValidPhone = (phoneNumbers || []).some(
@@ -186,7 +185,7 @@ export const SimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { errand } = useAppContext();
+  const { errand, featureFlags } = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);

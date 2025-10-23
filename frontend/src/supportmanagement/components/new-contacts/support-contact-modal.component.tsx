@@ -1,7 +1,6 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
-import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
@@ -45,7 +44,7 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
   setSearchResultArray,
   replacePhonenumbers,
 }) => {
-  const { supportMetadata, supportErrand } = useAppContext();
+  const { supportMetadata, supportErrand, featureFlags } = useAppContext();
 
   return (
     <Modal
@@ -56,7 +55,7 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
     >
       <Modal.Content className="p-0">
         <>
-          {appConfig.features.useOrganizationStakeholders && !editing ? (
+          {featureFlags?.useOrganizationStakeholders && !editing ? (
             <SupportContactSearchModeSelector
               inName={'modal'}
               searchMode={searchMode}
@@ -95,7 +94,7 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
                     </div>
                   )}
                 </FormControl>
-                {appConfig.features.useRolesForStakeholders ? (
+                {featureFlags?.useRolesForStakeholders ? (
                   <FormControl id={`contact-relation`} size="sm" className="w-1/2">
                     <FormLabel>Roll</FormLabel>
                     <Select

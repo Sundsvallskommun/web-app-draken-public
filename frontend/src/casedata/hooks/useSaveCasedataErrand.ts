@@ -14,12 +14,11 @@ import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
 
 export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
-  const { errand, administrators, municipalityId, setErrand, user } = useAppContext();
+  const { errand, administrators, municipalityId, setErrand, user, featureFlags } = useAppContext();
   const toastMessage = useSnackbar();
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
 
@@ -55,7 +54,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       return null;
     }
 
-    if (appConfig.features.useFacilities) {
+    if (featureFlags?.useFacilities) {
       const facilities = getValues('facilities');
       const validFacilities: FacilityDTO[] = facilities.map((f) => ({
         ...f,

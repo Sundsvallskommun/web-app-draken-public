@@ -23,7 +23,6 @@ import { MessageController } from './controllers/message.controller';
 import { MetadataController } from './controllers/metadata.controller';
 import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
-import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
 import { SupportErrandController } from './controllers/supportmanagement/support-errand.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
 import { SupportHistoryController } from './controllers/supportmanagement/support-history.controller';
@@ -33,6 +32,8 @@ import { SupportNoteController } from './controllers/supportmanagement/support-n
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
+import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
+import { FeatureFlagController } from './controllers/featureflags.controller';
 
 validateEnv();
 
@@ -69,6 +70,7 @@ const app = new App([
   CaseStatusController,
   CaseDataConversationController,
   SupportConversationController,
+  FeatureFlagController,
   MetadataController,
 ]);
 

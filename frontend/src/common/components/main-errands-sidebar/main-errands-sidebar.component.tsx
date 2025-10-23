@@ -4,8 +4,7 @@ import { CaseStatusValues } from '@casedata/components/casedata-filtering/compon
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { getApplicationEnvironment } from '@common/services/application-service';
-import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
-import { appConfig } from '@config/appconfig';
+import { SymbolByMunicipalityId } from '@common/utils/municiplaity-symbol';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
@@ -18,6 +17,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { userMenuGroups } from '../layout/userMenuGroups';
+import { attestationEnabled } from '@common/services/featureflags-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -27,7 +27,7 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
+  const { user, billingRecords, isLoading, featureFlags }: AppContextInterface = useAppContext();
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
 
@@ -36,15 +36,17 @@ export const MainErrandsSidebar: React.FC<{
       href="/"
       className="no-underline"
       aria-label={`Draken - ${
-        appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
       }. Gå till startsidan.`}
     >
       <Logo
         className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
-        symbol={appConfig.symbol}
+        symbol={SymbolByMunicipalityId()}
         title={'Draken'}
-        subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
+        subtitle={
+          process.env.NEXT_PUBLIC_APPLICATION_NAME + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
+        }
       />
     </NextLink>
   );
@@ -83,13 +85,11 @@ export const MainErrandsSidebar: React.FC<{
               </span>
             </div>
           )}
-          {isNotificicationEnabled() && (
-            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          )}
+          <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
-          {appConfig.isSupportManagement ? (
+          {featureFlags?.isSupportManagement ? (
             <FormProvider {...suppportManagementFilterForm}>
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
@@ -98,7 +98,7 @@ export const MainErrandsSidebar: React.FC<{
               />
             </FormProvider>
           ) : null}
-          {appConfig.isCaseData ? (
+          {featureFlags?.isCaseData ? (
             <FormProvider {...casedataFilterForm}>
               <CasedataFilterSidebarStatusSelector iconButton={!open} />
             </FormProvider>
@@ -151,7 +151,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
       </div>
 
-      {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
+      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
     </aside>
   );
 };

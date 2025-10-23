@@ -3,7 +3,6 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isKC } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
@@ -33,6 +32,7 @@ export const SupportErrandsTable: React.FC = () => {
     supportAdmins,
     municipalityId,
     selectedSupportErrandStatuses,
+    featureFlags,
   }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
@@ -187,10 +187,10 @@ export const SupportErrandsTable: React.FC = () => {
           scope="row"
           className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
         >
-          {appConfig.features.useThreeLevelCategorization ? (
+          {featureFlags?.useThreeLevelCategorization ? (
             <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
           ) : null}
-          {appConfig.features.useTwoLevelCategorization ? (
+          {featureFlags?.useTwoLevelCategorization ? (
             <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
           ) : null}
 
@@ -198,13 +198,13 @@ export const SupportErrandsTable: React.FC = () => {
         </Table.HeaderColumn>
         <Table.Column scope="row">
           <div className="max-w-[280px]">
-            {appConfig.features.useThreeLevelCategorization ? (
+            {featureFlags?.useThreeLevelCategorization ? (
               <div>
                 <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
                 <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
               </div>
             ) : null}
-            {appConfig.features.useTwoLevelCategorization ? (
+            {featureFlags?.useTwoLevelCategorization ? (
               <>
                 <p className="m-0">
                   {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)

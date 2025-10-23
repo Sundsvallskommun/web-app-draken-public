@@ -1,12 +1,10 @@
 'use client';
 
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import { User } from '@common/interfaces/user';
 import { isKA } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -23,14 +21,12 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   forwardSupportErrand,
   getSupportErrandById,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
@@ -77,21 +73,8 @@ export interface ForwardFormProps {
 }
 
 export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    user,
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportMetadata,
-    supportAttachments,
-  }: {
-    user: User;
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-  } = useAppContext();
+  const { user, municipalityId, supportErrand, setSupportErrand, supportMetadata, supportAttachments, featureFlags } =
+    useAppContext();
   const confirm = useConfirm();
   const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const [showModal, setShowModal] = useState(false);
@@ -181,7 +164,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     reset();
   };
 
-  if (!appConfig.features.useEscalation) {
+  if (!featureFlags?.useEscalation) {
     return null;
   }
 
@@ -222,7 +205,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         ) : (
           <>
             <Modal.Content>
-              {appConfig.features.useDepartmentEscalation && (
+              {featureFlags?.useDepartmentEscalation && (
                 <>
                   <small>
                     Verksamheter som inte använder Draken kan inte ta emot ärenden via systemet. Använd e-post i dessa
