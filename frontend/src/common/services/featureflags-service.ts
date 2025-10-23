@@ -1,5 +1,7 @@
 import { FeatureFlags } from '@common/utils/feature-flags';
 import { ApiResponse, apiService } from './api-service';
+import { getApplicationEnvironment, isLOP, isPT } from './application-service';
+import { User } from '@common/interfaces/user';
 
 function mapFeatureFlagsGeneric(data: Array<{ name: string; enabled: boolean }>): FeatureFlags {
   return data.reduce((acc, { name, enabled }) => {
@@ -19,3 +21,7 @@ export const getFeatureFlags = async () => {
       throw e;
     });
 };
+
+//TODO: Add as feature flag in db
+export const isAppealEnabled = () => isPT() && getApplicationEnvironment() === 'TEST';
+export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;

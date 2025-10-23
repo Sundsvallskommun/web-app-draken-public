@@ -17,7 +17,6 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { isAppealEnabled } from '@common/services/feature-flag-service';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -40,6 +39,7 @@ import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
+import { isAppealEnabled } from '@common/services/featureflags-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {

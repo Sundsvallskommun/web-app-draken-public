@@ -26,7 +26,6 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
-import { formatMessage } from '@common/services/sanitizer-service';
 import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { FeatureFlags } from '@common/utils/feature-flags';

@@ -4,7 +4,6 @@ import { CaseStatusValues } from '@casedata/components/casedata-filtering/compon
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { getApplicationEnvironment } from '@common/services/application-service';
-import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
 import { SymbolByMunicipalityId } from '@common/utils/municiplaity-symbol';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -18,6 +17,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { userMenuGroups } from '../layout/userMenuGroups';
+import { attestationEnabled } from '@common/services/featureflags-service';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -85,9 +85,7 @@ export const MainErrandsSidebar: React.FC<{
               </span>
             </div>
           )}
-          {isNotificicationEnabled() && (
-            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          )}
+          <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
@@ -153,7 +151,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
       </div>
 
-      {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
+      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
     </aside>
   );
 };
