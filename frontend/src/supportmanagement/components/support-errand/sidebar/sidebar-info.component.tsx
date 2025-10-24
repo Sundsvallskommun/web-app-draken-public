@@ -575,7 +575,7 @@ export const SidebarInfo: React.FC<{
                         leftIcon={<LucideIcon name="mail" />}
                         className="w-full"
                         color="vattjom"
-                        data-cy="new-message-button"
+                        data-cy="sidebar-new-message-button"
                         variant="secondary"
                         onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
                       >

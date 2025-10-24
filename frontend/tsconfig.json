@@ -16,7 +16,7 @@
     // "strictFunctionTypes": false,
     // "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "noEmit": false,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

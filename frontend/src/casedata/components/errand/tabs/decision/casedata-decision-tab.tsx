@@ -138,7 +138,7 @@ export const CasedataDecisionTab: React.FC<{
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   const [textIsDirty, setTextIsDirty] = useState(false);
 
-  const ownerPartyId = getOwnerStakeholder(errand).personId;
+  const ownerPartyId = getOwnerStakeholder(errand)?.personId;
 
   const { services } = useErrandServices({
     municipalityId,
