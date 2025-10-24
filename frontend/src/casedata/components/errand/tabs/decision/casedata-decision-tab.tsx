@@ -316,15 +316,19 @@ export const CasedataDecisionTab: React.FC<{}> = () => {
         headerReplyTo: '',
         headerReferences: '',
       };
-      const sentMessage = isMEX()
-        ? await sendMessage(municipalityId, errand, messageData)
-        : isPT()
-        ? await sendDecisionMessage(municipalityId, errand)
-        : () => {
-            throw new Error('Kontaktsätt saknas');
-          };
-      const updatedStatus = await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
-      const phaseChange = await triggerPhaseChange();
+      if (isMEX()) {
+        await sendMessage(municipalityId, errand, messageData);
+      } else if (isPT() && municipalityId === '2260') {
+        console.log("PT Ånge - beslut skickas ej manuellt");
+        // PT Ånge - do nothing, they handle sending themselves
+      } else if (isPT()) {
+        console.log("PT Sundsvall - sending decision by letter or email");
+        await sendDecisionMessage(municipalityId, errand);
+      } else {
+        throw new Error('Kontaktsätt saknas');
+      }
+      await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
+      await triggerPhaseChange();
       toastMessage(
         getToastOptions({
           message: 'Beslutet skickades',

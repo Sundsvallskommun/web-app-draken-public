@@ -45,10 +45,6 @@ export const sanitizedInline: (unsafe: string) => string = (unsafe) => {
   return SanitizeHTML(unsafe.replace('</', ' </'), inlineConfig);
 };
 
-export const formatErrandDescription: (text: string) => string = (text) => {
-  return text?.replace(/([^\s<]+)<(https?:\/\/[^>]+)>/g, '<a href="$2" target="_blank">$1</a>').replace(/\n/g, '<br>');
-};
-
 export const formatMessage: (text: string) => string = (text) => {
   return (
     text
@@ -62,6 +58,10 @@ export const formatMessage: (text: string) => string = (text) => {
       // Styling for links
       .replace(/<a /gi, '<a class="text-vattjom-surface-primary underline hover:text-vattjom-surface-primary-hover" ')
   );
+};
+
+export const sanitizeHtmlMessageBody: (text: string) => string = (text) => {
+  return SanitizeHTML(text).replaceAll(/<br\s*\/?>/gi, '</p><p>');
 };
 
 export default sanitized;

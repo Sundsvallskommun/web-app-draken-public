@@ -30,15 +30,15 @@ import { Role } from '@casedata/interfaces/role';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
+import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { replaceExtraParameter } from './casedata-extra-parameters-service';
-import { v4 as uuidv4 } from 'uuid';
-import { formatErrandDescription } from '@common/services/sanitizer-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -203,7 +203,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       errandNumber: e.errandNumber,
       caseType: e.caseType,
       label: findCaseLabelForCaseType(CaseTypes.ALL[e.caseType]),
-      description: formatErrandDescription(e?.description) || '',
+      description: sanitized(e?.description) || '',
       administrator: administrator,
       administratorName: administrator ? `${administrator.firstName} ${administrator.lastName}` : '',
       priority: Priority[e.priority as Priority],

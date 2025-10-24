@@ -26,7 +26,7 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
+import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -411,7 +411,15 @@ export const MessageComposer: React.FC<{
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
         !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
       }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setValue('messageBody', formatMessage(defaultSignature() + historyHeader + props.message.message));
+
+      setValue(
+        'messageBody',
+        defaultSignature() +
+          historyHeader +
+          (props.message.htmlMessage
+            ? sanitizeHtmlMessageBody(props.message.htmlMessage)
+            : formatMessage(sanitized(props.message.message)))
+      );
       trigger();
     } else {
       setValue('messageBody', defaultSignature());
