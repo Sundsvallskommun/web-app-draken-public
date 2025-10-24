@@ -131,6 +131,21 @@ export interface AppContextInterface {
 
   billingRecords: CPageBillingRecord;
   setBillingRecords: (billingRecords: CPageBillingRecord) => void;
+
+  unsavedChanges: boolean;
+  setUnsavedChanges: (unsavedChanges: boolean) => void;
+
+  unsavedFacility: boolean;
+  setUnsavedFacility: (unsavedFacility: boolean) => void;
+
+  unsavedContract: boolean;
+  setUnsavedContract: (unsavedContract: boolean) => void;
+
+  unsavedDecision: boolean;
+  setUnsavedDecision: (unsavedDecision: boolean) => void;
+
+  unsavedInvestigation: boolean;
+  setUnsavedInvestigation: (unsavedInvestigation: boolean) => void;
 }
 
 const AppContext = createContext<AppContextInterface>(null);
@@ -173,6 +188,11 @@ export function AppWrapper({ children }) {
   const [notifications, setNotifications] = useState<(SupportNotification | CaseDataNotification)[]>([]);
   const [uiPhase, setUiPhase] = useState<UiPhase>();
   const [billingRecords, setBillingRecords] = useState<CPageBillingRecord>({ content: [] });
+  const [unsavedChanges, setUnsavedChanges] = useState<boolean>(false);
+  const [unsavedFacility, setUnsavedFacility] = useState<boolean>(false);
+  const [unsavedContract, setUnsavedContract] = useState<boolean>(false);
+  const [unsavedDecision, setUnsavedDecision] = useState<boolean>(false);
+  const [unsavedInvestigation, setUnsavedInvestigation] = useState<boolean>(false);
 
   return (
     <AppContext.Provider
@@ -293,6 +313,21 @@ export function AppWrapper({ children }) {
 
         billingRecords,
         setBillingRecords: (billingRecords: CPageBillingRecord) => setBillingRecords(billingRecords),
+
+        unsavedChanges,
+        setUnsavedChanges: (unsavedChanges: boolean) => setUnsavedChanges(unsavedChanges),
+
+        unsavedFacility,
+        setUnsavedFacility: (unsavedFacility: boolean) => setUnsavedFacility(unsavedFacility),
+
+        unsavedContract,
+        setUnsavedContract: (unsavedContract: boolean) => setUnsavedContract(unsavedContract),
+
+        unsavedInvestigation,
+        setUnsavedInvestigation: (unsavedInvestigation: boolean) => setUnsavedInvestigation(unsavedInvestigation),
+
+        unsavedDecision,
+        setUnsavedDecision: (unsavedDecision: boolean) => setUnsavedDecision(unsavedDecision),
       }}
     >
       {children}

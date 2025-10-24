@@ -65,7 +65,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     setAllowed(_a);
   }, [user, errand]);
 
-  const { setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
+  const { setValue, register, getValues, reset, watch }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   useEffect(() => {
     if (administrators && errand?.administrator?.adAccount) {
@@ -293,13 +293,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 ))}
               </Select>
             </FormControl>
-            <SaveButtonComponent
-              setUnsaved={() => {}}
-              update={() => {}}
-              label="Spara ärende"
-              color="primary"
-              loading={loading}
-            />
+            <SaveButtonComponent label="Spara ärende" color="primary" loading={loading} />
           </div>
         ) : null}
 
@@ -431,7 +425,6 @@ export const SidebarInfo: React.FC<{}> = () => {
             setShowMessageComposer(false);
           }, 0);
         }}
-        setUnsaved={() => {}}
         update={() =>
           setTimeout(() => {
             getErrand(municipalityId, errand.id.toString()).then((res) => {

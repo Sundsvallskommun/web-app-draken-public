@@ -115,7 +115,7 @@ export const SupportErrandsTable: React.FC = () => {
         throw new Error('Failed to acknowledge notification');
       });
     }
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
+    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}/grundinformation`, '_blank');
   };
 
   const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (

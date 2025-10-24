@@ -6,9 +6,10 @@ import { ExtraParameter, Notification } from '@common/data-contracts/case-data/d
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { Data } from '@common/services/api-service';
 import { Attachment } from './attachment';
-import { ApiErrandStatus } from './errand-status';
+import { ApiErrandStatus, ErrandStatus } from './errand-status';
 import { ErrandNote } from './errandNote';
 import { CasedataOwnerOrContact, CreateStakeholderDto, Stakeholder } from './stakeholder';
+import { defaultMunicipality } from '@casedata/services/casedata-errand-service';
 
 export interface ApiErrand {
   id: number;
@@ -107,6 +108,31 @@ export interface IErrand {
   relatesTo?: RelatedErrand[];
   publicNote?: string;
 }
+
+export const defaultCaseDataErrandInformation: IErrand = {
+  id: undefined,
+  externalCaseId: '',
+  errandNumber: '',
+  caseType: '',
+  label: '',
+  description: '',
+  priority: Priority.MEDIUM,
+  administrator: undefined,
+  administratorName: '',
+  status: { statusType: ErrandStatus.ArendeInkommit },
+  statuses: [],
+  phase: ErrandPhase.aktualisering,
+  channel: Channels.WEB_UI,
+  municipalityId: defaultMunicipality.id,
+  stakeholders: [],
+  created: '',
+  updated: '',
+  notes: [],
+  decisions: [],
+  attachments: [],
+  messageIds: [],
+  extraParameters: [],
+};
 
 export interface ErrandsData extends Data {
   errands: IErrand[];

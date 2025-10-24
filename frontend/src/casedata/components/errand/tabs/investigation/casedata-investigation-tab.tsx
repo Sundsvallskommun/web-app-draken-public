@@ -70,13 +70,10 @@ let formSchemaFT = yup
   })
   .required();
 
-export const CasedataInvestigationTab: React.FC<{
-  errand: IErrand;
-  setUnsaved: (unsaved: boolean) => void;
-}> = (props) => {
+export const CasedataInvestigationTab: React.FC<{}> = () => {
   const toastMessage = useSnackbar();
   const saveConfirm = useConfirm();
-  const { municipalityId, errand, user }: AppContextInterface = useAppContext();
+  const { municipalityId, errand, user, setUnsavedInvestigation }: AppContextInterface = useAppContext();
   const { setErrand } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -96,7 +93,7 @@ export const CasedataInvestigationTab: React.FC<{
   };
 
   useEffect(() => {
-    if (isFTErrand(props.errand)) {
+    if (isFTErrand(errand)) {
       setValue('description', FT_INVESTIGATION_TEXT);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,9 +115,7 @@ export const CasedataInvestigationTab: React.FC<{
     getValues,
     formState: { errors },
   } = useForm<UtredningFormModel>({
-    resolver: yupResolver(
-      isFTErrand(props.errand) ? formSchemaFT : formSchema
-    ) as unknown as Resolver<UtredningFormModel>,
+    resolver: yupResolver(isFTErrand(errand) ? formSchemaFT : formSchema) as unknown as Resolver<UtredningFormModel>,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
@@ -136,17 +131,17 @@ export const CasedataInvestigationTab: React.FC<{
         return;
       }
 
-      if (isFTErrand(props.errand)) {
+      if (isFTErrand(errand)) {
         data.outcome = 'APPROVAL';
-        await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
+        await saveDecision(municipalityId, errand, data, 'PROPOSED');
       } else {
         const rendered = await renderUtredningPdf(errand, data);
-        await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
+        await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
       }
 
       setIsLoading(false);
       setError(undefined);
-      props.setUnsaved(false);
+      setUnsavedInvestigation(false);
       toastMessage(
         getToastOptions({
           message: 'Utredningen sparades',
@@ -169,14 +164,14 @@ export const CasedataInvestigationTab: React.FC<{
 
   const getPdfPreview = () => {
     const data = getValues();
-    renderUtredningPdf(props.errand, data).then(async (d) => {
-      await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
-      await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
+    renderUtredningPdf(errand, data).then(async (d) => {
+      await saveDecision(municipalityId, errand, data, 'PROPOSED', d.pdfBase64);
+      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
         const uri = `data:application/pdf;base64,${d.pdfBase64}`;
         const link = document.createElement('a');
         link.href = uri;
-        link.setAttribute('download', `Utredning-${props.errand.errandNumber}.pdf`);
+        link.setAttribute('download', `Utredning-${errand.errandNumber}.pdf`);
         document.body.appendChild(link);
         link.click();
         setPreviewError(false);
@@ -188,10 +183,10 @@ export const CasedataInvestigationTab: React.FC<{
   };
 
   const outcomeModalCallback = async (outcome) => {
-    const { phrases } = await getUtredningPhrases(props.errand, outcome as DecisionOutcome);
+    const { phrases } = await getUtredningPhrases(errand, outcome as DecisionOutcome);
     setValue('description', phrases);
     setTextIsDirty(true);
-    props.setUnsaved(true);
+    setUnsavedInvestigation(true);
   };
 
   const handleOutcomeChange = (newOutcome) => {
@@ -218,7 +213,7 @@ export const CasedataInvestigationTab: React.FC<{
   };
 
   const appendPhrases = async () => {
-    const { phrases } = await getUtredningPhrases(props.errand, 'REJECTION');
+    const { phrases } = await getUtredningPhrases(errand, 'REJECTION');
     setValue('description', phrases);
     setPhrasesAppended(true);
   };
@@ -226,7 +221,7 @@ export const CasedataInvestigationTab: React.FC<{
   useEffect(() => {
     setFirstDescriptionChange(true);
     setFirstOutcomeChange(true);
-    const decision = getProposedOrRecommendedDecision(props.errand.decisions);
+    const decision = getProposedOrRecommendedDecision(errand.decisions);
     if (decision) {
       setValue('outcome', decision.decisionOutcome);
     } else {
@@ -251,19 +246,19 @@ export const CasedataInvestigationTab: React.FC<{
       law: decision?.law,
       outcome: decision?.decisionOutcome,
     });
-    setValue('errandNumber', props.errand.errandNumber);
-    props.setUnsaved(false);
+    setValue('errandNumber', errand.errandNumber);
+    setUnsavedInvestigation(false);
     trigger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.errand]);
+  }, [errand]);
 
   useEffect(() => {
-    props.setUnsaved(textIsDirty);
+    setUnsavedInvestigation(textIsDirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textIsDirty]);
 
   useEffect(() => {
-    props.setUnsaved(formState.isDirty);
+    setUnsavedInvestigation(formState.isDirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState.isDirty]);
 
@@ -273,19 +268,19 @@ export const CasedataInvestigationTab: React.FC<{
         setFirstDescriptionChange(false);
         setPhrasesAppended(false);
       } else {
-        props.setUnsaved(textIsDirty);
+        setUnsavedInvestigation(textIsDirty);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description]);
 
   return (
-    <div className="w-full py-24 px-32">
+    <>
       <div className="w-full flex justify-between items-center flex-wrap h-40">
         <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
-          <h2 className="text-h4-sm md:text-h4-md">Utredning</h2>
+          <h2 className="text-h2-md max-medium-device:text-h4-md">Utredning</h2>
         </div>
-        {!isFTErrand(props.errand) && (
+        {!isFTErrand(errand) && (
           <Button
             type="button"
             disabled={!formState.isValid || isErrandLocked(errand) || !allowed}
@@ -315,7 +310,7 @@ export const CasedataInvestigationTab: React.FC<{
           </div>
         )}
 
-        {isFTErrand(props.errand) && (
+        {isFTErrand(errand) && (
           <div className="pb-[1.5rem]">
             <Divider.Section orientation="horizontal">
               <div className="flex gap-sm items-center">
@@ -328,7 +323,7 @@ export const CasedataInvestigationTab: React.FC<{
         <form onSubmit={handleSubmit(save)} data-cy="utredning-form">
           <Input type="hidden" {...register('decidedBy')} value={user.username} />
           <div className="flex gap-24">
-            {!isFTErrand(props.errand) && (
+            {!isFTErrand(errand) && (
               <>
                 <FormControl className="w-full">
                   <FormLabel>Lagrum</FormLabel>
@@ -346,7 +341,7 @@ export const CasedataInvestigationTab: React.FC<{
                         }),
                         { shouldDirty: true }
                       );
-                      props.setUnsaved(true);
+                      setUnsavedInvestigation(true);
                       trigger();
                     }}
                     placeholder="Välj lagrum"
@@ -439,8 +434,7 @@ export const CasedataInvestigationTab: React.FC<{
                   });
               })}
               disabled={
-                !isFTErrand(props.errand) &&
-                (!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty)
+                !isFTErrand(errand) && (!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty)
               }
               leftIcon={<LucideIcon name="check" className="mr-sm" />}
               loading={isLoading}
@@ -448,7 +442,7 @@ export const CasedataInvestigationTab: React.FC<{
             >
               Spara
             </Button>
-            {isFTErrand(props.errand) && (
+            {isFTErrand(errand) && (
               <Button
                 onClick={() => {
                   return saveConfirm
@@ -483,6 +477,6 @@ export const CasedataInvestigationTab: React.FC<{
           </div>
         </form>
       </div>
-    </div>
+    </>
   );
 };

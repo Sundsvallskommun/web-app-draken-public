@@ -159,7 +159,6 @@ export const MessageComposer: React.FC<{
   message?: MessageNode;
   show: boolean;
   closeHandler: () => void;
-  setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
   const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
@@ -353,9 +352,6 @@ export const MessageComposer: React.FC<{
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
     setValue('messageBody', defaultSignature());
-    setTimeout(() => {
-      props.setUnsaved(false);
-    }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans]);
 

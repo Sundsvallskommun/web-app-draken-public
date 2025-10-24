@@ -201,130 +201,128 @@ export const CasedataAttachments: React.FC = () => {
 
   return (
     <FormProvider {...methods}>
-      <div className="w-full py-24 px-32">
-        <div className="w-full flex justify-between items-center flex-wrap h-40">
-          <h2 className="text-h4-sm md:text-h4-md">Bilagor</h2>
-          <Button
-            data-cy="add-attachment-button"
-            disabled={isErrandLocked(errand)}
-            color="vattjom"
-            rightIcon={<LucideIcon name="upload" size={16} />}
-            inverted
-            size="sm"
-            onClick={() => {
-              openHandler();
-            }}
-          >
-            Ladda upp bilaga
-          </Button>
-        </div>
-        <div>
-          <p className="py-8">Här samlas bilagor som är kopplade till ärendet.</p>
-        </div>
+      <div className="w-full flex justify-between items-center flex-wrap h-40">
+        <h2 className="text-h2-md max-medium-device:text-h4-md">Bilagor</h2>
+        <Button
+          data-cy="add-attachment-button"
+          disabled={isErrandLocked(errand)}
+          color="vattjom"
+          rightIcon={<LucideIcon name="upload" size={16} />}
+          inverted
+          size="sm"
+          onClick={() => {
+            openHandler();
+          }}
+        >
+          Ladda upp bilaga
+        </Button>
+      </div>
+      <div>
+        <p className="py-8">Här samlas bilagor som är kopplade till ärendet.</p>
+      </div>
 
-        <div className="mt-md" data-cy="casedataAttachments-list">
-          <FileUpload.List name="files">
-            {files?.map((file, i) => (
-              <FileUpload.ListItem
-                className="flex flex-wrap wrapping-list-item"
-                key={file.id}
-                index={i}
-                isEdit={editIndex === i}
-                nameProps={{
-                  description: `Uppladdad: ${dayjs(file?.meta?.created as string).format('YYYY-MM-DD HH:mm')}`,
-                }}
-                categoryProps={{
-                  categories: isMEX() ? MEXAllAttachmentLabels : PTAttachmentLabels,
-                }}
-                actionsProps={{
-                  onEditSave: () => {
-                    if (errors?.files?.[i]?.meta?.name?.message) {
-                      toastMessage({
-                        position: 'bottom',
-                        closeable: false,
-                        message: 'Namn måste anges',
-                        status: 'error',
-                      });
-                      return;
-                    }
-                    editAttachment(
-                      municipalityId,
-                      errand.id.toString(),
-                      file.id,
-                      `${file.meta.name}.${file.meta.ending}`,
-                      file.meta.category
-                    );
-                    setEditIndex(null);
-                  },
-                  onEditCancel: () => {
-                    if (originalFile) {
-                      setValue(`files.${i}`, originalFile, {
-                        shouldDirty: false,
-                        shouldTouch: false,
-                        shouldValidate: false,
-                      });
-                    }
-                    setEditIndex(null);
-                    setOriginalFile(null);
-                  },
-                  showEditSave: editIndex === i,
-                  showEditCancel: editIndex === i,
-                  extraActions: [
-                    <Fragment key={`item-${i}`}>
-                      {editIndex !== i && (
-                        <Button
-                          key="view"
-                          variant="tertiary"
-                          leftIcon={<LucideIcon name="eye" />}
-                          data-cy={`open-attachment-${file.id}`}
-                          onClick={() => {
-                            clickHandler(file);
-                          }}
-                          size="sm"
-                        >
-                          Öppna
-                        </Button>
-                      )}
-                    </Fragment>,
-                  ],
-                  showMore: !isErrandLocked(errand),
-                  morePopupMenuPanel: (
-                    <PopupMenu.Panel>
-                      <PopupMenu.Items>
-                        <PopupMenu.Group>
-                          <PopupMenu.Item>
-                            <Button
-                              data-cy={`edit-attachment-${file.id}`}
-                              leftIcon={<LucideIcon name="pencil" />}
-                              onClick={() => {
-                                setOriginalFile({ ...file, meta: { ...file.meta } });
-                                setEditIndex(i);
-                              }}
-                            >
-                              Ändra
-                            </Button>
-                          </PopupMenu.Item>
-                          <PopupMenu.Item>
-                            <Button
-                              data-cy={`delete-attachment-${file.id}`}
-                              leftIcon={<LucideIcon name="trash" />}
-                              onClick={async () => {
-                                handleRemove(file);
-                              }}
-                            >
-                              Ta bort
-                            </Button>
-                          </PopupMenu.Item>
-                        </PopupMenu.Group>
-                      </PopupMenu.Items>
-                    </PopupMenu.Panel>
-                  ),
-                }}
-                file={file}
-              />
-            ))}
-          </FileUpload.List>
-        </div>
+      <div className="mt-md" data-cy="casedataAttachments-list">
+        <FileUpload.List name="files">
+          {files?.map((file, i) => (
+            <FileUpload.ListItem
+              className="flex flex-wrap wrapping-list-item"
+              key={file.id}
+              index={i}
+              isEdit={editIndex === i}
+              nameProps={{
+                description: `Uppladdad: ${dayjs(file?.meta?.created as string).format('YYYY-MM-DD HH:mm')}`,
+              }}
+              categoryProps={{
+                categories: isMEX() ? MEXAllAttachmentLabels : PTAttachmentLabels,
+              }}
+              actionsProps={{
+                onEditSave: () => {
+                  if (errors?.files?.[i]?.meta?.name?.message) {
+                    toastMessage({
+                      position: 'bottom',
+                      closeable: false,
+                      message: 'Namn måste anges',
+                      status: 'error',
+                    });
+                    return;
+                  }
+                  editAttachment(
+                    municipalityId,
+                    errand.id.toString(),
+                    file.id,
+                    `${file.meta.name}.${file.meta.ending}`,
+                    file.meta.category
+                  );
+                  setEditIndex(null);
+                },
+                onEditCancel: () => {
+                  if (originalFile) {
+                    setValue(`files.${i}`, originalFile, {
+                      shouldDirty: false,
+                      shouldTouch: false,
+                      shouldValidate: false,
+                    });
+                  }
+                  setEditIndex(null);
+                  setOriginalFile(null);
+                },
+                showEditSave: editIndex === i,
+                showEditCancel: editIndex === i,
+                extraActions: [
+                  <Fragment key={`item-${i}`}>
+                    {editIndex !== i && (
+                      <Button
+                        key="view"
+                        variant="tertiary"
+                        leftIcon={<LucideIcon name="eye" />}
+                        data-cy={`open-attachment-${file.id}`}
+                        onClick={() => {
+                          clickHandler(file);
+                        }}
+                        size="sm"
+                      >
+                        Öppna
+                      </Button>
+                    )}
+                  </Fragment>,
+                ],
+                showMore: !isErrandLocked(errand),
+                morePopupMenuPanel: (
+                  <PopupMenu.Panel>
+                    <PopupMenu.Items>
+                      <PopupMenu.Group>
+                        <PopupMenu.Item>
+                          <Button
+                            data-cy={`edit-attachment-${file.id}`}
+                            leftIcon={<LucideIcon name="pencil" />}
+                            onClick={() => {
+                              setOriginalFile({ ...file, meta: { ...file.meta } });
+                              setEditIndex(i);
+                            }}
+                          >
+                            Ändra
+                          </Button>
+                        </PopupMenu.Item>
+                        <PopupMenu.Item>
+                          <Button
+                            data-cy={`delete-attachment-${file.id}`}
+                            leftIcon={<LucideIcon name="trash" />}
+                            onClick={async () => {
+                              handleRemove(file);
+                            }}
+                          >
+                            Ta bort
+                          </Button>
+                        </PopupMenu.Item>
+                      </PopupMenu.Group>
+                    </PopupMenu.Items>
+                  </PopupMenu.Panel>
+                ),
+              }}
+              file={file}
+            />
+          ))}
+        </FileUpload.List>
       </div>
       <UploadAttachmentModal
         isOpen={addAttachmentWindowIsOpen}

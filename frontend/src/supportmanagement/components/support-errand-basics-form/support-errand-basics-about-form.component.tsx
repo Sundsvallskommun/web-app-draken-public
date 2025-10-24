@@ -1,10 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { User } from '@common/interfaces/user';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Channels,
   ContactChannelType,
@@ -13,27 +10,16 @@ import {
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import { SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
-export const SupportErrandBasicsAboutForm: React.FC<{
-  supportErrand: SupportErrand;
-  registeringNewErrand?: boolean;
-}> = (props) => {
-  const {
-    supportMetadata,
-  }: {
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
-  } = useAppContext();
-  const { supportErrand } = props;
+export const SupportErrandBasicsAboutForm: React.FC<{}> = () => {
+  const { supportErrand, supportMetadata } = useAppContext();
   const { t } = useTranslation();
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();

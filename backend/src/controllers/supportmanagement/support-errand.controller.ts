@@ -490,6 +490,25 @@ export class SupportErrandController {
     return resToSend;
   };
 
+  @Get('/supporterrands/errandnumber/:errandNumber')
+  @OpenAPI({ summary: 'Return an errand by number' })
+  @UseBefore(authMiddleware)
+  async getSupportErrandByErrandNumber(
+    @Req() req: RequestWithUser,
+    @Param('errandNumber') errandNumber: string,
+    @Res() response: any,
+  ): Promise<SupportErrand> {
+    if (!MUNICIPALITY_ID) {
+      console.error('No municipality id found, needed to fetch errands.');
+      logger.error('No municipality id found, needed to fetch errands.');
+      return response.status(400).send('Municipality id missing');
+    }
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands?filter=errandNumber:'${errandNumber}'`;
+    const errandResponse = await this.apiService.get<any>({ url }, req.user);
+    const errandData = errandResponse.data.content[0];
+    return response.send((await this.preparedErrandResponse(errandData, req)).data);
+  }
+
   @Get('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Return an errand by id' })
   @UseBefore(authMiddleware)
@@ -616,25 +635,21 @@ export class SupportErrandController {
     return response.status(200).send(data);
   }
 
-  @Post('/newerrand/:municipalityId')
+  @Post('/newerrand')
   @HttpCode(201)
   @OpenAPI({ summary: 'Initiate a new, empty support errand' })
   @UseBefore(authMiddleware)
-  async registerSupportErrand(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<{ data: SupportErrandDto; message: string }> {
+  async registerSupportErrand(@Req() req: RequestWithUser, @Res() response: any): Promise<{ data: SupportErrandDto; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
+    if (!MUNICIPALITY_ID) {
       console.error('No municipality id found, needed to fetch errands.');
       logger.error('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
-    const url = `${municipalityId}/${this.namespace}/errands`;
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,

@@ -599,6 +599,25 @@ export const getSupportErrandById: (
     );
 };
 
+export const getSupportErrandByErrandNumber: (
+  errandnumber: string
+) => Promise<{ errand: SupportErrand; error?: string }> = (errandnumber) => {
+  let url = `supporterrands/errandnumber/${errandnumber}`;
+  return apiService
+    .get<ApiSupportErrand>(url)
+    .then((res: any) => {
+      const errand = mapApiSupportErrandToSupportErrand(res.data);
+      return { errand };
+    })
+    .catch(
+      (e) =>
+        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
+          errand: SupportErrand;
+          error?: string;
+        })
+    );
+};
+
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand) {
     return true;
@@ -742,11 +761,9 @@ export const getSupportErrandsCount: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
-  municipalityId
-) => {
+export const initiateSupportErrand: () => Promise<any | Partial<SupportErrandDto>> = () => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand`, {})
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })

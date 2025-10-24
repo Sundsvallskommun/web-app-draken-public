@@ -1,8 +1,7 @@
 import { useAppContext } from '@contexts/app.context';
 import { Table } from '@sk-web-gui/react';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useMemo, useState } from 'react';
-import { CParameter } from 'src/data-contracts/backend/data-contracts';
+import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const {
@@ -54,55 +53,52 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   );
 
   return (
-    <div className="pt-xl pb-16 px-40 flex flex-col">
-      <div className="flex flex-col gap-md mb-32">
-        <h2 className="text-h2-md">Ärendeuppgifter</h2>
-        <div className="rounded-lg gap-md p-16">
-          <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
-          {supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value ? (
-            <div className="flex flex-row gap-md">
-              <strong>Ärendenummer i e-tjänst</strong>
-              <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>
-            </div>
-          ) : null}
-          {simpleParams &&
-            simpleParams
-              .filter((param) => param.values?.length > 0)
-              .map((param, idx) => (
-                <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
-                  <div className="font-bold">{param.displayName}</div>
-                  <div>{param.values.join(', ')}</div>
-                </div>
-              ))}
-        </div>
-
-        {tables.map((table, idx) => (
-          <div key={`table-${idx}`} className="p-16">
-            <h3 className="text-h3-md mb-12">{table.label}</h3>
-            <Table dense background>
-              <Table.Header>
-                {table.header.map((header, headerIdx) => (
-                  <Table.HeaderColumn key={`header-${headerIdx}`} className="flex justify-start">
-                    {header}
-                  </Table.HeaderColumn>
-                ))}
-              </Table.Header>
-              <Table.Body>
-                {table.rows.map((row, rowIdx) => (
-                  <Table.Row key={`row-${rowIdx}`}>
-                    {row.map((cell) => (
-                      <Table.Column key={cell.key} className="flex justify-start">
-                        {cell.value}
-                      </Table.Column>
-                    ))}
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+    <div className="flex flex-col gap-md mb-32">
+      <h2 className="text-h2-md">Ärendeuppgifter</h2>
+      <div className="rounded-lg gap-md p-16">
+        <h3 className="text-h3-md mb-12">Grundinformation</h3>
+        {supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value ? (
+          <div className="flex flex-row gap-md">
+            <strong>Ärendenummer i e-tjänst</strong>
+            <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>
           </div>
-        ))}
-        <div className="my-md gap-xl"></div>
+        ) : null}
+        {simpleParams &&
+          simpleParams
+            .filter((param) => param.values?.length > 0)
+            .map((param, idx) => (
+              <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
+                <div className="font-bold">{param.displayName}</div>
+                <div>{param.values.join(', ')}</div>
+              </div>
+            ))}
       </div>
+
+      {tables.map((table, idx) => (
+        <div key={`table-${idx}`} className="p-16">
+          <h3 className="text-h3-md mb-12">{table.label}</h3>
+          <Table dense background>
+            <Table.Header>
+              {table.header.map((header, headerIdx) => (
+                <Table.HeaderColumn key={`header-${headerIdx}`} className="flex justify-start">
+                  {header}
+                </Table.HeaderColumn>
+              ))}
+            </Table.Header>
+            <Table.Body>
+              {table.rows.map((row, rowIdx) => (
+                <Table.Row key={`row-${rowIdx}`}>
+                  {row.map((cell) => (
+                    <Table.Column key={cell.key} className="flex justify-start">
+                      {cell.value}
+                    </Table.Column>
+                  ))}
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        </div>
+      ))}
     </div>
   );
 };

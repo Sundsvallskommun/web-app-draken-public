@@ -20,7 +20,7 @@ import {
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -43,7 +43,6 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -117,28 +116,22 @@ let formSchema = yup
   })
   .required();
 
-export const CasedataDecisionTab: React.FC<{
-  setUnsaved: (unsaved: boolean) => void;
-  update: () => void;
-}> = (props) => {
-  const { municipalityId, user, errand, setErrand }: AppContextInterface = useAppContext();
+export const CasedataDecisionTab: React.FC<{}> = () => {
+  const { municipalityId, user, errand, setErrand, setUnsavedDecision }: AppContextInterface = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const selectedBeslut = 1;
-  const [richText, setRichText] = useState<string>('');
   const [error, setError] = useState<string>();
-  const quillRef = useRef(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
-  const [textIsDirty, setTextIsDirty] = useState(false);
 
-  const ownerPartyId = getOwnerStakeholder(errand).personId;
+  const ownerPartyId = getOwnerStakeholder(errand)?.personId;
 
   const { services } = useErrandServices({
     municipalityId,
@@ -202,7 +195,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [errand]);
 
   useEffect(() => {
-    props.setUnsaved(formState.isDirty);
+    setUnsavedDecision(formState.isDirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
 
@@ -244,7 +237,7 @@ export const CasedataDecisionTab: React.FC<{
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
-      props.setUnsaved(false);
+      setUnsavedDecision(false);
       toastMessage(
         getToastOptions({
           message: 'Beslutet sparades',
@@ -437,14 +430,6 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const onRichTextChange = (delta?) => {
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
-      shouldDirty: true,
-    });
-    setValue('descriptionPlaintext', quillRef.current.getText());
-    trigger('description');
-  };
-
   const sortedDec = errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
 
   useEffect(() => {
@@ -455,7 +440,6 @@ export const CasedataDecisionTab: React.FC<{
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
       setValue('id', existingDecision.id.toString());
       setValue('description', existingDecision.description);
-      setRichText(existingDecision.description);
       setValue('outcome', existingDecision.decisionOutcome);
       setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
       setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
@@ -487,7 +471,7 @@ export const CasedataDecisionTab: React.FC<{
     if (InTemplate === '') {
       content = '';
     }
-    onRichTextChange();
+    setValue('description', content);
   };
 
   const isSent = () => {
@@ -570,7 +554,7 @@ export const CasedataDecisionTab: React.FC<{
                     setSelectedLaws(newValue);
                     const newLaws = getLawMapping(errand).filter((law) => newValue.includes(law.heading));
                     setValue('law', newLaws, { shouldDirty: true });
-                    props.setUnsaved(true);
+                    setUnsavedDecision(true);
                     trigger('law');
                   }}
                   onSelect={(e) => {
