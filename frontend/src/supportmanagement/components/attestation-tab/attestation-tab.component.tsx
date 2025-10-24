@@ -46,11 +46,11 @@ export const AttestationTab = () => {
   const invoiceTypeFilter = watchFilter('invoiceType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
-  const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
+  const billingRecords = useBillingRecords(page, pageSize, attestationFilterObject, sortObject);
   const initialFocus = useRef(null);
 
   useEffect(() => {
-    getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
+    getBillingRecords(page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId, page, pageSize, attestationFilterObject, sortObject]);
 
@@ -110,7 +110,7 @@ export const AttestationTab = () => {
       })
       .catch(() => {});
     setSupportErrand(undefined);
-    getBillingRecords(municipalityId);
+    getBillingRecords();
     //eslint-disable-next-line
   }, [router]);
 
@@ -204,7 +204,7 @@ export const AttestationTab = () => {
           <AttestationInvoiceForm
             selectedrecord={selectedRecord}
             update={(recordId: string) => {
-              getBillingRecord(recordId, municipalityId).then(setSelectedRecord);
+              getBillingRecord(recordId).then(setSelectedRecord);
             }}
           />
         </AttestationInvoiceWrapperComponent>

@@ -1,7 +1,7 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
-import { ApiSupportErrand } from './support-errand-service';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { ApiSupportErrand } from './support-errand-service';
 
 export interface ParametersObject {
   RECRUITMENT?: Parameter[];
@@ -121,10 +121,10 @@ export const getRecruitmentParameters = (errand: SupportErrandDto) => {
   return combined;
 };
 
-export const saveParameters = (errandId, municipalityId, parameters: { [key: string]: Parameter[] }) => {
+export const saveParameters = (errandId, parameters: { [key: string]: Parameter[] }) => {
   const paramsList = Object.values(parameters).flat(1);
   return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${errandId}`, {
       parameters: paramsList,
     })
     .catch((e) => {

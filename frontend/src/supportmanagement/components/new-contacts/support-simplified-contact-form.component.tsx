@@ -14,6 +14,7 @@ import {
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
 import {
   emptyContact,
@@ -30,7 +31,6 @@ import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
@@ -143,7 +143,7 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
+  const { setSupportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -241,11 +241,9 @@ export const SupportSimplifiedContactForm: React.FC<{
   }, [organizationNumber, personNumber]);
 
   useEffect(() => {
-    appConfig.isSupportManagement &&
-      municipalityId &&
-      getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+    appConfig.isSupportManagement && getSupportMetadata().then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [municipalityId]);
+  }, []);
 
   const onSubmit = async (e: SupportStakeholderFormModel) => {
     if (!editing) {

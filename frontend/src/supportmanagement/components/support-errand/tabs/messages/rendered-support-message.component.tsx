@@ -1,6 +1,6 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
+import sanitized from '@common/services/sanitizer-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
@@ -25,7 +25,7 @@ export const RenderedSupportMessage: React.FC<{
   root?: boolean;
   children: any;
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
-  const { supportErrand, municipalityId, user }: AppContextInterface = useAppContext();
+  const { supportErrand, user }: AppContextInterface = useAppContext();
   const [allowed, setAllowed] = useState(false);
   const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
 
@@ -82,7 +82,7 @@ export const RenderedSupportMessage: React.FC<{
     if (!message.viewed && supportErrand.assignedUserId === user.username) {
       expanded &&
         isInViewport(document.querySelector(`.message-${message.communicationID}`)) &&
-        setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
+        setMessageViewStatus(supportErrand.id, message.communicationID, true).then(() => {
           update();
         });
     }
@@ -235,7 +235,6 @@ export const RenderedSupportMessage: React.FC<{
                   onClick={() => {
                     if (message?.conversationId) {
                       getSupportConversationAttachment(
-                        municipalityId,
                         supportErrand.id,
                         message.conversationId,
                         message.messageId,
@@ -268,7 +267,7 @@ export const RenderedSupportMessage: React.FC<{
                           });
                         });
                     } else {
-                      getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
+                      getMessageAttachment(supportErrand.id, message.communicationID, a.id)
                         .then((res) => {
                           if (res.data) {
                             const uri = `data:${a.mimeType};base64,${res.data}`;

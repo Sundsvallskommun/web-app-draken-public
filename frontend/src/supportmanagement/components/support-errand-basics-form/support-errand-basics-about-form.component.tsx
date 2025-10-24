@@ -9,7 +9,6 @@ import {
   Channels,
   ContactChannelType,
   SupportErrand,
-  defaultSupportErrandInformation,
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
@@ -17,8 +16,8 @@ import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanage
 import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
@@ -60,7 +59,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       setCategoriesList(supportMetadata?.categories);
       setContactReasonList(supportMetadata?.contactReasons);
     } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
+      getSupportMetadata().then((data) => {
         setCategoriesList(data.metadata?.categories);
         setContactReasonList(data.metadata?.contactReasons);
       });

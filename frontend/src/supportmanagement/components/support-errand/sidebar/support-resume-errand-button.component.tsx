@@ -1,6 +1,7 @@
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import { useConfirm, useSnackbar, Button } from '@sk-web-gui/react';
 import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import {
   getSupportErrandById,
   setSupportErrandStatus,
@@ -8,17 +9,16 @@ import {
   Status,
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
+  const { supportErrand, setSupportErrand } = useAppContext();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
 
   const activateErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING)
+    return setSupportErrandStatus(supportErrand.id, Status.ONGOING)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -26,7 +26,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
             status: 'success',
           })
         );
-        return getSupportErrandById(supportErrand.id, municipalityId).then((res) => {
+        return getSupportErrandById(supportErrand.id).then((res) => {
           setSupportErrand(res.errand);
           setIsLoading(false);
         });

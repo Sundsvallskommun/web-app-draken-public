@@ -141,13 +141,11 @@ export const SupportMessageForm: React.FC<{
   update?: () => void;
 }> = (props) => {
   const {
-    municipalityId,
     user,
     supportErrand,
     supportAttachments,
     setSupportErrand,
   }: {
-    municipalityId: string;
     user: User;
     supportErrand: SupportErrand;
     supportAttachments: SupportAttachment[];
@@ -252,7 +250,7 @@ export const SupportMessageForm: React.FC<{
   });
 
   const getSingleSupportAttachment = (attachment: SupportAttachment) => {
-    getSupportAttachment(supportErrand?.id, municipalityId, attachment).then((res) => {
+    getSupportAttachment(supportErrand?.id, attachment).then((res) => {
       appendExistingAttachment(res);
     });
   };
@@ -266,7 +264,6 @@ export const SupportMessageForm: React.FC<{
 
     if (contactMeans === 'draken' || contactMeans === 'minasidor') {
       const conversationId = await getOrCreateSupportConversationId(
-        municipalityId,
         supportErrand,
         contactMeans,
         selectedRelationId,
@@ -275,7 +272,6 @@ export const SupportMessageForm: React.FC<{
       );
 
       sendPromise = sendSupportConversationMessage(
-        municipalityId,
         supportErrand.id,
         conversationId,
         data.messageBody,
@@ -283,7 +279,7 @@ export const SupportMessageForm: React.FC<{
       );
     } else {
       const messageData: MessageRequest = {
-        municipalityId: municipalityId,
+        municipalityId: process.env.NEXT_PUBLIC_DEFAULT_MUNICIPALITY_ID,
         errandId: supportErrand.id,
         contactMeans: data.contactMeans,
         emails: data.emails,
@@ -317,12 +313,12 @@ export const SupportMessageForm: React.FC<{
         setValue('messageBody', emailBody);
 
         if (typeOfMessage === 'infoCompletion') {
-          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
+          await setSupportErrandStatus(supportErrand.id, Status.PENDING);
         } else if (typeOfMessage === 'internalCompletion') {
-          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+          await setSupportErrandStatus(supportErrand.id, Status.AWAITING_INTERNAL_RESPONSE);
         }
 
-        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+        const updated = await getSupportErrandById(supportErrand.id);
         setSupportErrand(updated.errand);
 
         toastMessage(
@@ -424,7 +420,7 @@ export const SupportMessageForm: React.FC<{
   }, [contactMeans, props.message]);
 
   useEffect(() => {
-    getSourceRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
+    getSourceRelations(supportErrand.id, 'ASC').then((res) => {
       const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
       setRelationErrands(sortedRelations);
     });

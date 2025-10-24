@@ -17,11 +17,10 @@ const renderPdf = (url, data, exportParameters) =>
     });
 
 export const exportErrands: (
-  municipalityId: string,
   errandsData: IErrand[],
   exportParameters?: string[]
-) => Promise<{ pdfBase64: string; error?: string }> = (municipalityId, errandsData: IErrand[], exportParameters) => {
-  let url = `${municipalityId}/export`;
+) => Promise<{ pdfBase64: string; error?: string }> = (errandsData: IErrand[], exportParameters) => {
+  let url = `/export`;
   if (exportParameters?.length) {
     url += `?exclude=${exportParameters.join(',')}`;
   }
@@ -40,11 +39,10 @@ export const exportErrands: (
 };
 
 export const exportSingleErrand: (
-  municipalityId: string,
   errand: IErrand,
   exportParameters?: string[]
-) => Promise<{ pdfBase64: string; error?: string }> = (municipalityId, errand: IErrand, exportParameters) => {
-  let url = `${municipalityId}/exportsingle`;
+) => Promise<{ pdfBase64: string; error?: string }> = (errand: IErrand, exportParameters) => {
+  let url = `/exportsingle`;
   if (exportParameters?.length) {
     url += `?exclude=${exportParameters.join(',')}`;
   }

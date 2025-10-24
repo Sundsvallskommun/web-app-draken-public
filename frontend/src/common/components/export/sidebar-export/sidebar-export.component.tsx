@@ -1,6 +1,5 @@
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { downloadPdf, downloadAttachment, exportSingleErrand } from '@common/services/export-service';
+import { downloadAttachment, downloadPdf, exportSingleErrand } from '@common/services/export-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
@@ -16,7 +15,7 @@ interface ExportParameters {
 }
 
 export const SidebarExport: React.FC = () => {
-  const { municipalityId, errand }: { municipalityId: string; errand: IErrand } = useAppContext();
+  const { errand } = useAppContext();
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const exportConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -42,7 +41,7 @@ export const SidebarExport: React.FC = () => {
       .map(([key, value]) => !value && key)
       .filter(Boolean);
 
-    exportSingleErrand(municipalityId, errand, excludeParameters)
+    exportSingleErrand(errand, excludeParameters)
       .then((pdf) => {
         downloadPdf(
           pdf,

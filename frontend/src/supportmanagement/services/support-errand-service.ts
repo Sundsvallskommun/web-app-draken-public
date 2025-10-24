@@ -8,7 +8,6 @@ import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
-import store from '@supportmanagement/services/storage-service';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
@@ -118,11 +117,6 @@ export enum Channels {
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
 }
-
-export const municipalityIds = [
-  { label: 'Sundsvall', id: '2281' },
-  { label: 'Timrå', id: '2262' },
-];
 
 export enum Status {
   NEW = 'NEW',
@@ -426,7 +420,6 @@ export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand
 };
 
 export const useSupportErrands = (
-  municipalityId: string,
   page?: number,
   size?: number,
   filter?: { [key: string]: string | boolean | number },
@@ -450,13 +443,10 @@ export const useSupportErrands = (
     solvedSupportErrands,
   } = useAppContext();
 
-  const unparsedStoredFilter = store.get('filter');
-  const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
-
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
-      await getSupportErrands(municipalityId, page, size, filter, sort)
+      await getSupportErrands(page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
         })
@@ -470,7 +460,7 @@ export const useSupportErrands = (
         });
 
       const sidebarUpdatePromises = [
-        getSupportErrandsCount(municipalityId, { ...filter, status: Status.NEW })
+        getSupportErrandsCount({ ...filter, status: Status.NEW })
           .then((res) => {
             setNewSupportErrands(res);
           })
@@ -483,7 +473,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrandsCount(municipalityId, {
+        getSupportErrandsCount({
           ...filter,
           status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
         })
@@ -499,7 +489,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.SUSPENDED}` })
+        getSupportErrandsCount({ ...filter, status: `${Status.SUSPENDED}` })
           .then((res) => {
             setSuspendedSupportErrands(res);
           })
@@ -512,7 +502,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.ASSIGNED}` })
+        getSupportErrandsCount({ ...filter, status: `${Status.ASSIGNED}` })
           .then((res) => {
             setAssignedSupportErrands(res);
           })
@@ -525,7 +515,7 @@ export const useSupportErrands = (
             });
           }),
 
-        getSupportErrandsCount(municipalityId, { ...filter, status: Status.SOLVED })
+        getSupportErrandsCount({ ...filter, status: Status.SOLVED })
           .then((res) => {
             setSolvedSupportErrands(res);
           })
@@ -579,11 +569,8 @@ export const useSupportErrands = (
   return supportErrands;
 };
 
-export const getSupportErrandById: (
-  id: string,
-  municipalityId: string
-) => Promise<{ errand: SupportErrand; error?: string }> = (id, municipalityId) => {
-  let url = `supporterrands/${municipalityId}/${id}`;
+export const getSupportErrandById: (id: string) => Promise<{ errand: SupportErrand; error?: string }> = (id) => {
+  let url = `supporterrands/${id}`;
   return apiService
     .get<ApiSupportErrand>(url)
     .then((res: any) => {
@@ -685,23 +672,19 @@ export const handleErrandResponse: (res: ApiSupportErrand[]) => SupportErrand[] 
 };
 
 export const getSupportErrands: (
-  municipalityId: string,
   page?: number,
   size?: number,
   filter?: { [key: string]: string | boolean | number },
   sort?: { [key: string]: 'asc' | 'desc' }
-) => Promise<SupportErrandsData> = (municipalityId, page = 0, size = 10, filter = {}, sort = { modified: 'desc' }) => {
-  if (!municipalityId) {
-    return Promise.reject('Municipality id missing');
-  }
-  let url = `supporterrands/${municipalityId}?page=${page}&size=${size}`;
+) => Promise<SupportErrandsData> = (page = 0, size = 10, filter = {}, sort = { modified: 'desc' }) => {
+  let url = `supporterrands?page=${page}&size=${size}`;
   const filterQuery = Object.keys(filter)
     .map((key) => key + '=' + filter[key])
     .join('&');
   const sortQuery = `${Object.keys(sort)
     .map((key) => `sort=${key}%2C${sort[key]}`)
     .join('&')}`;
-  url = filterQuery ? `supporterrands/${municipalityId}?page=${page}&size=${size}&${filterQuery}` : url;
+  url = filterQuery ? `supporterrands?${filterQuery}&page=${page}&size=${size}` : url;
   url = sortQuery ? `${url}&${sortQuery}` : url;
   return apiService
     .get<PagedApiSupportErrands>(url)
@@ -721,17 +704,13 @@ export const getSupportErrands: (
     });
 };
 
-export const getSupportErrandsCount: (
-  municipalityId: string,
-  filter?: { [key: string]: string | boolean | number }
-) => Promise<any> = (municipalityId, filter = {}) => {
-  if (!municipalityId) {
-    return Promise.reject('Municipality id missing');
-  }
+export const getSupportErrandsCount: (filter?: { [key: string]: string | boolean | number }) => Promise<any> = (
+  filter = {}
+) => {
   const filterQuery = Object.keys(filter)
     .map((key) => key + '=' + filter[key])
     .join('&');
-  const url = `countsupporterrands/${municipalityId}?${filterQuery}`;
+  const url = `countsupporterrands?${filterQuery}`;
   return apiService
     .get<any>(url)
     .then((res) => {
@@ -742,11 +721,9 @@ export const getSupportErrandsCount: (
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
-  municipalityId
-) => {
+export const initiateSupportErrand: () => Promise<any | Partial<SupportErrandDto>> = () => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand`, {})
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })
@@ -765,9 +742,8 @@ interface UpdateResponse {
 type AllSettledResponse = ({ status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any })[];
 
 export const updateSupportErrand: (
-  municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
-) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
+) => Promise<UpdateResponse> = async (formdata) => {
   let responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
@@ -776,7 +752,7 @@ export const updateSupportErrand: (
 
   if (formdata.notes && formdata.id) {
     try {
-      const noteRes = await saveSupportNote(formdata.id, municipalityId, formdata.notes);
+      const noteRes = await saveSupportNote(formdata.id, formdata.notes);
       responseObj.notes = noteRes;
     } catch (e) {
       responseObj.notes = false;
@@ -787,11 +763,7 @@ export const updateSupportErrand: (
 
   if (formdata.attachments && formdata.attachments.length > 0) {
     try {
-      const attachmentRes: AllSettledResponse = await saveSupportAttachments(
-        formdata.id,
-        municipalityId,
-        formdata.attachments
-      );
+      const attachmentRes: AllSettledResponse = await saveSupportAttachments(formdata.id, formdata.attachments);
       responseObj.attachments = attachmentRes.every((r) => r.status === 'fulfilled');
     } catch (e) {
       responseObj.attachments = false;
@@ -841,7 +813,7 @@ export const updateSupportErrand: (
   }
 
   return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${formdata.id}`, data)
     .then(() => {
       responseObj.errand = true;
       return responseObj;
@@ -869,6 +841,20 @@ export const blobToBase64: (blobl: Blob) => Promise<string> = (blob) =>
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
+
+export async function patchSupportErrand(
+  errandId: string,
+  data: Partial<SupportErrandDto>,
+  subPath: string = ''
+): Promise<boolean> {
+  try {
+    await apiService.patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${errandId}${subPath}`, data);
+    return true;
+  } catch (e) {
+    console.error('Something went wrong when patching errand', e);
+    throw e;
+  }
+}
 
 export const saveSupportCroppedImage = async (errandId: number, attachment: SupportAttachment, _blob: Blob) => {
   if (!attachment?.id) {
@@ -905,119 +891,66 @@ export const saveSupportCroppedImage = async (errandId: number, attachment: Supp
     });
 };
 
-export const setSupportErrandAdmin: (
+export const setSupportErrandAdmin = async (
   errandId: string,
-  municipalityId: string,
   assignedUserId: string,
-  status?: Status,
-  assigner?: string
-) => Promise<boolean> = async (errandId, municipalityId, assignedUserId, status?, assigner?) => {
+  status?: Status
+): Promise<boolean> => {
   const data: Partial<SupportErrandDto> = { assignedUserId, status };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  return patchSupportErrand(errandId, data, '/admin');
 };
 
-export const setSupportErrandStatus: (
-  errandId: string,
-  municipalityId: string,
-  status: Status
-) => Promise<boolean> = async (errandId, municipalityId, status) => {
-  const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+export const setSupportErrandStatus = async (errandId: string, status: Status): Promise<boolean> => {
+  const data: Partial<SupportErrandDto> = {
+    status,
+    suspension: { suspendedFrom: undefined, suspendedTo: undefined },
+  };
+  return patchSupportErrand(errandId, data);
 };
 
-export const closeSupportErrand: (
-  errandId: string,
-  municipalityId: string,
-  resolution: Resolution
-) => Promise<boolean> = async (errandId, municipalityId, resolution) => {
+export const closeSupportErrand = async (errandId: string, resolution: Resolution): Promise<boolean> => {
   const data: Partial<SupportErrandDto> = { status: Status.SOLVED, resolution };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  return patchSupportErrand(errandId, data);
 };
 
-export const setSuspension: (
+export const setSuspension = async (
   errandId: string,
-  municipalityId: string,
   status: Status,
   date: string,
   comment: string
-) => Promise<boolean> = async (errandId, municipalityId, status, date, comment) => {
+): Promise<boolean> => {
   if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
     return Promise.reject('Invalid date');
   }
+
   const data: Partial<SupportErrandDto> = {
     status,
-    suspension: {
-      suspendedFrom: status === Status.SUSPENDED ? dayjs().toISOString() : undefined,
-      suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
-    },
+    suspension:
+      status === Status.SUSPENDED
+        ? {
+            suspendedFrom: dayjs().toISOString(),
+            suspendedTo: dayjs(date).set('hour', 7).toISOString(),
+          }
+        : { suspendedFrom: undefined, suspendedTo: undefined },
   };
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(async () => {
-      if (status === Status.SUSPENDED && comment) {
-        const note = await saveSupportNote(errandId, municipalityId, comment);
-      }
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when suspending errand');
-      throw e;
-    });
+  const ok = await patchSupportErrand(errandId, data);
+  if (ok && status === Status.SUSPENDED && comment) {
+    await saveSupportNote(errandId, comment);
+  }
+  return ok;
 };
 
-export const setSupportErrandPriority: (
-  errandId: string,
-  municipalityId: string,
-  priority: Priority
-) => Promise<boolean> = async (errandId, municipalityId, priority) => {
-  const data: Partial<SupportErrandDto> = { priority };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+export const setSupportErrandPriority = async (errandId: string, priority: Priority): Promise<boolean> => {
+  return patchSupportErrand(errandId, { priority });
 };
 
 export const forwardSupportErrand: (
   user: User,
   errand: SupportErrand,
-  municipalityId: string,
   data: ForwardFormProps,
   supportAttachment: SupportAttachment[]
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
+) => Promise<boolean> = async (user, errand, data, supportAttachment) => {
   if (!errand.id) {
     throw 'No errand id found. Cannot forward errand without id.';
   }
@@ -1035,7 +968,7 @@ export const forwardSupportErrand: (
 
   if (data.recipient == 'EMAIL') {
     const message: MessageRequest = {
-      municipalityId: municipalityId,
+      municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
       errandId: errand.id,
       contactMeans: 'email',
       recipientEmail: '',
@@ -1055,7 +988,7 @@ export const forwardSupportErrand: (
       message.senderName = 'Kontakt  Sundsvall';
     }
     await sendMessage(message);
-    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+    return closeSupportErrand(errand.id, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
     errand.stakeholders.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
@@ -1065,9 +998,9 @@ export const forwardSupportErrand: (
     delete data.existingEmail;
     delete data.newEmail;
     return apiService
-      .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
+      .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${errand.id}/forward`, data)
       .then(() => {
-        return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+        return closeSupportErrand(errand.id, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {
         throw new Error(e.response.data as string);
@@ -1080,10 +1013,9 @@ export const forwardSupportErrand: (
 export const requestInfo: (
   user: User,
   errand: SupportErrand,
-  municipalityId: string,
   data: RequestInfo,
   supportAttachment: SupportAttachment[]
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
+) => Promise<boolean> = async (user, errand, data, supportAttachment) => {
   if (!errand.id) {
     throw 'No errand id found. Cannot request info without id.';
   }
@@ -1100,7 +1032,7 @@ export const requestInfo: (
   }
 
   const message: MessageRequest = {
-    municipalityId: municipalityId,
+    municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
     errandId: errand.id,
     contactMeans: data.contactMeans,
     recipientEmail: data.email,
@@ -1120,17 +1052,16 @@ export const requestInfo: (
   if (!sendSuccess) {
     throw new Error('SENDING_FAILED');
   }
-  return setSupportErrandStatus(errand.id, municipalityId, Status.PENDING);
+  return setSupportErrandStatus(errand.id, Status.PENDING);
 };
 
 export const requestInternal: (
   user: User,
   errand: SupportErrand,
-  municipalityId: string,
   data: RequestInfo,
   supportAttachment: SupportAttachment[],
   title: string
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment, title) => {
+) => Promise<boolean> = async (user, errand, data, supportAttachment, title) => {
   if (!errand.id) {
     throw 'No errand id found. Cannot request info without id.';
   }
@@ -1147,7 +1078,7 @@ export const requestInternal: (
   }
 
   const message: MessageRequest = {
-    municipalityId: municipalityId,
+    municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
     errandId: errand.id,
     contactMeans: data.contactMeans,
     recipientEmail: data.email,
@@ -1167,5 +1098,5 @@ export const requestInternal: (
   if (!sendSuccess) {
     throw new Error('SENDING_FAILED');
   }
-  return setSupportErrandStatus(errand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+  return setSupportErrandStatus(errand.id, Status.AWAITING_INTERNAL_RESPONSE);
 };

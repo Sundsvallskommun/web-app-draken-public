@@ -8,14 +8,10 @@ import { getLastUpdatedAdministrator } from './stakeholder.service';
 
 const SERVICE = apiServiceName('case-data');
 
-export const validateContractAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (
-  municipalityId,
-  errandId,
-  user,
-) => {
+export const validateContractAction: (errandId: string, user: User) => Promise<boolean> = async (errandId, user) => {
   let allowed = false;
   const apiService = new ApiService();
-  const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}`;
+  const url = `$${process.env.CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
   if (existingErrand.data.extraParameters?.find(p => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {

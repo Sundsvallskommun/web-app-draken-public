@@ -1,12 +1,12 @@
+import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import React, { useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
-import { User } from '@common/interfaces/user';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export const SupportErrandBasicsAboutDisclosure: React.FC<{
   errand: ApiSupportErrand;
@@ -16,7 +16,6 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   const {
     supportErrand,
   }: {
-    municipalityId: string;
     supportErrand: SupportErrand;
     supportAttachments: SupportAttachment[];
     user: User;

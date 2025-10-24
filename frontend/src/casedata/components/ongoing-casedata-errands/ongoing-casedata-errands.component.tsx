@@ -30,7 +30,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
   const {
-    municipalityId,
     setErrand,
     setAdministrators,
     administrators,
@@ -272,7 +271,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
                   ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
                   : null}
               </h1>
-              {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
+              {appConfig.features.useErrandExport && <ExportButton errands={errands} />}
             </div>
             <div>
               <FormProvider {...tableForm}>

@@ -2,7 +2,6 @@
 
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import { User } from '@common/interfaces/user';
-import { isKA } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -79,14 +78,12 @@ export interface ForwardFormProps {
 export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
     user,
-    municipalityId,
     supportErrand,
     setSupportErrand,
     supportMetadata,
     supportAttachments,
   }: {
     user: User;
-    municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
     supportMetadata: SupportMetadata;
@@ -125,7 +122,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleForwardErrand = (data: ForwardFormProps) => {
     setIsLoading(true);
 
-    return forwardSupportErrand(user, supportErrand, municipalityId, data, supportAttachments)
+    return forwardSupportErrand(user, supportErrand, data, supportAttachments)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -138,7 +135,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         }, 2000);
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
       })
       .catch((e: Error) => {
         toastMessage({
