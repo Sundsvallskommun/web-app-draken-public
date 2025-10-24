@@ -14,12 +14,12 @@ import {
 } from '@casedata/interfaces/lagenhetsarrende-data';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { AxiosResponse } from 'axios';
 import { replaceExtraParameter, saveExtraParameters } from './casedata-extra-parameters-service';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 export enum ContractType {
   LAND_LEASE = 'LAND_LEASE',
@@ -375,14 +375,14 @@ export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
     });
 };
 
-export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
+export const saveContractToErrand = (contractId: string, errand: IErrand) => {
   const data: ExtraParameter[] = [
     {
       key: 'contractId',
       values: [contractId],
     },
   ];
-  return saveExtraParameters(municipalityId, data, errand);
+  return saveExtraParameters(data, errand);
 };
 
 export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | LagenhetsArrendeData> = (errand) => {
@@ -949,14 +949,13 @@ export const getContractType = (contract: ContractData) => {
 };
 
 export const fetchSignedContractAttachment: (
-  municipalityId: string,
   contractId: string,
   attachmentId: number
-) => Promise<ApiResponse<CasedataContractAttachment>> = (municipalityId, contractId, attachmentId) => {
+) => Promise<ApiResponse<CasedataContractAttachment>> = (contractId, attachmentId) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
-  const url = `contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`;
+  const url = `contracts/${contractId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<CasedataContractAttachment>>(url)
     .then((res) => {
@@ -969,7 +968,6 @@ export const fetchSignedContractAttachment: (
 };
 
 export const saveSignedContractAttachment = (
-  municipalityId: string,
   contractId: string,
   attachment: { id: string; file: File }[],
   note: string
@@ -990,7 +988,7 @@ export const saveSignedContractAttachment = (
     };
 
     apiService
-      .post<boolean, CasedataContractAttachment>(`contracts/${municipalityId}/${contractId}/attachments`, formData)
+      .post<boolean, CasedataContractAttachment>(`contracts/${contractId}/attachments`, formData)
       .then((res) => {
         return res;
       })
@@ -1005,14 +1003,14 @@ export const saveSignedContractAttachment = (
   });
 };
 
-export const deleteSignedContractAttachment = (municipalityId: string, contractId: string, attachmentId: number) => {
+export const deleteSignedContractAttachment = (contractId: string, attachmentId: number) => {
   if (!attachmentId) {
     console.error('No id found, cannot continue.');
     return;
   }
 
   return apiService
-    .deleteRequest<boolean>(`contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`)
+    .deleteRequest<boolean>(`contracts/${contractId}/attachments/${attachmentId}`)
     .then((res) => {
       return res;
     })
@@ -1022,11 +1020,7 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
     });
 };
 
-export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, inKey: string, element: string[]) => {
-  if (!municipalityId) {
-    console.error('No municipalityId found. Cannot update set marks of contract.');
-    return;
-  }
+export const saveDoneMarksOnErrande = (errand: IErrand, inKey: string, element: string[]) => {
   if (!errand.id) {
     console.error('No id found. Cannot update set marks of contract.');
     return;
@@ -1040,10 +1034,8 @@ export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, 
     id: errand.id.toString(),
     extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
   };
-  return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
-    .catch((e) => {
-      console.error('Something went wrong when triggering errand phase change', e);
-      throw e;
-    });
+  return apiService.patch<boolean, Partial<RegisterErrandData>>(`casedata/errands/${errand.id}`, e).catch((e) => {
+    console.error('Something went wrong when triggering errand phase change', e);
+    throw e;
+  });
 };

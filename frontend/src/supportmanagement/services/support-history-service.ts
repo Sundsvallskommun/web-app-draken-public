@@ -1,15 +1,13 @@
-import { ParsedSupportEvent, SupportEvent, SupportEvents } from '@supportmanagement/interfaces/supportEvent';
 import { apiService } from '@common/services/api-service';
+import { ParsedSupportEvent, SupportEvent, SupportEvents } from '@supportmanagement/interfaces/supportEvent';
 import dayjs from 'dayjs';
 
 export const parseChange: (
   event: SupportEvent,
   errandId: string,
-  municipalityId: string,
   keyMapper: { [key: string]: string }
-) => Promise<ParsedSupportEvent> = async (event, errandId, municipalityId, keyMapper) => {
+) => Promise<ParsedSupportEvent> = async (event) => {
   const currentVersion = event.metadata.find((item) => item.key === 'CurrentVersion')?.value || 'unknown';
-  const previousVersion = event.metadata.find((item) => item.key === 'PreviousVersion')?.value || 'unknown';
   const executedBy = event.metadata.find((item) => item.key === 'ExecutedBy')?.value || 'unknown';
   const p = {
     ...event,
@@ -21,19 +19,16 @@ export const parseChange: (
     },
   } as ParsedSupportEvent;
   return p;
-  // const diff = await fetchRevisionDiff(errandId, parsedChange, municipalityId, keyMapper);
-  // parsedChange.parsed.diffList = diff;
 };
 
 export const getSupportErrandEvents: (
   errandId: string,
-  municipalityId: string,
   keyMapper: { [key: string]: string }
-) => Promise<ParsedSupportEvent[]> = (errandId, municipalityId, keyMapper) => {
+) => Promise<ParsedSupportEvent[]> = (errandId, keyMapper) => {
   return apiService
-    .get<SupportEvents>(`supporthistory/${municipalityId}/${errandId}`)
+    .get<SupportEvents>(`supporthistory/${errandId}`)
     .then((res) => {
-      const ps = res.data.content.map((event) => parseChange(event, errandId, municipalityId, keyMapper));
+      const ps = res.data.content.map((event) => parseChange(event, errandId, keyMapper));
       return Promise.all(ps);
     })
     .catch((e) => {

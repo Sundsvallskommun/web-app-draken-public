@@ -2,14 +2,9 @@ import { MessageWrapper } from '@common/components/message/message-wrapper.compo
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
-import {
-  getDefaultEmailBody,
-  getDefaultSmsBody,
-} from '@supportmanagement/components/templates/default-message-template';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
-import { useTranslation } from 'next-i18next';
 import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
@@ -21,16 +16,14 @@ export const SupportMessagesTab: React.FC<{
   conversationMessageTree: Message[];
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
-  municipalityId: string;
 }> = (props) => {
-  const { supportErrand, municipalityId, user } = useAppContext();
+  const { supportErrand, user } = useAppContext();
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
   const [allowed, setAllowed] = useState(false);
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
   const [sortedMessages, setSortedMessages] = useState<Message[]>();
-  const { t } = useTranslation();
 
   const allMessages = React.useMemo(
     () => [...(props.messages || []), ...(props.supportConversations || [])],
@@ -52,7 +45,7 @@ export const SupportMessagesTab: React.FC<{
       console.warn('Not implemented');
       props.update();
     } else if (!message.viewed && supportErrand.assignedUserId === user.username) {
-      setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
+      setMessageViewStatus(supportErrand.id, message.communicationID, true).then(() => {
         props.update();
       });
     }

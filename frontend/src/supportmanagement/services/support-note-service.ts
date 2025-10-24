@@ -33,12 +33,9 @@ export interface SupportNoteData {
   };
 }
 
-export const getSupportNotes: (errandId: string, municipalityId: string) => Promise<SupportNoteData> = (
-  errandId,
-  municipalityId
-) => {
+export const getSupportNotes: (errandId: string) => Promise<SupportNoteData> = (errandId) => {
   return apiService
-    .get<SupportNoteData>(`supportnotes/${municipalityId}/${errandId}`)
+    .get<SupportNoteData>(`supportnotes/${errandId}`)
     .then((res) => {
       return res.data;
     })
@@ -48,14 +45,13 @@ export const getSupportNotes: (errandId: string, municipalityId: string) => Prom
     });
 };
 
-export const saveSupportNote: (
-  errandId: string,
-  municipalityId: string,
-  body: string,
-  partyId?: string
-) => Promise<boolean> = (errandId, municipalityId, body, partyId) => {
+export const saveSupportNote: (errandId: string, body: string, partyId?: string) => Promise<boolean> = (
+  errandId,
+  body,
+  partyId
+) => {
   return apiService
-    .post<boolean, Partial<SupportNoteDto>>(`supportnotes/${municipalityId}/${errandId}`, { body, partyId })
+    .post<boolean, Partial<SupportNoteDto>>(`supportnotes/${errandId}`, { body, partyId })
     .then((res) => {
       return true;
     })
@@ -65,14 +61,13 @@ export const saveSupportNote: (
     });
 };
 
-export const updateSupportNote: (
-  errandId: string,
-  municipalityId: string,
-  noteId: string,
-  body: string
-) => Promise<boolean> = (errandId, municipalityId, noteId, body) => {
+export const updateSupportNote: (errandId: string, noteId: string, body: string) => Promise<boolean> = (
+  errandId,
+  noteId,
+  body
+) => {
   return apiService
-    .patch<boolean, Partial<SupportNoteDto>>(`supportnotes/${municipalityId}/${errandId}/notes/${noteId}`, { body })
+    .patch<boolean, Partial<SupportNoteDto>>(`supportnotes/${errandId}/notes/${noteId}`, { body })
     .then((res) => {
       return true;
     })
@@ -82,13 +77,9 @@ export const updateSupportNote: (
     });
 };
 
-export const deleteSupportNote: (errandId: string, municipalityId: string, noteId: string) => Promise<boolean> = (
-  errandId,
-  municipalityId,
-  noteId
-) => {
+export const deleteSupportNote: (errandId: string, noteId: string) => Promise<boolean> = (errandId, noteId) => {
   return apiService
-    .deleteRequest<boolean>(`supportnotes/${municipalityId}/${errandId}/notes/${noteId}`)
+    .deleteRequest<boolean>(`supportnotes/${errandId}/notes/${noteId}`)
     .then((res) => {
       return true;
     })

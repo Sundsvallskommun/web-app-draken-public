@@ -7,7 +7,7 @@ import { deepFlattenToObject } from '@common/services/helper-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{
@@ -26,7 +26,7 @@ export const SaveButtonComponent: React.FC<{
     errand: IErrand;
     municipalityId: string;
   } = useAppContext();
-  const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
+  const errandNumber = errand?.errandNumber;
   const router = useRouter();
 
   const { registeringNewErrand } = props;

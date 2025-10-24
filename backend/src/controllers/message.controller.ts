@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AttachmentResponse,
@@ -30,8 +31,8 @@ import { generateMessageId, sendDigitalMail, sendEmail, sendSms, sendWebMessage 
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
-import { IsArray, IsOptional, IsString, Validate, ValidateNested } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import { IsArray, IsOptional, IsString } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -60,8 +61,6 @@ class MessageDto {
   @IsString()
   errandId: string;
   @IsString()
-  municipalityId: string;
-  @IsString()
   messageClassification: MessageClassification;
   @IsString()
   reply_to: string;
@@ -78,8 +77,6 @@ class SmsDto {
   text: string;
   @IsString()
   errandId: string;
-  @IsString()
-  municipalityId: string;
 }
 
 class DecisionMessageDto {
@@ -191,16 +188,15 @@ export class MessageController {
   SERVICE = apiServiceName('case-data');
   MESSAGING_SERVICE = apiServiceName('messaging');
 
-  @Post('/casedata/:municipalityId/message/decision')
+  @Post('/casedata/message/decision')
   @HttpCode(201)
   @OpenAPI({ summary: 'Send decision message through relevant channel' })
   @UseBefore(authMiddleware, validationMiddleware(DecisionMessageDto, 'body'))
   async decisionMessage(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @Body() messageDto: { errandId: string },
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
-    const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
+    const errandsUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     const decision = errandData.data?.decisions.find(d => d.decisionType === 'FINAL');
@@ -235,7 +231,7 @@ export class MessageController {
         message: 'Beslut fattat i ärende',
         attachments,
       } as WebMessageRequest;
-      return sendWebMessage(municipalityId, message, req, errandData);
+      return sendWebMessage(MUNICIPALITY_ID, message, req, errandData);
     } else {
       // Digital mail (Letter endpoint)
       const owner = getOwnerStakeholder(errandData.data);
@@ -266,21 +262,20 @@ export class MessageController {
         department: 'SBK(Gatuavdelningen, Trafiksektionen)',
         attachments: attachments,
       };
-      return sendDigitalMail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+      return sendDigitalMail(MUNICIPALITY_ID, message, req, errandData, MessageClassification.Informationsmeddelande);
     }
   }
 
-  @Post('/casedata/:municipalityId/sms')
+  @Post('/casedata/sms')
   @HttpCode(201)
   @OpenAPI({ summary: 'Send sms' })
   @UseBefore(authMiddleware)
   async sms(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Body() smsDto: { errandId: string; municipalityId: string; phonenumber: string; text: string },
+    @Body() smsDto: { errandId: string; phonenumber: string; text: string },
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
     await validateRequestBody(SmsDto, smsDto);
-    const errandsUrl = `${smsDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${smsDto.errandId}`;
+    const errandsUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${smsDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
@@ -289,21 +284,20 @@ export class MessageController {
       mobileNumber: smsDto.phonenumber,
       message: smsDto.text,
     };
-    return sendSms(municipalityId, message, req, errandData);
+    return sendSms(MUNICIPALITY_ID, message, req, errandData);
   }
 
-  @Post('/casedata/:municipalityId/email')
+  @Post('/casedata/email')
   @HttpCode(201)
   @OpenAPI({ summary: 'Send email' })
   @UseBefore(authMiddleware)
   async email(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
     @Body() messageDto: MessageDto,
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
     await validateRequestBody(MessageDto, messageDto);
-    const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
+    const errandsUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     const MESSAGE_ID = generateMessageId();
@@ -345,21 +339,20 @@ export class MessageController {
       },
     } as EmailRequest;
 
-    return sendEmail(municipalityId, message, req, errandData, MessageClassification[messageDto.messageClassification]);
+    return sendEmail(MUNICIPALITY_ID, message, req, errandData, MessageClassification[messageDto.messageClassification]);
   }
 
-  @Post('/casedata/:municipalityId/webmessage')
+  @Post('/casedata/webmessage')
   @HttpCode(201)
   @OpenAPI({ summary: 'Send webmessage' })
   @UseBefore(authMiddleware)
   async webmessage(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
     @Body() messageDto: MessageDto,
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
     await validateRequestBody(MessageDto, messageDto);
-    const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
+    const errandsUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
     let message: WebMessageRequest;
@@ -387,20 +380,15 @@ export class MessageController {
         message.attachments = attachments;
       }
     }
-    return sendWebMessage(municipalityId, message, req, errandData);
+    return sendWebMessage(MUNICIPALITY_ID, message, req, errandData);
   }
 
-  @Get('/casedata/:municipalityId/errand/:errandId/messages')
+  @Get('/casedata/errand/:errandId/messages')
   @OpenAPI({ summary: 'Return all messages by errand id' })
   @UseBefore(authMiddleware)
   @ResponseSchema(MessageResponse)
-  async errandMessages(
-    @Req() req: RequestWithUser,
-    @Param('errandId') errandId: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: IMessageResponse[],
-  ): Promise<{ data: IMessageResponse[]; message: string }> {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
+  async errandMessages(@Req() req: RequestWithUser, @Param('errandId') errandId: string): Promise<{ data: IMessageResponse[]; message: string }> {
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<IMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when fetching messages for errand: ', errandId);
@@ -409,18 +397,16 @@ export class MessageController {
     return { data: res.data, message: 'success' };
   }
 
-  @Put('/casedata/:municipalityId/errand/:errandId/messages/:messageId/viewed/:isViewed')
+  @Put('/casedata/errand/:errandId/messages/:messageId/viewed/:isViewed')
   @OpenAPI({ summary: 'Set message isViewed status' })
   @UseBefore(authMiddleware)
   async setMessageViewed(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('messageId') messageId: string,
-    @Param('municipalityId') municipalityId: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<any, any>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' };

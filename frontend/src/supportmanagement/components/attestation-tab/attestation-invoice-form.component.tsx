@@ -1,6 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { maybe, prettyTime } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
@@ -17,7 +18,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import BillingForm from '../billing/billing-form.component';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (boolean) => void;
@@ -97,7 +97,7 @@ export const AttestationInvoiceForm: React.FC<{
   };
 
   const onSubmit = () => {
-    return saveBillingRecord(undefined, municipalityId, getValues())
+    return saveBillingRecord(undefined, getValues())
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -146,7 +146,7 @@ export const AttestationInvoiceForm: React.FC<{
           disabled={!isDirty}
           onClick={() => {
             setValue('status', getValues().status);
-            setBillingRecordStatus(municipalityId, getValues(), getValues().status, user).then(() => {
+            setBillingRecordStatus(getValues(), getValues().status, user).then(() => {
               props.update(selectedRecord.id);
               setShowDecisionComponent(false);
             });
@@ -210,18 +210,14 @@ export const AttestationInvoiceForm: React.FC<{
               variant="primary"
               color="error"
               className="mr-16"
-              onClick={() =>
-                rejectBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
-              }
+              onClick={() => rejectBillingRecord(getValues(), user).then(() => props.update(selectedRecord.id))}
             >
               Avslå
             </Button>
             <Button
               variant="primary"
               color="gronsta"
-              onClick={() =>
-                approveBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
-              }
+              onClick={() => approveBillingRecord(getValues(), user).then(() => props.update(selectedRecord.id))}
             >
               Godkänn
             </Button>

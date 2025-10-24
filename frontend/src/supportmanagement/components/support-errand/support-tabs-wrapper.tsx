@@ -35,13 +35,11 @@ export const SupportTabsWrapper: React.FC<{
   const [messageTree, setMessageTree] = useState([]);
   const [conversationMessageTree, setConversationMessageTree] = useState([]);
   const {
-    municipalityId,
     supportErrand,
     setSupportErrand,
     supportAttachments,
     setSupportAttachments,
   }: {
-    municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: (e: SupportErrand) => void;
     supportAttachments: SupportAttachment[];
@@ -62,16 +60,16 @@ export const SupportTabsWrapper: React.FC<{
   }, [methods]);
 
   const getMessagesAndConversations = () => {
-    getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-    fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+    getSupportAttachments(supportErrand.id).then(setSupportAttachments);
+    fetchSupportMessages(supportErrand.id).then((res) => {
       const tree = buildTree(res);
       setMessageTree(tree);
       setMessages(res);
     });
-    getSupportConversations(municipalityId, supportErrand.id).then((res) => {
+    getSupportConversations(supportErrand.id).then((res) => {
       Promise.all(
         res.data.map((conversation: any) =>
-          getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
+          getSupportConversationMessages(supportErrand.id, conversation.id).then((messages) => {
             return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
           })
         )
@@ -87,7 +85,7 @@ export const SupportTabsWrapper: React.FC<{
 
   const update = () => {
     if (supportErrand.id) {
-      getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+      getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
       getMessagesAndConversations();
     }
   };
@@ -134,7 +132,6 @@ export const SupportTabsWrapper: React.FC<{
           conversationMessageTree={conversationMessageTree}
           setUnsaved={setUnsavedChanges}
           update={update}
-          municipalityId={municipalityId}
         />
       ),
       disabled: false,

@@ -11,11 +11,9 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
   const {
-    municipalityId,
     errand,
     setErrand,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  }: { user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } = useAppContext();
 
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -34,7 +32,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
           throw new Error('Errand could not be registered');
         }
 
-        const appealedErrand = await getErrand(municipalityId, res.errandId);
+        const appealedErrand = await getErrand(res.errandId);
         if (!appealedErrand || !appealedErrand.errand) {
           throw new Error('Failed to fetch the appealed errand');
         }
@@ -46,7 +44,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
             })
           );
         });
-        router.replace(`/arende/${municipalityId}/${appealedErrand.errand.errandNumber}`);
+        router.replace(`/arende/${process.env.NEXT_PUBLIC_MUNICIPALITY_ID}/${appealedErrand.errand.errandNumber}`);
         setIsLoading(false);
         return true;
       })
@@ -65,7 +63,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
 
   const handleClick = (errand: IErrand) => {
     window.open(
-      `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.relatesTo?.[0].errandNumber}`,
+      `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${process.env.NEXT_PUBLIC_MUNICIPALITY_ID}/${errand.relatesTo?.[0].errandNumber}`,
       '_blank'
     );
   };

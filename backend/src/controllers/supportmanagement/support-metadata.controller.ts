@@ -1,9 +1,9 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
+import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 interface SupportType {
@@ -56,28 +56,20 @@ export class SupportMetadataController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
-  @Get('/supportmetadata/:municipalityId')
+  @Get('/supportmetadata/')
   @OpenAPI({ summary: 'Get support metadata' })
   @UseBefore(authMiddleware)
-  async fetchSupportMetadata(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<SupportMetadata> {
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
+  async fetchSupportMetadata(@Req() req: RequestWithUser, @Res() response: any): Promise<SupportMetadata> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/metadata`;
     const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
     return response.status(200).send(res.data);
   }
 
-  @Get('/supportmetadata/:municipalityId/roles')
+  @Get('/supportmetadata/roles')
   @OpenAPI({ summary: 'Get support roles' })
   @UseBefore(authMiddleware)
-  async fetchSupportMetadataRoles(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<SupportRoles> {
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/roles`;
+  async fetchSupportMetadataRoles(@Req() req: RequestWithUser, @Res() response: any): Promise<SupportRoles> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/metadata/roles`;
     const res = await this.apiService.get<SupportRoles>({ url }, req.user);
     return response.status(200).send(res.data);
   }

@@ -7,7 +7,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { mapFormToServiceFromPayload, Service } from './casedata-service-mapper';
 
 type UseErrandServicesArgs = {
-  municipalityId: string;
   partyId: string;
   errandNumber: string;
   assetType: string;
@@ -17,7 +16,6 @@ type UseErrandServicesArgs = {
 };
 
 export function useErrandServices({
-  municipalityId,
   partyId,
   errandNumber,
   assetType,
@@ -34,7 +32,6 @@ export function useErrandServices({
     setError(undefined);
     try {
       const resp = await getAssets({
-        municipalityId,
         partyId,
         assetId: errandNumber,
         type: assetType,
@@ -65,7 +62,7 @@ export function useErrandServices({
     } finally {
       setLoading(false);
     }
-  }, [municipalityId, partyId, errandNumber, assetType, status, origin, schema]);
+  }, [partyId, errandNumber, assetType, status, origin, schema]);
 
   useEffect(() => {
     refetch();

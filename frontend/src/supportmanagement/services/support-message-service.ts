@@ -96,13 +96,12 @@ const getPlaintextMessageBody = (htmlMessage: string): string => {
   return sanitized(transformed).trim();
 };
 
-export const sendClosingMessage = (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
+export const sendClosingMessage = (adminName: string, supportErrand: SupportErrand) => {
   const contactChannels = applicantContactChannel(supportErrand);
   const messageBody = getClosingMessageBody();
   const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
   return sendMessage({
-    municipalityId: municipalityId,
     errandId: supportErrand.id,
     contactMeans:
       Channels[supportErrand.channel] === Channels.ESERVICE ||
@@ -187,13 +186,9 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
         });
       }
       try {
-        await apiService.post<boolean, FormData>(
-          `supportmessage/${data.municipalityId}/${data.errandId}`,
-          messageFormData,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          }
-        );
+        await apiService.post<boolean, FormData>(`supportmessage/errands/${data.errandId}`, messageFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
 
         return true;
       } catch (error) {
@@ -208,15 +203,12 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
   return Promise.all(msgPromises).then((results) => (results.every((r) => r) ? true : false));
 };
 
-export const fetchSupportMessages: (errandId: string, municipalityId: string) => Promise<MessageNode[]> = (
-  errandId,
-  municipalityId
-) => {
+export const fetchSupportMessages: (errandId: string) => Promise<MessageNode[]> = (errandId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<Message[]>(`supportmessage/${municipalityId}/errands/${errandId}/communication`)
+    .get<Message[]>(`supportmessage/errands/${errandId}/communication`)
     .then((res) => {
       const list: Message[] = res.data.sort((a, b) =>
         dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
@@ -231,14 +223,13 @@ export const fetchSupportMessages: (errandId: string, municipalityId: string) =>
 
 export const setMessageViewStatus: (
   errandId: string,
-  municipalityId: string,
   communicationID: string,
   isViewed: boolean
-) => Promise<ApiResponse<any>> = (errandId, municipalityId, communicationID, isViewed) => {
+) => Promise<ApiResponse<any>> = (errandId, communicationID, isViewed) => {
   if (!communicationID) {
     console.error('No communication id found, cannot fetch. Returning.');
   }
-  const url = `supportmessage/${municipalityId}/errands/${errandId}/communication/${communicationID}/viewed/${isViewed}`;
+  const url = `supportmessage/errands/${errandId}/communication/${communicationID}/viewed/${isViewed}`;
   return apiService
     .put<ApiResponse<any>, any>(url, {})
     .then((res) => res.data)
@@ -249,11 +240,10 @@ export const setMessageViewStatus: (
 };
 
 export const getMessageAttachment: (
-  municipalityId: string,
   errandId: string,
   communicationID: string,
   attachmentId: string
-) => Promise<ApiResponse<string>> = (municipalityId, errandId, communicationID, attachmentId) => {
+) => Promise<ApiResponse<string>> = (errandId, communicationID, attachmentId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch.');
   }
@@ -264,7 +254,7 @@ export const getMessageAttachment: (
     console.error('No attachment id found, cannot fetch.');
   }
 
-  const url = `supportmessage/${municipalityId}/errand/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
+  const url = `supportmessage/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<string>>(url)
     .then((res) => res.data)

@@ -2,10 +2,9 @@ import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
-import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
+import { Decision, DecisionOutcome, DecisionType, Law } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { Law } from '@casedata/interfaces/decision';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -67,12 +66,11 @@ export const beslutsmallMapping = [
 ];
 
 export const saveDecision: (
-  municipalityId: string,
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
   decisionType: DecisionType,
   pdf?: string
-) => Promise<boolean> = (municipalityId, errand, formData, decisionType, pdf) => {
+) => Promise<boolean> = (errand, formData, decisionType, pdf) => {
   const atts = [];
   if (pdf) {
     const att: Attachment = {
@@ -113,8 +111,8 @@ export const saveDecision: (
     ...(formData.extraParameters && { extraParameters: formData.extraParameters }),
   };
   const apiCall = obj.id
-    ? apiService.put<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions/${obj.id}`, obj)
-    : apiService.patch<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions`, obj);
+    ? apiService.put<boolean, Decision>(`casedata/errands/${errand.id}/decisions/${obj.id}`, obj)
+    : apiService.patch<boolean, Decision>(`casedata/errands/${errand.id}/decisions`, obj);
   return apiCall
     .then((res) => {
       return true;

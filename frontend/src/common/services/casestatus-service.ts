@@ -29,11 +29,11 @@ export const findOperationUsingNamespace = (namespace: string) => {
   }
 };
 
-export const getStatusesUsingPartyId = (municipalityId: string, partyId: string) => {
-  if (!municipalityId || !partyId) {
+export const getStatusesUsingPartyId = (partyId: string) => {
+  if (!partyId) {
     return Promise.resolve([]);
   }
-  const url = `${municipalityId}/party/${partyId}/statuses`;
+  const url = `/party/${partyId}/statuses`;
 
   return apiService
     .get<ApiResponse<any>>(url)
@@ -47,11 +47,11 @@ export const getStatusesUsingPartyId = (municipalityId: string, partyId: string)
     });
 };
 
-export const getStatusesUsingOrganizationNumber = (municipalityId: string, organizationNumber: string) => {
-  if (!municipalityId || !organizationNumber) {
+export const getStatusesUsingOrganizationNumber = (organizationNumber: string) => {
+  if (!organizationNumber) {
     return Promise.resolve([]);
   }
-  const url = `${municipalityId}/${organizationNumber}/statuses`;
+  const url = `/${organizationNumber}/statuses`;
 
   return apiService
     .get<ApiResponse<any>>(url)
@@ -65,8 +65,8 @@ export const getStatusesUsingOrganizationNumber = (municipalityId: string, organ
     });
 };
 
-export const getErrandStatus = (municipalityId: string, query: string) => {
-  const url = `${municipalityId}/errands/statuses/${query}`;
+export const getErrandStatus = (query: string) => {
+  const url = `/errands/statuses/${query}`;
 
   return apiService
     .get<ApiResponse<any>>(url)

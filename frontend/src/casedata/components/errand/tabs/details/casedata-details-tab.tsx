@@ -28,16 +28,13 @@ interface CasedataDetailsProps {
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
-  const [loading, setIsLoading] = useState<boolean>();
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
-  const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
-    setAllowed(_a);
   }, [user, errand]);
 
   const form = useFormContext<IErrand>();
@@ -47,10 +44,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { description } = watch();
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
-    return saveFacilities(municipalityId, errand.id, estates).then(() => {
-      setIsLoading(undefined);
+    return saveFacilities(errand.id, estates).then(() => {
       props.setUnsaved(false);
-      return getErrand(municipalityId, errand.id.toString())
+      return getErrand(errand.id.toString())
         .then((res) => {
           setErrand(res.errand);
           toastMessage(
@@ -59,10 +55,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               status: 'success',
             })
           );
-          setIsLoading(undefined);
         })
         .catch(() => {
-          setIsLoading(undefined);
           toastMessage({
             position: 'bottom',
             closeable: false,

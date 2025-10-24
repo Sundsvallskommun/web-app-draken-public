@@ -46,7 +46,7 @@ export const SidebarGenericNotes: React.FC<{
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
+  const { supportErrand, setSupportErrand, administrators } = useAppContext();
   const [selectedNote, setSelectedNote] = useState<GenericNote>();
   const [notes, setNotes] = useState<SupportNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,8 +83,8 @@ export const SidebarGenericNotes: React.FC<{
     let createNote = true;
 
     const apiCall = note.id
-      ? updateSupportNote(supportErrand.id, municipalityId, note.id, note.text)
-      : saveSupportNote(supportErrand.id, municipalityId, note.text, note.partyId);
+      ? updateSupportNote(supportErrand.id, note.id, note.text)
+      : saveSupportNote(supportErrand.id, note.text, note.partyId);
 
     return apiCall
       .then(() => {
@@ -95,7 +95,7 @@ export const SidebarGenericNotes: React.FC<{
           })
         );
         setIsLoading(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
       })
       .catch((e) => {
@@ -116,7 +116,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   useEffect(() => {
-    getSupportNotes(supportErrand.id, municipalityId).then((res) => setNotes(res.notes));
+    getSupportNotes(supportErrand.id).then((res) => setNotes(res.notes));
     if (selectedNote) {
       setSelectedNote(notes.map(makeGeneric).find((n) => n.id === selectedNote.id));
     }
@@ -133,7 +133,7 @@ export const SidebarGenericNotes: React.FC<{
 
   const saveModifiedNote = () => {
     const note: ErrandNotesTabFormModel = getValues();
-    return updateSupportNote(supportErrand.id, municipalityId, note.id, note.text)
+    return updateSupportNote(supportErrand.id, note.id, note.text)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -141,7 +141,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
         setValue('id', '');
         setEditNote(false);
@@ -159,7 +159,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   const removeNote = (inNote) => {
-    return deleteSupportNote(supportErrand.id, municipalityId, inNote.id)
+    return deleteSupportNote(supportErrand.id, inNote.id)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -167,7 +167,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
       })
       .catch((e) => {

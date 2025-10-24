@@ -23,12 +23,10 @@ import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const {
-    municipalityId,
     supportErrand,
     supportMetadata,
     supportAdmins,
   }: {
-    municipalityId: string;
     supportErrand: SupportErrand;
     supportMetadata: SupportMetadata;
     supportAdmins: SupportAdmin[];
@@ -46,7 +44,7 @@ export const SidebarHistory: React.FC<{}> = () => {
     if (supportErrand && keyMapper && Object.keys(keyMapper).length > 1) {
       setError(false);
       setIsLoading(true);
-      getSupportErrandEvents(supportErrand?.id, municipalityId, keyMapper)
+      getSupportErrandEvents(supportErrand?.id, keyMapper)
         .then((res) => {
           setEvents(res);
           setIsLoading(false);
@@ -88,10 +86,7 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     if (selectedChange) {
-      // setSelectedChangeDetails(selectedChange.parsed.diffList);
-      // setIsOpen(true);
-      // TODO Fetch revison diff on modal opening or when fetching events (slow)?
-      fetchRevisionDiff(supportErrand.id, selectedChange, municipalityId, keyMapper, supportAdmins)
+      fetchRevisionDiff(supportErrand.id, selectedChange, keyMapper, supportAdmins)
         .then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);

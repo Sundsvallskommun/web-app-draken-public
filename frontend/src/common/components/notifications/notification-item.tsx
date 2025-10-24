@@ -23,14 +23,14 @@ export const NotificationItem: React.FC<{ notification: NotificationType }> = ({
   const handleAcknowledge = async () => {
     try {
       if (appConfig.isCaseData) {
-        await acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification);
+        await acknowledgeCasedataNotification(notification as CaseDataNotification);
       } else {
-        await acknowledgeSupportNotification(municipalityId, notification as SupportNotification);
+        await acknowledgeSupportNotification(notification as SupportNotification);
       }
 
       const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
 
-      const notifications = await getNotifications(municipalityId);
+      const notifications = await getNotifications();
       setNotifications(notifications);
     } catch (error) {
       toastMessage({

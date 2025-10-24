@@ -47,12 +47,12 @@ export const CasedataAttachments: React.FC = () => {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [originalFile, setOriginalFile] = useState<UploadFile | null>(null);
 
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const { errand, setErrand } = useAppContext();
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
 
   const closeModal = () => {
-    getErrand(municipalityId, errand.id.toString())
+    getErrand(errand.id.toString())
       .then((data) => setErrand(data.errand))
       .catch((e) => {
         toastMessage({
@@ -155,7 +155,7 @@ export const CasedataAttachments: React.FC = () => {
   const clickHandler = (attachment: UploadFile) => {
     if (imageMimeTypes.includes(attachment.file.type)) {
       setModalFetching(true);
-      fetchAttachment(municipalityId, errand.id, attachment.id)
+      fetchAttachment(errand.id, attachment.id)
         .then((res) => setModalAttachment(res.data))
         .then(() => {
           setModalFetching(false);
@@ -180,8 +180,8 @@ export const CasedataAttachments: React.FC = () => {
       const saved = await saveErrand();
       if (!saved) return;
 
-      await deleteAttachment(municipalityId, errand?.id, attachment);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await deleteAttachment(errand?.id, attachment);
+      const res = await getErrand(errand.id.toString());
       setErrand(res.errand);
       toastMessage(
         getToastOptions({
@@ -250,7 +250,6 @@ export const CasedataAttachments: React.FC = () => {
                       return;
                     }
                     editAttachment(
-                      municipalityId,
                       errand.id.toString(),
                       file.id,
                       `${file.meta.name}.${file.meta.ending}`,
@@ -332,7 +331,6 @@ export const CasedataAttachments: React.FC = () => {
         isOpen={addAttachmentWindowIsOpen}
         attachmentTypeExists={attachmentTypeExists}
         errand={errand}
-        municipalityId={municipalityId}
         saveErrand={saveErrand}
         setErrand={setErrand}
         closeHandler={closeHandler}

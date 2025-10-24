@@ -19,7 +19,7 @@ import { useSnackbar } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
 
 export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
-  const { errand, administrators, municipalityId, setErrand, user } = useAppContext();
+  const { errand, administrators, setErrand, user } = useAppContext();
   const toastMessage = useSnackbar();
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
 
@@ -67,7 +67,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
 
       if (errand.id) {
         try {
-          await saveFacilities(municipalityId, errand.id, validFacilities);
+          await saveFacilities(errand.id, validFacilities);
         } catch (e) {
           toastMessage({
             position: 'bottom',
@@ -95,7 +95,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       };
     });
 
-    await saveExtraParameters(municipalityId, extraParams, errand);
+    await saveExtraParameters(extraParams, errand);
     return extraParams;
   }
 
@@ -126,9 +126,9 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
     if (formState.dirtyFields['administratorName']) {
       const admin = administrators.find((a) => a.displayName === getValues().administratorName);
       if (!!admin) {
-        setAdministrator(municipalityId, errand, admin);
+        setAdministrator(errand, admin);
         if (admin.adAccount !== user.username) {
-          updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Tilldelat);
+          updateErrandStatus(errand.id.toString(), ErrandStatus.Tilldelat);
         }
       }
     }
@@ -137,19 +137,19 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       if (dataToSave.stakeholders) {
         for (const stakeholder of dataToSave.stakeholders) {
           if (stakeholder.id && !stakeholder.removed && stakeholder.newRole !== 'ADMINISTRATOR') {
-            await editStakeholder(municipalityId, dataToSave.id.toString(), stakeholder);
+            await editStakeholder(dataToSave.id.toString(), stakeholder);
           }
         }
       }
 
       const res = await saveErrand(dataToSave);
-      await getErrand(municipalityId, res.errandId.toString());
+      await getErrand(res.errandId.toString());
 
       const removedStakeholders = (dataToSave.stakeholders ?? []).filter((s) => s.removed);
       for (const removed of removedStakeholders) {
-        await removeStakeholder(municipalityId, res.errandId.toString(), removed.id);
+        await removeStakeholder(res.errandId.toString(), removed.id);
       }
-      const saved2 = await getErrand(municipalityId, res.errandId.toString());
+      const saved2 = await getErrand(res.errandId.toString());
       setErrand(saved2.errand);
 
       if (registeringNewErrand) {

@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 
 interface ExportButtonProps {
   errands: ErrandsData;
-  municipalityId: string;
 }
 
 export const ExportButton: React.FC<ExportButtonProps> = (props) => {
@@ -15,7 +14,7 @@ export const ExportButton: React.FC<ExportButtonProps> = (props) => {
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const toastMessage = useSnackbar();
 
-  const { errands, municipalityId } = props;
+  const { errands } = props;
 
   const isErrandNotClosed = () => {
     return errands.errands.some((errand) => errand.status.statusType !== ErrandStatus.ArendeAvslutat);
@@ -23,7 +22,7 @@ export const ExportButton: React.FC<ExportButtonProps> = (props) => {
 
   const handleExportErrands = () => {
     setIsExportLoading(true);
-    exportErrands(municipalityId, errands.errands).then((pdf) => {
+    exportErrands(errands.errands).then((pdf) => {
       downloadPdf(
         pdf,
         `Arendelista-${dayjs().format('YYYY-MM-DD')}.pdf`,

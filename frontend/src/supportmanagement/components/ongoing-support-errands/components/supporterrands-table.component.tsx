@@ -37,7 +37,6 @@ export const SupportErrandsTable: React.FC = () => {
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
-  const pageSize = watch('pageSize');
   const totalPages = watch('totalPages');
   const page = watch('page');
   const [categories, setCategories] = useState<Category[]>();
@@ -111,7 +110,7 @@ export const SupportErrandsTable: React.FC = () => {
 
   const openErrandeInNewWindow = async (errand: SupportErrand) => {
     if (errand.activeNotifications && errand.activeNotifications.length > 0) {
-      await globalAcknowledgeSupportNotification(errand, municipalityId).catch(() => {
+      await globalAcknowledgeSupportNotification(errand).catch(() => {
         throw new Error('Failed to acknowledge notification');
       });
     }

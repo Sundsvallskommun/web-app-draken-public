@@ -162,7 +162,7 @@ export const MessageComposer: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
+  const { errand, user }: { errand: IErrand; user: User } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -246,15 +246,9 @@ export const MessageComposer: React.FC<{
     data.messageBody = renderedHtml.html;
 
     if (data.contactMeans === 'draken' || data.contactMeans === 'minasidor') {
-      const conversationId = await getOrCreateConversationId(
-        municipalityId,
-        errand,
-        contactMeans,
-        props?.message?.conversationId
-      );
+      const conversationId = await getOrCreateConversationId(errand, contactMeans, props?.message?.conversationId);
 
       sendConversationMessage(
-        municipalityId,
         errand.id,
         conversationId,
         data.messageBody,
@@ -284,7 +278,7 @@ export const MessageComposer: React.FC<{
           return;
         });
     } else {
-      apiCall(municipalityId, errand, data)
+      apiCall(errand, data)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -325,9 +319,9 @@ export const MessageComposer: React.FC<{
       errand.status.statusType !== ErrandStatus.InterntAterkoppling
     ) {
       if (typeOfMessage === 'infoCompletion') {
-        await setErrandStatus(errand.id, municipalityId, ErrandStatus.VantarPaKomplettering, null, null);
+        await setErrandStatus(errand.id, ErrandStatus.VantarPaKomplettering, null, null);
       } else if (typeOfMessage === 'internalCompletion') {
-        await setErrandStatus(errand.id, municipalityId, ErrandStatus.InterntAterkoppling, null, null);
+        await setErrandStatus(errand.id, ErrandStatus.InterntAterkoppling, null, null);
       }
     }
   };

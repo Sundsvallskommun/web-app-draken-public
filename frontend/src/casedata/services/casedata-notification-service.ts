@@ -2,11 +2,9 @@ import { Notification as CasedataNotification, Errand } from '@common/data-contr
 import { apiService } from '@common/services/api-service';
 import { PatchNotificationDto } from 'src/data-contracts/backend/data-contracts';
 
-export const getCasedataNotifications: (municipalityId: string) => Promise<CasedataNotification[]> = (
-  municipalityId
-) => {
+export const getCasedataNotifications: () => Promise<CasedataNotification[]> = () => {
   return apiService
-    .get<CasedataNotification[]>(`casedatanotifications/${municipalityId}`)
+    .get<CasedataNotification[]>(`casedatanotifications`)
     .then((res) => {
       return res.data;
     })
@@ -16,10 +14,9 @@ export const getCasedataNotifications: (municipalityId: string) => Promise<Cased
     });
 };
 
-export const acknowledgeCasedataNotification: (
-  municipalityId: string,
-  notification: CasedataNotification
-) => Promise<boolean> = (municipalityId, notification) => {
+export const acknowledgeCasedataNotification: (notification: CasedataNotification) => Promise<boolean> = (
+  notification
+) => {
   if (!notification.id) {
     return Promise.reject('Missing id on notification');
   }
@@ -34,7 +31,7 @@ export const acknowledgeCasedataNotification: (
     acknowledged: true,
   };
   return apiService
-    .patch<boolean, PatchNotificationDto>(`casedatanotifications/${municipalityId}`, data)
+    .patch<boolean, PatchNotificationDto>(`casedatanotifications`, data)
     .then((res) => {
       return true;
     })
@@ -44,15 +41,12 @@ export const acknowledgeCasedataNotification: (
     });
 };
 
-export const globalAcknowledgeCasedataNotification: (errand: Errand, municipalityId: string) => Promise<boolean> = (
-  errand,
-  municipalityId
-) => {
+export const globalAcknowledgeCasedataNotification: (errand: Errand) => Promise<boolean> = (errand) => {
   if (!errand.id) {
     return Promise.reject('Missing id on notification');
   }
   return apiService
-    .put(`casedatanotifications/${municipalityId}/${errand.id}/global-acknowledged`, {})
+    .put(`casedatanotifications/${errand.id}/global-acknowledged`, {})
     .then((res) => {
       return true;
     })

@@ -490,28 +490,18 @@ export class SupportErrandController {
     return resToSend;
   };
 
-  @Get('/supporterrands/:municipalityId/:id')
+  @Get('/supporterrands/:id')
   @OpenAPI({ summary: 'Return an errand by id' })
   @UseBefore(authMiddleware)
-  async errand(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<SupportErrand> {
-    if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
+  async errand(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<SupportErrand> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands/${id}`;
     const errandResponse = await this.apiService.get<SupportErrand>({ url }, req.user);
     const errandData = errandResponse.data;
 
     return response.send((await this.preparedErrandResponse(errandData, req)).data);
   }
 
-  @Get('/supporterrands/:municipalityId')
+  @Get('/supporterrands/')
   @OpenAPI({ summary: 'Return all support errands for municipality' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
   async errands(
@@ -532,15 +522,8 @@ export class SupportErrandController {
     @QueryParam('start') start: string,
     @QueryParam('end') end: string,
     @QueryParam('sort') sort: string,
-    @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<PageErrand> {
-    if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
-      return response.status(400).send('Municipality id missing');
-    }
-
     const filter = await this.buildErrandFilter(
       req,
       query,
@@ -557,7 +540,7 @@ export class SupportErrandController {
       start,
       end,
     );
-    let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
+    let url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
     url += filter;
     if (sort) {
       url += `&sort=${sort}`;
@@ -567,7 +550,7 @@ export class SupportErrandController {
     return response.status(200).send(data);
   }
 
-  @Get('/countsupporterrands/:municipalityId')
+  @Get('/countsupporterrands/')
   @OpenAPI({ summary: 'Counts errands based on the provided filters' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
   async countErrands(
@@ -585,15 +568,8 @@ export class SupportErrandController {
     @QueryParam('resolution') resolution: string,
     @QueryParam('start') start: string,
     @QueryParam('end') end: string,
-    @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<any> {
-    if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
-      return response.status(400).send('Municipality id missing');
-    }
-
     const filter = await this.buildErrandFilter(
       req,
       query,
@@ -610,31 +586,23 @@ export class SupportErrandController {
       start,
       end,
     );
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count?${filter}`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands/count?${filter}`;
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
     const data = res.data;
     return response.status(200).send(data);
   }
 
-  @Post('/newerrand/:municipalityId')
+  @Post('/newerrand/')
   @HttpCode(201)
   @OpenAPI({ summary: 'Initiate a new, empty support errand' })
   @UseBefore(authMiddleware)
-  async registerSupportErrand(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<{ data: SupportErrandDto; message: string }> {
+  async registerSupportErrand(@Req() req: RequestWithUser, @Res() response: any): Promise<{ data: SupportErrandDto; message: string }> {
     const isAdmin = await checkIfSupportAdministrator(req.user);
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/errands`;
+
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
@@ -699,23 +667,17 @@ export class SupportErrandController {
     return response.status(201).send(res.data);
   }
 
-  @Patch('/supporterrands/:municipalityId/:id')
+  @Patch('/supporterrands/:id')
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
   async updateSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
     @Body() data: Partial<SupportErrandDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to fetch errands.');
-      logger.error('No municipality id found, it is needed to fetch errands.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/errands/${id}`;
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
       ...data,
@@ -729,14 +691,13 @@ export class SupportErrandController {
     return response.status(200).send(res.data);
   }
 
-  @Patch('/supporterrands/:municipalityId/:id/admin')
+  @Patch('/supporterrands/:id/admin')
   @HttpCode(201)
   @OpenAPI({ summary: 'Set user as admin for support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
   async becomeAdminForSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
     @Body() data: Partial<SupportErrandDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -744,12 +705,8 @@ export class SupportErrandController {
     if (!isAdmin) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to update errand.');
-      logger.error('No municipality id found, it is needed to update errand.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/errands/${id}`;
+
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
       assignedUserId: data.assignedUserId,
@@ -763,28 +720,22 @@ export class SupportErrandController {
     return response.status(200).send(res.data);
   }
 
-  @Post('/supporterrands/:municipalityId/:id/forward')
+  @Post('/supporterrands/:id/forward')
   @HttpCode(201)
   @OpenAPI({ summary: 'Forward a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(ForwardFormDto, 'body'))
   async forwardSupportErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
     @Body() data: Partial<ForwardFormDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to forward errand.');
-      logger.error('No municipality id found, it is needed to forward errand.');
-      return response.status(400).send('Municipality id missing');
-    }
     if (!id) {
       console.error('No errand id found, it is needed to forward errand.');
       logger.error('No errand id found, it is needed to forward errand.');
       return response.status(400).send('Errand id missing');
     }
-    const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}`;
+    const supportErrandUrl = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}`;
     const supportBaseURL = apiURL(this.SERVICE);
     const existingSupportErrand = await this.apiService.get<SupportErrand>({ url: supportErrandUrl, baseURL: supportBaseURL }, req.user);
     if (!existingSupportErrand) {
@@ -800,16 +751,7 @@ export class SupportErrandController {
         logger.error('Missing required fields for stakeholder');
         return response.status(400).send('Missing required fields for stakeholder');
       }
-      // TODO Check for email and phone?
-      // if (
-      //   s.contactChannels.length === 0 ||
-      //   !s.contactChannels.some(c => c.type === ContactChannelType.PHONE) ||
-      //   !s.contactChannels.some(c => c.type === ContactChannelType.EMAIL)
-      // ) {
-      //   console.error('Missing required contact channels for stakeholder');
-      //   logger.error('Missing required contact channels for stakeholder');
-      //   return response.status(400).send('Missing required contact channels for stakeholder');
-      // }
+
       if (s.externalIdType === ExternalIdType.COMPANY) {
         stakeholders.push({
           type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
@@ -943,7 +885,7 @@ export class SupportErrandController {
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands`;
     const CASEDATA_SERVICE = apiServiceName('case-data');
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
@@ -959,13 +901,13 @@ export class SupportErrandController {
 
     // Fetch support errand attachments
     try {
-      const supportErrandAttachmentsUrl = `${municipalityId}/${this.namespace}/errands/${id}/attachments`;
+      const supportErrandAttachmentsUrl = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/attachments`;
       const existingSupportErrandAttachments = await this.apiService.get<ErrandAttachment[]>(
         { url: supportErrandAttachmentsUrl, baseURL: supportBaseURL },
         req.user,
       );
       const attachmentsPromises: Promise<ErrandAttachment & { fileData: ArrayBuffer }>[] = existingSupportErrandAttachments.data?.map(a => {
-        const singleAttachmentsUrl = `${municipalityId}/${this.namespace}/errands/${id}/attachments/${a.id}`;
+        const singleAttachmentsUrl = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/attachments/${a.id}`;
         const filesData = this.apiService
           .get<ArrayBuffer>({ url: singleAttachmentsUrl, baseURL: supportBaseURL, responseType: 'arraybuffer' }, req.user)
           .then(res => ({
@@ -991,7 +933,7 @@ export class SupportErrandController {
       });
 
       const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
-        const casedataAttachmentsUrl = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/attachments`;
+        const casedataAttachmentsUrl = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
           .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
           .then(res => res.data)

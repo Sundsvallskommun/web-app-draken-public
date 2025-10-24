@@ -10,7 +10,6 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
-import { sanitized } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
@@ -51,12 +50,7 @@ let formSchema = yup
   .required();
 
 export const SidebarUtredning: React.FC = () => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  }: { municipalityId: string; errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
+  const { errand, setErrand, user }: { errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -85,8 +79,8 @@ export const SidebarUtredning: React.FC = () => {
     try {
       setIsLoading(true);
       const rendered = await renderUtredningPdf(errand, data);
-      await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
-      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      await saveDecision(errand, data, 'PROPOSED', rendered.pdfBase64);
+      await getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);
       setError(false);
       toastMessage(

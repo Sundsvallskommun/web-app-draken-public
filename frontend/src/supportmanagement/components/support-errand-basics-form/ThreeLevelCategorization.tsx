@@ -4,15 +4,11 @@ import { useAppContext } from '@contexts/app.context';
 import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
-import {
-  defaultSupportErrandInformation,
-  isSupportErrandLocked,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
+import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata, SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
+import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
-import { useTranslation } from 'next-i18next';
 
 const LABEL_LEVELS = {
   CATEGORY: 'CATEGORY',
@@ -54,7 +50,7 @@ export const ThreeLevelCategorization: React.FC<{
       );
       setOldCategoriesList(supportMetadata?.categories);
     } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
+      getSupportMetadata().then((data) => {
         setCategoriesList(
           data.metadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
         );

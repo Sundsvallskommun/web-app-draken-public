@@ -8,7 +8,7 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 import dayjs from 'dayjs';
-import { Body, Controller, Param, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { Body, Controller, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 @Controller()
@@ -17,13 +17,12 @@ export class ExportController {
   SERVICE = apiServiceName('case-data');
   TEMPLATING_SERVICE = apiServiceName('templating');
 
-  @Post('/:municipalityId/export')
+  @Post('/export')
   @OpenAPI({ summary: 'Export list of errands' })
   @UseBefore(authMiddleware)
   async exportErrands(
     @Req() req: RequestWithUser,
     @Body() data: (Errand & { caseLabel: string })[],
-    @Param('municipalityId') municipalityId: string,
     @QueryParam('exclude') exclude: string,
   ): Promise<any> {
     const renderRequest: RenderRequest = {
@@ -45,13 +44,12 @@ export class ExportController {
     return { data: response.data, message: `Export PDF rendered` };
   }
 
-  @Post('/:municipalityId/exportsingle')
+  @Post('/exportsingle')
   @OpenAPI({ summary: 'Export single errand' })
   @UseBefore(authMiddleware)
   async exportSingleErrand(
     @Req() req: RequestWithUser,
     @Body() data: Errand & { administratorName: string; caseLabel: string; attachments: any[] },
-    @Param('municipalityId') municipalityId: string,
     @QueryParam('exclude') exclude: string,
   ): Promise<any> {
     let basicInformation = {};
@@ -72,7 +70,7 @@ export class ExportController {
 
     let messages = [];
     if (!exclude?.includes('messages')) {
-      const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/messages`;
+      const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/messages`;
       const baseURL = apiURL(this.SERVICE);
       const res = await this.apiService.get<IMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
         logger.error('Error when fetching messages for errand: ', data.id);

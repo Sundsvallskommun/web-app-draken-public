@@ -1,7 +1,8 @@
 import { useAppContext } from '@common/contexts/app.context';
+import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
+import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   SupportErrand,
@@ -15,10 +16,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { MessagePortal } from './sidebar/message-portal.component';
 
 let formSchema = yup
   .object({
@@ -86,7 +86,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
       .catch((e) => {});
     if (props.id) {
       setIsLoading(true);
-      getSupportErrandById(props.id, municipalityId)
+      getSupportErrandById(props.id)
         .then((res) => {
           if (res.error) {
             toastMessage({
@@ -112,7 +112,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
       if (municipalityId && supportErrandIsEmpty(supportErrand) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
-        initiateSupportErrand(municipalityId)
+        initiateSupportErrand()
           .then((result) =>
             setTimeout(() => {
               router.push(`/arende/${municipalityId}/${result.id}`);

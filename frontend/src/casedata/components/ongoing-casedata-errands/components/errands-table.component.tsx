@@ -74,7 +74,7 @@ export const ErrandsTable: React.FC = () => {
 
   const handleClick = async (errand) => {
     if (errand.notifications && errand.notifications.length > 0) {
-      await globalAcknowledgeCasedataNotification(errand, municipalityId).catch(() => {
+      await globalAcknowledgeCasedataNotification(errand).catch(() => {
         throw new Error('Failed to acknowledge notification');
       });
     }

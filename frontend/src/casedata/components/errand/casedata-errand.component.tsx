@@ -23,11 +23,6 @@ import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 
-type IErrandFormData = Pick<
-  IErrand,
-  'caseType' | 'channel' | 'description' | 'municipalityId' | 'phase' | 'priority' | 'status'
->;
-
 export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   let formSchema = yup
     .object({
@@ -37,7 +32,6 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
         .test('notDefaultCasetype', 'Ärendetyp måste väljas', (val) => !!val && val !== 'Välj ärendetyp'),
       channel: yup.string(),
       description: yup.string(),
-      municipalityId: yup.string().required('Kommun måste anges'),
       phase: yup.string(),
       priority: yup.string(),
       status: yup.object({
@@ -48,13 +42,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
 
   const [isLoading, setIsLoading] = useState(false);
   const {
-    municipalityId,
     errand,
     setErrand,
     setAdministrators,
     setUiPhase,
   }: {
-    municipalityId: string;
     errand: IErrand;
     setErrand: any;
     setAdministrators: (admins: Admin[]) => void;
@@ -95,7 +87,7 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     if (props.id) {
       // Existing errand, load it and show it
       setIsLoading(true);
-      getErrandByErrandNumber(municipalityId, props.id)
+      getErrandByErrandNumber(props.id)
         .then((res) => {
           if (res.error) {
             toastMessage({

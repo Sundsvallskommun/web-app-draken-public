@@ -6,8 +6,7 @@ export interface supportmanagementFacility {
   value: string;
 }
 export const saveFacilityInfo = (id, facilities) => {
-  const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID;
-  const url = `supporterrands/saveFacilities/${municipalityId}/${id}`;
+  const url = `supporterrands/saveFacilities/${id}`;
   const facilitiesArray = facilities?.map((f) => f.address.propertyDesignation) || [];
 
   return apiService

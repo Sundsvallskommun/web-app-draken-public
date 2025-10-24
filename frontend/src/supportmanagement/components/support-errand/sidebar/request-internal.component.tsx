@@ -79,14 +79,12 @@ export interface RequestInternalFormProps {
 export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
     user,
-    municipalityId,
     supportErrand,
     setSupportErrand,
     supportMetadata,
     supportAttachments,
   }: {
     user: User;
-    municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
     supportMetadata: SupportMetadata;
@@ -120,7 +118,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
   const handleRequestInternal = (data: RequestInternalFormProps) => {
     setIsLoading(true);
     setError(false);
-    return requestInternal(user, supportErrand, municipalityId, data, addedAttachment, appConfig.applicationName)
+    return requestInternal(user, supportErrand, data, addedAttachment, appConfig.applicationName)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -130,7 +128,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
         );
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
         setAddedAttachment([]);
         reset();
       })

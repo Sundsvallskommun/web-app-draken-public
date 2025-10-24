@@ -43,14 +43,12 @@ import { ResumeErrandButton } from './resume-errand-button.component';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
-    municipalityId,
     user,
     errand,
     setErrand,
     administrators,
     uiPhase,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  }: { user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
@@ -116,7 +114,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       await errandSave();
       const admin = administrators.find((a) => a.adAccount === user.username);
       if (admin) {
-        await setAdministrator(municipalityId, errand, admin);
+        await setAdministrator(errand, admin);
         toastMessage(
           getToastOptions({
             message: 'Handläggare sparades',
@@ -124,7 +122,7 @@ export const SidebarInfo: React.FC<{}> = () => {
           })
         );
       }
-      const updated = await getErrand(municipalityId, errand.id.toString());
+      const updated = await getErrand(errand.id.toString());
       setErrand(updated.errand);
       reset();
       pollDisplayPhase();
@@ -175,7 +173,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         noteType: 'PUBLIC',
         extraParameters: {},
       };
-      return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
+      return saveErrandNote(errand.id?.toString(), newNote)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -184,7 +182,7 @@ export const SidebarInfo: React.FC<{}> = () => {
             })
           );
 
-          cancelErrandPhaseChange(municipalityId, errand)
+          cancelErrandPhaseChange(errand)
             .then(() => {
               toastMessage(
                 getToastOptions({
@@ -194,8 +192,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               );
               setDialogIsOpen(false);
 
-              //TODO add polling.
-              getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+              getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
               reset();
               pollDisplayPhase();
             })
@@ -434,7 +431,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         setUnsaved={() => {}}
         update={() =>
           setTimeout(() => {
-            getErrand(municipalityId, errand.id.toString()).then((res) => {
+            getErrand(errand.id.toString()).then((res) => {
               setErrand(res.errand);
               return res;
             });

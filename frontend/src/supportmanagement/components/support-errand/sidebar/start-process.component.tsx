@@ -2,9 +2,9 @@ import { useAppContext } from '@contexts/app.context';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import {
   Status,
-  setSupportErrandStatus,
-  setSupportErrandAdmin,
   getSupportErrandById,
+  setSupportErrandAdmin,
+  setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { useFormContext } from 'react-hook-form';
 
@@ -13,7 +13,7 @@ export const StartProcessComponent: React.FC<{
   onSubmit: () => Promise<any>;
   onError: () => void;
 }> = ({ disabled, onSubmit, onError }) => {
-  const { user, supportErrand, administrators, municipalityId, setSupportErrand } = useAppContext();
+  const { user, supportErrand, administrators, setSupportErrand } = useAppContext();
   const toast = useSnackbar();
   const { handleSubmit, reset } = useFormContext();
 
@@ -24,19 +24,13 @@ export const StartProcessComponent: React.FC<{
       if (!supportErrand.assignedUserId) {
         const currentAdmin = administrators.find((a) => a.adAccount === user.username);
         if (currentAdmin) {
-          await setSupportErrandAdmin(
-            supportErrand.id,
-            municipalityId,
-            currentAdmin.adAccount,
-            Status.ONGOING,
-            currentAdmin.adAccount
-          );
+          await setSupportErrandAdmin(supportErrand.id, currentAdmin.adAccount, Status.ONGOING);
         }
       }
 
-      await setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING);
+      await setSupportErrandStatus(supportErrand.id, Status.ONGOING);
 
-      const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+      const updated = await getSupportErrandById(supportErrand.id);
       setSupportErrand(updated.errand);
       reset(updated.errand);
 

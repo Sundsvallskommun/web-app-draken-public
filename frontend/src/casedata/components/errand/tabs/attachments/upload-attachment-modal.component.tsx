@@ -16,7 +16,6 @@ interface UploadAttachmentModalProps {
   isOpen: boolean;
   attachmentTypeExists: boolean;
   errand: IErrand;
-  municipalityId: string;
   saveErrand: () => Promise<boolean>;
   setErrand: (errand: IErrand) => void;
   closeHandler: () => void;
@@ -26,7 +25,6 @@ export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
   isOpen,
   attachmentTypeExists,
   errand,
-  municipalityId,
   saveErrand,
   setErrand,
   closeHandler,
@@ -45,8 +43,8 @@ export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
       const saved = await saveErrand();
       if (!saved) return;
 
-      await sendAttachments(municipalityId, errand.id, errand.errandNumber, newFiles);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await sendAttachments(errand.id, errand.errandNumber, newFiles);
+      const res = await getErrand(errand.id.toString());
       setErrand(res.errand);
 
       toastMessage({

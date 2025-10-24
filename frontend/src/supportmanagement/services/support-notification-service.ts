@@ -2,9 +2,9 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { apiService } from '@common/services/api-service';
 import { SupportErrand } from './support-errand-service';
 
-export const getSupportNotifications: (municipalityId: string) => Promise<SupportNotification[]> = (municipalityId) => {
+export const getSupportNotifications: () => Promise<SupportNotification[]> = () => {
   return apiService
-    .get<SupportNotification[]>(`supportnotifications/${municipalityId}`)
+    .get<SupportNotification[]>(`supportnotifications`)
     .then((res) => {
       return res.data;
     })
@@ -14,16 +14,15 @@ export const getSupportNotifications: (municipalityId: string) => Promise<Suppor
     });
 };
 
-export const acknowledgeSupportNotification: (
-  municipalityId: string,
-  notification: SupportNotification
-) => Promise<boolean> = (municipalityId, notification) => {
+export const acknowledgeSupportNotification: (notification: SupportNotification) => Promise<boolean> = (
+  notification
+) => {
   if (!notification.id) {
     return Promise.reject('Missing id on notification');
   }
   const data = { ...notification, ownerFullName: notification.ownerFullName || '', acknowledged: true };
   return apiService
-    .patch<boolean, SupportNotification>(`supportnotifications/${municipalityId}`, data)
+    .patch<boolean, SupportNotification>(`supportnotifications`, data)
     .then((res) => {
       return true;
     })
@@ -33,15 +32,12 @@ export const acknowledgeSupportNotification: (
     });
 };
 
-export const globalAcknowledgeSupportNotification: (
-  errand: SupportErrand,
-  municipalityId: string
-) => Promise<boolean> = (errand, municipalityId) => {
+export const globalAcknowledgeSupportNotification: (errand: SupportErrand) => Promise<boolean> = (errand) => {
   if (!errand.id) {
     return Promise.reject('Missing id on errand');
   }
   return apiService
-    .put(`supportnotifications/${municipalityId}/${errand.id}/global-acknowledged`, {})
+    .put(`supportnotifications/${errand.id}/global-acknowledged`, {})
     .then((res) => {
       return true;
     })

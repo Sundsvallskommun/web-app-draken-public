@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -21,24 +21,19 @@ export class SupportFacilitiesController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
-  @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
+  @Patch('/supporterrands/saveFacilities/:id')
   @OpenAPI({ summary: 'Save facilities by errand' })
   @UseBefore(authMiddleware)
-  async saveFacility(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Param('id') id: string,
-    @Body() facilities: string[],
-    @Res() response: any,
-  ) {
-    if (!municipalityId || !id) {
+  async saveFacility(@Req() req: RequestWithUser, @Param('id') id: string, @Body() facilities: string[], @Res() response: any) {
+    if (!id) {
+      logger.error('No errand id found, it is needed to save facilities.');
       throw new HttpException(400, 'Bad Request');
     }
 
     const PROPERTY_DESIGNATION_KEY = 'propertyDesignation';
     const PROPERTY_DESIGNATION_DISPLAY_NAME = 'Fastighetsbeteckning';
 
-    const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
+    const supportErrandUrl = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/parameters`;
     const supportBaseURL = apiURL(this.SERVICE);
     const existingParametersResponse = await this.apiService.get<Parameters>({ url: supportErrandUrl, baseURL: supportBaseURL }, req.user);
     const existingParameters = existingParametersResponse?.data;
@@ -50,10 +45,10 @@ export class SupportFacilitiesController {
     let url: string;
     let body: Parameters | string[] = [];
     if (existingParameters.find(p => p.key === PROPERTY_DESIGNATION_KEY)) {
-      url = `${municipalityId}/${this.namespace}/errands/${id}/parameters/propertyDesignation`;
+      url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/parameters/propertyDesignation`;
       body = facilities;
     } else {
-      url = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
+      url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/parameters`;
       body = [
         ...existingParameters,
         {

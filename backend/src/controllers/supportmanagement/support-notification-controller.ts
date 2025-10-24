@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Notification as SupportNotification } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -61,31 +61,26 @@ export class SupportNotificationController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
-  @Get('/supportnotifications/:municipalityId')
+  @Get('/supportnotifications/')
   @OpenAPI({ summary: 'Get support notifications' })
   @UseBefore(authMiddleware)
-  async getSupportNotifications(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<SupportNotification[]> {
+  async getSupportNotifications(@Req() req: RequestWithUser, @Res() response: any): Promise<SupportNotification[]> {
     const queryObject = {
       ownerId: req.user.username,
     };
     const queryString = new URLSearchParams(queryObject).toString();
-    const url = `${municipalityId}/${this.namespace}/notifications?${queryString}`;
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/notifications?${queryString}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<SupportNotification[]>({ url, baseURL }, req.user);
     return response.status(200).send(res.data);
   }
 
-  @Post('/supportnotifications/:municipalityId')
+  @Post('/supportnotifications/')
   @HttpCode(201)
   @OpenAPI({ summary: 'Create a support notification' })
   @UseBefore(authMiddleware, validationMiddleware(SupportNotificationDto, 'body'))
   async createSupportNotification(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @Body() data: SupportNotificationDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -93,12 +88,8 @@ export class SupportNotificationController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to create notification.');
-      logger.error('No municipality id found, it is needed to create notification.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/notifications`;
+
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/notifications`;
     const baseURL = apiURL(this.SERVICE);
     const body: SupportNotificationDto = {
       ...data,
@@ -111,13 +102,12 @@ export class SupportNotificationController {
     return response.status(200).send(res.data);
   }
 
-  @Patch('/supportnotifications/:municipalityId')
+  @Patch('/supportnotifications/')
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a support notification' })
   @UseBefore(authMiddleware)
   async updateSupportNotification(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @Body() data: SupportNotificationDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -125,12 +115,8 @@ export class SupportNotificationController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to update notification.');
-      logger.error('No municipality id found, it is needed to update notification.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/notifications`;
+
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/notifications`;
     const baseURL = apiURL(this.SERVICE);
     const body: SupportNotificationDto[] = [
       {
@@ -145,13 +131,12 @@ export class SupportNotificationController {
     return response.status(200).send(res.data);
   }
 
-  @Put('/supportnotifications/:municipalityId/:errandId/global-acknowledged')
+  @Put('/supportnotifications/:errandId/global-acknowledged')
   @HttpCode(201)
   @OpenAPI({ summary: 'Global-acknowledged all support notification for errand' })
   @UseBefore(authMiddleware)
   async globalAcknowledgedSupportNotification(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @Param('errandId') errandId: string,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -159,12 +144,8 @@ export class SupportNotificationController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, it is needed to set global acknowledged.');
-      logger.error('No municipality id found, it is needed to set global acknowledged.');
-      return response.status(400).send('Municipality id missing');
-    }
-    const url = `${municipalityId}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
+
+    const url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put({ url, baseURL }, req.user).catch(e => {
       logger.error('Error when global acknowledging support notification');

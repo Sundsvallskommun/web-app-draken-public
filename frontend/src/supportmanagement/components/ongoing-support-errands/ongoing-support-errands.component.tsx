@@ -58,7 +58,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     setSupportErrand,
     setSupportAdmins,
     supportAdmins,
-    municipalityId,
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
@@ -84,7 +83,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
 
-  const errands = useSupportErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
+  const errands = useSupportErrands(page, pageSize, filterObject, sortObject, extraFilter);
 
   const initialFocus = useRef(null);
 
@@ -177,7 +176,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   useEffect(() => {
     const sortData = store.get('sort');
     if (attestationEnabled(user)) {
-      getBillingRecords(municipalityId, 0, pageSize, {}, { modified: 'desc' }).then(setBillingRecords);
+      getBillingRecords(0, pageSize, {}, { modified: 'desc' }).then(setBillingRecords);
     }
 
     if (sortData) {

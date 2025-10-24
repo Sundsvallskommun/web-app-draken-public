@@ -8,7 +8,7 @@ import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useState } from 'react';
 
 export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const { errand, setErrand } = useAppContext();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +36,7 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
       return;
     }
 
-    return setErrandStatus(errand.id, municipalityId, status)
+    return setErrandStatus(errand.id, status)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -45,7 +45,7 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
       })
       .catch(() => {
         showSaveError();
