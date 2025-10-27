@@ -214,35 +214,35 @@ redigera env-filer efter behov. URLer, nycklar och cert behöver fyllas i korrek
 För KS:
 
 ```
-cd frontend
+cd admin
 cp .env.kc-example .env.kc
 ```
 
 För MEX:
 
 ```
-cd frontend
+cd admin
 cp .env.mex-example .env.mex
 ```
 
 För PT:
 
 ```
-cd frontend
+cd admin
 cp .env.pt-example .env.pt
 ```
 
 För LOP:
 
 ```
-cd frontend
+cd admin
 cp .env.lop-example .env.lop
 ```
 
 För ROB:
 
 ```
-cd frontend
+cd admin
 cp .env.rob-example .env.rob
 ```
 
