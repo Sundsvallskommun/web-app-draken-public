@@ -107,7 +107,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon as any} />}>
+        <Disclosure
+          variant="alt"
+          header={label}
+          data-cy={`section-${label}-disclosure`}
+          icon={<LucideIcon name={icon as any} />}
+        >
           {isAppeal && label === 'Övergripande' && (
             <div className="px-0">
               <FormControl className="w-full" key="relatesTo">
@@ -172,7 +177,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               </>
             ) : null}
             {appConfig.features.useFacilities ? (
-              <Disclosure variant="alt" header="Fastigheter" icon={<LucideIcon name="map-pin" />}>
+              <Disclosure
+                variant="alt"
+                header="Fastigheter"
+                data-cy="facilities-disclosure"
+                icon={<LucideIcon name="map-pin" />}
+              >
                 <Facilities
                   facilities={realEstates}
                   setUnsaved={props.setUnsaved}

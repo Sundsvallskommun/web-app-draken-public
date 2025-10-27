@@ -10,7 +10,7 @@ export const mockOrganization = {
       addressArea: 'Test Street',
       postalCode: '12345',
     },
-    phoneNumber: '00000000',
+    phoneNumber: '',
     municipality: {
       municipalityName: 'Stockholm kommun',
       municipalityCode: '0180',

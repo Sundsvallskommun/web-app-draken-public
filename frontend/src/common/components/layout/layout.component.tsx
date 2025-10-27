@@ -16,6 +16,7 @@ import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
+import { AngeSymbol } from '@styles/ange-symbol';
 
 export default function Layout({ title, children }) {
   const {
@@ -45,7 +46,7 @@ export default function Layout({ title, children }) {
       <Logo
         variant="service"
         title={'Draken'}
-        symbol={appConfig.symbol}
+        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
@@ -59,7 +60,11 @@ export default function Layout({ title, children }) {
           appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
+        <Logo
+          variant="symbol"
+          symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+          className="h-40"
+        />
       </a>
       <span className="text-large">
         {appConfig.isSupportManagement ? (
