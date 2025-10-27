@@ -1,5 +1,4 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { Priority } from '@casedata/interfaces/priority';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
@@ -99,14 +98,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
     setValue('description', errand.description || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
-
-  useEffect(() => {
-    if (!Array.isArray(diagnoses)) return;
-    if (!diagnoses.includes('PALLIATIVE_CARE')) return;
-    if (priority === Priority.HIGH) return;
-
-    setValue('priority', Priority.HIGH, { shouldDirty: true });
-  }, [diagnoses, priority, setValue]);
 
   const renderSection = (fields: UppgiftField[], label: string, icon: IconName) => {
     const isAppeal = errand.caseType === 'APPEAL';

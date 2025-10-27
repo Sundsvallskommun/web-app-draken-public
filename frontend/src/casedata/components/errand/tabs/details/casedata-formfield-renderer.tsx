@@ -61,14 +61,14 @@ const dependencyMatches = (candidate: unknown, expected: string | string[]) => {
   const expectedValues = Array.isArray(expected) ? expected : [expected];
 
   if (Array.isArray(candidate)) {
-    return candidate.some((value) => expectedValues.includes(String(value)));
+    return candidate.some((value) => expectedValues.includes(String(value).trim()));
   }
 
   if (candidate === null || candidate === undefined) {
     return false;
   }
 
-  return expectedValues.includes(String(candidate));
+  return expectedValues.includes(String(candidate).trim());
 };
 
 const toTrimmedString = (value: unknown): string => {
@@ -133,18 +133,12 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
     [detail.dependsOn]
   );
 
-  const dependencyValues = dependencyFieldKeys.length ? watch(dependencyFieldKeys) : undefined;
+  const allFormValues = watch();
 
   const dependentSatisfied =
     detail.dependsOn?.every((dep, index) => {
       const depKey = dependencyFieldKeys[index];
-      const watchedValue =
-        Array.isArray(dependencyValues) && dependencyFieldKeys.length > 1
-          ? dependencyValues[index]
-          : dependencyFieldKeys.length === 1
-          ? dependencyValues
-          : undefined;
-      const depValue = watchedValue === undefined ? getValues(depKey) : watchedValue;
+      const depValue = allFormValues?.[depKey] ?? getValues(depKey);
 
       return dependencyMatches(depValue, dep.value);
     }) ?? true;
@@ -156,7 +150,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
   const error = get(errors, fieldKey)?.message;
   const isComboboxField = detail.formField.type === 'combobox';
 
-  if (detail.formField.type === 'checkbox' && isVisible) {
+  if (detail.formField.type === 'checkbox') {
     register(fieldKey, validationRules);
   }
 

@@ -49,8 +49,6 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  const form = useFormContext<IErrand>();
-
   const {
     register,
     watch,
