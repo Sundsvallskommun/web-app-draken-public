@@ -60,40 +60,6 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   ...documentMimeTypes,
 ];
 
-export const getMEXAttachmentKey = (
-  label: string
-): keyof typeof MEXAttachmentLabels | keyof typeof MEXLegacyAttachmentLabels | undefined => {
-  const labelToKeyMap: Record<string, keyof typeof MEXAllAttachmentLabels> = Object.entries(
-    MEXAllAttachmentLabels
-  ).reduce((acc, [key, value]) => {
-    acc[value] = key as keyof typeof MEXAllAttachmentLabels;
-    return acc;
-  }, {} as Record<string, keyof typeof MEXAllAttachmentLabels>);
-
-  return labelToKeyMap[label];
-};
-
-export const getPTAttachmentKey: (label: string) => PTAttachmentCategory = (label) => {
-  switch (label) {
-    case 'Passfoto':
-      return 'PASSPORT_PHOTO';
-    case 'Läkarintyg':
-      return 'MEDICAL_CONFIRMATION';
-    case 'Underskrift':
-      return 'SIGNATURE';
-    case 'Polisanmälan':
-      return 'POLICE_REPORT';
-    case 'Ärende (Skannad ansökan)':
-      return 'ERRAND_SCANNED_APPLICATION';
-    case 'Delgivningskvitto':
-      return 'SERVICE_RECEIPT';
-    case 'Övriga bilagor':
-      return 'OTHER_ATTACHMENT';
-    default:
-      return undefined;
-  }
-};
-
 export const getAttachmentLabel = (attachment: Attachment) =>
   isMEX() ? MEXAttachmentLabels[attachment?.category] || 'Okänt' : PTAttachmentLabels[attachment?.category] || 'Okänt';
 
@@ -120,9 +86,10 @@ export const onlyOneAllowed: (cat: MEXAttachmentCategory | PTAttachmentCategory)
 export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (errand) => {
   // Errand may only have max one passport photo and max one signature before moving to Utredning phase
   const uniqueAttachmentsOnlyOnce = uniqueAttachments.every(
-    (u) =>
+    (attachmentkey) =>
       errand.attachments.filter(
-        (a) => (isMEX() ? (a.category as MEXAttachmentCategory) : (a.category as PTAttachmentCategory)) === u
+        (a) =>
+          (isMEX() ? (a.category as MEXAttachmentCategory) : (a.category as PTAttachmentCategory)) === attachmentkey
       ).length < 2
   );
   return uniqueAttachmentsOnlyOnce;

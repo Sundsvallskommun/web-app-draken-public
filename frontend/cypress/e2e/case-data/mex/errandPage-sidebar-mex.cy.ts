@@ -1,6 +1,5 @@
 /// <reference types="cypress" />
 
-import { useAppContext } from '@contexts/app.context';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
@@ -16,7 +15,6 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
-  const { featureFlags } = useAppContext();
   describe('Errand page', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/messages/*', mockMessages);
@@ -211,7 +209,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('manages Exports', () => {
-      if (featureFlags?.useErrandExport) {
+      // if (featureFlags?.useErrandExport) {
+      //TODO: Fix
+      if (true) {
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
         cy.get('[data-cy="basicInformation"]').should('exist');
         cy.get('[data-cy="export-button"]').should('exist').click();

@@ -10,7 +10,7 @@ import {
 } from '@common/services/casestatus-service';
 import { sortBy } from '@common/services/helper-service';
 import {
-  CreateRelation,
+  createRelation,
   deleteRelation,
   getSourceRelations,
   getTargetRelations,
@@ -54,7 +54,13 @@ export const LinkedErrandsDisclosure: React.FC<{
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
       const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
-      CreateRelation(municipalityId, errand.id.toString(), errand.errandNumber, targetErrand)
+      createRelation(
+        municipalityId,
+        errand.id.toString(),
+        errand.errandNumber,
+        targetErrand,
+        featureFlags?.isSupportManagement
+      )
         .then(async () => {
           const relatedErrands = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
           setRelations(relatedErrands);

@@ -1,9 +1,7 @@
+import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
-import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
-import { useAppContext } from '@contexts/app.context';
-
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -26,13 +24,14 @@ const formatServiceName = (str: string) => {
   return str.toLocaleLowerCase();
 };
 
-export function CreateRelation(
+export function createRelation(
   municipalityId: string,
   sourceId: string,
   sourceErrandNumber: string,
-  targetErrand: CaseStatusResponse
+  targetErrand: CaseStatusResponse,
+  //TODO: Refactor?
+  isSupportManagement?: boolean
 ) {
-  const { featureFlags } = useAppContext();
   const url = `${municipalityId}/relations`;
 
   const body: Partial<Relation> = {
@@ -40,7 +39,7 @@ export function CreateRelation(
     source: {
       resourceId: sourceId,
       type: sourceErrandNumber,
-      service: featureFlags?.isSupportManagement ? 'supportmanagement' : 'case-data',
+      service: isSupportManagement ? 'supportmanagement' : 'case-data',
       namespace: '',
     },
     target: {
