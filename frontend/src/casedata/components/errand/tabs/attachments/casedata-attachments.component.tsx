@@ -13,7 +13,6 @@ import {
   onlyOneAllowed,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';
 import { mapAttachmentToUploadFile, validAttachment } from '@common/services/attachment-service';
@@ -27,6 +26,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { EditAttachmentModal } from './edit-attachment-modal.component';
 import { UploadAttachmentModal } from './upload-attachment-modal.component';
+import { imageMimeTypes } from '@common/utils/mimeTypes';
 export interface CasedataAttachmentFormModel {
   files: UploadFile[];
   newFiles: UploadFile[];

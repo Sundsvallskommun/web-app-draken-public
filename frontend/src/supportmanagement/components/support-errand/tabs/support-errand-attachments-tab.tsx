@@ -1,7 +1,8 @@
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
-import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
+import { documentMimeTypes, imageMimeTypes } from '@common/utils/mimeTypes';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -23,7 +24,6 @@ import {
   SingleSupportAttachment,
   SupportAttachment,
   deleteSupportAttachment,
-  documentMimeTypes,
   getSupportAttachment,
   saveSupportAttachments,
 } from '@supportmanagement/services/support-attachment-service';

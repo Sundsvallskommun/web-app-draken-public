@@ -1,5 +1,5 @@
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { apiService } from '@common/services/api-service';
+import { documentMimeTypes, imageMimeTypes } from '@common/utils/mimeTypes';
 import { toBase64 } from '@common/utils/toBase64';
 
 export interface SupportAttachment {
@@ -38,21 +38,6 @@ export type AttachmentCategory =
 
 export const MAX_FILE_SIZE_MB = 50;
 
-export const documentMimeTypes = [
-  'application/pdf',
-  'application/rtf',
-  'application/msword',
-  'application/x-tika-msoffice',
-  'text/plain',
-  'application/vnd.ms-excel',
-  'application/vnd.ms-outlook',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.oasis.opendocument.text',
-  'application/vnd.oasis.opendocument.spreadsheet',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-];
-
 export const ACCEPTED_UPLOAD_FILETYPES = [
   'bmp',
   'gif',
@@ -80,31 +65,6 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];
-
-export const isImageAttachment: (a: SupportAttachment) => boolean = (a) => {
-  return imageMimeTypes.includes(a.mimeType);
-};
-
-export const getAttachmentKey: (label: string) => AttachmentCategory = (label) => {
-  switch (label) {
-    case 'Passfoto':
-      return 'PASSPORT_PHOTO';
-    case 'Läkarintyg':
-      return 'MEDICAL_CONFIRMATION';
-    case 'Underskrift':
-      return 'SIGNATURE';
-    case 'Polisanmälan':
-      return 'POLICE_REPORT';
-    case 'Ärende (Skannad ansökan)':
-      return 'ERRAND_SCANNED_APPLICATION';
-    case 'Delgivningskvitto':
-      return 'SERVICE_RECEIPT';
-    case 'Övriga bilagor':
-      return 'OTHER_ATTACHMENT';
-    default:
-      return undefined;
-  }
-};
 
 export const getSupportAttachment: (
   errandId: string,

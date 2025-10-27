@@ -8,16 +8,7 @@ import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { UploadCloud } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
-
-export const imageMimeTypes = [
-  'image/jpeg',
-  'image/gif',
-  'image/png',
-  'image/tiff',
-  'image/bmp',
-  'image/heic',
-  'image/heif',
-];
+import { imageMimeTypes } from '@common/utils/mimeTypes';
 
 const FileUpload: React.FC<{
   dragDrop: boolean;

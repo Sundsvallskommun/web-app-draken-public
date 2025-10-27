@@ -8,7 +8,7 @@ import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { imageMimeTypes } from '@common/utils/mimeTypes';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page attachments tab', () => {

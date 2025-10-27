@@ -1,35 +1,18 @@
 import {
   Attachment,
-  MEXAllAttachmentLabels,
   MEXAttachmentCategory,
   MEXAttachmentLabels,
-  MEXLegacyAttachmentLabels,
   PTAttachmentCategory,
   PTAttachmentLabels,
 } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
+import { documentMimeTypes, imageMimeTypes } from '@common/utils/mimeTypes';
 import { UploadFile } from '@sk-web-gui/react';
 
 export const MAX_FILE_SIZE_MB = 50;
-
-export const documentMimeTypes = [
-  'application/pdf',
-  'application/rtf',
-  'application/msword',
-  'application/x-tika-msoffice',
-  'text/plain',
-  'application/vnd.ms-excel',
-  'application/vnd.ms-outlook',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.oasis.opendocument.text',
-  'application/vnd.oasis.opendocument.spreadsheet',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-];
 
 export const ACCEPTED_UPLOAD_FILETYPES = [
   'bmp',
