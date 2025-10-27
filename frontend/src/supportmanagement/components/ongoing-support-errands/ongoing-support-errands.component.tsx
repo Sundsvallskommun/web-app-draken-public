@@ -1,6 +1,5 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
-import { attestationEnabled } from '@common/services/feature-flag-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import store from '@supportmanagement/services/storage-service';
@@ -21,6 +20,7 @@ import SupportManagementFiltering, {
   SupportManagementValues,
 } from '../supportmanagement-filtering/supportmanagement-filtering.component';
 import { SupportErrandsTable } from './components/supporterrands-table.component';
+import { attestationEnabled } from '@common/services/featureflags-service';
 
 export interface TableForm {
   sortOrder: 'asc' | 'desc';
