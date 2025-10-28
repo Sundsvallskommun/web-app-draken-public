@@ -5,6 +5,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { Permissions } from '@/interfaces/users.interface';
 import ApiService from '@/services/api.service';
+import { logger } from '@/utils/logger';
 import authMiddleware from '@middlewares/auth.middleware';
 import { Controller, Get, Header, Param, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -34,6 +35,7 @@ export class UserController {
     }
 
     console.error('_____PERMISSIONS:', permissions);
+    logger.error('_____PERMISSIONS:', permissions);
 
     const userData: UserData = {
       name,
