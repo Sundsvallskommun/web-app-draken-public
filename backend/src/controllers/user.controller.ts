@@ -34,9 +34,6 @@ export class UserController {
       throw new HttpException(400, 'Bad Request');
     }
 
-    console.error('_____PERMISSIONS:', permissions);
-    logger.error(`--------canUSEADMINPANEL------------: ${permissions.canUseAdminPanel}`);
-
     const userData: UserData = {
       name,
       firstName,

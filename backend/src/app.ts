@@ -107,8 +107,6 @@ const samlStrategy = new Strategy(
     const groups = profile['http://schemas.xmlsoap.org/claims/Group']?.join(',') ?? profile['groups'];
     const username = profile['urn:oid:0.9.2342.19200300.100.1.1'];
 
-    console.log('groups', groups);
-
     if (!givenName || !sn || !email || !groups || !username) {
       logger.error(
         'Could not extract necessary profile data fields from the IDP profile. Does the Profile interface match the IDP profile response? The profile response may differ, for example Onegate vs ADFS.',

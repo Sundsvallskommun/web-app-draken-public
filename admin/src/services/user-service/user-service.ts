@@ -21,7 +21,6 @@ const getMe: () => Promise<ServiceResponse<User>> = () => {
   return apiService
     .get<ApiResponse<User>>('me')
     .then((res) => {
-      console.log('API response:', res);
       return { data: handleSetUserResponse(res.data) };
     })
     .catch((e) => ({
