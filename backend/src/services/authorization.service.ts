@@ -112,6 +112,7 @@ const roles = new Map<InternalRole, Partial<Permissions>>([
  */
 export const getPermissions = (groups: InternalRole[] | string[], internalGroups = false): Permissions => {
   const permissions: Permissions = defaultPermissions();
+  console.log('___PERM', permissions);
   groups.forEach(group => {
     const groupLower = group.toLowerCase();
     const role = internalGroups ? (groupLower as InternalRole) : (roleADMapping[groupLower] as InternalRole);
@@ -124,6 +125,8 @@ export const getPermissions = (groups: InternalRole[] | string[], internalGroups
       });
     }
   });
+
+  console.log('___PERM', permissions);
   return permissions;
 };
 
@@ -144,5 +147,6 @@ export const getRole = (groups: string[]) => {
     }
   });
 
+  console.log('roles', roles);
   return roles.sort((a, b) => RoleOrderEnum[a] - RoleOrderEnum[b])[0];
 };
