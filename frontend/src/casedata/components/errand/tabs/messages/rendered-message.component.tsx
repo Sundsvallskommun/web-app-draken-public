@@ -22,7 +22,10 @@ export const RenderedMessage: React.FC<{
 }> = ({ message, onSelect, setShowMessageComposer, root = false, children }) => {
   const { user, errand, municipalityId } = useAppContext();
   const [allowed, setAllowed] = useState<boolean>(false);
-  const [expanded, setExpanded] = useState<boolean>(!message?.children?.length ? true : false);
+
+  // Changed logic for expanded message to see if it solve problem with unread message counter
+  // const [expanded, setExpanded] = useState<boolean>(!message?.children?.length ? true : false);
+  const [expanded, setExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
