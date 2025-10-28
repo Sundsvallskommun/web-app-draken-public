@@ -33,6 +33,8 @@ export class UserController {
       throw new HttpException(400, 'Bad Request');
     }
 
+    console.log('_____PERMISSIONS:', permissions);
+
     const userData: UserData = {
       name,
       firstName,

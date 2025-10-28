@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 export default function Index() {
   const router = useRouter();
   useEffect(() => {
-    router.push('/admin');
+    router.push('/start');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <LoaderFullScreen />;
