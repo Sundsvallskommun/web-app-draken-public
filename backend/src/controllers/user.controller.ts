@@ -35,7 +35,7 @@ export class UserController {
     }
 
     console.error('_____PERMISSIONS:', permissions);
-    // logger.error('_____LOGGERPERMISSIONS:', permissions);
+    logger.error(`--------canUSEADMINPANEL------------: ${permissions.canUseAdminPanel}`);
 
     const userData: UserData = {
       name,
