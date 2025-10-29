@@ -327,7 +327,6 @@ export enum SupportStakeholderRole {
   PRIMARY = 'PRIMARY',
   CONTACT = 'CONTACT',
 }
-
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
@@ -336,9 +335,18 @@ export class SupportErrandController {
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
 
+  // Accepted query parameters
+  SAFE_CHARS_REGEX = /[^\p{L}\p{N}\s.\-_,:]/gu;
+
+  sanitizeQuery = (s?: string): string => {
+    return (s ?? '').normalize('NFKC').replace(this.SAFE_CHARS_REGEX, '').replace(/\s+/g, ' ').trim();
+  };
+
+  stripPhoneNoise = (s: string): string => s.replace(/\+/g, '');
+
   private async buildErrandFilter(
     req: RequestWithUser,
-    query?: string,
+    queryRaw?: string,
     stakeholders?: string,
     priority?: string,
     category?: string,
@@ -352,15 +360,19 @@ export class SupportErrandController {
     start?: string,
     end?: string,
   ): Promise<string> {
-    const filterList = [];
-    if (query) {
-      let guidRes = null;
-      const isPersonNumber = luhnCheck(query);
-      if (isPersonNumber) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+    const filterList: string[] = [];
+
+    if (queryRaw) {
+      const query = this.sanitizeQuery(queryRaw);
+      const qPhone = this.stripPhoneNoise(query);
+
+      let guidRes: { data?: string } | null = null;
+      if (luhnCheck(queryRaw)) {
+        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${queryRaw}/guid`;
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(() => null);
       }
-      let queryFilter = `(`;
+
+      let queryFilter = '(';
       queryFilter += `description~'*${query}*'`;
       queryFilter += ` or title~'*${query}*'`;
       queryFilter += ` or errandNumber~'*${query}*'`;
@@ -369,18 +381,18 @@ export class SupportErrandController {
       queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query.replace('+', '')}*' and stakeholders.contactChannels.type~'${
-        ContactChannelType.PHONE
-      }')`;
-      queryFilter += ` or exists(stakeholders.organizationName ~ '*${query}*')`;
-      queryFilter += ` or exists(stakeholders.externalId ~ '*${query}*')`;
+      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${qPhone}*' and stakeholders.contactChannels.type~'${ContactChannelType.PHONE}')`;
+      queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.externalId~'*${query}*')`;
       queryFilter += ` or exists(parameters.values~'*${query}*')`;
-      if (guidRes !== null) {
-        queryFilter += ` or exists(stakeholders.externalId ~ '*${guidRes.data}*')`;
+      if (guidRes?.data) {
+        const g = this.sanitizeQuery(guidRes.data);
+        queryFilter += ` or exists(stakeholders.externalId~'*${g}*')`;
       }
       queryFilter += ')';
       filterList.push(queryFilter);
     }
+
     if (stakeholders) {
       filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
     }
@@ -400,32 +412,17 @@ export class SupportErrandController {
       const labelCategoryList = labelCategory?.split(',');
       const labelTypeList = labelType?.split(',');
       const labelSubTypeList = labelSubType?.split(',');
-      if (labelCategory) {
-        if (labelCategoryList.length > 0) {
-          const ss = labelCategoryList
-            .join(',')
-            .split(',')
-            .map(s => `exists(labels:'${s}')`);
-          filterList.push(`(${ss.join(' or ')})`);
-        }
+      if (labelCategoryList && labelCategoryList.length > 0) {
+        const ss = labelCategoryList.map(s => `exists(labels:'${s}')`);
+        filterList.push(`(${ss.join(' or ')})`);
       }
-      if (labelType) {
-        if (labelTypeList.length > 0) {
-          const ss = labelTypeList
-            .join(',')
-            .split(',')
-            .map(s => `exists(labels:'${s}')`);
-          filterList.push(`(${ss.join(' or ')})`);
-        }
+      if (labelTypeList && labelTypeList.length > 0) {
+        const ss = labelTypeList.map(s => `exists(labels:'${s}')`);
+        filterList.push(`(${ss.join(' or ')})`);
       }
-      if (labelSubType) {
-        if (labelSubTypeList.length > 0) {
-          const ss = labelSubTypeList
-            .join(',')
-            .split(',')
-            .map(s => `exists(labels:'${s}')`);
-          filterList.push(`(${ss.join(' or ')})`);
-        }
+      if (labelSubTypeList && labelSubTypeList.length > 0) {
+        const ss = labelSubTypeList.map(s => `exists(labels:'${s}')`);
+        filterList.push(`(${ss.join(' or ')})`);
       }
     }
     if (channel) {
@@ -446,6 +443,7 @@ export class SupportErrandController {
       const e = toOffsetDateTime(dayjs(end).endOf('day'));
       filterList.push(`created<'${e}'`);
     }
+
     return filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
   }
 
