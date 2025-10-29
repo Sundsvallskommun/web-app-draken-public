@@ -47,6 +47,7 @@ export interface UppgiftField {
     | { type: 'date'; options?: { min?: string; max?: string } }
     | { type: 'datetime-local'; options?: { min?: string; max?: string } }
     | { type: 'textarea'; options?: { placeholder?: string } }
+    | { type: 'combobox'; options: OptionBase[] }
     | { type: 'select'; options: OptionBase[] }
     | { type: 'radio'; options: OptionBase[]; inline?: boolean }
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
@@ -54,10 +55,11 @@ export interface UppgiftField {
   section: string;
   dependsOn?: {
     field: string;
-    value: string;
+    value: string | string[];
     validationMessage?: string;
   }[];
   description?: string;
+  required?: boolean;
 }
 
 const caseTypeTemplateAlias: Record<string, string> = {
@@ -148,8 +150,9 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
       const templateField = caseTypeTemplate?.find((f) => f.field === field);
 
       if (caseType && field && templateField) {
-        const { label, formField, section, dependsOn } = templateField;
+        const { label, formField, section, dependsOn, description, required } = templateField;
         const isCheckbox = formField.type === 'checkbox';
+        const isMultiValueField = isCheckbox || Array.isArray(templateField.value);
         // If the field is a checkbox, its values are in a string formatted
         // comma-separated list in the first element of the param.values array
         const rawValues = Array.isArray(param.values) ? param.values : [];
@@ -158,7 +161,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
           .map((v) => v.trim())
           .filter(Boolean);
 
-        const value = isCheckbox ? normalized : rawValues[0] ?? '';
+        const value = isMultiValueField ? normalized : rawValues[0] ?? '';
 
         obj[caseType] = obj[caseType] || [];
         const data: UppgiftField = {
@@ -168,6 +171,8 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
           formField,
           section,
           dependsOn,
+          description,
+          required,
         };
 
         const a: UppgiftField[] = obj[caseType];
@@ -187,22 +192,22 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
 };
 
 export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
-  const nullFilteredData: ExtraParameter[] = data
-    .filter((d) => d.values[0] !== null && typeof d.values[0] !== 'undefined')
-    .map((param) => ({
-      ...param,
-      values: param.values.flatMap((v) => (typeof v === 'string' ? [v] : [])),
-    }));
+  const sanitizedData: ExtraParameter[] = data.map((param) => ({
+    ...param,
+    values: (param.values ?? [])
+      .map((value) => (value === null || typeof value === 'undefined' ? '' : String(value).trim()))
+      .filter((value) => value !== ''),
+  }));
 
-  let newExtraParameters = [...errand.extraParameters];
-  nullFilteredData.forEach((p) => {
-    newExtraParameters = replaceExtraParameter(newExtraParameters, p);
-  });
+  const mergedExtraParameters = errand.extraParameters
+    .filter((existing) => !sanitizedData.some((param) => param.key === existing.key))
+    .concat(sanitizedData);
+
   return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(
     `casedata/${municipalityId}/errands/${errand.id}`,
     {
       id: errand.id.toString(),
-      extraParameters: newExtraParameters,
+      extraParameters: mergedExtraParameters,
     }
   );
 };
