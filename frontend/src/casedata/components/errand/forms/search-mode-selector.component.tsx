@@ -65,9 +65,8 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
             data-cy={`search-person-${inName}`}
             size="sm"
             className="mr-sm"
-            name={`stakeholderType-${id}`}
-            id={`searchPerson-${id}-${inName}`}
             value={'PERSON'}
+            key={'PERSON'}
             checked={searchMode === 'person'}
             onChange={() => {}}
             onClick={(e) => {
@@ -83,9 +82,8 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
             data-cy={`search-enterprise-${id}-${inName}`}
             size="sm"
             className="mr-sm"
-            name={`stakeholderType-${id}`}
-            id={`searchEnterprise-${id}-${inName}`}
             value={'ENTERPRISE'}
+            key={'ENTERPRISE'}
             onChange={() => {}}
             checked={searchMode === 'enterprise'}
             onClick={(e) => {
@@ -101,9 +99,8 @@ export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
             data-cy={`search-organization-${inName}`}
             size="sm"
             className="mr-sm"
-            name={`stakeholderType-${id}`}
-            id={`searchOrganization-${id}-${inName}`}
             value={'ORGANIZATION'}
+            key={'ORGANIZATION'}
             onChange={() => {}}
             checked={searchMode === 'organization'}
             onClick={(e) => {

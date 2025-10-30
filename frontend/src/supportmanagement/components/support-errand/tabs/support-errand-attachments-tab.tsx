@@ -54,9 +54,7 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachmentList: [],
 };
 
-export const SupportErrandAttachmentsTab: React.FC<{
-  update: () => void;
-}> = (props) => {
+export const SupportErrandAttachmentsTab: React.FC<{}> = () => {
   const { supportErrand, setSupportErrand, supportAttachments, user, municipalityId } = useAppContext();
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
   const [addNewAttachment, setAddNewAttachment] = useState(false);
@@ -205,7 +203,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
       if (confirmed) {
         return deleteSupportAttachment(supportErrand?.id.toString(), municipalityId, selectedAttachment.id)
           .then(() => {
-            props.update();
             reset();
           })
           .then(() => {
@@ -257,7 +254,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   );
 
   return (
-    <div className="w-full py-40 px-48 gap-32">
+    <>
       <div className="w-full flex justify-between items-center flex-wrap h-40">
         <h2 className="text-h2-md max-medium-device:text-h4-md">Bilagor</h2>
         <div>
@@ -320,7 +317,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     }));
                     setIsLoading(true);
                     saveSupportAttachments(supportErrand.id.toString(), municipalityId, attachmentsData)
-                      .then(() => props.update())
                       .then(() => setAddNewAttachment(false))
                       .then(() => setSelectedAttachment(null))
                       .then(() => setIsLoading(false))
@@ -475,6 +471,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
         <Spinner />
       )}
       {editAttachmentModal}
-    </div>
+    </>
   );
 };

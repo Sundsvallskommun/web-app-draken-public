@@ -63,7 +63,6 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
               disabled={disabled}
               form={form}
               contact={contact}
-              id={id}
               label={label}
               setSearchMode={setSearchMode}
               setSelectedUser={setSelectedUser}

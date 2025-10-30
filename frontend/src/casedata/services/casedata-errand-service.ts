@@ -46,10 +46,7 @@ export const municipalityIds = [
   { label: 'Ånge', id: '2260' },
 ];
 
-export const emptyMeaErrandList: ErrandsData = {
-  errands: [],
-  labels: [],
-};
+export const defaultMunicipality = municipalityIds.find((m) => m.id === process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
 
 export const emptyErrandList: ErrandsData = {
   errands: [],
@@ -195,18 +192,6 @@ export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = 
   } else {
     return errand?.status === ErrandStatus.ArendeAvslutat;
   }
-};
-
-const defaultMunicipality = municipalityIds.find((m) => m.label === 'Sundsvall');
-
-export const emptyErrand: Partial<IErrand> = {
-  caseType: '',
-  channel: Channels.WEB_UI,
-  description: '',
-  municipalityId: defaultMunicipality.id,
-  phase: ErrandPhase.aktualisering,
-  priority: Priority.MEDIUM,
-  status: { statusType: ErrandStatus.ArendeInkommit },
 };
 
 export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId) => {

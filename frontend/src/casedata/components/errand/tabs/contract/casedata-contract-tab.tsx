@@ -48,11 +48,6 @@ import { KopeAvtal } from './kopeavtal';
 import { Lagenhetsarrende } from './lagenhetsarrende';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 
-interface CasedataContractProps {
-  update: () => void;
-  setUnsaved: Dispatch<SetStateAction<boolean>>;
-}
-
 interface ContractStatus {
   status?: 'DRAFT' | 'ACTIVE';
 }
@@ -66,14 +61,20 @@ interface ContractStatus {
 // has to decide on a common interface for all form fields, and then create a function that
 // generates the form fields based on this interface.
 
-export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
+export const CasedataContractTab: React.FC<{}> = () => {
   const {
     municipalityId,
     errand,
     setErrand,
     user,
-  }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
-    useAppContext();
+    setUnsavedContract,
+  }: {
+    municipalityId: string;
+    errand: IErrand;
+    setErrand: Dispatch<SetStateAction<IErrand>>;
+    user: User;
+    setUnsavedContract: Dispatch<SetStateAction<boolean>>;
+  } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
@@ -165,7 +166,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       })
       .then((res) => {
         setIsLoading(undefined);
-        props.setUnsaved(false);
+        setUnsavedContract(false);
         getErrand(municipalityId, errand.id.toString())
           .then((res) => {
             setErrand(res.errand);
@@ -270,211 +271,204 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     <FormProvider {...contractForm}>
       <form
         onChange={() => {
-          props.setUnsaved(true);
+          setUnsavedContract(true);
         }}
       >
-        <div className="w-full py-24 px-32">
-          <div className="flex">
-            <div className="w-4/5">
-              <div className="flex justify-between items-end mb-md">
-                <p>
-                  <strong>{existingContract ? `Avtal ${existingContract.contractId}` : 'Nytt avtal'}</strong>
-                </p>
-                <div className="flex">
-                  <Button
-                    data-cy="preview-contract"
-                    variant="primary"
-                    color="vattjom"
-                    inverted={!isPreviewLoading}
-                    loading={isPreviewLoading}
-                    loadingText="Genererar pdf..."
-                    disabled={
-                      isPreviewLoading ||
-                      (isErrandLocked(errand) && !existingContract) ||
-                      (!allowed && !existingContract)
-                    }
-                    size="sm"
-                    rightIcon={<LucideIcon name="external-link" />}
-                    onClick={() => {
-                      onRenderContract(contractForm.getValues());
-                    }}
-                  >
-                    Förhandsgranska avtal (pdf)
-                  </Button>
-                </div>
+        <div className="flex">
+          <div className="w-4/5">
+            <div className="flex justify-between items-end mb-md">
+              <p>
+                <strong>{existingContract ? `Avtal ${existingContract.contractId}` : 'Nytt avtal'}</strong>
+              </p>
+              <div className="flex">
+                <Button
+                  data-cy="preview-contract"
+                  variant="primary"
+                  color="vattjom"
+                  inverted={!isPreviewLoading}
+                  loading={isPreviewLoading}
+                  loadingText="Genererar pdf..."
+                  disabled={
+                    isPreviewLoading || (isErrandLocked(errand) && !existingContract) || (!allowed && !existingContract)
+                  }
+                  size="sm"
+                  rightIcon={<LucideIcon name="external-link" />}
+                  onClick={() => {
+                    onRenderContract(contractForm.getValues());
+                  }}
+                >
+                  Förhandsgranska avtal (pdf)
+                </Button>
               </div>
-
-              {existingContract?.attachmentMetaData?.[0] ? (
-                <div className="flex gap-12 justify-between">
-                  <div className="flex gap-12">
-                    <div>
-                      <p>
-                        <strong> {existingContract?.attachmentMetaData[0].filename}</strong>
-                      </p>
-                      {existingContract?.attachmentMetaData[0].note && (
-                        <p>Anteckning: {existingContract?.attachmentMetaData[0].note}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="justify-self-end">
-                    <Button
-                      data-cy="add-attachment-button"
-                      disabled={isErrandLocked(errand)}
-                      color="vattjom"
-                      rightIcon={<LucideIcon name="external-link" />}
-                      inverted={allowed}
-                      size="sm"
-                      className="mr-8"
-                      onClick={() => {
-                        const attachment = fetchSignedContractAttachment(
-                          municipalityId,
-                          existingContract?.contractId,
-                          existingContract?.attachmentMetaData[0].id
-                        );
-                        attachment.then((res) => downloadDocument(res.data));
-                      }}
-                    >
-                      Förhandsgranska signerat avtal (pdf)
-                    </Button>
-                    <Button
-                      data-cy="add-attachment-button"
-                      disabled={isErrandLocked(errand) || !allowed}
-                      color="error"
-                      rightIcon={<LucideIcon name="trash" />}
-                      inverted={allowed}
-                      size="sm"
-                      onClick={() => {
-                        removeConfirm
-                          .showConfirmation(
-                            'Ta bort signerat avtal?',
-                            'Vill du ta bort denna bilaga?',
-                            'Ja',
-                            'Nej',
-                            'info',
-                            'info'
-                          )
-                          .then((confirmed) => {
-                            if (confirmed) {
-                              deleteSignedContractAttachment(
-                                municipalityId,
-                                existingContract?.contractId,
-                                existingContract?.attachmentMetaData[0].id
-                              )
-                                .then(() => {
-                                  getErrand(municipalityId, errand.id.toString()).then((res) => {
-                                    setErrand(res.errand);
-                                  });
-                                })
-                                .then(() => {
-                                  toastMessage(
-                                    getToastOptions({
-                                      message: 'Bilagan togs bort',
-                                      status: 'success',
-                                    })
-                                  );
-                                })
-                                .catch(() => {
-                                  toastMessage({
-                                    position: 'bottom',
-                                    closeable: false,
-                                    message: 'Något gick fel när bilagan togs bort',
-                                    status: 'error',
-                                  });
-                                });
-                            }
-                          });
-                      }}
-                    ></Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-between items-end mb-md">
-                  <p>
-                    <strong>Signerat avtal {existingContract?.contractId}</strong>
-                  </p>
-                  <div className="flex">
-                    <CasedataContractAttachmentUpload contractId={existingContract?.contractId} />
-                  </div>
-                </div>
-              )}
-
-              <FormControl id="contractType" className="my-md">
-                <FormLabel>Typ av avtal</FormLabel>
-                <RadioButton.Group className="space-x-4" inline>
-                  <RadioButton
-                    data-cy="purchaseType"
-                    {...contractForm.register('contractType')}
-                    value={ContractType.PURCHASE_AGREEMENT}
-                    name="contractType"
-                    defaultChecked={contractForm.getValues().contractType === ContractType.PURCHASE_AGREEMENT}
-                    onChange={() => {
-                      contractForm.setValue('contractType', ContractType.PURCHASE_AGREEMENT);
-                    }}
-                  >
-                    Köpeavtal
-                  </RadioButton>
-                  <RadioButton
-                    data-cy="apartmentType"
-                    {...contractForm.register('contractType')}
-                    value={ContractType.LAND_LEASE}
-                    name="contractType"
-                    defaultChecked={contractForm.getValues().contractType === ContractType.LAND_LEASE}
-                    onChange={() => {
-                      contractForm.setValue('contractType', ContractType.LAND_LEASE);
-                    }}
-                  >
-                    Lägenhetsarrende
-                  </RadioButton>
-                </RadioButton.Group>
-              </FormControl>
-
-              <FormControl id="isDraft" className="my-md">
-                <FormLabel>
-                  Status för avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
-                </FormLabel>
-                {loading === undefined && (
-                  <Checkbox
-                    disabled={isErrandLocked(errand) || !allowed}
-                    checked={contractForm.getValues().status === 'DRAFT' ? true : false}
-                    value={contractForm.getValues().status}
-                    onChange={() => {
-                      contractForm.setValue(
-                        'status',
-                        contractForm.getValues()?.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE'
-                      );
-                      contractForm.trigger('status');
-                      onSave(contractForm.getValues());
-                    }}
-                    indeterminate={false}
-                  >
-                    Markera som utkast
-                  </Checkbox>
-                )}
-              </FormControl>
-              <Input type="hidden" readOnly name="id" {...contractForm.register('contractId')} />
-              {contractType === ContractType.PURCHASE_AGREEMENT ? (
-                <KopeAvtal
-                  changeBadgeColor={changeBadgeColor}
-                  onSave={onSave}
-                  existingContract={(existingContract as KopeAvtalsData) || defaultKopeavtal}
-                  sellers={sellers}
-                  buyers={buyers}
-                  updateStakeholders={updateStakeholdersFromErrand}
-                />
-              ) : contractType === ContractType.LAND_LEASE ? (
-                <Lagenhetsarrende
-                  changeBadgeColor={changeBadgeColor}
-                  onSave={onSave}
-                  existingContract={(existingContract as LagenhetsArrendeData) || defaultLagenhetsarrende}
-                  leaseholders={leaseholders}
-                  grantors={grantors}
-                  updateStakeholders={updateStakeholdersFromErrand}
-                />
-              ) : null}
             </div>
 
-            <ContractNavigation contractType={contractType} />
+            {existingContract?.attachmentMetaData?.[0] ? (
+              <div className="flex gap-12 justify-between">
+                <div className="flex gap-12">
+                  <div>
+                    <p>
+                      <strong> {existingContract?.attachmentMetaData[0].filename}</strong>
+                    </p>
+                    {existingContract?.attachmentMetaData[0].note && (
+                      <p>Anteckning: {existingContract?.attachmentMetaData[0].note}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="justify-self-end">
+                  <Button
+                    data-cy="add-attachment-button"
+                    disabled={isErrandLocked(errand)}
+                    color="vattjom"
+                    rightIcon={<LucideIcon name="external-link" />}
+                    inverted={allowed}
+                    size="sm"
+                    className="mr-8"
+                    onClick={() => {
+                      const attachment = fetchSignedContractAttachment(
+                        municipalityId,
+                        existingContract?.contractId,
+                        existingContract?.attachmentMetaData[0].id
+                      );
+                      attachment.then((res) => downloadDocument(res.data));
+                    }}
+                  >
+                    Förhandsgranska signerat avtal (pdf)
+                  </Button>
+                  <Button
+                    data-cy="add-attachment-button"
+                    disabled={isErrandLocked(errand) || !allowed}
+                    color="error"
+                    rightIcon={<LucideIcon name="trash" />}
+                    inverted={allowed}
+                    size="sm"
+                    onClick={() => {
+                      removeConfirm
+                        .showConfirmation(
+                          'Ta bort signerat avtal?',
+                          'Vill du ta bort denna bilaga?',
+                          'Ja',
+                          'Nej',
+                          'info',
+                          'info'
+                        )
+                        .then((confirmed) => {
+                          if (confirmed) {
+                            deleteSignedContractAttachment(
+                              municipalityId,
+                              existingContract?.contractId,
+                              existingContract?.attachmentMetaData[0].id
+                            )
+                              .then(() => {
+                                getErrand(municipalityId, errand.id.toString()).then((res) => {
+                                  setErrand(res.errand);
+                                });
+                              })
+                              .then(() => {
+                                toastMessage(
+                                  getToastOptions({
+                                    message: 'Bilagan togs bort',
+                                    status: 'success',
+                                  })
+                                );
+                              })
+                              .catch(() => {
+                                toastMessage({
+                                  position: 'bottom',
+                                  closeable: false,
+                                  message: 'Något gick fel när bilagan togs bort',
+                                  status: 'error',
+                                });
+                              });
+                          }
+                        });
+                    }}
+                  ></Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-end mb-md">
+                <p>
+                  <strong>Signerat avtal {existingContract?.contractId}</strong>
+                </p>
+                <div className="flex">
+                  <CasedataContractAttachmentUpload contractId={existingContract?.contractId} />
+                </div>
+              </div>
+            )}
+
+            <FormControl id="contractType" className="my-md">
+              <FormLabel>Typ av avtal</FormLabel>
+              <RadioButton.Group className="space-x-4" inline>
+                <RadioButton
+                  data-cy="purchaseType"
+                  {...contractForm.register('contractType')}
+                  value={ContractType.PURCHASE_AGREEMENT}
+                  name="contractType"
+                  defaultChecked={contractForm.getValues().contractType === ContractType.PURCHASE_AGREEMENT}
+                  onChange={() => {
+                    contractForm.setValue('contractType', ContractType.PURCHASE_AGREEMENT);
+                  }}
+                >
+                  Köpeavtal
+                </RadioButton>
+                <RadioButton
+                  data-cy="apartmentType"
+                  {...contractForm.register('contractType')}
+                  value={ContractType.LAND_LEASE}
+                  name="contractType"
+                  defaultChecked={contractForm.getValues().contractType === ContractType.LAND_LEASE}
+                  onChange={() => {
+                    contractForm.setValue('contractType', ContractType.LAND_LEASE);
+                  }}
+                >
+                  Lägenhetsarrende
+                </RadioButton>
+              </RadioButton.Group>
+            </FormControl>
+
+            <FormControl id="isDraft" className="my-md">
+              <FormLabel>
+                Status för avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
+              </FormLabel>
+              {loading === undefined && (
+                <Checkbox
+                  disabled={isErrandLocked(errand) || !allowed}
+                  checked={contractForm.getValues().status === 'DRAFT' ? true : false}
+                  value={contractForm.getValues().status}
+                  onChange={() => {
+                    contractForm.setValue('status', contractForm.getValues()?.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE');
+                    contractForm.trigger('status');
+                    onSave(contractForm.getValues());
+                  }}
+                  indeterminate={false}
+                >
+                  Markera som utkast
+                </Checkbox>
+              )}
+            </FormControl>
+            <Input type="hidden" readOnly name="id" {...contractForm.register('contractId')} />
+            {contractType === ContractType.PURCHASE_AGREEMENT ? (
+              <KopeAvtal
+                changeBadgeColor={changeBadgeColor}
+                onSave={onSave}
+                existingContract={(existingContract as KopeAvtalsData) || defaultKopeavtal}
+                sellers={sellers}
+                buyers={buyers}
+                updateStakeholders={updateStakeholdersFromErrand}
+              />
+            ) : contractType === ContractType.LAND_LEASE ? (
+              <Lagenhetsarrende
+                changeBadgeColor={changeBadgeColor}
+                onSave={onSave}
+                existingContract={(existingContract as LagenhetsArrendeData) || defaultLagenhetsarrende}
+                leaseholders={leaseholders}
+                grantors={grantors}
+                updateStakeholders={updateStakeholdersFromErrand}
+              />
+            ) : null}
           </div>
+
+          <ContractNavigation contractType={contractType} />
         </div>
       </form>
     </FormProvider>

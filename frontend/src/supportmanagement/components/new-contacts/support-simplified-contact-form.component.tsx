@@ -12,16 +12,15 @@ import {
   usernamePattern,
 } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FormControl, Input } from '@sk-web-gui/react';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Button } from '@sk-web-gui/react';
 import {
   emptyContact,
   ExternalIdType,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
-import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,7 +29,6 @@ import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
@@ -143,7 +141,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -240,13 +237,6 @@ export const SupportSimplifiedContactForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationNumber, personNumber]);
 
-  useEffect(() => {
-    appConfig.isSupportManagement &&
-      municipalityId &&
-      getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [municipalityId]);
-
   const onSubmit = async (e: SupportStakeholderFormModel) => {
     if (!editing) {
       e.internalId = uuidv4();
@@ -303,15 +293,6 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   return (
     <div data-cy={`contact-form`} key={contact.internalId}>
-      <div className="hidden">
-        <FormControl id={`id`}>
-          <Input data-cy={`contact-externalId-${id}`} {...register(`externalId`)} type="hidden" />
-          <Input data-cy={`contact-externalIdType-${id}`} {...register(`externalIdType`)} type="hidden" />
-          <Input data-cy={`contact-id-${id}`} {...register(`internalId`)} type="hidden" />
-          <Input data-cy={`contact-role-${id}`} {...register(`role`)} />
-        </FormControl>
-      </div>
-
       {!editing ? (
         <>
           <SupportContactSearchModeSelector
@@ -319,7 +300,6 @@ export const SupportSimplifiedContactForm: React.FC<{
             disabled={props.disabled}
             form={form}
             contact={contact}
-            id={id}
             label={label}
             replacePhonenumbers={replacePhonenumbers}
             {...searchProps}

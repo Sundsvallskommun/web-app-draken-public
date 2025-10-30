@@ -78,7 +78,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="assign-administrator-button"]').should('exist').contains('Tilldela').click();
 
       cy.wait('@patchStakeholders').should(({ request }) => {
-        console.log('request stakeholder: ', request);
         expect(request.body.adAccount).to.equal('TESTADMIN1');
       });
 

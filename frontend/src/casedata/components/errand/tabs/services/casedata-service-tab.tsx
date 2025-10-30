@@ -34,7 +34,7 @@ export const CasedataServicesTab: React.FC = () => {
 
   const assetType = 'FTErrandAssets';
 
-  const partyId = getOwnerStakeholder(errand).personId;
+  const partyId = getOwnerStakeholder(errand)?.personId;
   const errandNr = errand.errandNumber!;
 
   useEffect(() => {
@@ -168,8 +168,8 @@ export const CasedataServicesTab: React.FC = () => {
   );
 
   return (
-    <div className="w-full py-24 px-32">
-      <h2 className="text-h4-sm md:text-h4-md">Insatser</h2>
+    <>
+      <h2 className="text-h2-md max-medium-device:text-h4-md">Insatser</h2>
       <p className="mt-sm text-md">
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
         service kunden har rätt till vid sina resor.
@@ -189,6 +189,6 @@ export const CasedataServicesTab: React.FC = () => {
           <ServiceListComponent services={services} onRemove={removeService} />
         )}
       </div>
-    </div>
+    </>
   );
 };

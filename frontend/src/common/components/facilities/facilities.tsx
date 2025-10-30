@@ -1,8 +1,6 @@
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { User } from '@common/interfaces/user';
-import { isKC } from '@common/services/application-service';
 import {
   getFacilityByAddress,
   getFacilityByDesignation,
@@ -10,6 +8,7 @@ import {
   makeFacility,
   removeMunicipalityName,
 } from '@common/services/facilities-service';
+import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import {
   Button,
@@ -21,52 +20,35 @@ import {
   SearchField,
   Spinner,
   Table,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
 import { FacilityDetails } from './facilities-details';
 
 export const Facilities: React.FC<{
   setValue: UseFormSetValue<any>;
-  setUnsaved: (unsaved: boolean) => void;
   facilities: FacilityDTO[];
   onSave?: (estates: FacilityDTO[]) => Promise<void>;
 }> = (props) => {
-  const { setValue, setUnsaved } = props;
+  const { setValue } = props;
   const toastMessage = useSnackbar();
-  const saveConfirm = useConfirm();
 
-  const {
-    supportErrand,
-    errand,
-    user,
-  }: {
-    supportErrand;
-    errand;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
-  } = useAppContext();
+  const { supportErrand, errand, setUnsavedFacility } = useAppContext();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchType, setSearchType] = useState<string>('');
+  const [searchType, setSearchType] = useState<string>('PROPERTY');
   const [searchResult, setSearchResult] = useState<EstateInfoSearch[]>([]);
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [internalUnsaved, setInternalUnsaved] = useState<boolean>(false);
 
   const { register } = useForm();
 
   const [selectedEstate, setSelectedEstate] = useState<EstateInformation>();
   const searchValue = '';
+
+  const disabled = appConfig.isSupportManagement ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand);
 
   useEffect(() => {
     setRealEstates(props.facilities);
@@ -132,28 +114,25 @@ export const Facilities: React.FC<{
 
         <fieldset className="flex flex-row gap-12" data-cy="radio-button-group">
           <RadioButton
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={disabled}
             value="PROPERTY"
-            onClick={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              setSearchType(target.value);
+            checked={searchType === 'PROPERTY'}
+            onChange={(e) => {
+              setSearchType(e.target.value);
               setSearchResult([]);
             }}
-            name="sk-example"
-            defaultChecked
             data-cy="search-property-radio-button"
           >
             Sök på fastighetsbeteckning
           </RadioButton>
           <RadioButton
             value="ADDRESS"
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
-            onClick={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              setSearchType(target.value);
+            disabled={disabled}
+            checked={searchType === 'ADDRESS'}
+            onChange={(e) => {
+              setSearchType(e.target.value);
               setSearchResult([]);
             }}
-            name="sk-example"
             data-cy="search-address-radio-button"
           >
             Sök på adress
@@ -163,7 +142,7 @@ export const Facilities: React.FC<{
 
         <SearchField.Suggestions autofilter={true}>
           <SearchField.SuggestionsInput
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={disabled}
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
@@ -184,8 +163,7 @@ export const Facilities: React.FC<{
                       event.stopPropagation();
                       setRealEstates([...realEstates, makeFacility(estate)]);
                       setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
-                      setInternalUnsaved(true);
-                      setUnsaved(true);
+                      setUnsavedFacility(true);
                     }}
                     data-cy={`searchHit-${index}`}
                   >
@@ -231,7 +209,7 @@ export const Facilities: React.FC<{
                       <div className="w-96 flex justify-center">
                         <Spinner id={`realEstate-spinner-${index}`} size={2} className="hidden" />
                         <Link
-                          disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+                          disabled={disabled}
                           id={`realEstate-link-${index}`}
                           variant="tertiary"
                           href="#"
@@ -244,7 +222,7 @@ export const Facilities: React.FC<{
                     <Table.Column>
                       <Button
                         variant="tertiary"
-                        disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+                        disabled={disabled}
                         onClick={() => {
                           setRealEstates((realEstates) => realEstates.filter((item) => item !== realEstate));
                           setValue(
@@ -252,8 +230,7 @@ export const Facilities: React.FC<{
                             realEstates.filter((item) => item !== realEstate),
                             { shouldDirty: true }
                           );
-                          setInternalUnsaved(true);
-                          setUnsaved(true);
+                          setUnsavedFacility(true);
                         }}
                         size="sm"
                         data-cy={`remove-estate-${index}`}

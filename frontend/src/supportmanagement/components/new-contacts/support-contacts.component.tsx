@@ -1,8 +1,8 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
+import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
   SupportErrand,
@@ -15,12 +15,9 @@ import { buildStakeholdersList } from '@supportmanagement/services/support-stake
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
-import { appConfig } from '@config/appconfig';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
-  update: () => void;
-  registeringNewErrand?: boolean;
 }
 
 export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
@@ -31,11 +28,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     supportMetadata,
   }: {
     user: User;
-    municipalityId: string;
     supportErrand: SupportErrand;
-    setSupportErrand: any;
     supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();

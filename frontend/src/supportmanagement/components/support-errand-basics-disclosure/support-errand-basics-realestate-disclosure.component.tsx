@@ -3,29 +3,20 @@ import { FacilityDTO } from '@common/interfaces/facilities';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure } from '@sk-web-gui/react';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
-  supportErrand: SupportErrand;
-  setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
-}> = (props) => {
+export const SupportErrandBasicsRealEstateDisclosure: React.FC<{}> = () => {
   const [facilities, setFacilities] = useState<FacilityDTO[]>([]);
-  const { setValue, watch, getValues } = useFormContext();
+  const { setValue } = useFormContext();
 
-  const {
-    supportErrand,
-  }: {
-    supportErrand: SupportErrand;
-  } = useAppContext();
-
-  const fac = watch('facilities');
+  const { supportErrand } = useAppContext();
 
   useState(() => {
     let facilitiesFromErrande = [] as FacilityDTO[];
-    const estates = props.supportErrand?.parameters?.filter((obj) => obj.key === 'propertyDesignation')[0]?.values;
+    const estates = supportErrand?.parameters?.filter((obj) => obj.key === 'propertyDesignation')[0]?.values;
 
     if (estates !== undefined) {
       estates.forEach((facility) => {
@@ -54,7 +45,7 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
         header="Fastigheter"
         data-cy={`facility-disclosure`}
       >
-        <Facilities setValue={setValue} setUnsaved={props.setUnsavedFacility} facilities={facilities}></Facilities>
+        <Facilities setValue={setValue} facilities={facilities} />
       </Disclosure>
     </div>
   );
