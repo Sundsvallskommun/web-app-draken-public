@@ -12,6 +12,8 @@ import { mockPermits } from '../fixtures/mockPermits';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockContract } from '../fixtures/mockContract';
+import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
+import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Decisions tab', () => {
@@ -32,6 +34,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+
+      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
 
       cy.visit(`/arende/2281/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
@@ -64,7 +79,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('disables save button if no decision is selected', () => {
-      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj beslut');
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
       cy.contains('Förslag till beslut måste anges').should('exist');
       cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');

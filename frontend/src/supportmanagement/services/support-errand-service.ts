@@ -307,6 +307,7 @@ export enum Resolution {
   RECRUITED_MORE = 'RECRUITED_MORE',
   CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
+  SUB_PACKAGE_READY = 'SUB_PACKAGE_READY',
 }
 
 export enum ResolutionLabelLOP {
@@ -346,6 +347,7 @@ export enum ResolutionLabelROB {
   RECRUITED_FEWER = 'Rekryterat färre',
   RECRUITED_MORE = 'Rekryterat fler',
   CANCELLED = 'Avbruten',
+  SUB_PACKAGE_READY = 'Delpaket klart',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;

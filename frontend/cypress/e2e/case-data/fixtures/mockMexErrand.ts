@@ -125,6 +125,41 @@ export const mockMexErrand_base = {
         extraParameters: {},
       },
       {
+        id: 2280,
+        version: 3,
+        created: '2024-05-10T14:25:47.461919+02:00',
+        updated: '2024-05-10T14:35:06.168435+02:00',
+        type: 'PERSON',
+        firstName: 'Daniella',
+        lastName: 'Testarsson',
+        organizationName: '',
+        roles: ['SELLER'],
+        personalNumber: MOCK_PERSON_NUMBER,
+        addresses: [
+          {
+            addressCategory: 'POSTAL_ADDRESS',
+            street: 'Testgata 41',
+            postalCode: '12345',
+            city: 'Staden',
+            careOf: '',
+          },
+        ],
+        address: {
+          streetAddress: '',
+        },
+        contactInformation: [
+          {
+            contactType: 'PHONE',
+            value: Cypress.env('mockPhoneNumber'),
+          },
+          {
+            contactType: 'EMAIL',
+            value: Cypress.env('mockEmail'),
+          },
+        ],
+        extraParameters: {},
+      },
+      {
         id: 2106,
         version: 3,
         created: '2024-05-10T14:25:47.461919+02:00',

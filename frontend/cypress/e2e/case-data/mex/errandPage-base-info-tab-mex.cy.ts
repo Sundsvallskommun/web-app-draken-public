@@ -21,6 +21,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockRelations } from '../fixtures/mockRelations';
+import { mockAsset } from '../fixtures/mockAsset';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
@@ -44,15 +45,20 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
       cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
-      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );
       cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
       );
+      cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
 
-      cy.intercept('POST', '**/address', mockAddress).as('postAddress');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+
+      cy.intercept('POST', '**/address', mockAddress).as('poFfastAddress');
+      cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errand/*', mockMexErrand_base).as('getErrandById');
@@ -186,7 +192,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist')
         .clear()
         .type(Cypress.env('mockInvalidPersonNumber'));
-      cy.get('[data-cy="search-button-owner"]').should('be.disabled');
 
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockInvalidPersonNumber'));
       cy.get('[data-cy="personal-number-error-message"]').should('exist').and('have.text', invalidSsnMessage);
@@ -199,7 +204,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist')
         .clear()
         .type(Cypress.env('mockInvalidPersonNumber'));
-      cy.get('[data-cy="search-button-person"]').should('exist');
+      cy.get('[data-cy="contact-form"] button').should('exist');
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockInvalidPersonNumber'));
       cy.get('[data-cy="personal-number-error-message"]').should('exist').and('have.text', invalidSsnMessage);
@@ -212,10 +217,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('POST', '**/address', { message: 'Not found' }).as('notFoundAddress');
       visit();
+      cy.wait(500);
 
-      cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockPersonNumber'));
+      cy.get('[data-cy="contact-personalNumber-person"]')
+        .should('not.be.disabled')
+        .clear()
+        .should('contain.value', '')
+        .type(Cypress.env('mockPersonNumber'));
       cy.get('button').contains('Lägg till manuellt').should('exist');
-      cy.get('[data-cy="search-button-person"]').click();
+      cy.get('[data-cy="contact-form"] button').contains('Sök').click();
       cy.wait('@notFoundAddress');
       cy.get('[data-cy="not-found-error-message"]').should('exist').and('have.text', 'Sökningen gav ingen träff');
     });
@@ -246,14 +256,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
-      cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
+      cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
       cy.get('[data-cy="org-number-error-message-owner"]').should('exist').and('have.text', invalidOrgNumberMessage);
 
       cy.get('[data-cy="search-enterprise-person-form"]').click();
-      cy.get('[data-cy="contact-orgNumber-person"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
+      cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
       cy.get('[data-cy="org-number-error-message-person"]').should('exist').and('have.text', invalidOrgNumberMessage);
 
-      cy.get('[data-cy="contact-orgNumber-person"]').clear().type(Cypress.env('mockOrganizationNumber'));
+      cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockOrganizationNumber'));
       cy.get('[data-cy="org-number-error-message-person"]').should('not.exist');
     });
 
@@ -298,7 +308,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="priority-input"]').should('exist').select('Hög');
 
       cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
-      cy.get('button').contains('Ja').should('exist').click();
+      // FIXME Patch request is done twice (why? to save extraparameters separately?) so we
+      // must await twice verify body at this point. Not good.
+      cy.wait('@patchErrand').should(({ request }) => {
+        expect(request.body.id).to.equal('101');
+      });
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal('101');
         expect(request.body.caseType).to.equal(CaseTypes.MEX.MEX_INVOICE);
@@ -340,17 +354,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="search-enterprise-owner-form"]').should('exist').click();
       cy.get('[data-cy="search-enterprise-owner-form"]').should('exist').click();
-      cy.get('[data-cy="contact-orgNumber-owner"]').type('556677-8899');
+      // cy.get('[data-cy="contact-orgNumber-owner"]').type('556677-8899');
+      cy.get('[data-cy="contact-personalNumber-owner"]').type(Cypress.env('mockOrganizationNumber'));
       cy.wait(300);
-      cy.get('[data-cy="search-button-owner"]').click();
+      // cy.get('[data-cy="search-button-owner"]').click();
+      cy.get('[data-cy="contact-form"] button').contains('Sök').click();
 
       cy.get('[data-cy="organization-search-result"]').find('p').contains(mockOrganization.data.name).should('exist');
 
       cy.get('button').contains('Lägg till ärendeägare').should('be.disabled');
-      cy.get('[data-cy="new-email-input"]').type('test@example.com');
+      cy.get('[data-cy="new-email-input"]').type(Cypress.env('mockEmail'));
       cy.get('[data-cy="add-new-email-button"]').click();
 
-      cy.get('[data-cy="newPhoneNumber"]').clear().type('+46701740635');
+      cy.get('[data-cy="newPhoneNumber"]').clear().type(Cypress.env('mockPhoneNumber'));
       cy.get('[data-cy="newPhoneNumber-button"]').click();
 
       cy.get('[data-cy="roll-select"]').select('Säljare');
@@ -390,7 +406,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       // Add a stakeholders
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
-      cy.get('[data-cy="search-button-owner"]').click();
+      // cy.get('[data-cy="search-button-owner"]').click();
+      cy.get('[data-cy="contact-form"] button').contains('Sök').click();
 
       // Add email and remove it
       cy.get('[data-cy="new-email-input"]').type(email_1);
@@ -420,15 +437,22 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="roll-select"]').select('Säljare');
 
       cy.get('button').contains('Lägg till ärendeägare').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
+      // Awaiting twice since two PATCH requests are made
+      // See FIXME comment above
       cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.contactInformation[0].contactType).to.equal('PHONE');
-        expect(request.body.contactInformation[0].value).to.equal(phonenumber_1);
-        expect(request.body.contactInformation[1].contactType).to.equal('PHONE');
-        expect(request.body.contactInformation[1].value).to.equal(phonenumber_2);
-        expect(request.body.contactInformation[2].contactType).to.equal('EMAIL');
-        expect(request.body.contactInformation[2].value).to.equal(email_1);
-        expect(request.body.contactInformation[3].contactType).to.equal('EMAIL');
-        expect(request.body.contactInformation[3].value).to.equal(email_2);
+        expect(request.body.id).to.equal('101');
+      });
+      cy.wait('@patchErrand').should(({ request }) => {
+        const requestApplicant = request.body.stakeholders.find((s) => s.roles.includes('APPLICANT'));
+        expect(requestApplicant.contactInformation[0].contactType).to.equal('PHONE');
+        expect(requestApplicant.contactInformation[0].value).to.equal(phonenumber_1);
+        expect(requestApplicant.contactInformation[1].contactType).to.equal('PHONE');
+        expect(requestApplicant.contactInformation[1].value).to.equal(phonenumber_2);
+        expect(requestApplicant.contactInformation[2].contactType).to.equal('EMAIL');
+        expect(requestApplicant.contactInformation[2].value).to.equal(email_1);
+        expect(requestApplicant.contactInformation[3].contactType).to.equal('EMAIL');
+        expect(requestApplicant.contactInformation[3].value).to.equal(email_2);
       });
     });
 
@@ -489,7 +513,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'PATCH',
         `**/errands/${mockMexErrand_base.data.id}/stakeholders/${contact[0].id}`,
         mockMexErrand_base
-      ).as('patchErrand');
+      ).as('patchStakeholder');
       visit();
 
       cy.get('[data-cy="registered-contacts"] [data-cy="rendered-CONTACT_PERSON"]').should('exist');
@@ -523,17 +547,20 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="newPhoneNumber"]').clear().type('+46701740635');
       cy.get('[data-cy="newPhoneNumber-button"]').click();
 
-      cy.get('button').contains('Spara uppgifter').should('exist').click();
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.firstName).to.equal(contact[0].firstName);
-        expect(request.body.lastName).to.equal(contact[0].lastName);
-        expect(request.body.addresses[0].street).to.equal('Testgata');
-        expect(request.body.addresses[0].postalCode).to.equal('12345');
-        expect(request.body.addresses[0].city).to.equal('Teststaden');
-        expect(request.body.contactInformation[0].contactType).to.equal('PHONE');
-        expect(request.body.contactInformation[0].value).to.equal('+46701740635');
-        expect(request.body.contactInformation[1].contactType).to.equal('EMAIL');
-        expect(request.body.contactInformation[1].value).to.equal('test@example.com');
+      cy.get('button').contains('Ändra uppgifter').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
+
+      cy.wait('@patchStakeholder').should(({ request }) => {
+        const requestStakeholder = request.body;
+        expect(requestStakeholder.firstName).to.equal(contact[0].firstName);
+        expect(requestStakeholder.lastName).to.equal(contact[0].lastName);
+        expect(requestStakeholder.addresses[0].street).to.equal('Testgata');
+        expect(requestStakeholder.addresses[0].postalCode).to.equal('12345');
+        expect(requestStakeholder.addresses[0].city).to.equal('Teststaden');
+        expect(requestStakeholder.contactInformation[0].contactType).to.equal('PHONE');
+        expect(requestStakeholder.contactInformation[0].value).to.equal('+46701740635');
+        expect(requestStakeholder.contactInformation[1].contactType).to.equal('EMAIL');
+        expect(requestStakeholder.contactInformation[1].value).to.equal('test@example.com');
       });
     });
 
@@ -784,6 +811,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('button').contains('Gör till ärendeägare').should('exist').click();
       cy.get('button').contains('Ja').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchStakeholder').should(({ request }) => {
         expect(request.body.roles[0]).to.equal('APPLICANT');

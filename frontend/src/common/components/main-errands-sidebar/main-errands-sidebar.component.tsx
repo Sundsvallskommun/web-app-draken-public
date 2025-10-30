@@ -18,6 +18,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { userMenuGroups } from '../layout/userMenuGroups';
+import { AngeSymbol } from '@styles/ange-symbol';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
@@ -42,7 +43,7 @@ export const MainErrandsSidebar: React.FC<{
       <Logo
         className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
-        symbol={appConfig.symbol}
+        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
         title={'Draken'}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />

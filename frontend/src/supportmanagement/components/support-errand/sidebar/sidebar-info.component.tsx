@@ -374,6 +374,9 @@ export const SidebarInfo: React.FC<{
       case Resolution.CANCELLED: {
         return solutionComponent('Avbruten', 'avslutade ärendet.', 'check');
       }
+      case Resolution.SUB_PACKAGE_READY: {
+        return solutionComponent('Delpaket klart', 'avslutade ärendet.', 'check');
+      }
     }
   };
 
@@ -575,7 +578,7 @@ export const SidebarInfo: React.FC<{
                         leftIcon={<LucideIcon name="mail" />}
                         className="w-full"
                         color="vattjom"
-                        data-cy="new-message-button"
+                        data-cy="sidebar-new-message-button"
                         variant="secondary"
                         onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
                       >

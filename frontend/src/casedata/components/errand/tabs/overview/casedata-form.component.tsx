@@ -7,13 +7,12 @@ import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { getCaseLabels, isErrandLocked, municipalityIds } from '@casedata/services/casedata-errand-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment } from '@common/services/application-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
-import { Dispatch, SetStateAction, useEffect } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
-import { CasedataContactsComponent } from './casedata-contacts.component';
 import { appConfig } from '@config/appconfig';
+import LucideIcon from '@sk-web-gui/lucide-icon';
+import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { Dispatch, SetStateAction, useEffect } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { CasedataContactsComponent } from './casedata-contacts.component';
 export interface CasedataFormModel {
   id: string;
   errandNumber: string;

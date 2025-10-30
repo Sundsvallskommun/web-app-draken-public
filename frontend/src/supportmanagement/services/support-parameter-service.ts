@@ -99,6 +99,24 @@ const template: ParametersObject = {
       group: 'Antal rekryterade',
       values: ['Antal rekryterade', 'false', '', 'number'],
     },
+    {
+      key: 'recruitment@closure_3',
+      displayName: 'Avslut',
+      group: 'Fakturering',
+      values: ['Fakturerat', 'false', ''],
+    },
+    {
+      key: 'recruitment@closure_4',
+      displayName: 'Avslut',
+      group: 'Kandidatupplevelse',
+      values: ['Enkät utskickad', 'false', ''],
+    },
+    {
+      key: 'recruitment@closure_5',
+      displayName: 'Avslut',
+      group: 'Sammanfattning',
+      values: ['Sammanfattning', 'false', ''],
+    },
   ],
 };
 

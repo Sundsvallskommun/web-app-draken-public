@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { getErrand, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
@@ -16,7 +16,7 @@ import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-
 import { IconName } from 'lucide-react/dynamic';
 import dynamic from 'next/dynamic';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -30,25 +30,21 @@ interface CasedataDetailsProps {
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
-  const [loading, setIsLoading] = useState<boolean>();
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
-  }, [user, errand]);
-
   const form = useFormContext<IErrand>();
 
   const { watch, setValue, trigger } = form;
 
-  const { description } = watch();
+  const description = watch('description');
+  const priority = watch('priority');
+  const diagnoses = useWatch<string[]>({
+    name: `medical${EXTRAPARAMETER_SEPARATOR}diagnoses` as any,
+  });
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
-      setIsLoading(undefined);
       props.setUnsaved(false);
       return getErrand(municipalityId, errand.id.toString())
         .then((res) => {
@@ -59,10 +55,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               status: 'success',
             })
           );
-          setIsLoading(undefined);
         })
         .catch(() => {
-          setIsLoading(undefined);
           toastMessage({
             position: 'bottom',
             closeable: false,
@@ -85,17 +79,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     uppgifterFields?.forEach((f) => {
       const key = f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-      const isCheckbox = f.formField.type === 'checkbox';
       const rawValue = f.value;
-
-      setValue<any>(
-        key,
-        isCheckbox
-          ? Array.isArray(rawValue)
-            ? rawValue
-            : rawValue?.split(',').filter((v) => v !== '') ?? []
-          : rawValue
-      );
+      if (f.formField.type === 'checkbox' || Array.isArray(rawValue)) {
+        const normalizedArray = Array.isArray(rawValue)
+          ? rawValue
+          : typeof rawValue === 'string'
+          ? rawValue
+              .split(',')
+              .map((v) => v.trim())
+              .filter((v) => v !== '')
+          : [];
+        setValue<any>(key, normalizedArray, { shouldDirty: false });
+      } else {
+        setValue<any>(key, rawValue, { shouldDirty: false });
+      }
     });
 
     setValue('description', errand.description || '');
@@ -107,7 +104,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon as any} />}>
+        <Disclosure
+          variant="alt"
+          header={label}
+          data-cy={`section-${label}-disclosure`}
+          icon={<LucideIcon name={icon as any} />}
+        >
           {isAppeal && label === 'Övergripande' && (
             <div className="px-0">
               <FormControl className="w-full" key="relatesTo">
@@ -172,7 +174,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               </>
             ) : null}
             {appConfig.features.useFacilities ? (
-              <Disclosure variant="alt" header="Fastigheter" icon={<LucideIcon name="map-pin" />}>
+              <Disclosure
+                variant="alt"
+                header="Fastigheter"
+                data-cy="facilities-disclosure"
+                icon={<LucideIcon name="map-pin" />}
+              >
                 <Facilities
                   facilities={realEstates}
                   setUnsaved={props.setUnsaved}
