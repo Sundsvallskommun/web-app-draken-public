@@ -7,7 +7,7 @@ import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments'
 import { mockErrands_base } from 'cypress/e2e/case-data/fixtures/mockErrands';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockContract } from '../fixtures/mockContract';
-import { mockConversations } from '../fixtures/mockConversations';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockNotifications } from '../fixtures/mockNotifications';
@@ -24,8 +24,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
       );
       cy.visit('/registrera');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

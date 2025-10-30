@@ -2,7 +2,7 @@ import { defineConfig } from 'cypress';
 
 export default defineConfig({
   e2e: {
-    // supportFile: false,
+    supportFile: false,
     baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}`,
     env: {
       apiUrl: `${process.env.NEXT_PUBLIC_API_URL}`,
@@ -40,7 +40,23 @@ export default defineConfig({
     chromeWebSecurity: false,
     setupNodeEvents(on, config) {
       require('@cypress/code-coverage/task')(on, config);
-      // include any other plugin code...
+      // const wp = require('@cypress/webpack-preprocessor');
+      // // include any other plugin code...
+      // const webpackOptions = {
+      //   resolve: {
+      //     extensions: ['.ts', '.tsx', '.js', '.jsx'],
+      //   },
+      //   module: {
+      //     rules: [
+      //       {
+      //         test: /\.tsx?$/,
+      //         exclude: /node_modules/,
+      //         loader: 'ts-loader',
+      //       },
+      //     ],
+      //   },
+      // };
+      // on('file:preprocessor', wp({ webpackOptions }));
 
       // It's IMPORTANT to return the config object
       // with any changed environment variables

@@ -1,5 +1,3 @@
-import { MOCK_PERSON_NUMBER } from './mockMexErrand';
-
 export const mockContract = {
   data: {
     contractId: '2024-01026',
@@ -10,9 +8,10 @@ export const mockContract = {
     type: 'PURCHASE_AGREEMENT',
     stakeholders: [
       {
-        type: 'COMPANY',
+        type: 'PERSON',
         roles: ['BUYER'],
-        organizationName: 'Testbolaget',
+        firstName: 'Test',
+        lastName: 'Köparsson',
         address: {
           type: 'POSTAL_ADDRESS',
           streetAddress: 'Testvägen 1',
@@ -51,30 +50,30 @@ export const mockContract = {
           attention: '',
         },
       },
-      {
-        id: 2075,
-        version: 1,
-        created: '2024-05-17T10:50:17.25221+02:00',
-        updated: '2024-05-17T10:50:17.252221+02:00',
-        type: 'PERSON',
-        personalNumber: MOCK_PERSON_NUMBER,
-        firstName: 'My',
-        lastName: 'Testsson',
-        roles: ['ADMINISTRATOR', 'SELLER'],
-        adAccount: 'kctest',
-        addresses: [],
-        address: {
-          type: 'POSTAL_ADDRESS',
-          streetAddress: 'Testvägen 44',
-          careOf: '',
-          postalCode: '12345',
-          town: 'Sundsvall',
-          country: '',
-          attention: '',
-        },
-        contactInformation: [],
-        extraParameters: {},
-      },
+      // {
+      //   id: 2075,
+      //   version: 1,
+      //   created: '2024-05-17T10:50:17.25221+02:00',
+      //   updated: '2024-05-17T10:50:17.252221+02:00',
+      //   type: 'PERSON',
+      //   personalNumber: MOCK_PERSON_NUMBER,
+      //   firstName: 'My',
+      //   lastName: 'Testsson',
+      //   roles: ['ADMINISTRATOR', 'SELLER'],
+      //   adAccount: 'kctest',
+      //   addresses: [],
+      //   address: {
+      //     type: 'POSTAL_ADDRESS',
+      //     streetAddress: 'Testvägen 44',
+      //     careOf: '',
+      //     postalCode: '12345',
+      //     town: 'Sundsvall',
+      //     country: '',
+      //     attention: '',
+      //   },
+      //   contactInformation: [],
+      //   extraParameters: {},
+      // },
     ],
     indexTerms: [
       {

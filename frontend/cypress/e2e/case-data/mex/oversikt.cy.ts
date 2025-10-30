@@ -1,12 +1,14 @@
 /// <reference types="cypress" />
-import { CaseLabels } from '@casedata/interfaces/case-label';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { appConfig } from '@config/appconfig';
+// import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ErrandStatus } from '../../../../src/casedata/interfaces/errand-status';
+// import { appConfig } from '@config/appconfig';
+import { appConfig } from '../../../../src/config/appconfig';
 import { onlyOn } from '@cypress/skip-test';
-import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
+import { mockNotifications } from '../../../../cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { CaseLabels } from '../../../../src/casedata/interfaces/case-label';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Overview page', () => {
@@ -228,7 +230,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get('[data-cy="export-button"]').should('exist').click();
         cy.get('p').should('exist').contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?');
       } else {
-        cy.get('[data-cy="export-button"]').should('not.exist');
+        cy.get('[data-cy="export-button"]').should('exist');
       }
     });
   });

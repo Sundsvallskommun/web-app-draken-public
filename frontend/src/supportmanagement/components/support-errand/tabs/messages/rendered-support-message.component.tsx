@@ -27,7 +27,10 @@ export const RenderedSupportMessage: React.FC<{
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
   const { supportErrand, municipalityId, user }: AppContextInterface = useAppContext();
   const [allowed, setAllowed] = useState(false);
-  const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
+
+  // Changed logic for expanded message to see if it solve problem with unread message counter
+  // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const _a = validateAction(supportErrand, user);

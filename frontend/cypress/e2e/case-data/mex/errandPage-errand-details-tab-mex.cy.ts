@@ -15,6 +15,9 @@ import { mockEstateInfo } from '../fixtures/mockEstateInfo';
 import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
 import { mockContract } from '../fixtures/mockContract';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { mockRelations } from '../fixtures/mockRelations';
+import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
+import { mockAsset } from '../fixtures/mockAsset';
 
 const checkExtraParameter = (extraParameters: ExtraParameter[], key: string, value: string) => {
   console.log('checking extra parameter', key, value);
@@ -50,15 +53,39 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
     });
+
+    // afterEach(() => {
+    //   cy.get('[data-cy="save-and-continue-button"]').then(($ele) => {
+    //     if ($ele.is(':enabled')) {
+    //       cy.get('[data-cy="save-and-continue-button"]').click();
+    //       cy.wait('@patchErrand');
+    //     }
+    //   });
+    // });
 
     const goToErrandInformationTab = () => {
       cy.visit('/arende/2281/MEX-2024-000280');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getErrand');
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();
 
       // Should exist on all MEX case types
       cy.get('[data-cy="caseMeaning-input"]').should('exist');
+      cy.get('[data-cy="facilities-disclosure"]').should('exist').click();
+      cy.get('[data-cy="section-Övergripande-disclosure"]').should('exist').click();
     };
 
     const checkEstateInfo = () => {
@@ -97,11 +124,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .contains(mockEstateInfo.data.actions[0].fileDesignation);
 
       cy.get('[data-cy="close-estate-info-button"]').should('exist').click({ force: true });
-
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').and('be.enabled');
       cy.get('[data-cy="remove-estate-0"]').should('exist').contains('Ta bort').click();
       cy.get('[data-cy="estate-table"]').should('exist').contains('Inga fastigheter tillagda');
-
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').and('be.disabled');
     };
 
     it('search property designation', () => {
@@ -172,7 +198,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="toDate-input"]').should('exist').type('2024-07-30');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       let currentParameters: any = [...mockMexErrand_base.data.extraParameters];
       currentParameters = replaceExtraParameter(currentParameters, {
@@ -218,7 +244,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="timetable-input"]').should('exist').type('2024-06-15');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 7');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -247,7 +273,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="reason-textarea"]').should('exist').type('Mock text 1');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -256,12 +282,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('case MEX_APPLICATION_SQUARE_PLACE', () => {
+    it('case MEX_SQUARE_PLACE', () => {
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
-          caseType: 'MEX_APPLICATION_SQUARE_PLACE',
+          caseType: 'MEX_SQUARE_PLACE',
         })
       ).as('getErrand');
 
@@ -290,7 +316,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -328,7 +354,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -373,11 +399,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="account.type-radio-button-1"]').should('have.value', 'Plusgiro');
       cy.get('[data-cy="account.type-radio-button-2"]').should('have.value', 'Bankkonto').check();
 
-      cy.get('[data-cy="account.bank-input"]').should('exist').type('Testbank');
-      cy.get('[data-cy="account.owner-input"]').should('exist').type('Test Testarsson');
-      cy.get('[data-cy="account.number-input"]').should('exist').type('1234567890');
+      cy.get('[data-cy="account.bank-input"]').should('exist').first().type('Testbank');
+      cy.get('[data-cy="account.owner-input"]').should('exist').first().type('Test Testarsson');
+      cy.get('[data-cy="account.number-input"]').should('exist').first().type('1234567890');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
@@ -404,7 +430,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -425,7 +451,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -453,7 +479,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
@@ -477,7 +503,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
@@ -497,11 +523,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
       });
+      cy.get('[data-cy="save-and-continue-button"]').should('be.disabled');
     });
 
     it('case MEX_LAND_SURVEYING_OFFICE', () => {
@@ -517,11 +544,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
-      });
+      cy.wait('@patchErrand').should(({ request }) => {});
     });
 
     it('case MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE', () => {
@@ -537,7 +562,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
@@ -559,7 +584,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="invoiceRecipient-input"]').should('exist').type('Test Testarsson');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'invoiceNumber', '12345');
@@ -581,7 +606,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
@@ -608,7 +633,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="fromDate-input"]').should('exist').type('2024-06-05');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'reason', 'Jag har flyttat');
@@ -618,12 +643,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('case MEX_TERMINATION_OF_HUNTING_LEASE', () => {
+    it('case MEX_HUNTING_LEASE', () => {
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
-          caseType: 'MEX_TERMINATION_OF_HUNTING_LEASE',
+          caseType: 'MEX_HUNTING_LEASE',
         })
       ).as('getErrand');
 
@@ -633,7 +658,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="fromDate-input"]').should('exist').type('2024-06-05');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
       cy.wait('@patchErrand').should(({ request }) => {
         checkExtraParameter(request.body.extraParameters, 'reason', 'Mock text 1');

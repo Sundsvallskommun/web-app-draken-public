@@ -33,7 +33,6 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)
     ) as (keyof IErrand)[];
     fieldNames.push('propertyDesignation' as keyof IErrand);
-    fieldNames.push('facilities' as keyof IErrand);
 
     const isValid = await trigger(fieldNames);
 

@@ -15,6 +15,7 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { AngeSymbol } from '@styles/ange-symbol';
 
 export default function BaseErrandLayout({ children }) {
   const {
@@ -43,7 +44,7 @@ export default function BaseErrandLayout({ children }) {
       <Logo
         variant="service"
         title={'Draken'}
-        symbol={appConfig.symbol}
+        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
@@ -57,7 +58,11 @@ export default function BaseErrandLayout({ children }) {
           appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo variant="symbol" symbol={appConfig.symbol} className="h-40" />
+        <Logo
+          variant="symbol"
+          symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+          className="h-40"
+        />
       </a>
       <span className="text-large">
         {appConfig.isSupportManagement ? (

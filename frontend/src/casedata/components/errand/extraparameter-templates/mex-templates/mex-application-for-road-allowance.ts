@@ -72,7 +72,7 @@ export const mexApplicationForRoadAllowance_UppgiftFieldTempalte: UppgiftField[]
     section: 'Övergripande',
   },
   {
-    field: 'account.number',
+    field: 'account.gironumber',
     value: '',
     label: 'Giro-nummer',
     formField: {
@@ -81,7 +81,7 @@ export const mexApplicationForRoadAllowance_UppgiftFieldTempalte: UppgiftField[]
     section: 'Övergripande',
   },
   {
-    field: 'account.owner',
+    field: 'account.giroowner',
     value: '',
     label: 'Giro-ägare',
     formField: {
