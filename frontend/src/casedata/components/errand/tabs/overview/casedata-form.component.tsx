@@ -153,7 +153,6 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               <Input type="hidden" {...register('status')} />
               <FormControl id="errandCategory" className="w-full" required>
                 <FormLabel>Ärendetyp</FormLabel>
-                <Input type="hidden" />
                 <Select
                   {...register('caseType')}
                   disabled={isErrandLocked(errand)}
