@@ -59,7 +59,8 @@ export const RenderedSupportMessage: React.FC<{
 
   const getMessageOwner = (msg: Message) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
-      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) => stakeholder.role.includes('PRIMARY'));
+      const ownerInfomration =
+        supportErrand.stakeholders?.filter((stakeholder) => stakeholder.role.includes('PRIMARY')) ?? [];
       const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.contactChannels.some((value) => value.value === msg.sender)

@@ -165,6 +165,9 @@ export interface Label {
    * @example "keycard"
    */
   name: string;
+  resourcePath: string;
+  resourceName: string;
+  id: string;
   labels?: Label[];
 }
 

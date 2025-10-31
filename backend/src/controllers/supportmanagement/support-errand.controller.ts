@@ -14,6 +14,7 @@ import {
   ContactChannel,
   ErrandAttachment,
   ExternalTag,
+  Label,
   Notification,
   PageErrand,
   Parameter,
@@ -44,6 +45,7 @@ import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } fr
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+import { v4 as uuidv4, v4 } from 'uuid';
 
 export enum CustomerType {
   PRIVATE,
@@ -506,6 +508,62 @@ export class SupportErrandController {
     const errandResponse = await this.apiService.get<SupportErrand>({ url }, req.user);
     const errandData = errandResponse.data;
 
+    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
+    const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
+    console.log('metadataRes', metadataRes.data);
+    console.log('errand.labels', errandData.labels);
+    const labelObjects = errandData.labels?.map(label => {
+      console.log('label', label);
+      const levels = label.split('.');
+      if (levels.length == 1) {
+        const matchingCategory = metadataRes.data.labelStructure?.find(l => l.name === levels[0]);
+        console.log('matchingCategory', matchingCategory);
+        // delete matchingCategory?.labels;
+        return matchingCategory;
+      } else if (levels.length == 2) {
+        const matchingCategory = metadataRes.data.labelStructure?.find(l => l.name === levels[0]);
+        const matchingType = matchingCategory?.labels?.find(l => l.name === label);
+        console.log('matchingCategory', matchingCategory);
+        console.log('matchingType', matchingType);
+        // delete matchingCategory?.labels;
+        // delete matchingType?.labels;
+        return matchingType;
+      } else if (levels.length == 3) {
+        const matchingCategory = metadataRes.data.labelStructure?.find(l => l.name === levels[0]);
+        const matchingType = matchingCategory?.labels?.find(l => l.name === levels[0] + '.' + levels[1]);
+        const matchingSubType = matchingType?.labels?.find(l => l.name === label);
+        console.log('matchingCategory', matchingCategory);
+        console.log('matchingType', matchingType);
+        console.log('matchingSubType', matchingSubType);
+        // delete matchingCategory?.labels;
+        // delete matchingType?.labels;
+        // delete matchingSubType?.labels;
+        return matchingSubType;
+      }
+      // const depth = label.split('.').length - 1;
+      // return {
+      //   id: v4(),
+      //   displayName: label.toLocaleLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
+      //   name: label,
+      //   resourcePath: label.replace(/\./g, '/'),
+      //   resourceName: label.split('.').pop() || label,
+      //   classification: depth === 0 ? 'CATEGORY' : depth === 1 ? 'TYPE' : 'SUBTYPE',
+      // };
+    });
+    errandData.labels = labelObjects as any;
+
+    // errandData.labels = errandData.labels?.map(label => {
+    //   const depth = label.split('.').length - 1;
+    //   return {
+    //     id: v4(),
+    //     classification: depth === 0 ? 'CATEGORY' : depth === 1 ? 'TYPE' : 'SUBTYPE',
+    //     displayName: label.toLocaleLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
+    //     name: label,
+    //     resourcePath: label.replace(/\./g, '/'),
+    //     resourceName: label.split('.').pop() || label,
+    //   } as any;
+    // });
+
     return response.send((await this.preparedErrandResponse(errandData, req)).data);
   }
 
@@ -562,6 +620,54 @@ export class SupportErrandController {
     }
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
     const data = res.data;
+    console.log('data', data);
+    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
+    const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
+    console.log('metadataRes', metadataRes.data);
+    const errandsWithLabelObjects: any[] = data.content.map(errand => {
+      console.log('errand.labels', errand.labels);
+      const labelObjects = errand.labels?.map(label => {
+        console.log('label', label);
+        const levels = label.split('.');
+        if (levels.length == 1) {
+          const matchingCategory = metadataRes.data.labelStructure?.find(l => l.name === levels[0]);
+          console.log('matchingCategory', matchingCategory);
+          // delete matchingCategory?.labels;
+          return matchingCategory;
+        } else if (levels.length == 2) {
+          const matchingCategory = metadataRes.data.labelStructure?.find(l => l.name === levels[0]);
+          const matchingType = matchingCategory?.labels?.find(l => l.name === label);
+          console.log('matchingCategory', matchingCategory);
+          console.log('matchingType', matchingType);
+          // delete matchingCategory?.labels;
+          // delete matchingType?.labels;
+          return matchingType;
+        } else if (levels.length == 3) {
+          const matchingCategory = metadataRes.data.labelStructure?.find(l => l.name === levels[0]);
+          const matchingType = matchingCategory?.labels?.find(l => l.name === levels[0] + '.' + levels[1]);
+          const matchingSubType = matchingType?.labels?.find(l => l.name === label);
+          console.log('matchingCategory', matchingCategory);
+          console.log('matchingType', matchingType);
+          console.log('matchingSubType', matchingSubType);
+          // delete matchingCategory?.labels;
+          // delete matchingType?.labels;
+          // delete matchingSubType?.labels;
+          return matchingSubType;
+        }
+        // const depth = label.split('.').length - 1;
+        // return {
+        //   id: v4(),
+        //   displayName: label.toLocaleLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
+        //   name: label,
+        //   resourcePath: label.replace(/\./g, '/'),
+        //   resourceName: label.split('.').pop() || label,
+        //   classification: depth === 0 ? 'CATEGORY' : depth === 1 ? 'TYPE' : 'SUBTYPE',
+        // };
+      });
+      return { ...errand, labels: labelObjects };
+    });
+    console.log('dataWithLabelObjects', errandsWithLabelObjects);
+    data.content = errandsWithLabelObjects;
     return response.status(200).send(data);
   }
 

@@ -244,23 +244,26 @@ export const findAttestationStatusLabelForAttestationStatusKey = (attestationSta
 
 export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
   errand.labels.length !== 0
-    ? metadata?.labels.labelStructure.find((c) => errand.labels.includes(c.name))
+    ? // ? metadata?.labels.labelStructure.find((c) => errand.labels.includes(c.name))
+      errand.labels.find((label) => label.classification === 'CATEGORY')
     : metadata?.labels.labelStructure.find((c) => errand.classification.category === c.name);
 
 export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata) => {
-  const types = getLabelCategory(errand, metadata)?.labels;
-  const matchingType = types?.find((t) => errand.labels.includes(t.name));
-  if (matchingType) {
-    return matchingType;
-  }
-  return types?.find((t) => t.name === errand.classification?.type);
+  return errand.labels.find((label) => label.classification === 'TYPE');
+  // const types = getLabelCategory(errand, metadata)?.labels;
+  // const matchingType = types?.find((t) => errand.labels.includes(t.name));
+  // if (matchingType) {
+  //   return matchingType;
+  // }
+  // return types?.find((t) => t.name === errand.classification?.type);
 };
 
 export const getLabelSubType = (errand: SupportErrand, metadata: SupportMetadata) => {
-  const types = getLabelCategory(errand, metadata)?.labels;
-  const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
-  const matchingSubType = subTypes?.find((s) => errand.labels.includes(s.name));
-  return matchingSubType;
+  return errand.labels.find((label) => label.classification === 'SUBTYPE');
+  // const types = getLabelCategory(errand, metadata)?.labels;
+  // const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
+  // const matchingSubType = subTypes?.find((s) => errand.labels.includes(s.name));
+  // return matchingSubType;
 };
 
 export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] => {
@@ -460,6 +463,7 @@ export const useSupportErrands = (
       setIsLoading(true);
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
+          console.log('Fetched errands:', res);
           setSupportErrands({ ...res, isLoading: false });
         })
         .catch(() => {
@@ -683,6 +687,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
 
 export const handleErrandResponse: (res: ApiSupportErrand[]) => SupportErrand[] = (res) => {
   const errands = res.map(mapApiSupportErrandToSupportErrand);
+  console.log("Handled errands' response:", errands);
   return errands;
 };
 
@@ -716,9 +721,11 @@ export const getSupportErrands: (
         totalElements: res.data.totalElements,
         labels: [],
       } as SupportErrandsData;
+      console.log("Returned errands' data:", response);
       return response;
     })
     .catch((e) => {
+      console.error('Error: could not fetch errands.', e);
       return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };

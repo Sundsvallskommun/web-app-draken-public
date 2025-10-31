@@ -18,6 +18,8 @@ import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
+import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
+import { mockRelations } from './fixtures/mockRelations';
 
 ////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
@@ -49,6 +51,14 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       );
       cy.intercept('GET', '**/supportnotes/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockComments).as('getNotes');
       cy.intercept('POST', '**/supportnotes/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockComments).as('addNote');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
     });
 
     it('shows the correct base errand and sidebar main buttons', () => {
@@ -161,18 +171,19 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
         'postMessage'
       );
-      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Vidarebefordra ärendet').click();
+      cy.get('[data-cy="save-button"]').contains('Spara ärende').should('be.enabled').click();
+      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
 
       cy.get(`article.sk-modal-dialog`).should('exist');
 
       cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
       cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej,');
 
-      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Vidarebefordra ärende').click();
+      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Överlämna ärende').click();
 
-      cy.get('.sk-dialog').should('exist').contains('Vill du vidarebefordra ärendet?');
+      cy.get('.sk-dialog').should('exist').contains('Vill du överlämna ärendet?');
       cy.get('.sk-dialog .sk-btn-secondary').contains('Nej').should('exist');
       cy.get('.sk-dialog .sk-btn-primary').contains('Ja').should('exist').click();
       cy.wait('@postMessage');
@@ -183,6 +194,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('.sk-modal-dialog .sk-btn-primary').contains('Parkera ärende').click();
       const solveLables = [
         { label: 'Avslutat', id: 'SOLVED' },
+        { label: 'Registrerat i annat system', id: 'REGISTERED_EXTERNAL_SYSTEM' },
         { label: 'Åter till chef', id: 'BACK_TO_MANAGER' },
         { label: 'Åter till HR', id: 'BACK_TO_HR' },
       ];
@@ -190,8 +202,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       //can change supportErrand to solved
       cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
       cy.get('article.sk-modal-dialog').should('exist').contains('Välj en lösning');
-      cy.get('[data-cy="solve-radiolist"] li').should('have.length', solveLables.length);
-      cy.get('[data-cy="solve-radiolist"] li input').eq(1).should('have.value', solveLables[1].id).check();
+      cy.get('[data-cy="solve-radiolist"] label').should('have.length', solveLables.length);
+      cy.get('[data-cy="solve-radiolist"] label input').eq(1).should('have.value', solveLables[1].id).check();
       cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist').click();
     });
 
@@ -242,7 +254,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
-      cy.get(`[data-cy="suspend-button"]`).should('exist').click();
+      cy.get(`[data-cy="resume-button"]`).should('exist').click();
       cy.get('button').contains('Ja').should('exist').click();
 
       cy.wait('@updateErrand').then((interception) => {

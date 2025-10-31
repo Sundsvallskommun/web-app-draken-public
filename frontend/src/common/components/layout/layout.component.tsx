@@ -72,6 +72,7 @@ export default function Layout({ title, children }) {
             <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
             <span className="font-bold ml-8">
               {supportMetadata?.categories
+                // FIXME Hur blir detta när categories och type har kvar name med punkt, medan labels övergått till resourcePath och slash?
                 ?.find((t) => t.name === supportErrand.category)
                 ?.types.find((t) => t.name === supportErrand.classification.type)?.displayName ||
                 supportErrand.type}{' '}

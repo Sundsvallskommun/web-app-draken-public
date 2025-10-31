@@ -155,6 +155,7 @@ export const SupportErrandsTable: React.FC = () => {
   };
 
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
+    console.log('errand in table row', errand);
     const notification = findLatestNotification(errand);
     return (
       <Table.Row

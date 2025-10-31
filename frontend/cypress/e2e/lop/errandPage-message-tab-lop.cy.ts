@@ -13,6 +13,8 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
+import { mockRelations } from './fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Message tab', () => {
@@ -34,6 +36,14 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         '**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
         mockSupportErrandCommunication
       ).as('sendMessage');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
     });
 
     const goToMessageTab = () => {
