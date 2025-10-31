@@ -194,6 +194,9 @@ export interface Label {
    * @minLength 1
    * @example "keyCard"
    */
+  resourcePath: string;
+  resourceName: string;
+  id: string;
   name: string;
   labels?: Label[];
 }

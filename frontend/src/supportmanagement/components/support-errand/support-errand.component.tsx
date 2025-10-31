@@ -158,6 +158,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                         {!supportErrandIsEmpty(supportErrand) ? (
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
                             {
+                              // FIXME Hur blir detta när categories och type har kvar name med punkt, medan labels övergått till resourcePath och slash?
                               categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                 ?.displayName
                             }
