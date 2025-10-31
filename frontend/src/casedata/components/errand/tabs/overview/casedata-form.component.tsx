@@ -153,9 +153,11 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
               <Input type="hidden" {...register('status')} />
               <FormControl id="errandCategory" className="w-full" required>
                 <FormLabel>Ärendetyp</FormLabel>
-                <Input type="hidden" {...register('caseType')} />
+                <Input type="hidden" />
                 <Select
+                  {...register('caseType')}
                   disabled={isErrandLocked(errand)}
+                  readOnly={errand?.channel === Channels.ESERVICE_KATLA}
                   data-cy="casetype-input"
                   value={caseType}
                   className="w-full text-dark-primary"
@@ -168,7 +170,10 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 >
                   <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
                   {Object.entries(getCaseLabels())
-                    .filter(([key]) => !caseTypesHiddenFromRegistation.includes(key))
+                    .filter(([key]) => {
+                      if (errand?.channel === Channels.ESERVICE_KATLA) return true;
+                      return !caseTypesHiddenFromRegistation.includes(key);
+                    })
                     .sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([key, label]: [string, string], index) => {
                       return (
@@ -182,6 +187,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                       );
                     })}
                 </Select>
+
                 {errors.caseType && (
                   <div className="my-sm text-error">
                     <FormErrorMessage>{errors.caseType?.message}</FormErrorMessage>
