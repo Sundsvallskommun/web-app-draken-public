@@ -21,14 +21,8 @@ import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
-interface CasedataDetailsProps {
-  update: () => void;
-  setUnsaved: Dispatch<SetStateAction<boolean>>;
-  registeringNewErrand: boolean;
-}
-
-export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+export const CasedataDetailsTab: React.FC<{}> = () => {
+  const { municipalityId, errand, setErrand, user, setUnsavedFacility } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const toastMessage = useSnackbar();
 
@@ -45,7 +39,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
-      props.setUnsaved(false);
+      setIsLoading(undefined);
+      setUnsavedFacility(false);
       return getErrand(municipalityId, errand.id.toString())
         .then((res) => {
           setErrand(res.errand);
@@ -156,7 +151,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   return (
     <form
       onChange={() => {
-        props.setUnsaved(true);
+        setUnsavedFacility(true);
         trigger();
       }}
       onSubmit={(event) => {
@@ -164,48 +159,36 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
         return false;
       }}
     >
-      <div className="w-full py-24 px-32">
-        <div className="flex">
-          <div className="w-full">
-            <h2 className="text-h4-sm md:text-h4-md mb-lg">Ärendeuppgifter</h2>
-            {errand?.externalCaseId ? (
-              <>
-                <strong className="my-lg">Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
-              </>
-            ) : null}
-            {appConfig.features.useFacilities ? (
-              <Disclosure
-                variant="alt"
-                header="Fastigheter"
-                data-cy="facilities-disclosure"
-                icon={<LucideIcon name="map-pin" />}
-              >
-                <Facilities
-                  facilities={realEstates}
-                  setUnsaved={props.setUnsaved}
-                  setValue={setValue}
-                  onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
-                />
-              </Disclosure>
-            ) : null}
-            {sections.map(({ label, icon }, idx) => {
-              const filtered = fields?.filter((f) => f.section === label);
-              return filtered?.length ? <div key={idx}>{renderSection(filtered, label, icon)}</div> : null;
-            })}
-            <div className="flex my-24 gap-xl">
-              <FormControl id="description" className="w-full">
-                <FormLabel>Ärendebeskrivning</FormLabel>
+      <h2 className="text-h2-md mb-md">Ärendeuppgifter</h2>
+      {errand?.externalCaseId ? (
+        <>
+          <strong className="my-lg">Ärendenummer i e-tjänst</strong> {errand.externalCaseId}
+        </>
+      ) : null}
+      {appConfig.features.useFacilities ? (
+        <Disclosure variant="alt" header="Fastigheter" icon={<LucideIcon name="map-pin" />}>
+          <Facilities
+            facilities={realEstates}
+            setValue={setValue}
+            onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
+          />
+        </Disclosure>
+      ) : null}
+      {sections.map(({ label, icon }, idx) => {
+        const filtered = fields?.filter((f) => f.section === label);
+        return filtered?.length ? <div key={idx}>{renderSection(filtered, label, icon)}</div> : null;
+      })}
+      <div className="flex my-24 gap-xl">
+        <FormControl id="description" className="w-full">
+          <FormLabel>Ärendebeskrivning</FormLabel>
 
-                <TextEditor
-                  className={'h-[25rem] case-description-editor'}
-                  readOnly
-                  disableToolbar
-                  value={{ markup: description }}
-                />
-              </FormControl>
-            </div>
-          </div>
-        </div>
+          <TextEditor
+            className={'h-[25rem] case-description-editor'}
+            readOnly
+            disableToolbar
+            value={{ markup: description }}
+          />
+        </FormControl>
       </div>
     </form>
   );

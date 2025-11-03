@@ -84,32 +84,23 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
 
   return (
     <>
-      <div className="w-full py-24 px-32">
-        <div className="w-full flex justify-between items-center flex-wrap h-40">
-          <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
-            <h2 className="text-h4-sm md:text-h4-md">Tillstånd och tjänster</h2>
-          </div>
+      <div className="w-full flex justify-between items-center flex-wrap h-40">
+        <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
+          <h2 className="text-h2-md max-medium-device:text-h4-md">Tillstånd och tjänster</h2>
         </div>
-        <div className="py-8 w-full gap-24">
-          <p className="w-4/5 pr-16">Här samlas historik på ärendeägarens tillstånd och tjänster</p>
-        </div>
-        {assets ? (
-          <>
-            {' '}
-            {assets.length !== 0 && (
-              <AutoTable
-                background={false}
-                footer={false}
-                autodata={assets}
-                autoheaders={assetHeaders}
-                data-cy="assets-table"
-              />
-            )}
-          </>
-        ) : (
-          <> </>
-        )}
       </div>
+      <div className="py-8 w-full gap-24">
+        <p className="w-4/5 pr-16">Här samlas historik på ärendeägarens tillstånd och tjänster</p>
+      </div>
+      {assets && assets.length !== 0 && (
+        <AutoTable
+          background={false}
+          footer={false}
+          autodata={assets}
+          autoheaders={assetHeaders}
+          data-cy="assets-table"
+        />
+      )}
     </>
   );
 };

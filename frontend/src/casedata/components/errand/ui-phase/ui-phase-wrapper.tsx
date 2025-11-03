@@ -1,10 +1,20 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { useAppContext } from '@common/contexts/app.context';
-import { UiPhaseComponent } from '../ui-phase.component';
+import { UiPhaseComponent } from './ui-phase.component';
+import { useEffect } from 'react';
+import { getUiPhase } from '@casedata/services/casedata-errand-service';
 
 export const UiPhaseWrapper = () => {
-  const { errand, uiPhase } = useAppContext();
+  const { errand, uiPhase, setUiPhase } = useAppContext();
+
+  useEffect(() => {
+    if (errand) {
+      setUiPhase(getUiPhase(errand));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errand]);
+
   const arrow = <span className="border-t-2 border-r-2 h-[26px] w-[28px] rotate-45"></span>;
 
   return (

@@ -7,13 +7,11 @@ import { deepFlattenToObject } from '@common/services/helper-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;
-  setUnsaved: (unsaved: boolean) => void;
-  update: () => void;
   color?: string;
   label?: string;
   icon?: JSX.Element;
@@ -26,7 +24,6 @@ export const SaveButtonComponent: React.FC<{
     errand: IErrand;
     municipalityId: string;
   } = useAppContext();
-  const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const router = useRouter();
 
   const { registeringNewErrand } = props;
@@ -34,12 +31,12 @@ export const SaveButtonComponent: React.FC<{
 
   useEffect(() => {
     setTimeout(() => {
-      if (errandNumber && window.location.pathname.includes('registrera') && !formState.isDirty) {
-        router.push(`/arende/${municipalityId}/${errandNumber}`);
+      if (errand?.errandNumber && registeringNewErrand) {
+        router.push(`/arende/${errand?.errandNumber}/grundinformation`);
       }
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formState.isDirty, errandNumber]);
+  }, [formState.isDirty, errand?.errandNumber]);
 
   const saveErrand = useSaveCasedataErrand(registeringNewErrand);
 
@@ -52,7 +49,7 @@ export const SaveButtonComponent: React.FC<{
           isErrandLocked(errand) ||
           !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
           !formState.isValid ||
-          errand.status?.statusType === ErrandStatus.Parkerad
+          errand?.status?.statusType === ErrandStatus.Parkerad
         }
         type="button"
         onClick={handleSubmit(() => {

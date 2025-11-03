@@ -37,7 +37,6 @@ export class CaseDataAttachmentController {
     const baseURL = apiURL(this.SERVICE);
 
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
-    console.log('files:', files);
     const data: CreateAttachmentDto = {
       file: files[0].buffer.toString('base64'),
       category: attachmentData.category,

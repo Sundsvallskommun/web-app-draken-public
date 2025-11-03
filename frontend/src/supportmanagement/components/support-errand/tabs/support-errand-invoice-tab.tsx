@@ -17,7 +17,6 @@ import {
   saveBillingRecord,
 } from '@supportmanagement/services/support-billing-service';
 import {
-  ApiSupportErrand,
   getSupportErrandById,
   isSupportErrandLocked,
   SupportErrand,
@@ -31,11 +30,7 @@ import {
   CBillingRecordTypeEnum,
 } from 'src/data-contracts/backend/data-contracts';
 
-export const SupportErrandInvoiceTab: React.FC<{
-  errand: ApiSupportErrand;
-  setUnsaved: (unsaved: boolean) => void;
-  update: () => void;
-}> = (props) => {
+export const SupportErrandInvoiceTab: React.FC<{}> = () => {
   const {
     supportErrand,
     user,

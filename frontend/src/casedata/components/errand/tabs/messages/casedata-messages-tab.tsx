@@ -14,7 +14,6 @@ import { MessageComposer } from './message-composer.component';
 import MessageTreeComponent from './tree.component';
 
 export const CasedataMessagesTab: React.FC<{
-  setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
   const {
@@ -164,86 +163,83 @@ export const CasedataMessagesTab: React.FC<{
 
   return (
     <>
-      <div className="w-full py-24 px-32">
-        <div className="w-full flex justify-between items-center flex-wrap h-40">
-          <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
-            <h2 className="text-h4-sm md:text-h4-md">Meddelanden</h2>
-          </div>
-          <Button
-            type="button"
-            disabled={isErrandLocked(errand) || !allowed}
-            size="sm"
-            variant="primary"
-            color="vattjom"
-            inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<LucideIcon name="mail" size={18} />}
-            onClick={() => {
-              setSelectedMessage(undefined);
-              setShowMessageComposer(true);
-            }}
-            data-cy="new-message-button"
-          >
-            Nytt meddelande
-          </Button>
+      <div className="w-full flex justify-between items-center flex-wrap h-40">
+        <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
+          <h2 className="text-h2-md">Meddelanden</h2>
         </div>
-        <div className="py-8 w-full gap-24">
-          <p className="w-4/5 pr-16">
-            På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med
-            ärendets olika intressenter.
-          </p>
-        </div>
-
-        <div className="flex flex-row gap-30">
-          <div className="flex flex-col">
-            <FormLabel>Visa</FormLabel>
-            <Select
-              className="w-[16rem]"
-              size="sm"
-              aria-label="Välj ett sorteringsalternativ"
-              value={sortMessages.toString()}
-              onChange={(e) => setSortMessages(Number(e.target.value))}
-            >
-              <Select.Option value={0}>Alla</Select.Option>
-              <Select.Option value={1}>Mottagna</Select.Option>
-              <Select.Option value={2}>Skickade</Select.Option>
-            </Select>
-          </div>
-          <div className="flex flex-col">
-            <FormLabel>Inkom via</FormLabel>
-            <Select
-              className="w-[16rem]"
-              size="sm"
-              aria-label="Välj källa"
-              value={filterSource.toString()}
-              onChange={(e) => setFilterSource(Number(e.target.value))}
-            >
-              <Select.Option value={0}>Alla</Select.Option>
-              <Select.Option value={1}>Draken</Select.Option>
-              <Select.Option value={2}>Digital brevlåda</Select.Option>
-              <Select.Option value={3}>E-post</Select.Option>
-              <Select.Option value={4}>Mina sidor</Select.Option>
-              <Select.Option value={5}>SMS</Select.Option>
-              <Select.Option value={6}>E-tjänst</Select.Option>
-            </Select>
-          </div>
-        </div>
-        {combinedMessages?.length ? (
-          <MessageTreeComponent
-            nodes={sortedMessages}
-            onSelect={(msg: MessageResponse) => {
-              setMessageViewed(msg);
-              setSelectedMessage(msg);
-            }}
-            setShowMessageComposer={setShowMessageComposer}
-          />
-        ) : (
-          <>
-            <Divider className="pt-24" />
-            <p className="pt-24 text-dark-disabled">Inga meddelanden</p>
-          </>
-        )}
+        <Button
+          type="button"
+          disabled={isErrandLocked(errand) || !allowed}
+          size="sm"
+          variant="primary"
+          color="vattjom"
+          inverted={!(isErrandLocked(errand) || !allowed)}
+          rightIcon={<LucideIcon name="mail" size={18} />}
+          onClick={() => {
+            setSelectedMessage(undefined);
+            setShowMessageComposer(true);
+          }}
+          data-cy="new-message-button"
+        >
+          Nytt meddelande
+        </Button>
       </div>
-      <div className="h-xl"></div>
+      <div className="py-8 w-full gap-24">
+        <p className="w-4/5 pr-16">
+          På denna sida har du möjlighet att föra dialoger och säkerställa en smidig informationsutväxling med ärendets
+          olika intressenter.
+        </p>
+      </div>
+
+      <div className="flex flex-row gap-30">
+        <div className="flex flex-col">
+          <FormLabel>Visa</FormLabel>
+          <Select
+            className="w-[16rem]"
+            size="sm"
+            aria-label="Välj ett sorteringsalternativ"
+            value={sortMessages.toString()}
+            onChange={(e) => setSortMessages(Number(e.target.value))}
+          >
+            <Select.Option value={0}>Alla</Select.Option>
+            <Select.Option value={1}>Mottagna</Select.Option>
+            <Select.Option value={2}>Skickade</Select.Option>
+          </Select>
+        </div>
+        <div className="flex flex-col">
+          <FormLabel>Inkom via</FormLabel>
+          <Select
+            className="w-[16rem]"
+            size="sm"
+            aria-label="Välj källa"
+            value={filterSource.toString()}
+            onChange={(e) => setFilterSource(Number(e.target.value))}
+          >
+            <Select.Option value={0}>Alla</Select.Option>
+            <Select.Option value={1}>Draken</Select.Option>
+            <Select.Option value={2}>Digital brevlåda</Select.Option>
+            <Select.Option value={3}>E-post</Select.Option>
+            <Select.Option value={4}>Mina sidor</Select.Option>
+            <Select.Option value={5}>SMS</Select.Option>
+            <Select.Option value={6}>E-tjänst</Select.Option>
+          </Select>
+        </div>
+      </div>
+      {combinedMessages?.length ? (
+        <MessageTreeComponent
+          nodes={sortedMessages}
+          onSelect={(msg: MessageResponse) => {
+            setMessageViewed(msg);
+            setSelectedMessage(msg);
+          }}
+          setShowMessageComposer={setShowMessageComposer}
+        />
+      ) : (
+        <>
+          <Divider className="pt-24" />
+          <p className="pt-24 text-dark-disabled">Inga meddelanden</p>
+        </>
+      )}
       <MessageComposer
         message={selectedMessage}
         show={showMessageComposer}
@@ -253,7 +249,6 @@ export const CasedataMessagesTab: React.FC<{
             setSelectedMessage(undefined);
           }, 0);
         }}
-        setUnsaved={props.setUnsaved}
         update={props.update}
       />
     </>

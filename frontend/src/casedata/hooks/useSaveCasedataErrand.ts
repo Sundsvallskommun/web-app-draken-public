@@ -24,7 +24,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
 
   async function saveCaseDetails(data: IErrand): Promise<ExtraParameter[] | null> {
-    if (!errand.extraParameters) {
+    if (!errand?.extraParameters) {
       return [];
     }
     const uppgifter = extraParametersToUppgiftMapper(data);

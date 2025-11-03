@@ -1,8 +1,6 @@
-import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { useAppContext } from '@common/contexts/app.context';
 import { isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
@@ -12,7 +10,6 @@ import {
   Status,
   StatusLabel,
   StatusLabelROB,
-  SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
   isSupportErrandLocked,
@@ -25,7 +22,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
-import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
@@ -33,23 +30,16 @@ import { StartProcessComponent } from './start-process.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 
-export const SidebarInfo: React.FC<{
-  unsavedFacility: boolean;
-  setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
-}> = (props) => {
+export const SidebarInfo: React.FC<{}> = () => {
   const {
     user,
     supportErrand,
     setSupportErrand,
     administrators,
     municipalityId,
-  }: {
-    user: any;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-    administrators: Admin[];
-    uiPhase: UiPhase;
-    municipalityId: string;
+    unsavedFacility,
+    setUnsavedFacility,
+    setUnsavedChanges,
   } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<{ key: string; label: string }[]>([]);
   const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
@@ -127,10 +117,10 @@ export const SidebarInfo: React.FC<{
           updateSupportErrandStatus(getValues().status);
         }
 
-        if (props.unsavedFacility) {
+        if (unsavedFacility) {
           saveFacilityInfo(supportErrand.id, getValues().facilities)
             .then(() => {
-              props.setUnsavedFacility(false);
+              setUnsavedFacility(false);
               setIsLoading(false);
             })
             .catch(() => {
@@ -156,6 +146,7 @@ export const SidebarInfo: React.FC<{
           setSupportErrand(e.errand);
           reset(e.errand);
         }, 0);
+        setUnsavedChanges(false);
         return res;
       })
       .catch((e) => {

@@ -110,7 +110,7 @@ const SupportManagementFiltering: React.FC<{
               {show ? 'Dölj filter' : `Visa filter ${numberOfFilters !== 0 ? `(${numberOfFilters})` : ''}`}
             </Button>
             <Link
-              href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+              href={`${process.env.NEXT_PUBLIC_BASEPATH}/arende/registrera`}
               target="_blank"
               data-cy="register-new-errand-button"
             >
