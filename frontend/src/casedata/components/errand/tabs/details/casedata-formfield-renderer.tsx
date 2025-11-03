@@ -352,7 +352,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'checkbox' && (
         <>
-          <Checkbox.Group direction="row" value={checkboxValue} onChange={handleCheckboxChange}>
+          <Checkbox.Group direction="column" value={checkboxValue} onChange={handleCheckboxChange}>
             {checkboxOptions.map((option, index) => (
               <Checkbox
                 key={`${option.value}-${index}`}
