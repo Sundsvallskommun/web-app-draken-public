@@ -170,7 +170,9 @@ export const getOrCreateConversationId = async (
   //   (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation.id
   // );
 
-  const existingRelationlessConversation = conversations.data.find((c) => c.relationIds.length === 0);
+  const existingRelationlessConversation = conversations.data.find(
+    (c) => c.relationIds.length === 0 && c.type !== 'EXTERNAL'
+  );
 
   let conversationId: string | undefined = undefined;
 
