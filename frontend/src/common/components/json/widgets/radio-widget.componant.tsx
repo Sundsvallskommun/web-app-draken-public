@@ -5,11 +5,12 @@ import { useId } from 'react';
 
 export function RadiobuttonWidget({ id, value, onChange, options, disabled, readonly, label, required }: WidgetProps) {
   const enumOptions = (options?.enumOptions as { value: any; label: string }[]) ?? [];
+  const customClassName = (options as any)?.className || 'w-full max-w-[40rem]';
   const uid = useId();
   const groupName = id ?? `radio-${uid}`;
 
   return (
-    <FormControl className="w-full max-w-[40rem]">
+    <FormControl className={customClassName}>
       <div className="flex flex-wrap gap-12" id={groupName} role="radiogroup" aria-labelledby={`${groupName}-label`}>
         {enumOptions.map((o) => (
           <RadioButton
