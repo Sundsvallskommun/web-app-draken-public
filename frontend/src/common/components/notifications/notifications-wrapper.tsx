@@ -29,7 +29,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
           return [];
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [municipalityId]);
+  }, [municipalityId, show]);
 
   const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
 
