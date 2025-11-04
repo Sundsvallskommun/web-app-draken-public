@@ -112,7 +112,7 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     value: [],
     label: 'Välj förflyttningshjälpmedel som den sökande är beroende av',
     formField: {
-      type: 'checkbox',
+      type: 'combobox',
       options: [
         { label: 'Rollator', value: 'WALKER', name: 'mobilityAids' },
         { label: 'Krycka, käpp, stavar', value: 'CRUTCH_CANE_POLES', name: 'mobilityAids' },
@@ -160,7 +160,7 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     value: [],
     label: 'Ange medicinska diagnoser',
     formField: {
-      type: 'checkbox',
+      type: 'combobox',
       options: [
         { label: 'Synskada', value: 'VISION_IMPAIRMENT', name: 'diagnoses' },
         { label: 'Fysisk, nedsatt rörelseförmåga', value: 'PHYSICAL_MOBILITY_IMPAIRMENT', name: 'diagnoses' },
