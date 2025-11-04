@@ -137,9 +137,10 @@ export const LinkedErrandsDisclosure: React.FC<{
 
   useEffect(() => {
     const fetchOtherErrands = async () => {
-      const otherErrands = relations.filter(
-        (relation) => !relationToErrands.some((errand) => errand.caseId === relation.target.resourceId)
-      );
+      const otherErrands =
+        relations?.filter(
+          (relation) => !relationToErrands.some((errand) => errand.caseId === relation.target.resourceId)
+        ) ?? [];
       const promises = await Promise.all(
         otherErrands.map((relation) => getErrandStatus(municipalityId, relation.target.type))
       );

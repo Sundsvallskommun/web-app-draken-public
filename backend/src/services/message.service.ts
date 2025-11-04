@@ -250,8 +250,11 @@ export const saveMessageOnErrand: (
 
   if (messagingInfo?.content?.attachments && messagingInfo?.content?.attachments?.length > 0) {
     for (const attachment of messagingInfo.content.attachments) {
-      const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments/${attachment.name}`;
-      const attachmentResponse = await apiService.get<ArrayBuffer>({ url: attachmentUrl, responseType: 'arraybuffer' }, user);
+      const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments`;
+      const attachmentResponse = await apiService.get<ArrayBuffer>(
+        { url: attachmentUrl, params: { fileName: attachment.name }, responseType: 'arraybuffer' },
+        user,
+      );
       const attatchmentBase64 = Buffer.from(attachmentResponse.data).toString('base64');
       attachments.push({ ...attachment, content: attatchmentBase64 });
     }

@@ -345,7 +345,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 leftIcon={<LucideIcon name="mail" />}
                 className="w-full mt-16"
                 color="vattjom"
-                data-cy="new-message-button"
+                data-cy="sidebar-new-message-button"
                 variant="secondary"
                 disabled={isErrandLocked(errand) || !allowed}
                 onClick={() => {

@@ -5,6 +5,12 @@ export enum assetStatusLabels {
   BLOCKED = 'Blockerat',
 }
 
+interface JsonParameter {
+  key: string;
+  value: string;
+  schemaId: string;
+}
+
 export enum assetTypeLabels {
   PARKINGPERMIT = 'P-tillstånd',
 }
@@ -21,6 +27,7 @@ export interface Asset {
   statusReason: string;
   description: string;
   additionalParameters: { [key: string]: string };
+  jsonParameters: JsonParameter[];
 }
 
 export interface UpdateAsset {

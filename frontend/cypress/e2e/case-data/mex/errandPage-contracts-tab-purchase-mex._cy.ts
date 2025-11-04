@@ -8,6 +8,10 @@ import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContract } from '../fixtures/mockContract';
+import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
+import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page support attachments tab', () => {
@@ -34,11 +38,24 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
+      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
       cy.wait('@getContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').eq(3).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
     });
     const contractText = {
       data: {

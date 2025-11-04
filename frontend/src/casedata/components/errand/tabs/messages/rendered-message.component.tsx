@@ -22,7 +22,10 @@ export const RenderedMessage: React.FC<{
 }> = ({ message, onSelect, setShowMessageComposer, root = false, children }) => {
   const { user, errand, municipalityId } = useAppContext();
   const [allowed, setAllowed] = useState<boolean>(false);
-  const [expanded, setExpanded] = useState<boolean>(!message?.children?.length ? true : false);
+
+  // Changed logic for expanded message to see if it solve problem with unread message counter
+  // const [expanded, setExpanded] = useState<boolean>(!message?.children?.length ? true : false);
+  const [expanded, setExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -77,6 +80,7 @@ export const RenderedMessage: React.FC<{
                 <div>
                   {!root ? <CornerDownRight size={16} className="mr-sm" /> : null}
                   <p
+                    data-cy="sender"
                     className={cx(`mr-md break-all text-small font-bold`)}
                     dangerouslySetInnerHTML={{
                       __html: `Från: ${sanitized(getSender(message))}`,
@@ -175,6 +179,7 @@ export const RenderedMessage: React.FC<{
         <div className="pl-xl flex justify-between items-start">
           <p
             className={cx(`my-0 text-primary`, message.viewed ? 'font-normal' : 'font-bold')}
+            data-cy="message-subject"
             dangerouslySetInnerHTML={{
               __html: sanitized(message.subject || ''),
             }}
@@ -188,6 +193,7 @@ export const RenderedMessage: React.FC<{
               type="button"
               className="self-start"
               color="vattjom"
+              data-cy="respond-button"
               disabled={isErrandLocked(errand) || !allowed}
               size="sm"
               variant="primary"
@@ -210,6 +216,7 @@ export const RenderedMessage: React.FC<{
               <Icon icon={<Paperclip />} size="1.6rem" />
               {message?.attachments?.map((a, idx) => (
                 <Button
+                  data-cy={`message-attachment-${idx}`}
                   key={`${a.fileName}-${idx}`}
                   onClick={() => {
                     if (message.conversationId) {
@@ -289,8 +296,11 @@ export const RenderedMessage: React.FC<{
           <div className="my-18">
             <span
               className="text"
+              data-cy="message-body"
               dangerouslySetInnerHTML={{
-                __html: formatMessage(sanitized(message?.message?.replace(/\r\n/g, '<br>') || '')),
+                __html: message.htmlMessage
+                  ? sanitized(message.htmlMessage)
+                  : formatMessage(sanitized(message.message)),
               }}
             />
           </div>

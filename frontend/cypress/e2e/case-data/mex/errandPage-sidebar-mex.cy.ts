@@ -14,6 +14,8 @@ import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockErrand_base } from '../fixtures/mockErrand';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -28,7 +30,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('GET', '**/**/stakeholders/**', mockMexErrand_base.data.stakeholders);
+      cy.intercept('DELETE', '**/**/stakeholders/**', mockMexErrand_base.data.stakeholders);
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/assets?**', mockAsset);
+      cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
 
       cy.intercept('POST', '**/stakeholders/**', mockMexErrand_base.data.stakeholders);
       cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
@@ -57,23 +62,36 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get(`[aria-label="${mockSidebarButtons[5].label}"]`).should('exist');
     });
 
-    it.only('manages Information', () => {
-      cy.intercept('PATCH', '**/errands/*/stakeholders/*', mockMexErrand_base.data.stakeholders).as(
-        'patchStakeholders'
-      );
+    it.only('manages Administrators', () => {
+      cy.intercept('PATCH', '**/errands/*/stakeholders', mockMexErrand_base.data.stakeholders).as('patchStakeholders');
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
 
       cy.get(`[aria-label="${mockSidebarButtons[0].label}"]`).should('exist');
       cy.get('[data-cy="admin-input"]').should('exist').select('Testhandläggare Katarina');
-      cy.get('[data-cy="assign-administrator-button"]').should('exist').contains('Tilldela').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').contains('Spara ärende').click();
 
       cy.wait('@patchStakeholders').should(({ request }) => {
         expect(request.body.adAccount).to.equal('TESTADMIN1');
       });
+    });
 
-      cy.get('[data-cy="status-input"]').should('exist').select(1);
-      cy.get('[data-cy="save-status-button"]').should('exist').contains('Spara').click();
+    it.only('manages Status', () => {
+      cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
+
+      cy.get(`[aria-label="${mockSidebarButtons[0].label}"]`).should('exist');
+
+      cy.get('[data-cy="status-input"]').should('exist').should('not.be.disabled').select(1);
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').contains('Spara ärende').click();
       cy.get('[data-cy="status-input"]').should('exist').contains('Väntar på komplettering');
+      // FIXME Patch request is done twice (why? to save extraparameters separately?) so we
+      // must await twice verify body at this point. Not good.
+      cy.wait('@patchErrand').should(({ request }) => {
+        expect(request.body.id).to.equal(mockErrand_base.data.id.toString());
+      });
+      cy.wait('@patchErrand').should(({ request }) => {
+        console.log(request.body);
+        expect(request.body.status.statusType).to.equal('Väntar på komplettering');
+      });
     });
 
     it('manages Notes', () => {
@@ -218,7 +236,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .should('exist')
           .contains('Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.');
       } else {
-        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('not.exist');
+        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist');
       }
     });
   });

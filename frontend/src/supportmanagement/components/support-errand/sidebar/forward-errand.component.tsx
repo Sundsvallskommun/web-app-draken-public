@@ -111,7 +111,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
     resolver: yupResolver(yupForwardForm) as any,
     defaultValues: {
-      recipient: isKA() ? 'EMAIL' : '',
+      recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
       emails: [],
       department: 'MEX',
       message: '',

@@ -26,7 +26,7 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
+import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -360,18 +360,29 @@ export const MessageComposer: React.FC<{
   }, [contactMeans]);
 
   const defaultSignature = () => {
-    if (getValues('contactMeans') === 'draken' || getValues('contactMeans') === 'minasidor') {
-      return t('messages:templates.conversation_default_signature', { user: user.firstName + ' ' + user.lastName });
+    const userName = user.firstName + ' ' + user.lastName;
+    switch (contactMeans) {
+      case 'draken':
+        return t('messages:templates.internal_conversation_default_signature', {
+          user: userName,
+        });
+      case 'sms':
+        return t('messages:templates.sms.case_data', { user: userName });
+      default:
+        return t('messages:templates.case_data_default_signature', {
+          user: userName,
+          department: isMEX()
+            ? 'Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen'
+            : isPT()
+            ? 'Gatuavdelningen, Trafiksektionen'
+            : null,
+          interpolation: { escapeValue: false },
+          email_information:
+            contactMeans === 'email'
+              ? '<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>'
+              : '',
+        });
     }
-    return t('messages:templates.case_data_default_signature', {
-      user: errand.administratorName,
-      department: isMEX()
-        ? 'Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen'
-        : isPT()
-        ? 'Gatuavdelningen, Trafiksektionen'
-        : null,
-      interpolation: { escapeValue: false },
-    });
   };
 
   useEffect(() => {
@@ -404,7 +415,15 @@ export const MessageComposer: React.FC<{
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
         !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
       }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
-      setValue('messageBody', formatMessage(defaultSignature() + historyHeader + props.message.message));
+
+      setValue(
+        'messageBody',
+        defaultSignature() +
+          historyHeader +
+          (props.message.htmlMessage
+            ? sanitizeHtmlMessageBody(props.message.htmlMessage)
+            : formatMessage(sanitized(props.message.message)))
+      );
       trigger();
     } else {
       setValue('messageBody', defaultSignature());

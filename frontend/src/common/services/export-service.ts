@@ -28,6 +28,11 @@ export const exportErrands: (
 
   const preparedErrands = errandsData.map((errand) => ({
     ...errand,
+    attachments: errand.attachments.map((attachment) => ({
+      name: attachment.name,
+      mimeType: attachment.mimeType,
+      file: '',
+    })),
     caseLabel: MEXCaseLabel[errand.caseType],
   }));
 
@@ -46,6 +51,11 @@ export const exportSingleErrand: (
 
   const preparedErrand = {
     ...errand,
+    attachments: errand.attachments.map((attachment) => ({
+      name: attachment.name,
+      mimeType: attachment.mimeType,
+      file: '',
+    })),
     caseLabel: MEXCaseLabel[errand.caseType],
     extraParameters: errand.extraParameters?.map((ep) => ({
       ...ep,

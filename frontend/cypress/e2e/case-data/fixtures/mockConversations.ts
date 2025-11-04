@@ -14,7 +14,7 @@ export const mockConversationMessages = {
       viewed: 'true',
     },
     {
-      conversationId: 'abababab-ed21-4b30-9e0c-1252c878153e',
+      conversationId: 'abababab-ed21-4b30-9e0c-1252c878153f',
       messageId: 'd553003a-da2c-42d1-84aa-68b53aa7ea5f',
       sent: '2025-07-09T11:23:42.122Z',
       message: '<p>Hej,</p><p><br /></p><p>Tack för att du kontaktar oss.</p>',
@@ -40,7 +40,7 @@ export const mockConversations = {
         relationIds: [],
       },
       {
-        id: 'abababab-ed21-4b30-9e0c-1252c878153e',
+        id: 'abababab-ed21-4b30-9e0c-1252c878153f',
         topic: 'Ärende: #KS-00000000',
         type: 'INTERNAL',
         relationIds: ['bd835475-cbc2-4b92-979d-8bc18bd75385'],
