@@ -16,7 +16,7 @@ import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-
 import { IconName } from 'lucide-react/dynamic';
 import dynamic from 'next/dynamic';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -38,10 +38,6 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const { watch, setValue, trigger } = form;
 
   const description = watch('description');
-  const priority = watch('priority');
-  const diagnoses = useWatch<string[]>({
-    name: `medical${EXTRAPARAMETER_SEPARATOR}diagnoses` as any,
-  });
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(municipalityId, errand.id, estates).then(() => {
@@ -71,8 +67,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
-    const uppgifter = extraParametersToUppgiftMapper(errand);
-    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || baseDetails;
+    const uppgifterFields: UppgiftField[] = extraParametersToUppgiftMapper(errand) || baseDetails;
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);
