@@ -18,9 +18,7 @@ import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
-import { notificationChange_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-change';
 import { notificationNational_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-national';
-import { notificationNationalRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-national-renewal';
 import { notificationRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-renewal';
 import { notificationRiak_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-riak';
 import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-appeal';
@@ -64,10 +62,8 @@ export interface UppgiftField {
 
 const caseTypeTemplateAlias: Record<string, string> = {
   PARATRANSIT: 'PARATRANSIT_NOTIFICATION',
-  PARATRANSIT_CHANGE: 'PARATRANSIT_NOTIFICATION_CHANGE',
   PARATRANSIT_RENEWAL: 'PARATRANSIT_NOTIFICATION_RENEWAL',
   PARATRANSIT_NATIONAL: 'PARATRANSIT_NOTIFICATION_NATIONAL',
-  PARATRANSIT_NATIONAL_RENEWAL: 'PARATRANSIT_NOTIFICATION_NATIONAL_RENEWAL',
   PARATRANSIT_RIAK: 'PARATRANSIT_NOTIFICATION_RIAK',
   PARATRANSIT_BUS_CARD: 'PARATRANSIT_NOTIFICATION_BUS_CARD',
 };
@@ -78,18 +74,14 @@ export interface ExtraParametersObject {
 
 const template: ExtraParametersObject = {
   PARATRANSIT: notification_UppgiftFieldTemplate,
-  PARATRANSIT_CHANGE: notificationChange_UppgiftFieldTemplate,
   PARATRANSIT_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NATIONAL: notificationNational_UppgiftFieldTemplate,
-  PARATRANSIT_NATIONAL_RENEWAL: notificationNationalRenewal_UppgiftFieldTemplate,
   PARATRANSIT_RIAK: notificationRiak_UppgiftFieldTemplate,
   PARATRANSIT_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
 
   PARATRANSIT_NOTIFICATION: notification_UppgiftFieldTemplate,
-  PARATRANSIT_NOTIFICATION_CHANGE: notificationChange_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_NATIONAL: notificationNational_UppgiftFieldTemplate,
-  PARATRANSIT_NOTIFICATION_NATIONAL_RENEWAL: notificationNationalRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RIAK: notificationRiak_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
 
