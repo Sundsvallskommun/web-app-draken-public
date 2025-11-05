@@ -63,4 +63,11 @@ export default defineConfig({
       return config;
     },
   },
+
+  component: {
+    devServer: {
+      framework: 'next',
+      bundler: 'webpack',
+    },
+  },
 });
