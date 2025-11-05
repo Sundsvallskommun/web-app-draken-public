@@ -57,7 +57,7 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
   }
 };
 
-const dependencyMatches = (candidate: unknown, expected: string | string[]) => {
+const matchesDependency = (candidate: unknown, expected: string | string[]) => {
   const expectedValues = Array.isArray(expected) ? expected : [expected];
 
   if (Array.isArray(candidate)) {
@@ -83,11 +83,25 @@ function getConditionalValidationRules(
   return {
     validate: (value: any) => {
       const allValues = getValues();
-      const shouldValidate = field.dependsOn?.some((dep) => {
-        const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-        const depValue = allValues[depName];
-        return dependencyMatches(depValue, dep.value);
-      });
+      const logicOperator = field.dependsOnLogic ?? 'AND';
+
+      let shouldValidate: boolean;
+
+      if (logicOperator === 'OR') {
+        shouldValidate =
+          field.dependsOn?.some((dep) => {
+            const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+            const depValue = allValues[depName];
+            return matchesDependency(depValue, dep.value);
+          }) ?? false;
+      } else {
+        shouldValidate =
+          field.dependsOn?.every((dep) => {
+            const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+            const depValue = allValues[depName];
+            return matchesDependency(depValue, dep.value);
+          }) ?? false;
+      }
 
       if (!shouldValidate) return true;
 
@@ -119,14 +133,33 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
   const allFormValues = watch();
 
   const dependentSatisfied =
-    detail.dependsOn?.every((dep, index) => {
-      const depKey = dependencyFieldKeys[index];
-      const depValue = allFormValues?.[depKey] ?? getValues(depKey);
+    detail.dependsOn && detail.dependsOn.length > 0
+      ? (() => {
+          const logicOperator = detail.dependsOnLogic ?? 'AND';
 
-      return dependencyMatches(depValue, dep.value);
-    }) ?? true;
+          if (logicOperator === 'OR') {
+            // OR logic: at least one dependency must be satisfied
+            const result = detail.dependsOn.some((dep) => {
+              const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+              const depValue = allFormValues[depName];
+              const matches = matchesDependency(depValue, dep.value);
+              return matches;
+            });
+            return result;
+          } else {
+            // AND logic (default): all dependencies must be satisfied
+            const result = detail.dependsOn.every((dep) => {
+              const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+              const depValue = allFormValues[depName];
+              const matches = matchesDependency(depValue, dep.value);
+              return matches;
+            });
+            return result;
+          }
+        })()
+      : undefined;
 
-  const isVisible = dependentSatisfied;
+  const isVisible = dependentSatisfied !== false;
 
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;

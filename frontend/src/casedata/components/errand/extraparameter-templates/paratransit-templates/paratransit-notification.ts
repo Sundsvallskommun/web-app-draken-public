@@ -108,6 +108,20 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     ],
   },
   {
+    field: 'external.mobilityAid.boolean',
+    value: '',
+    label: 'Behöver den sökande förflyttningshjälpmedel?',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Ja', value: 'YES', name: 'mobilityAids' },
+        { label: 'Nej', value: 'NO', name: 'mobilityAids' },
+      ],
+    },
+    required: true,
+    section: 'Yttre omständigheter',
+  },
+  {
     field: 'external.mobilityAids',
     value: [],
     label: 'Välj förflyttningshjälpmedel som den sökande är beroende av',
@@ -123,8 +137,36 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
       ],
     },
-    required: false,
+    dependsOn: [
+      {
+        field: 'external.mobilityAid.boolean',
+        value: 'YES',
+        validationMessage: 'Vänligen bekräfta behovet av förflyttningshjälpmedel.',
+      },
+    ],
     section: 'Yttre omständigheter',
+  },
+  {
+    field: 'external.mobilityAids.additional',
+    value: '',
+    label: 'Hur långt klarar den sökande att gå på plan mark i meter?',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    dependsOnLogic: 'OR',
+    dependsOn: [
+      {
+        field: 'external.mobilityAids',
+        value: ['WALKER', 'CRUTCH_CANE_POLES'],
+        validationMessage: 'Vänligen beskriv hur långt den sökande kan gå på plan mark i meter.',
+      },
+      {
+        field: 'external.mobilityAid.boolean',
+        value: 'NO',
+        validationMessage: 'Vänligen beskriv hur långt den sökande kan gå på plan mark i meter.',
+      },
+    ],
   },
   {
     field: 'external.assistanceDuringTravel',

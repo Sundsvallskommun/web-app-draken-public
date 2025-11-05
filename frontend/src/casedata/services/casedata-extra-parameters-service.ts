@@ -51,6 +51,7 @@ export interface UppgiftField {
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
     | { type: 'checkbox'; options: OptionBase[] };
   section: string;
+  dependsOnLogic?: 'AND' | 'OR';
   dependsOn?: {
     field: string;
     value: string | string[];
@@ -132,17 +133,19 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
   // If the field is not found in the errand extraparameters, the default value
   // from the template will be used.
 
+  const caseType = errand.caseType;
+  const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
+  const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+
+  obj[caseType] = caseTypeTemplate?.map((field) => ({ ...field })) || [];
+
   errand.extraParameters.forEach((param) => {
     try {
-      const caseType = errand.caseType;
       const field = param['key'];
-
-      const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-      const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
       const templateField = caseTypeTemplate?.find((f) => f.field === field);
 
-      if (caseType && field && templateField) {
-        const { label, formField, section, dependsOn, description, required } = templateField;
+      if (field && templateField) {
+        const { label, formField, section, dependsOn, dependsOnLogic, description, required } = templateField;
         const isCheckbox = formField.type === 'checkbox';
         const isMultiValueField = isCheckbox || Array.isArray(templateField.value);
         // If the field is a checkbox, its values are in a string formatted
@@ -155,7 +158,6 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
 
         const value = isMultiValueField ? normalized : rawValues[0] ?? '';
 
-        obj[caseType] = obj[caseType] || [];
         const data: UppgiftField = {
           field,
           value,
@@ -163,6 +165,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
           formField,
           section,
           dependsOn,
+          dependsOnLogic,
           description,
           required,
         };
