@@ -85,7 +85,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   readOnly
                   disabled
                   className="w-full text-dark-primary"
-                  variant="tertiary"
+                  variant="primary"
                   size="sm"
                   value={getValues('channel')}
                   data-cy="channel-input"
@@ -119,7 +119,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   disabled
                   data-cy="municipality-input"
                   className="w-full text-dark-primary"
-                  variant="tertiary"
+                  variant="primary"
                   size="sm"
                   value={getValues('municipalityId')}
                   onChange={(e) => {
@@ -160,7 +160,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   data-cy="casetype-input"
                   value={caseType}
                   className="w-full text-dark-primary"
-                  variant="tertiary"
+                  variant="primary"
                   size="sm"
                   onChange={(e) => {
                     setValue('caseType', e.currentTarget.value, { shouldDirty: true });
@@ -201,7 +201,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   data-cy="priority-input"
                   value={priority}
                   className="w-full text-dark-primary"
-                  variant="tertiary"
+                  variant="primary"
                   size="sm"
                 >
                   {Object.entries(Priority).map((c: [string, string]) => {
