@@ -74,6 +74,7 @@ export interface SupportErrand extends ApiSupportErrand {
   caseId?: string;
   category: string;
   type: string;
+  subType: string;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
 }
@@ -244,23 +245,15 @@ export const findAttestationStatusLabelForAttestationStatusKey = (attestationSta
 
 export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
   errand.labels.length !== 0
-    ? metadata?.labels.labelStructure.find((c) => errand.labels.includes(c.name))
-    : metadata?.labels.labelStructure.find((c) => errand.classification.category === c.name);
+    ? errand.labels.find((label) => label.classification === 'CATEGORY')
+    : metadata?.labels.labelStructure.find((c) => errand.classification.category === c.resourceName);
 
-export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata) => {
-  const types = getLabelCategory(errand, metadata)?.labels;
-  const matchingType = types?.find((t) => errand.labels.includes(t.name));
-  if (matchingType) {
-    return matchingType;
-  }
-  return types?.find((t) => t.name === errand.classification?.type);
+export const getLabelType = (errand: SupportErrand) => {
+  return errand.labels.find((label) => label.classification === 'TYPE');
 };
 
-export const getLabelSubType = (errand: SupportErrand, metadata: SupportMetadata) => {
-  const types = getLabelCategory(errand, metadata)?.labels;
-  const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
-  const matchingSubType = subTypes?.find((s) => errand.labels.includes(s.name));
-  return matchingSubType;
+export const getLabelSubType = (errand: SupportErrand) => {
+  return errand.labels.find((label) => label.classification === 'SUBTYPE');
 };
 
 export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] => {
@@ -270,7 +263,7 @@ export const getLabelTypeFromDisplayName = (displayName: string, metadata: Suppo
 
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label => {
   const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  return allTypesFlattened?.find((t) => t.name === name);
+  return allTypesFlattened?.find((t) => t.resourcePath === name);
 };
 
 export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label => {
@@ -280,7 +273,7 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
       ?.filter((l) => l.labels?.length > 0)
       ?.map((l) => l.labels)
       ?.flat() || [];
-  return allSubTypesFlattened?.find((t) => t.name === name);
+  return allSubTypesFlattened?.find((t) => t.resourcePath === name);
 };
 
 // This might be instance specific in the future, meaning
@@ -623,6 +616,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       ...e,
       category: e.classification?.category === 'NONE' ? undefined : e.classification?.category,
       type: e.classification?.type === 'NONE' ? undefined : e.classification?.type,
+      subType: undefined,
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -719,6 +713,7 @@ export const getSupportErrands: (
       return response;
     })
     .catch((e) => {
+      console.error('Error: could not fetch errands.', e);
       return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };
@@ -813,7 +808,7 @@ export const updateSupportErrand: (
       ...(formdata.category && { category: formdata.category }),
       ...(formdata.type && { type: formdata.type }),
     },
-    labels: formdata.labels,
+    labels: formdata.labels.map((label) => ({ ...label, labels: undefined })),
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
     ...(typeof formdata.contactReasonDescription !== 'undefined' && {
       contactReasonDescription: formdata.contactReasonDescription,

@@ -19,6 +19,7 @@ import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { MessagePortal } from './sidebar/message-portal.component';
+import { appConfig } from '@config/appconfig';
 
 let formSchema = yup
   .object({
@@ -157,10 +158,11 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                       <div className="w-full flex flex-wrap flex-col justify-between gap-24">
                         {!supportErrandIsEmpty(supportErrand) ? (
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {
-                              categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                ?.displayName
-                            }
+                            {appConfig.features.useThreeLevelCategorization
+                              ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ??
+                                '(Ärendetyp saknas)'
+                              : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
+                                  ?.displayName}
                           </h1>
                         ) : supportErrand ? (
                           <div className="flex justify-between items-center pt-8">

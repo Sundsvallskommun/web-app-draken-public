@@ -2,6 +2,7 @@ import { SupportAttachment } from '@supportmanagement/services/support-attachmen
 import { Status, SupportStakeholderFormModel, ExternalTags } from '@supportmanagement/services/support-errand-service';
 import { Priority } from './priority';
 import { CParameter } from 'src/data-contracts/backend/data-contracts';
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export interface ApiPagingData {
   pageable: {
@@ -38,7 +39,7 @@ export interface RegisterSupportErrandFormModel {
   priority?: Priority;
   category: string;
   type: string;
-  labels: string[];
+  labels: Label[];
   contactReason: string;
   contactReasonDescription: string;
   businessRelated: boolean;

@@ -1,4 +1,4 @@
-import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
@@ -9,7 +9,7 @@ import {
   isSupportErrandLocked,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
-import { getSupportMetadata, SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
+import { getSupportMetadata, SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'next-i18next';
@@ -33,67 +33,24 @@ export const ThreeLevelCategorization: React.FC<{
   } = useAppContext();
 
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
-  const { watch, setValue, trigger, register, formState } = formControls;
+  const { getValues, setValue, trigger, formState } = formControls;
   const { errors } = formState;
-  const { category, type, labels } = watch();
   const { supportErrand } = props;
   const [categoriesList, setCategoriesList] = useState<Label[]>();
   const [typesList, setTypesList] = useState<Label[]>();
   const { t } = useTranslation();
 
-  // Needed until labels and old categories have identical names
-  const [oldCategoriesList, setOldCategoriesList] = useState<Category[]>();
-  const [oldTypesList, setOldTypesList] = useState<SupportType[]>();
-
   const [selectedLabels, setSelectedLabels] = useState<{ [key: string]: Label }>({});
 
-  useEffect(() => {
-    if (supportMetadata) {
-      setCategoriesList(
-        supportMetadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
-      );
-      setOldCategoriesList(supportMetadata?.categories);
-    } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
-        setCategoriesList(
-          data.metadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
-        );
-        setOldCategoriesList(data.metadata?.categories);
-      });
-    }
-  }, [supportMetadata]);
-
-  useEffect(() => {
-    if (supportErrand && categoriesList?.length > 0) {
-      const selected = getSelectedLabels(supportErrand.labels, categoriesList);
-      setSelectedLabels(selected);
-    }
-  }, [categoriesList, supportErrand]);
-
-  useEffect(() => {
-    const categoryItem = categoriesList?.find((c) => c.name === category);
-    setTypesList(categoryItem?.labels?.sort((a, b) => a.displayName?.localeCompare(b.displayName)) || []);
-    setOldTypesList(oldCategoriesList?.find((c) => c.name === category)?.types || []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, categoriesList]);
-
-  useEffect(() => {
-    const selectedLabelsArray = Object.values(selectedLabels)
-      .filter(Boolean)
-      .map((label) => label.name);
-    setValue('labels', selectedLabelsArray, { shouldDirty: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLabels]);
-
-  const getSelectedLabels = (errandLabels: string[], labelCategories: Label[]): { [key: string]: Label } => {
+  const getSelectedLabels = (errandLabels: Label[]): { [key: string]: Label } => {
     const selected: { [key: string]: Label } = {};
-    const labelCategory = labelCategories.find((c) => errandLabels?.includes(c.name));
+    const labelCategory = errandLabels.find((c) => c.classification === 'CATEGORY');
+    const labelType = errandLabels.find((c) => c.classification === 'TYPE');
+    const labelSubtype = errandLabels.find((c) => c.classification === 'SUBTYPE');
     if (labelCategory) {
       selected[LABEL_LEVELS.CATEGORY] = labelCategory;
-      const labelType = labelCategory.labels?.find((c) => errandLabels?.includes(c.name));
       if (labelType) {
         selected[LABEL_LEVELS.TYPE] = labelType;
-        const labelSubtype = labelType.labels?.find((c) => errandLabels?.includes(c.name));
         if (labelSubtype) {
           selected[LABEL_LEVELS.SUBTYPE] = labelSubtype;
         }
@@ -102,14 +59,60 @@ export const ThreeLevelCategorization: React.FC<{
     return selected;
   };
 
+  useEffect(() => {
+    if (supportMetadata) {
+      setCategoriesList(
+        supportMetadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
+      );
+    } else {
+      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
+        setCategoriesList(
+          data.metadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
+        );
+      });
+    }
+  }, [supportMetadata]);
+
+  useEffect(() => {
+    if (supportErrand) {
+      const selected = getSelectedLabels(supportErrand.labels);
+      setSelectedLabels(selected);
+    }
+  }, [supportErrand]);
+
+  useEffect(() => {
+    const categoryItem = categoriesList?.find(
+      (c) => c.id === supportErrand.labels.find((l) => l.classification === 'CATEGORY')?.id
+    );
+    setTypesList(categoryItem?.labels?.sort((a, b) => a.displayName?.localeCompare(b.displayName)) || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoriesList, supportErrand]);
+
+  useEffect(() => {
+    const selectedLabelsArray = [];
+    if (selectedLabels['CATEGORY']) {
+      selectedLabelsArray.push(selectedLabels['CATEGORY']);
+    }
+    if (selectedLabels['TYPE']) {
+      selectedLabelsArray.push(selectedLabels['TYPE']);
+    }
+    if (selectedLabels['SUBTYPE']) {
+      selectedLabelsArray.push(selectedLabels['SUBTYPE']);
+    }
+    setValue('labels', selectedLabelsArray); //, { shouldDirty: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLabels]);
+
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCategory = categoriesList.find((c) => c.name === e.currentTarget.value);
+    const selectedCategory = categoriesList.find((c) => c.id === e.currentTarget.value);
+    setTypesList(selectedCategory?.labels?.sort((a, b) => a.displayName.localeCompare(b.displayName)) || []);
     setSelectedLabels({
       [LABEL_LEVELS.CATEGORY]: selectedCategory,
     });
-    setValue('category', e.currentTarget.value, { shouldDirty: true });
+    setValue('category', selectedCategory.resourcePath, { shouldDirty: true });
     setValue('type', undefined, { shouldDirty: true });
-    trigger(['category', 'type']);
+    setValue('subType', undefined, { shouldDirty: true });
+    trigger(['category', 'type', 'subType']);
   };
 
   return (
@@ -123,13 +126,13 @@ export const ThreeLevelCategorization: React.FC<{
             className="w-full text-dark-primary"
             variant="primary"
             size="md"
-            value={selectedLabels['CATEGORY']?.name}
+            value={selectedLabels['CATEGORY']?.id}
             onChange={handleCategoryChange}
           >
             <Select.Option value="">Välj verksamhet</Select.Option>
             {categoriesList?.map((label: Label) => (
-              <Select.Option value={label.name} key={`label-${label.name}`}>
-                {label.displayName || label.name}
+              <Select.Option value={label.id} key={`label-${label.id}`}>
+                {label.displayName || label.resourcePath}
               </Select.Option>
             ))}
           </Select>
@@ -149,37 +152,42 @@ export const ThreeLevelCategorization: React.FC<{
             )}
           </FormLabel>
           <Combobox
-            {...register('type')}
             disabled={isSupportErrandLocked(supportErrand)}
             data-cy="labelType-wrapper"
             className="w-full text-dark-primary"
             variant="primary"
             size="md"
             placeholder={
-              selectedLabels
-                ? selectedLabels['SUBTYPE']?.displayName || selectedLabels['TYPE']?.displayName
+              getValues().subType
+                ? selectedLabels['SUBTYPE']?.displayName
+                : getValues().type
+                ? selectedLabels['TYPE']?.displayName
                 : 'Välj ärendetyp'
             }
-            value={selectedLabels['SUBTYPE']?.name || selectedLabels['TYPE']?.name}
+            value={selectedLabels['SUBTYPE']?.id ?? selectedLabels['TYPE']?.id}
             onSelect={(e) => {
-              let selectedType = typesList?.find((type) => type.labels?.some((label) => label.name === e.target.value));
+              let selectedType = typesList?.find((type) => type.labels?.some((label) => label.id === e.target.value));
               if (selectedType) {
-                const selectedSubtype = selectedType?.labels?.find((label) => label.name === e.target.value);
+                const selectedSubtype = selectedType?.labels?.find((label) => label.id === e.target.value);
                 setSelectedLabels((prev) => ({
                   ...prev,
                   [LABEL_LEVELS.TYPE]: selectedType,
                   [LABEL_LEVELS.SUBTYPE]: selectedSubtype,
                 }));
+                const dirtied =
+                  supportErrand.labels.find((l) => l.classification === 'SUBTYPE')?.id !== selectedSubtype?.id;
+                setValue('subType', selectedSubtype?.resourcePath, {
+                  shouldDirty: dirtied,
+                });
               } else {
-                selectedType = typesList?.find((type) => type.name === e.target.value);
+                selectedType = typesList?.find((type) => type.id === e.target.value);
                 setSelectedLabels((prev) => ({
                   ...prev,
                   [LABEL_LEVELS.TYPE]: selectedType,
                   [LABEL_LEVELS.SUBTYPE]: undefined,
                 }));
               }
-              const oldType = oldTypesList?.find((c) => c.name === selectedType?.name);
-              setValue('type', oldType?.name, { shouldDirty: true });
+              setValue('type', selectedType?.resourcePath, { shouldDirty: true });
               trigger('type');
             }}
             onChange={() => {}}
@@ -189,20 +197,20 @@ export const ThreeLevelCategorization: React.FC<{
               {typesList?.map((typeLabel: Label, index) => {
                 if (typeLabel.labels?.length > 0) {
                   return (
-                    <Combobox.Optgroup key={`group-${index}`} label={typeLabel.displayName || typeLabel.name}>
+                    <Combobox.Optgroup key={`group-${index}`} label={typeLabel.displayName || typeLabel.resourcePath}>
                       {typeLabel.labels
                         ?.sort((a, b) => a.displayName.localeCompare(b.displayName))
                         .map((subtypeLabel: Label) => (
-                          <Combobox.Option value={subtypeLabel.name} key={`label-${subtypeLabel.name}`}>
-                            {subtypeLabel.displayName || subtypeLabel.name}
+                          <Combobox.Option value={subtypeLabel.id} key={`label-${subtypeLabel.resourcePath}`}>
+                            {`${subtypeLabel.displayName || subtypeLabel.resourcePath}`}
                           </Combobox.Option>
                         ))}
                     </Combobox.Optgroup>
                   );
                 } else {
                   return (
-                    <Combobox.Option value={typeLabel.name} key={`label-${typeLabel.name}`}>
-                      {typeLabel.displayName || typeLabel.name}
+                    <Combobox.Option value={typeLabel.id} key={`label-${typeLabel.resourcePath}`}>
+                      {`${typeLabel.displayName || typeLabel.resourcePath}`}
                     </Combobox.Option>
                   );
                 }

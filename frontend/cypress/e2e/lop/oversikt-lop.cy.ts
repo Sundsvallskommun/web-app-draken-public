@@ -15,6 +15,7 @@ import {
   mockSolvedSupportErrands,
   mockSupportErrands,
   mockSupportErrandsEmpty,
+  mockCount,
 } from './fixtures/mockSupportErrands';
 import { mockNotifications } from './fixtures/mockSupportNotifications';
 import { mockBillingRecords } from './fixtures/mockBillingRecords';
@@ -25,11 +26,13 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/billing/2281/billingrecords**', mockBillingRecords).as('getBillingRecords');
+      cy.intercept('GET', '**/countsupporterrands/**', mockCount).as('getCount');
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
       cy.intercept('GET', '**/supporterrands/2281?page=1*', mockSupportErrandsEmpty).as('getErrandsEmpty');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/supportnotifications/2281', mockNotifications).as('getSupportNotifications');
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
+
       cy.visit('/oversikt/');
       cy.wait('@getErrands');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -52,7 +55,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       headerRow.get('th').eq(4).find('span').first().should('have.text', 'Inkom via');
       headerRow.get('th').eq(5).find('span').first().should('have.text', 'Registrerades');
       headerRow.get('th').eq(6).find('span').first().should('have.text', 'Prioritet');
-      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Ansvarig');
+      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Registrerad av');
     });
 
     it('displays the filters', () => {
@@ -73,7 +76,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="Verksamhet-filter"]').type('1');
       cy.get(`[data-cy=Verksamhet-filter-${mockCategories[0].name}]`).should('exist').click();
 
-      cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockFilteredCategoryErrands).as('getFilterCatErrands');
+      cy.intercept('GET', /\/supporterrands\/2281\?page=0.*labelCategory.*/, mockFilteredCategoryErrands).as(
+        'getFilterCatErrands'
+      );
 
       cy.wait('@getFilterCatErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -92,8 +97,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       //Ärendekategori
       cy.get('[data-cy="Ärendekategori-filter"]').type('2');
       cy.get(`[data-cy=Ärendekategori-filter-${mockCategories[0].types[0].displayName}]`).should('exist').click();
-
-      cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockFilteredCategoryErrands).as('getFilterTypeErrands');
+      cy.intercept('GET', /\/supporterrands\/2281\?page=0.*labelType.*/, mockFilteredCategoryErrands).as(
+        'getFilterTypeErrands'
+      );
 
       cy.wait('@getFilterTypeErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -181,15 +187,16 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="overview-aside"]').should('exist');
       cy.get('[data-cy="avatar-aside"]').should('exist');
       cy.get('[aria-label="Notifieringar"]').should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[0].name}"]`).should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[1].name}"]`).should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[2].name}"]`).should('exist');
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[3].name}"]`).should('exist');
+      cy.get(`[aria-label="status-button-ASSIGNED"]`).should('exist');
+      cy.get(`[aria-label="status-button-NEW"]`).should('exist');
+      cy.get(`[aria-label="status-button-ONGOING"]`).should('exist');
+      cy.get(`[aria-label="status-button-SOLVED"]`).should('exist');
+      cy.get(`[aria-label="status-button-SUSPENDED"]`).should('exist');
     });
 
     //SIDEBAR USE
     it('allows to switch between errand statuses in sidebar', () => {
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[1].name}"]`).click();
+      cy.get(`[aria-label="status-button-ONGOING"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockOngoingSupportErrands).as('getOngoingErrands');
       cy.wait('@getOngoingErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -197,7 +204,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockOngoingSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[2].name}"]`).click();
+      cy.get(`[aria-label="status-button-SUSPENDED"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSuspendedSupportErrands).as('getSuspendedErrands');
       cy.wait('@getSuspendedErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -205,7 +212,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockSuspendedSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[3].name}"]`).click();
+      cy.get(`[aria-label="status-button-SOLVED"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSolvedSupportErrands).as('getSolvedErrands');
       cy.wait('@getSolvedErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
@@ -213,7 +220,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         mockSolvedSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData?.statuses?.[0].name}"]`).click();
+      cy.get(`[aria-label="status-button-NEW"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSupportErrands).as('getNewErrands');
       cy.wait('@getNewErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
@@ -233,7 +240,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
       cy.get('[data-cy="query-filter"]').clear();
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
-      cy.wait('@getEmptyErrands');
+      cy.wait('@getErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
     });
   });

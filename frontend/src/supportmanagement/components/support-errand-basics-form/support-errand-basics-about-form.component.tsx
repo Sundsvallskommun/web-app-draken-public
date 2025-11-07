@@ -174,7 +174,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       ) : null}
 
       <div className="flex my-24 gap-xl">
-        <FormControl id="description" className="w-full">
+        <FormControl id="description" className="w-full" data-cy="errand-description-richtext-wrapper">
           <FormLabel>Ärendebeskrivning</FormLabel>
           <TextEditor
             className="w-full h-[15rem] case-description-editor"
