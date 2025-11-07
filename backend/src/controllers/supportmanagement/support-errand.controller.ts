@@ -639,7 +639,7 @@ export class SupportErrandController {
     const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
     const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
     const getDefaultLabels = (names: { category: string; type: string; subType?: string }) => {
-      const categorybject = metadataRes.data.labelStructure?.flat(Infinity).find(l => l.resourcePath === names.category);
+      const categorybject = metadataRes.data.labelStructure?.find(l => l.resourcePath === names.category);
       if (!categorybject) return [];
       if (!names.type) return [categorybject];
       const typeObject = categorybject.labels?.find(l => l.resourcePath === names.type);
