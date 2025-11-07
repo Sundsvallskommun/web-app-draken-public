@@ -159,7 +159,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 
       {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} />
+          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata} />
         </div>
       ) : null}
 

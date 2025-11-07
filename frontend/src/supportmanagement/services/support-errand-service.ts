@@ -19,6 +19,7 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { appConfig } from '@config/appconfig';
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -616,7 +617,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       ...e,
       category: e.classification?.category === 'NONE' ? undefined : e.classification?.category,
       type: e.classification?.type === 'NONE' ? undefined : e.classification?.type,
-      subType: undefined,
+      subType: appConfig.features.useThreeLevelCategorization
+        ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
+        : undefined,
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,

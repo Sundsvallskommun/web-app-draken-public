@@ -1,15 +1,7 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { User } from '@common/interfaces/user';
-import { useAppContext } from '@contexts/app.context';
 import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
-import {
-  defaultSupportErrandInformation,
-  isSupportErrandLocked,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
-import { getSupportMetadata, SupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'next-i18next';
@@ -22,21 +14,12 @@ const LABEL_LEVELS = {
 
 export const ThreeLevelCategorization: React.FC<{
   supportErrand: SupportErrand;
+  supportMetadata: SupportMetadata;
 }> = (props) => {
-  const {
-    supportMetadata,
-  }: {
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
-  } = useAppContext();
-
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
   const { getValues, setValue, trigger, formState } = formControls;
   const { errors } = formState;
   const { supportErrand } = props;
-  const [categoriesList, setCategoriesList] = useState<Label[]>();
   const [typesList, setTypesList] = useState<Label[]>();
   const { t } = useTranslation();
 
@@ -59,19 +42,9 @@ export const ThreeLevelCategorization: React.FC<{
     return selected;
   };
 
-  useEffect(() => {
-    if (supportMetadata) {
-      setCategoriesList(
-        supportMetadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
-      );
-    } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
-        setCategoriesList(
-          data.metadata?.labels?.labelStructure.sort((a, b) => a.displayName.localeCompare(b.displayName))
-        );
-      });
-    }
-  }, [supportMetadata]);
+  const categoriesList = props.supportMetadata?.labels?.labelStructure.sort((a, b) =>
+    a.displayName.localeCompare(b.displayName)
+  );
 
   useEffect(() => {
     if (supportErrand) {
@@ -90,16 +63,14 @@ export const ThreeLevelCategorization: React.FC<{
 
   useEffect(() => {
     const selectedLabelsArray = [];
-    if (selectedLabels['CATEGORY']) {
+    if (selectedLabels['CATEGORY'] && selectedLabels['TYPE']) {
       selectedLabelsArray.push(selectedLabels['CATEGORY']);
-    }
-    if (selectedLabels['TYPE']) {
       selectedLabelsArray.push(selectedLabels['TYPE']);
+      if (selectedLabels['SUBTYPE']) {
+        selectedLabelsArray.push(selectedLabels['SUBTYPE']);
+      }
+      setValue('labels', selectedLabelsArray);
     }
-    if (selectedLabels['SUBTYPE']) {
-      selectedLabelsArray.push(selectedLabels['SUBTYPE']);
-    }
-    setValue('labels', selectedLabelsArray); //, { shouldDirty: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLabels]);
 
@@ -122,6 +93,7 @@ export const ThreeLevelCategorization: React.FC<{
           <FormLabel>Verksamhet*</FormLabel>
           <Select
             disabled={isSupportErrandLocked(supportErrand)}
+            readOnly={!props.supportMetadata}
             data-cy="labelCategory-input"
             className="w-full text-dark-primary"
             variant="primary"
@@ -144,13 +116,14 @@ export const ThreeLevelCategorization: React.FC<{
         </FormControl>
       </div>
       <div className="flex my-md gap-xl w-1/2">
-        <FormControl id="labelType" className="w-full">
+        <FormControl id="labelType" className="w-full" readOnly={!props.supportMetadata}>
           <FormLabel>
             {t(
               `common:basics_tab.errandType.${process.env.NEXT_PUBLIC_APPLICATION}`,
               t(`common:basics_tab.errandType.default`)
             )}
           </FormLabel>
+
           <Combobox
             disabled={isSupportErrandLocked(supportErrand)}
             data-cy="labelType-wrapper"
@@ -166,31 +139,52 @@ export const ThreeLevelCategorization: React.FC<{
             }
             value={selectedLabels['SUBTYPE']?.id ?? selectedLabels['TYPE']?.id}
             onSelect={(e) => {
-              let selectedType = typesList?.find((type) => type.labels?.some((label) => label.id === e.target.value));
-              if (selectedType) {
-                const selectedSubtype = selectedType?.labels?.find((label) => label.id === e.target.value);
+              let selectedType;
+              if (typesList.length > 0) {
+                selectedType =
+                  typesList?.find((type) => type.labels?.some((label) => label.id === e.target.value)) ||
+                  typesList?.find((type) => type.id === e.target.value);
+              } else if (supportErrand.labels) {
+                selectedType = supportErrand.labels.find((l) => l.classification === 'TYPE' && l.id === e.target.value);
+              } else {
+                return;
+              }
+
+              let selectedSubType;
+              if (selectedType && selectedType.labels && selectedType.labels.length > 0) {
+                selectedSubType = selectedType.labels.find((label) => label.id === e.target.value);
+              } else if (supportErrand.labels) {
+                selectedSubType = supportErrand.labels.find(
+                  (l) => l.classification === 'SUBTYPE' && l.id === e.target.value
+                );
+              }
+
+              if (selectedSubType) {
                 setSelectedLabels((prev) => ({
                   ...prev,
                   [LABEL_LEVELS.TYPE]: selectedType,
-                  [LABEL_LEVELS.SUBTYPE]: selectedSubtype,
+                  [LABEL_LEVELS.SUBTYPE]: selectedSubType,
                 }));
                 const dirtied =
-                  supportErrand.labels.find((l) => l.classification === 'SUBTYPE')?.id !== selectedSubtype?.id;
-                setValue('subType', selectedSubtype?.resourcePath, {
+                  supportErrand.labels.find((l) => l.classification === 'SUBTYPE')?.id !== selectedSubType?.id;
+                setValue('type', selectedType?.resourcePath, { shouldDirty: true });
+                setValue('subType', selectedSubType?.resourcePath, {
                   shouldDirty: dirtied,
                 });
-              } else {
-                selectedType = typesList?.find((type) => type.id === e.target.value);
+                trigger('type');
+                trigger('subType');
+              } else if (selectedType) {
                 setSelectedLabels((prev) => ({
                   ...prev,
                   [LABEL_LEVELS.TYPE]: selectedType,
                   [LABEL_LEVELS.SUBTYPE]: undefined,
                 }));
+                setValue('type', selectedType?.resourcePath, { shouldDirty: true });
+                trigger('type');
+              } else {
+                return;
               }
-              setValue('type', selectedType?.resourcePath, { shouldDirty: true });
-              trigger('type');
             }}
-            onChange={() => {}}
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />
             <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">
