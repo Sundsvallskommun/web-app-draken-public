@@ -18,6 +18,7 @@ import {
 } from '@sk-web-gui/react';
 import React, { useMemo, useState } from 'react';
 import { UseFormReturn, get } from 'react-hook-form';
+import { RepeatableFieldGroup } from './repeatable-field-group';
 
 interface Props {
   detail: UppgiftField;
@@ -175,6 +176,28 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
   if (!isVisible) return null;
 
+  // Handle repeatable groups
+  if (detail.formField.type === 'repeatableGroup') {
+    const groupConfig = (detail as any).repeatableGroup;
+    const initialData = (detail as any).initialData;
+
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.label && <FormLabel className="mb-md">{detail.label}</FormLabel>}
+        {detail.description && <p className="text-sm text-gray-600 mb-md">{detail.description}</p>}
+        <RepeatableFieldGroup
+          groupName={groupConfig.groupName}
+          basePath={groupConfig.basePath}
+          fields={groupConfig.fields}
+          minItems={groupConfig.repeatableConfig.minItems}
+          addButtonText={groupConfig.repeatableConfig.addButtonText}
+          removeButtonText={groupConfig.repeatableConfig.removeButtonText}
+          initialData={initialData}
+        />
+      </div>
+    );
+  }
+
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
       {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
@@ -186,9 +209,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
           <Input
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
-            className={cx(
-              errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? 'w-1/2' : 'w-full'
-            )}
+            className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
             data-cy={`${detail.field}-input`}
             {...getInputProps(detail)}
           />
