@@ -28,6 +28,11 @@ const hasFormat = (e: RJSFValidationError): e is RJSFValidationError & { params:
 export function createJsonErrorTransformer(schema: RJSFSchema) {
   return (errors: RJSFValidationError[]): RJSFValidationError[] =>
     errors.map((e) => {
+      // Extract field name from property path (e.g., ".type" -> "type")
+      const fieldName = e.property?.replace(/^\./, '') ?? '';
+      const fieldSchema = fieldName ? (schema.properties?.[fieldName] as RJSFSchema | undefined) : undefined;
+      const fieldTitle = fieldSchema?.title ?? fieldName;
+
       if (isRequiredError(e)) {
         const key = e.params.missingProperty;
         const title = (schema.properties?.[key] as RJSFSchema | undefined)?.title ?? key;
@@ -58,7 +63,9 @@ export function createJsonErrorTransformer(schema: RJSFSchema) {
         return { ...e, message: `Värdet matchar inte formatet "${f}".` };
       }
 
-      if (e.name === 'enum') return { ...e, message: 'Välj ett av de tillgängliga alternativen.' };
+      if (e.name === 'enum' || e.name === 'not') {
+        return { ...e, message: `Vänligen ange ${fieldTitle}.` };
+      }
 
       return e;
     });

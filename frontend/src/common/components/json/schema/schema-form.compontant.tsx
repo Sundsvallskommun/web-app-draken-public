@@ -36,6 +36,7 @@ type SchemaFormProps = {
   formData?: any;
   onChange?: (data: any, e?: IChangeEvent) => void;
   onSubmit?: (payload: any, e: IChangeEvent) => void;
+  objectFieldTemplate?: React.ComponentType<any>;
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -82,7 +83,14 @@ function buildUiSchemaFromSchema(schema: RJSFSchema): UiSchema {
   return ui;
 }
 
-export default function SchemaForm({ schema, uiSchema, formData, onChange, onSubmit }: SchemaFormProps) {
+export default function SchemaForm({
+  schema,
+  uiSchema,
+  formData,
+  onChange,
+  onSubmit,
+  objectFieldTemplate,
+}: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
 
@@ -108,22 +116,30 @@ export default function SchemaForm({ schema, uiSchema, formData, onChange, onSub
     [onSubmit]
   );
 
+  const templates: any = {
+    FieldTemplate,
+    ButtonTemplates: { SubmitButton: SubmitButtonFieldTemplate },
+  };
+
+  if (objectFieldTemplate) {
+    templates.ObjectFieldTemplate = objectFieldTemplate;
+  }
+
   return (
-    <Form
-      schema={schema || { type: 'object', properties: {} }}
-      uiSchema={uiSchema ?? autoUi}
-      formData={data}
-      onChange={handleChange}
-      onSubmit={handleSubmit}
-      validator={validatorAjv8}
-      widgets={widgets}
-      templates={{
-        FieldTemplate,
-        ButtonTemplates: { SubmitButton: SubmitButtonFieldTemplate },
-      }}
-      transformErrors={createJsonErrorTransformer(schema)}
-      noHtml5Validate
-      showErrorList={false}
-    />
+    <div className="w-full max-w-full">
+      <Form
+        schema={schema || { type: 'object', properties: {} }}
+        uiSchema={uiSchema ?? autoUi}
+        formData={data}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        validator={validatorAjv8}
+        widgets={widgets}
+        templates={templates}
+        transformErrors={createJsonErrorTransformer(schema)}
+        noHtml5Validate
+        showErrorList={false}
+      />
+    </div>
   );
 }
