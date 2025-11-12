@@ -174,10 +174,20 @@ export interface NamespaceConfig {
    * @example "2000-10-31T01:30:00+02:00"
    */
   modified?: string;
+  /**
+   * If set to true access control will be enabled
+   * @example true
+   */
+  accessControl?: boolean;
 }
 
 /** Label model */
 export interface Label {
+  /**
+   * Label ID
+   * @example "5f79a808-0ef3-4985-99b9-b12f23e202a7"
+   */
+  id?: string;
   /**
    * Label classification
    * @minLength 1
@@ -190,11 +200,16 @@ export interface Label {
    */
   displayName?: string;
   /**
-   * Name for the label
-   * @minLength 1
-   * @example "keyCard"
+   * Resource path
+   * @example "/parent/child/keycard"
    */
-  name: string;
+  resourcePath?: string;
+  /**
+   * Resource name
+   * @minLength 1
+   * @example "keycard"
+   */
+  resourceName: string;
   labels?: Label[];
 }
 
@@ -213,6 +228,11 @@ export interface EmailIntegration {
    */
   errandClosedEmailTemplate?: string | null;
   /**
+   * HTML template for email that will be sent when incoming mail is rejected
+   * @example "<html><body>Errand is closed. Please open a new errand.</body></html>"
+   */
+  errandClosedEmailHTMLTemplate?: string | null;
+  /**
    * Email sender if incoming mail results in new errand
    * @example "test@sundsvall.se"
    */
@@ -222,6 +242,11 @@ export interface EmailIntegration {
    * @example "New errand is created."
    */
   errandNewEmailTemplate?: string | null;
+  /**
+   * HTML template for email that will be sent when incoming mail results in new errand
+   * @example "<html><body>New errand is created.</body></html>"
+   */
+  errandNewEmailHTMLTemplate?: string | null;
   /**
    * Number of days before incoming mail is rejected. Measured from when the errand was last touched. Rejection can only occur if status on errand equals 'inactiveStatus'.
    * @format int32
@@ -448,6 +473,7 @@ export interface Type {
   displayName?: string;
   /**
    * Email for where to escalate the errand if needed
+   * @format email
    * @example "escalationgroup@sesamestreet.com"
    */
   escalationEmail?: string;
@@ -558,6 +584,7 @@ export interface Errand {
   assignedGroupId?: string;
   /**
    * Email address used for escalation of errand
+   * @format email
    * @example "joe.doe@email.com"
    */
   escalationEmail?: string;
@@ -580,11 +607,8 @@ export interface Errand {
    * @example true
    */
   businessRelated?: boolean;
-  /**
-   * List of labels for the errand
-   * @example ["label1","label2"]
-   */
-  labels?: string[];
+  /** List of labels for the errand */
+  labels?: ErrandLabel[];
   /** List of active notifications for the errand */
   activeNotifications?: Notification[];
   /**
@@ -605,6 +629,35 @@ export interface Errand {
    * @example "2000-10-31T01:30:00+02:00"
    */
   touched?: string;
+}
+
+/** Errand label model */
+export interface ErrandLabel {
+  /**
+   * Label ID
+   * @example "5f79a808-0ef3-4985-99b9-b12f23e202a7"
+   */
+  id?: string;
+  /**
+   * Label classification
+   * @example "subtype"
+   */
+  classification?: string;
+  /**
+   * Display name for the label
+   * @example "Nyckelkort"
+   */
+  displayName?: string;
+  /**
+   * Resource path
+   * @example "/parent/child/xxx"
+   */
+  resourcePath?: string;
+  /**
+   * Resource name
+   * @example "keycard"
+   */
+  resourceName?: string;
 }
 
 /** External tag model */
@@ -896,7 +949,7 @@ export interface SmsRequest {
   sender: string;
   /**
    * Mobile number to recipient in format +467[02369]\d{7}
-   * @example "+46761234567"
+   * @example "+46701740605"
    */
   recipient: string;
   /**
@@ -931,6 +984,7 @@ export interface EmailAttachment {
 export interface EmailRequest {
   /**
    * Email address for sender
+   * @format email
    * @example "sender@sender.se"
    */
   sender: string;
@@ -941,6 +995,7 @@ export interface EmailRequest {
   senderName?: string;
   /**
    * Email address for recipient
+   * @format email
    * @example "recipient@recipient.se"
    */
   recipient: string;
@@ -1141,18 +1196,6 @@ export interface Conversation {
 
 /** Labels model */
 export interface Labels {
-  /**
-   * Timestamp when the labels was created
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  created?: string;
-  /**
-   * Timestamp when the labels was last modified
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  modified?: string;
   labelStructure?: Label[];
 }
 
@@ -1172,7 +1215,8 @@ export interface PageErrand {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1181,27 +1225,26 @@ export interface PageErrand {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
-  paged?: boolean;
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject;
+  paged?: boolean;
   unpaged?: boolean;
 }
 
 export interface SortObject {
+  empty?: boolean;
   sorted?: boolean;
   unsorted?: boolean;
-  empty?: boolean;
 }
 
 /** Revision model */
@@ -1393,7 +1436,8 @@ export interface PageEvent {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1402,8 +1446,7 @@ export interface PageEvent {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1434,6 +1477,11 @@ export interface Communication {
    */
   messageBody?: string;
   /**
+   * The message body in HTML format
+   * @example "<p>Hello world</p>"
+   */
+  htmlMessageBody?: string;
+  /**
    * The time the communication was sent
    * @format date-time
    */
@@ -1450,7 +1498,7 @@ export interface Communication {
   communicationType?: CommunicationCommunicationTypeEnum;
   /**
    * The mobile number or email adress the communication was sent to
-   * @example "+46701234567"
+   * @example "+46701740605"
    */
   target?: string;
   /**
@@ -1562,7 +1610,8 @@ export interface PageMessage {
   totalElements?: number;
   /** @format int32 */
   totalPages?: number;
-  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1571,8 +1620,7 @@ export interface PageMessage {
   sort?: SortObject;
   /** @format int32 */
   numberOfElements?: number;
-  first?: boolean;
-  last?: boolean;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

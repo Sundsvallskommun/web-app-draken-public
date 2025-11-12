@@ -1,7 +1,7 @@
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
 import { Chip } from '@sk-web-gui/react';
-import { Channels, Status } from '@supportmanagement/services/support-errand-service';
+import { Channels } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { Admin } from '@common/services/user-service';
@@ -31,8 +31,6 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
   const [allCategories, setAllCategories] = useState<Category[]>();
   const [allTypes, setAllTypes] = useState<SupportType[]>();
   const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
-  const [allLabelTypes, setAllLabelTypes] = useState<string[]>();
-  const [allLabelSubTypes, setAllLabelSubTypes] = useState<string[]>();
   const {
     supportMetadata,
     selectedSupportErrandStatuses,
@@ -64,23 +62,20 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
     if (supportMetadata?.labels?.labelStructure) {
       setAllLabelCategories(supportMetadata?.labels.labelStructure);
       const _labelTypes: string[] = [];
-      const _labelSubTypes: string[] = [];
       if (labelCategories.length > 0) {
         // Some labelCategory is selected, get labelTypes from those
         labelCategories?.forEach((category) => {
-          const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.name === category)?.labels;
+          const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.resourcePath === category)?.labels;
           if (categoryTypes) {
-            _labelTypes.push(...categoryTypes.map((l) => l.name));
+            _labelTypes.push(...categoryTypes.map((l) => l.resourcePath));
           }
         });
       } else {
         // No selected labelCategory, get all label types
         supportMetadata?.labels.labelStructure?.forEach((category) => {
-          _labelTypes.push(...category.labels.map((l) => l.name));
+          _labelTypes.push(...category.labels.map((l) => l.resourcePath));
         });
       }
-      setAllLabelTypes(_labelTypes);
-      setAllLabelSubTypes(_labelSubTypes);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportMetadata, categories, types, labelCategories, labelTypes, labelSubTypes]);
@@ -167,7 +162,7 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
           aria-label="Rensa verksamhet"
           onClick={() => handleRemoveLabelCategory(category)}
         >
-          {allLabelCategories?.find((c) => c.name === category)?.displayName}
+          {allLabelCategories?.find((c) => c.resourcePath === category)?.displayName}
         </Chip>
       ))}
       {types.map((type, typeIndex) => (

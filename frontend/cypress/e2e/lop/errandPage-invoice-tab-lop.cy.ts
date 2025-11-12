@@ -14,7 +14,8 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { mock } from 'node:test';
+import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
+import { mockRelations } from './fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Invoice tab', () => {
@@ -41,6 +42,14 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           partyId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         },
       }).as('getOrganization');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
     });
 
     const goToInvoiceTab = () => {
@@ -86,7 +95,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           description: 'Extra löneutbetalning - Systemet',
           customerReference: mockPortalPersonData_internal.data.referenceNumber,
           ourReference: mockMe.data.name,
-          referenceId: 'N/A',
+          // referenceId: 'N/A',
           invoiceRows: [
             {
               descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
@@ -116,6 +125,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
                   subaccount: internalInvoiceType?.accountInformation.subaccount,
                   department: internalInvoiceType?.accountInformation.department,
                   activity: internalInvoiceType?.accountInformation.activity,
+                  project: '11041',
                   counterpart: internalCustomer?.counterpart,
                 },
               ],
@@ -129,14 +139,26 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         },
       };
       cy.get('[data-cy="save-invoice-button"]').should('exist').click();
-      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+      cy.wait('@saveBillingRecord').should(({ request }) => {
         expect(request.body).to.deep.equal(baseData);
+        expect(request.body.category).to.deep.equal(baseData.category);
+        expect(request.body.status).to.deep.equal(baseData.status);
+        expect(request.body.type).to.deep.equal(baseData.type);
+        expect(request.body.extraParameters).to.deep.equal(baseData.extraParameters);
+        expect(request.body.invoice.customerId).to.deep.equal(baseData.invoice.customerId);
+        expect(request.body.invoice.description).to.deep.equal(baseData.invoice.description);
+        expect(request.body.invoice.customerReference).to.deep.equal(baseData.invoice.customerReference);
+        expect(request.body.invoice.ourReference).to.deep.equal(baseData.invoice.ourReference);
+        expect(request.body.invoice.invoiceRows[0]).to.deep.equal(baseData.invoice.invoiceRows[0]);
+        expect(request.body.invoice.invoiceRows[1]).to.deep.equal(baseData.invoice.invoiceRows[1]);
       });
+
+      cy.wait(500);
 
       // Change description
       cy.get('[data-cy="invoice-description-input"]').select('Extra beställning');
       cy.get('[data-cy="save-invoice-button"]').click();
-      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+      cy.wait('@saveBillingRecord').should(({ request }) => {
         const modifiedData = structuredClone(baseData);
         const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === 'Extra beställning')?.internal;
         modifiedData.invoice.description = 'Extra beställning';
@@ -149,10 +171,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(request.body).to.deep.equal(modifiedData);
       });
 
+      cy.wait(500);
+
       // Change customer
       cy.get('[data-cy="customerId-input"]').select('40');
       cy.get('[data-cy="save-invoice-button"]').click();
-      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+      cy.wait('@saveBillingRecord').should(({ request }) => {
         const modifiedData = structuredClone(baseData);
         const counterpart = invoiceSettings.customers.internal.find((c) => c.customerId === 40)?.counterpart;
         modifiedData.invoice.customerId = '40';
@@ -163,10 +187,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         expect(request.body).to.deep.equal(modifiedData);
       });
 
+      cy.wait(500);
+
       // Change activity
       cy.get('[data-cy="activity-input"]').select('5757');
       cy.get('[data-cy="save-invoice-button"]').click();
-      cy.wait('@saveBillingRecord').should(({ request, response }) => {
+      cy.wait('@saveBillingRecord').should(({ request }) => {
         const modifiedData = structuredClone(baseData);
         const costcenter = invoiceSettings.activities.find((a) => a.value === '5757')?.costCenter;
         modifiedData.invoice.invoiceRows.forEach((row) => {
@@ -192,6 +218,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           },
         ];
       });
+
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand_billing).as(
         'getSupportErrand'
       );
@@ -208,63 +235,63 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       const externalCustomer = invoiceSettings.customers.external.find(
         (c) => c.companyId === mockPortalPersonData_external.data.companyId
       );
-      cy.get('[data-cy="save-invoice-button"]').should('exist').click();
-      cy.wait('@saveBillingRecord').should(({ request, response }) => {
-        expect(request.body).to.deep.equal({
-          category: 'SALARY_AND_PENSION',
-          status: 'NEW',
-          type: 'EXTERNAL',
-          invoice: {
-            customerId: mockPortalPersonData_external.data.companyId.toString(),
-            description: 'Extra löneutbetalning - Systemet',
-            customerReference: externalCustomer?.customerReference,
-            ourReference: mockMe.data.name,
-            referenceId: 'N/A',
-            invoiceRows: [
-              {
-                descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
-                detailedDescriptions: [],
-                costPerUnit: 306,
-                quantity: 1,
-                vatCode: '00',
-                accountInformation: [
-                  {
-                    amount: 300,
-                    costCenter: externalInvoiceType?.accountInformation.costCenter,
-                    subaccount: externalInvoiceType?.accountInformation.subaccount,
-                    department: externalInvoiceType?.accountInformation.department,
-                    activity: externalInvoiceType?.accountInformation.activity,
-                    counterpart: externalCustomer?.counterpart,
-                  },
-                  {
-                    amount: 6,
-                    costCenter: externalInvoiceType?.accountInformation.costCenter,
-                    subaccount: externalInvoiceType?.accountInformation.subaccount,
-                    department: externalInvoiceType?.accountInformation.department,
-                    activity: externalInvoiceType?.accountInformation.activity,
-                    counterpart: externalCustomer?.counterpart,
-                    project: '11041',
-                  },
-                ],
-              },
-            ],
-          },
-          recipient: {
-            partyId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-            organizationName: 'Sundsvall Elnät AB',
-            addressDetails: {
-              street: mockLegalEntityResponse.data.address.addressArea,
-              careOf: '',
-              city: mockLegalEntityResponse.data.address.city,
-              postalCode: mockLegalEntityResponse.data.postAddress.postalCode,
+      const baseData = {
+        category: 'SALARY_AND_PENSION',
+        status: 'NEW',
+        type: 'EXTERNAL',
+        invoice: {
+          customerId: mockPortalPersonData_external.data.companyId.toString(),
+          description: 'Extra löneutbetalning - Systemet',
+          customerReference: externalCustomer?.customerReference,
+          ourReference: mockMe.data.name,
+          invoiceRows: [
+            {
+              descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
+              detailedDescriptions: [],
+              costPerUnit: 306,
+              quantity: 1,
+              vatCode: '00',
+              accountInformation: [
+                {
+                  amount: 300,
+                  costCenter: externalInvoiceType?.accountInformation.costCenter,
+                  subaccount: externalInvoiceType?.accountInformation.subaccount,
+                  department: externalInvoiceType?.accountInformation.department,
+                  activity: externalInvoiceType?.accountInformation.activity,
+                  counterpart: externalCustomer?.counterpart,
+                },
+                {
+                  amount: 6,
+                  costCenter: externalInvoiceType?.accountInformation.costCenter,
+                  subaccount: externalInvoiceType?.accountInformation.subaccount,
+                  department: externalInvoiceType?.accountInformation.department,
+                  activity: externalInvoiceType?.accountInformation.activity,
+                  counterpart: externalCustomer?.counterpart,
+                  project: '11041',
+                },
+              ],
             },
+          ],
+        },
+        recipient: {
+          partyId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          organizationName: 'Sundsvall Elnät AB',
+          addressDetails: {
+            street: mockLegalEntityResponse.data.address.addressArea,
+            careOf: '',
+            city: mockLegalEntityResponse.data.address.city,
+            postalCode: mockLegalEntityResponse.data.postAddress.postalCode,
           },
-          extraParameters: {
-            errandId: mockSupportErrand_billing.id,
-            errandNumber: mockSupportErrand_billing.errandNumber,
-            referenceName: `${mockSupportErrand_billing.stakeholders[0].firstName} ${mockSupportErrand_billing.stakeholders[0].lastName}`,
-          },
-        });
+        },
+        extraParameters: {
+          errandId: mockSupportErrand_billing.id,
+          errandNumber: mockSupportErrand_billing.errandNumber,
+          referenceName: `${mockSupportErrand_billing.stakeholders[0].firstName} ${mockSupportErrand_billing.stakeholders[0].lastName}`,
+        },
+      };
+      cy.get('[data-cy="save-invoice-button"]').should('exist').click();
+      cy.wait('@saveBillingRecord').should(({ request }) => {
+        expect(request.body).to.deep.equal(baseData);
       });
     });
   });

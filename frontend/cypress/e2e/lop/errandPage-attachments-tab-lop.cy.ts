@@ -13,6 +13,8 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
+import { mockRelations } from './fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Errand page support attachments tab', () => {
@@ -33,6 +35,14 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
+      );
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
       );
 
       cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
@@ -70,7 +80,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         cy.wait('@getAttachment');
         if (attachment.mimeType !== 'application/pdf') {
           cy.get('img').should('exist');
-          cy.get('.modal-close-btn').should('exist').click();
+          cy.get('.sk-modal-dialog-close').should('exist').click();
         }
 
         cy.get(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).should('exist').click();

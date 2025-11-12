@@ -71,10 +71,12 @@ export default function Layout({ title, children }) {
           <>
             <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
             <span className="font-bold ml-8">
-              {supportMetadata?.categories
-                ?.find((t) => t.name === supportErrand.category)
-                ?.types.find((t) => t.name === supportErrand.classification.type)?.displayName ||
-                supportErrand.type}{' '}
+              {appConfig.features.useThreeLevelCategorization
+                ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
+                : supportMetadata?.categories
+                    ?.find((t) => t.name === supportErrand.category)
+                    ?.types.find((t) => t.name === supportErrand.classification.type)?.displayName ||
+                  supportErrand.type}{' '}
             </span>
             <span className="text-small">({errandNumber})</span>
           </>
