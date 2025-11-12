@@ -16,22 +16,20 @@ export const LabelTypeValues = {
 };
 
 export const SupportManagementFilterLabelType: React.FC = () => {
-  const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
+  const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const labelCategories = watch('labelCategory');
   const labelTypes = watch('labelType');
   const { register } = useFormContext<LabelTypeFilter>();
   const [query, setQuery] = useState<string>('');
-  const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
   // const [allTypes, setAllTypes] = useState<Label[]>();
   const [allStringTypes, setAllStringTypes] = useState<string[]>();
   const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
 
   useEffect(() => {
-    setAllLabelCategories(supportMetadata?.labels?.labelStructure);
     const _types: Label[] = [];
     if (labelCategories.length > 0) {
       labelCategories?.forEach((category) => {
-        const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.name === category)?.labels;
+        const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.resourcePath === category)?.labels;
         if (categoryTypes) {
           _types.push(...categoryTypes);
         }

@@ -27,8 +27,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
     if (!errand.extraParameters) {
       return [];
     }
-    const uppgifter = extraParametersToUppgiftMapper(data);
-    const uppgifterFields: UppgiftField[] = uppgifter[data.caseType] || baseDetails;
+    const uppgifterFields: UppgiftField[] = extraParametersToUppgiftMapper(data) || baseDetails;
     const fieldNames = uppgifterFields.map((f) =>
       f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)
     ) as (keyof IErrand)[];

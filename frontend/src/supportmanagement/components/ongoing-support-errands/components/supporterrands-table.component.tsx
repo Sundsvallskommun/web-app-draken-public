@@ -200,8 +200,8 @@ export const SupportErrandsTable: React.FC = () => {
           <div className="max-w-[280px]">
             {appConfig.features.useThreeLevelCategorization ? (
               <div>
-                <div>{getLabelType(errand, supportMetadata)?.displayName || ''}</div>
-                <div>{getLabelSubType(errand, supportMetadata)?.displayName || ''}</div>
+                <div>{getLabelType(errand)?.displayName || ''}</div>
+                <div>{getLabelSubType(errand)?.displayName || ''}</div>
               </div>
             ) : null}
             {appConfig.features.useTwoLevelCategorization ? (

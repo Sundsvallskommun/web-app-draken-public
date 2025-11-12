@@ -259,7 +259,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         // and we want to be able to filter on multiple types with the same displayName
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat();
         const matchedTypes = allTypesFlattened.filter((l) => labelTypeFilter.includes(l.displayName));
-        const matchedTypeNames = matchedTypes.map((t) => t.name);
+        const matchedTypeNames = matchedTypes.map((t) => t.resourcePath);
         fObj['labelType'] = matchedTypeNames.join(',');
       }
       if (labelSubTypeFilter && labelSubTypeFilter.length > 0) {
@@ -274,7 +274,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
           .map((l) => l.labels)
           .flat();
         const matchedSubTypes = allSubTypesFlattened.filter((l) => labelSubTypeFilter.includes(l.displayName));
-        const matchedSubTypeNames = matchedSubTypes.map((t) => t.name);
+        const matchedSubTypeNames = matchedSubTypes.map((t) => t.resourcePath);
         fObj['labelSubType'] = matchedSubTypeNames.join(',');
       }
       if (channelFilter && channelFilter.length > 0) {

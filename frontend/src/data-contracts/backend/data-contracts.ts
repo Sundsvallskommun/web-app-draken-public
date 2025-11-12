@@ -10,6 +10,8 @@
  * ---------------------------------------------------------------
  */
 
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+
 export interface SsnPayload {
   ssn: string;
 }
@@ -495,7 +497,7 @@ export interface SupportErrandDto {
   contactReasonDescription?: string;
   suspension?: CSuspension;
   businessRelated?: boolean;
-  labels?: any[];
+  labels?: Label[];
   activeNotifications?: CNotification[];
   created?: string;
   modified?: string;

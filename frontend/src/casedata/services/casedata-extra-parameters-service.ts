@@ -122,7 +122,7 @@ export const getExtraParametersLabels = (caseType: string): { [key: string]: str
   }, {});
 };
 
-export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
+export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<UppgiftField[]> = (errand) => {
   // Create base template encompassing all case types
   const obj: Partial<ExtraParametersObject> = { ...template };
 
@@ -180,7 +180,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
     }
   });
 
-  return obj;
+  return obj[errand.caseType];
 };
 
 export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {

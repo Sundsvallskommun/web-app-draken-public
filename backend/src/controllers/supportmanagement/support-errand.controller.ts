@@ -14,6 +14,7 @@ import {
   ContactChannel,
   ErrandAttachment,
   ExternalTag,
+  Label,
   Notification,
   PageErrand,
   Parameter,
@@ -44,6 +45,7 @@ import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } fr
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+import { v4 as uuidv4, v4 } from 'uuid';
 
 export enum CustomerType {
   PRIVATE,
@@ -293,7 +295,7 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   businessRelated?: boolean;
   @IsOptional()
   @IsArray()
-  labels?: string[];
+  labels?: Label[];
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -413,16 +415,16 @@ export class SupportErrandController {
       const labelTypeList = labelType?.split(',');
       const labelSubTypeList = labelSubType?.split(',');
       if (labelCategoryList && labelCategoryList.length > 0) {
-        const ss = labelCategoryList.map(s => `exists(labels:'${s}')`);
-        filterList.push(`(${ss.join(' or ')})`);
+        const ss1 = labelCategoryList.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
+        filterList.push(`(${ss1.join(' or ')})`);
       }
       if (labelTypeList && labelTypeList.length > 0) {
-        const ss = labelTypeList.map(s => `exists(labels:'${s}')`);
-        filterList.push(`(${ss.join(' or ')})`);
+        const ss1 = labelTypeList.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
+        filterList.push(`(${ss1.join(' or ')})`);
       }
       if (labelSubTypeList && labelSubTypeList.length > 0) {
-        const ss = labelSubTypeList.map(s => `exists(labels:'${s}')`);
-        filterList.push(`(${ss.join(' or ')})`);
+        const ss1 = labelSubTypeList.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
+        filterList.push(`(${ss1.join(' or ')})`);
       }
     }
     if (channel) {
@@ -632,6 +634,22 @@ export class SupportErrandController {
       logger.error('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
+
+    // Fetch metadata for labels for new errand
+    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
+    const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
+    const getDefaultLabels = (names: { category: string; type: string; subType?: string }) => {
+      const categorybject = metadataRes.data.labelStructure?.find(l => l.resourcePath === names.category);
+      if (!categorybject) return [];
+      if (!names.type) return [categorybject];
+      const typeObject = categorybject.labels?.find(l => l.resourcePath === names.type);
+      if (!typeObject) return [categorybject];
+      if (!names.subType) return [categorybject, typeObject];
+      const subTypeObject = typeObject.labels?.find(l => l.resourcePath === names.subType);
+      if (!subTypeObject) return [categorybject, typeObject];
+      return [categorybject, typeObject, subTypeObject];
+    };
+
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
@@ -645,7 +663,7 @@ export class SupportErrandController {
         : isKA()
         ? {
             category: 'ADMINISTRATION',
-            type: 'ADMINISTRATION.CONTACT_CENTER',
+            type: 'ADMINISTRATION/CONTACT_CENTER',
           }
         : isLOP()
         ? {
@@ -665,18 +683,18 @@ export class SupportErrandController {
         : isROB()
         ? {
             category: 'COMPLETE_RECRUITMENT',
-            type: 'COMPLETE_RECRUITMENT.RETAKE',
+            type: 'COMPLETE_RECRUITMENT/RETAKE',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
             type: 'UNCATEGORIZED',
           },
       labels: isLOP()
-        ? ['SALARY', 'SALARY.UNCATEGORIZED', 'SALARY.UNCATEGORIZED.UNCATEGORIZED']
+        ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
         : isIK()
-        ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
+        ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
         : isKA()
-        ? ['ADMINISTRATION', 'ADMINISTRATION.CONTACT_CENTER', 'ADMINISTRATION.CONTACT_CENTER.GENERAL']
+        ? getDefaultLabels({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' })
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
@@ -684,6 +702,7 @@ export class SupportErrandController {
       resolution: Resolution.INFORMED,
       title: 'Empty errand',
     };
+    console.log('Creating new empty errand with body', body);
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);

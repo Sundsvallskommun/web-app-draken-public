@@ -8,7 +8,9 @@ import {
   updateAsset,
 } from '@casedata/services/asset-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.compontant';
+import { serviceUiSchema } from '@common/components/json/schemas/service-ui-schema';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
@@ -168,15 +170,22 @@ export const CasedataServicesTab: React.FC = () => {
   );
 
   return (
-    <div className="w-full py-24 px-32">
+    <div className="w-full max-w-full py-24 px-32 overflow-x-hidden">
       <h2 className="text-h4-sm md:text-h4-md">Insatser</h2>
       <p className="mt-sm text-md">
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
         service kunden har rätt till vid sina resor.
       </p>
 
-      <div className="mt-24">
-        <SchemaForm schema={schema} formData={formData} onChange={(fd) => setFormData(fd)} onSubmit={handleSubmit} />
+      <div className="mt-24 max-w-full">
+        <SchemaForm
+          schema={schema}
+          uiSchema={serviceUiSchema}
+          formData={formData}
+          onChange={(fd) => setFormData(fd)}
+          onSubmit={handleSubmit}
+          objectFieldTemplate={ServicesObjectFieldTemplate}
+        />
       </div>
 
       <div className="mt-32 pt-24">

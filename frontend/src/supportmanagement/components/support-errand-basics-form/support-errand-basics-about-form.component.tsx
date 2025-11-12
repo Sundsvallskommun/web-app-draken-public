@@ -159,7 +159,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 
       {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} />
+          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata} />
         </div>
       ) : null}
 
@@ -174,7 +174,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       ) : null}
 
       <div className="flex my-24 gap-xl">
-        <FormControl id="description" className="w-full">
+        <FormControl id="description" className="w-full" data-cy="errand-description-richtext-wrapper">
           <FormLabel>Ärendebeskrivning</FormLabel>
           <TextEditor
             className="w-full h-[15rem] case-description-editor"
