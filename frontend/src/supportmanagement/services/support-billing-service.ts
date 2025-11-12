@@ -60,7 +60,15 @@ export const billingFormSchema = yup.object({
   invoice: yup.object({
     description: yup.string().required('Fyll i faktureringstyp'),
     customerId: yup.string().required('Fyll i kundidentitet'),
-    customerReference: yup.string().required('Fyll i referensnummer'),
+    customerReference: yup
+      .string()
+      .required('Referensnummer saknas. Vänligen ange ett referensnummer som börjar med en siffra mellan 0 och 9, och som innehåller mellan 4 och 12 tecken')
+      .matches(
+        /^[0-9]/,
+        'Vänligen ange ett referensnummer som börjar med en siffra mellan 0 och 9, och som innehåller mellan 4 och 12 tecken'
+      )
+      .min(4, 'Referensnumret måste innehålla minst 4 tecken')
+      .max(12, 'Referensnumret får innehålla max 12 tecken'),
     invoiceRows: yup.array().of(
       yup.object({
         // visible: yup.boolean().default(true),
