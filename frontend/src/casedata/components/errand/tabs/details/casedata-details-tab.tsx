@@ -104,6 +104,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
           header={label}
           data-cy={`section-${label}-disclosure`}
           icon={<LucideIcon name={icon as any} />}
+          open
         >
           {isAppeal && label === 'Övergripande' && (
             <div className="px-0">
