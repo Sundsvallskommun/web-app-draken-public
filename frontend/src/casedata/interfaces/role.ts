@@ -25,6 +25,7 @@ export enum Role {
   ORGANIZATION = 'ORGANIZATION',
   RIGHTS_HOLDER = 'RIGHTS_HOLDER',
   REPORTER = 'REPORTER',
+  NEXT_OF_KIN = 'NEXT_OF_KIN',
   LEGAL_GUARDIAN = 'LEGAL_GUARDIAN',
   LEGAL_REPRESENTATIVE = 'LEGAL_REPRESENTATIVE',
   HEALTHCARE_PERSONNEL = 'HEALTHCARE_PERSONNEL',
@@ -59,7 +60,7 @@ export enum PTRelation {
   DOCTOR = 'Läkare',
   REPORTER = 'Anmälare',
   CONTACT_PERSON = 'Kontaktperson',
-
+  NEXT_OF_KIN = 'Anhörig',
   LEGAL_GUARDIAN = 'Vårdnadshavare',
   LEGAL_REPRESENTATIVE = 'Juridiskt ombud',
   HEALTHCARE_PERSONNEL = 'Sjukvårdspersonal',
