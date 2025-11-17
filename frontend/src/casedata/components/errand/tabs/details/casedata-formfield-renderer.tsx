@@ -18,6 +18,7 @@ import {
 } from '@sk-web-gui/react';
 import React, { useMemo, useState } from 'react';
 import { UseFormReturn, get } from 'react-hook-form';
+import { RepeatableFieldGroup } from './repeatable-field-group';
 
 interface Props {
   detail: UppgiftField;
@@ -57,7 +58,7 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
   }
 };
 
-const dependencyMatches = (candidate: unknown, expected: string | string[]) => {
+const matchesDependency = (candidate: unknown, expected: string | string[]) => {
   const expectedValues = Array.isArray(expected) ? expected : [expected];
 
   if (Array.isArray(candidate)) {
@@ -83,11 +84,25 @@ function getConditionalValidationRules(
   return {
     validate: (value: any) => {
       const allValues = getValues();
-      const shouldValidate = field.dependsOn?.some((dep) => {
-        const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-        const depValue = allValues[depName];
-        return dependencyMatches(depValue, dep.value);
-      });
+      const logicOperator = field.dependsOnLogic ?? 'AND';
+
+      let shouldValidate: boolean;
+
+      if (logicOperator === 'OR') {
+        shouldValidate =
+          field.dependsOn?.some((dep) => {
+            const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+            const depValue = allValues[depName];
+            return matchesDependency(depValue, dep.value);
+          }) ?? false;
+      } else {
+        shouldValidate =
+          field.dependsOn?.every((dep) => {
+            const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+            const depValue = allValues[depName];
+            return matchesDependency(depValue, dep.value);
+          }) ?? false;
+      }
 
       if (!shouldValidate) return true;
 
@@ -119,14 +134,33 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
   const allFormValues = watch();
 
   const dependentSatisfied =
-    detail.dependsOn?.every((dep, index) => {
-      const depKey = dependencyFieldKeys[index];
-      const depValue = allFormValues?.[depKey] ?? getValues(depKey);
+    detail.dependsOn && detail.dependsOn.length > 0
+      ? (() => {
+          const logicOperator = detail.dependsOnLogic ?? 'AND';
 
-      return dependencyMatches(depValue, dep.value);
-    }) ?? true;
+          if (logicOperator === 'OR') {
+            // OR logic: at least one dependency must be satisfied
+            const result = detail.dependsOn.some((dep) => {
+              const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+              const depValue = allFormValues[depName];
+              const matches = matchesDependency(depValue, dep.value);
+              return matches;
+            });
+            return result;
+          } else {
+            // AND logic (default): all dependencies must be satisfied
+            const result = detail.dependsOn.every((dep) => {
+              const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+              const depValue = allFormValues[depName];
+              const matches = matchesDependency(depValue, dep.value);
+              return matches;
+            });
+            return result;
+          }
+        })()
+      : undefined;
 
-  const isVisible = dependentSatisfied;
+  const isVisible = dependentSatisfied !== false;
 
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
@@ -142,6 +176,28 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
   if (!isVisible) return null;
 
+  // Handle repeatable groups
+  if (detail.formField.type === 'repeatableGroup') {
+    const groupConfig = (detail as any).repeatableGroup;
+    const initialData = (detail as any).initialData;
+
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.label && <FormLabel className="mb-md">{detail.label}</FormLabel>}
+        {detail.description && <p className="text-sm text-gray-600 mb-md">{detail.description}</p>}
+        <RepeatableFieldGroup
+          groupName={groupConfig.groupName}
+          basePath={groupConfig.basePath}
+          fields={groupConfig.fields}
+          minItems={groupConfig.repeatableConfig.minItems}
+          addButtonText={groupConfig.repeatableConfig.addButtonText}
+          removeButtonText={groupConfig.repeatableConfig.removeButtonText}
+          initialData={initialData}
+        />
+      </div>
+    );
+  }
+
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
       {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
@@ -153,9 +209,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
           <Input
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
-            className={cx(
-              errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? 'w-1/2' : 'w-full'
-            )}
+            className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
             data-cy={`${detail.field}-input`}
             {...getInputProps(detail)}
           />

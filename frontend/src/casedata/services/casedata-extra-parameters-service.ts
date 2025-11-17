@@ -28,8 +28,68 @@ import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import escapeStringRegexp from 'escape-string-regexp';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
+
+export const groupRepeatableParameters = (
+  extraParameters: ExtraParameter[],
+  basePath: string
+): Record<number, Record<string, string | string[]>> => {
+  const grouped: Record<number, Record<string, string | string[]>> = {};
+
+  // Handle case where extraParameters is undefined or not an array
+  if (!extraParameters || !Array.isArray(extraParameters)) {
+    return grouped;
+  }
+
+  const escapedBasePath = escapeStringRegexp(basePath);
+  const pattern = new RegExp(`^${escapedBasePath}\\.(\\d+)\\.(.+)$`);
+
+  extraParameters.forEach((param) => {
+    const match = param.key.match(pattern);
+    if (match) {
+      const index = parseInt(match[1], 10);
+      const fieldKey = match[2];
+
+      if (!grouped[index]) {
+        grouped[index] = {};
+      }
+
+      // Keep arrays for multi-value fields (combobox), single value for others
+      const values = param.values ?? [];
+      grouped[index][fieldKey] = values.length > 1 ? values : values[0] ?? '';
+    }
+  });
+
+  return grouped;
+};
+
+// Example: "personal@journey@0@destination" -> { key: "personal.journey.0.destination", values: ["Stockholm"] }
+export const extractRepeatableGroupData = (rawValues: Record<string, unknown>, basePath: string): ExtraParameter[] => {
+  const extracted: ExtraParameter[] = [];
+  const formKeyPrefix = basePath.replaceAll('.', EXTRAPARAMETER_SEPARATOR);
+  const escapedPrefix = escapeStringRegexp(formKeyPrefix);
+  const escapedSeparator = escapeStringRegexp(EXTRAPARAMETER_SEPARATOR);
+  const pattern = new RegExp(`^${escapedPrefix}${escapedSeparator}(\\d+)${escapedSeparator}(.+)$`);
+
+  Object.keys(rawValues).forEach((key) => {
+    const match = key.match(pattern);
+    if (match) {
+      const index = match[1];
+      const fieldName = match[2];
+      const value = rawValues[key];
+
+      const backendKey = `${basePath}.${index}.${fieldName}`;
+      extracted.push({
+        key: backendKey,
+        values: Array.isArray(value) ? value : [String(value ?? '')],
+      });
+    }
+  });
+
+  return extracted;
+};
 
 export type OptionBase = {
   label: string;
@@ -49,8 +109,10 @@ export interface UppgiftField {
     | { type: 'select'; options: OptionBase[] }
     | { type: 'radio'; options: OptionBase[]; inline?: boolean }
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
-    | { type: 'checkbox'; options: OptionBase[] };
+    | { type: 'checkbox'; options: OptionBase[] }
+    | { type: 'repeatableGroup' };
   section: string;
+  dependsOnLogic?: 'AND' | 'OR';
   dependsOn?: {
     field: string;
     value: string | string[];
@@ -58,6 +120,8 @@ export interface UppgiftField {
   }[];
   description?: string;
   required?: boolean;
+  pairWith?: string;
+  repeatableGroup?: any;
 }
 
 const caseTypeTemplateAlias: Record<string, string> = {
@@ -132,17 +196,43 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
   // If the field is not found in the errand extraparameters, the default value
   // from the template will be used.
 
+  const caseType = errand.caseType;
+  const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
+  const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+
+  obj[caseType] = caseTypeTemplate?.map((field) => ({ ...field })) || [];
+
+  // First: handle repeatable groups
+  caseTypeTemplate?.forEach((templateField) => {
+    if (templateField.formField.type === 'repeatableGroup' && (templateField as any).repeatableGroup) {
+      const basePath = (templateField as any).repeatableGroup.basePath;
+      const groupedData = groupRepeatableParameters(errand.extraParameters, basePath);
+
+      if (Object.keys(groupedData).length > 0) {
+        const a: UppgiftField[] = obj[caseType];
+        const i = a.findIndex((f) => f.field === templateField.field);
+
+        if (i > -1) {
+          (obj[caseType][i] as any).initialData = groupedData;
+        }
+      }
+    }
+  });
+
+  // Second: handle regular fields
   errand.extraParameters.forEach((param) => {
     try {
-      const caseType = errand.caseType;
       const field = param['key'];
 
-      const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-      const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+      // Skip fields that are part of repeatable groups
+      if (/\.\d+\./.test(field)) {
+        return;
+      }
+
       const templateField = caseTypeTemplate?.find((f) => f.field === field);
 
-      if (caseType && field && templateField) {
-        const { label, formField, section, dependsOn, description, required } = templateField;
+      if (field && templateField) {
+        const { label, formField, section, dependsOn, dependsOnLogic, description, required } = templateField;
         const isCheckbox = formField.type === 'checkbox';
         const isMultiValueField = isCheckbox || Array.isArray(templateField.value);
         // If the field is a checkbox, its values are in a string formatted
@@ -155,7 +245,6 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
 
         const value = isMultiValueField ? normalized : rawValues[0] ?? '';
 
-        obj[caseType] = obj[caseType] || [];
         const data: UppgiftField = {
           field,
           value,
@@ -163,6 +252,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
           formField,
           section,
           dependsOn,
+          dependsOnLogic,
           description,
           required,
         };
@@ -176,7 +266,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
         }
       }
     } catch (error) {
-      console.warn('Kunde inte mappa extraParameter:', param, error);
+      console.warn('Could not map extraParameter:', param, error);
     }
   });
 
@@ -191,8 +281,31 @@ export const saveExtraParameters = (municipalityId: string, data: ExtraParameter
       .filter((value) => value !== ''),
   }));
 
+  const repeatableGroupPaths = new Set<string>();
+  sanitizedData.forEach((param) => {
+    const match = param.key.match(/^(.+)\.\d+\..+$/);
+    if (match) {
+      repeatableGroupPaths.add(match[1]);
+    }
+  });
+
   const mergedExtraParameters = errand.extraParameters
-    .filter((existing) => !sanitizedData.some((param) => param.key === existing.key))
+    .filter((existing) => {
+      if (sanitizedData.some((param) => param.key === existing.key)) {
+        return false;
+      }
+
+      // Remove if it's part of a repeatable group that we're updating
+      for (const basePath of repeatableGroupPaths) {
+        const escapedBasePath = escapeStringRegexp(basePath);
+        const pattern = new RegExp(`^${escapedBasePath}\\.\\d+\\..+$`);
+        if (pattern.test(existing.key)) {
+          return false;
+        }
+      }
+
+      return true;
+    })
     .concat(sanitizedData);
 
   return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(

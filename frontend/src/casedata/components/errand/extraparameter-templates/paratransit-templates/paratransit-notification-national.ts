@@ -1,122 +1,195 @@
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
+import { swedishMunicipalities } from '../municipalities';
+
+export const journeyFieldsGroup = {
+  groupName: 'Resa',
+  basePath: 'personal.journey',
+  section: 'Yttre omständigheter',
+  repeatableConfig: {
+    minItems: 1,
+    addButtonText: 'Lägg till resa',
+    removeButtonText: 'Ta bort resa',
+  },
+  fields: [
+    {
+      field: 'travelFromMunicipality',
+      value: '',
+      label: 'Från kommun',
+      formField: {
+        type: 'select',
+        options: swedishMunicipalities,
+      },
+      section: 'Yttre omständigheter',
+      required: true,
+      pairWith: 'travelToMunicipality',
+    },
+    {
+      field: 'travelToMunicipality',
+      value: '',
+      label: 'Till kommun',
+      formField: {
+        type: 'select',
+        options: swedishMunicipalities,
+      },
+      section: 'Yttre omständigheter',
+      required: true,
+    },
+    {
+      field: 'travelFromLocation',
+      value: '',
+      label: 'Från - Ort (kompletterande)',
+      formField: {
+        type: 'textarea',
+      },
+      section: 'Yttre omständigheter',
+      pairWith: 'travelToLocation',
+    },
+    {
+      field: 'travelToLocation',
+      value: '',
+      label: 'Till - Ort (kompletterande)',
+      formField: {
+        type: 'textarea',
+      },
+      section: 'Yttre omständigheter',
+    },
+    {
+      field: 'travelDateKnown',
+      value: '',
+      label: 'Vet du vilket datum resan ska inträffa?',
+      formField: {
+        type: 'radio',
+        options: [
+          { label: 'Jag vet datum', value: 'YES', name: 'travelDateKnown' },
+          { label: 'Jag vet inte exakt datum', value: 'NO', name: 'travelDateKnown' },
+        ],
+      },
+      section: 'Yttre omständigheter',
+    },
+    {
+      field: 'travelDate',
+      value: '',
+      label: 'Ange datum',
+      formField: {
+        type: 'date',
+      },
+      section: 'Yttre omständigheter',
+      dependsOn: [{ field: 'travelDateKnown', value: 'YES', validationMessage: 'Vänligen ange resedatum.' }],
+    },
+    {
+      field: 'travelMonth',
+      value: '',
+      label: 'Ange månad för resan',
+      description: 'Om du inte vet exakt datum och tid för din resa, välj en månad då resan förväntas inträffa',
+      formField: {
+        type: 'select',
+        options: [
+          { label: 'Januari', value: 'JANUARY' },
+          { label: 'Februari', value: 'FEBRUARY' },
+          { label: 'Mars', value: 'MARCH' },
+          { label: 'April', value: 'APRIL' },
+          { label: 'Maj', value: 'MAY' },
+          { label: 'Juni', value: 'JUNE' },
+          { label: 'Juli', value: 'JULY' },
+          { label: 'Augusti', value: 'AUGUST' },
+          { label: 'September', value: 'SEPTEMBER' },
+          { label: 'Oktober', value: 'OCTOBER' },
+          { label: 'November', value: 'NOVEMBER' },
+          { label: 'December', value: 'DECEMBER' },
+        ],
+      },
+      section: 'Yttre omständigheter',
+      dependsOn: [{ field: 'travelDateKnown', value: 'NO', validationMessage: 'Vänligen ange månad för resan.' }],
+    },
+  ] as UppgiftField[],
+};
 
 export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
-    field: 'external.currentHousingDescription',
+    field: 'personal.purposeOfTravel',
     value: '',
-    label: 'Aktuellt boendeform',
-    description: 'Ange boendeform och ev. namn på t.ex. äldreboendet',
+    label: 'Beskriv ändamålet med resan',
+    description:
+      'Riksfärdtjänst kan inte beviljas till sjukvårdande behandling eller tjänsteresor. Vid sjukvårdande behandling ska man vända sig till regionen för sjukresor',
     formField: {
       type: 'textarea',
     },
     section: 'Yttre omständigheter',
+    required: true,
   },
   {
-    field: 'external.vehicleTypeNeeded',
+    field: 'personal.journey',
     value: '',
-    label: 'Vilken typ av fordonstyp bedöms behövas',
+    label: 'Resor',
+    formField: {
+      type: 'repeatableGroup' as any,
+    },
+    section: 'Yttre omständigheter',
+    repeatableGroup: journeyFieldsGroup,
+  } as any,
+  {
+    field: 'personal.mobilityAidNeeded',
+    value: '',
+    label: 'Behöver den sökande förflyttningshjälpmedel?',
     formField: {
       type: 'radio',
       options: [
-        { label: 'Taxibil', value: 'TAXI' },
-        { label: 'Litet specialfordon', value: 'SMALL_SPECIAL' },
-        { label: 'Stort specialfordon', value: 'LARGE_SPECIAL' },
+        { label: 'Ja', value: 'YES', name: 'mobilityAidNeeded' },
+        { label: 'Nej', value: 'NO', name: 'mobilityAidNeeded' },
       ],
     },
     section: 'Yttre omständigheter',
   },
   {
-    field: 'external.livingSituationDescription',
-    value: '',
-    label: 'Beskriv den sökandes boendesituation',
-    description: 'Finns det hiss, trappor eller trapport mellan lägenhet och ytterentré',
+    field: 'personal.mobilityAids',
+    value: [],
+    label: 'Förflyttningshjälpmedel som den sökande är beroende av för att kunna genomföra resan',
     formField: {
-      type: 'textarea',
-    },
-    section: 'Yttre omständigheter',
-  },
-  {
-    field: 'external.travelType',
-    value: '',
-    label: 'Vilken typ av resor gäller ärendet',
-    formField: {
-      type: 'select',
+      type: 'combobox',
       options: [
-        { label: 'Utbildningsresor', value: 'EDUCATION' },
-        { label: 'Arbetsresor', value: 'WORK' },
-        { label: 'Personliga resor', value: 'PERSONAL' },
+        { label: 'Rollator', value: 'WALKER', name: 'mobilityAids' },
+        { label: 'Krycka, käpp, stavar', value: 'CRUTCH_CANE_POLES', name: 'mobilityAids' },
+        { label: 'Hopfällbar rullstol', value: 'FOLDABLE_WHEELCHAIR', name: 'mobilityAids' },
+        { label: 'Komfortrullstol eller motsvarande', value: 'COMFORT_WHEELCHAIR', name: 'mobilityAids' },
+        { label: 'Elrullstol', value: 'ELECTRIC_WHEELCHAIR', name: 'mobilityAids' },
+        { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
       ],
     },
     section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'personal.mobilityAidNeeded',
+        value: 'YES',
+        validationMessage: 'Vänligen välj förflyttningshjälpmedel.',
+      },
+    ],
   },
   {
-    field: 'external.travelDestinations',
+    field: 'personal.walkingDistance',
     value: '',
-    label: 'Vilket/vilka resmål gäller ärendet',
+    label: 'Hur långt klarar du att gå på plan mark? Ange i antalet meter',
     formField: {
       type: 'textarea',
     },
     section: 'Yttre omständigheter',
-  },
-  {
-    field: 'personal.disabilityDescription',
-    value: '',
-    label: 'Beskriv funktionsnedsättningen',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.disabilityImpactDescription',
-    value: '',
-    label: 'Beskriv de besvär som funktionsnedsättningen/-arna orsakar',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.travelAbilityAndAids',
-    value: '',
-    label: 'Ange reseförmåga och behov av hjälpmedel',
-    description: 'Behöver hjälp att kommunicera, medicinsk hjälp',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.purposeOfTravel',
-    value: '',
-    label: 'Ange ändamål med resan',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.travelPeriodFrom',
-    value: '',
-    label: 'Ange perioden för resan/resorna – från',
-    formField: {
-      type: 'date',
-    },
-    section: 'Personlig information',
-  },
-  {
-    field: 'personal.travelPeriodTo',
-    value: '',
-    label: 'Ange perioden för resan/resorna – till',
-    formField: {
-      type: 'date',
-    },
-    section: 'Personlig information',
+    dependsOnLogic: 'OR',
+    dependsOn: [
+      {
+        field: 'personal.mobilityAids',
+        value: ['WALKER', 'CRUTCH_CANE_POLES'],
+        validationMessage: 'Vänligen ange hur långt du kan gå på plan mark i meter (minst 4 tecken).',
+      },
+      {
+        field: 'personal.mobilityAidNeeded',
+        value: 'NO',
+        validationMessage: 'Vänligen ange hur långt du kan gå på plan mark i meter (minst 4 tecken).',
+      },
+    ],
   },
   {
     field: 'personal.needForEscort',
     value: '',
-    label: 'Ange om ansökan omfattar behov av ledsagare?',
+    label: 'Ange om du behöver aktiv hjälp av en ledsagare under själva resan',
     formField: {
       type: 'radio',
       options: [
@@ -124,105 +197,159 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Nej', value: 'NO', name: 'needForEscort' },
       ],
     },
-    section: 'Personlig information',
+    section: 'Yttre omständigheter',
   },
   {
-    field: 'personal.escortHelpInCar',
+    field: 'personal.escortHelpDescription',
     value: '',
-    label: 'Beskriv varför ledsagare behövs under resan',
+    label: 'Beskriv behovet av hjälp',
     formField: {
       type: 'textarea',
     },
-    section: 'Personlig information',
-    dependsOn: [
-      { field: 'personal.needForEscort', value: 'YES', validationMessage: 'Vänligen beskriv behovet av ledsagare.' },
-    ],
-  },
-  {
-    field: 'medical.basisOfApplication',
-    value: '',
-    label: 'Uppgifter i ansökan baseras på',
-    formField: {
-      type: 'checkbox',
-      options: [
-        { label: 'Kontakt med anhöriga', value: 'FAMILY_CONTACT', name: 'basisOfApplication' },
-        { label: 'Direkt kontakt med den sökande', value: 'APPLICANT_CONTACT', name: 'basisOfApplication' },
-        { label: 'Journalanteckningar', value: 'MEDICAL_NOTES', name: 'basisOfApplication' },
-        { label: 'Annan orsak', value: 'OTHER', name: 'basisOfApplication' },
-      ],
-    },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.basisOfApplicationOther',
-    value: '',
-    label: 'Annan orsak - beskrivning',
-    formField: { type: 'textarea' },
-    section: 'Medicinskt utlåtande',
+    section: 'Yttre omständigheter',
     dependsOn: [
       {
-        field: 'medical.basisOfApplication',
-        value: 'OTHER',
-        validationMessage: 'Vänligen beskriv vilka uppgifter ansökan baseras på.',
+        field: 'personal.needForEscort',
+        value: 'YES',
+        validationMessage: 'Vänligen beskriv behovet av ledsagare under resan.',
       },
     ],
   },
   {
-    field: 'medical.mainDiagnosis',
-    value: '',
-    label: 'Huvuddiagnos',
+    field: 'personal.transportTypes',
+    value: [],
+    label: 'Vilken/vilka färdmedel gäller anmälan',
     formField: {
-      type: 'textarea',
-    },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.otherDiagnoses',
-    value: '',
-    label: 'Övriga diagnoser',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.investigationsTreatments',
-    value: '',
-    label: 'Aktuella utredningar, behandlingar och eller rehabilitering',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.otherInfo',
-    value: '',
-    label: 'Annan information',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Medicinskt utlåtande',
-  },
-  {
-    field: 'medical.certifiedByLicensedPersonnel',
-    value: '',
-    description: 'Med legitimerad personal avses personal med minst sjuksköterskeutbildning och giltig legitimation.',
-    label: 'Jag intygar som legitimerad personal, att uppgifterna är riktiga',
-    formField: {
-      type: 'radio',
+      type: 'combobox',
       options: [
+        { label: 'Tåg', value: 'TRAIN', name: 'transportTypes' },
+        { label: 'Buss', value: 'BUS', name: 'transportTypes' },
+        { label: 'Flyg', value: 'PLANE', name: 'transportTypes' },
+        { label: 'Båt', value: 'BOAT', name: 'transportTypes' },
+        { label: 'Taxibil', value: 'TAXI', name: 'transportTypes' },
+        { label: 'Rullstolstaxi', value: 'WHEELCHAIR_TAXI', name: 'transportTypes' },
+      ],
+    },
+    section: 'Yttre omständigheter',
+  },
+  {
+    field: 'personal.taxiDescription',
+    value: '',
+    label: 'Beskriv varför resan behöver ske med taxi',
+    description: 'Riksfärdtjänst prioriterar allmänna transportmedel; taxiresor beviljas endast vid särskilda behov.',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'personal.transportTypes',
+        value: ['TAXI', 'WHEELCHAIR_TAXI'],
+        validationMessage: 'Vänligen beskriv varför resan behöver ske med taxi.',
+      },
+    ],
+  },
+  // Medical opinion section
+  {
+    field: 'medical.diagnoses',
+    value: [],
+    label: 'Ange funktionsnedsättning / funktionsnedsättningar',
+    formField: {
+      type: 'combobox',
+      options: [
+        { label: 'Synskada', value: 'VISUAL_IMPAIRMENT', name: 'diagnoses' },
         {
-          label: 'Ja, jag är legitimerad och intygar att uppgifterna är riktiga',
-          value: 'LICENSED',
-          name: 'certification',
+          label: 'Fysisk, nedsatt rörelseförmåga (orsakat av exempelvis stroke, artros)',
+          value: 'PHYSICAL_MOBILITY_IMPAIRMENT',
+          name: 'diagnoses',
+        },
+        { label: 'Demenssjukdom', value: 'DEMENTIA', name: 'diagnoses' },
+        {
+          label:
+            'Kognitiv, neuropsykiatrisk eller intellektuell (som ger minnes, inlärning och/eller orienteringssvårigheter)',
+          value: 'COGNITIVE_NEUROPSYCHIATRIC_INTELLECTUAL',
+          name: 'diagnoses',
         },
         {
-          label: 'Nej, jag är inte legitimerad',
-          value: 'NOT_LICENSED',
-          name: 'certification',
+          label: 'Medicinsk, kronisk och långvarig sjukdom, (yrsel, KOL, hjärt/kärlsjukdom, muskelsjukdom)',
+          value: 'CHRONIC_MEDICAL_CONDITION',
+          name: 'diagnoses',
         },
+        { label: 'Psykisk sjukdom', value: 'MENTAL_ILLNESS', name: 'diagnoses' },
+        { label: 'Palliativ vård', value: 'PALLIATIVE_CARE', name: 'diagnoses' },
       ],
     },
     section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.disabilityDuration',
+    value: '',
+    label: 'Ange funktionsnedsättningens ungefärliga varaktighet',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Mindre än 1 år', value: 'LESS_THAN_ONE_YEAR', name: 'disabilityDuration' },
+        { label: '1 år eller mer', value: 'ONE_YEAR_OR_MORE', name: 'disabilityDuration' },
+      ],
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.disabilityConsequences',
+    value: '',
+    label: 'Beskriv vilken konsekvens sjukdomstillståndet/funktionsnedsättningen medför',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.publicTransportAbility',
+    value: '',
+    label: 'Beskriv den sökandes förmåga att resa med allmänna kommunikationer',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.canUseEscortService',
+    value: '',
+    label:
+      'Klarar den sökande att resa med allmänna kommunikationer med hjälp av ledsagarservice som trafikföretag tillhandahåller?',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Ja', value: 'YES', name: 'canUseEscortService' },
+        { label: 'Nej', value: 'NO', name: 'canUseEscortService' },
+      ],
+    },
+    section: 'Medicinskt utlåtande',
+  },
+  {
+    field: 'medical.escortServiceReason',
+    value: '',
+    label: 'Beskriv anledningen',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Medicinskt utlåtande',
+    dependsOn: [
+      {
+        field: 'medical.canUseEscortService',
+        value: 'NO',
+        validationMessage: 'Vänligen beskriv anledningen.',
+      },
+    ],
+  },
+  {
+    field: 'medical.additionalInfo',
+    value: '',
+    label: 'Beskriv annan viktig information om funktionsnedsättningen',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Medicinskt utlåtande',
+    required: false,
   },
 ];
