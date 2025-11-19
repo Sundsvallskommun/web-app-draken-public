@@ -683,7 +683,7 @@ export class SupportErrandController {
         : isROB()
         ? {
             category: 'COMPLETE_RECRUITMENT',
-            type: 'COMPLETE_RECRUITMENT/RETAKE',
+            type: 'COMPLETE_RECRUITMENT.RETAKE',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
