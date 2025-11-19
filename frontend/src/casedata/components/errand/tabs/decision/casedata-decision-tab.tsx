@@ -702,9 +702,11 @@ export const CasedataDecisionTab: React.FC<{
             color="primary"
             size="md"
             onClick={onSubmit}
-            disabled={isLoading || isErrandLocked(errand) || !allowed || isSent()}
+            loading={isLoading}
+            loadingText="Sparar"
+            disabled={isErrandLocked(errand) || !allowed || isSent()}
           >
-            {isLoading ? 'Sparar' : 'Spara beslutstext'}
+            Spara beslutstext
           </Button>
           <Button
             data-cy="decision-pdf-preview-button"
