@@ -19,6 +19,7 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
+import type { RJSFSchema } from '@rjsf/utils';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
@@ -39,6 +40,7 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
+import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
@@ -120,6 +122,7 @@ let formSchema = yup
 export const CasedataDecisionTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
+  onRefetchServices?: (refetch: () => void) => void;
 }> = (props) => {
   const { municipalityId, user, errand, setErrand }: AppContextInterface = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -127,7 +130,6 @@ export const CasedataDecisionTab: React.FC<{
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const selectedBeslut = 1;
-  const [richText, setRichText] = useState<string>('');
   const [error, setError] = useState<string>();
   const quillRef = useRef(null);
   const saveConfirm = useConfirm();
@@ -136,16 +138,31 @@ export const CasedataDecisionTab: React.FC<{
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
-  const [textIsDirty, setTextIsDirty] = useState(false);
+  const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
 
   const ownerPartyId = getOwnerStakeholder(errand)?.personId;
+  const assetType = 'FTErrandAssets';
 
-  const { services } = useErrandServices({
+  useEffect(() => {
+    (async () => {
+      const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
+      setServiceSchema(schema);
+    })();
+  }, [municipalityId, assetType]);
+
+  const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
     partyId: ownerPartyId,
     errandNumber: errand.errandNumber,
-    assetType: 'FTErrandAssets',
+    assetType: assetType,
+    schema: serviceSchema,
   });
+
+  useEffect(() => {
+    if (props.onRefetchServices && refetchServices) {
+      props.onRefetchServices(refetchServices);
+    }
+  }, [props, refetchServices]);
 
   useEffect(() => {
     const laws = getValues('law')?.map((law) => law.heading) ?? [];
@@ -240,7 +257,7 @@ export const CasedataDecisionTab: React.FC<{
   const save = async (data: DecisionFormModel) => {
     try {
       setIsLoading(true);
-      const rendered = await renderBeslutPdf(errand, data);
+      const rendered = await renderBeslutPdf(errand, data, services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
@@ -281,8 +298,8 @@ export const CasedataDecisionTab: React.FC<{
         adAccount: user.username,
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
-      const rendered = await renderBeslutPdf(errand, data);
-      const saved = await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      const rendered = await renderBeslutPdf(errand, data, services);
+      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
       const recipientEmail = owner?.emails?.[0]?.value;
@@ -326,10 +343,10 @@ export const CasedataDecisionTab: React.FC<{
       if (isMEX()) {
         await sendMessage(municipalityId, errand, messageData);
       } else if (isPT() && municipalityId === '2260') {
-        console.log("PT Ånge - beslut skickas ej manuellt");
+        console.log('PT Ånge - beslut skickas ej manuellt');
         // PT Ånge - do nothing, they handle sending themselves
       } else if (isPT()) {
-        console.log("PT Sundsvall - sending decision by letter or email");
+        console.log('PT Sundsvall - sending decision by letter or email');
         await sendDecisionMessage(municipalityId, errand);
       } else {
         throw new Error('Kontaktsätt saknas');
@@ -399,7 +416,7 @@ export const CasedataDecisionTab: React.FC<{
           error: !pdfBase64 ? 'Error when fetching existing pdf data' : undefined,
         };
       } else {
-        pdfData = await renderBeslutPdf(errand, data);
+        pdfData = await renderBeslutPdf(errand, data, services);
         const saved = await saveDecision(municipalityId, errand, data, 'FINAL', pdfData.pdfBase64);
         const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
       }
@@ -459,7 +476,6 @@ export const CasedataDecisionTab: React.FC<{
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
       setValue('id', existingDecision.id.toString());
       setValue('description', existingDecision.description);
-      setRichText(existingDecision.description);
       setValue('outcome', existingDecision.decisionOutcome);
       setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
       setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
@@ -685,18 +701,12 @@ export const CasedataDecisionTab: React.FC<{
             variant="secondary"
             color="primary"
             size="md"
-            onClick={handleSubmit(onSubmit, onError)}
-            disabled={
-              isLoading ||
-              !formState.isValid ||
-              (isPT() && !getValues('validFrom')) ||
-              (isPT() && !getValues('validTo')) ||
-              isErrandLocked(errand) ||
-              !allowed ||
-              isSent()
-            }
+            onClick={onSubmit}
+            loading={isLoading}
+            loadingText="Sparar"
+            disabled={isErrandLocked(errand) || !allowed || isSent()}
           >
-            {isLoading ? 'Sparar' : 'Spara beslutstext'}
+            Spara beslutstext
           </Button>
           <Button
             data-cy="decision-pdf-preview-button"

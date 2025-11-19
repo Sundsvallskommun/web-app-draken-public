@@ -2,16 +2,16 @@ import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
-import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
+import { Decision, DecisionOutcome, DecisionType, Law } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { Law } from '@casedata/interfaces/decision';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 import { isFTErrand } from './casedata-errand-service';
+import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
@@ -218,23 +218,26 @@ export const getPhrases: (
 
 export const renderUtredningPdf: (
   errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d) => {
-  return renderPdf(errand, d, 'investigation');
+  d: UtredningFormModel | DecisionFormModel,
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
+  return renderPdf(errand, d, 'investigation', services);
 };
 
 export const renderBeslutPdf: (
   errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d) => {
-  return renderPdf(errand, d, 'decision');
+  d: UtredningFormModel | DecisionFormModel,
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
+  return renderPdf(errand, d, 'decision', services);
 };
 
 export const renderPdf: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
-  templateType: 'investigation' | 'decision'
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType) => {
+  templateType: 'investigation' | 'decision',
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
   const decision = errand.decisions.find(
     (d) =>
       (templateType === 'decision' && d.decisionType === 'FINAL') ||
@@ -258,7 +261,7 @@ export const renderPdf: (
   if (isMEX()) {
     identifier = `mex.decision`;
   } else if (isPT() && isFTErrand(errand)) {
-    identifier = 'sbk.ft.general';
+    identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
@@ -313,6 +316,50 @@ export const renderPdf: (
     renderBody.parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
   }
   renderBody.parameters['description'] = formData.description;
+
+  if (isPT() && isFTErrand(errand)) {
+    const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
+      if (law.article && law.sfs) {
+        if (!acc[law.sfs]) {
+          acc[law.sfs] = [];
+        }
+        acc[law.sfs].push(law.article);
+      }
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    const lawReferences = lawsBySfs
+      ? Object.entries(lawsBySfs)
+          .map(([sfs, articles]) => {
+            return `${articles.join('§, ')}§ (${sfs})`;
+          })
+          .join(', ')
+      : '';
+    renderBody.parameters['lawReferences'] = lawReferences;
+
+    if (services && services.length > 0) {
+      renderBody.parameters['services'] = services.map((service) => {
+        const serviceData: any = {
+          restyp: service.restyp,
+          validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
+          validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
+          validityType: service.validityType,
+        };
+
+        if (service.aids?.length > 0) {
+          serviceData.aids = service.aids.join(', ');
+        }
+
+        if (service.addon?.length > 0) {
+          serviceData.addon = service.addon.join(', ');
+        }
+
+        return serviceData;
+      });
+    } else {
+      renderBody.parameters['services'] = [];
+    }
+  }
 
   return apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
