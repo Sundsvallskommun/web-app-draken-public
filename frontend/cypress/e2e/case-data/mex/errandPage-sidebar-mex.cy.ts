@@ -15,7 +15,6 @@ import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockErrand_base } from '../fixtures/mockErrand';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {

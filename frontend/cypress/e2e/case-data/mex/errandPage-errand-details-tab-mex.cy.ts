@@ -192,24 +192,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      let currentParameters: any = [...mockMexErrand_base.data.extraParameters];
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'reason',
-        values: ['Mock text 1'],
-      });
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'fromDate',
-        values: ['2024-06-30'],
-      });
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'toDate',
-        values: ['2024-07-30'],
-      });
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'otherInformation',
-        values: ['Mock text 2'],
-      });
-
       cy.wait('@saveExtraParameters').should(({ request }) => {
         checkExtraParameter(request.body, 'reason', 'Mock text 1');
         checkExtraParameter(request.body, 'fromDate', '2024-06-30');
@@ -399,7 +381,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.wait('@saveExtraParameters').should(({ request }) => {
         checkExtraParameter(request.body, 'otherInformation', 'Mock text');
-        // checkExtraParameter(request.body, 'propertyDesignation', 'Test property');
         checkExtraParameter(request.body, 'registrationAddressStatus', 'Nej jag är inte folkbokförd');
         checkExtraParameter(request.body, 'roadType', 'Enskild väg UTAN statsbidrag');
 

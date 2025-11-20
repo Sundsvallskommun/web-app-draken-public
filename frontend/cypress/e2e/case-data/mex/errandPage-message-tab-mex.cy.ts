@@ -65,9 +65,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             mockMessages.data.length + mockConversationMessages.data.length * mockConversations.data.data.length
           )
       ) {
-        // cy.get('[data-cy="expand-message-button"]').each((button) => {
-        //   cy.wrap(button).should('exist').click();
-        // });
         mockMessages.data.forEach((message) => {
           if (message.messageType === 'EMAIL' && message.emailHeaders[0].header === 'MESSAGE_ID') {
             const node = cy.get(`[data-cy="node-${message.emailHeaders[0].values}"]`);

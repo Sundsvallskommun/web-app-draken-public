@@ -472,11 +472,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
       cy.wait('@saveExtraParameters').should(({ request }) => {
         preventProcessExtraParameters(request.body);
-        // expect(request.body.map((p) => p.key)).to.not.include.members([
-        //   'process.phaseStatus',
-        //   'process.phaseAction',
-        //   'process.displayPhase',
-        // ]);
       });
       cy.wait('@patchErrand').should(({ request }) => {
         const requestApplicant = request.body.stakeholders.find((s) => s.roles.includes('APPLICANT'));

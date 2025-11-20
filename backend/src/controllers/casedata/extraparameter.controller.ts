@@ -14,7 +14,7 @@ export const PROCESS_PARAMETER_KEYS = ['process.displayPhase', 'process.phaseAct
 @Controller()
 @UseBefore(hasPermissions(['canEditCasedata']))
 export class ExtraParameterController {
-  private apiService = new ApiService();
+  private readonly apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
 
   @Patch('/casedata/:municipalityId/errands/:id/extraparameters')
@@ -28,7 +28,7 @@ export class ExtraParameterController {
     @Body() data: ExtraParameter[],
   ): Promise<{ data: ExtraParameter[]; message: string }> {
     if (!errandId) {
-      throw 'Id not found. Cannot patch errand extraParameters without id.';
+      throw new Error('Id not found. Cannot patch errand extraParameters without id.');
     }
 
     if (data.some(p => PROCESS_PARAMETER_KEYS.includes(p.key))) {
@@ -51,7 +51,7 @@ export class ExtraParameterController {
     @Body() data: ExtraParameter[],
   ): Promise<{ data: ExtraParameter[]; message: string }> {
     if (!errandId) {
-      throw 'Id not found. Cannot patch errand extraParameters without id.';
+      throw new Error('Id not found. Cannot patch errand extraParameters without id.');
     }
 
     if (data.some(p => !PROCESS_PARAMETER_KEYS.includes(p.key))) {

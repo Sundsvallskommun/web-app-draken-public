@@ -17,7 +17,7 @@ export const phaseChangeInProgress = (errand: IErrand) => {
   if (errand.status?.statusType === ErrandStatus.ArendeAvslutat) {
     return false;
   }
-  if (typeof errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === 'undefined') {
+  if (errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === undefined) {
     return true;
   }
   if (
@@ -50,7 +50,7 @@ export const triggerErrandPhaseChange = async (municipalityId: string, errand: I
 
 const savePhaseAction = (municipalityId: string, phaseAction: 'CANCEL' | 'COMPLETE', errand: IErrand) => {
   if (!errand?.id) {
-    return Promise.reject('No errand id');
+    return Promise.reject(new Error('No errand id'));
   }
   return apiService.patch<any, ExtraParameter[]>(
     `casedata/${municipalityId}/errands/${errand.id}/extraparameters/process`,
