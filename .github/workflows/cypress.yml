@@ -35,11 +35,23 @@ jobs:
           spec: cypress/e2e/case-data/mex**/*.cy.ts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_PUBLIC_APPLICATION: MEX
           NEXT_PUBLIC_APP_NAME: 'Draken'
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
           DOMAIN_NAME: localhost
           BASE_PATH: ''
           NEXT_PUBLIC_BASE_PATH: ''
+          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
+          NEXT_PUBLIC_ENVIRONMENT: TEST
           HEALTH_AUTH: false
           HEALTH_USERNAME: ''
           HEALTH_PASSWORD: ''
+          NEXT_PUBLIC_IS_CASEDATA: true
+          NEXT_PUBLIC_USE_FACILITIES: true
+          NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: true
+          NEXT_PUBLIC_USE_RELATIONS: true
+          NEXT_PUBLIC_USE_ESCALATION: true
+          NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
+          NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: true
+          NEXT_PUBLIC_USE_MY_PAGES: true
+          NEXT_PUBLIC_USE_ERRAND_EXPORT: true          

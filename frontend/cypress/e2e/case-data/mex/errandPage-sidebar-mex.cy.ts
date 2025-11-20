@@ -16,6 +16,7 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockErrand_base } from '../fixtures/mockErrand';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -47,6 +48,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
       );
+      cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
+      cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+
       cy.visit('/arende/2281/MEX-2024-000280');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -62,7 +67,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get(`[aria-label="${mockSidebarButtons[5].label}"]`).should('exist');
     });
 
-    it.only('manages Administrators', () => {
+    it('manages Administrators', () => {
       cy.intercept('PATCH', '**/errands/*/stakeholders', mockMexErrand_base.data.stakeholders).as('patchStakeholders');
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
 
@@ -75,7 +80,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it.only('manages Status', () => {
+    it('manages Status', () => {
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
 
       cy.get(`[aria-label="${mockSidebarButtons[0].label}"]`).should('exist');
@@ -83,13 +88,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="status-input"]').should('exist').should('not.be.disabled').select(1);
       cy.get('[data-cy="save-and-continue-button"]').should('exist').contains('Spara ärende').click();
       cy.get('[data-cy="status-input"]').should('exist').contains('Väntar på komplettering');
-      // FIXME Patch request is done twice (why? to save extraparameters separately?) so we
-      // must await twice verify body at this point. Not good.
       cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockErrand_base.data.id.toString());
-      });
-      cy.wait('@patchErrand').should(({ request }) => {
-        console.log(request.body);
         expect(request.body.status.statusType).to.equal('Väntar på komplettering');
       });
     });
@@ -111,7 +110,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
               });
           }
         });
-      cy.get('[data-cy="PUBLIC-note-input"]').should('exist').type('Mock note');
+      cy.get('[data-cy="PUBLIC-note-input"]').should('exist').type('Mock note', { delay: 100 });
       cy.get('[data-cy="save-PUBLIC-note-button"]').should('exist').click();
 
       cy.wait('@patchNotes').should(({ request }) => {
@@ -139,7 +138,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           }
         });
 
-      cy.get('[data-cy="INTERNAL-note-input"]').should('exist').type('Mock comment');
+      cy.get('[data-cy="INTERNAL-note-input"]').should('exist').type('Mock comment', { delay: 100 });
       cy.get('[data-cy="save-INTERNAL-note-button"]').should('exist').click();
 
       cy.wait('@patchNotes').should(({ request }) => {
@@ -164,7 +163,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist')
         .last()
         .within(() => {
-          cy.get('.ql-editor').type('Mock investigation text');
+          cy.get('.ql-editor').type('Mock investigation text', { delay: 100 });
         });
 
       cy.get('[data-cy="save-investigation-description-button"]').should('exist').click();

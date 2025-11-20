@@ -11,6 +11,7 @@ import { mockAddress } from '../fixtures/mockAddress';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Message tab', () => {
@@ -42,6 +43,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/assets?**', mockAsset);
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
     });
 
     const goToMessageTab = () => {
@@ -63,10 +65,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             mockMessages.data.length + mockConversationMessages.data.length * mockConversations.data.data.length
           )
       ) {
+        // cy.get('[data-cy="expand-message-button"]').each((button) => {
+        //   cy.wrap(button).should('exist').click();
+        // });
         mockMessages.data.forEach((message) => {
           if (message.messageType === 'EMAIL' && message.emailHeaders[0].header === 'MESSAGE_ID') {
-            cy.get(`[data-cy="node-${message.emailHeaders[0].values}"]`).should('exist').click();
-            cy.get('[data-cy="sender"]').should('exist');
+            const node = cy.get(`[data-cy="node-${message.emailHeaders[0].values}"]`);
+            node.should('exist').click();
+            node.find('[data-cy="sender"]').should('exist');
+            cy.get(`[data-cy="expand-message-button-${message.emailHeaders[0].values}"]`).should('exist').click();
 
             if (message.direction === 'INBOUND') {
               cy.get('[data-cy="respond-button"]').should('exist');
@@ -218,7 +225,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         if (message.direction === 'INBOUND' && message.messageType === 'EMAIL') {
           const messageNode = cy.get(`[data-cy="node-${message.emailHeaders[0].values}"]`);
           messageNode.should('exist').click();
-          messageNode.find('[data-cy="respond-button"]').should('exist').click({ force: true });
+          cy.get(`[data-cy="expand-message-button-${message.emailHeaders[0].values}"]`).should('exist').click();
+          messageNode.find(`[data-cy="respond-button"]`).should('exist').click({ force: true });
 
           cy.get('[data-cy="messageTemplate"]').should('exist').first().select(1);
           cy.get('[data-cy="email-tag-0"]').should('exist').contains(message.email);

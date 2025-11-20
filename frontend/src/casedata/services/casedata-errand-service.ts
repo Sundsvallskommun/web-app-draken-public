@@ -27,7 +27,6 @@ import {
 
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { Role } from '@casedata/interfaces/role';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -38,7 +37,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
-import { replaceExtraParameter } from './casedata-extra-parameters-service';
+import { phaseChangeInProgress } from './process-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -719,83 +718,7 @@ export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
   );
 };
 
-export const phaseChangeInProgress = (errand: IErrand) => {
-  if (!errand?.id) {
-    return false;
-  }
-  if (errand.extraParameters.find((p) => p.key === 'process.phaseAction')?.values[0] === 'CANCEL') {
-    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'CANCELED';
-  }
 
-  if (errand.status?.statusType === ErrandStatus.ArendeAvslutat) {
-    return false;
-  }
-  if (typeof errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === 'undefined') {
-    return true;
-  }
-  if (
-    errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad &&
-    !!errand.administrator
-  ) {
-    return true;
-  }
-  if (
-    errand.phase === ErrandPhase.aktualisering ||
-    errand.phase === ErrandPhase.utredning ||
-    errand.phase === ErrandPhase.beslut ||
-    errand.phase === ErrandPhase.verkstalla ||
-    errand.phase === ErrandPhase.uppfoljning
-  ) {
-    return errand.extraParameters?.find((p) => p.key === 'process.phaseAction')?.values[0] === 'COMPLETE';
-  } else {
-    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'WAITING';
-  }
-};
-
-export const cancelErrandPhaseChange = async (municipalityId: string, errand: IErrand) => {
-  if (!errand.id) {
-    console.error('No id found. Cannot update errand wihout id. Returning.');
-    return;
-  }
-  const newParameter: ExtraParameter = {
-    key: 'process.phaseAction',
-    values: ['CANCEL'],
-  };
-  const e: Partial<RegisterErrandData> = {
-    id: errand.id.toString(),
-    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
-  };
-  return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
-    .catch((e) => {
-      console.error('Something went wrong when cancelling errand phase change', e);
-      throw e;
-    });
-};
-
-export const triggerErrandPhaseChange = async (municipalityId: string, errand: IErrand) => {
-  if (!errand?.id) {
-    console.error('No id found. Cannot update errand wihout id. Returning.');
-    return;
-  }
-  const newParameter: ExtraParameter = {
-    key: 'process.phaseAction',
-    values: ['COMPLETE'],
-  };
-  const e: Partial<RegisterErrandData> = {
-    id: errand.id.toString(),
-    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
-  };
-  return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
-    .catch((e) => {
-      console.error('Something went wrong when triggering errand phase change', e);
-      throw e;
-    });
-};
-
-export const getUiPhase: (errand: IErrand) => UiPhase = (errand) =>
-  errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] as UiPhase;
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;

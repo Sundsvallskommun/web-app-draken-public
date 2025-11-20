@@ -3,7 +3,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
 import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
-import { getErrand, getUiPhase, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
+import { getErrand, isFTErrand } from '@casedata/services/casedata-errand-service';
 import {
   countUnreadMessages,
   fetchMessages,
@@ -25,6 +25,7 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
