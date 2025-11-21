@@ -9,6 +9,7 @@ import {
   isErrandLocked,
   validateAction,
   validateErrandForDecision,
+  validateExtraParametersForDecision,
   validateStakeholdersForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
@@ -101,6 +102,8 @@ export const PhaseChanger = () => {
           ? 'Ärendet har fel status för att beslut ska kunna fattas.'
           : !validateStakeholdersForDecision(errand).valid
           ? 'Ärendet saknar ärendeägare.'
+          : !validateExtraParametersForDecision(errand).valid
+          ? `Ärendeuppgifter saknas: ${validateExtraParametersForDecision(errand).reason}`
           : undefined,
       });
     } else if (uiPhase === UiPhase.beslut) {

@@ -38,6 +38,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { phaseChangeInProgress } from './process-service';
+import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -710,11 +711,52 @@ export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; 
   return { valid: true, reason: '' };
 };
 
+export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
+  const extraParameterLabels = extraParametersToUppgiftMapper(e).reduce((acc, curr) => {
+    {
+      if (curr.field && curr.label) {
+        acc[curr.field] = curr.label;
+      }
+      return acc;
+    }
+  }, {} as Record<string, string>);
+  let requiredExtraParameters = [];
+  if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+    requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
+  } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
+    if (e.caseType === PTCaseType.PARKING_PERMIT || e.caseType === PTCaseType.PARKING_PERMIT_RENEWAL) {
+      requiredExtraParameters = [
+        'disability.duration',
+        'disability.canBeAloneWhileParking',
+        'disability.walkingAbility',
+      ];
+      if (e.extraParameters?.find((p) => p.key === 'disability.walkingAbility')?.values?.[0] === 'true') {
+        requiredExtraParameters.push('disability.walkingDistance.max');
+      }
+    } else if (e.caseType === PTCaseType.LOST_PARKING_PERMIT) {
+      requiredExtraParameters = ['application.lostPermit.policeReportNumber'];
+    }
+  }
+  const missingExtraParameters = [];
+  requiredExtraParameters.forEach((param) => {
+    if (e.extraParameters?.find((p) => p.key === param)?.values?.length === 0) {
+      missingExtraParameters.push(
+        extraParameterLabels?.[param] ? `"${extraParameterLabels[param]}"` : 'Okänd parameter'
+      );
+    }
+  });
+  if (missingExtraParameters.length > 0) {
+    return { valid: false, reason: `${missingExtraParameters.join(', ')}` };
+  }
+  return { valid: true, reason: '' };
+};
+
 export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
   return (
     validateStakeholdersForDecision(e).valid &&
     validateStatusForDecision(e).valid &&
-    validateAttachmentsForDecision(e).valid
+    validateAttachmentsForDecision(e).valid &&
+    validateExtraParametersForDecision(e).valid
   );
 };
 
