@@ -33,6 +33,7 @@ import { SupportNoteController } from './controllers/supportmanagement/support-n
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
+import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
 
 validateEnv();
 
@@ -70,6 +71,7 @@ const app = new App([
   CaseDataConversationController,
   SupportConversationController,
   MetadataController,
+  ExtraParameterController,
 ]);
 
 app.listen();

@@ -22,6 +22,8 @@ import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockAsset } from '../fixtures/mockAsset';
+import { preventProcessExtraParameters } from '../utils/utils';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
@@ -52,6 +54,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
+      cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
 
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
@@ -62,6 +65,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errand/*', mockMexErrand_base).as('getErrandById');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
     });
 
     it('shows the correct base errand information', () => {
@@ -308,10 +312,38 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="priority-input"]').should('exist').select('Hög');
 
       cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
-      // FIXME Patch request is done twice (why? to save extraparameters separately?) so we
-      // must await twice verify body at this point. Not good.
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal('101');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        preventProcessExtraParameters(request.body);
+        expect(request.body).to.deep.equal([
+          {
+            key: 'dummyItem',
+            values: ['dummyValue1', 'dummyValue2'],
+          },
+          {
+            key: 'contractId',
+            values: ['2024-01026'],
+          },
+          {
+            key: 'propertyDesignation',
+            values: ['Test property'],
+          },
+          {
+            key: 'caseMeaning',
+            values: [],
+          },
+          {
+            key: 'invoiceNumber',
+            values: [],
+          },
+          {
+            key: 'invoiceRecipient',
+            values: [],
+          },
+          {
+            key: 'otherInformation',
+            values: [],
+          },
+        ]);
       });
       cy.wait('@patchErrand').should(({ request }) => {
         expect(request.body.id).to.equal('101');
@@ -438,10 +470,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('button').contains('Lägg till ärendeägare').click();
       cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
-      // Awaiting twice since two PATCH requests are made
-      // See FIXME comment above
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal('101');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        preventProcessExtraParameters(request.body);
       });
       cy.wait('@patchErrand').should(({ request }) => {
         const requestApplicant = request.body.stakeholders.find((s) => s.roles.includes('APPLICANT'));

@@ -163,6 +163,7 @@ export const RenderedMessage: React.FC<{
               )}
             ></span>
             <Button
+              data-cy={`expand-message-button-${message?.emailHeaders?.[0]?.values || message?.messageId}`}
               variant="ghost"
               iconButton
               size="sm"

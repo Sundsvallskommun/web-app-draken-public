@@ -29,6 +29,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
 import escapeStringRegexp from 'escape-string-regexp';
+import { PROCESS_PARAMETER_KEYS } from './process-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
 
@@ -274,15 +275,19 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
 };
 
 export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
-  const sanitizedData: ExtraParameter[] = data.map((param) => ({
-    ...param,
-    values: (param.values ?? [])
-      .map((value) => (value === null || typeof value === 'undefined' ? '' : String(value).trim()))
-      .filter((value) => value !== ''),
-  }));
+  // This function must not include process-related extra parameters since most of these
+  // are read-only and managed by the process-service. Hence the filter for PROCESS_PARAMETER_KEYS.
+  const sanitizedParameters: ExtraParameter[] = data
+    .filter((p) => !PROCESS_PARAMETER_KEYS.includes(p.key))
+    .map((param) => ({
+      ...param,
+      values: (param.values ?? [])
+        .map((value) => (value === null || typeof value === 'undefined' ? '' : String(value).trim()))
+        .filter((value) => value !== ''),
+    }));
 
   const repeatableGroupPaths = new Set<string>();
-  sanitizedData.forEach((param) => {
+  sanitizedParameters.forEach((param) => {
     const match = param.key.match(/^(.+)\.\d+\..+$/);
     if (match) {
       repeatableGroupPaths.add(match[1]);
@@ -291,7 +296,7 @@ export const saveExtraParameters = (municipalityId: string, data: ExtraParameter
 
   const mergedExtraParameters = errand.extraParameters
     .filter((existing) => {
-      if (sanitizedData.some((param) => param.key === existing.key)) {
+      if (sanitizedParameters.some((param) => param.key === existing.key)) {
         return false;
       }
 
@@ -306,14 +311,12 @@ export const saveExtraParameters = (municipalityId: string, data: ExtraParameter
 
       return true;
     })
-    .concat(sanitizedData);
+    .concat(sanitizedParameters)
+    .filter((p) => !PROCESS_PARAMETER_KEYS.includes(p.key));
 
-  return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(
-    `casedata/${municipalityId}/errands/${errand.id}`,
-    {
-      id: errand.id.toString(),
-      extraParameters: mergedExtraParameters,
-    }
+  return apiService.patch<any, ExtraParameter[]>(
+    `casedata/${municipalityId}/errands/${errand.id}/extraparameters`,
+    mergedExtraParameters
   );
 };
 

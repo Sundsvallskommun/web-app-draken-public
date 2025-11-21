@@ -13,7 +13,6 @@ import {
 import {
   getErrand,
   isErrandLocked,
-  triggerErrandPhaseChange,
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
@@ -66,6 +65,7 @@ import { CasedataMessageTabFormModel } from '../messages/message-composer.compon
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
+import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -343,10 +343,8 @@ export const CasedataDecisionTab: React.FC<{
       if (isMEX()) {
         await sendMessage(municipalityId, errand, messageData);
       } else if (isPT() && municipalityId === '2260') {
-        console.log('PT Ånge - beslut skickas ej manuellt');
         // PT Ånge - do nothing, they handle sending themselves
       } else if (isPT()) {
-        console.log('PT Sundsvall - sending decision by letter or email');
         await sendDecisionMessage(municipalityId, errand);
       } else {
         throw new Error('Kontaktsätt saknas');

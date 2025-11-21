@@ -30,7 +30,7 @@ export const APIS = [
   },
   {
     name: 'case-data',
-    version: '11.9',
+    version: '11.10',
   },
   {
     name: 'supportmanagement',

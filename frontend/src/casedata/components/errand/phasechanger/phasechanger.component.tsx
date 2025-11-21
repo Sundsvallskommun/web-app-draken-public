@@ -7,8 +7,6 @@ import { validateAttachmentsForDecision } from '@casedata/services/casedata-atta
 import {
   getErrand,
   isErrandLocked,
-  phaseChangeInProgress,
-  triggerErrandPhaseChange,
   validateAction,
   validateErrandForDecision,
   validateStakeholdersForDecision,
@@ -24,6 +22,7 @@ import { IconName } from 'lucide-react/dynamic';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
+import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 
 export const PhaseChanger = () => {
   const {

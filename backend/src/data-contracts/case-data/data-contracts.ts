@@ -797,6 +797,8 @@ export interface Errand {
 
 /** Extra parameters for the errand */
 export interface ExtraParameter {
+  /** Parameter id */
+  id?: string;
   /**
    * Parameter key
    * @minLength 1
@@ -1098,6 +1100,11 @@ export interface MessageRequest {
    */
   message?: string;
   /**
+   * The message in HTML format
+   * @example "<p>Hello world</p>"
+   */
+  htmlMessage?: string;
+  /**
    * The time the message was sent
    * @example "2020-01-01 12:00:00"
    */
@@ -1129,7 +1136,7 @@ export interface MessageRequest {
   messageType?: string;
   /**
    * The mobile number of the recipient
-   * @example "+46701234567"
+   * @example "+46701740605"
    */
   mobileNumber?: string;
   /**
@@ -1453,10 +1460,10 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   first?: boolean;
   last?: boolean;
   pageable?: PageableObject;
@@ -1600,6 +1607,11 @@ export interface MessageResponse {
    */
   message?: string;
   /**
+   * The message in HTML format
+   * @example "<p>Hello world</p>"
+   */
+  htmlMessage?: string;
+  /**
    * The time the message was sent
    * @example "2020-01-01 12:00:00"
    */
@@ -1631,7 +1643,7 @@ export interface MessageResponse {
   messageType?: string;
   /**
    * The mobile number of the recipient
-   * @example "+46701234567"
+   * @example "+46701740605"
    */
   mobileNumber?: string;
   /**
@@ -1668,10 +1680,10 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   first?: boolean;
   last?: boolean;
   pageable?: PageableObject;
