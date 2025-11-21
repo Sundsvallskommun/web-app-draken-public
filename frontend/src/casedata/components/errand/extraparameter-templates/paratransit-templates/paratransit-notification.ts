@@ -4,7 +4,7 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'external.currentHousing',
     value: '',
-    label: 'Välj bostadstyp',
+    label: 'Ange aktuell boendeform',
     formField: {
       type: 'select',
       options: [
