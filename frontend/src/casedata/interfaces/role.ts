@@ -54,7 +54,6 @@ export enum MEXRelation {
 
 export enum PTRelation {
   APPLICANT = 'Ärendeägare',
-  FELLOW_APPLICANT = 'Medsökande',
   DRIVER = 'Förare',
   PASSENGER = 'Passagerare',
   DOCTOR = 'Läkare',
