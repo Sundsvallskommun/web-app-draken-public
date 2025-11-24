@@ -39,6 +39,7 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
+import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
@@ -65,7 +66,6 @@ import { CasedataMessageTabFormModel } from '../messages/message-composer.compon
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -137,8 +137,20 @@ export const CasedataDecisionTab: React.FC<{
   const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-  const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
+
+  const [initialLawValues] = useState<string[]>(() => {
+    const sortedDec = [...errand.decisions].sort(
+      (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
+    );
+    const existingDecision = sortedDec[0];
+
+    if (existingDecision?.decisionType === 'FINAL' && existingDecision.law?.length > 0) {
+      return existingDecision.law.map((law) => law.heading);
+    }
+
+    return getLawMapping(errand).map((law) => law.heading);
+  });
 
   const ownerPartyId = getOwnerStakeholder(errand)?.personId;
   const assetType = 'FTErrandAssets';
@@ -165,12 +177,6 @@ export const CasedataDecisionTab: React.FC<{
   }, [props, refetchServices]);
 
   useEffect(() => {
-    const laws = getValues('law')?.map((law) => law.heading) ?? [];
-    setSelectedLaws(laws);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -193,7 +199,7 @@ export const CasedataDecisionTab: React.FC<{
       errandNumber: errand.errandNumber,
       personalNumber: getOwnerStakeholder(errand)?.personalNumber,
       errandCaseType: errand.caseType,
-      law: getLawMapping(errand),
+      law: [],
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
       outcome: 'Välj beslut',
       validFrom: '',
@@ -223,12 +229,6 @@ export const CasedataDecisionTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
 
-  useEffect(() => {
-    const laws = getValues('law')?.map((law) => law.heading) ?? [];
-    setSelectedLaws(laws);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const triggerPhaseChange = () => {
     return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
@@ -241,7 +241,6 @@ export const CasedataDecisionTab: React.FC<{
             status: 'success',
           })
         );
-        setIsLoading(false);
       })
       .catch(() => {
         toastMessage({
@@ -393,7 +392,6 @@ export const CasedataDecisionTab: React.FC<{
     try {
       setIsPreviewLoading(true);
       const data = getValues();
-      data.outcome = data.outcome;
       let pdfData: {
         pdfBase64: string;
         error?: string;
@@ -464,25 +462,29 @@ export const CasedataDecisionTab: React.FC<{
     trigger('description');
   };
 
-  const sortedDec = errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  const sortedDec = [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
 
   useEffect(() => {
-    const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
-
     setValue('errandId', errand.id);
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
-      setValue('id', existingDecision.id.toString());
-      setValue('description', existingDecision.description);
-      setValue('outcome', existingDecision.decisionOutcome);
-      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
-      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
+      setValue('id', existingDecision.id.toString(), { shouldDirty: false });
+      setValue('description', existingDecision.description, { shouldDirty: false });
+      setValue('outcome', existingDecision.decisionOutcome, { shouldDirty: false });
+      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'), { shouldDirty: false });
+      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'), { shouldDirty: false });
+
+      if (existingDecision.law && existingDecision.law.length > 0) {
+        setValue('law', existingDecision.law, { shouldDirty: false });
+      }
     } else {
-      setValue('id', undefined);
+      setValue('id', undefined, { shouldDirty: false });
     }
-    trigger();
+
+    props.setUnsaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand]);
+  }, [errand.id]);
 
   const changeTemplate = (InTemplate) => {
     let content = 'Hej!<br><br>';
@@ -577,23 +579,21 @@ export const CasedataDecisionTab: React.FC<{
             <>
               <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
-                <Input type="hidden" {...register('law')} />
                 <Combobox
                   multiple
                   placeholder="Välj lagrum"
-                  value={selectedLaws}
+                  value={initialLawValues}
                   size="sm"
-                  onChange={(e) => {
-                    const newValue = e.target.value as string[];
-                    setSelectedLaws(newValue);
-                    const newLaws = getLawMapping(errand).filter((law) => newValue.includes(law.heading));
-                    setValue('law', newLaws, { shouldDirty: true });
-                    props.setUnsaved(true);
-                    trigger('law');
-                  }}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
-                    setSelectedLaws(selected);
+                    const newLaws = getLawMapping(errand).filter((law) => selected.includes(law.heading));
+                    setValue('law', newLaws, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    });
+                    props.setUnsaved(true);
+                    trigger('law');
                   }}
                 >
                   <Combobox.Input />
@@ -616,7 +616,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validFrom')}
                   size="sm"
-                  disabled={isSent()}
+                  disabled={isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validFrom-input"
                 />
@@ -628,7 +628,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validTo')}
                   size="sm"
-                  disabled={isSent()}
+                  disabled={isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validTo-input"
                 />

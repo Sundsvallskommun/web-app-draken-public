@@ -103,7 +103,7 @@ export const saveDecision: (
     decisionType,
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,
-    law: getLawMapping(errand),
+    law: formData.law,
     validFrom:
       isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : undefined,
     validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : undefined,
