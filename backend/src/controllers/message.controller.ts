@@ -2,6 +2,7 @@ import { apiServiceName } from '@/config/api-config';
 import {
   AttachmentResponse,
   Classification,
+  Conversation,
   EmailHeader,
   Errand as ErrandDTO,
   MessageResponse as IMessageResponse,
@@ -21,12 +22,20 @@ import {
 import { HttpException } from '@/exceptions/HttpException';
 import { isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
-import { apiURL, base64Encode } from '@/utils/util';
+import { apiURL, base64Encode, base64ToByteArray } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
-import { generateMessageId, sendDigitalMail, sendEmail, sendSms, sendWebMessage } from '@services/message.service';
+import {
+  createConversation,
+  generateMessageId,
+  sendConversation,
+  sendDigitalMail,
+  sendEmail,
+  sendSms,
+  sendWebMessage,
+} from '@services/message.service';
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
@@ -34,6 +43,7 @@ import { IsArray, IsOptional, IsString, Validate, ValidateNested } from 'class-v
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
+import { CaseDataConversationController } from './casedata/casedata-conversation.controller';
 
 export enum MessageClassification {
   'Efterfrågan komplettering' = 'COMPLETION_REQUEST',
@@ -199,9 +209,26 @@ export class MessageController {
     @Param('municipalityId') municipalityId: string,
     @Body() messageDto: { errandId: string },
   ): Promise<{ data: AgnosticMessageResponse; message: string }> {
-    const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
+
+    const conversationUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}/communication/conversations`;
+    const conversationRes = await this.apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, req.user);
+    const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
+
+    let externalConversation, relationlessConversation;
+
+    externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
+    relationlessConversation = conversationRes.data.find(c => c.relationIds.length === 0 && c.type !== 'EXTERNAL');
+
+    if (externalConversation === undefined) {
+      externalConversation = await createConversation(messageDto.errandId, req.user, 'EXTERNAL', 'Mina sidor');
+    }
+
+    if (relationlessConversation === undefined) {
+      relationlessConversation = await createConversation(messageDto.errandId, req.user, 'INTERNAL', errandData.data.errandNumber);
+    }
+
     const decision = errandData.data?.decisions.find(d => d.decisionType === 'FINAL');
     const pdf = decision?.attachments[0];
     if (!pdf) {
@@ -212,7 +239,19 @@ export class MessageController {
         message: 'No decision attachment found',
       };
     }
+
+    const formData = new FormData();
+    const messageObj = {
+      createdBy: { type: 'adAccount', value: req.user.username },
+      content: 'Beslut fattat i ärende',
+    };
+    formData.append('message', JSON.stringify(messageObj));
+    const byteArray = base64ToByteArray(pdf.file);
+    formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
+
     if (errandData.data.externalCaseId) {
+      sendConversation(messageDto.errandId, externalConversation.id, formData, req.user);
+
       // WEBMESSAGE
       const attachments = [
         {
@@ -236,6 +275,11 @@ export class MessageController {
       } as WebMessageRequest;
       return sendWebMessage(municipalityId, message, req, errandData);
     } else {
+      await sendConversation(messageDto.errandId, externalConversation.id, formData, req.user);
+      if (errandData.data.channel === 'ESERVICE_KATLA') {
+        sendConversation(messageDto.errandId, relationlessConversation.id, formData, req.user);
+      }
+
       // Digital mail (Letter endpoint)
       const owner = getOwnerStakeholder(errandData.data);
       const attachments = [

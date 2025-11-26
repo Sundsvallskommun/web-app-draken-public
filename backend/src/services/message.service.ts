@@ -1,4 +1,4 @@
-import { CASEDATA_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Classification,
@@ -26,6 +26,7 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
+import { apiURL } from '@/utils/util';
 
 interface SmsMessage {
   party?: {
@@ -365,4 +366,25 @@ export const setMessageViewed = (municipalityId: string, errandId: number, messa
   const apiService = new ApiService();
   const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
   return apiService.put<any, any>({ url }, user);
+};
+
+export const createConversation = async (errandId: string, user: User, converastionType: string, topic: string) => {
+  const apiService = new ApiService();
+  const baseURL = apiURL(SERVICE);
+  const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
+  const body = {
+    topic: topic,
+    type: converastionType,
+  };
+
+  const res = await apiService.post<any, any>({ url, baseURL, data: body }, user);
+
+  return res.data;
+};
+
+export const sendConversation = (errandId: string, conversationId: string, data: FormData, user: User) => {
+  const apiService = new ApiService();
+  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  return apiService.post<any, any>({ url, data, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
