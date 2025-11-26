@@ -1,4 +1,4 @@
-import { ContractType } from '@casedata/services/contract-service';
+import { ContractType } from '@casedata/interfaces/contracts';
 import { Badge, Link } from '@sk-web-gui/react';
 
 export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ contractType }) => {
@@ -16,7 +16,7 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
           { key: 'property', label: 'Fastighetsbildning' },
           { key: 'other', label: 'Övriga villkor' },
         ]
-      : contractType === ContractType.LAND_LEASE
+      : contractType === ContractType.LEASE_AGREEMENT
       ? [
           { key: 'parties', label: 'Parter' },
           { key: 'area', label: 'Område och upplåtelse' },

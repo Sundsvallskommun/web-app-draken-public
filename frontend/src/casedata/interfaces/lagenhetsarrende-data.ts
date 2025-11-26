@@ -1,10 +1,7 @@
-import { BaseContract } from '@casedata/services/contract-service';
-import { CasedataOwnerOrContact } from './stakeholder';
+import { Contract, Stakeholder as ContractStakeholder } from './contracts';
 
-export type LagenhetsArrendeStakeholder = Omit<Omit<CasedataOwnerOrContact, 'personId'>, 'stakeholderType'> & {
-  partyId: string;
-  partOwnership?: string;
-  type: 'PERSON' | 'COMPANY' | 'ASSOCIATION';
+export type LagenhetsArrendeStakeholder = ContractStakeholder & {
+  personalNumber?: string;
 };
 
 export interface LagenhetsArendeTemplate {
@@ -214,9 +211,9 @@ export interface LagenhetsArendeTemplate {
   };
 }
 
-export type LagenhetsArrendeData = BaseContract & {
-  leaseholders?: LagenhetsArrendeStakeholder[];
-  grantors?: LagenhetsArrendeStakeholder[];
+export type LagenhetsArrendeData = Contract & {
+  lessees?: LagenhetsArrendeStakeholder[];
+  lessors?: LagenhetsArrendeStakeholder[];
   omrade: string;
   andamal: string;
   arrendetid: string;

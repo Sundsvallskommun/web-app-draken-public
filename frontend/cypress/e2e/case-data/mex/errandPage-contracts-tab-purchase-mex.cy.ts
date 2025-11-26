@@ -1,16 +1,18 @@
 /// <reference types="cypress" />
 
+import { Contract, ContractType, StakeholderRole, Status } from '@casedata/interfaces/contracts';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
-import { mockAsset } from '../fixtures/mockAsset';
-import { mockContract } from '../fixtures/mockContract';
-import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
@@ -38,7 +40,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -50,6 +52,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
 
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
@@ -80,7 +84,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         { key: 'property', label: 'Fastighetsbildning' },
         { key: 'other', label: 'Övriga villkor' },
       ];
-      cy.get('[data-cy="purchaseType"]').should('exist').check();
+      cy.get('[data-cy="contract-type-select"]').should('exist');
 
       //Purchase contracts
       purchaseType.forEach((type) => {
@@ -152,9 +156,22 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get(`[data-cy="${datacy}-richtext-wrapper"] .ql-editor[contenteditable="true"]`)
           .should('exist')
           .type(inputText);
-        cy.get(`[data-cy="${datacy}-disclosure"] button.sk-btn-primary`).contains('Spara').should('exist').click();
-        cy.wait('@getErrand');
-        cy.get(`[data-cy="${datacy}-disclosure"] button.sk-btn-tertiary`).should('exist').click();
+      });
+
+      // Manual textarea input in Additional terms disclosure
+      cy.get('[data-cy="other-conditions-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
+      cy.wait('@putContract').should(({ request }) => {
+        const purchaseAgreement: Contract = request.body;
+        expect(purchaseAgreement.type).to.equal(ContractType.PURCHASE_AGREEMENT);
+        expect(purchaseAgreement.leaseType).to.be.undefined;
+        const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
+        const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
+        expect(buyer.firstName).to.equal(
+          mockPurchaseAgreement.data.stakeholders.find((x) => x.roles.includes('BUYER'))?.firstName ?? ''
+        );
+        expect(seller.firstName).to.equal(
+          mockPurchaseAgreement.data.stakeholders.find((x) => x.roles.includes('SELLER'))?.firstName ?? ''
+        );
       });
     });
 
@@ -249,10 +266,24 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
 
       cy.get('[data-cy="purchase-price-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.wait('@putContract').should(({ request }) => {
+        expect(request.body.contractId).to.equal('2024-01026');
+        expect(request.body.externalReferenceId).to.equal('101');
+        expect(request.body.status).to.equal('DRAFT');
+        expect(request.body.type).to.equal('PURCHASE_AGREEMENT');
+        expect(request.body.leaseType).to.be.undefined;
+        const thisIndexTerm = request.body.indexTerms.find((term: any) => term.header === 'Köpeskilling och betalning');
+        expect(thisIndexTerm).to.not.be.undefined;
+        expect(thisIndexTerm.terms).to.have.length(1);
+        expect(thisIndexTerm.terms[0]?.term).to.contain(
+          '<p>Belopp för köpeskillingen i text: <strong>TRETUSEN SEXHUNDRA KRONOR</strong> Belopp för köpeskillingen i siffror: <strong>3600 kr</strong> Villkor för köpeskilling: <strong>Köpebrev ska upprättas med kvittens på köpeskillingen</strong> </p><p><br></p><p>(saknas)</p>'
+        );
+      });
     });
 
     //ACCESS
     it('manages access automatically in purchase contracts', () => {
+      const date = '2024-12-31';
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="access-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="access-disclosure"] button.sk-btn-primary').contains('Fyll i villkor').should('exist').click();
@@ -263,7 +294,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('#accessDate[aria-disabled="true"]').should('be.disabled');
 
       cy.get('[data-cy="timeOfAccess-radioGroup"] [type="radio"]').eq(0).should('exist').check();
-      cy.get('#accessDate[aria-disabled="false"]').should('not.be.disabled').type(new Date().toLocaleDateString());
+      cy.get('#accessDate[aria-disabled="false"]').should('not.be.disabled').type(date);
       cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
 
       cy.get('[data-cy="access-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
@@ -272,6 +303,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
 
       cy.get('[data-cy="access-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.wait('@putContract').should(({ request }) => {
+        expect(request.body.contractId).to.equal('2024-01026');
+        expect(request.body.externalReferenceId).to.equal('101');
+        expect(request.body.status).to.equal(Status.DRAFT);
+        expect(request.body.type).to.equal(ContractType.PURCHASE_AGREEMENT);
+        expect(request.body.leaseType).to.be.undefined;
+        const thisIndexTerm = request.body.indexTerms.find((term: any) => term.header === 'Tillträde');
+        expect(thisIndexTerm).to.not.be.undefined;
+        expect(thisIndexTerm.terms).to.have.length(1);
+        expect(thisIndexTerm.terms[0]?.term).to.contain(
+          `<p><strong>Tillträde</strong>Tillträde sker på datum: ${date}</p>`
+        );
+      });
     });
 
     //SOIL POLLUTION

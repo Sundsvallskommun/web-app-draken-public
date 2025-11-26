@@ -1,5 +1,13 @@
 import { CasedataContractAttachmentUpload } from '@casedata/components/errand/tabs/contract/casedata-contract-attachment-upload';
-import { Contract } from '@casedata/interfaces/contracts';
+import {
+  AddressType,
+  Contract,
+  ContractType,
+  Stakeholder,
+  StakeholderRole,
+  StakeholderType,
+  Status,
+} from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { KopeAvtalsData, KopeavtalStakeholder, KopeavtalsTemplate } from '@casedata/interfaces/kopeavtals-data';
 import {
@@ -9,25 +17,24 @@ import {
 } from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {
   CasedataContractAttachment,
-  ContractData,
-  ContractType,
   casedataStakeholderToContractStakeholder,
-  contractStakeholderToKopeavtalStakeholder,
+  AvtalsData,
   defaultKopeavtal,
   defaultLagenhetsarrende,
   deleteSignedContractAttachment,
   fetchSignedContractAttachment,
   getContractType,
   getErrandContract,
+  leaseTypes,
   renderContractPdf,
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -36,35 +43,21 @@ import {
   FormControl,
   FormLabel,
   Input,
-  RadioButton,
+  Select,
   Spinner,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { FormProvider, useForm, UseFormReturn } from 'react-hook-form';
 import { ContractNavigation } from './contract-navigation';
 import { KopeAvtal } from './kopeavtal';
 import { Lagenhetsarrende } from './lagenhetsarrende';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 
 interface CasedataContractProps {
   update: () => void;
   setUnsaved: Dispatch<SetStateAction<boolean>>;
 }
-
-interface ContractStatus {
-  status?: 'DRAFT' | 'ACTIVE';
-}
-
-// TODO
-// Suggestion for improvement:
-// In the contract components, some of the form fields (namely the checkboxes) are generated
-// from a list of items and using a render function. The rest of the form fields (radiobuttons,
-// text fields, etc) are manually created. It would be good to generate all form fields from lists
-// from lists, kind of like is done for extraParameters on the Uppgifter tab. To do this, one
-// has to decide on a common interface for all form fields, and then create a function that
-// generates the form fields based on this interface.
 
 export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const {
@@ -79,8 +72,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [sellers, setSellers] = useState<KopeavtalStakeholder[]>([]);
   const [buyers, setBuyers] = useState<KopeavtalStakeholder[]>([]);
-  const [leaseholders, setLeaseholders] = useState<LagenhetsArrendeStakeholder[]>([]);
-  const [grantors, setGrantors] = useState<LagenhetsArrendeStakeholder[]>([]);
+  const [lessees, setLessees] = useState<LagenhetsArrendeStakeholder[]>([]);
+  const [lessors, setLessors] = useState<LagenhetsArrendeStakeholder[]>([]);
   const toastMessage = useSnackbar();
   const removeConfirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
@@ -90,58 +83,73 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   }, [user, errand]);
 
   const updateStakeholdersFromErrand = () => {
-    const _sellers: KopeavtalStakeholder[] = getStakeholdersByRelation(errand, Role.SELLER)
-      .map(casedataStakeholderToContractStakeholder)
-      .map(contractStakeholderToKopeavtalStakeholder);
-    const _buyers: KopeavtalStakeholder[] = getStakeholdersByRelation(errand, Role.BUYER)
-      .map(casedataStakeholderToContractStakeholder)
-      .map(contractStakeholderToKopeavtalStakeholder);
-    const _leaseholders: LagenhetsArrendeStakeholder[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER)
-      .map(casedataStakeholderToContractStakeholder)
-      .map(contractStakeholderToKopeavtalStakeholder);
-    const _grantors: LagenhetsArrendeStakeholder[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER)
-      .map(casedataStakeholderToContractStakeholder)
-      .map(contractStakeholderToKopeavtalStakeholder);
+    const _sellers: KopeavtalStakeholder[] = getStakeholdersByRelation(errand, Role.SELLER).map(
+      casedataStakeholderToContractStakeholder
+    );
+    const _buyers: KopeavtalStakeholder[] = getStakeholdersByRelation(errand, Role.BUYER).map(
+      casedataStakeholderToContractStakeholder
+    );
+    const _lessees: LagenhetsArrendeStakeholder[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
+      casedataStakeholderToContractStakeholder
+    );
+    // Should lessors be fetched from errand stakeholders or *always* set to Sundsvalls kommun?
+    // const _lessors: LagenhetsArrendeStakeholder[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER)
+    //   .map(casedataStakeholderToContractStakeholder);
+    const sundsvallsKommun: Stakeholder = {
+      type: StakeholderType.MUNICIPALITY,
+      roles: [StakeholderRole.LESSOR],
+      organizationName: 'Sundsvalls kommun',
+      organizationNumber: '212000-2411',
+      address: {
+        type: AddressType.POSTAL_ADDRESS,
+        streetAddress: 'Stadsbyggnadsnämnden',
+        postalCode: '851 85',
+        town: 'Sundsvall',
+      },
+    };
+    const _lessors = [sundsvallsKommun];
     setSellers(_sellers || []);
     setBuyers(_buyers || []);
-    setLeaseholders(_leaseholders || []);
-    setGrantors(_grantors || []);
+    setLessees(_lessees || []);
+    setLessors(_lessors || []);
   };
 
   const getStakeholdersFromContract = (contract: KopeAvtalsData | LagenhetsArrendeData) => {
     let _sellers: KopeavtalStakeholder[] = [];
     let _buyers: KopeavtalStakeholder[] = [];
-    let _leaseholders: LagenhetsArrendeStakeholder[] = [];
-    let _grantors: LagenhetsArrendeStakeholder[] = [];
-    if (contract.contractType === ContractType.PURCHASE_AGREEMENT) {
+    let _lessees: LagenhetsArrendeStakeholder[] = [];
+    let _lessors: LagenhetsArrendeStakeholder[] = [];
+    if (contract.type === ContractType.PURCHASE_AGREEMENT) {
       _sellers = (contract as KopeAvtalsData).sellers;
       _buyers = (contract as KopeAvtalsData).buyers;
-    } else if (contract.contractType === ContractType.LAND_LEASE) {
-      _leaseholders = (contract as LagenhetsArrendeData).leaseholders || [];
-      _grantors = (contract as LagenhetsArrendeData).grantors || [];
+    } else if (contract.type === ContractType.LEASE_AGREEMENT) {
+      _lessees = (contract as LagenhetsArrendeData).lessees || [];
+      _lessors = (contract as LagenhetsArrendeData).lessors || [];
     }
+    console.log('setting stakeholders from contract', _sellers, _buyers, _lessees, _lessors);
     setSellers(_sellers);
     setBuyers(_buyers);
-    setLeaseholders(_leaseholders);
-    setGrantors(_grantors);
+    setLessees(_lessees);
+    setLessors(_lessors);
   };
 
   useEffect(() => {
     if (existingContract?.contractId) {
       getStakeholdersFromContract(existingContract);
     } else {
+      console.log('updating stakeholders from errand');
       updateStakeholdersFromErrand();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, existingContract]);
 
-  const contractForm = useForm<ContractData & ContractStatus & KopeavtalsTemplate & LagenhetsArendeTemplate>({
+  const contractForm = useForm<(KopeAvtalsData | LagenhetsArrendeData) & KopeavtalsTemplate & LagenhetsArendeTemplate>({
     defaultValues:
-      existingContract?.contractType === ContractType.PURCHASE_AGREEMENT
+      existingContract?.type === ContractType.PURCHASE_AGREEMENT
         ? defaultKopeavtal
-        : existingContract?.contractType === ContractType.LAND_LEASE
+        : existingContract?.type === ContractType.LEASE_AGREEMENT
         ? defaultLagenhetsarrende
-        : { ...defaultKopeavtal, ...defaultLagenhetsarrende, contractType: ContractType.PURCHASE_AGREEMENT },
+        : ({ ...defaultKopeavtal, ...defaultLagenhetsarrende, type: ContractType.PURCHASE_AGREEMENT } as AvtalsData),
     mode: 'onChange',
   });
 
@@ -156,7 +164,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     }
   };
 
-  const onSave = async (data: ContractData) => {
+  const onSave = async (data: AvtalsData) => {
     setIsLoading('Sparar avtal...');
     return saveContract(data)
       .then(async (res: Contract) => {
@@ -189,7 +197,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       });
   };
 
-  const onRenderContract = async (contractData: ContractData) => {
+  const onRenderContract = async (contractData: AvtalsData) => {
     setIsPreviewLoading(true);
 
     const saved =
@@ -240,7 +248,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
         .then((res) => {
           if (res) {
             setExistingContract(res);
-            contractForm.setValue('contractType', res.contractType);
+            contractForm.setValue('type', res.type);
+            contractForm.setValue('leaseType', res.leaseType);
             contractForm.reset(res);
           }
         })
@@ -254,7 +263,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  const contractType = contractForm.watch('contractType') as ContractType;
+  const contractType = contractForm.watch('type') as ContractType;
 
   const downloadDocument = (a: CasedataContractAttachment) => {
     const uri = `data:${a.metaData.mimeType};base64,${a.attachmentData.content}`;
@@ -397,36 +406,27 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                   </div>
                 </div>
               )}
-
-              <FormControl id="contractType" className="my-md">
-                <FormLabel>Typ av avtal</FormLabel>
-                <RadioButton.Group className="space-x-4" inline>
-                  <RadioButton
-                    data-cy="purchaseType"
-                    {...contractForm.register('contractType')}
-                    value={ContractType.PURCHASE_AGREEMENT}
-                    name="contractType"
-                    defaultChecked={contractForm.getValues().contractType === ContractType.PURCHASE_AGREEMENT}
-                    onChange={() => {
-                      contractForm.setValue('contractType', ContractType.PURCHASE_AGREEMENT);
-                    }}
-                  >
-                    Köpeavtal
-                  </RadioButton>
-                  <RadioButton
-                    data-cy="apartmentType"
-                    {...contractForm.register('contractType')}
-                    value={ContractType.LAND_LEASE}
-                    name="contractType"
-                    defaultChecked={contractForm.getValues().contractType === ContractType.LAND_LEASE}
-                    onChange={() => {
-                      contractForm.setValue('contractType', ContractType.LAND_LEASE);
-                    }}
-                  >
-                    Lägenhetsarrende
-                  </RadioButton>
-                </RadioButton.Group>
-              </FormControl>
+              <div className="flex justify-start gap-xl">
+                <FormControl id="contractType" className="my-md">
+                  <FormLabel>Typ av avtal</FormLabel>
+                  <Select data-cy="contract-type-select" {...contractForm.register('type')}>
+                    <option value={ContractType.PURCHASE_AGREEMENT}>Köpeavtal</option>
+                    <option value={ContractType.LEASE_AGREEMENT}>Lägenhetsarrende</option>
+                  </Select>
+                </FormControl>
+                {contractForm.getValues().type === ContractType.LEASE_AGREEMENT && (
+                  <FormControl id="contractSubType" className="my-md">
+                    <FormLabel>Undertyp</FormLabel>
+                    <Select data-cy="contract-subtype-select" {...contractForm.register('leaseType')}>
+                      {leaseTypes.map((lt) => (
+                        <option key={lt.key} value={lt.key}>
+                          {lt.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </div>
 
               <FormControl id="isDraft" className="my-md">
                 <FormLabel>
@@ -440,7 +440,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                     onChange={() => {
                       contractForm.setValue(
                         'status',
-                        contractForm.getValues()?.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE'
+                        contractForm.getValues()?.status === Status.ACTIVE ? Status.DRAFT : Status.ACTIVE
                       );
                       contractForm.trigger('status');
                       onSave(contractForm.getValues());
@@ -461,13 +461,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                   buyers={buyers}
                   updateStakeholders={updateStakeholdersFromErrand}
                 />
-              ) : contractType === ContractType.LAND_LEASE ? (
+              ) : contractType === ContractType.LEASE_AGREEMENT ? (
                 <Lagenhetsarrende
                   changeBadgeColor={changeBadgeColor}
                   onSave={onSave}
                   existingContract={(existingContract as LagenhetsArrendeData) || defaultLagenhetsarrende}
-                  leaseholders={leaseholders}
-                  grantors={grantors}
+                  lessees={lessees}
+                  lessors={lessors}
                   updateStakeholders={updateStakeholdersFromErrand}
                 />
               ) : null}
