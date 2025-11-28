@@ -7,7 +7,7 @@ import { Button, Divider, cx } from '@sk-web-gui/react';
 import { getSupportNotifications } from '@supportmanagement/services/support-notification-service';
 import { useEffect } from 'react';
 import { NotificationItem } from './notification-item';
-import { getFilteredNotifications, getNotificationKey } from './notification-utils';
+import { getFilteredNotifications } from './notification-utils';
 
 export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
   show,
