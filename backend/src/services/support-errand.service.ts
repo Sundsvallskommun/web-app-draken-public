@@ -1,5 +1,4 @@
-import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { AdUser } from '@/controllers/active-directory.controller';
+import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
 import ApiService from './api.service';
