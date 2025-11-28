@@ -1,17 +1,18 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
+import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
-import { Decision, DecisionOutcome, DecisionType, Law } from '@casedata/interfaces/decision';
+import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 import { isFTErrand } from './casedata-errand-service';
-import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [

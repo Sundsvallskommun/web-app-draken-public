@@ -97,24 +97,31 @@ let formSchema = yup
     law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup
       .string()
-      .required('Förslag till beslut måste anges')
-      .test('outcomecheck', 'Förslag till beslut måste anges', (outcome) => {
-        return outcome !== 'Välj beslut';
+      .required('Beslut måste anges')
+      .test('outcomecheck', 'Beslut måste anges', (outcome) => {
+        return outcome !== '' && outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
       ? yup.string().when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
-          return outcome === 'Bifall' ? schema.required('Giltig från måste anges') : schema.notRequired();
+          return outcome === 'APPROVAL' ? schema.required('Giltig från måste anges') : schema.notRequired();
         })
       : yup.string(),
 
     validTo: isPT()
-      ? yup.string().test({
-          name: 'Test av datum',
-          message: 'Slutdatum måste vara efter startdatum',
-          test: (value, context) =>
-            context.parent.outcome !== 'Bifall' ||
-            (Date.parse(context.parent.validFrom) < Date.parse(value.toString()) && value.length !== 0),
-        })
+      ? yup
+          .string()
+          .when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+            return outcome === 'APPROVAL' ? schema.required('Giltig till måste anges') : schema.notRequired();
+          })
+          .test({
+            name: 'validTo-after-validFrom',
+            message: 'Slutdatum måste vara efter startdatum',
+            test: (value, context) => {
+              if (context.parent.outcome !== 'APPROVAL') return true;
+              if (!value || !context.parent.validFrom) return true;
+              return Date.parse(context.parent.validFrom) < Date.parse(value);
+            },
+          })
       : yup.string(),
   })
   .required();
@@ -201,7 +208,7 @@ export const CasedataDecisionTab: React.FC<{
       errandCaseType: errand.caseType,
       law: [],
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
-      outcome: 'Välj beslut',
+      outcome: '',
       validFrom: '',
       validTo: '',
     },
@@ -544,7 +551,7 @@ export const CasedataDecisionTab: React.FC<{
             <FormLabel>Beslut</FormLabel>
             <Input data-cy="decision-outcome-input" type="hidden" {...register('outcome')} />
             <Select
-              className={cx(`w-full`, errors.outcome ? 'border-error' : '')}
+              className={`w-full`}
               data-cy="decision-outcome-select"
               size="sm"
               onChange={(e) => {
@@ -568,11 +575,7 @@ export const CasedataDecisionTab: React.FC<{
                 Ärendet avskrivs
               </Select.Option>
             </Select>
-            {errors.outcome && (
-              <div className="my-sm text-error">
-                <FormErrorMessage>{errors.outcome.message}</FormErrorMessage>
-              </div>
-            )}
+            {errors.outcome && <FormErrorMessage className="text-error">{errors.outcome.message}</FormErrorMessage>}
           </FormControl>
 
           {isPT() && (
@@ -593,7 +596,6 @@ export const CasedataDecisionTab: React.FC<{
                       shouldValidate: true,
                     });
                     props.setUnsaved(true);
-                    trigger('law');
                   }}
                 >
                   <Combobox.Input />
@@ -605,9 +607,7 @@ export const CasedataDecisionTab: React.FC<{
                     ))}
                   </Combobox.List>
                 </Combobox>
-                <div className="my-sm text-error">
-                  {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
-                </div>
+                {errors.law && <FormErrorMessage className="text-error">{errors.law.message}</FormErrorMessage>}
               </FormControl>
 
               <FormControl className="w-full">
@@ -620,6 +620,9 @@ export const CasedataDecisionTab: React.FC<{
                   placeholder="Välj datum"
                   data-cy="validFrom-input"
                 />
+                {errors.validFrom && (
+                  <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
+                )}
               </FormControl>
 
               <FormControl className="w-full">
@@ -632,6 +635,7 @@ export const CasedataDecisionTab: React.FC<{
                   placeholder="Välj datum"
                   data-cy="validTo-input"
                 />
+                {errors.validTo && <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>}
               </FormControl>
             </>
           )}
@@ -699,7 +703,7 @@ export const CasedataDecisionTab: React.FC<{
             variant="secondary"
             color="primary"
             size="md"
-            onClick={onSubmit}
+            onClick={handleSubmit(onSubmit, onError)}
             loading={isLoading}
             loadingText="Sparar"
             disabled={isErrandLocked(errand) || !allowed || isSent()}
