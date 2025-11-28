@@ -104,3 +104,58 @@ export const isValidUrl = (string: string) => {
   }
   return url.protocol === 'http:' || url.protocol === 'https:';
 };
+
+export function buildCategoryFilter(list: string[]) {
+  const unique = Array.from(new Set(list));
+  if (unique.length === 0) return '';
+  const parts = unique.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
+  return `(${parts.join(' or ')})`;
+}
+
+export function findLeafComponents(cleanedData: string[]): Set<string> {
+  const finalLeafNodes = new Set(cleanedData);
+
+  for (const label of cleanedData) {
+    for (const potentialChild of cleanedData) {
+      if (potentialChild.length > label.length && potentialChild.startsWith(label + '/')) {
+        finalLeafNodes.delete(label);
+        break;
+      }
+    }
+  }
+
+  return finalLeafNodes;
+}
+
+export function hasParent(parents: string[]) {
+  return (subPath: string) => {
+    const idx = subPath.lastIndexOf('/');
+    const parent = idx >= 0 ? subPath.substring(0, idx) : '';
+    return parents.some(p => p === parent);
+  };
+}
+
+export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): string[] {
+  const normalized = pathLists.map(list => list ?? []);
+
+  if (normalized.length === 0) {
+    return [];
+  }
+
+  if (normalized.length === 1) {
+    return [...normalized[0]];
+  }
+
+  const parents = normalized[0];
+  const second = normalized[1];
+
+  const cleanSubPaths = second.filter(hasParent(parents));
+
+  const remaining: string[][] = [cleanSubPaths];
+
+  if (normalized.length > 2) {
+    remaining.push(...normalized.slice(2));
+  }
+
+  return [...parents, ...removeUnreachablePaths(remaining)];
+}
