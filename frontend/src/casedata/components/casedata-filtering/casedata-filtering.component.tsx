@@ -7,7 +7,6 @@ import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import {
   CaseAdminsFilter,
@@ -69,7 +68,7 @@ export const CaseDataValues = {
 const CaseDataFiltering: React.FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
-  administrators?: (SupportAdmin | Admin)[];
+  administrators?: Admin[];
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);

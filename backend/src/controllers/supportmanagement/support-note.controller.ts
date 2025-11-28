@@ -3,9 +3,9 @@ import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { checkIfSupportAdministrator } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
@@ -73,6 +73,7 @@ export interface SupportNoteData {
 }
 
 @Controller()
+@UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportNoteController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
@@ -110,10 +111,6 @@ export class SupportNoteController {
     @Body() noteDto: Partial<SupportNoteDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const isAdmin = checkIfSupportAdministrator(req.user);
-    if (!isAdmin) {
-      throw new HttpException(403, 'Forbidden');
-    }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/notes`;
     let data: SupportNote;
     if (noteDto.body) {
@@ -149,10 +146,6 @@ export class SupportNoteController {
     @Body() noteDto: Partial<SupportNoteUpdateDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const isAdmin = checkIfSupportAdministrator(req.user);
-    if (!isAdmin) {
-      throw new HttpException(403, 'Forbidden');
-    }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
     let data: SupportNoteUpdateDto;
     if (noteDto.body) {
@@ -183,10 +176,6 @@ export class SupportNoteController {
     @Param('noteId') noteId: string,
     @Res() response: any,
   ): Promise<SupportNoteData> {
-    const isAdmin = checkIfSupportAdministrator(req.user);
-    if (!isAdmin) {
-      throw new HttpException(403, 'Forbidden');
-    }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/notes/${noteId}`;
     const res = await this.apiService.delete<SupportNoteData>({ url }, req.user);
     return response.status(204).send(res.data);

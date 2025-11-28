@@ -3,7 +3,6 @@ import { SupportManagementFilter, SupportManagementValues } from '../supportmana
 import { Chip } from '@sk-web-gui/react';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { Admin } from '@common/services/user-service';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
@@ -12,7 +11,7 @@ import { useAppContext } from '@contexts/app.context';
 import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 interface SupportManagementFilterTagsProps {
-  administrators: (SupportAdmin | Admin)[];
+  administrators: Admin[];
 }
 
 export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsProps> = ({ administrators }) => {

@@ -5,8 +5,8 @@ import {
   SupportRevisionDifference,
 } from '@supportmanagement/interfaces/supportRevisionDiff';
 import { apiService } from '@common/services/api-service';
-import { SupportAdmin } from './support-admin-service';
 import { Channels } from './support-errand-service';
+import { Admin } from '@common/services/user-service';
 
 const extractValues: (d: SupportRevisionDifference) => {
   value: string | { [key: string]: string };
@@ -122,7 +122,7 @@ const parseGenericStringDiff: (
 const parseAdministratorDiff: (
   d: SupportRevisionDifference,
   key: string,
-  admins: SupportAdmin[]
+  admins: Admin[]
 ) => { title: string; description: string } = (d, key, admins) => {
   const operation = parseDiffOperation(d);
   const { value, fromValue } = extractValues(d);
@@ -175,7 +175,7 @@ const parseExternalTagDiff: (d: SupportRevisionDifference) => { title: string; d
 export const parseDiff: (
   d: SupportRevisionDifference,
   keyMapper: { [key: string]: string },
-  admins: SupportAdmin[]
+  admins: Admin[]
 ) => ParsedSupportRevisionDifference = (d, keyMapper, admins) => {
   const { title, description } = d.path.includes('stakeholders')
     ? parseStakeholderDiff(d)
@@ -229,7 +229,7 @@ export const fetchRevisionDiff: (
   event: ParsedSupportEvent,
   municipalityId: string,
   keyMapper: { [key: string]: string },
-  admins: SupportAdmin[]
+  admins: Admin[]
 ) => Promise<ParsedSupportRevisionDifference[]> = (errandId, event, municipalityId, keyMapper, admins) => {
   const currentVersion = event.metadata.find((item) => item.key === 'CurrentVersion')?.value;
   const previousVersion = event.metadata.find((item) => item.key === 'PreviousVersion')?.value;

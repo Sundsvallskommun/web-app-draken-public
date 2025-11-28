@@ -3,7 +3,6 @@
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getAdminUsers } from '@common/services/user-service';
 import { DeployInfoBanner } from '@common/utils/deploy-info-banner';
 import { appConfig } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
@@ -12,14 +11,8 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import { useEffect, useState } from 'react';
 
 const Oversikt: React.FC = () => {
-  const { user, setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
+  const { user, municipalityId, setSupportMetadata } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
-
-  useEffect(() => {
-    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
-    getAdminUsers().then(setAdministrators);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     appConfig.isSupportManagement &&

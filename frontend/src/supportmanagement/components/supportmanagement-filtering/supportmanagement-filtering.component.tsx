@@ -1,6 +1,5 @@
 import { Admin } from '@common/services/user-service';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import {
   CaseAdminsFilter,
@@ -88,7 +87,7 @@ export const SupportManagementValues = {
 const SupportManagementFiltering: React.FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
-  administrators?: (SupportAdmin | Admin)[];
+  administrators?: Admin[];
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);

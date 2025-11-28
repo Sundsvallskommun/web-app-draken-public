@@ -30,15 +30,3 @@ export const validateSupportAction: (municipalityId: string, errandId: string, u
   }
   return Promise.resolve(allowed);
 };
-
-export const checkIfSupportAdministrator: (user: User) => Promise<boolean> = async user => {
-  const apiService = new ApiService();
-  // ÅNGE TODO
-  // Ny version (2.0) av activedirectory med kommunkod i urlen.
-  //
-  // Därtill har domän gjorts konfigurerbar i .env-filen.
-  //
-  const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
-  const res = await apiService.get<AdUser[]>({ url }, user);
-  return res.data.some(u => u.name === user.username);
-};
