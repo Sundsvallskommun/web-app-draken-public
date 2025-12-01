@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 const Arende: React.FC = () => {
   const pathName = usePathname();
   const [errandId, setErrandId] = useState<string>();
-  const { setAdministrators, municipalityId, setMunicipalityId, setSupportMetadata } = useAppContext();
+  const { municipalityId, setMunicipalityId, setSupportMetadata, setAdministrators } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
@@ -24,17 +24,18 @@ const Arende: React.FC = () => {
   };
 
   useEffect(() => {
-    const municipality = pathName?.split('/')[2];
-    const errandNumber = pathName?.split('/')[3];
-    municipality && setMunicipalityId(municipality);
-    errandNumber && setErrandId(errandNumber);
+    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
+    getAdminUsers().then((data) => {
+      setAdministrators(data);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    getAdminUsers().then((data) => {
-      setAdministrators(data);
-    });
+    const municipality = pathName?.split('/')[2];
+    const errandNumber = pathName?.split('/')[3];
+    municipality && setMunicipalityId(municipality);
+    errandNumber && setErrandId(errandNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

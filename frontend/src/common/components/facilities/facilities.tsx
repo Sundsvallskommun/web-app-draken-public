@@ -1,7 +1,6 @@
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { User } from '@common/interfaces/user';
 import { isKC } from '@common/services/application-service';
 import {
   getFacilityByAddress,
@@ -21,13 +20,9 @@ import {
   SearchField,
   Spinner,
   Table,
-  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
 import { FacilityDetails } from './facilities-details';
@@ -40,19 +35,13 @@ export const Facilities: React.FC<{
 }> = (props) => {
   const { setValue, setUnsaved } = props;
   const toastMessage = useSnackbar();
-  const saveConfirm = useConfirm();
 
   const {
     supportErrand,
     errand,
-    user,
   }: {
     supportErrand;
     errand;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
   } = useAppContext();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -60,7 +49,6 @@ export const Facilities: React.FC<{
   const [searchResult, setSearchResult] = useState<EstateInfoSearch[]>([]);
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [internalUnsaved, setInternalUnsaved] = useState<boolean>(false);
 
   const { register } = useForm();

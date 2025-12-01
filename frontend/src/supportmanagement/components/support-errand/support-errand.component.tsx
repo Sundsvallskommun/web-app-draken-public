@@ -1,8 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar, Icon } from '@sk-web-gui/react';
-import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
+import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import {
   SupportErrand,
   defaultSupportErrandInformation,
@@ -41,13 +40,11 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
     municipalityId,
     supportErrand,
     setSupportErrand,
-    setSupportAdmins,
     supportMetadata,
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: (e: any) => void;
-    setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
   } = useAppContext();
   const toastMessage = useSnackbar();
@@ -68,11 +65,6 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const { setUser } = useAppContext();
 
   const { theme } = useGui();
-
-  useEffect(() => {
-    getSupportAdmins().then(setSupportAdmins);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     setCategoriesList(supportMetadata?.categories);
