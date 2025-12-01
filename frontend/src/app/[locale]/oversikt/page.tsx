@@ -9,10 +9,19 @@ import { AttestationTab } from '@supportmanagement/components/attestation-tab/at
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
+import { getAdminUsers } from '@common/services/user-service';
 
 const Oversikt: React.FC = () => {
-  const { user, municipalityId, setSupportMetadata } = useAppContext();
+  const { user, municipalityId, setSupportMetadata, setAdministrators, setMunicipalityId } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
+    getAdminUsers().then((data) => {
+      setAdministrators(data);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     appConfig.isSupportManagement &&
