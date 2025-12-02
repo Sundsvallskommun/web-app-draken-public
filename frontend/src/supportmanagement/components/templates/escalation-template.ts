@@ -23,20 +23,11 @@ export const extractContactInfo = (c: SupportStakeholderFormModel | undefined) =
   if (!c) {
     return { name: '(saknas)', adress: '(saknas)', phone: '(saknas)', email: '(saknas)' };
   }
-  const name = maybe(`${c?.firstName || ''} ${c?.lastName || ''}`.trim());
+  const personName = `${c?.firstName || ''} ${c?.lastName || ''}`.trim();
+  const name = maybe(personName || c?.organizationName);
   const adress = normalizeAddress(c?.address, c?.zipCode, c?.city);
-  const phone = maybe(
-    c?.phoneNumbers
-      ?.map((x) => x.value)
-      .filter(Boolean)
-      .join(', ')
-  );
-  const email = maybe(
-    c?.emails
-      ?.map((x) => x.value)
-      .filter(Boolean)
-      .join(', ')
-  );
+  const phone = maybe(c?.phoneNumbers?.map((x) => x.value).join(', '));
+  const email = maybe(c?.emails?.map((x) => x.value).join(', '));
   return { name, adress, phone, email };
 };
 
