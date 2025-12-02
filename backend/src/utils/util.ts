@@ -131,7 +131,7 @@ export function hasParent(parents: string[]) {
   return (subPath: string) => {
     const idx = subPath.lastIndexOf('/');
     const parent = idx >= 0 ? subPath.substring(0, idx) : '';
-    return parents.some(p => p === parent);
+    return parents.includes(parent);
   };
 }
 
