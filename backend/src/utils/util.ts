@@ -104,3 +104,13 @@ export const isValidUrl = (string: string) => {
   }
   return url.protocol === 'http:' || url.protocol === 'https:';
 };
+
+export const base64ToByteArray = (base64: string) => {
+  const byteCharacters = atob(base64);
+
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Uint8Array(byteNumbers);
+};

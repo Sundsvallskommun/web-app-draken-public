@@ -7,17 +7,7 @@ import {
   MessageResponse as IMessageResponse,
   MessageResponseDirectionEnum,
 } from '@/data-contracts/case-data/data-contracts';
-import {
-  DigitalMailAttachment,
-  DigitalMailAttachmentContentTypeEnum,
-  DigitalMailRequest,
-  DigitalMailRequestContentTypeEnum,
-  EmailAttachment,
-  EmailRequest,
-  SmsRequest,
-  WebMessageAttachment,
-  WebMessageRequest,
-} from '@/data-contracts/messaging/data-contracts';
+import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
@@ -26,7 +16,16 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
-import { generateMessageId, sendDigitalMail, sendEmail, sendSms, sendWebMessage } from '@services/message.service';
+import {
+  generateMessageId,
+  sendDecisionToDigitalMail,
+  sendDecisionToKatla,
+  sendDecisionToMinaSidor,
+  sendDecisionToOpenE,
+  sendEmail,
+  sendSms,
+  sendWebMessage,
+} from '@services/message.service';
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
@@ -198,74 +197,31 @@ export class MessageController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Body() messageDto: { errandId: string },
-  ): Promise<{ data: AgnosticMessageResponse; message: string }> {
-    const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
+  ): Promise<{ data: AgnosticMessageResponse; message: string }[]> {
     const baseURL = apiURL(this.SERVICE);
+
+    const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
+
     const decision = errandData.data?.decisions.find(d => d.decisionType === 'FINAL');
     const pdf = decision?.attachments[0];
     if (!pdf) {
-      return {
-        data: {
-          messageId: undefined,
+      return [
+        {
+          data: { messageId: undefined },
+          message: 'No decision attachment found',
         },
-        message: 'No decision attachment found',
-      };
+      ];
     }
+
+    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id.toString(), req.user, pdf);
     if (errandData.data.externalCaseId) {
-      // WEBMESSAGE
-      const attachments = [
-        {
-          base64Data: pdf.file,
-          fileName: `${pdf.name}.pdf`,
-          mimeType: pdf.mimeType,
-        } as WebMessageAttachment,
-      ];
-      const message: WebMessageRequest = {
-        party: {
-          partyId: getOwnerStakeholder(errandData.data).personId,
-          externalReferences: [
-            {
-              key: 'flowInstanceId',
-              value: errandData.data.externalCaseId,
-            },
-          ],
-        },
-        message: 'Beslut fattat i ärende',
-        attachments,
-      } as WebMessageRequest;
-      return sendWebMessage(municipalityId, message, req, errandData);
+      const openE_success = await sendDecisionToOpenE(errandData.data, req.user, pdf);
+      return [minasidor_success, openE_success];
     } else {
-      // Digital mail (Letter endpoint)
-      const owner = getOwnerStakeholder(errandData.data);
-      const attachments = [
-        {
-          deliveryMode: 'ANY',
-          contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
-          content: pdf.file,
-          filename: `${pdf.name}.pdf`,
-        } as DigitalMailAttachment,
-      ];
-      const message: DigitalMailRequest = {
-        party: {
-          partyIds: [owner?.personId],
-          externalReferences: [],
-        },
-        sender: {
-          supportInfo: {
-            text: 'Sundsvalls kommun',
-            emailAddress: '',
-            phoneNumber: '',
-            url: '',
-          },
-        },
-        subject: MESSAGE_SUBJECT,
-        contentType: DigitalMailRequestContentTypeEnum.TextPlain,
-        body: 'Beslut fattat i ärende',
-        department: 'SBK(Gatuavdelningen, Trafiksektionen)',
-        attachments: attachments,
-      };
-      return sendDigitalMail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+      const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
+      const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+      return [minasidor_success, katla_success, digitalMail_success];
     }
   }
 
