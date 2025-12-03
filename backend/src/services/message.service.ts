@@ -425,7 +425,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
 };
 
 export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment) => {
-  if (errand.channel === 'ESERVICE_KATLA') {
+  if (errand.channel !== 'ESERVICE_KATLA') {
     return { data: { messageId: 'Non Katla errand' }, message: `Non Katla errand` };
   }
 
