@@ -401,13 +401,13 @@ export class SupportErrandController {
       const ss = priority.split(',').map(s => `priority:'${s}'`);
       filterList.push(`(${ss.join(' or ')})`);
     }
-    if (!labelCategory && labelType) {
-      console.log('\n----------------------------------------------------------------------------------\n');
-      console.log('LABELTYPE', labelType);
-      console.log('\n----------------------------------------------------------------------------------\n');
-      const labelTypeList = labelType?.split(',');
-      const searchString = buildCategoryFilter([...labelTypeList]);
-      if (searchString) filterList.push(searchString);
+    if (category) {
+      const ss = category.split(',').map(s => `category:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
+    }
+    if (type) {
+      const ss = type.split(',').map(s => `type:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
     }
     if (labelCategory || labelType || labelSubType) {
       const labelCategoryList = labelCategory?.split(',');

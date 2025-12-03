@@ -20,6 +20,7 @@ export const CasedataFilterQuery: React.FC = () => {
       value={query}
       size="md"
       data-cy="query-filter"
+      showSearchButton
       onChange={(e) => {
         setQuery(e.target.value);
       }}

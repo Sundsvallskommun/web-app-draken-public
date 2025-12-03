@@ -127,35 +127,72 @@ export function findLeafComponents(cleanedData: string[]): Set<string> {
   return finalLeafNodes;
 }
 
-export function hasParent(parents: string[]) {
-  return (subPath: string) => {
-    const idx = subPath.lastIndexOf('/');
-    const parent = idx >= 0 ? subPath.substring(0, idx) : '';
-    return parents.includes(parent);
-  };
+function hasAnyAncestor(path: string, ancestorLists: string[][]): boolean {
+  let current = path;
+
+  while (true) {
+    const idx = current.lastIndexOf('/');
+    if (idx < 0) return ancestorLists[0].includes(current);
+
+    current = current.substring(0, idx);
+
+    if (ancestorLists.some(list => list.includes(current))) {
+      return true;
+    }
+  }
 }
 
 export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): string[] {
-  const normalized = pathLists.map(list => list ?? []);
+  const normalized = pathLists.filter(list => list && list.length);
 
-  if (normalized.length === 0) {
-    return [];
-  }
-
-  if (normalized.length === 1) {
-    return [...normalized[0]];
-  }
+  if (normalized.length === 0) return [];
+  if (normalized.length === 1) return [...normalized[0]];
 
   const parents = normalized[0];
-  const second = normalized[1];
+  const rest = normalized.slice(1);
 
-  const cleanSubPaths = second.filter(hasParent(parents));
+  const ancestorLists = [parents];
 
-  const remaining: string[][] = [cleanSubPaths];
+  const cleaned: string[][] = [parents];
 
-  if (normalized.length > 2) {
-    remaining.push(...normalized.slice(2));
+  for (const list of rest) {
+    const filtered = list.filter(path => hasAnyAncestor(path, ancestorLists));
+    cleaned.push(filtered);
+    ancestorLists.push(filtered);
   }
 
-  return [...parents, ...removeUnreachablePaths(remaining)];
+  return cleaned.flat();
 }
+
+// export function hasParent(parents: string[]) {
+//   return (subPath: string) => {
+//     const idx = subPath.lastIndexOf('/');
+//     const parent = idx >= 0 ? subPath.substring(0, idx) : '';
+//     return parents.includes(parent);
+//   };
+// }
+
+// export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): string[] {
+//   const normalized = pathLists.filter(list => list);
+
+//   if (normalized.length === 0) {
+//     return [];
+//   }
+
+//   if (normalized.length === 1) {
+//     return [...normalized[0]];
+//   }
+
+//   const parents = normalized[0];
+//   const second = normalized[1];
+
+//   const cleanSubPaths = second.filter(hasParent(parents));
+
+//   const remaining: string[][] = [cleanSubPaths];
+
+//   if (normalized.length > 2) {
+//     remaining.push(...normalized.slice(2));
+//   }
+
+//   return [...parents, ...removeUnreachablePaths(remaining)];
+// }
