@@ -163,36 +163,3 @@ export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): str
 
   return cleaned.flat();
 }
-
-// export function hasParent(parents: string[]) {
-//   return (subPath: string) => {
-//     const idx = subPath.lastIndexOf('/');
-//     const parent = idx >= 0 ? subPath.substring(0, idx) : '';
-//     return parents.includes(parent);
-//   };
-// }
-
-// export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): string[] {
-//   const normalized = pathLists.filter(list => list);
-
-//   if (normalized.length === 0) {
-//     return [];
-//   }
-
-//   if (normalized.length === 1) {
-//     return [...normalized[0]];
-//   }
-
-//   const parents = normalized[0];
-//   const second = normalized[1];
-
-//   const cleanSubPaths = second.filter(hasParent(parents));
-
-//   const remaining: string[][] = [cleanSubPaths];
-
-//   if (normalized.length > 2) {
-//     remaining.push(...normalized.slice(2));
-//   }
-
-//   return [...parents, ...removeUnreachablePaths(remaining)];
-// }

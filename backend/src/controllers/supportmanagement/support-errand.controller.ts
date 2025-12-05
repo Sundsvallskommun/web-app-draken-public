@@ -414,21 +414,9 @@ export class SupportErrandController {
       const labelTypeList = labelType?.split(',');
       const labelSubTypeList = labelSubType?.split(',');
 
-      console.log('category', labelCategoryList);
-      console.log('labeltypelist', labelTypeList);
-      console.log('labelsubtypelist', labelSubTypeList);
-
       const cleanPath = removeUnreachablePaths([labelCategoryList, labelTypeList, labelSubTypeList]);
-      console.log('\n----------------------------------------------------------------------------------\n');
-      console.log('==== Clean paths (sorted) ====');
-      [...cleanPath].sort().forEach(p => console.log(p));
-
-      console.log('\n----------------------------------------------------------------------------------\n');
 
       const leaves = findLeafComponents(cleanPath);
-      console.log('==== Leaf components (sorted) ====');
-      [...leaves].sort().forEach(p => console.log(p));
-      console.log('\n----------------------------------------------------------------------------------\n');
 
       const searchString = buildCategoryFilter([...leaves]);
       if (searchString) filterList.push(searchString);
