@@ -21,6 +21,7 @@ export interface CasedataSignedContractAttachmentFormModel {
 export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> = ({ contractId }) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
 
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
@@ -42,7 +43,6 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
     register,
     control,
     watch,
-    reset,
     setValue,
     getValues,
     formState: { errors },
@@ -80,7 +80,6 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
         className="w-[43rem]"
         onClose={() => {
           closeHandler();
-          reset();
         }}
         label={'Ladda upp bilaga'}
       >
@@ -115,31 +114,24 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
             <Button
               className="w-full"
               disabled={!contractAttachmentFields?.length || !allowed}
-              type="submit"
+              type="button"
               variant="primary"
               color="primary"
+              loading={loading}
               loadingText="Laddar upp"
-              onClick={(e) => {
-                e.preventDefault();
-                const apiCall = saveSignedContractAttachment(
-                  municipalityId,
-                  contractId,
-                  contractAttachmentFields,
-                  getValues('note')
-                );
-                apiCall
-                  .then(() =>
-                    getErrand(municipalityId, errand.id.toString())
-                      .then((res) => setErrand(res.errand))
-                      .then(() => {
-                        toastMessage(
-                          getToastOptions({
-                            message: 'Bilagan sparades',
-                            status: 'success',
-                          })
-                        );
+              onClick={() => {
+                setLoading(true);
+                saveSignedContractAttachment(municipalityId, contractId, contractAttachmentFields, getValues('note'))
+                  .then(async () => {
+                    const res = await getErrand(municipalityId, errand.id.toString());
+                    setErrand(res.errand);
+                    toastMessage(
+                      getToastOptions({
+                        message: 'Bilagan sparades',
+                        status: 'success',
                       })
-                  )
+                    );
+                  })
                   .catch(() => {
                     toastMessage({
                       position: 'bottom',
@@ -147,6 +139,9 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
                       message: 'Något gick fel när bilagan sparades',
                       status: 'error',
                     });
+                  })
+                  .finally(() => {
+                    setLoading(false);
                   });
               }}
             >

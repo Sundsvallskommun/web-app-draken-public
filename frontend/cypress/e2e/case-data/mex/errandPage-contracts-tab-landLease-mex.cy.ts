@@ -1,6 +1,14 @@
 /// <reference types="cypress" />
 
-import { Contract, ContractType, LeaseType, StakeholderRole } from '@casedata/interfaces/contracts';
+import {
+  Contract,
+  ContractType,
+  IntervalType,
+  InvoicedIn,
+  LeaseType,
+  StakeholderRole,
+  TimeUnit,
+} from '@casedata/interfaces/contracts';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
@@ -14,6 +22,8 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
+import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
+import { IErrand } from '@casedata/interfaces/errand';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -67,42 +77,33 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       },
     };
 
-    it('can upload signed contract', () => {
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.intercept(
-        'POST',
-        `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
-        {}
-      );
+    // Not implemented yet
+    // it('can upload signed contract', () => {
+    //   cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
+    //   cy.intercept(
+    //     'POST',
+    //     `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
+    //     {}
+    //   );
 
-      cy.get('[data-cy="preview-contract"]').should('exist');
+    //   cy.get('[data-cy="preview-contract"]').should('exist');
 
-      cy.get('button').should('exist').contains('Ladda upp signerat avtal (pdf)').click();
-      cy.get('button').contains('Bläddra').should('exist').click();
-      cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/testpdf.pdf', { force: true });
-      cy.get('select[data-cy="attachmentType"]').should('exist').select(1);
-      cy.get('.sk-modal-footer button.sk-btn-primary').should('exist').contains('Ladda upp').click();
-      cy.get('.sk-snackbar').contains('Bilagan sparades').should('exist');
-    });
+    //   cy.get('button').should('exist').contains('Ladda upp signerat avtal (pdf)').click();
+    //   cy.get('button').contains('Bläddra').should('exist').click();
+    //   cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/testpdf.pdf', { force: true });
+    //   cy.get('select[data-cy="attachmentType"]').should('exist').select(1);
+    //   cy.get('.sk-modal-footer button.sk-btn-primary').should('exist').contains('Ladda upp').click();
+    //   cy.get('.sk-snackbar').contains('Bilagan sparades').should('exist');
+    // });
 
     it('shows the correct contracts information', () => {
       const landLeaseType = [
         { key: 'parties', label: 'Parter' },
         { key: 'area', label: 'Område' },
-        { key: 'purpose', label: 'Ändamål' },
-        { key: 'arrendetid', label: 'Arrendetid och uppsägning' },
-        { key: 'arrendeavgift', label: 'Arrendeavgift' },
-        { key: 'bygglov', label: 'Bygglov och tillstånd' },
-        { key: 'subletting', label: 'Överlåtelse och underupplåtelse' },
-        { key: 'inskrivning', label: 'Inskrivning' },
-        { key: 'skick', label: 'Skick och skötsel' },
-        { key: 'ledningar', label: 'Ledningar' },
-        { key: 'expenses', label: 'Kostnader' },
-        { key: 'pollution', label: 'Markföroreningar' },
-        { key: 'upphorande', label: 'Arrendets upphörande och återställning av området' },
-        { key: 'damages', label: 'Skada och ansvar' },
-        { key: 'special', label: 'Särskilda bestämmelser' },
-        { key: 'jordabalk', label: 'Hänvisning till Jordabalken' },
+        { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
+        { key: 'lopande', label: 'Löpande fakturering' },
+        { key: 'engangs', label: 'Engångsfakturering' },
+        { key: 'signerade', label: 'Signerade avtal' },
       ];
 
       //land lease contracts
@@ -110,32 +111,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get(`[data-cy="badge-${type.key}"]`).contains(type.label).should('exist');
       });
 
+      cy.get('[data-cy="casedata-contract-form"]').find('.sk-disclosure').should('have.length', 6);
       cy.get('[data-cy="parties-disclosure"]').contains('Parter').should('exist');
       cy.get('[data-cy="area-disclosure"]').contains('Område').should('exist');
-      cy.get('[data-cy="purpose-disclosure"]').contains('Ändamål').should('exist');
-      cy.get('[data-cy="tenancy-period-disclosure"]').contains('Arrendetid och uppsägning').should('exist');
-      cy.get('[data-cy="lease-fee-disclosure"]').contains('Arrendeavgift').should('exist');
-      cy.get('[data-cy="building-permits-disclosure"]').contains('Bygglov och tillstånd').should('exist');
-      cy.get('[data-cy="assignment-subassignment-disclosure"]')
-        .contains('Överlåtelse och underupplåtelse')
-        .should('exist');
-      cy.get('[data-cy="enrollment-disclosure"]').contains('Inskrivning').should('exist');
-      cy.get('[data-cy="condition-care-disclosure"]').contains('Skick och skötsel').should('exist');
-      cy.get('[data-cy="wires-disclosure"]').contains('Ledningar').should('exist');
-      cy.get('[data-cy="costs-disclosure"]').contains('Kostnader').should('exist');
-      cy.get('[data-cy="soil-pollution-disclosure"]').contains('Markföroreningar').should('exist');
-      cy.get('[data-cy="termination-reinstatement-disclosure"]')
-        .contains('Arrendets upphörande och återställning av området')
-        .should('exist');
-      cy.get('[data-cy="damages-disclosure"]').contains('Skada och ansvar').should('exist');
-      cy.get('[data-cy="special-provisions-disclosure"]').contains('Särskilda bestämmelser').should('exist');
-      cy.get('[data-cy="landCode-disclosure"]').contains('Hänvisning till Jordabalken').should('exist');
+      cy.get('[data-cy="avtalstid-disclosure"]').contains('Avtalstid och uppsägning').should('exist');
+      cy.get('[data-cy="lopande-disclosure"]').contains('Löpande avgift').should('exist');
+      cy.get('[data-cy="engangs-disclosure"]').contains('Engångsfakturering').should('exist');
+      cy.get('[data-cy="signerade-disclosure"]').contains('Signerade avtal').should('exist');
     });
 
-    //PARTIES
+    // Parter
     it('manages parties in land lease contracts', () => {
       cy.get('[data-cy="parties-disclosure"]').should('exist');
-      cy.get('[data-cy="lessor-table"] .sk-table-tbody-tr')
+      cy.get('[data-cy="Upplåtare-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
           `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''} ${
@@ -143,55 +131,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           }`
         );
 
-      cy.get('[data-cy="lessee-table"] .sk-table-tbody-tr')
+      cy.get('[data-cy="Arrendatorer-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
           `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''} ${
             mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.lastName ?? ''
           }`
         );
-      cy.get('[data-cy="parties-disclosure"] button.sk-btn-tertiary[aria-expanded="true"]').should('exist').click();
-    });
 
-    //MANUAL TEXTAREA INPUT IN ALL DISCLOSURES
-    it('manages disclosure inputs manually in land lease contracts', () => {
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-
-      const dataCys = [
-        'area',
-        'purpose',
-        'tenancy-period',
-        'lease-fee',
-        'building-permits',
-        'assignment-subassignment',
-        'enrollment',
-        'condition-care',
-        'wires',
-        'costs',
-        'soil-pollution',
-        'termination-reinstatement',
-        'damages',
-        'special-provisions',
-        'landCode',
-      ];
-
-      dataCys.forEach((datacy) => {
-        const inputtext = 'Skriver ett villkor';
-        cy.get(`[data-cy="${datacy}-disclosure"] button.sk-btn-tertiary`).should('exist').click();
-        cy.get(`[data-cy="${datacy}-richtext-wrapper"] .ql-editor[contenteditable="false"]`).should('exist');
-        cy.get(`[data-cy="manual-text-checkbox-${datacy}"]`).should('exist').check({ force: true });
-        cy.get(`[data-cy="${datacy}-richtext-wrapper"] .ql-editor[contenteditable="true"]`)
-          .should('exist')
-          .type(inputtext, { delay: 10 });
-      });
-
-      // Manual textarea input in Additional terms disclosure
-      cy.get('[data-cy="additional-terms-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="additional-terms-heading"]').should('exist').type('Villkor', { delay: 10 });
-      cy.get('[data-cy="additional-terms-richtext-wrapper"]')
-        .should('exist')
-        .type('Beskrivning av villkor', { delay: 10 });
-      cy.get('[data-cy="additional-terms-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
+      cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
@@ -205,619 +154,153 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''
         );
       });
-      // cy.wait('@getErrand');
-      // cy.get(`[data-cy="additional-terms-disclosure"] button.sk-btn-tertiary`).should('exist').click();
     });
 
-    //AREA
-    it('manages area automatically in land lease contracts', () => {
+    // Område
+    it('manages property designations in land lease contracts', () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Fyll i villkor').should('exist').click();
-      cy.get('.sk-modal-dialog').should('exist');
+      cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
 
-      // Is not in use right now
-      // cy.get('[data-cy="areacheck-group"] [type="radio"]').eq(0).should('exist').check();
-      // cy.get('[data-cy="areacheck-group"] [type="radio"]').eq(1).should('exist').check();
-      cy.get('[data-cy="property-designation-check"]').should('exist').check({ force: true });
+      const buildSelector = (p) => `[data-cy="property-designation-checkbox-${p.replace(/\s+/g, '-')}"]`;
 
-      cy.get('#areaSize').should('exist').type('200');
-      cy.get('#mapAttachments').should('exist').type('mapattachment.txt');
+      const errandProperties = getErrandPropertyDesignations(mockMexErrand_base.data as unknown as IErrand);
+      const errandPropertiesCySelectors = errandProperties.map(buildSelector);
 
-      cy.get('#mapAttachmentReference').should('exist').type('map reference');
+      const contractProperties = mockLeaseAgreement.data.propertyDesignations;
+      const contractPropertiesCySelectors = contractProperties.map(buildSelector);
 
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
+      errandPropertiesCySelectors.forEach((selector) => {
+        cy.get(selector).should('exist').and('not.be.checked');
+      });
 
-      // Is not in use right now
-      // cy.get('[data-cy="area-richtext-wrapper"] .ql-editor[contenteditable="false"]')
-      //   .should('exist')
-      //   .contains('map reference');
+      contractPropertiesCySelectors.forEach((selector) => {
+        cy.get(selector).should('exist').and('be.checked');
+      });
+
+      // Check all and save
+      errandPropertiesCySelectors.forEach((selector) => {
+        cy.get(selector).should('exist').check({ force: true });
+      });
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //PURPOSE
-    it('manages purpose automatically in land lease contracts', () => {
-      const purposeTerms = [
-        {
-          key: 'andamalTerms.condition.byggnad',
-
-          header: 'Byggnad',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.batplats',
-
-          header: 'Båtplats',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.idrattsandamal',
-
-          header: 'Idrottsändamål',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.led',
-
-          header: 'Led',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.parkering',
-
-          header: 'Parkering',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.skylt',
-
-          header: 'Skylt',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.snotipp',
-
-          header: 'Snötipp',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.tomtkomplement',
-
-          header: 'Tomtkomplement',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.upplag',
-
-          header: 'Upplag',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.uppstallning',
-
-          header: 'Uppställning',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.ytjordvarme',
-
-          header: 'Ytjordvärme',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.vag',
-
-          header: 'Väg',
-          conditionText: '',
-        },
-        {
-          key: 'andamalTerms.condition.atervinningsstation',
-
-          header: 'Återvinningsstation',
-          conditionText: '',
-        },
-      ];
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="purpose-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="purpose-disclosure"] button.sk-btn-primary').contains('Fyll i villkor').should('exist').click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      purposeTerms.forEach((p) => {
-        cy.get(`[data-cy="purpose-term-${p.header}"]`).should('exist').check({ force: true });
+      cy.wait('@putContract').should(({ request }) => {
+        const leaseAgreement: Contract = request.body;
+        expect(leaseAgreement.propertyDesignations).to.deep.equal([...errandProperties, ...contractProperties]);
       });
-
-      // Is not in use right now
-      // cy.get('#purposeOtherInformation').should('exist').type('Clarification text');
-      // cy.get('[data-cy="bygglov-checkgroup"] [type="radio"]').eq(0).should('exist').check();
-      // cy.get('[data-cy="bygglov-checkgroup"] [type="radio"]').eq(1).should('exist').check();
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="purpose-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="purpose-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="purpose-disclosure"] button.sk-btn-tertiary').should('exist').click();
     });
 
-    //TENANCY PERIOD
+    // Avtalstid och uppsägning
     it('manages tenancy period automatically in land lease contracts', () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="tenancy-period-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="tenancy-period-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
-      cy.get('#startDate[type="date"]').should('exist').type('2024-12-01');
-      cy.get('#endDate[type="date"]').should('exist').type('2025-12-01');
+      cy.get('[data-cy="avtalstid-start"]').should('exist').type('2024-12-01');
+      cy.get('[data-cy="avtalstid-end"]').should('exist').type('2025-12-01');
 
-      cy.get('select#noticePeriod').should('exist').select(1);
-      cy.get('select#autoRenewal').should('exist').select(1);
+      cy.get('[data-cy="lessee-notice-unit"]').should('exist').select(TimeUnit.DAYS);
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
+      cy.get('[data-cy="lessee-notice-party"]').should('have.value', 'LESSEE');
 
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
+      cy.get('[data-cy="lessor-notice-unit"]').should('exist').select(TimeUnit.MONTHS);
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
+      cy.get('[data-cy="lessor-notice-party"]').should('have.value', 'LESSOR');
 
-      cy.get('[data-cy="tenancy-period-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
+      cy.get('[data-cy="autoextend-true-radiobutton"]').should('exist').check({ force: true });
+      cy.get('[data-cy="extension-unit-selector"]').should('exist').select(TimeUnit.YEARS);
+      cy.get('[data-cy="extension-input"]').should('exist').type('180');
 
-      cy.get('[data-cy="tenancy-period-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="tenancy-period-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
+      cy.wait('@putContract').should(({ request }) => {
+        const leaseAgreement: Contract = request.body;
+        expect(leaseAgreement.notices).to.deep.equal([
+          { party: 'LESSEE', periodOfNotice: '15', unit: TimeUnit.DAYS },
+          { party: 'LESSOR', periodOfNotice: '1', unit: TimeUnit.MONTHS },
+        ]);
+        expect(leaseAgreement.extension).to.deep.equal({
+          autoExtend: true,
+          unit: TimeUnit.YEARS,
+          leaseExtension: '180',
+        });
+      });
     });
 
-    //LEASE FEE
+    // Löpande avgift
     it('manages lease fee automatically in land lease contracts', () => {
-      const rows = ['yearly', 'byYear', 'byLease', 'previouslyPaid', 'indexAdjustedFee'];
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="lease-fee-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lease-fee-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
+      cy.get('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
-      cy.get('[data-cy="lease-fee-table"] .sk-table-tbody-tr').should('have.length', rows.length);
-      rows.forEach((r) => {
-        cy.get(`[data-cy="${r}-row"] [type="checkbox"]`).should('exist').should('have.value', r).check({ force: true });
-        if (r !== rows[4] && r !== rows[3]) {
-          cy.get(`[data-cy="${r}-row"] [type="text"]`).should('exist').type('1200');
-        } else if (r === rows[3]) {
-          cy.get(`[data-cy="previouslyPaid-from-input"]`).click().clear().type('2024-01-01');
-          cy.get(`[data-cy="previouslyPaid-to-input"]`).click().clear().type('2024-12-01');
-        } else if (r === rows[4]) {
-          cy.get(`[data-cy="${r}-row"] select#noticePeriod`).should('not.be.disabled').select(2);
-        }
+      cy.get('[data-cy="generate-invoice-true-radiobutton"]').should('exist');
+      cy.get('[data-cy="generate-invoice-false-radiobutton"]').should('exist');
 
-        cy.get('[data-cy="paymentPeriod"] [type="radio"]').eq(0).should('have.value', 'year').check();
-        cy.get('[data-cy="paymentPeriod"] [type="radio"]').eq(1).should('have.value', 'quarter').check();
+      cy.get('[data-cy="fees-yearly-input"]').should('exist').type('120');
 
-        cy.get('[data-cy="paymentMode"] [type="radio"]').eq(0).should('have.value', 'pre').check();
-        cy.get('[data-cy="paymentMode"] [type="radio"]').eq(1).should('have.value', 'post').check();
+      cy.get('[data-cy="indexed-true-radiobutton"]').should('exist');
+      cy.get('[data-cy="indexed-false-radiobutton"]').should('exist');
+
+      cy.get('[data-cy="invoice-interval-yearly-radiobutton"]').should('exist');
+      cy.get('[data-cy="invoice-interval-halfyearly-radiobutton"]').should('exist');
+      cy.get('[data-cy="invoice-interval-quarterly-radiobutton"]').should('exist').check({ force: true });
+
+      cy.get('[data-cy="invoice-in-advance-radiobutton"]').should('exist').check({ force: true });
+      cy.get('[data-cy="invoice-in-arrears-radiobutton"]').should('exist');
+
+      cy.get('[data-cy="invoice-markup-input"]').should('exist');
+
+      cy.get('[data-cy="fees-additional-information-0-input"]').should('exist');
+      cy.get('[data-cy="fees-additional-information-1-input"]').should('exist').type('Foobar');
+
+      cy.get('[data-cy="lopande-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
+      cy.wait('@putContract').should(({ request }) => {
+        const leaseAgreement: Contract = request.body;
+        expect(leaseAgreement.invoicing).to.deep.equal({
+          invoiceInterval: IntervalType.QUARTERLY,
+          invoicedIn: InvoicedIn.ADVANCE,
+        });
+        expect(leaseAgreement.fees).to.deep.equal({
+          currency: 'SEK',
+          monthly: 0,
+          yearly: 120,
+          total: 120,
+          additionalInformation: ['Avgift, båtplats', 'Foobar'],
+        });
       });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="lease-fee-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="lease-fee-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="lease-fee-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //BUILDING PERMITS
-    it('manages building permits automatically in land lease contracts', () => {
-      const buildPermits = [
-        {
-          key: 'bygglovTerms.condition.permitFees',
-          header: 'Arrendator skaffar de tillstånd som krävs',
-          conditionText:
-            'Arrendatorn är skyldig att skaffa och bekosta de tillstånd som krävs för verksamheten på området. Föreskrifter som meddelas av myndighet eller som följer av lag ska följas.',
-        },
-        {
-          key: 'bygglovTerms.condition.buildingOwnership',
-          header: 'Arrendator äger byggnader inom området',
-          conditionText: 'Arrendatorn äger byggnader som står inom området.',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="building-permits-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="building-permits-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="buildPermits-table"] .sk-table-tbody-tr').should('have.length', buildPermits.length);
-      buildPermits.forEach((b) => {
-        cy.get(`[data-cy="buildPermits-table"] .sk-table-tbody-tr [data-cy="${b.key}-checkbox"]`)
-          .contains(b.header)
-          .should('exist');
-        cy.get(`[data-cy="buildPermits-table"] .sk-table-tbody-tr [data-cy='${b.key}-checkbox'] [type="checkbox"]`)
-          .should('exist')
-          .check({ force: true });
-      });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="building-permits-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="building-permits-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="building-permits-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //CONDITION CARE
-    it('manages condition and care automatically in land lease contracts', () => {
-      const conditionsCare = [
-        {
-          key: 'skickTerms.condition.nuisance',
-          header: 'Området ska hållas städat',
-          conditionText:
-            'Området upplåts i befintligt skick. Det åligger arrendatorn att hålla området i städat och vårdat skick och hålla god ordning i sin verksamhet inom området. Arrendatorn ska tillse att den verksamhet han bedriver inom området inte på något vis medför olägenhet för grannar eller någon annan samt för andra verksamheter i anslutning till området.',
-        },
-        {
-          key: 'skickTerms.condition.accessibility',
-          header: 'Allmänhetens framkomlighet får inte hindras',
-          conditionText:
-            'Arrendatorn är skyldig att bedriva sin verksamhet inom området så den inte hindrar allmänhetens framkomlighet intill arrendeområdet.',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="condition-care-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="condition-care-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="conditionsCare-table"] .sk-table-tbody-tr').should('have.length', conditionsCare.length);
-      conditionsCare.forEach((b) => {
-        cy.get('[data-cy="conditionsCare-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
-          .contains(b.header)
-          .should('exist');
-        cy.get('[data-cy="conditionsCare-table"] .sk-table-tbody-tr [type="checkbox"]')
-          .should('exist')
-          .check({ force: true });
-      });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="condition-care-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="condition-care-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="condition-care-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //COSTS
-    it('manages costs automatically in land lease contracts', () => {
-      const costs = [
-        {
-          key: 'kostnaderTerms.condition.kostnader',
-          header: 'Arrendatorn står för kostnader och drift för områdets nyttjande',
-          conditionText:
-            'Arrendatorn ansvarar för avgifter, drift och övriga kostnader som krävs för områdets nyttjande.',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="costs-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="costs-disclosure"] button.sk-btn-primary').contains('Fyll i villkor').should('exist').click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="costs-table"] .sk-table-tbody-tr').should('have.length', costs.length);
-      costs.forEach((b) => {
-        cy.get('[data-cy="costs-table"] .sk-table-tbody-tr .sk-form-checkbox-label').contains(b.header).should('exist');
-        cy.get('[data-cy="costs-table"] .sk-table-tbody-tr [type="checkbox"]').should('exist').check({ force: true });
-      });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="costs-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="costs-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="costs-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //SOIL POLLUTION
-    it('manages soil and pollution automatically in land lease contracts', () => {
-      const soilPollution = [
-        {
-          key: 'markfororeningarTerms.condition.pollutionAvoidance',
-          header: 'Schaktmassor får inte innehålla förorening',
-          conditionText:
-            'Arrendatorn påminns om att som verkamhetsutövare är det dennes ansvar, enligt miljöbalkens bestämmelser, att tillse att ev. schaktmassor eller annat material som tillförs området inte innehåller någon förorening till skada för mark och vatten.',
-        },
-        {
-          key: 'markfororeningarTerms.condition.verificationResponsibility',
-          header: 'Ansvar för verifiering av föroreningsfri mark',
-          conditionText:
-            'Arrendatorn ansvarar att på egen bekostnad och genom markundersökningar kunna verifiera att området lämnas fritt från markföroreningar.',
-        },
-        {
-          key: 'markfororeningarTerms.condition.testDone',
-          header: 'Miljöprovtagning är utförd',
-          conditionText: `Miljöprovtagning av området är utförd åååå-mm-dd. Arrendatorn har tagit del av provtagningsrapporten.`,
-        },
-        {
-          key: 'markfororeningarTerms.condition.testingAtEnd',
-          header: 'Arrendator ska återlämna mark utan förorening',
-          conditionText:
-            'Det är arrendatorns skyldighet att visa att området lämnas fritt från föroreningar. Miljöprovtagning av området ska utföras i samband med att arrendet upphör om fastighetsägaren så kräver. En provtagningsplan ska inlämnas till fastighetsägaren för godkännande innan provtagning sker. Provtagningen bekostas av arrendatorn.',
-        },
-        {
-          key: 'markfororeningarTerms.condition.testingAtTransfer',
-          header: 'Rekommendation om provtagning vid tillträde',
-          conditionText:
-            'Fastighetsägaren rekommenderar att en provtagning av området görs vid tillträdet. En provtagningsplan ska inlämnas till fastighetsägaren för godkännande innan provtagning sker. Provtagningen bekostas av arrendatorn.',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="soil-pollution-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="soil-pollution-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="soilPollution-table"] .sk-table-tbody-tr').should('have.length', soilPollution.length);
-      soilPollution.forEach((b) => {
-        cy.get('[data-cy="soilPollution-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
-          .contains(b.header)
-          .should('exist');
-        cy.get('[data-cy="soilPollution-table"] .sk-table-tbody-tr [type="checkbox"]')
-          .should('exist')
-          .check({ force: true });
-      });
-
-      cy.get('[name="markfororeningarTerms.condition.testDone.date"]').type('2024-01-01');
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="soil-pollution-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="soil-pollution-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="soil-pollution-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //TERMINATION AND REINSTATEMENT
-    it('manages termination reinstatement automatically in land lease contracts', () => {
-      const terminationReinstatement = [
-        {
-          key: 'upphorandeTerms.condition.restorationCleaning',
-          header: 'Återställning och städning',
-          conditionText:
-            'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har flyttat från adressen som angivits i detta avtal.',
-        },
-        {
-          key: 'upphorandeTerms.condition.restorationBuildingRemoval',
-          header: 'Återställning och städning inkl. byggnader',
-          conditionText:
-            'Vid avtalets upphörande ska arrendatorn lämna området väl avstädat och återställt i skick som kan godkännas av fastighetsägaren. Alla byggnader/anläggningar inom området ska tas bort. Om så inte sker kommer fastighetsägaren att ombesörja avstädningen på arrendatorns bekostnad. Detta gäller även om arrendatorn har avflyttat från den i detta avtal angivna adressen',
-        },
-        {
-          key: 'upphorandeTerms.condition.noRefundLeaseFee',
-          header: 'Avgift återbetalas ej vid förtida upphörande',
-          conditionText:
-            'Om arrendeavtalet upphör i förtid, oavsett anledning, återbetalas inte erlagd arrendeavgift understigande 750 kronor.',
-        },
-        {
-          key: 'upphorandeTerms.condition.inspectionRequirements',
-          header: 'Besiktning och friskrivning',
-          conditionText:
-            'När avtalet upphör ska arrendatorn kalla fastighetsägaren till besiktning av området. Fastighetsägaren friskriver sig från eventuell skyldighet att vid avtalets upphörande ersätta arrendatorn dels med annat markområde, dels för kostnader som arrendatorn nedlagt inom området',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="termination-reinstatement-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="termination-reinstatement-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="terminationReinstatement-table"] .sk-table-tbody-tr').should(
-        'have.length',
-        terminationReinstatement.length
-      );
-      terminationReinstatement.forEach((b) => {
-        cy.get('[data-cy="terminationReinstatement-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
-          .contains(b.header)
-          .should('exist');
-        cy.get('[data-cy="terminationReinstatement-table"] .sk-table-tbody-tr [type="checkbox"]')
-          .should('exist')
-          .check({ force: true });
-      });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="termination-reinstatement-richtext-wrapper"] .ql-editor[contenteditable="false"]').should(
-        'exist'
-      );
-
-      cy.get('[data-cy="termination-reinstatement-disclosure"] button.sk-btn-primary')
-        .contains('Spara')
-        .should('exist')
-        .click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="termination-reinstatement-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //DAMAGES
-    it('manages damages automatically in land lease contracts', () => {
-      const damages = [
-        {
-          key: 'skadaansvarTerms.condition.begransning',
-          header: 'Arrendatorn ansvarar för skada inom området',
-          conditionText:
-            'Fastighetsägaren är inte ansvarig för skada på arrendestället eller arrendatorn tillhörig egendom som orsakas av markens beskaffenhet, grundvattenförändringar, tredje man eller allmänheten. Om krav skulle riktas mot arrendatorns verksamhet ska arrendatorn skyndsamt underrätta fastighetsägaren om detta.',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="damages-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="damages-disclosure"] button.sk-btn-primary').contains('Fyll i villkor').should('exist').click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="damages-table"] .sk-table-tbody-tr').should('have.length', damages.length);
-      damages.forEach((d) => {
-        cy.get('[data-cy="damages-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
-          .contains(d.header)
-          .should('exist');
-        cy.get('[data-cy="damages-table"] .sk-table-tbody-tr [type="checkbox"]').should('exist').check({ force: true });
-      });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="damages-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="damages-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="damages-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //SPECIAL PROVISIONS
-    it('manages special provisions automatically in land lease contracts', () => {
-      const specialProvisions = [
-        {
-          key: 'sarskildaTerms.condition.sarskilda',
-
-          header: 'Området får inte inhägnas eller bebyggas med någon form av byggnader.',
-          conditionText: '',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="special-provisions-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="special-provisions-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="special-provisions-table"] .sk-table-tbody-tr').should('have.length', specialProvisions.length);
-      specialProvisions.forEach((s) => {
-        cy.get('[data-cy="special-provisions-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
-          .contains(s.header)
-          .should('exist');
-        cy.get('[data-cy="special-provisions-table"] .sk-table-tbody-tr [type="checkbox"]')
-          .should('exist')
-          .check({ force: true });
-      });
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="special-provisions-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="special-provisions-disclosure"] button.sk-btn-primary')
-        .contains('Spara')
-        .should('exist')
-        .click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="special-provisions-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
-
-    //SOIL BEAM
-    it('manages landCode automatically in land lease contracts', () => {
-      const landCode = [
-        {
-          key: 'jordabalkenTerms.condition.jordabalken',
-
-          header: 'I övrigt gäller vad som stadgas i 7 eller 8 kap jordabalken om lägenhetsarrende.',
-          conditionText: '',
-        },
-        {
-          key: 'jordabalkenTerms.condition.replaces',
-
-          header:
-            'Detta avtal ersätter fr.o.m. åååå-mm-dd det mellan parterna tidigare träffade avtalet daterat åååå-mm-dd samt tillägg daterat åååå-mm-dd.',
-          conditionText: '',
-        },
-      ];
-
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-primary')
-        .contains('Fyll i villkor')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
-
-      cy.get('[data-cy="landCode-table"] .sk-table-tbody-tr').should('have.length', landCode.length);
-      landCode.forEach((s) => {
-        cy.get('[data-cy="landCode-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
-          .contains(s.header)
-          .should('exist');
-        cy.get('[data-cy="landCode-table"] .sk-table-tbody-tr [type="checkbox"]')
-          .should('exist')
-          .check({ force: true });
-      });
-
-      cy.get('[data-cy="jordabalken-from-input"]').should('exist').type('2024-01-01');
-      cy.get('[data-cy="jordabalken-previous-from-input"]').should('exist').type('1988-05-09');
-      cy.get('[data-cy="jordabalken-addition-input"]').should('exist').type('1994-12-24');
-
-      cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
-
-      cy.get('[data-cy="landCode-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
-
-      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
-
-      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-tertiary').should('exist').click();
     });
 
     // Signatures
-    it('manages signatures', () => {
-      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary')
-        .contains('Välj villkor för underskrifter')
-        .should('exist')
-        .click();
-      cy.get('.sk-modal-dialog').should('exist');
+    // Not implemented yet
+    // it('manages signatures', () => {
+    //   cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
+    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
+    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary')
+    //     .contains('Välj villkor för underskrifter')
+    //     .should('exist')
+    //     .click();
+    //   cy.get('.sk-modal-dialog').should('exist');
 
-      cy.get('[data-cy="signature-table-option"]').should('exist').click();
+    //   cy.get('[data-cy="signature-table-option"]').should('exist').click();
 
-      cy.get('[data-cy="signature-table"] .sk-table-tbody-tr').should(
-        'have.length',
-        mockMexErrand_base.data.stakeholders.length
-      );
-      mockMexErrand_base.data.stakeholders.forEach((s) => {
-        cy.get('[data-cy="signature-table"] .sk-table-tbody-tr')
-          .should('exist')
-          .contains(s.firstName + ' ' + s.lastName)
-          .get('[data-cy="signature-table"] .sk-table-tbody-tr [type="checkbox"]')
-          .should('exist')
-          .check({ force: true });
-      });
+    //   cy.get('[data-cy="signature-table"] .sk-table-tbody-tr').should(
+    //     'have.length',
+    //     mockMexErrand_base.data.stakeholders.length
+    //   );
+    //   mockMexErrand_base.data.stakeholders.forEach((s) => {
+    //     cy.get('[data-cy="signature-table"] .sk-table-tbody-tr')
+    //       .should('exist')
+    //       .contains(s.firstName + ' ' + s.lastName)
+    //       .get('[data-cy="signature-table"] .sk-table-tbody-tr [type="checkbox"]')
+    //       .should('exist')
+    //       .check({ force: true });
+    //   });
 
-      cy.get('[data-cy="signature-lessor"]').should('exist').type('1');
-      cy.get('[data-cy="signature-lessee"]').should('exist').type('1');
-      cy.get('button').should('exist').contains('Importera').click();
+    //   cy.get('[data-cy="signature-lessor"]').should('exist').type('1');
+    //   cy.get('[data-cy="signature-lessee"]').should('exist').type('1');
+    //   cy.get('button').should('exist').contains('Importera').click();
 
-      cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-      cy.wait('@getErrand');
+    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
+    //   cy.wait('@getErrand');
 
-      cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    });
+    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
+    // });
   });
 });

@@ -133,6 +133,8 @@ export const mockLeaseAgreement = {
     status: 'DRAFT',
     type: ContractType.LEASE_AGREEMENT,
     leaseType: LeaseType.USUFRUCT_MOORING,
+    propertyDesignations: ['AVTALSFASTIGHET 1:123', 'AVTALSFASTIGHET 2:456'],
+    notices: [],
     stakeholders: [
       {
         type: 'PERSON',

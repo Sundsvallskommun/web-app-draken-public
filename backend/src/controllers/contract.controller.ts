@@ -37,7 +37,7 @@ export class CasedataContractsController {
   @OpenAPI({ summary: 'Fetch a contract' })
   @UseBefore(authMiddleware)
   async fetch_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
-    const url = `contracts/${MUNICIPALITY_ID}/${id}`;
+    const url = `${MUNICIPALITY_ID}/contracts/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Contract>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
@@ -47,7 +47,7 @@ export class CasedataContractsController {
   @OpenAPI({ summary: 'Fetch all contracts' })
   @UseBefore(authMiddleware)
   async fetch_contracts(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
-    const url = `contracts/${MUNICIPALITY_ID}/${id}`;
+    const url = `${MUNICIPALITY_ID}/contracts/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Contract[]>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
@@ -58,12 +58,16 @@ export class CasedataContractsController {
   @OpenAPI({ summary: 'Save a new contract' })
   @UseBefore(authMiddleware)
   async create_contract(@Req() req: RequestWithUser, @Body() data: Contract): Promise<{ data: Contract; message: string }> {
-    const errandId = data.externalReferenceId.toString();
+    const errandIdParameter = data.extraParameters.find(p => p.name === 'errandId')?.parameters['errandId'];
+    if (!errandIdParameter) {
+      throw new HttpException(400, 'Missing errand id');
+    }
+    const errandId = errandIdParameter.toString();
     const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `contracts/${MUNICIPALITY_ID}`;
+    const url = `${MUNICIPALITY_ID}/contracts`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.post<Contract, Contract>({ url, baseURL, data }, req.user).catch(e => {
       logger.error('Something went wrong when creating contract');
@@ -80,12 +84,16 @@ export class CasedataContractsController {
     if (!id) {
       throw 'Id not found. Cannot edit contract without id.';
     }
-    const errandId = data.externalReferenceId.toString();
+    const errandIdParameter = data.extraParameters.find(p => p.name === 'errandId')?.parameters['errandId'];
+    if (!errandIdParameter) {
+      throw new HttpException(400, 'Missing errand id');
+    }
+    const errandId = errandIdParameter.toString();
     const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `contracts/${MUNICIPALITY_ID}/${id}`;
+    const url = `${MUNICIPALITY_ID}/contracts/${id}`;
     const baseURL = apiURL(this.SERVICE);
     await this.apiService.put<any, Contract>({ url, baseURL, data }, req.user).catch(e => {
       throw e;
@@ -105,7 +113,7 @@ export class CasedataContractsController {
     if (!id) {
       throw 'Id not found. Cannot delete contract without id.';
     }
-    const contractUrl = `contracts/${MUNICIPALITY_ID}/${id}`;
+    const contractUrl = `${MUNICIPALITY_ID}/contracts/${id}`;
     const existingContract: Contract = (
       await this.apiService.get<Contract>({ url: contractUrl, baseURL }, req.user).catch(e => {
         throw 'Existing contract not found.';
@@ -132,7 +140,7 @@ export class CasedataContractsController {
     @Param('attachmentId') attachmentId: number,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `contracts/${MUNICIPALITY_ID}/${contractId}/attachments/${attachmentId}`;
+    const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<CasedataContractAttachment>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
@@ -147,8 +155,9 @@ export class CasedataContractsController {
     @Param('contractId') contractId: string,
     @Body() data: CasedataContractAttachment,
   ): Promise<{ data: CasedataContractAttachment; message: string }> {
-    const url = `contracts/${MUNICIPALITY_ID}/${contractId}/attachments`;
+    const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
+    console.log('Saving contract attachment with data:', { metadata: data.metaData });
     const response = await this.apiService.post<CasedataContractAttachment, CasedataContractAttachment>({ url, baseURL, data }, req.user).catch(e => {
       logger.error('Something went wrong when saving signed contract attachment');
       logger.error(e);
@@ -170,7 +179,7 @@ export class CasedataContractsController {
     if (!attachmentId && !contractId) {
       throw 'Id not found. Cannot delete signed contract attachment without id.';
     }
-    const url = `contracts/${MUNICIPALITY_ID}/${contractId}/attachments/${attachmentId}`;
+    const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
     const response = await this.apiService.delete<boolean>({ url, baseURL }, req.user).catch(e => {
       throw e;
     });

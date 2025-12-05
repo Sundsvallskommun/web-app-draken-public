@@ -1,32 +1,23 @@
-import { CasedataContractAttachmentUpload } from '@casedata/components/errand/tabs/contract/casedata-contract-attachment-upload';
+// import { CasedataContractAttachmentUpload } from '@casedata/components/errand/tabs/contract/casedata-contract-attachment-upload';
+import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
-  AddressType,
   Contract,
   ContractType,
-  Stakeholder,
-  StakeholderRole,
-  StakeholderType,
+  IntervalType,
+  InvoicedIn,
+  Party,
   Status,
+  TimeUnit,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { KopeAvtalsData, KopeavtalStakeholder, KopeavtalsTemplate } from '@casedata/interfaces/kopeavtals-data';
-import {
-  LagenhetsArendeTemplate,
-  LagenhetsArrendeData,
-  LagenhetsArrendeStakeholder,
-} from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {
-  CasedataContractAttachment,
   casedataStakeholderToContractStakeholder,
-  AvtalsData,
+  contractTypes,
   defaultKopeavtal,
   defaultLagenhetsarrende,
-  deleteSignedContractAttachment,
-  fetchSignedContractAttachment,
-  getContractType,
   getErrandContract,
   leaseTypes,
   renderContractPdf,
@@ -36,23 +27,13 @@ import {
 import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import {
-  Button,
-  Checkbox,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  Spinner,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { FormProvider, useForm, UseFormReturn } from 'react-hook-form';
+import { FormProvider, Resolver, useForm } from 'react-hook-form';
+import * as yup from 'yup';
+import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
-import { KopeAvtal } from './kopeavtal';
-import { Lagenhetsarrende } from './lagenhetsarrende';
 
 interface CasedataContractProps {
   update: () => void;
@@ -60,6 +41,52 @@ interface CasedataContractProps {
 }
 
 export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
+  let formSchema = yup
+    .object({
+      type: yup.string().required('Avtalstyp måste anges'),
+      notices: yup
+        .array()
+        .of(
+          yup.object({
+            party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
+            periodOfNotice: yup.string().required('Antal måste anges'),
+            unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
+          })
+        )
+        .min(2),
+      extension: yup.object({
+        autoExtend: yup.boolean(),
+        leaseExtension: yup.string().when('autoExtend', {
+          is: (autoExtend: boolean) => autoExtend,
+          then: (schema) =>
+            schema.required('Antal måste anges').test('notEmpty', 'Antal måste väljas', (val) => !!val && val !== ''),
+          otherwise: (schema) => schema,
+        }),
+        unit: yup.mixed<string>().when('autoExtend', {
+          is: (autoExtend: boolean) => autoExtend,
+          then: (schema) => schema.oneOf(Object.keys(TimeUnit), 'Välj enhet').required('Enhet måste väljas'),
+          otherwise: (schema) => schema,
+        }),
+      }),
+      invoicing: yup.object({
+        invoiceInterval: yup.mixed<string>().when('type', {
+          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
+          then: (schema) =>
+            schema.oneOf(Object.keys(IntervalType), 'Välj intervall').required('Intervall måste väljas'),
+          otherwise: (schema) => schema,
+        }),
+
+        invoicedIn: yup.mixed<string>().when('type', {
+          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
+          then: (schema) =>
+            schema
+              .oneOf(Object.keys(InvoicedIn), 'Välj förskott eller efterskott')
+              .required('Förskott eller efterskott måste väljas'),
+          otherwise: (schema) => schema,
+        }),
+      }),
+    })
+    .required();
   const {
     municipalityId,
     errand,
@@ -69,11 +96,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
-  const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
-  const [sellers, setSellers] = useState<KopeavtalStakeholder[]>([]);
-  const [buyers, setBuyers] = useState<KopeavtalStakeholder[]>([]);
-  const [lessees, setLessees] = useState<LagenhetsArrendeStakeholder[]>([]);
-  const [lessors, setLessors] = useState<LagenhetsArrendeStakeholder[]>([]);
+  const [existingContract, setExistingContract] = useState<ContractData>(undefined);
+  const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);
+  const [buyers, setBuyers] = useState<StakeholderWithPersonnumber[]>([]);
+  const [lessees, setLessees] = useState<StakeholderWithPersonnumber[]>([]);
+  const [lessors, setLessors] = useState<StakeholderWithPersonnumber[]>([]);
   const toastMessage = useSnackbar();
   const removeConfirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
@@ -83,50 +110,50 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   }, [user, errand]);
 
   const updateStakeholdersFromErrand = () => {
-    const _sellers: KopeavtalStakeholder[] = getStakeholdersByRelation(errand, Role.SELLER).map(
+    const _sellers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.SELLER).map(
       casedataStakeholderToContractStakeholder
     );
-    const _buyers: KopeavtalStakeholder[] = getStakeholdersByRelation(errand, Role.BUYER).map(
+    const _buyers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.BUYER).map(
       casedataStakeholderToContractStakeholder
     );
-    const _lessees: LagenhetsArrendeStakeholder[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
+    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
       casedataStakeholderToContractStakeholder
     );
     // Should lessors be fetched from errand stakeholders or *always* set to Sundsvalls kommun?
-    // const _lessors: LagenhetsArrendeStakeholder[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER)
-    //   .map(casedataStakeholderToContractStakeholder);
-    const sundsvallsKommun: Stakeholder = {
-      type: StakeholderType.MUNICIPALITY,
-      roles: [StakeholderRole.LESSOR],
-      organizationName: 'Sundsvalls kommun',
-      organizationNumber: '212000-2411',
-      address: {
-        type: AddressType.POSTAL_ADDRESS,
-        streetAddress: 'Stadsbyggnadsnämnden',
-        postalCode: '851 85',
-        town: 'Sundsvall',
-      },
-    };
-    const _lessors = [sundsvallsKommun];
+    const _lessors: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER).map(
+      casedataStakeholderToContractStakeholder
+    );
+    // const sundsvallsKommun: Stakeholder = {
+    //   type: StakeholderType.MUNICIPALITY,
+    //   roles: [StakeholderRole.LESSOR],
+    //   organizationName: 'Sundsvalls kommun',
+    //   organizationNumber: '212000-2411',
+    //   address: {
+    //     type: AddressType.POSTAL_ADDRESS,
+    //     streetAddress: 'Stadsbyggnadsnämnden',
+    //     postalCode: '851 85',
+    //     town: 'Sundsvall',
+    //   },
+    // };
+    // const _lessors = [sundsvallsKommun];
     setSellers(_sellers || []);
     setBuyers(_buyers || []);
     setLessees(_lessees || []);
     setLessors(_lessors || []);
   };
 
-  const getStakeholdersFromContract = (contract: KopeAvtalsData | LagenhetsArrendeData) => {
-    let _sellers: KopeavtalStakeholder[] = [];
-    let _buyers: KopeavtalStakeholder[] = [];
-    let _lessees: LagenhetsArrendeStakeholder[] = [];
-    let _lessors: LagenhetsArrendeStakeholder[] = [];
+  const getStakeholdersFromContract = (contract: ContractData) => {
+    let _sellers: StakeholderWithPersonnumber[] = [];
+    let _buyers: StakeholderWithPersonnumber[] = [];
+    let _lessees: StakeholderWithPersonnumber[] = [];
+    let _lessors: StakeholderWithPersonnumber[] = [];
     if (contract.type === ContractType.PURCHASE_AGREEMENT) {
-      _sellers = (contract as KopeAvtalsData).sellers;
-      _buyers = (contract as KopeAvtalsData).buyers;
+      _sellers = (contract as ContractData).sellers;
+      _buyers = (contract as ContractData).buyers;
     } else if (contract.type === ContractType.LEASE_AGREEMENT) {
-      _lessees = (contract as LagenhetsArrendeData).lessees || [];
-      _lessors = (contract as LagenhetsArrendeData).lessors || [];
+      _lessees = (contract as ContractData).lessees || [];
+      _lessors = (contract as ContractData).lessors || [];
     }
-    console.log('setting stakeholders from contract', _sellers, _buyers, _lessees, _lessors);
     setSellers(_sellers);
     setBuyers(_buyers);
     setLessees(_lessees);
@@ -137,19 +164,19 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     if (existingContract?.contractId) {
       getStakeholdersFromContract(existingContract);
     } else {
-      console.log('updating stakeholders from errand');
       updateStakeholdersFromErrand();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, existingContract]);
 
-  const contractForm = useForm<(KopeAvtalsData | LagenhetsArrendeData) & KopeavtalsTemplate & LagenhetsArendeTemplate>({
+  const contractForm = useForm<ContractData>({
+    resolver: yupResolver(formSchema) as Resolver<ContractData>,
     defaultValues:
       existingContract?.type === ContractType.PURCHASE_AGREEMENT
         ? defaultKopeavtal
         : existingContract?.type === ContractType.LEASE_AGREEMENT
         ? defaultLagenhetsarrende
-        : ({ ...defaultKopeavtal, ...defaultLagenhetsarrende, type: ContractType.PURCHASE_AGREEMENT } as AvtalsData),
+        : ({ ...defaultKopeavtal, ...defaultLagenhetsarrende, type: ContractType.PURCHASE_AGREEMENT } as ContractData),
     mode: 'onChange',
   });
 
@@ -164,8 +191,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     }
   };
 
-  const onSave = async (data: AvtalsData) => {
-    setIsLoading('Sparar avtal...');
+  const onSave = async (data: ContractData) => {
+    setIsLoading('Sparar avtal..');
     return saveContract(data)
       .then(async (res: Contract) => {
         await saveContractToErrand(municipalityId, res.contractId, errand);
@@ -174,34 +201,32 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       .then((res) => {
         setIsLoading(undefined);
         props.setUnsaved(false);
-        getErrand(municipalityId, errand.id.toString())
-          .then((res) => {
-            setErrand(res.errand);
-            toastMessage(
-              getToastOptions({
-                message: 'Avtalet sparades',
-                status: 'success',
-              })
-            );
-            setIsLoading(undefined);
-          })
-          .catch((e) => {
-            setIsLoading(undefined);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när avtalet skulle sparas',
-              status: 'error',
-            });
-          });
+        getErrand(municipalityId, errand.id.toString()).then((res) => {
+          setErrand(res.errand);
+          toastMessage(
+            getToastOptions({
+              message: 'Avtalet sparades',
+              status: 'success',
+            })
+          );
+          setIsLoading(undefined);
+        });
+      })
+      .catch(() => {
+        setIsLoading(undefined);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när avtalet skulle sparas',
+          status: 'error',
+        });
       });
   };
 
-  const onRenderContract = async (contractData: AvtalsData) => {
+  const onRenderContract = async (contractData: ContractData) => {
     setIsPreviewLoading(true);
 
-    const saved =
-      allowed && !isErrandLocked(errand) ? await saveContract(contractData) : getContractType(existingContract);
+    const saved = allowed && !isErrandLocked(errand) ? await saveContract(contractData) : existingContract;
     if (allowed && !isErrandLocked(errand)) {
       await saveContractToErrand(municipalityId, saved.contractId, errand);
     }
@@ -244,6 +269,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
   useEffect(() => {
     if (errand) {
+      const errandIdExtraParameter = {
+        name: 'errandId',
+        parameters: {
+          errandId: errand.id.toString(),
+        },
+      };
+      let newParams = [];
       getErrandContract(errand)
         .then((res) => {
           if (res) {
@@ -252,12 +284,15 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
             contractForm.setValue('leaseType', res.leaseType);
             contractForm.reset(res);
           }
+          const oldParams = res.extraParameters.filter((p) => p.name !== 'errandId');
+          newParams = [...oldParams, errandIdExtraParameter];
         })
         .catch(() => {
+          newParams = [errandIdExtraParameter];
           setExistingContract(undefined);
         })
         .finally(() => {
-          contractForm.setValue('externalReferenceId', errand.id.toString());
+          contractForm.setValue('extraParameters', newParams);
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,153 +300,34 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
   const contractType = contractForm.watch('type') as ContractType;
 
-  const downloadDocument = (a: CasedataContractAttachment) => {
-    const uri = `data:${a.metaData.mimeType};base64,${a.attachmentData.content}`;
-    const link = document.createElement('a');
-    const filename = a.metaData.filename;
-    link.href = uri;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-  };
-
   return (
     <FormProvider {...contractForm}>
       <form
         onChange={() => {
           props.setUnsaved(true);
         }}
+        data-cy="casedata-contract-form"
       >
         <div className="w-full py-24 px-32">
           <div className="flex">
-            <div className="w-4/5">
-              <div className="flex justify-between items-end mb-md">
-                <p>
-                  <strong>{existingContract ? `Avtal ${existingContract.contractId}` : 'Nytt avtal'}</strong>
+            <div className="w-3/4">
+              <div>
+                <h2 className="text-h2-md">{contractTypes.find((ct) => ct.key === contractType)?.label}</h2>
+                <p className="py-16">
+                  Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i
+                  sin ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som
+                  registrerats under ärendeuppgifter.
                 </p>
-                <div className="flex">
-                  <Button
-                    data-cy="preview-contract"
-                    variant="primary"
-                    color="vattjom"
-                    inverted={!isPreviewLoading}
-                    loading={isPreviewLoading}
-                    loadingText="Genererar pdf..."
-                    disabled={
-                      isPreviewLoading ||
-                      (isErrandLocked(errand) && !existingContract) ||
-                      (!allowed && !existingContract)
-                    }
-                    size="sm"
-                    rightIcon={<LucideIcon name="external-link" />}
-                    onClick={() => {
-                      onRenderContract(contractForm.getValues());
-                    }}
-                  >
-                    Förhandsgranska avtal (pdf)
-                  </Button>
-                </div>
               </div>
-
-              {existingContract?.attachmentMetaData?.[0] ? (
-                <div className="flex gap-12 justify-between">
-                  <div className="flex gap-12">
-                    <div>
-                      <p>
-                        <strong> {existingContract?.attachmentMetaData[0].filename}</strong>
-                      </p>
-                      {existingContract?.attachmentMetaData[0].note && (
-                        <p>Anteckning: {existingContract?.attachmentMetaData[0].note}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="justify-self-end">
-                    <Button
-                      data-cy="add-attachment-button"
-                      disabled={isErrandLocked(errand)}
-                      color="vattjom"
-                      rightIcon={<LucideIcon name="external-link" />}
-                      inverted={allowed}
-                      size="sm"
-                      className="mr-8"
-                      onClick={() => {
-                        const attachment = fetchSignedContractAttachment(
-                          municipalityId,
-                          existingContract?.contractId,
-                          existingContract?.attachmentMetaData[0].id
-                        );
-                        attachment.then((res) => downloadDocument(res.data));
-                      }}
-                    >
-                      Förhandsgranska signerat avtal (pdf)
-                    </Button>
-                    <Button
-                      data-cy="add-attachment-button"
-                      disabled={isErrandLocked(errand) || !allowed}
-                      color="error"
-                      rightIcon={<LucideIcon name="trash" />}
-                      inverted={allowed}
-                      size="sm"
-                      onClick={() => {
-                        removeConfirm
-                          .showConfirmation(
-                            'Ta bort signerat avtal?',
-                            'Vill du ta bort denna bilaga?',
-                            'Ja',
-                            'Nej',
-                            'info',
-                            'info'
-                          )
-                          .then((confirmed) => {
-                            if (confirmed) {
-                              deleteSignedContractAttachment(
-                                municipalityId,
-                                existingContract?.contractId,
-                                existingContract?.attachmentMetaData[0].id
-                              )
-                                .then(() => {
-                                  getErrand(municipalityId, errand.id.toString()).then((res) => {
-                                    setErrand(res.errand);
-                                  });
-                                })
-                                .then(() => {
-                                  toastMessage(
-                                    getToastOptions({
-                                      message: 'Bilagan togs bort',
-                                      status: 'success',
-                                    })
-                                  );
-                                })
-                                .catch(() => {
-                                  toastMessage({
-                                    position: 'bottom',
-                                    closeable: false,
-                                    message: 'Något gick fel när bilagan togs bort',
-                                    status: 'error',
-                                  });
-                                });
-                            }
-                          });
-                      }}
-                    ></Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-between items-end mb-md">
-                  <p>
-                    <strong>Signerat avtal {existingContract?.contractId}</strong>
-                  </p>
-                  <div className="flex">
-                    <CasedataContractAttachmentUpload contractId={existingContract?.contractId} />
-                  </div>
-                </div>
-              )}
               <div className="flex justify-start gap-xl">
                 <FormControl id="contractType" className="my-md">
-                  <FormLabel>Typ av avtal</FormLabel>
+                  <FormLabel>Välj avtalstyp</FormLabel>
                   <Select data-cy="contract-type-select" {...contractForm.register('type')}>
-                    <option value={ContractType.PURCHASE_AGREEMENT}>Köpeavtal</option>
-                    <option value={ContractType.LEASE_AGREEMENT}>Lägenhetsarrende</option>
+                    {contractTypes.map((t) => (
+                      <option key={t.key} value={t.key as ContractType}>
+                        {t.label}
+                      </option>
+                    ))}
                   </Select>
                 </FormControl>
                 {contractForm.getValues().type === ContractType.LEASE_AGREEMENT && (
@@ -430,47 +346,37 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
               <FormControl id="isDraft" className="my-md">
                 <FormLabel>
-                  Status för avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
+                  Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
                 </FormLabel>
-                {loading === undefined && (
-                  <Checkbox
-                    disabled={isErrandLocked(errand) || !allowed}
-                    checked={contractForm.getValues().status === 'DRAFT' ? true : false}
-                    value={contractForm.getValues().status}
-                    onChange={() => {
-                      contractForm.setValue(
-                        'status',
-                        contractForm.getValues()?.status === Status.ACTIVE ? Status.DRAFT : Status.ACTIVE
-                      );
-                      contractForm.trigger('status');
-                      onSave(contractForm.getValues());
-                    }}
-                    indeterminate={false}
-                  >
-                    Markera som utkast
-                  </Checkbox>
-                )}
+                <Checkbox
+                  disabled={loading !== undefined || isErrandLocked(errand) || !allowed}
+                  checked={contractForm.getValues().status === 'DRAFT' ? true : false}
+                  value={contractForm.getValues().status}
+                  onChange={() => {
+                    contractForm.setValue(
+                      'status',
+                      contractForm.getValues()?.status === Status.ACTIVE ? Status.DRAFT : Status.ACTIVE
+                    );
+                    contractForm.trigger('status');
+                    onSave(contractForm.getValues());
+                  }}
+                  indeterminate={false}
+                >
+                  Markera som utkast
+                </Checkbox>
+                <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
               </FormControl>
               <Input type="hidden" readOnly name="id" {...contractForm.register('contractId')} />
-              {contractType === ContractType.PURCHASE_AGREEMENT ? (
-                <KopeAvtal
-                  changeBadgeColor={changeBadgeColor}
-                  onSave={onSave}
-                  existingContract={(existingContract as KopeAvtalsData) || defaultKopeavtal}
-                  sellers={sellers}
-                  buyers={buyers}
-                  updateStakeholders={updateStakeholdersFromErrand}
-                />
-              ) : contractType === ContractType.LEASE_AGREEMENT ? (
-                <Lagenhetsarrende
-                  changeBadgeColor={changeBadgeColor}
-                  onSave={onSave}
-                  existingContract={(existingContract as LagenhetsArrendeData) || defaultLagenhetsarrende}
-                  lessees={lessees}
-                  lessors={lessors}
-                  updateStakeholders={updateStakeholdersFromErrand}
-                />
-              ) : null}
+              <ContractForm
+                changeBadgeColor={changeBadgeColor}
+                onSave={onSave}
+                existingContract={(existingContract as ContractData) || defaultKopeavtal}
+                sellers={sellers}
+                buyers={buyers}
+                lessees={lessees}
+                lessors={lessors}
+                updateStakeholders={updateStakeholdersFromErrand}
+              />
             </div>
 
             <ContractNavigation contractType={contractType} />

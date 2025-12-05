@@ -26,8 +26,6 @@ import * as yup from 'yup';
 
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { KopeAvtalsData } from '@casedata/interfaces/kopeavtals-data';
-import { LagenhetsArrendeData } from '@casedata/interfaces/lagenhetsarrende-data';
 import { Role } from '@casedata/interfaces/role';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import { validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
@@ -66,6 +64,7 @@ import { ServiceListComponent } from '../services/casedata-service-list.componen
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
+import { ContractData } from '@casedata/interfaces/contract-data';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -135,7 +134,7 @@ export const CasedataDecisionTab: React.FC<{
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
-  const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
+  const [existingContract, setExistingContract] = useState<ContractData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
