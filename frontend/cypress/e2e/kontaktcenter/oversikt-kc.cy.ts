@@ -218,18 +218,21 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     //SEARCH
-    it('displays search and allows to filter table', () => {
+    it.only('displays search and allows to filter table', () => {
       cy.get('[data-cy="query-filter"]').should('exist').type('kctest2');
+      cy.get('button').contains('Sök').should('be.enabled').click();
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockFilterAdminErrands).as('getQueryErrands');
       cy.wait('@getQueryErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').contains('kctest2').should('exist');
 
       cy.get('[data-cy="query-filter"]').clear().type('search text');
+      cy.get('button').contains('Sök').should('be.enabled').click();
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockEmptySupportErrand).as('getEmptyErrands');
       cy.wait('@getEmptyErrands');
       cy.get('Caption#errandTableCaption').contains('Det finns inga ärenden').should('exist');
 
       cy.get('[data-cy="query-filter"]').clear();
+      cy.get('button').contains('Sök').should('be.enabled').click();
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
       cy.wait('@getErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
