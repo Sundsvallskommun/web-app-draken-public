@@ -105,6 +105,64 @@ export const isValidUrl = (string: string) => {
   return url.protocol === 'http:' || url.protocol === 'https:';
 };
 
+export function buildCategoryFilter(list: string[]) {
+  const unique = Array.from(new Set(list));
+  if (unique.length === 0) return '';
+  const parts = unique.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
+  return `(${parts.join(' or ')})`;
+}
+
+export function findLeafComponents(cleanedData: string[]): Set<string> {
+  const finalLeafNodes = new Set(cleanedData);
+
+  for (const label of cleanedData) {
+    for (const potentialChild of cleanedData) {
+      if (potentialChild.length > label.length && potentialChild.startsWith(label + '/')) {
+        finalLeafNodes.delete(label);
+        break;
+      }
+    }
+  }
+
+  return finalLeafNodes;
+}
+
+function hasAnyAncestor(path: string, ancestorLists: string[][]): boolean {
+  let current = path;
+
+  while (true) {
+    const idx = current.lastIndexOf('/');
+    if (idx < 0) return ancestorLists[0].includes(current);
+
+    current = current.substring(0, idx);
+
+    if (ancestorLists.some(list => list.includes(current))) {
+      return true;
+    }
+  }
+}
+
+export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): string[] {
+  const normalized = pathLists.filter(list => list && list.length);
+
+  if (normalized.length === 0) return [];
+  if (normalized.length === 1) return [...normalized[0]];
+
+  const parents = normalized[0];
+  const rest = normalized.slice(1);
+
+  const ancestorLists = [parents];
+
+  const cleaned: string[][] = [parents];
+
+  for (const list of rest) {
+    const filtered = list.filter(path => hasAnyAncestor(path, ancestorLists));
+    cleaned.push(filtered);
+    ancestorLists.push(filtered);
+  }
+
+  return cleaned.flat();
+}
 export const base64ToByteArray = (base64: string) => {
   const byteCharacters = atob(base64);
 

@@ -391,6 +391,7 @@ export const useErrands = (
       if (!filter) {
         return;
       }
+      setErrands({ ...errands, isLoading: true });
       await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
           if (currentRequestId.current === requestId) {
@@ -758,8 +759,6 @@ export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
     validateExtraParametersForDecision(e).valid
   );
 };
-
-
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;

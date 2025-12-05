@@ -37,13 +37,12 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
 import { logger } from '@/utils/logger';
-import { apiURL, luhnCheck, toOffsetDateTime, withRetries } from '@/utils/util';
+import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { v4 as uuidv4, v4 } from 'uuid';
 
 export enum CustomerType {
   PRIVATE,
@@ -412,18 +411,13 @@ export class SupportErrandController {
       const labelCategoryList = labelCategory?.split(',');
       const labelTypeList = labelType?.split(',');
       const labelSubTypeList = labelSubType?.split(',');
-      if (labelCategoryList && labelCategoryList.length > 0) {
-        const ss1 = labelCategoryList.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
-        filterList.push(`(${ss1.join(' or ')})`);
-      }
-      if (labelTypeList && labelTypeList.length > 0) {
-        const ss1 = labelTypeList.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
-        filterList.push(`(${ss1.join(' or ')})`);
-      }
-      if (labelSubTypeList && labelSubTypeList.length > 0) {
-        const ss1 = labelSubTypeList.map(s => `exists(labels.metadataLabel.resourcePath:'${s}')`);
-        filterList.push(`(${ss1.join(' or ')})`);
-      }
+
+      const cleanPath = removeUnreachablePaths([labelCategoryList, labelTypeList, labelSubTypeList]);
+
+      const leaves = findLeafComponents(cleanPath);
+
+      const searchString = buildCategoryFilter([...leaves]);
+      if (searchString) filterList.push(searchString);
     }
     if (channel) {
       filterList.push(`channel:'${channel}'`);
