@@ -5,7 +5,6 @@ import { emptyErrandList } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { User } from '@common/interfaces/user';
 import { Admin, emptyUser } from '@common/services/user-service';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Status,
@@ -65,9 +64,6 @@ export interface AppContextInterface {
 
   selectedSupportErrandStatuses;
   setSelectedSupportErrandStatuses: (selectedSupportErrandStatuses: Status[]) => void;
-
-  supportAdmins;
-  setSupportAdmins: (admins: SupportAdmin[]) => void;
 
   stakeholderContacts: SupportStakeholderFormModel[];
   setStakeholderContacts: (stakeholderContacts: SupportStakeholderFormModel[]) => void;
@@ -159,7 +155,6 @@ export function AppWrapper({ children }) {
   const [supportAttachments, setSupportAttachments] = useState<SupportAttachment[]>();
   const [selectedSupportErrandStatuses, setSelectedSupportErrandStatuses] = useState<Status[]>([Status.NEW]);
   const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<string[]>(['ArendeInkommit']);
-  const [supportAdmins, setSupportAdmins] = useState<SupportAdmin[]>([]);
   const [stakeholderContacts, setStakeholderContacts] = useState<SupportStakeholderFormModel[]>([]);
   const [stakeholderCustomers, setStakeholderCustomers] = useState<SupportStakeholderFormModel[]>([]);
   const [municipalityId, setMunicipalityId] = useState<string>();
@@ -216,9 +211,6 @@ export function AppWrapper({ children }) {
         selectedErrandStatuses,
         setSelectedErrandStatuses: (selectedErrandStatuses: string[]) =>
           setSelectedErrandStatuses(selectedErrandStatuses),
-
-        supportAdmins,
-        setSupportAdmins: (admins: SupportAdmin[]) => setSupportAdmins(admins),
 
         stakeholderContacts,
         setStakeholderContacts: (stakeholderContacts: SupportStakeholderFormModel[]) =>

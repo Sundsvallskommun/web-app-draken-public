@@ -17,16 +17,15 @@ export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => P
   errand
 ) => {
   return apiService
-    .post<ApiResponse<MessageResponse>, { errandId: string }>(`casedata/${municipalityId}/message/decision`, {
+    .post<ApiResponse<MessageResponse>[], { errandId: string }>(`casedata/${municipalityId}/message/decision`, {
       errandId: errand.id.toString(),
     })
     .then((res) => {
-      if (res.data.data.messageId) {
-        return true;
-      }
-      throw 'No message id received';
+      const allSuccess = res.data.every((c) => c?.data?.messageId);
+      if (allSuccess) return true;
+      throw new Error('Not all channels returned a messageId');
     })
-    .catch((e) => {
+    .catch(() => {
       throw new Error('Något gick fel när beslutet skulle skickas');
     });
 };

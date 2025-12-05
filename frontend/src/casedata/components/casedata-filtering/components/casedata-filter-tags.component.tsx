@@ -11,13 +11,12 @@ import {
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import { Chip } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import dayjs from 'dayjs';
 import { useFormContext } from 'react-hook-form';
 import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
 
 interface CasedataFilterTagsProps {
-  administrators: (SupportAdmin | Admin)[];
+  administrators: Admin[];
 }
 
 export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administrators }) => {

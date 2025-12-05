@@ -23,7 +23,6 @@ import {
   Stakeholder as SupportStakeholder,
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
@@ -37,7 +36,6 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
-import { checkIfSupportAdministrator } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
 import { Type as TypeTransformer } from 'class-transformer';
@@ -619,10 +617,6 @@ export class SupportErrandController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<{ data: SupportErrandDto; message: string }> {
-    const isAdmin = await checkIfSupportAdministrator(req.user);
-    if (!isAdmin) {
-      throw new HttpException(403, 'Forbidden');
-    }
     if (!municipalityId) {
       console.error('No municipality id found, needed to fetch errands.');
       logger.error('No municipality id found, needed to fetch errands.');
@@ -751,10 +745,6 @@ export class SupportErrandController {
     @Body() data: Partial<SupportErrandDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const isAdmin = await checkIfSupportAdministrator(req.user);
-    if (!isAdmin) {
-      throw new HttpException(403, 'Forbidden');
-    }
     if (!municipalityId) {
       console.error('No municipality id found, it is needed to update errand.');
       logger.error('No municipality id found, it is needed to update errand.');
