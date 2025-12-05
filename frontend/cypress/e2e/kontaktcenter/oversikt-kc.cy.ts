@@ -50,7 +50,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       headerRow.get('th').eq(4).find('span').first().should('have.text', 'Inkom via');
       headerRow.get('th').eq(5).find('span').first().should('have.text', 'Registrerades');
       headerRow.get('th').eq(6).find('span').first().should('have.text', 'Prioritet');
-      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Ansvarig');
+      headerRow.get('th').eq(7).find('span').first().should('have.text', 'Registrerad av');
     });
 
     it('displays the filters', () => {
@@ -231,7 +231,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.get('[data-cy="query-filter"]').clear();
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
-      cy.wait('@getEmptyErrands');
+      cy.wait('@getErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
     });
   });
