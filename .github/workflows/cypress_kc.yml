@@ -1,5 +1,8 @@
 name: Cypress Tests KC
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   pull_request:
