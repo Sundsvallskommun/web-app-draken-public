@@ -78,9 +78,9 @@ export const SidebarHistory: React.FC<{}> = () => {
     _km['true'] = 'Ja';
     _km['false'] = 'Nej';
     supportMetadata?.categories.forEach((c) => {
-      _km[c.name] = c.displayName;
+      _km[c.name.replaceAll('.', '/')] = c.displayName;
       c.types.forEach((t) => {
-        _km[t.name] = t.displayName;
+        _km[t.name.replaceAll('.', '/')] = t.displayName;
       });
     });
     setKeyMapper(_km);
