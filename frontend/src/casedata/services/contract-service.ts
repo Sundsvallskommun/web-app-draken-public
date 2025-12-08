@@ -24,6 +24,8 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
+import { UploadFile } from '@sk-web-gui/react';
+import { base64ToFile } from '@common/services/attachment-service';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
@@ -102,10 +104,10 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
 
   console.log('Processed:', apiContract);
   if (contract.contractId) {
-    const url = `contract/${contract.contractId}`;
+    const url = `contracts/${contract.contractId}`;
     apiCall = apiService.put<ApiResponse<Contract>, Contract>(url, apiContract);
   } else {
-    const url = `contract`;
+    const url = `contracts`;
     apiCall = apiService.post<ApiResponse<Contract>, Contract>(url, apiContract);
   }
   return apiCall
@@ -122,7 +124,7 @@ export const deleteContract: (contractId: string) => Promise<AxiosResponse<boole
   if (!contractId) {
     console.error('No contract id found, cannot delete. Returning.');
   }
-  const url = `contract/${contractId}`;
+  const url = `contracts/${contractId}`;
   return apiService.deleteRequest<boolean>(url).catch((e) => {
     console.error('Something went wrong when deleting contract: ', contractId);
     throw e;
@@ -133,7 +135,7 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
   if (!contractId) {
     console.error('No contract id found, cannot fetch. Returning.');
   }
-  const url = `contract/${contractId}`;
+  const url = `contracts/${contractId}`;
   return apiService
     .get<ApiResponse<ContractData>>(url)
     .then((res) => res.data)
@@ -144,7 +146,7 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
 };
 
 export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
-  const url = `contract`;
+  const url = `contracts`;
   return apiService
     .get<ApiResponse<ContractData[]>>(url)
     .then((res) => res.data)
@@ -468,7 +470,8 @@ export const saveSignedContractAttachment = (
   note: string
 ) => {
   const attachmentPromise = attachment.map(async (attachment) => {
-    const fileData = await toBase64(attachment.file[0]);
+    console.log('Processing attachment', attachment);
+    const fileData = await toBase64(attachment.file);
 
     const formData: Attachment = {
       attachmentData: {
@@ -476,8 +479,8 @@ export const saveSignedContractAttachment = (
       },
       metadata: {
         category: AttachmentCategory.CONTRACT,
-        filename: attachment.file[0].name,
-        mimeType: attachment.file[0].type,
+        filename: attachment.file.name,
+        mimeType: attachment.file.type,
         note: note,
       },
     };
@@ -514,3 +517,36 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
       throw e;
     });
 };
+
+export function mapContractAttachmentToUploadFile<TExtraMeta extends object = object>(
+  attachment: Attachment
+): UploadFile<TExtraMeta> {
+  let file: File;
+  if (!attachment.attachmentData.content) {
+    file = new File([], `${attachment.metadata.filename}`, { type: attachment.metadata.mimeType });
+  } else {
+    file = base64ToFile(
+      attachment.attachmentData.content,
+      `${attachment.metadata.filename}`,
+      attachment.metadata.mimeType
+    );
+  }
+
+  const a: UploadFile<TExtraMeta> = {
+    id: attachment.metadata.id?.toString() ?? crypto.randomUUID(),
+    file,
+    meta: {
+      name: attachment.metadata.filename.replace(/\.[^/.]+$/, ''),
+      ending: attachment.metadata.filename.split('.')?.[1] ?? '',
+      category: attachment.metadata.category,
+      note: attachment.metadata.note,
+      mimeType: attachment.metadata.mimeType,
+      version: '',
+      created: '',
+      updated: '',
+      ...({} as TExtraMeta),
+      isValidAttachment: attachment.attachmentData.content,
+    },
+  };
+  return a;
+}

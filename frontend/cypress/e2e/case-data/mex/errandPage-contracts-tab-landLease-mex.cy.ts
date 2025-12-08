@@ -15,7 +15,7 @@ import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
@@ -36,14 +36,22 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
-      cy.intercept('PUT', '**/contract/2024-01026', contractText).as('putContract');
-      cy.intercept('POST', '**/contract', contractText).as('postLandLeaseContract');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/stakeholders/personNumber').as('getStakeholders');
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.intercept('GET', '**/contract/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('POST', '**/contracts', contractText).as('postLandLeaseContract');
+      cy.intercept('PUT', '**/contracts/2024-01026', contractText).as('putContract');
+      // cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+      //   'getContractAttachment'
+      // );
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
+      cy.intercept('DELETE', '**/contracts/2281/2024-01026/attachments/1', {}).as('deleteContractAttachment');
+      // cy.intercept('DELETE', '**/contracts/2281/2024-01026/attachments/1', cy.spy().as('deleteContractAttachment'));
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -60,8 +68,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
-      cy.wait('@getContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getContract');
       cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
 
       cy.get('[data-cy="contract-type-select"]').should('exist');
@@ -77,24 +85,33 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       },
     };
 
-    // Not implemented yet
-    // it('can upload signed contract', () => {
-    //   cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-    //   cy.intercept(
-    //     'POST',
-    //     `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
-    //     {}
-    //   );
+    it('shows uploaded contracts', () => {
+      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
+      cy.intercept(
+        'POST',
+        `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
+        {}
+      );
+      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary.sk-disclosure-header-icon')
+        .should('exist')
+        .click();
 
-    //   cy.get('[data-cy="preview-contract"]').should('exist');
+      cy.get('[data-cy="contract-upload-field"]').should('exist');
+      cy.get('[data-cy="contract-attachment-item-1"]').should('exist');
+      cy.get('[data-cy="contract-attachment-item-1"]')
+        .find('.sk-form-file-upload-list-item-actions-more')
+        .should('exist')
+        .click();
+      cy.get('[data-cy="open-attachment-1"]').should('exist');
+      cy.get('[data-cy="delete-attachment-1"]').should('exist').click();
+      cy.get('h1.sk-dialog-confirm-heading').contains('Ta bort signerat avtal?').should('exist');
+      cy.get('article.sk-dialog').find('button').contains('Nej').should('exist');
+      cy.get('article.sk-dialog').find('button').contains('Ja').should('exist').click();
 
-    //   cy.get('button').should('exist').contains('Ladda upp signerat avtal (pdf)').click();
-    //   cy.get('button').contains('Bläddra').should('exist').click();
-    //   cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/testpdf.pdf', { force: true });
-    //   cy.get('select[data-cy="attachmentType"]').should('exist').select(1);
-    //   cy.get('.sk-modal-footer button.sk-btn-primary').should('exist').contains('Ladda upp').click();
-    //   cy.get('.sk-snackbar').contains('Bilagan sparades').should('exist');
-    // });
+      cy.wait('@deleteContractAttachment').should(({ request }) => {
+        expect(request.url).to.contain(contractText.data.contractId);
+      });
+    });
 
     it('shows the correct contracts information', () => {
       const landLeaseType = [
@@ -139,6 +156,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           }`
         );
 
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
+
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
       cy.wait('@putContract').should(({ request }) => {
@@ -182,6 +203,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       errandPropertiesCySelectors.forEach((selector) => {
         cy.get(selector).should('exist').check({ force: true });
       });
+
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
@@ -249,6 +274,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="fees-additional-information-0-input"]').should('exist');
       cy.get('[data-cy="fees-additional-information-1-input"]').should('exist').type('Foobar');
+
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
 
       cy.get('[data-cy="lopande-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {

@@ -286,6 +286,31 @@ export const mockLeaseAgreement = {
         ],
       },
     ],
+    attachmentMetaData: [
+      {
+        id: 1,
+        category: 'CONTRACT',
+        filename: 'mock-contract.pdf',
+        mimeType: 'application/pdf',
+        note: '',
+      },
+    ],
+  },
+  message: 'success',
+};
+
+export const mockContractAttachment = {
+  data: {
+    attachmentData: {
+      content: 'JVBERi0xLjcKJeLjz9MKO==',
+    },
+    metadata: {
+      id: 1,
+      category: 'CONTRACT',
+      filename: 'mock-contract.pdf',
+      mimeType: 'application/pdf',
+      note: '',
+    },
   },
   message: 'success',
 };

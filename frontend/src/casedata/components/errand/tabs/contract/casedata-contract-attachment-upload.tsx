@@ -125,6 +125,7 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
                   .then(async () => {
                     const res = await getErrand(municipalityId, errand.id.toString());
                     setErrand(res.errand);
+                    closeHandler();
                     toastMessage(
                       getToastOptions({
                         message: 'Bilagan sparades',
@@ -162,7 +163,7 @@ export const CasedataContractAttachmentUpload: React.FC<{ contractId: string }> 
           openHandler();
         }}
       >
-        Ladda upp signerat avtal (pdf)
+        Ladda upp avtal
       </Button>
     </>
   );

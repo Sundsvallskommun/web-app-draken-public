@@ -33,7 +33,7 @@ export class CasedataContractsController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('contract');
 
-  @Get('/contract/:id')
+  @Get('/contracts/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
   @UseBefore(authMiddleware)
   async fetch_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
@@ -43,7 +43,7 @@ export class CasedataContractsController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Get('/contract')
+  @Get('/contracts')
   @OpenAPI({ summary: 'Fetch all contracts' })
   @UseBefore(authMiddleware)
   async fetch_contracts(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
@@ -53,7 +53,7 @@ export class CasedataContractsController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Post('/contract')
+  @Post('/contracts')
   @HttpCode(201)
   @OpenAPI({ summary: 'Save a new contract' })
   @UseBefore(authMiddleware)
@@ -77,7 +77,7 @@ export class CasedataContractsController {
     return { data: response.data, message: `Contract created` };
   }
 
-  @Put('/contract/:id')
+  @Put('/contracts/:id')
   @OpenAPI({ summary: 'Update an existing contract' })
   @UseBefore(authMiddleware)
   async update_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Body() data: Contract): Promise<ResponseData> {
@@ -104,7 +104,7 @@ export class CasedataContractsController {
     return { data: getRes.data, message: 'success' } as ResponseData;
   }
 
-  @Delete('/contract/:id')
+  @Delete('/contracts/:id')
   @HttpCode(201)
   @OpenAPI({ summary: 'Delete a contract' })
   @UseBefore(authMiddleware)

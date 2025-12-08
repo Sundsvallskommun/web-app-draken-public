@@ -223,50 +223,6 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       });
   };
 
-  const onRenderContract = async (contractData: ContractData) => {
-    setIsPreviewLoading(true);
-
-    const saved = allowed && !isErrandLocked(errand) ? await saveContract(contractData) : existingContract;
-    if (allowed && !isErrandLocked(errand)) {
-      await saveContractToErrand(municipalityId, saved.contractId, errand);
-    }
-
-    const pdf = await renderContractPdf(errand, saved, existingContract?.status === 'DRAFT' ? true : false);
-
-    const createAndClickLink = (d: { pdfBase64: string; error?: string }) => {
-      if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
-        const byteCharacters = atob(d.pdfBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('target', '_blank');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        setIsPreviewLoading(false);
-      } else {
-        setIsPreviewLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när pdf:en genererades',
-          status: 'error',
-        });
-        console.error('Error when fetching preview');
-      }
-    };
-
-    createAndClickLink(pdf);
-  };
-
   useEffect(() => {
     if (errand) {
       const errandIdExtraParameter = {

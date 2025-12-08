@@ -18,11 +18,13 @@ import {
   Button,
   Checkbox,
   Disclosure,
+  FileUpload,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Icon,
   Input,
+  PopupMenu,
   RadioButton,
   Select,
   Table,
@@ -30,9 +32,13 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, Fragment, SetStateAction, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CasedataContractAttachmentUpload } from './casedata-contract-attachment-upload';
+import { MEXAllAttachmentLabels } from '@casedata/interfaces/attachment';
+import { editAttachment } from '@casedata/services/casedata-attachment-service';
+import dayjs from 'dayjs';
+import { ContractAttachments } from './contract-attachments';
 
 export const ContractForm: React.FC<{
   changeBadgeColor;
@@ -366,6 +372,11 @@ export const ContractForm: React.FC<{
         header={<h2 className="text-h4-sm md:text-h4-md">Avtalstid och uppsägning</h2>}
         color="gronsta"
         variant="alt"
+        initalOpen={formState.errors.notices?.length > 0}
+        label={
+          formState.errors.notices?.length > 0 || formState.errors.extension?.leaseExtension ? 'Fel i formulär' : ''
+        }
+        labelColor={formState.errors.notices?.length > 0 || formState.errors.extension?.leaseExtension ? 'error' : null}
         onClick={() => {
           changeBadgeColor(`badge-avtalstid`);
         }}
@@ -680,99 +691,84 @@ export const ContractForm: React.FC<{
           changeBadgeColor(`badge-signerade`);
         }}
       >
-        <div className="flex flex-col gap-24">Signerade avtal</div>
-        {existingContract?.attachmentMetaData?.[0] ? (
-          <div className="flex gap-12 justify-between">
-            <div className="flex gap-12">
-              <div>
-                <p>
-                  <strong> {existingContract?.attachmentMetaData[0].filename}</strong>
-                </p>
-                {existingContract?.attachmentMetaData[0].note && (
-                  <p>Anteckning: {existingContract?.attachmentMetaData[0].note}</p>
-                )}
+        <ContractAttachments existingContract={existingContract} />
+        {/* {existingContract?.attachmentMetaData?.map((att) => (
+          <>
+            <div className="flex gap-12 justify-between">
+              <div className="flex gap-12">
+                <div>
+                  <p>
+                    <strong> {att.filename}</strong>
+                  </p>
+                  {att.note && <p>Anteckning: {att.note}</p>}
+                </div>
+              </div>
+              <div className="justify-self-end">
+                <Button
+                  data-cy="add-attachment-button"
+                  disabled={isErrandLocked(errand)}
+                  color="vattjom"
+                  rightIcon={<LucideIcon name="external-link" />}
+                  inverted={allowed}
+                  size="sm"
+                  className="mr-8"
+                  onClick={() => {
+                    fetchSignedContractAttachment(municipalityId, existingContract?.contractId, att.id).then((res) =>
+                      downloadDocument(res.data)
+                    );
+                  }}
+                >
+                  Förhandsgranska signerat avtal (pdf)
+                </Button>
+                <Button
+                  data-cy="add-attachment-button"
+                  disabled={isErrandLocked(errand) || !allowed}
+                  color="error"
+                  rightIcon={<LucideIcon name="trash" />}
+                  inverted={allowed}
+                  size="sm"
+                  onClick={() => {
+                    removeConfirm
+                      .showConfirmation(
+                        'Ta bort signerat avtal?',
+                        'Vill du ta bort denna bilaga?',
+                        'Ja',
+                        'Nej',
+                        'info',
+                        'info'
+                      )
+                      .then((confirmed) => {
+                        if (confirmed) {
+                          deleteSignedContractAttachment(municipalityId, existingContract?.contractId, att.id)
+                            .then(() => {
+                              getErrand(municipalityId, errand.id.toString()).then((res) => {
+                                setErrand(res.errand);
+                              });
+                            })
+                            .then(() => {
+                              toastMessage(
+                                getToastOptions({
+                                  message: 'Bilagan togs bort',
+                                  status: 'success',
+                                })
+                              );
+                            })
+                            .catch(() => {
+                              toastMessage({
+                                position: 'bottom',
+                                closeable: false,
+                                message: 'Något gick fel när bilagan togs bort',
+                                status: 'error',
+                              });
+                            });
+                        }
+                      });
+                  }}
+                ></Button>
               </div>
             </div>
-            <div className="justify-self-end">
-              <Button
-                data-cy="add-attachment-button"
-                disabled={isErrandLocked(errand)}
-                color="vattjom"
-                rightIcon={<LucideIcon name="external-link" />}
-                inverted={allowed}
-                size="sm"
-                className="mr-8"
-                onClick={() => {
-                  fetchSignedContractAttachment(
-                    municipalityId,
-                    existingContract?.contractId,
-                    existingContract?.attachmentMetaData[0].id
-                  ).then((res) => downloadDocument(res.data));
-                }}
-              >
-                Förhandsgranska signerat avtal (pdf)
-              </Button>
-              <Button
-                data-cy="add-attachment-button"
-                disabled={isErrandLocked(errand) || !allowed}
-                color="error"
-                rightIcon={<LucideIcon name="trash" />}
-                inverted={allowed}
-                size="sm"
-                onClick={() => {
-                  removeConfirm
-                    .showConfirmation(
-                      'Ta bort signerat avtal?',
-                      'Vill du ta bort denna bilaga?',
-                      'Ja',
-                      'Nej',
-                      'info',
-                      'info'
-                    )
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        deleteSignedContractAttachment(
-                          municipalityId,
-                          existingContract?.contractId,
-                          existingContract?.attachmentMetaData[0].id
-                        )
-                          .then(() => {
-                            getErrand(municipalityId, errand.id.toString()).then((res) => {
-                              setErrand(res.errand);
-                            });
-                          })
-                          .then(() => {
-                            toastMessage(
-                              getToastOptions({
-                                message: 'Bilagan togs bort',
-                                status: 'success',
-                              })
-                            );
-                          })
-                          .catch(() => {
-                            toastMessage({
-                              position: 'bottom',
-                              closeable: false,
-                              message: 'Något gick fel när bilagan togs bort',
-                              status: 'error',
-                            });
-                          });
-                      }
-                    });
-                }}
-              ></Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-between items-end mb-md">
-            <p>
-              <strong>Signerat avtal {existingContract?.contractId}</strong>
-            </p>
-            <div className="flex">
-              <CasedataContractAttachmentUpload contractId={existingContract?.contractId} />
-            </div>
-          </div>
-        )}
+          </>
+        ))} */}
       </Disclosure>
     </>
   );
