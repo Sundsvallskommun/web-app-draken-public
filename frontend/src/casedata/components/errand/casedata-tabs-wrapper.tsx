@@ -357,7 +357,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     },
   ];
 
-  const [current, setCurrent] = React.useState<number | undefined>(4);
+  const [current, setCurrent] = React.useState<number | undefined>(0);
 
   let currentTab = current;
 
