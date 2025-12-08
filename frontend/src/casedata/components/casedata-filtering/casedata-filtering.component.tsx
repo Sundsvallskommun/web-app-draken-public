@@ -1,4 +1,9 @@
 import {
+  CaseChannelFilter,
+  CaseChannelValues,
+  CasedataFilterChannel,
+} from '@casedata/components/casedata-filtering/components/casedata-filter-channel.component';
+import {
   CasePhaseFilter,
   CasePhaseValues,
   CasedataFilterPhase,
@@ -52,6 +57,7 @@ export type CaseDataFilter = CaseTypeFilter &
   CaseQueryFilter &
   CasePropertyDesignationFilter &
   CasePhaseFilter &
+  CaseChannelFilter &
   CaseStakeholderTypeFilter;
 export const CaseDataValues = {
   ...CaseTypeValues,
@@ -62,6 +68,7 @@ export const CaseDataValues = {
   ...CaseQueryValues,
   ...CasePropertyDesignationValues,
   ...CasePhaseValues,
+  ...CaseChannelValues,
   ...CaseStakeholderTypeValues,
 };
 
@@ -138,6 +145,9 @@ const CaseDataFiltering: React.FC<{
                   <CasedataFilterPhase />
                 </div>
               )}
+              <div className="relative max-md:w-full">
+                <CasedataFilterChannel />
+              </div>
               {appConfig.features.useOrganizationStakeholders && (
                 <div className="relative max-md:w-full">
                   <CasedataStakeholderType />
