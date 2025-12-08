@@ -70,7 +70,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
 
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select(2);
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor').should('exist').clear().type('Mock text', { delay: 100 });
       cy.get('[data-cy="save-decision-button"]').should('exist').click();
       cy.get('button').should('exist').contains('Ja').click();
 
@@ -82,8 +82,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
-      cy.contains('Förslag till beslut måste anges').should('exist');
+      cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor').should('exist').clear().type('Mock text', { delay: 100 });
+      cy.contains('Beslut måste anges').should('exist');
       cy.get('[data-cy="save-decision-button"]').should('exist').should('be.enabled');
       cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('be.disabled');
     });
