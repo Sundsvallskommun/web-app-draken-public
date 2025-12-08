@@ -1,10 +1,10 @@
 import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Resolution,
   ResolutionLabelIK,
@@ -24,12 +24,12 @@ import { UseFormReturn, useFormContext } from 'react-hook-form';
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    supportAdmins,
+    administrators,
     municipalityId,
     supportErrand,
     setSupportErrand,
   }: {
-    supportAdmins: SupportAdmin[];
+    administrators: Admin[];
     municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
@@ -50,8 +50,8 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
     return closeSupportErrand(supportErrand.id, municipalityId, resolution)
       .then(() => {
         if (msg) {
-          const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
-          const adminName = getAdminName(admin, supportErrand);
+          const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
+          const adminName = getAdminName(admin);
           return sendClosingMessage(adminName, supportErrand, municipalityId);
         }
       })

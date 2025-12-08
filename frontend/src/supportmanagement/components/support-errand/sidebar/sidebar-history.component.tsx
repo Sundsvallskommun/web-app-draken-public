@@ -1,11 +1,11 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
+import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Channels,
   ResolutionLabelIK,
@@ -26,12 +26,12 @@ export const SidebarHistory: React.FC<{}> = () => {
     municipalityId,
     supportErrand,
     supportMetadata,
-    supportAdmins,
+    administrators,
   }: {
     municipalityId: string;
     supportErrand: SupportErrand;
     supportMetadata: SupportMetadata;
-    supportAdmins: SupportAdmin[];
+    administrators: Admin[];
   } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +91,7 @@ export const SidebarHistory: React.FC<{}> = () => {
       // setSelectedChangeDetails(selectedChange.parsed.diffList);
       // setIsOpen(true);
       // TODO Fetch revison diff on modal opening or when fetching events (slow)?
-      fetchRevisionDiff(supportErrand.id, selectedChange, municipalityId, keyMapper, supportAdmins)
+      fetchRevisionDiff(supportErrand.id, selectedChange, municipalityId, keyMapper, administrators)
         .then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);

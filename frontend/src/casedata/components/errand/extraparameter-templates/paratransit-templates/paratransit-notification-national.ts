@@ -143,7 +143,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.mobilityAids',
     value: [],
-    label: 'Förflyttningshjälpmedel som den sökande är beroende av för att kunna genomföra resan',
+    label: 'Ange ett eller flera förflyttningshjälpmedel som den sökande är beroende av för att kunna genomföra resan',
     formField: {
       type: 'combobox',
       options: [
@@ -167,7 +167,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.walkingDistance',
     value: '',
-    label: 'Hur långt klarar du att gå på plan mark? Ange i antalet meter',
+    label: 'Hur långt klarar den sökande att gå på plan mark? Ange i antalet meter',
     formField: {
       type: 'textarea',
     },
@@ -189,7 +189,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.needForEscort',
     value: '',
-    label: 'Ange om du behöver aktiv hjälp av en ledsagare under själva resan',
+    label: 'Behöver den sökande aktiv hjälp av en ledsagare under själva resan?',
     formField: {
       type: 'radio',
       options: [
@@ -218,7 +218,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.transportTypes',
     value: [],
-    label: 'Vilken/vilka färdmedel gäller anmälan',
+    label: 'Ange ett eller flera färdmedel för resan',
     formField: {
       type: 'combobox',
       options: [

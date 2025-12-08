@@ -56,6 +56,48 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     ],
   },
   {
+    field: 'external.canTravelIndependentlyByBus',
+    value: '',
+    label: 'Kan den sökande självständigt, utan hjälp av annan person resa med buss?',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Ja', value: 'YES' },
+        { label: 'Nej', value: 'NO' },
+        { label: 'Ibland', value: 'SOMETIMES' },
+      ],
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'external.currentHousing',
+        value: ['OWN_HOUSING', 'APARTMENT_HOUSING'],
+        validationMessage: 'Besvara frågan om självständig bussresa.',
+      },
+    ],
+  },
+  {
+    field: 'external.canTravelWithAssistanceByBus',
+    value: '',
+    label: 'Kan den sökande med hjälp av annan person resa med buss?',
+    formField: {
+      type: 'radio',
+      options: [
+        { label: 'Ja', value: 'YES' },
+        { label: 'Nej', value: 'NO' },
+        { label: 'Ibland', value: 'SOMETIMES' },
+      ],
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'external.currentHousing',
+        value: ['OWN_HOUSING', 'APARTMENT_HOUSING'],
+        validationMessage: 'Besvara frågan om bussresa med hjälp.',
+      },
+    ],
+  },
+  {
     field: 'external.housingAccessibility',
     value: '',
     label: 'Ange tillgängligheten till bostaden',

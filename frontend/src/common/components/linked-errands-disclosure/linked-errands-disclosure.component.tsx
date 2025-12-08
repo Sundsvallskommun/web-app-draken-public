@@ -162,7 +162,7 @@ export const LinkedErrandsDisclosure: React.FC<{
       variant="alt"
       icon={<LucideIcon name="link-2" />}
       header="Kopplade ärenden"
-      data-cy={`facility-disclosure`}
+      data-cy={`connected-errands-disclosure`}
     >
       <h2 className="pt-[1.2rem] text-h2-md">Kopplingar skapade från detta ärende</h2>
       <p className="my-[2.4rem]">Nedan väljer du vilket ärende du vill länka med detta ärende.</p>

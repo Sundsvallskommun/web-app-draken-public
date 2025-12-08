@@ -1,10 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { User } from '@common/interfaces/user';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Channels,
   ContactChannelType,
@@ -29,9 +26,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     supportMetadata,
   }: {
     supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
   } = useAppContext();
   const { supportErrand } = props;
   const { t } = useTranslation();

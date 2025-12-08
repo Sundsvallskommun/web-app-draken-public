@@ -452,6 +452,7 @@ export const useSupportErrands = (
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
+      setSupportErrands({ ...supportErrands, isLoading: true });
       await getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });

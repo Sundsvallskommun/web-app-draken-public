@@ -2,7 +2,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
-import { getAdminUsers, getMe } from '@common/services/user-service';
+import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
 import store from '@supportmanagement/services/storage-service';
@@ -32,7 +32,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const {
     municipalityId,
     setErrand,
-    setAdministrators,
     administrators,
     selectedErrandStatuses,
     setSelectedErrandStatuses,
@@ -160,13 +159,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
     }
     //eslint-disable-next-line
   }, [errands]);
-
-  useEffect(() => {
-    getAdminUsers().then((data) => {
-      setAdministrators(data);
-    });
-    //eslint-disable-next-line
-  }, []);
 
   useDebounceEffect(
     () => {

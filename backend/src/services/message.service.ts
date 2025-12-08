@@ -1,7 +1,9 @@
-import { CASEDATA_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
+  Attachment,
   Classification,
+  Conversation,
   EmailHeader,
   Errand as ErrandDTO,
   Header,
@@ -10,6 +12,10 @@ import {
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
 import {
+  DigitalMailAttachment,
+  DigitalMailAttachmentContentTypeEnum,
+  DigitalMailRequest,
+  DigitalMailRequestContentTypeEnum,
   EmailAttachment,
   EmailRequest,
   HistoryResponse,
@@ -26,6 +32,8 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import ApiService, { ApiResponse } from './api.service';
+import { apiURL, base64ToByteArray } from '@/utils/util';
+import { getOwnerStakeholder } from './stakeholder.service';
 
 interface SmsMessage {
   party?: {
@@ -238,7 +246,6 @@ export const saveMessageOnErrand: (
   user: User,
 ) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
   const apiService = new ApiService();
-
   // Fetch message info from Messaging and construct SaveMessage object
   const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
@@ -252,7 +259,7 @@ export const saveMessageOnErrand: (
     for (const attachment of messagingInfo.content.attachments) {
       const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments`;
       const attachmentResponse = await apiService.get<ArrayBuffer>(
-        { url: attachmentUrl, params: { fileName: attachment.name }, responseType: 'arraybuffer' },
+        { url: attachmentUrl, params: { fileName: attachment.name ?? attachment.filename }, responseType: 'arraybuffer' },
         user,
       );
       const attatchmentBase64 = Buffer.from(attachmentResponse.data).toString('base64');
@@ -278,9 +285,9 @@ export const saveMessageOnErrand: (
     email: process.env.CASEDATA_SENDER_EMAIL || '',
     userId: '',
     attachments: attachments.map(a => ({
-      content: a.content || a.base64Data,
-      name: a.name || a.fileName,
-      contentType: a.contentType || a.mimeType,
+      content: a.content ?? a.base64Data,
+      name: a.name ?? a.fileName ?? a.filename,
+      contentType: a.contentType ?? a.mimeType,
     })),
     emailHeaders: emailHeaders,
   };
@@ -365,4 +372,203 @@ export const setMessageViewed = (municipalityId: string, errandId: number, messa
   const apiService = new ApiService();
   const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
   return apiService.put<any, any>({ url }, user);
+};
+
+export const createConversation = async (errandId: string, user: User, converastionType: string, topic: string) => {
+  const apiService = new ApiService();
+  const baseURL = apiURL(SERVICE);
+  const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
+  const body = {
+    topic: topic,
+    type: converastionType,
+  };
+
+  const res = await apiService.post<any, any>({ url, baseURL, data: body }, user);
+
+  return res.data;
+};
+
+export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
+  const apiService = new ApiService();
+  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  const formData = new FormData();
+  const messageObj = {
+    createdBy: { type: 'adAccount', value: user.username },
+    content: 'Beslut fattat i ärende',
+  };
+  formData.append('message', JSON.stringify(messageObj));
+  const byteArray = base64ToByteArray(pdf.file);
+  formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
+
+  return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
+};
+
+export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string, user: User, pdf: Attachment) => {
+  const apiService = new ApiService();
+  const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
+  const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
+  let externalConversation;
+  externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
+
+  if (externalConversation === undefined) {
+    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor');
+  }
+  return sendConversation(errandId, externalConversation.id, user, pdf)
+    .then(async res => {
+      return { data: { ...res.data, messageId: externalConversation.id }, message: `Message sent to Mina sidor` };
+    })
+    .catch(e => {
+      logger.error('Error when sending message to Mina sidor:', e);
+      return { data: e, message: `Error when sending message to Mina sidor` };
+    });
+};
+
+export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment) => {
+  if (errand.channel !== 'ESERVICE_KATLA') {
+    return { data: { messageId: 'Non Katla errand' }, message: `Non Katla errand` };
+  }
+
+  const apiService = new ApiService();
+  const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errand.id}/communication/conversations`;
+  const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
+  let relationlessConversation;
+
+  relationlessConversation = conversationRes.data.find(c => c.relationIds.length === 0 && c.type !== 'EXTERNAL');
+
+  if (relationlessConversation === undefined) {
+    relationlessConversation = await createConversation(errand.id.toString(), user, 'INTERNAL', errand.errandNumber);
+  }
+  return sendConversation(errand.id.toString(), relationlessConversation.id, user, pdf)
+    .then(async res => {
+      return { data: { ...res.data, messageId: relationlessConversation.id }, message: `Message sent to Katla` };
+    })
+    .catch(e => {
+      logger.error('Error when sending message to Katla:', e);
+      return { data: e, message: `Error when sending message to Katla` };
+    });
+};
+
+export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachment) => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/webmessage`;
+  const apiService = new ApiService();
+
+  const attachments = [
+    {
+      base64Data: pdf.file,
+      fileName: `${pdf.name}.pdf`,
+      mimeType: pdf.mimeType,
+    } as WebMessageAttachment,
+  ];
+  const message: WebMessageRequest = {
+    party: {
+      partyId: getOwnerStakeholder(errand).personId,
+      externalReferences: [
+        {
+          key: 'flowInstanceId',
+          value: errand.externalCaseId,
+        },
+      ],
+    },
+    message: 'Beslut fattat i ärende',
+    attachments,
+  } as WebMessageRequest;
+
+  return apiService
+    .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, user)
+    .then(async (res: ApiResponse<WebMessageResponse>) => {
+      return saveMessageOnErrand(
+        MUNICIPALITY_ID,
+        errand,
+        {
+          message: message.message,
+          id: res.data.messageId,
+          messageType: 'WEBMESSAGE',
+          messageClassification: MessageClassification.Informationsmeddelande,
+          header_message_Id: '',
+          header_reply_to: '',
+          header_references: '',
+        },
+        user,
+      )
+        .then(async _ => {
+          return { data: res.data, message: `Message sent to OpenE` };
+        })
+        .catch(e => {
+          logger.error('Error when saving message id:', e);
+          return { data: res.data, message: `Message to OpenE sent but id could not be stored` };
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending message to OpenE:', e);
+      throw e;
+    });
+};
+
+export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: Attachment) => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
+  const apiService = new ApiService();
+
+  const attachments = [
+    {
+      deliveryMode: 'ANY',
+      contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
+      content: pdf.file,
+      filename: `${pdf.name}.pdf`,
+    } as DigitalMailAttachment,
+  ];
+  const message: DigitalMailRequest = {
+    party: {
+      partyIds: [getOwnerStakeholder(errand).personId],
+      externalReferences: [],
+    },
+    sender: {
+      supportInfo: {
+        text: 'Sundsvalls kommun',
+        emailAddress: '',
+        phoneNumber: '',
+        url: '',
+      },
+    },
+    //Change subject depending on application and casetype?
+    subject: 'Meddelande gällande er ansökan om parkeringstillstånd',
+    contentType: DigitalMailRequestContentTypeEnum.TextPlain,
+    body: 'Beslut fattat i ärende',
+    department: 'SBK(Gatuavdelningen, Trafiksektionen)',
+    attachments: attachments,
+  };
+
+  return apiService
+    .post<LetterResponse, DigitalMailRequest>({ url, data: message }, user)
+    .then(async (res: ApiResponse<LetterResponse>) => {
+      const id = res.data.messages?.[0]?.messageId;
+      if (!id) {
+        throw new Error('Error: no id returned when sending message');
+      }
+      return saveMessageOnErrand(
+        MUNICIPALITY_ID,
+        errand,
+        {
+          message: message.body,
+          id: id,
+          messageType: 'DIGITAL_MAIL',
+          messageClassification: MessageClassification.Informationsmeddelande,
+          header_message_Id: '',
+          header_reply_to: '',
+          header_references: '',
+        },
+        user,
+      )
+        .then(async _ => {
+          return { data: { messageId: id }, message: `Digital mail sent` };
+        })
+        .catch(e => {
+          logger.error('Error when saving message id:', e);
+          return { data: { messageId: id }, message: `Digital mail sent but id could not be stored` };
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending digital mail:', e);
+      throw e;
+    });
 };

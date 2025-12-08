@@ -391,6 +391,7 @@ export const useErrands = (
       if (!filter) {
         return;
       }
+      setErrands({ ...errands, isLoading: true });
       await getErrands(municipalityId, page, size, filter, sort, extraParameters)
         .then((res) => {
           if (currentRequestId.current === requestId) {
@@ -725,11 +726,10 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
     requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
   } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
     if (e.caseType === PTCaseType.PARKING_PERMIT || e.caseType === PTCaseType.PARKING_PERMIT_RENEWAL) {
-      requiredExtraParameters = [
-        'disability.duration',
-        'disability.canBeAloneWhileParking',
-        'disability.walkingAbility',
-      ];
+      requiredExtraParameters = ['disability.duration', 'disability.walkingAbility'];
+      if (e.extraParameters?.find((p) => p.key === 'application.applicant.capacity')?.values?.[0] === 'PASSENGER') {
+        requiredExtraParameters.push('disability.canBeAloneWhileParking');
+      }
       if (e.extraParameters?.find((p) => p.key === 'disability.walkingAbility')?.values?.[0] === 'true') {
         requiredExtraParameters.push('disability.walkingDistance.max');
       }
@@ -759,8 +759,6 @@ export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
     validateExtraParametersForDecision(e).valid
   );
 };
-
-
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;
