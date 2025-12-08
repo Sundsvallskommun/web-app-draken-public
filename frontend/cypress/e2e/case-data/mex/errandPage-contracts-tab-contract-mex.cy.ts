@@ -44,14 +44,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
       cy.intercept('POST', '**/contracts', contractText).as('postLandLeaseContract');
       cy.intercept('PUT', '**/contracts/2024-01026', contractText).as('putContract');
-      // cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
-      //   'getContractAttachment'
-      // );
       cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
         'getContractAttachment'
       );
       cy.intercept('DELETE', '**/contracts/2281/2024-01026/attachments/1', {}).as('deleteContractAttachment');
-      // cy.intercept('DELETE', '**/contracts/2281/2024-01026/attachments/1', cy.spy().as('deleteContractAttachment'));
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -295,41 +291,5 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         });
       });
     });
-
-    // Signatures
-    // Not implemented yet
-    // it('manages signatures', () => {
-    //   cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary')
-    //     .contains('Välj villkor för underskrifter')
-    //     .should('exist')
-    //     .click();
-    //   cy.get('.sk-modal-dialog').should('exist');
-
-    //   cy.get('[data-cy="signature-table-option"]').should('exist').click();
-
-    //   cy.get('[data-cy="signature-table"] .sk-table-tbody-tr').should(
-    //     'have.length',
-    //     mockMexErrand_base.data.stakeholders.length
-    //   );
-    //   mockMexErrand_base.data.stakeholders.forEach((s) => {
-    //     cy.get('[data-cy="signature-table"] .sk-table-tbody-tr')
-    //       .should('exist')
-    //       .contains(s.firstName + ' ' + s.lastName)
-    //       .get('[data-cy="signature-table"] .sk-table-tbody-tr [type="checkbox"]')
-    //       .should('exist')
-    //       .check({ force: true });
-    //   });
-
-    //   cy.get('[data-cy="signature-lessor"]').should('exist').type('1');
-    //   cy.get('[data-cy="signature-lessee"]').should('exist').type('1');
-    //   cy.get('button').should('exist').contains('Importera').click();
-
-    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
-    //   cy.wait('@getErrand');
-
-    //   cy.get('[data-cy="signature-disclosure"] button.sk-btn-tertiary').should('exist').click();
-    // });
   });
 });

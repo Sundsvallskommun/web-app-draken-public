@@ -6,7 +6,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockErrands_base } from 'cypress/e2e/case-data/fixtures/mockErrands';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
@@ -31,6 +31,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
+      );
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
       );
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
       cy.visit('/registrera');

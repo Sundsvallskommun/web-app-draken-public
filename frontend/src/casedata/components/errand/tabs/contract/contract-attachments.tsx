@@ -41,12 +41,10 @@ export const ContractAttachments: React.FC<{
           existingContract?.contractId,
           aM.id
         ).then((res) => res.data);
-        console.log('attachment:', ra);
 
         return mapContractAttachmentToUploadFile(ra);
       }) ?? []
     );
-    console.log('uploadFiles:', uploadFiles);
     setFiles(uploadFiles);
   };
 
@@ -122,7 +120,6 @@ export const ContractAttachments: React.FC<{
         <FileUpload.Field
           data-cy={`contract-upload-field`}
           onChange={(e) => {
-            console.log('Field uploading files:', e);
             const files = e.target.value;
             saveSignedContractAttachment(municipalityId, existingContract?.contractId, files, '')
               .then((res) => {

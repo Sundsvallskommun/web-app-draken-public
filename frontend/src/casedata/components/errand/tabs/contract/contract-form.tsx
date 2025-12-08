@@ -1,30 +1,22 @@
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
-import { Attachment, ContractType, IntervalType, InvoicedIn, TimeUnit } from '@casedata/interfaces/contracts';
+import { ContractType, IntervalType, InvoicedIn, TimeUnit } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
-import {
-  deleteSignedContractAttachment,
-  fetchSignedContractAttachment,
-  getContractStakeholderName,
-  prettyContractRoles,
-} from '@casedata/services/contract-service';
+import { getContractStakeholderName, prettyContractRoles } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
   Disclosure,
-  FileUpload,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Icon,
   Input,
-  PopupMenu,
   RadioButton,
   Select,
   Table,
@@ -32,12 +24,8 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import React, { Dispatch, Fragment, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import { CasedataContractAttachmentUpload } from './casedata-contract-attachment-upload';
-import { MEXAllAttachmentLabels } from '@casedata/interfaces/attachment';
-import { editAttachment } from '@casedata/services/casedata-attachment-service';
-import dayjs from 'dayjs';
 import { ContractAttachments } from './contract-attachments';
 
 export const ContractForm: React.FC<{
@@ -174,7 +162,6 @@ export const ContractForm: React.FC<{
               disabled={!allowed}
               onClick={handleSubmit(
                 () => {
-                  console.log('saving with values:', getValues());
                   setIsLoading(true);
                   onSave({ ...getValues() }).then(() => {
                     setIsLoading(undefined);
@@ -191,16 +178,6 @@ export const ContractForm: React.FC<{
         )}
       </div>
     );
-  };
-
-  const downloadDocument = (a: Attachment) => {
-    const uri = `data:${a.metadata.mimeType};base64,${a.attachmentData.content}`;
-    const link = document.createElement('a');
-    const filename = a.metadata.filename;
-    link.href = uri;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
   };
 
   const partyTable = (
@@ -474,8 +451,6 @@ export const ContractForm: React.FC<{
             <FormControl
               className="flex-grow"
               onChange={(e) => {
-                console.log('radio value:', e.target.value, 'of type', typeof e.target.value);
-                console.log('Setting form value to:', e.target.value === 'true');
                 setValue('extension.autoExtend', e.target.value === 'true');
                 trigger();
               }}
@@ -605,7 +580,6 @@ export const ContractForm: React.FC<{
             <FormControl
               className="flex-grow"
               onChange={(e) => {
-                console.log('Setting value to:', e.target.value);
                 setValue('invoicing.invoicedIn', e.target.value);
               }}
             >
@@ -692,83 +666,6 @@ export const ContractForm: React.FC<{
         }}
       >
         <ContractAttachments existingContract={existingContract} />
-        {/* {existingContract?.attachmentMetaData?.map((att) => (
-          <>
-            <div className="flex gap-12 justify-between">
-              <div className="flex gap-12">
-                <div>
-                  <p>
-                    <strong> {att.filename}</strong>
-                  </p>
-                  {att.note && <p>Anteckning: {att.note}</p>}
-                </div>
-              </div>
-              <div className="justify-self-end">
-                <Button
-                  data-cy="add-attachment-button"
-                  disabled={isErrandLocked(errand)}
-                  color="vattjom"
-                  rightIcon={<LucideIcon name="external-link" />}
-                  inverted={allowed}
-                  size="sm"
-                  className="mr-8"
-                  onClick={() => {
-                    fetchSignedContractAttachment(municipalityId, existingContract?.contractId, att.id).then((res) =>
-                      downloadDocument(res.data)
-                    );
-                  }}
-                >
-                  Förhandsgranska signerat avtal (pdf)
-                </Button>
-                <Button
-                  data-cy="add-attachment-button"
-                  disabled={isErrandLocked(errand) || !allowed}
-                  color="error"
-                  rightIcon={<LucideIcon name="trash" />}
-                  inverted={allowed}
-                  size="sm"
-                  onClick={() => {
-                    removeConfirm
-                      .showConfirmation(
-                        'Ta bort signerat avtal?',
-                        'Vill du ta bort denna bilaga?',
-                        'Ja',
-                        'Nej',
-                        'info',
-                        'info'
-                      )
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          deleteSignedContractAttachment(municipalityId, existingContract?.contractId, att.id)
-                            .then(() => {
-                              getErrand(municipalityId, errand.id.toString()).then((res) => {
-                                setErrand(res.errand);
-                              });
-                            })
-                            .then(() => {
-                              toastMessage(
-                                getToastOptions({
-                                  message: 'Bilagan togs bort',
-                                  status: 'success',
-                                })
-                              );
-                            })
-                            .catch(() => {
-                              toastMessage({
-                                position: 'bottom',
-                                closeable: false,
-                                message: 'Något gick fel när bilagan togs bort',
-                                status: 'error',
-                              });
-                            });
-                        }
-                      });
-                  }}
-                ></Button>
-              </div>
-            </div>
-          </>
-        ))} */}
       </Disclosure>
     </>
   );

@@ -9,6 +9,7 @@ import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { mockLeaseAgreement, mockContractAttachment } from '../fixtures/mockContract';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page attachments tab', () => {
@@ -29,6 +30,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       ).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');

@@ -1,4 +1,3 @@
-// import { CasedataContractAttachmentUpload } from '@casedata/components/errand/tabs/contract/casedata-contract-attachment-upload';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
   Contract,
@@ -20,7 +19,6 @@ import {
   defaultLagenhetsarrende,
   getErrandContract,
   leaseTypes,
-  renderContractPdf,
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
