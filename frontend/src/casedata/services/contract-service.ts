@@ -82,6 +82,18 @@ export const defaultLagenhetsarrende: ContractData = {
   propertyDesignations: [],
   lessees: [],
   lessors: [],
+  notices: [
+    {
+      party: Party.LESSEE,
+      periodOfNotice: 3,
+      unit: TimeUnit.MONTHS,
+    },
+    {
+      party: Party.LESSOR,
+      periodOfNotice: 3,
+      unit: TimeUnit.MONTHS,
+    },
+  ],
   extraParameters: [
     {
       name: 'InvoiceInfo',
