@@ -60,6 +60,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     };
 
     it('saves an internal invoice correctly', () => {
+      // FIXME During 2025 this test will fail due to updated invoiceData in 2026 - see file
       const mockSupportErrand_billing = mockSupportErrand;
       mockSupportErrand_billing.stakeholders = mockSupportErrand_billing.stakeholders.slice(0, 1);
       mockSupportErrand_billing.stakeholders.forEach((stakeholder: any) => {
@@ -100,11 +101,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
             {
               descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
               detailedDescriptions: [],
-              costPerUnit: 300,
+              costPerUnit: 310,
               quantity: 1,
               accountInformation: [
                 {
-                  amount: 300,
+                  amount: 310,
                   costCenter: internalInvoiceType?.accountInformation.costCenter,
                   subaccount: internalInvoiceType?.accountInformation.subaccount,
                   department: internalInvoiceType?.accountInformation.department,
@@ -206,6 +207,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('saves an external invoice correctly', () => {
+      // FIXME During 2025 this test will fail due to updated invoiceData in 2026 - see file
       const mockSupportErrand_billing = mockSupportErrand;
       mockSupportErrand_billing.stakeholders = mockSupportErrand_billing.stakeholders.slice(0, 1);
       mockSupportErrand_billing.stakeholders.forEach((stakeholder: any) => {
@@ -248,12 +250,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
             {
               descriptions: [`Ärendenummer: ${mockSupportErrand_billing.errandNumber}`],
               detailedDescriptions: [],
-              costPerUnit: 306,
+              costPerUnit: 316,
               quantity: 1,
               vatCode: '00',
               accountInformation: [
                 {
-                  amount: 300,
+                  amount: 310,
                   costCenter: externalInvoiceType?.accountInformation.costCenter,
                   subaccount: externalInvoiceType?.accountInformation.subaccount,
                   department: externalInvoiceType?.accountInformation.department,
@@ -292,6 +294,16 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="save-invoice-button"]').should('exist').click();
       cy.wait('@saveBillingRecord').should(({ request }) => {
         expect(request.body).to.deep.equal(baseData);
+        expect(request.body.category).to.deep.equal(baseData.category);
+        expect(request.body.status).to.deep.equal(baseData.status);
+        expect(request.body.type).to.deep.equal(baseData.type);
+        expect(request.body.extraParameters).to.deep.equal(baseData.extraParameters);
+        expect(request.body.invoice.customerId).to.deep.equal(baseData.invoice.customerId);
+        expect(request.body.invoice.description).to.deep.equal(baseData.invoice.description);
+        expect(request.body.invoice.customerReference).to.deep.equal(baseData.invoice.customerReference);
+        expect(request.body.invoice.ourReference).to.deep.equal(baseData.invoice.ourReference);
+        expect(request.body.invoice.invoiceRows[0]).to.deep.equal(baseData.invoice.invoiceRows[0]);
+        expect(request.body.invoice.invoiceRows[1]).to.deep.equal(baseData.invoice.invoiceRows[1]);
       });
     });
   });
