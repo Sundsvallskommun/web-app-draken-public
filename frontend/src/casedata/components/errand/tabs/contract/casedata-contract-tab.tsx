@@ -5,6 +5,7 @@ import {
   IntervalType,
   InvoicedIn,
   Party,
+  StakeholderRole,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
@@ -117,7 +118,15 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       casedataStakeholderToContractStakeholder
     );
     const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
-      casedataStakeholderToContractStakeholder
+      (s, idx) => {
+        // FIXME Assign PRIMARY_BILLING_PARTY to the first LEASEHOLDER-stakeholder
+        // Is this the rule we should use? To be discussed
+        const l = casedataStakeholderToContractStakeholder(s);
+        if (idx === 0) {
+          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
+        }
+        return l;
+      }
     );
     const _lessors: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER).map(
       casedataStakeholderToContractStakeholder
@@ -134,11 +143,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     let _lessees: StakeholderWithPersonnumber[] = [];
     let _lessors: StakeholderWithPersonnumber[] = [];
     if (contract.type === ContractType.PURCHASE_AGREEMENT) {
-      _sellers = (contract).sellers;
-      _buyers = (contract).buyers;
+      _sellers = contract.sellers;
+      _buyers = contract.buyers;
     } else if (contract.type === ContractType.LEASE_AGREEMENT) {
-      _lessees = (contract).lessees || [];
-      _lessors = (contract).lessors || [];
+      _lessees = contract.lessees || [];
+      _lessors = contract.lessors || [];
     }
     setSellers(_sellers);
     setBuyers(_buyers);

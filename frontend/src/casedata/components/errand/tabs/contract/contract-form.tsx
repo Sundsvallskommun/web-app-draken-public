@@ -1,5 +1,5 @@
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
-import { ContractType, IntervalType, TimeUnit } from '@casedata/interfaces/contracts';
+import { ContractType, IntervalType, StakeholderRole, TimeUnit } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
@@ -216,7 +216,9 @@ export const ContractForm: React.FC<{
               </Table.Column>
               <Table.Column className="flex flex-col items-start justify-center !gap-0">
                 {b.roles?.length > 0 ? (
-                  b.roles.map((role, idx) => <div key={`role-${idx}`}>{prettyContractRoles[role]}</div>)
+                  b.roles
+                    .filter((r) => r !== StakeholderRole.CONTACT_PERSON)
+                    .map((role, idx) => <div key={`role-${idx}`}>{prettyContractRoles[role]}</div>)
                 ) : (
                   <strong>(saknas)</strong>
                 )}

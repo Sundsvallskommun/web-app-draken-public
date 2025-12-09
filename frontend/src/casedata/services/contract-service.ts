@@ -7,19 +7,19 @@ import {
   Contract,
   Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
+  StakeholderType as ContractStakeholderType,
   ContractType,
   Fees,
   InvoicedIn,
   LeaseType,
   Parameter,
   Party,
-  StakeholderType,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
-import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -310,6 +310,13 @@ const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
   }
 };
 
+const toContractStakeholderType = (type: StakeholderType): ContractStakeholderType => {
+  if (type === 'ORGANIZATION') {
+    return ContractStakeholderType.COMPANY;
+  }
+  return type as ContractStakeholderType;
+};
+
 export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOwnerOrContact): ContractStakeholder => {
   const phone = stakeholder.phoneNumbers?.[0] || '';
   const email = stakeholder.emails?.[0] || '';
@@ -328,9 +335,8 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
       values: [stakeholder.extraInformation ?? ''],
     },
   ];
-  const contractStakeholderType = stakeholder.stakeholderType as StakeholderType;
   return {
-    ...(stakeholder.stakeholderType && { type: contractStakeholderType }),
+    ...(stakeholder.stakeholderType && { type: toContractStakeholderType(stakeholder.stakeholderType) }),
     roles: stakeholder.roles.map(toContractStakeholderRole),
     ...(stakeholder.personalNumber && { personalNumber: stakeholder.personalNumber }),
     ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
