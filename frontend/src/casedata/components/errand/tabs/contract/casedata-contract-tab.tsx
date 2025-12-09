@@ -134,11 +134,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     let _lessees: StakeholderWithPersonnumber[] = [];
     let _lessors: StakeholderWithPersonnumber[] = [];
     if (contract.type === ContractType.PURCHASE_AGREEMENT) {
-      _sellers = (contract as ContractData).sellers;
-      _buyers = (contract as ContractData).buyers;
+      _sellers = (contract).sellers;
+      _buyers = (contract).buyers;
     } else if (contract.type === ContractType.LEASE_AGREEMENT) {
-      _lessees = (contract as ContractData).lessees || [];
-      _lessors = (contract as ContractData).lessors || [];
+      _lessees = (contract).lessees || [];
+      _lessors = (contract).lessors || [];
     }
     setSellers(_sellers);
     setBuyers(_buyers);
@@ -269,7 +269,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                   <FormLabel>Välj avtalstyp</FormLabel>
                   <Select data-cy="contract-type-select" {...contractForm.register('type')}>
                     {contractTypes.map((t) => (
-                      <option key={t.key} value={t.key as ContractType}>
+                      <option key={t.key} value={t.key}>
                         {t.label}
                       </option>
                     ))}

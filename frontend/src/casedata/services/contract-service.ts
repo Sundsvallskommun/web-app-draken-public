@@ -113,8 +113,8 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
   let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
   const apiContract: Contract =
     contract.type === ContractType.PURCHASE_AGREEMENT
-      ? kopeavtalToContract(contract as ContractData)
-      : lagenhetsArrendeToContract(contract as ContractData);
+      ? kopeavtalToContract(contract)
+      : lagenhetsArrendeToContract(contract);
 
   console.log('Processed:', apiContract);
   if (contract.contractId) {
@@ -375,7 +375,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees = undefined;
   if (data.generateInvoice) {
-    const yearlyNumber = parseFloat(data.fees.yearly.toString());
+    const yearlyNumber = Number.parseFloat(data.fees.yearly.toString());
     fees = {
       yearly: yearlyNumber,
       monthly: 0,
@@ -441,12 +441,6 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
   c.type === 'COMPANY' || c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY'
     ? c.organizationName
     : `${c.firstName} ${c.lastName}`;
-
-// export const getContractType = (contract: ContractData) => {
-//   return contract.type === ContractType.PURCHASE_AGREEMENT
-//     ? kopeavtalToContract(contract as ContractData)
-//     : lagenhetsArrendeToContract(contract as ContractData);
-// };
 
 export const fetchSignedContractAttachment: (
   municipalityId: string,
@@ -527,14 +521,14 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   attachment: Attachment
 ): UploadFile<TExtraMeta> {
   let file: File;
-  if (!attachment.attachmentData.content) {
-    file = new File([], `${attachment.metadata.filename}`, { type: attachment.metadata.mimeType });
-  } else {
+  if (attachment.attachmentData.content) {
     file = base64ToFile(
       attachment.attachmentData.content,
       `${attachment.metadata.filename}`,
       attachment.metadata.mimeType
     );
+  } else {
+    file = new File([], `${attachment.metadata.filename}`, { type: attachment.metadata.mimeType });
   }
 
   const a: UploadFile<TExtraMeta> = {

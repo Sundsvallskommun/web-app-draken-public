@@ -1,25 +1,25 @@
 /// <reference types="cypress" />
 
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
+import { mockEstateInfo } from '../fixtures/mockEstateInfo';
+import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
-import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
-import { mockEstateInfo } from '../fixtures/mockEstateInfo';
-import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
-import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
-import { mockAsset } from '../fixtures/mockAsset';
 import { preventProcessExtraParameters } from '../utils/utils';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 const checkExtraParameter = (extraParameters: ExtraParameter[], key: string, value: string) => {
   const param = extraParameters.find((p: any) => p.key === key);

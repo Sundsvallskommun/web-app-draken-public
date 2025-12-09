@@ -7,15 +7,15 @@ import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments'
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
-import { mockAsset } from '../fixtures/mockAsset';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {

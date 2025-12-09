@@ -1,5 +1,5 @@
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
-import { ContractType, IntervalType, InvoicedIn, TimeUnit } from '@casedata/interfaces/contracts';
+import { ContractType, IntervalType, TimeUnit } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
@@ -21,8 +21,6 @@ import {
   Select,
   Table,
   Textarea,
-  useConfirm,
-  useSnackbar,
 } from '@sk-web-gui/react';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
@@ -39,7 +37,6 @@ export const ContractForm: React.FC<{
   updateStakeholders: () => void;
 }> = ({ changeBadgeColor, onSave, existingContract, buyers, sellers, lessees, lessors, updateStakeholders }) => {
   const {
-    setErrand,
     municipalityId,
     errand,
     user,
@@ -47,13 +44,11 @@ export const ContractForm: React.FC<{
     useAppContext();
   const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
     useFormContext<ContractData>();
-  const toastMessage = useSnackbar();
-  const removeConfirm = useConfirm();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
   const [lessorNoticeIndex, setLessorNoticeIndex] = useState(1);
   const [invoiceInfoIndex, setInvoiceInfoIndex] = useState(0);
 
-  const [loading, setIsLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
   const [updatingParties, setUpdatingParties] = useState<boolean>(false);
 
@@ -140,12 +135,12 @@ export const ContractForm: React.FC<{
         // Find index for lessee and lessor notices
         const lesseeIndex = existingContract.notices?.findIndex((n) => n.party === 'LESSEE');
         const lessorIndex = existingContract.notices?.findIndex((n) => n.party === 'LESSOR');
-        setLesseeNoticeIndex(lesseeIndex !== -1 ? lesseeIndex : 0);
-        setLessorNoticeIndex(lessorIndex !== -1 ? lessorIndex : 1);
+        setLesseeNoticeIndex(lesseeIndex === -1 ? 0 : lesseeIndex);
+        setLessorNoticeIndex(lessorIndex === -1 ? 1 : lessorIndex);
 
         // Find index for InvoiceInfo extraparameter
         const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo');
-        setInvoiceInfoIndex(_invoiceInfoIndex !== -1 ? _invoiceInfoIndex : existingContract.extraParameters.length);
+        setInvoiceInfoIndex(_invoiceInfoIndex === -1 ? existingContract.extraParameters.length : _invoiceInfoIndex);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,9 +157,9 @@ export const ContractForm: React.FC<{
               disabled={!allowed}
               onClick={handleSubmit(
                 () => {
-                  setIsLoading(true);
+                  setLoading(true);
                   onSave({ ...getValues() }).then(() => {
-                    setIsLoading(undefined);
+                    setLoading(undefined);
                   });
                 },
                 (e) => {
@@ -519,7 +514,6 @@ export const ContractForm: React.FC<{
           </div>
           <div className="flex gap-18 justify-start">
             <FormControl>
-              {/* FIXME vill APIet även ha belopp i textformat? */}
               <FormLabel>Ange avgift/år</FormLabel>
               <Input type="number" {...register('fees.yearly')} data-cy="fees-yearly-input" />
             </FormControl>

@@ -57,7 +57,7 @@ export const ContractAttachments: React.FC<{
       .showConfirmation('Ta bort signerat avtal?', 'Vill du ta bort denna bilaga?', 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          deleteSignedContractAttachment(municipalityId, existingContract?.contractId, parseInt(file.id))
+          deleteSignedContractAttachment(municipalityId, existingContract?.contractId, Number.parseInt(file.id))
             .then(() => {
               getErrand(municipalityId, errand.id.toString()).then((res) => {
                 setErrand(res.errand);
@@ -115,61 +115,59 @@ export const ContractAttachments: React.FC<{
   );
 
   return (
-    <>
-      <div className="my-16 flex flex-col gap-24 items-center">
-        <FileUpload.Field
-          data-cy={`contract-upload-field`}
-          onChange={(e) => {
-            const files = e.target.value;
-            saveSignedContractAttachment(municipalityId, existingContract?.contractId, files, '')
-              .then((res) => {
-                if (!res) {
-                  throw new Error();
-                }
-                getErrand(municipalityId, errand.id.toString()).then((res) => {
-                  setErrand(res.errand);
-                  loadFiles();
-                  toastMessage(
-                    getToastOptions({
-                      message: 'Bilagan/orna sparades',
-                      status: 'success',
-                    })
-                  );
-                });
-              })
-              .catch(() => {
-                toastMessage({
-                  position: 'bottom',
-                  closeable: false,
-                  message: 'Något gick fel när bilagan/orna sparades',
-                  status: 'error',
-                });
+    <div className="my-16 flex flex-col gap-24 items-center">
+      <FileUpload.Field
+        data-cy={`contract-upload-field`}
+        onChange={(e) => {
+          const files = e.target.value;
+          saveSignedContractAttachment(municipalityId, existingContract?.contractId, files, '')
+            .then((res) => {
+              if (!res) {
+                throw new Error();
+              }
+              getErrand(municipalityId, errand.id.toString()).then((res) => {
+                setErrand(res.errand);
+                loadFiles();
+                toastMessage(
+                  getToastOptions({
+                    message: 'Bilagan/orna sparades',
+                    status: 'success',
+                  })
+                );
               });
-          }}
-        ></FileUpload.Field>
-        <div className="w-full flex flex-col gap-lg">
-          <FileUpload.List isEdit={false}>
-            {files?.map((file, i) => (
-              <FileUpload.ListItem
-                data-cy={`contract-attachment-item-${file.id}`}
-                key={file.file.name}
-                file={file}
-                index={i}
-                iconProps={{ icon: <LucideIcon name="file-pen" /> }}
-                categoryProps={{
-                  categories: { CONTRACT: 'Avtal' },
-                }}
-                actionsProps={{
-                  showRemove: false,
-                  showMore: true,
-                  morePopupMenuPanel: morePanel(file),
-                  onRemove: handleRemoveFile,
-                }}
-              />
-            ))}
-          </FileUpload.List>
-        </div>
+            })
+            .catch(() => {
+              toastMessage({
+                position: 'bottom',
+                closeable: false,
+                message: 'Något gick fel när bilagan/orna sparades',
+                status: 'error',
+              });
+            });
+        }}
+      ></FileUpload.Field>
+      <div className="w-full flex flex-col gap-lg">
+        <FileUpload.List isEdit={false}>
+          {files?.map((file, i) => (
+            <FileUpload.ListItem
+              data-cy={`contract-attachment-item-${file.id}`}
+              key={file.file.name}
+              file={file}
+              index={i}
+              iconProps={{ icon: <LucideIcon name="file-pen" /> }}
+              categoryProps={{
+                categories: { CONTRACT: 'Avtal' },
+              }}
+              actionsProps={{
+                showRemove: false,
+                showMore: true,
+                morePopupMenuPanel: morePanel(file),
+                onRemove: handleRemoveFile,
+              }}
+            />
+          ))}
+        </FileUpload.List>
       </div>
-    </>
+    </div>
   );
 };
