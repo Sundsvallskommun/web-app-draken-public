@@ -294,6 +294,7 @@ export const ContractForm: React.FC<{
               <small>Om det finns ett äldre avtal, ange dess ID ovan.</small>
             </FormControl>
           </div>
+          {saveButton()}
         </div>
       </Disclosure>
       <Disclosure
