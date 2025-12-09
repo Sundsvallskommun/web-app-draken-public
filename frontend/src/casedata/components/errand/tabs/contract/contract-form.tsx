@@ -577,29 +577,6 @@ export const ContractForm: React.FC<{
             </FormControl>
           </div>
           <div className="flex gap-18 justify-start">
-            <FormControl
-              className="flex-grow"
-              onChange={(e) => {
-                setValue('invoicing.invoicedIn', e.target.value);
-              }}
-            >
-              <FormLabel>Avgiften ska erläggas</FormLabel>
-              <RadioButton.Group
-                inline
-                className="flex gap-24"
-                name="invoicedIn"
-                value={watch().invoicing?.invoicedIn === InvoicedIn.ARREARS ? InvoicedIn.ARREARS : undefined}
-              >
-                <RadioButton value={InvoicedIn.ADVANCE} data-cy="invoice-in-advance-radiobutton">
-                  I förskott
-                </RadioButton>
-                <RadioButton value={InvoicedIn.ARREARS} data-cy="invoice-in-arrears-radiobutton">
-                  I efterskott
-                </RadioButton>
-              </RadioButton.Group>
-            </FormControl>
-          </div>
-          <div className="flex gap-18 justify-start">
             <FormControl>
               <FormLabel>Ange fakturans referensnummer</FormLabel>
               <Input

@@ -7,13 +7,15 @@ import {
   Contract,
   Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
-  StakeholderType as ContractStakeholderType,
   ContractType,
   Fees,
+  InvoicedIn,
   LeaseType,
   Parameter,
+  Party,
   StakeholderType,
   Status,
+  TimeUnit,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
@@ -308,15 +310,7 @@ const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
   }
 };
 
-const toContractStakeholderType = (type: StakeholderType): ContractStakeholderType => {
-  if (type === StakeholderType.ORGANIZATION) {
-    return ContractStakeholderType.MUNICIPALITY;
-  }
-  return type as ContractStakeholderType;
-};
-
 export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOwnerOrContact): ContractStakeholder => {
-  // const phone = stakeholder.contactInformation?.find(c => c.contactType === 'PHONE')?.value;
   const phone = stakeholder.phoneNumbers?.[0] || '';
   const email = stakeholder.emails?.[0] || '';
   const address: Address = {
@@ -336,7 +330,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
   ];
   const contractStakeholderType = stakeholder.stakeholderType as StakeholderType;
   return {
-    ...(stakeholder.stakeholderType && { type: toContractStakeholderType(contractStakeholderType) }),
+    ...(stakeholder.stakeholderType && { type: contractStakeholderType }),
     roles: stakeholder.roles.map(toContractStakeholderRole),
     ...(stakeholder.personalNumber && { personalNumber: stakeholder.personalNumber }),
     ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
@@ -388,7 +382,6 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        // FIXME Ska den första raden alltså sättas till `Avgift, ${data.leaseType.toLocaleLowercase()}`?
         `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
         data.fees?.additionalInformation?.[1] ?? '',
       ],
@@ -407,7 +400,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     fees: fees,
     invoicing: {
-      invoicedIn: data.invoicing?.invoicedIn,
+      invoicedIn: InvoicedIn.ADVANCE,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
     start: data.start,
