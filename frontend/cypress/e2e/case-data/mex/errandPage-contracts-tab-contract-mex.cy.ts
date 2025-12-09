@@ -153,8 +153,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         );
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
@@ -201,8 +201,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
@@ -220,11 +220,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="avtalstid-end"]').should('exist').type('2025-12-01');
 
       cy.get('[data-cy="lessee-notice-unit"]').should('exist').select(TimeUnit.DAYS);
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
       cy.get('[data-cy="lessee-notice-party"]').should('have.value', 'LESSEE');
 
       cy.get('[data-cy="lessor-notice-unit"]').should('exist').select(TimeUnit.MONTHS);
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
       cy.get('[data-cy="lessor-notice-party"]').should('have.value', 'LESSOR');
 
       cy.get('[data-cy="autoextend-true-radiobutton"]').should('exist').check({ force: true });
@@ -263,17 +263,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="invoice-interval-halfyearly-radiobutton"]').should('exist');
       cy.get('[data-cy="invoice-interval-quarterly-radiobutton"]').should('exist').check({ force: true });
 
-      cy.get('[data-cy="invoice-in-advance-radiobutton"]').should('exist').check({ force: true });
-      cy.get('[data-cy="invoice-in-arrears-radiobutton"]').should('exist');
-
       cy.get('[data-cy="invoice-markup-input"]').should('exist');
 
       cy.get('[data-cy="fees-additional-information-0-input"]').should('exist');
       cy.get('[data-cy="fees-additional-information-1-input"]').should('exist').type('Foobar');
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').type('15');
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').type('1');
+      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
+      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
 
       cy.get('[data-cy="lopande-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {

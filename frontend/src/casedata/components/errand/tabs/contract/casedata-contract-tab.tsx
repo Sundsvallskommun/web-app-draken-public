@@ -26,7 +26,7 @@ import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -42,16 +42,20 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
-      notices: yup
-        .array()
-        .of(
-          yup.object({
-            party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
-            periodOfNotice: yup.string().required('Antal måste anges'),
-            unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
-          })
-        )
-        .min(2),
+      notices: yup.array().when('type', {
+        is: (type: ContractType) => type === ContractType.LEASE_AGREEMENT,
+        then: (schema) =>
+          schema
+            .of(
+              yup.object({
+                party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
+                periodOfNotice: yup.string().required('Antal måste anges'),
+                unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
+              })
+            )
+            .min(2),
+        otherwise: (schema) => schema,
+      }),
       extension: yup.object({
         autoExtend: yup.boolean(),
         leaseExtension: yup.string().when('autoExtend', {
@@ -93,14 +97,12 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
     useAppContext();
   const [loading, setIsLoading] = useState<string>();
-  const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
   const [existingContract, setExistingContract] = useState<ContractData>(undefined);
   const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);
   const [buyers, setBuyers] = useState<StakeholderWithPersonnumber[]>([]);
   const [lessees, setLessees] = useState<StakeholderWithPersonnumber[]>([]);
   const [lessors, setLessors] = useState<StakeholderWithPersonnumber[]>([]);
   const toastMessage = useSnackbar();
-  const removeConfirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -117,23 +119,9 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
       casedataStakeholderToContractStakeholder
     );
-    // Should lessors be fetched from errand stakeholders or *always* set to Sundsvalls kommun?
     const _lessors: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER).map(
       casedataStakeholderToContractStakeholder
     );
-    // const sundsvallsKommun: Stakeholder = {
-    //   type: StakeholderType.MUNICIPALITY,
-    //   roles: [StakeholderRole.LESSOR],
-    //   organizationName: 'Sundsvalls kommun',
-    //   organizationNumber: '212000-2411',
-    //   address: {
-    //     type: AddressType.POSTAL_ADDRESS,
-    //     streetAddress: 'Stadsbyggnadsnämnden',
-    //     postalCode: '851 85',
-    //     town: 'Sundsvall',
-    //   },
-    // };
-    // const _lessors = [sundsvallsKommun];
     setSellers(_sellers || []);
     setBuyers(_buyers || []);
     setLessees(_lessees || []);
@@ -253,6 +241,9 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   }, [errand]);
 
   const contractType = contractForm.watch('type') as ContractType;
+  useEffect(() => {
+    contractForm.trigger();
+  }, [contractType, contractForm]);
 
   return (
     <FormProvider {...contractForm}>
