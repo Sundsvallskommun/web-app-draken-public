@@ -12,6 +12,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockNotifications } from '../fixtures/mockNotifications';
 import { mockRelations } from '../fixtures/mockRelations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Register errand', () => {
@@ -31,6 +32,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
       );
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
       cy.visit('/registrera');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     });

@@ -1,7 +1,6 @@
 import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -14,7 +13,7 @@ export const CaseAdminsValues = {
 };
 
 interface SupportManagementFilterAdminsProps {
-  administrators?: (SupportAdmin | Admin)[];
+  administrators?: Admin[];
 }
 
 export const SupportManagementFilterAdmins: React.FC<SupportManagementFilterAdminsProps> = ({ administrators }) => {

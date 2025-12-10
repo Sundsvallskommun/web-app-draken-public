@@ -77,6 +77,7 @@
     "cypress-intercept-formdata": "^0.6.0",
     "dayjs": "^1.11.13",
     "envalid": "^8.1.0",
+    "escape-string-regexp": "^5.0.0",
     "i18next": "^24.2.3",
     "i18next-resources-to-backend": "^1.2.1",
     "next": "15.5.7",

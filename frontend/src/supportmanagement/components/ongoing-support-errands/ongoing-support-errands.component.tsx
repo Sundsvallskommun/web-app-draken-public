@@ -4,7 +4,6 @@ import { attestationEnabled } from '@common/services/feature-flag-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import store from '@supportmanagement/services/storage-service';
-import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -56,8 +55,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const {
     supportMetadata,
     setSupportErrand,
-    setSupportAdmins,
-    supportAdmins,
+    administrators,
     municipalityId,
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
@@ -224,14 +222,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     //eslint-disable-next-line
   }, [errands]);
 
-  useEffect(() => {
-    // getAdminUsers().then((data) => {
-    //   setAdministrators(data);
-    // });
-    getSupportAdmins().then(setSupportAdmins);
-    //eslint-disable-next-line
-  }, []);
-
   useDebounceEffect(
     () => {
       const fObj = {};
@@ -352,7 +342,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
               numberOfFilters={numberOfFilters}
               ownerFilterHandler={ownerFilteringHandler}
               ownerFilter={ownerFilter}
-              administrators={supportAdmins}
+              administrators={administrators}
             />
           </FormProvider>
         </div>

@@ -28,6 +28,7 @@ export const SaveButtonComponent: React.FC<{
   } = useAppContext();
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const router = useRouter();
+  const [internalLoading, setInternalLoading] = useState(false);
 
   const { registeringNewErrand } = props;
   const { handleSubmit, formState }: UseFormReturn<IErrand, any, undefined> = useFormContext();
@@ -55,8 +56,10 @@ export const SaveButtonComponent: React.FC<{
           errand.status?.statusType === ErrandStatus.Parkerad
         }
         type="button"
-        onClick={handleSubmit(() => {
-          saveErrand();
+        onClick={handleSubmit(async () => {
+          setInternalLoading(true);
+          await saveErrand();
+          setInternalLoading(false);
         })}
         color={
           (props.color as
@@ -71,7 +74,7 @@ export const SaveButtonComponent: React.FC<{
             | 'juniskar') || 'primary'
         }
         rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
-        loading={props.loading}
+        loading={props.loading || internalLoading}
         loadingText="Sparar"
       >
         {props.label || 'Spara'}

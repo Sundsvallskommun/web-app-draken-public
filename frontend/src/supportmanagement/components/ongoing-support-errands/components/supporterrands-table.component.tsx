@@ -8,7 +8,6 @@ import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Channels,
   Status,
@@ -24,13 +23,14 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 import { SupportStatusLabelComponent } from './support-status-label.component';
+import { Admin } from '@common/services/user-service';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const {
     supportErrands: data,
     supportMetadata,
-    supportAdmins,
+    administrators,
     municipalityId,
     selectedSupportErrandStatuses,
   }: AppContextInterface = useAppContext();
@@ -240,10 +240,9 @@ export const SupportErrandsTable: React.FC = () => {
         ) : null}
         <Table.Column>
           {getAdminName(
-            supportAdmins?.find((a: SupportAdmin) =>
+            administrators?.find((a: Admin) =>
               errand.assignedUserId ? a.adAccount === errand.assignedUserId : a.adAccount === errand.assignedUserId
-            ),
-            errand
+            )
           )}
         </Table.Column>
       </Table.Row>

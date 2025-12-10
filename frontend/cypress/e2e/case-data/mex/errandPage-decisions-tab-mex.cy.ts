@@ -14,6 +14,7 @@ import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockContract } from '../fixtures/mockContract';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Decisions tab', () => {
@@ -47,6 +48,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
 
       cy.visit(`/arende/2281/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
@@ -78,11 +80,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('disables save button if no decision is selected', () => {
+    it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
       cy.contains('Förslag till beslut måste anges').should('exist');
-      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.enabled');
+      cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('be.disabled');
     });
   });
 });

@@ -7,10 +7,9 @@ import { validateAttachmentsForDecision } from '@casedata/services/casedata-atta
 import {
   getErrand,
   isErrandLocked,
-  phaseChangeInProgress,
-  triggerErrandPhaseChange,
   validateAction,
   validateErrandForDecision,
+  validateExtraParametersForDecision,
   validateStakeholdersForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
@@ -24,6 +23,7 @@ import { IconName } from 'lucide-react/dynamic';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
+import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 
 export const PhaseChanger = () => {
   const {
@@ -102,6 +102,8 @@ export const PhaseChanger = () => {
           ? 'Ärendet har fel status för att beslut ska kunna fattas.'
           : !validateStakeholdersForDecision(errand).valid
           ? 'Ärendet saknar ärendeägare.'
+          : !validateExtraParametersForDecision(errand).valid
+          ? `Ärendeuppgifter saknas: ${validateExtraParametersForDecision(errand).reason}`
           : undefined,
       });
     } else if (uiPhase === UiPhase.beslut) {

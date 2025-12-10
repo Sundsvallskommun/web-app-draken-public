@@ -2,16 +2,11 @@ import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-w
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
-import {
-  emptyErrand,
-  getErrandByErrandNumber,
-  getUiPhase,
-  isErrandLocked,
-} from '@casedata/services/casedata-errand-service';
+import { emptyErrand, getErrandByErrandNumber, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { Admin, getAdminUsers, getMe } from '@common/services/user-service';
+import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -22,11 +17,7 @@ import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
-
-type IErrandFormData = Pick<
-  IErrand,
-  'caseType' | 'channel' | 'description' | 'municipalityId' | 'phase' | 'priority' | 'status'
->;
+import { getUiPhase } from '@casedata/services/process-service';
 
 export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   let formSchema = yup
@@ -51,13 +42,11 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
     municipalityId,
     errand,
     setErrand,
-    setAdministrators,
     setUiPhase,
   }: {
     municipalityId: string;
     errand: IErrand;
     setErrand: any;
-    setAdministrators: (admins: Admin[]) => void;
     setUiPhase: (phase: UiPhase) => void;
   } = useAppContext();
   const toastMessage = useSnackbar();
@@ -77,13 +66,6 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
   };
   const router = useRouter();
   const { setUser } = useAppContext();
-
-  useEffect(() => {
-    getAdminUsers().then((data) => {
-      setAdministrators(data);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     setInitialFocus();

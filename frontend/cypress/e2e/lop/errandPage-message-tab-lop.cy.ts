@@ -1,10 +1,12 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
-import { interceptFormData } from 'cypress-intercept-formdata';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
+import { goToMessageTab, sendEmailWithAttachment, sendSmsMessage } from '../utils/messages-cy';
+import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockMissingRootMessage,
@@ -13,8 +15,6 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
-import { mockRelations } from './fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Message tab', () => {
@@ -45,13 +45,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         'getConversationMessages'
       );
     });
-
-    const goToMessageTab = () => {
-      cy.visit('arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
-      cy.wait('@getSupportErrand');
-      cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
-      cy.get('button').contains('Meddelanden').should('exist').click();
-    };
 
     it('views messages in inbox', () => {
       cy.intercept(
@@ -118,60 +111,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
     it('sends sms', () => {
       goToMessageTab();
-      cy.get('[data-cy="new-message-button"]').should('exist').click();
-
-      cy.get('[data-cy="message-channel-radio-button-group"]').should('exist');
-      cy.get('[data-cy="useEmail-radiobutton-true"]').should('exist');
-      cy.get('[data-cy="useSms-radiobutton-true"]').should('exist').check({ force: true });
-
-      cy.get('[data-cy="decision-richtext-wrapper"]')
-        .first()
-        .should('exist')
-        .clear()
-        .type('Mock message', { delay: 100 });
-      cy.get('[data-cy="newPhoneNumber"]').first().should('exist').clear().type('+46701740635', { delay: 100 });
-      cy.get('[data-cy="newPhoneNumber-button"]').first().should('exist').click({ force: true });
-
-      cy.get('[data-cy="send-message-button"]').first().should('exist').click();
-      cy.wait('@sendMessage').should(({ request }) => {
-        const data = interceptFormData(request as any);
-        expect(data['contactMeans']).to.equal('sms');
-        expect(data['plaintextMessage']).to.equal('Mock message');
-        expect(data['recipientPhone']).to.equal('+46701740635');
-      });
+      sendSmsMessage();
     });
 
     it('sends email with attachment', () => {
       goToMessageTab();
-      cy.get('[data-cy="new-message-button"]').should('exist').click();
-
-      cy.get('[data-cy="decision-richtext-wrapper"]')
-        .first()
-        .should('exist')
-        .clear()
-        .type('Mock message', { delay: 100 });
-
-      cy.get('[data-cy="message-channel-radio-button-group"]').should('exist');
-      cy.get('[data-cy="useEmail-radiobutton-true"]').should('exist').check({ force: true });
-      cy.get('[data-cy="useSms-radiobutton-true"]').should('exist');
-      cy.get('[data-cy="new-email-input"]').first().should('exist').clear().type('test@example.com', { delay: 100 });
-      cy.get('[data-cy="add-new-email-button"]').first().should('exist').click({ force: true });
-
-      cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
-      cy.get('button').contains('Bläddra').should('exist').click();
-      cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/empty-attachment.txt', { force: true });
-      cy.get('.sk-form-error-message').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
-      cy.get('button').contains('Bläddra').should('exist').click();
-      cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/attachment.txt', { force: true });
-      cy.get('[data-cy="upload-button"]').contains('Ladda upp').should('exist').click();
-
-      cy.get('[data-cy="send-message-button"]').first().should('exist').click();
-      cy.wait('@sendMessage').should(({ request }) => {
-        const data = interceptFormData(request as any);
-        expect(data['contactMeans']).to.equal('email');
-        expect(data['plaintextMessage']).to.equal('Mock message');
-        expect(data['files']).to.equal('attachment.txt');
-      });
+      sendEmailWithAttachment();
     });
   });
 });
