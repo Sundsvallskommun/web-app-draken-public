@@ -154,15 +154,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       sortable: true,
       shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
       render: (errand) => {
-        return (
-          <>
-            {getAdminName(
-              administrators?.find((a: Admin) =>
-                errand.assignedUserId ? a.adAccount === errand.assignedUserId : a.adAccount === errand.assignedUserId
-              )
-            )}
-          </>
-        );
+        return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId))}</>;
       },
     },
     {
@@ -171,15 +163,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       sortable: true,
       shownForStatus: [Status.NEW],
       render: (errand) => {
-        return (
-          <>
-            {getAdminName(
-              administrators?.find((a: Admin) =>
-                errand.assignedUserId ? a.adAccount === errand.assignedUserId : a.adAccount === errand.assignedUserId
-              )
-            )}
-          </>
-        );
+        return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId))}</>;
       },
     },
   ];
