@@ -11,6 +11,8 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
     supportErrand: SupportErrand;
   } = useAppContext();
 
+  const isOpenEErrand = !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
+
   const simpleParams = useMemo(
     () =>
       supportErrand.parameters?.filter((p) => {
@@ -58,8 +60,8 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
         <div className="rounded-lg gap-md p-16">
-          <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
-          {supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value ? (
+          {isOpenEErrand || simpleParams.length > 0 ? <h3 className="text-h3-md mb-12">Grunduppgifter</h3> : null}
+          {isOpenEErrand ? (
             <div className="flex flex-row gap-md">
               <strong>Ärendenummer i e-tjänst</strong>
               <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>

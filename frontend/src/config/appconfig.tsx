@@ -28,6 +28,7 @@ interface AppConfigFeatures {
   useRequireContactChannel: boolean;
   useRelations: boolean;
   useMyPages: boolean;
+  useUiPhases: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -57,5 +58,6 @@ export const appConfig: AppConfig = {
     useRequireContactChannel: process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL === 'true',
     useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true', //Temporary
     useMyPages: process.env.NEXT_PUBLIC_USE_MY_PAGES === 'true',
+    useUiPhases: process.env.NEXT_PUBLIC_USE_UI_PHASES === 'true',
   },
 };
