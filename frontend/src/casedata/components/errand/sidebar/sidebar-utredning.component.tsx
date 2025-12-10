@@ -10,7 +10,6 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
-import { sanitized } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
@@ -26,7 +25,7 @@ export interface UtredningFormModel {
   personalNumber?: string;
   errandCaseType?: string;
   description: string;
-  law: Law;
+  law: Law[];
   outcome: string;
   validFrom?: string;
   validTo?: string;
@@ -41,7 +40,7 @@ let formSchema = yup
     personalNumber: yup.string(),
     errandCaseType: yup.string(),
     description: yup.string().required('Text måste anges'),
-    law: yup.object(),
+    law: yup.array(),
     outcome: yup.string(),
     validFrom: yup.string(),
     validTo: yup.string(),

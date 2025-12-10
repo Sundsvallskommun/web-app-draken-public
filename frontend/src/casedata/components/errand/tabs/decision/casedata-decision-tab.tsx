@@ -39,6 +39,7 @@ import {
   validateOwnerForSendingDecisionByLetter,
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
+import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
@@ -65,7 +66,6 @@ import { CasedataMessageTabFormModel } from '../messages/message-composer.compon
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -97,24 +97,31 @@ let formSchema = yup
     law: yup.array().min(1, 'Lagrum måste anges'),
     outcome: yup
       .string()
-      .required('Förslag till beslut måste anges')
-      .test('outcomecheck', 'Förslag till beslut måste anges', (outcome) => {
-        return outcome !== 'Välj beslut';
+      .required('Beslut måste anges')
+      .test('outcomecheck', 'Beslut måste anges', (outcome) => {
+        return outcome !== '' && outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
       ? yup.string().when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
-          return outcome === 'Bifall' ? schema.required('Giltig från måste anges') : schema.notRequired();
+          return outcome === 'APPROVAL' ? schema.required('Giltig från måste anges') : schema.notRequired();
         })
       : yup.string(),
 
     validTo: isPT()
-      ? yup.string().test({
-          name: 'Test av datum',
-          message: 'Slutdatum måste vara efter startdatum',
-          test: (value, context) =>
-            context.parent.outcome !== 'Bifall' ||
-            (Date.parse(context.parent.validFrom) < Date.parse(value.toString()) && value.length !== 0),
-        })
+      ? yup
+          .string()
+          .when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+            return outcome === 'APPROVAL' ? schema.required('Giltig till måste anges') : schema.notRequired();
+          })
+          .test({
+            name: 'validTo-after-validFrom',
+            message: 'Slutdatum måste vara efter startdatum',
+            test: (value, context) => {
+              if (context.parent.outcome !== 'APPROVAL') return true;
+              if (!value || !context.parent.validFrom) return true;
+              return Date.parse(context.parent.validFrom) < Date.parse(value);
+            },
+          })
       : yup.string(),
   })
   .required();
@@ -137,8 +144,20 @@ export const CasedataDecisionTab: React.FC<{
   const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<KopeAvtalsData | LagenhetsArrendeData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
-  const [selectedLaws, setSelectedLaws] = useState<string[]>([]);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
+
+  const [initialLawValues] = useState<string[]>(() => {
+    const sortedDec = [...errand.decisions].sort(
+      (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
+    );
+    const existingDecision = sortedDec[0];
+
+    if (existingDecision?.decisionType === 'FINAL' && existingDecision.law?.length > 0) {
+      return existingDecision.law.map((law) => law.heading);
+    }
+
+    return getLawMapping(errand).map((law) => law.heading);
+  });
 
   const ownerPartyId = getOwnerStakeholder(errand)?.personId;
   const assetType = 'FTErrandAssets';
@@ -165,12 +184,6 @@ export const CasedataDecisionTab: React.FC<{
   }, [props, refetchServices]);
 
   useEffect(() => {
-    const laws = getValues('law')?.map((law) => law.heading) ?? [];
-    setSelectedLaws(laws);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -193,9 +206,9 @@ export const CasedataDecisionTab: React.FC<{
       errandNumber: errand.errandNumber,
       personalNumber: getOwnerStakeholder(errand)?.personalNumber,
       errandCaseType: errand.caseType,
-      law: getLawMapping(errand),
+      law: [],
       decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
-      outcome: 'Välj beslut',
+      outcome: '',
       validFrom: '',
       validTo: '',
     },
@@ -223,12 +236,6 @@ export const CasedataDecisionTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, outcome, validFrom, validTo]);
 
-  useEffect(() => {
-    const laws = getValues('law')?.map((law) => law.heading) ?? [];
-    setSelectedLaws(laws);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const triggerPhaseChange = () => {
     return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
@@ -241,7 +248,6 @@ export const CasedataDecisionTab: React.FC<{
             status: 'success',
           })
         );
-        setIsLoading(false);
       })
       .catch(() => {
         toastMessage({
@@ -393,7 +399,6 @@ export const CasedataDecisionTab: React.FC<{
     try {
       setIsPreviewLoading(true);
       const data = getValues();
-      data.outcome = data.outcome;
       let pdfData: {
         pdfBase64: string;
         error?: string;
@@ -464,25 +469,29 @@ export const CasedataDecisionTab: React.FC<{
     trigger('description');
   };
 
-  const sortedDec = errand.decisions.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  const sortedDec = [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
 
   useEffect(() => {
-    const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
-
     setValue('errandId', errand.id);
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
-      setValue('id', existingDecision.id.toString());
-      setValue('description', existingDecision.description);
-      setValue('outcome', existingDecision.decisionOutcome);
-      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'));
-      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'));
+      setValue('id', existingDecision.id.toString(), { shouldDirty: false });
+      setValue('description', existingDecision.description, { shouldDirty: false });
+      setValue('outcome', existingDecision.decisionOutcome, { shouldDirty: false });
+      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'), { shouldDirty: false });
+      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'), { shouldDirty: false });
+
+      if (existingDecision.law && existingDecision.law.length > 0) {
+        setValue('law', existingDecision.law, { shouldDirty: false });
+      }
     } else {
-      setValue('id', undefined);
+      setValue('id', undefined, { shouldDirty: false });
     }
-    trigger();
+
+    props.setUnsaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand]);
+  }, [errand.id]);
 
   const changeTemplate = (InTemplate) => {
     let content = 'Hej!<br><br>';
@@ -542,7 +551,7 @@ export const CasedataDecisionTab: React.FC<{
             <FormLabel>Beslut</FormLabel>
             <Input data-cy="decision-outcome-input" type="hidden" {...register('outcome')} />
             <Select
-              className={cx(`w-full`, errors.outcome ? 'border-error' : '')}
+              className={`w-full`}
               data-cy="decision-outcome-select"
               size="sm"
               onChange={(e) => {
@@ -566,34 +575,27 @@ export const CasedataDecisionTab: React.FC<{
                 Ärendet avskrivs
               </Select.Option>
             </Select>
-            {errors.outcome && (
-              <div className="my-sm text-error">
-                <FormErrorMessage>{errors.outcome.message}</FormErrorMessage>
-              </div>
-            )}
+            {errors.outcome && <FormErrorMessage className="text-error">{errors.outcome.message}</FormErrorMessage>}
           </FormControl>
 
           {isPT() && (
             <>
               <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
-                <Input type="hidden" {...register('law')} />
                 <Combobox
                   multiple
                   placeholder="Välj lagrum"
-                  value={selectedLaws}
+                  value={initialLawValues}
                   size="sm"
-                  onChange={(e) => {
-                    const newValue = e.target.value as string[];
-                    setSelectedLaws(newValue);
-                    const newLaws = getLawMapping(errand).filter((law) => newValue.includes(law.heading));
-                    setValue('law', newLaws, { shouldDirty: true });
-                    props.setUnsaved(true);
-                    trigger('law');
-                  }}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
-                    setSelectedLaws(selected);
+                    const newLaws = getLawMapping(errand).filter((law) => selected.includes(law.heading));
+                    setValue('law', newLaws, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    });
+                    props.setUnsaved(true);
                   }}
                 >
                   <Combobox.Input />
@@ -605,9 +607,7 @@ export const CasedataDecisionTab: React.FC<{
                     ))}
                   </Combobox.List>
                 </Combobox>
-                <div className="my-sm text-error">
-                  {errors.law && formState.dirtyFields.law && <FormErrorMessage>{errors.law.message}</FormErrorMessage>}
-                </div>
+                {errors.law && <FormErrorMessage className="text-error">{errors.law.message}</FormErrorMessage>}
               </FormControl>
 
               <FormControl className="w-full">
@@ -616,10 +616,13 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validFrom')}
                   size="sm"
-                  disabled={isSent()}
+                  disabled={isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validFrom-input"
                 />
+                {errors.validFrom && (
+                  <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
+                )}
               </FormControl>
 
               <FormControl className="w-full">
@@ -628,10 +631,11 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validTo')}
                   size="sm"
-                  disabled={isSent()}
+                  disabled={isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validTo-input"
                 />
+                {errors.validTo && <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>}
               </FormControl>
             </>
           )}
@@ -699,7 +703,7 @@ export const CasedataDecisionTab: React.FC<{
             variant="secondary"
             color="primary"
             size="md"
-            onClick={onSubmit}
+            onClick={handleSubmit(onSubmit, onError)}
             loading={isLoading}
             loadingText="Sparar"
             disabled={isErrandLocked(errand) || !allowed || isSent()}
