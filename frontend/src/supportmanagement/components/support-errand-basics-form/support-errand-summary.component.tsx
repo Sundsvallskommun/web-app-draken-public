@@ -34,7 +34,7 @@ export const SupportErrandSummary: React.FC<{}> = () => {
 
           <div className="pr-sm">
             <div data-cy="errandRegisteredLabel" className="font-bold">
-              Inkom via {Channels[supportErrand.channel].toLowerCase()}
+              Inkom via {Channels[supportErrand.channel]?.toLowerCase()}
             </div>
             <div data-cy="errandRegistered">{prettyTime(supportErrand?.created)}</div>
           </div>
