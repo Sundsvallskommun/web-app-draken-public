@@ -304,7 +304,6 @@ const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
     case Role.PROPERTY_OWNER:
       return ContractStakeholderRole.LESSOR;
     case Role.APPLICANT:
-    //   return ContractStakeholderRole.APPLICANT;
     default:
       return ContractStakeholderRole.CONTACT_PERSON; // Default role
   }
@@ -393,7 +392,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       ],
       ...(data.indexAdjusted && { indexYear: 2025 }),
       ...(data.indexAdjusted && { indexNumber: 419.35 }),
-      ...(data.indexAdjusted && { indexationRate: 1.0 }),
+      ...(data.indexAdjusted && { indexationRate: 1 }),
       // FIXME indexType saknas i APIet
       // ...(data.indexAdjusted && {indexType: 'KPI 80'}),
     };

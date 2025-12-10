@@ -7,6 +7,7 @@ import {
   InvoicedIn,
   LeaseType,
   StakeholderRole,
+  Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
 import { onlyOn } from '@cypress/skip-test';
@@ -24,6 +25,7 @@ import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { IErrand } from '@casedata/interfaces/errand';
+import { Role } from '@casedata/interfaces/role';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -33,10 +35,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
+
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
-      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/stakeholders/personNumber').as('getStakeholders');
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
@@ -44,6 +46,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
       cy.intercept('POST', '**/contracts', contractText).as('postLandLeaseContract');
       cy.intercept('PUT', '**/contracts/2024-01026', contractText).as('putContract');
+      cy.intercept('POST', '**/contracts', contractText).as('postContract');
       cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
         'getContractAttachment'
       );
@@ -61,14 +64,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-
-      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
-      cy.wait('@getErrand');
-      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.wait('@getContract');
-      cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
-
-      cy.get('[data-cy="contract-type-select"]').should('exist');
     });
 
     const contractText = {
@@ -77,8 +72,33 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         externalReferenceId: '123123',
         status: 'ACTIVE',
         propertyDesignations: ['SUNDSVALL BLA'],
-        type: 'LAND_LEASE',
+        type: 'LEASE_AGREEMENT',
       },
+    };
+
+    const visitErrandContractTab = () => {
+      cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrandById');
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getContract');
+      cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+      cy.get('[data-cy="contract-type-select"]').should('exist');
+    };
+
+    const visitErrandWithoutContract = () => {
+      const mockMexErrand_base_without_contract = { ...mockMexErrand_base };
+      mockMexErrand_base_without_contract.data.extraParameters = mockMexErrand_base.data.extraParameters.filter(
+        (p) => p.key !== 'contractId'
+      );
+      cy.intercept('GET', '**/errand/101', mockMexErrand_base_without_contract).as('getErrandByIdNoContract');
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base_without_contract).as('getErrandNoContract');
+      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
+      cy.wait('@getErrandNoContract');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+      cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
     it('shows uploaded contracts', () => {
@@ -88,6 +108,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
         {}
       );
+      visitErrandContractTab();
       cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary.sk-disclosure-header-icon')
         .should('exist')
         .click();
@@ -110,11 +131,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('shows the correct contracts information', () => {
+      visitErrandContractTab();
       const landLeaseType = [
         { key: 'parties', label: 'Parter' },
         { key: 'area', label: 'Område' },
         { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
-        { key: 'lopande', label: 'Löpande fakturering' },
+        { key: 'lopande', label: 'Löpande avgift' },
         { key: 'engangs', label: 'Engångsfakturering' },
         { key: 'signerade', label: 'Signerade avtal' },
       ];
@@ -135,6 +157,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     // Parter
     it('manages parties in land lease contracts', () => {
+      visitErrandContractTab();
       cy.get('[data-cy="parties-disclosure"]').should('exist');
       cy.get('[data-cy="Upplåtare-table"] .sk-table-tbody-tr')
         .should('exist')
@@ -175,6 +198,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     // Område
     it('manages property designations in land lease contracts', () => {
+      visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
@@ -213,6 +237,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     // Avtalstid och uppsägning
     it('manages tenancy period automatically in land lease contracts', () => {
+      visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
@@ -248,6 +273,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     // Löpande avgift
     it('manages lease fee automatically in land lease contracts', () => {
+      visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
@@ -285,6 +311,223 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           yearly: 120,
           total: 120,
           additionalInformation: ['Avgift, båtplats', 'Foobar'],
+        });
+      });
+    });
+
+    it('manages creating a new lease agreement with correct default values', () => {
+      visitErrandWithoutContract();
+      cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
+        cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.USUFRUCT_MOORING);
+
+      cy.get('[data-cy="Upplåtare-table"]').should('exist');
+
+      cy.get('[data-cy="Upplåtare-table"]')
+        .should('exist')
+        .find('[data-cy="Upplåtare-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 1');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Upplåtare');
+        });
+
+      cy.get('[data-cy="Arrendatorer-table"]').should('exist');
+
+      cy.get('[data-cy="Arrendatorer-table"]')
+        .should('exist')
+        .find('[data-cy="Arrendatorer-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Arrendatorsson');
+          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 41');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Arrendator');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Fakturamottagare');
+        });
+
+      cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
+
+      cy.wait('@postContract').should(({ request }) => {
+        const leaseAgreement: Contract = request.body;
+        expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
+        expect(leaseAgreement.leaseType).to.equal(LeaseType.USUFRUCT_MOORING);
+        const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
+        const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
+        expect(lessor.firstName).to.equal(
+          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.PROPERTY_OWNER))?.firstName ?? ''
+        );
+        expect(lessee.firstName).to.equal(
+          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.LEASEHOLDER))?.firstName ?? ''
+        );
+        expect(leaseAgreement.notices).to.deep.equal([
+          { party: 'LESSEE', periodOfNotice: 3, unit: TimeUnit.MONTHS },
+          { party: 'LESSOR', periodOfNotice: 3, unit: TimeUnit.MONTHS },
+        ]);
+        expect(leaseAgreement.extension).to.deep.equal({
+          unit: TimeUnit.DAYS,
+        });
+        expect(leaseAgreement).to.deep.equal({
+          extension: { unit: 'DAYS' },
+          fees: {
+            yearly: null,
+            monthly: 0,
+            total: null,
+            currency: 'SEK',
+            additionalInformation: ['Avgift, båtplats', ''],
+          },
+          invoicing: { invoicedIn: 'ADVANCE' },
+          start: '',
+          end: '',
+          notices: [
+            { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
+            { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
+          ],
+          propertyDesignations: [],
+          contractId: '',
+          type: 'LEASE_AGREEMENT',
+          leaseType: 'USUFRUCT_MOORING',
+          status: 'DRAFT',
+          externalReferenceId: '',
+          stakeholders: [
+            {
+              type: 'PERSON',
+              roles: ['CONTACT_PERSON', 'LESSEE', 'PRIMARY_BILLING_PARTY'],
+              firstName: 'Test',
+              lastName: 'Arrendatorsson',
+              parameters: [{ key: 'extraParameter', values: [''] }],
+              phone: { value: '0701740635' },
+              email: { value: 'a@example.com' },
+              address: {
+                type: 'POSTAL_ADDRESS',
+                streetAddress: 'Testgata 41',
+                postalCode: '12345',
+                town: 'Staden',
+                country: '',
+                attention: '',
+                careOf: '',
+              },
+            },
+            {
+              type: 'PERSON',
+              roles: ['CONTACT_PERSON', 'LESSOR'],
+              firstName: 'Test',
+              lastName: 'Upplåtarsson',
+              parameters: [{ key: 'extraParameter', values: [''] }],
+              phone: { value: '0701740635' },
+              email: { value: 'a@example.com' },
+              address: {
+                type: 'POSTAL_ADDRESS',
+                streetAddress: 'Testgata 1',
+                postalCode: '12345',
+                town: 'Staden',
+                country: '',
+                attention: '',
+                careOf: '',
+              },
+            },
+          ],
+          extraParameters: [{ name: 'errandId', parameters: { errandId: '101' } }],
+        });
+      });
+    });
+
+    it('manages creating a new purchase agreement with correct default values', () => {
+      visitErrandWithoutContract();
+
+      // Switch to PURCHASE_AGREEMENT
+      cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.PURCHASE_AGREEMENT);
+
+      cy.get('[data-cy="Upplåtare-table"]').should('not.exist');
+      cy.get('[data-cy="Arrendatorer-table"]').should('not.exist');
+      cy.get('[data-cy="Köpare-table"]').should('exist');
+      cy.get('[data-cy="Säljare-table"]').should('exist');
+
+      cy.get('[data-cy="Köpare-table"]')
+        .should('exist')
+        .find('[data-cy="Köpare-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Köparsson');
+          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 2');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Köpare');
+        });
+
+      cy.get('[data-cy="Säljare-table"]')
+        .should('exist')
+        .find('[data-cy="Säljare-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Daniella Testarsson');
+          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 41');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Säljare');
+        });
+
+      cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
+
+      cy.wait('@postContract').should(({ request }) => {
+        const purchaseAgreement: Contract = request.body;
+        expect(purchaseAgreement.type).to.equal(ContractType.PURCHASE_AGREEMENT);
+        expect(purchaseAgreement.leaseType).to.be.undefined;
+        const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
+        const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
+        expect(seller.firstName).to.equal(
+          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.SELLER))?.firstName ?? ''
+        );
+        expect(buyer.firstName).to.equal(
+          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.BUYER))?.firstName ?? ''
+        );
+        expect(purchaseAgreement).to.deep.equal({
+          contractId: '',
+          externalReferenceId: '',
+          propertyDesignations: [],
+          extraParameters: [
+            {
+              name: 'errandId',
+              parameters: {
+                errandId: '101',
+              },
+            },
+          ],
+          status: Status.DRAFT,
+          type: ContractType.PURCHASE_AGREEMENT,
+          stakeholders: [
+            {
+              type: 'PERSON',
+              roles: ['BUYER'],
+              firstName: 'Test',
+              lastName: 'Köparsson',
+              parameters: [{ key: 'extraParameter', values: [''] }],
+              phone: { value: '0701740635' },
+              email: { value: 'a@example.com' },
+              address: {
+                type: 'POSTAL_ADDRESS',
+                streetAddress: 'Testgata 2',
+                postalCode: '12345',
+                town: 'Staden',
+                country: '',
+                attention: '',
+                careOf: '',
+              },
+            },
+            {
+              type: 'PERSON',
+              roles: ['SELLER'],
+              firstName: 'Daniella',
+              lastName: 'Testarsson',
+              parameters: [{ key: 'extraParameter', values: [''] }],
+              phone: { value: '0701740635' },
+              email: { value: 'a@example.com' },
+              address: {
+                type: 'POSTAL_ADDRESS',
+                streetAddress: 'Testgata 41',
+                postalCode: '12345',
+                town: 'Staden',
+                country: '',
+                attention: '',
+                careOf: '',
+              },
+            },
+          ],
         });
       });
     });

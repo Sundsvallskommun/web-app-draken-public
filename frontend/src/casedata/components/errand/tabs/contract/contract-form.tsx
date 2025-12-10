@@ -73,7 +73,7 @@ export const ContractForm: React.FC<{
   });
 
   useEffect(() => {
-    lessors.forEach(async (s: StakeholderWithPersonnumber, idx) => {
+    lessors.forEach(async (s: StakeholderWithPersonnumber) => {
       const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
       s.personalNumber = ssn;
       setValue('lessors', lessors);
@@ -154,6 +154,7 @@ export const ContractForm: React.FC<{
         ) : (
           <div>
             <Button
+              data-cy="save-contract-button"
               disabled={!allowed}
               onClick={handleSubmit(
                 () => {
@@ -188,8 +189,8 @@ export const ContractForm: React.FC<{
       <Table.Body>
         {stakeholders?.length > 0 ? (
           stakeholders.map((b, idx) => (
-            <Table.Row key={`row-${idx}`}>
-              <Table.Column className="flex flex-col items-start justify-center !gap-0">
+            <Table.Row key={`row-${idx}`} data-cy={`${label}-row-${idx}`}>
+              <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-name`}>
                 <div>
                   <strong>{getContractStakeholderName(b)}</strong>
                 </div>
@@ -199,7 +200,10 @@ export const ContractForm: React.FC<{
                     : b.personalNumber}
                 </div>
               </Table.Column>
-              <Table.Column className="flex flex-col items-start justify-center !gap-0">
+              <Table.Column
+                className="flex flex-col items-start justify-center !gap-0"
+                data-cy={`party-${idx}-address`}
+              >
                 {b.address?.streetAddress && b.address?.postalCode && b.address?.town ? (
                   <>
                     <div>
@@ -214,7 +218,7 @@ export const ContractForm: React.FC<{
                   <strong>(saknas)</strong>
                 )}
               </Table.Column>
-              <Table.Column className="flex flex-col items-start justify-center !gap-0">
+              <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-role`}>
                 {b.roles?.length > 0 ? (
                   b.roles
                     .filter((r) => r !== StakeholderRole.CONTACT_PERSON)
@@ -266,6 +270,7 @@ export const ContractForm: React.FC<{
           <div>
             <Button
               size="sm"
+              data-cy="update-contract-parties"
               rightIcon={<LucideIcon name="refresh-ccw" />}
               variant="secondary"
               loading={updatingParties}
