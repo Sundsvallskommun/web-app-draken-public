@@ -105,7 +105,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="owner-filenumber"]').should('exist');
       cy.get('[data-cy="estate-changes"]').should('exist');
 
-      cy.get('[data-cy="area-and-actions-tab"]').click();
+      cy.get('[data-cy="area-and-actions-tab"]').should('exist').click({ force: true });
       cy.get('[data-cy="total-area"]').should('exist').contains(mockEstateInfo.data?.totalArea);
       cy.get('[data-cy="total-area-land"]').should('exist').contains(mockEstateInfo.data?.totalAreaLand);
       cy.get('[data-cy="total-area-water"]').should('exist').contains(mockEstateInfo.data?.totalAreaWater);

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["@simonsmith/cypress-image-snapshot/types"],
     "target": "es6",
     "lib": [
       "dom",

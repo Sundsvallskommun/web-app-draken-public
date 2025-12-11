@@ -27,6 +27,11 @@ import { getErrandPropertyDesignations } from '@casedata/services/casedata-facil
 import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
 
+const takeElementSnapshot = (dataCySelector: string) => {
+  cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView(); //.matchImageSnapshot(dataCySelector);
+  cy.matchImageSnapshot({ capture: 'fullPage' });
+};
+
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
     beforeEach(() => {
@@ -153,6 +158,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="lopande-disclosure"]').contains('Löpande avgift').should('exist');
       cy.get('[data-cy="engangs-disclosure"]').contains('Engångsfakturering').should('exist');
       cy.get('[data-cy="signerade-disclosure"]').contains('Signerade avtal').should('exist');
+      takeElementSnapshot('contract-wrapper');
     });
 
     // Parter
@@ -181,6 +187,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
+
+      takeElementSnapshot('parties-disclosure');
+
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
@@ -228,6 +237,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
       cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
 
+      takeElementSnapshot('area-disclosure');
+      // cy.get('[data-cy="area-disclosure"]').scrollIntoView();
+      // cy.matchImageSnapshot();
+
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
@@ -255,6 +268,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="autoextend-true-radiobutton"]').should('exist').check({ force: true });
       cy.get('[data-cy="extension-unit-selector"]').should('exist').select(TimeUnit.YEARS);
       cy.get('[data-cy="extension-input"]').should('exist').type('180');
+
+      takeElementSnapshot('avtalstid-disclosure');
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
@@ -298,6 +313,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
       cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
 
+      takeElementSnapshot('lopande-disclosure');
+
       cy.get('[data-cy="lopande-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
@@ -318,7 +335,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('manages creating a new lease agreement with correct default values', () => {
       visitErrandWithoutContract();
       cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
-        cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.USUFRUCT_MOORING);
+      cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.USUFRUCT_MOORING);
 
       cy.get('[data-cy="Upplåtare-table"]').should('exist');
 
