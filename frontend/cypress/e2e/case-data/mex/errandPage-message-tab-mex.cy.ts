@@ -142,7 +142,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
       cy.get('.ql-editor').should('exist');
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').first().type('Mock message');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').first().children().type('Mock message');
 
       const ownerEmail = mockMexErrand_base.data.stakeholders
         .find((stakeholder) => stakeholder.roles.includes('APPLICANT'))
