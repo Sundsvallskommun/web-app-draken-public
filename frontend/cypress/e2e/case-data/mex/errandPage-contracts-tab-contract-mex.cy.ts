@@ -28,8 +28,8 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
 
 const takeElementSnapshot = (dataCySelector: string) => {
-  cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView(); //.matchImageSnapshot(dataCySelector);
-  cy.matchImageSnapshot({ capture: 'fullPage' });
+  cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
+  // cy.matchImageSnapshot({ capture: 'fullPage' });
 };
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
