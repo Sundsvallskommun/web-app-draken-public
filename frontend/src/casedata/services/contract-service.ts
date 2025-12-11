@@ -354,6 +354,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
 
 export const kopeavtalToContract = (data: ContractData): Contract => {
   return {
+    start: data.start,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: ContractType.PURCHASE_AGREEMENT,

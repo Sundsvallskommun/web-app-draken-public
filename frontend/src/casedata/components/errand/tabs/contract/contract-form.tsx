@@ -346,155 +346,180 @@ export const ContractForm: React.FC<{
           {saveButton()}
         </div>
       </Disclosure>
-      <Disclosure
-        icon={<Icon icon={<LucideIcon name="calendar" />} />}
-        data-cy="avtalstid-disclosure"
-        header={<h2 className="text-h4-sm md:text-h4-md">Avtalstid och uppsägning</h2>}
-        color="gronsta"
-        variant="alt"
-        initalOpen={formState.errors.notices?.length > 0}
-        label={
-          formState.errors.notices?.length > 0 || formState.errors.extension?.leaseExtension ? 'Fel i formulär' : ''
-        }
-        labelColor={formState.errors.notices?.length > 0 || formState.errors.extension?.leaseExtension ? 'error' : null}
-        onClick={() => {
-          changeBadgeColor(`badge-avtalstid`);
-        }}
-      >
-        <div className="flex flex-col gap-24">
-          <div className="flex gap-18 justify-start">
-            <FormControl id="startDate" className="w-full">
-              <FormLabel>Området upplåts från</FormLabel>
-              <Input type="date" {...register('start')} data-cy="avtalstid-start" />
-            </FormControl>
-            <FormControl id="endDate" className="w-full">
-              <FormLabel>Området upplåts till</FormLabel>
-              <Input type="date" {...register('end')} data-cy="avtalstid-end" />
-            </FormControl>
-          </div>
-          <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
-          <div className="flex justify-between gap-32 items-start mb-md">
-            <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
-              <FormLabel>Enhet</FormLabel>
-              <Select
-                className="w-full"
-                {...register(`notices.${lesseeNoticeIndex}.unit`)}
-                placeholder="Månad/år"
-                data-cy="lessee-notice-unit"
-              >
-                <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-              </Select>
-            </FormControl>
-            <FormControl className="flex-grow max-w-[45%]">
-              <FormLabel>Antal</FormLabel>
-              <Input
-                {...register(`notices.${lesseeNoticeIndex}.periodOfNotice`)}
-                placeholder="Ange tal"
-                data-cy="lessee-notice-period"
-              />
-              <Input
-                type="hidden"
-                readOnly
-                {...register(`notices.${lesseeNoticeIndex}.party`)}
-                value="LESSEE"
-                data-cy="lessee-notice-party"
-              />
-              {formState.errors.notices?.[lesseeNoticeIndex]?.periodOfNotice && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>
-                    {formState.errors.notices?.[lesseeNoticeIndex]?.periodOfNotice?.message}
-                  </FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
+      {getValues().type === ContractType.LEASE_AGREEMENT ? (
+        <Disclosure
+          icon={<Icon icon={<LucideIcon name="calendar" />} />}
+          data-cy="avtalstid-disclosure"
+          header={<h2 className="text-h4-sm md:text-h4-md">Avtalstid och uppsägning</h2>}
+          color="gronsta"
+          variant="alt"
+          initalOpen={formState.errors.notices?.length > 0}
+          label={
+            formState.errors.notices?.length > 0 || formState.errors.extension?.leaseExtension ? 'Fel i formulär' : ''
+          }
+          labelColor={
+            formState.errors.notices?.length > 0 || formState.errors.extension?.leaseExtension ? 'error' : null
+          }
+          onClick={() => {
+            changeBadgeColor(`badge-avtalstid`);
+          }}
+        >
+          <div className="flex flex-col gap-24">
+            <div className="flex gap-18 justify-start">
+              <FormControl id="startDate" className="w-full">
+                <FormLabel>Området upplåts från</FormLabel>
+                <Input type="date" {...register('start')} data-cy="avtalstid-start" />
+              </FormControl>
+              <FormControl id="endDate" className="w-full">
+                <FormLabel>Området upplåts till</FormLabel>
+                <Input type="date" {...register('end')} data-cy="avtalstid-end" />
+              </FormControl>
+            </div>
+            <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
+            <div className="flex justify-between gap-32 items-start mb-md">
+              <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
+                <FormLabel>Enhet</FormLabel>
+                <Select
+                  className="w-full"
+                  {...register(`notices.${lesseeNoticeIndex}.unit`)}
+                  placeholder="Månad/år"
+                  data-cy="lessee-notice-unit"
+                >
+                  <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                  <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                  <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                </Select>
+              </FormControl>
+              <FormControl className="flex-grow max-w-[45%]">
+                <FormLabel>Antal</FormLabel>
+                <Input
+                  {...register(`notices.${lesseeNoticeIndex}.periodOfNotice`)}
+                  placeholder="Ange tal"
+                  data-cy="lessee-notice-period"
+                />
+                <Input
+                  type="hidden"
+                  readOnly
+                  {...register(`notices.${lesseeNoticeIndex}.party`)}
+                  value="LESSEE"
+                  data-cy="lessee-notice-party"
+                />
+                {formState.errors.notices?.[lesseeNoticeIndex]?.periodOfNotice && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>
+                      {formState.errors.notices?.[lesseeNoticeIndex]?.periodOfNotice?.message}
+                    </FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+            </div>
 
-          <strong className="text-h6-md">Ange tid för fastighetsägarens uppsägningstid</strong>
-          <div className="flex justify-between gap-32 items-start mb-md">
-            <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
-              <FormLabel>Enhet</FormLabel>
-              <Select
-                className="w-full"
-                {...register(`notices.${lessorNoticeIndex}.unit`)}
-                placeholder="Månad/år"
-                data-cy="lessor-notice-unit"
-              >
-                <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-              </Select>
-            </FormControl>
-            <FormControl className="flex-grow max-w-[45%]">
-              <FormLabel>Antal</FormLabel>
-              <Input
-                {...register(`notices.${lessorNoticeIndex}.periodOfNotice`)}
-                placeholder="Ange tal"
-                data-cy="lessor-notice-period"
-              />
-              <Input
-                type="hidden"
-                readOnly
-                {...register(`notices.${lessorNoticeIndex}.party`)}
-                value="LESSOR"
-                data-cy="lessor-notice-party"
-              />
-              {formState.errors.notices?.[lessorNoticeIndex]?.periodOfNotice && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>
-                    {formState.errors.notices?.[lessorNoticeIndex]?.periodOfNotice?.message}
-                  </FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
+            <strong className="text-h6-md">Ange tid för fastighetsägarens uppsägningstid</strong>
+            <div className="flex justify-between gap-32 items-start mb-md">
+              <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
+                <FormLabel>Enhet</FormLabel>
+                <Select
+                  className="w-full"
+                  {...register(`notices.${lessorNoticeIndex}.unit`)}
+                  placeholder="Månad/år"
+                  data-cy="lessor-notice-unit"
+                >
+                  <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                  <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                  <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                </Select>
+              </FormControl>
+              <FormControl className="flex-grow max-w-[45%]">
+                <FormLabel>Antal</FormLabel>
+                <Input
+                  {...register(`notices.${lessorNoticeIndex}.periodOfNotice`)}
+                  placeholder="Ange tal"
+                  data-cy="lessor-notice-period"
+                />
+                <Input
+                  type="hidden"
+                  readOnly
+                  {...register(`notices.${lessorNoticeIndex}.party`)}
+                  value="LESSOR"
+                  data-cy="lessor-notice-party"
+                />
+                {formState.errors.notices?.[lessorNoticeIndex]?.periodOfNotice && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>
+                      {formState.errors.notices?.[lessorNoticeIndex]?.periodOfNotice?.message}
+                    </FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+            </div>
 
-          <div className="flex justify-between gap-32 items-end mb-md">
-            <FormControl
-              className="flex-grow"
-              onChange={(e) => {
-                setValue('extension.autoExtend', e.target.value === 'true');
-                trigger();
-              }}
-            >
-              <FormLabel>Automatisk förlängning av avtalet</FormLabel>
-              <RadioButton.Group className="flex gap-24" value={watch().extension?.autoExtend ? 'true' : 'false'}>
-                <RadioButton data-cy="autoextend-true-radiobutton" value={'true'}>
-                  Ja
-                </RadioButton>
-                <RadioButton value={'false'}>Nej</RadioButton>
-              </RadioButton.Group>
-            </FormControl>
-          </div>
-
-          <div className="flex justify-between gap-32 items-start mb-md">
-            <FormControl id={`extension`} className="flex-grow max-w-[45%]">
-              <FormLabel>Enhet</FormLabel>
-              <Select
-                className="w-full"
-                {...register('extension.unit')}
-                placeholder="Månad/år"
-                data-cy="extension-unit-selector"
+            <div className="flex justify-between gap-32 items-end mb-md">
+              <FormControl
+                className="flex-grow"
+                onChange={(e) => {
+                  setValue('extension.autoExtend', e.target.value === 'true');
+                  trigger();
+                }}
               >
-                <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-              </Select>
-            </FormControl>
-            <FormControl className="flex-grow max-w-[45%]">
-              <FormLabel>Antal</FormLabel>
-              <Input {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
-              {formState.errors.extension?.leaseExtension && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>{formState.errors.extension?.leaseExtension?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
+                <FormLabel>Automatisk förlängning av avtalet</FormLabel>
+                <RadioButton.Group className="flex gap-24" value={watch().extension?.autoExtend ? 'true' : 'false'}>
+                  <RadioButton data-cy="autoextend-true-radiobutton" value={'true'}>
+                    Ja
+                  </RadioButton>
+                  <RadioButton value={'false'}>Nej</RadioButton>
+                </RadioButton.Group>
+              </FormControl>
+            </div>
+
+            <div className="flex justify-between gap-32 items-start mb-md">
+              <FormControl id={`extension`} className="flex-grow max-w-[45%]">
+                <FormLabel>Enhet</FormLabel>
+                <Select
+                  className="w-full"
+                  {...register('extension.unit')}
+                  placeholder="Månad/år"
+                  data-cy="extension-unit-selector"
+                >
+                  <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                  <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                  <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                </Select>
+              </FormControl>
+              <FormControl className="flex-grow max-w-[45%]">
+                <FormLabel>Antal</FormLabel>
+                <Input {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
+                {formState.errors.extension?.leaseExtension && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>{formState.errors.extension?.leaseExtension?.message}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+            </div>
+            {saveButton()}
           </div>
-          {saveButton()}
-        </div>
-      </Disclosure>
+        </Disclosure>
+      ) : (
+        <Disclosure
+          icon={<Icon icon={<LucideIcon name="wallet" />} />}
+          data-cy="startdatum-disclosure"
+          header={<h2 className="text-h4-sm md:text-h4-md">Avtalsstartdatum</h2>}
+          color="gronsta"
+          variant="alt"
+          onClick={() => {
+            changeBadgeColor(`badge-startdatum`);
+          }}
+        >
+          <div className="flex flex-col gap-24">
+            <div className="flex gap-18 justify-start">
+              <FormControl id="startDate" className="w-full">
+                <FormLabel>Avtalets startdatum</FormLabel>
+                <Input type="date" {...register('start')} data-cy="avtalstid-start" />
+              </FormControl>
+            </div>
+            {saveButton()}
+          </div>
+        </Disclosure>
+      )}
       <Disclosure
         icon={<Icon icon={<LucideIcon name="wallet" />} />}
         data-cy="lopande-disclosure"

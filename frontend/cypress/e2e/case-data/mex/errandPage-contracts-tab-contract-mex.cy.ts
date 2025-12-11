@@ -29,7 +29,6 @@ import { Role } from '@casedata/interfaces/role';
 
 const takeElementSnapshot = (dataCySelector: string) => {
   cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
-  // cy.matchImageSnapshot({ capture: 'fullPage' });
 };
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
@@ -146,7 +145,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         { key: 'signerade', label: 'Signerade avtal' },
       ];
 
-      //land lease contracts
+      //lease agreements
       landLeaseType.forEach((type) => {
         cy.get(`[data-cy="badge-${type.key}"]`).contains(type.label).should('exist');
       });
@@ -162,7 +161,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     // Parter
-    it('manages parties in land lease contracts', () => {
+    it('manages parties in lease agreements', () => {
       visitErrandContractTab();
       cy.get('[data-cy="parties-disclosure"]').should('exist');
       cy.get('[data-cy="Upplåtare-table"] .sk-table-tbody-tr')
@@ -206,7 +205,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     // Område
-    it('manages property designations in land lease contracts', () => {
+    it('manages property designations in lease agreements', () => {
       visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
@@ -238,8 +237,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
 
       takeElementSnapshot('area-disclosure');
-      // cy.get('[data-cy="area-disclosure"]').scrollIntoView();
-      // cy.matchImageSnapshot();
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
@@ -249,7 +246,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     // Avtalstid och uppsägning
-    it('manages tenancy period automatically in land lease contracts', () => {
+    it('manages tenancy period automatically in lease agreements', () => {
       visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
@@ -287,7 +284,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     // Löpande avgift
-    it('manages lease fee automatically in land lease contracts', () => {
+    it('manages lease fee automatically in lease agreements', () => {
       visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').should('exist').click();
@@ -484,6 +481,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@postContract').should(({ request }) => {
         const purchaseAgreement: Contract = request.body;
         expect(purchaseAgreement.type).to.equal(ContractType.PURCHASE_AGREEMENT);
+        expect(purchaseAgreement.start).to.equal('');
         expect(purchaseAgreement.leaseType).to.be.undefined;
         const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
         const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
@@ -507,6 +505,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           ],
           status: Status.DRAFT,
           type: ContractType.PURCHASE_AGREEMENT,
+          start: '',
           stakeholders: [
             {
               type: 'PERSON',
