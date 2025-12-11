@@ -1,7 +1,8 @@
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { isROB } from '@common/services/application-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { LucideIcon } from '@sk-web-gui/lucide-icon';
-import { Badge, Button } from '@sk-web-gui/react';
+import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import {
   assignedStatuses,
@@ -14,7 +15,6 @@ import {
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
-import { isROB } from '@common/services/application-service';
 
 export interface SupportManagementStatusFilter {
   status: Status[];
@@ -30,7 +30,6 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   iconButton: boolean;
 }> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
   const {
-    isLoading,
     setSidebarLabel,
     setSelectedSupportErrandStatuses,
     selectedSupportErrandStatuses,
@@ -117,14 +116,16 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
             {!iconButton && (
               <span className="w-full flex justify-between">
                 {button.label}
-                <Badge
-                  className="min-w-fit px-4"
-                  inverted={!buttonIsActive || showAttestationTable}
-                  color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
-                  counter={
-                    isLoading ? '-' : button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands || '0'
-                  }
-                />
+                {button.totalStatusErrands === null ? (
+                  <Spinner color="vattjom" size={2} />
+                ) : (
+                  <Badge
+                    className="min-w-fit px-4"
+                    inverted={!buttonIsActive || showAttestationTable}
+                    color={buttonIsActive && !showAttestationTable ? 'tertiary' : 'vattjom'}
+                    counter={button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands}
+                  />
+                )}
               </span>
             )}
           </Button>

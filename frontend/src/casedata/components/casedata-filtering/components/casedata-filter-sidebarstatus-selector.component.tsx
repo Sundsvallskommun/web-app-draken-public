@@ -10,13 +10,12 @@ import {
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Badge, Button } from '@sk-web-gui/react';
+import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useMemo } from 'react';
 
 export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean }> = ({ iconButton }) => {
   const {
-    isLoading,
     setSelectedErrandStatuses,
     selectedErrandStatuses,
     setSidebarLabel,
@@ -53,35 +52,35 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
         key: newStatuses[0],
         statuses: newStatuses,
         icon: 'inbox',
-        totalStatusErrands: newErrands.totalElements,
+        totalStatusErrands: newErrands,
       },
       {
         label: getStatusLabel(ongoingStatuses),
         key: ongoingStatuses[0],
         statuses: ongoingStatuses,
         icon: 'clipboard-pen',
-        totalStatusErrands: ongoingErrands.totalElements,
+        totalStatusErrands: ongoingErrands,
       },
       {
         label: getStatusLabel(suspendedStatuses),
         key: suspendedStatuses[0],
         statuses: suspendedStatuses,
         icon: 'circle-pause',
-        totalStatusErrands: suspendedErrands.totalElements,
+        totalStatusErrands: suspendedErrands,
       },
       {
         label: getStatusLabel(assignedStatuses),
         key: assignedStatuses[0],
         statuses: assignedStatuses,
         icon: 'file-plus',
-        totalStatusErrands: assignedErrands.totalElements,
+        totalStatusErrands: assignedErrands,
       },
       {
         label: getStatusLabel(closedStatuses),
         key: closedStatuses[0],
         statuses: closedStatuses,
         icon: 'circle-check-big',
-        totalStatusErrands: closedErrands.totalElements,
+        totalStatusErrands: closedErrands,
       },
     ],
     [newErrands, ongoingErrands, suspendedErrands, assignedErrands, closedErrands]
@@ -111,14 +110,16 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
             {!iconButton && (
               <span className="w-full flex justify-between">
                 {button.label}
-                <Badge
-                  className="min-w-fit px-4"
-                  inverted={!buttonIsActive}
-                  color={buttonIsActive ? 'tertiary' : 'vattjom'}
-                  counter={
-                    isLoading ? '-' : button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands || '0'
-                  }
-                />
+                {button.totalStatusErrands !== null ? (
+                  <Badge
+                    className="min-w-fit px-4"
+                    inverted={!buttonIsActive}
+                    color={buttonIsActive ? 'tertiary' : 'vattjom'}
+                    counter={button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands}
+                  />
+                ) : (
+                  <Spinner color="vattjom" size={2} />
+                )}
               </span>
             )}
           </Button>

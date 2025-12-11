@@ -260,9 +260,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
             <div className="flex justify-between">
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden'
-                  ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
-                  : null}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (closedErrands ?? '') : null}
               </h1>
               {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
             </div>
