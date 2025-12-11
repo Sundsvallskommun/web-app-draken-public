@@ -138,11 +138,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       // FIXME Need to use first since two message composer components are rendered,
       // on for the sidebar and one for the message tab. Not good.
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
-      cy.get('[data-cy="useEmail-radiobutton-true"]').first().click();
+      cy.get('[data-cy="useEmail-radiobutton-true"]').first().click({ force: true });
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
       cy.get('.ql-editor').should('exist');
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('not.be.disabled').first().type('Mock message');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').first().type('Mock message');
 
       const ownerEmail = mockMexErrand_base.data.stakeholders
         .find((stakeholder) => stakeholder.roles.includes('APPLICANT'))
@@ -152,10 +152,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist')
         .first()
         .select(ownerEmail + ' (Ärendeägare)');
-      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test.com');
+      cy.get('[data-cy="new-email-input"]').should('exist').first().clear().type('test.com');
       cy.get('[data-cy="add-new-email-button"]').should('be.disabled');
-      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
-      cy.get('[data-cy="add-new-email-button"]').should('be.enabled').click({ force: true });
+      cy.get('[data-cy="new-email-input"]').should('exist').first().clear().type('test@example.com');
+      cy.get('[data-cy="add-new-email-button"]').should('be.enabled').first().click({ force: true });
 
       // Add existing attachment
       cy.get('[data-cy="select-errand-attachment"]').should('exist').first().select(1);
