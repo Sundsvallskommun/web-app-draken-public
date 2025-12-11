@@ -110,15 +110,15 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
             {!iconButton && (
               <span className="w-full flex justify-between">
                 {button.label}
-                {button.totalStatusErrands !== null ? (
+                {button.totalStatusErrands === null ? (
+                  <Spinner color="vattjom" size={2} />
+                ) : (
                   <Badge
                     className="min-w-fit px-4"
                     inverted={!buttonIsActive}
                     color={buttonIsActive ? 'tertiary' : 'vattjom'}
                     counter={button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands}
                   />
-                ) : (
-                  <Spinner color="vattjom" size={2} />
                 )}
               </span>
             )}
