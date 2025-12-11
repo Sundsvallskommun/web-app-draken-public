@@ -3,12 +3,12 @@ import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
+import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
-import store from '@supportmanagement/services/storage-service';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
@@ -19,7 +19,6 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-import { appConfig } from '@config/appconfig';
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -446,14 +445,17 @@ export const useSupportErrands = (
     solvedSupportErrands,
   } = useAppContext();
 
-  const unparsedStoredFilter = store.get('filter');
-  const storedFilter = unparsedStoredFilter ? JSON.parse(unparsedStoredFilter) : {};
-
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
+      setNewSupportErrands(null);
+      setOngoingSupportErrands(null);
+      setSuspendedSupportErrands(null);
+      setAssignedSupportErrands(null);
+      setSolvedSupportErrands(null);
       setSupportErrands({ ...supportErrands, isLoading: true });
-      await getSupportErrands(municipalityId, page, size, filter, sort)
+
+      const errandPromise = getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
         })
@@ -472,6 +474,7 @@ export const useSupportErrands = (
             setNewSupportErrands(res);
           })
           .catch(() => {
+            setNewSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -488,6 +491,7 @@ export const useSupportErrands = (
             setOngoingSupportErrands(res);
           })
           .catch(() => {
+            setOngoingSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -501,6 +505,7 @@ export const useSupportErrands = (
             setSuspendedSupportErrands(res);
           })
           .catch(() => {
+            setSuspendedSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -514,6 +519,7 @@ export const useSupportErrands = (
             setAssignedSupportErrands(res);
           })
           .catch(() => {
+            setAssignedSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -527,6 +533,7 @@ export const useSupportErrands = (
             setSolvedSupportErrands(res);
           })
           .catch(() => {
+            setSolvedSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -536,7 +543,7 @@ export const useSupportErrands = (
           }),
       ];
 
-      return Promise.allSettled(sidebarUpdatePromises);
+      return Promise.allSettled([errandPromise, ...sidebarUpdatePromises]);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

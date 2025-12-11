@@ -78,19 +78,19 @@ export interface AppContextInterface {
   setErrands: (errands: ErrandsData) => void;
 
   newErrands;
-  setNewErrands: (errands: ErrandsData) => void;
+  setNewErrands: (count: number) => void;
 
   ongoingErrands;
-  setOngoingErrands: (errands: ErrandsData) => void;
+  setOngoingErrands: (count: number) => void;
 
   suspendedErrands;
-  setSuspendedErrands: (errands: ErrandsData) => void;
+  setSuspendedErrands: (count: number) => void;
 
   assignedErrands;
-  setAssignedErrands: (errands: ErrandsData) => void;
+  setAssignedErrands: (count: number) => void;
 
   closedErrands;
-  setClosedErrands: (errands: ErrandsData) => void;
+  setClosedErrands: (count: number) => void;
 
   supportErrands;
   setSupportErrands: (supportErrands: SupportErrandsData) => void;
@@ -133,11 +133,11 @@ export function AppWrapper({ children }) {
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
   const [errands, setErrands] = useState<ErrandsData>(emptyErrandList);
-  const [newErrands, setNewErrands] = useState<ErrandsData>(emptyErrandList);
-  const [ongoingErrands, setOngoingErrands] = useState<ErrandsData>(emptyErrandList);
-  const [suspendedErrands, setSuspendedErrands] = useState<ErrandsData>(emptyErrandList);
-  const [assignedErrands, setAssignedErrands] = useState<ErrandsData>(emptyErrandList);
-  const [closedErrands, setClosedErrands] = useState<ErrandsData>(emptyErrandList);
+  const [newErrands, setNewErrands] = useState<number>(0);
+  const [ongoingErrands, setOngoingErrands] = useState<number>(0);
+  const [suspendedErrands, setSuspendedErrands] = useState<number>(0);
+  const [assignedErrands, setAssignedErrands] = useState<number>(0);
+  const [closedErrands, setClosedErrands] = useState<number>(0);
   const [supportErrands, setSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
   const [newSupportErrands, setNewSupportErrands] = useState<number>(0);
   const [ongoingSupportErrands, setOngoingSupportErrands] = useState<number>(0);
@@ -227,19 +227,19 @@ export function AppWrapper({ children }) {
         setErrands: (errands: ErrandsData) => setErrands(errands),
 
         newErrands,
-        setNewErrands: (errands: ErrandsData) => setNewErrands(errands),
+        setNewErrands: (count: number) => setNewErrands(count),
 
         ongoingErrands,
-        setOngoingErrands: (errands: ErrandsData) => setOngoingErrands(errands),
+        setOngoingErrands: (count: number) => setOngoingErrands(count),
 
         suspendedErrands,
-        setSuspendedErrands: (errands: ErrandsData) => setSuspendedErrands(errands),
+        setSuspendedErrands: (count: number) => setSuspendedErrands(count),
 
         assignedErrands,
-        setAssignedErrands: (errands: ErrandsData) => setAssignedErrands(errands),
+        setAssignedErrands: (count: number) => setAssignedErrands(count),
 
         closedErrands,
-        setClosedErrands: (errands: ErrandsData) => setClosedErrands(errands),
+        setClosedErrands: (count: number) => setClosedErrands(count),
 
         supportErrands,
         setSupportErrands: (errands: SupportErrandsData) => setSupportErrands(errands),
