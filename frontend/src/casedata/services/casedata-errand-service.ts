@@ -38,7 +38,6 @@ import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
 import { phaseChangeInProgress } from './process-service';
-import { set } from 'node_modules/cypress/types/lodash';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
