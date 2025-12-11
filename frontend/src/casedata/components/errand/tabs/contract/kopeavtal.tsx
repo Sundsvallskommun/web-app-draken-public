@@ -277,19 +277,17 @@ export const KopeAvtal: React.FC<{
                       <div>
                         <strong>{getContractStakeholderName(s)}</strong>
                       </div>
-                      <div>
-                        {s.type === 'COMPANY' || s.type === 'ASSOCIATION' ? s.organizationNumber : s.personalNumber}
-                      </div>
+                      <div>{s.type === 'COMPANY' || s.type === 'ASSOCIATION' ? s.organizationNumber : s.partyId}</div>
                     </Table.Column>
                     <Table.Column className="flex flex-col items-start justify-center !gap-0">
-                      {s.street && s.zip && s.city ? (
+                      {s.address?.streetAddress && s.address?.postalCode && s.address?.town ? (
                         <>
                           <div>
-                            <strong>{s.street}</strong>
+                            <strong>{s.address.streetAddress}</strong>
                           </div>
-                          <div>{s.careof}</div>
+                          <div>{s.address.careOf}</div>
                           <div>
-                            {s.zip} {s.city}
+                            {s.address.postalCode} {s.address.town}
                           </div>
                         </>
                       ) : (
@@ -300,7 +298,7 @@ export const KopeAvtal: React.FC<{
                       <Input
                         size="sm"
                         key={`partOwnership-${s.sellerId}`}
-                        {...register(`sellers.${idx}.partOwnership`)}
+                        // {...register(`sellers.${idx}.partOwnership`)}
                       />
                     </Table.Column>
                   </Table.Row>
@@ -336,15 +334,20 @@ export const KopeAvtal: React.FC<{
                     </Table.Column>
                     <Table.Column className="flex flex-col items-start justify-center !gap-0">
                       <div>
-                        <strong>{b.street}</strong>
+                        <strong>{b.address.streetAddress}</strong>
                       </div>
-                      <div>{b.careof}</div>
+                      <div>{b.address.careOf}</div>
                       <div>
-                        {b.zip} {b.city}
+                        {b.address.postalCode} {b.address.town}
                       </div>
                     </Table.Column>
                     <Table.Column>
-                      <Input size="sm" key={b.buyerId} {...register(`buyers.${idx}.partOwnership`)} />
+                      {/* partOwnership not implemented yet */}
+                      <Input
+                        size="sm"
+                        key={b.buyerId}
+                        // {...register(`buyers.${idx}.partOwnership`)}
+                      />
                     </Table.Column>
                   </Table.Row>
                 ))

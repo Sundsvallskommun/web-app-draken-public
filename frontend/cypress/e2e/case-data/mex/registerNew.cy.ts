@@ -6,7 +6,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockErrands_base } from 'cypress/e2e/case-data/fixtures/mockErrands';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContract } from '../fixtures/mockContract';
+import { mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
@@ -21,7 +21,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
       cy.intercept('GET', /2281\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
       cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');

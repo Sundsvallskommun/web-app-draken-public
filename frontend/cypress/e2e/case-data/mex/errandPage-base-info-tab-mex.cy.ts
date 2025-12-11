@@ -14,7 +14,7 @@ import { mockOrganization } from 'cypress/e2e/case-data/fixtures/mockOrganizatio
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import dayjs from 'dayjs';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContract } from '../fixtures/mockContract';
+import { mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
@@ -45,7 +45,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/101/messages', mockMessages);
       cy.intercept('GET', /\/errand\/\d*\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'

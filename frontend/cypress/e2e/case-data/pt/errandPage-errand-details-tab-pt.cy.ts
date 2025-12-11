@@ -7,7 +7,7 @@ import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockContract } from '../fixtures/mockContract';
+import { mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { modifyField } from '../fixtures/mockMexErrand';
@@ -26,7 +26,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockPTErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/**', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/**', mockPurchaseAgreement).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('PATCH', '**/errands/*', mockPTErrand_base).as('patchErrand');

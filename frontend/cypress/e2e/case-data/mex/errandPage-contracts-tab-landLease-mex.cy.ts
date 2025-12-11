@@ -1,17 +1,18 @@
 /// <reference types="cypress" />
 
+import { Contract, ContractType, LeaseType, StakeholderRole } from '@casedata/interfaces/contracts';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockContract } from '../fixtures/mockContract';
-import { modifyField } from '../fixtures/mockErrand';
-import { mockAsset } from '../fixtures/mockAsset';
-import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
@@ -25,14 +26,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
-      cy.intercept('GET', '**/contract/2024-01026', {
-        data: {
-          contractId: '2024-01026',
-          type: 'LAND_LEASE',
-          stakeholders: mockMexErrand_base.data.stakeholders,
-          indexTerms: [],
-        },
-      }).as('getContract');
       cy.intercept('PUT', '**/contract/2024-01026', contractText).as('putContract');
       cy.intercept('POST', '**/contract', contractText).as('postLandLeaseContract');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
@@ -40,7 +33,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/stakeholders/personNumber').as('getStakeholders');
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockLeaseAgreement).as('getContract');
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -52,6 +45,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
 
       cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
@@ -59,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
 
-      cy.get('[data-cy="apartmentType"]').should('exist').check();
+      cy.get('[data-cy="contract-type-select"]').should('exist');
     });
 
     const contractText = {
@@ -134,25 +129,25 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist');
       cy.get('[data-cy="damages-disclosure"]').contains('Skada och ansvar').should('exist');
       cy.get('[data-cy="special-provisions-disclosure"]').contains('Särskilda bestämmelser').should('exist');
-      cy.get('[data-cy="soilbeam-disclosure"]').contains('Hänvisning till Jordabalken').should('exist');
+      cy.get('[data-cy="landCode-disclosure"]').contains('Hänvisning till Jordabalken').should('exist');
     });
 
     //PARTIES
     it('manages parties in land lease contracts', () => {
       cy.get('[data-cy="parties-disclosure"]').should('exist');
-      cy.get('[data-cy="grantor-table"] .sk-table-tbody-tr')
+      cy.get('[data-cy="lessor-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
-          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('PROPERTY_OWNER'))?.firstName ?? ''} ${
-            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('PROPERTY_OWNER'))?.lastName ?? ''
+          `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''} ${
+            mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.lastName ?? ''
           }`
         );
 
-      cy.get('[data-cy="leaseholder-table"] .sk-table-tbody-tr')
+      cy.get('[data-cy="lessee-table"] .sk-table-tbody-tr')
         .should('exist')
         .contains(
-          `${mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('LEASEHOLDER'))?.firstName ?? ''} ${
-            mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes('LEASEHOLDER'))?.lastName ?? ''
+          `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''} ${
+            mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.lastName ?? ''
           }`
         );
       cy.get('[data-cy="parties-disclosure"] button.sk-btn-tertiary[aria-expanded="true"]').should('exist').click();
@@ -161,9 +156,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     //MANUAL TEXTAREA INPUT IN ALL DISCLOSURES
     it('manages disclosure inputs manually in land lease contracts', () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.intercept('GET', '**/contract/2024-01026', modifyField(mockContract, { type: 'LAND_LEASE' })).as(
-        'getContract'
-      );
 
       const dataCys = [
         'area',
@@ -180,7 +172,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'termination-reinstatement',
         'damages',
         'special-provisions',
-        'soilbeam',
+        'landCode',
       ];
 
       dataCys.forEach((datacy) => {
@@ -190,20 +182,31 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get(`[data-cy="manual-text-checkbox-${datacy}"]`).should('exist').check({ force: true });
         cy.get(`[data-cy="${datacy}-richtext-wrapper"] .ql-editor[contenteditable="true"]`)
           .should('exist')
-          .type(inputtext);
-        cy.get(`[data-cy="${datacy}-disclosure"] button.sk-btn-primary`).contains('Spara').should('exist').click();
-        cy.wait('@getErrand');
-        cy.get(`[data-cy="${datacy}-disclosure"] button.sk-btn-tertiary`).should('exist').click();
+          .type(inputtext, { delay: 10 });
       });
 
       // Manual textarea input in Additional terms disclosure
       cy.get('[data-cy="additional-terms-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="additional-terms-heading"]').should('exist').type('Villkor');
-      cy.get('[data-cy="additional-terms-richtext-wrapper"]').should('exist').type('Beskrivning av villkor');
+      cy.get('[data-cy="additional-terms-heading"]').should('exist').type('Villkor', { delay: 10 });
+      cy.get('[data-cy="additional-terms-richtext-wrapper"]')
+        .should('exist')
+        .type('Beskrivning av villkor', { delay: 10 });
       cy.get('[data-cy="additional-terms-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
-      cy.intercept('@putContract');
-      cy.wait('@getErrand');
-      cy.get(`[data-cy="additional-terms-disclosure"] button.sk-btn-tertiary`).should('exist').click();
+      cy.wait('@putContract').should(({ request }) => {
+        const leaseAgreement: Contract = request.body;
+        expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
+        expect(leaseAgreement.leaseType).to.equal(LeaseType.USUFRUCT_MOORING);
+        const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
+        const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
+        expect(lessor.firstName).to.equal(
+          mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''
+        );
+        expect(lessee.firstName).to.equal(
+          mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''
+        );
+      });
+      // cy.wait('@getErrand');
+      // cy.get(`[data-cy="additional-terms-disclosure"] button.sk-btn-tertiary`).should('exist').click();
     });
 
     //AREA
@@ -351,8 +354,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .click();
       cy.get('.sk-modal-dialog').should('exist');
 
-      cy.get('#startDate[type="date"]').should('exist').type(new Date().toLocaleDateString());
-      cy.get('#endDate[type="date"]').should('exist').type(new Date().toLocaleDateString());
+      cy.get('#startDate[type="date"]').should('exist').type('2024-12-01');
+      cy.get('#endDate[type="date"]').should('exist').type('2025-12-01');
 
       cy.get('select#noticePeriod').should('exist').select(1);
       cy.get('select#autoRenewal').should('exist').select(1);
@@ -733,8 +736,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     //SOIL BEAM
-    it('manages soilbeam automatically in land lease contracts', () => {
-      const soilBeam = [
+    it('manages landCode automatically in land lease contracts', () => {
+      const landCode = [
         {
           key: 'jordabalkenTerms.condition.jordabalken',
 
@@ -751,19 +754,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       ];
 
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
-      cy.get('[data-cy="soilbeam-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="soilbeam-disclosure"] button.sk-btn-primary')
+      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-primary')
         .contains('Fyll i villkor')
         .should('exist')
         .click();
       cy.get('.sk-modal-dialog').should('exist');
 
-      cy.get('[data-cy="soilbeam-table"] .sk-table-tbody-tr').should('have.length', soilBeam.length);
-      soilBeam.forEach((s) => {
-        cy.get('[data-cy="soilbeam-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
+      cy.get('[data-cy="landCode-table"] .sk-table-tbody-tr').should('have.length', landCode.length);
+      landCode.forEach((s) => {
+        cy.get('[data-cy="landCode-table"] .sk-table-tbody-tr .sk-form-checkbox-label')
           .contains(s.header)
           .should('exist');
-        cy.get('[data-cy="soilbeam-table"] .sk-table-tbody-tr [type="checkbox"]')
+        cy.get('[data-cy="landCode-table"] .sk-table-tbody-tr [type="checkbox"]')
           .should('exist')
           .check({ force: true });
       });
@@ -774,12 +777,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('.sk-modal-content button.sk-btn-primary').contains('Importera').should('exist').click();
 
-      cy.get('[data-cy="soilbeam-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
+      cy.get('[data-cy="landCode-richtext-wrapper"] .ql-editor[contenteditable="false"]').should('exist');
 
-      cy.get('[data-cy="soilbeam-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
+      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@getErrand');
 
-      cy.get('[data-cy="soilbeam-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="landCode-disclosure"] button.sk-btn-tertiary').should('exist').click();
     });
 
     // Signatures
@@ -807,8 +810,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .check({ force: true });
       });
 
-      cy.get('[data-cy="signature-propertyowner"]').should('exist').type('1');
-      cy.get('[data-cy="signature-leaseholder"]').should('exist').type('1');
+      cy.get('[data-cy="signature-lessor"]').should('exist').type('1');
+      cy.get('[data-cy="signature-lessee"]').should('exist').type('1');
       cy.get('button').should('exist').contains('Importera').click();
 
       cy.get('[data-cy="signature-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();

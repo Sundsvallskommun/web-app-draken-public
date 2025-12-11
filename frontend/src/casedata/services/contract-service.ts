@@ -1,9 +1,13 @@
 import {
   Address,
-  AttachmentMetaData,
+  AddressType,
   Contract,
   Stakeholder as ContractStakeholder,
-  TermGroup,
+  StakeholderRole as ContractStakeholderRole,
+  ContractType,
+  LeaseType,
+  StakeholderType,
+  Status,
 } from '@casedata/interfaces/contracts';
 import { IErrand, RegisterErrandData } from '@casedata/interfaces/errand';
 import { KopeAvtalsData, KopeavtalStakeholder, KopeavtalsTemplate } from '@casedata/interfaces/kopeavtals-data';
@@ -21,22 +25,36 @@ import { AxiosResponse } from 'axios';
 import { replaceExtraParameter, saveExtraParameters } from './casedata-extra-parameters-service';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
-export enum ContractType {
-  LAND_LEASE = 'LAND_LEASE',
-  PURCHASE_AGREEMENT = 'PURCHASE_AGREEMENT',
-}
+export const leaseTypes = [
+  { label: 'Allmän platsupplåtelse', key: LeaseType.LAND_LEASE_PUBLIC },
+  { label: 'Anläggningsarrende', key: LeaseType.SITE_LEASE_COMMERCIAL },
+  { label: 'Bostadsarrende', key: LeaseType.LAND_LEASE_RESIDENTIAL },
+  { label: 'Båtplats', key: LeaseType.USUFRUCT_MOORING },
+  { label: 'Hyresobjekt', key: LeaseType.OBJECT_LEASE },
+  { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
+  { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
+  { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
+  { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Tomträtt', key: LeaseType.LEASEHOLD },
+];
 
-export interface BaseContract {
-  contractId: string;
-  externalReferenceId?: string;
-  contractType: ContractType;
-  status: 'ACTIVE' | 'DRAFT';
-  propertyDesignations: string[];
-  attachmentMetaData: AttachmentMetaData[];
-  additionalTerms?: TermGroup[];
-}
+export const roleLabels: { [key in ContractStakeholderRole]: string } = {
+  BUYER: 'Köpare',
+  CONTACT_PERSON: 'Kontaktperson',
+  GRANTOR: 'Upplåtare',
+  LAND_RIGHT_OWNER: 'LAND_RIGHT_OWNER',
+  LEASEHOLDER: 'LEASEHOLDER',
+  PROPERTY_OWNER: 'PROPERTY_OWNER',
+  POWER_OF_ATTORNEY_CHECK: 'POWER_OF_ATTORNEY_CHECK',
+  POWER_OF_ATTORNEY_ROLE: 'POWER_OF_ATTORNEY_ROLE',
+  SELLER: 'SELLER',
+  SIGNATORY: 'SIGNATORY',
+  PRIMARY_BILLING_PARTY: 'PRIMARY_BILLING_PARTY',
+  LESSOR: 'LESSOR',
+  LESSEE: 'LESSEE',
+};
 
-export type ContractData = KopeAvtalsData | LagenhetsArrendeData;
+export type AvtalsData = KopeAvtalsData | LagenhetsArrendeData;
 
 const defaultKopeavtalTemplate: KopeavtalsTemplate = {
   overlatelseforklaringTerms: {
@@ -115,10 +133,10 @@ const defaultKopeavtalTemplate: KopeavtalsTemplate = {
   },
 };
 
-export const defaultKopeavtal: KopeAvtalsData = {
+export const defaultKopeavtal: KopeAvtalsData & KopeavtalsTemplate = {
   ...defaultKopeavtalTemplate,
-  status: 'DRAFT',
-  contractType: ContractType.PURCHASE_AGREEMENT,
+  status: Status.DRAFT,
+  type: ContractType.PURCHASE_AGREEMENT,
   contractId: '',
   propertyDesignations: [],
   buyers: [],
@@ -275,16 +293,17 @@ export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
   },
 };
 
-export const defaultLagenhetsarrende: BaseContract & LagenhetsArrendeData = {
+export const defaultLagenhetsarrende: LagenhetsArrendeData & LagenhetsArendeTemplate = {
   ...defaultLagenhetsArrendeTemplate,
   attachmentMetaData: [],
   contractId: '',
   externalReferenceId: '',
-  contractType: ContractType.LAND_LEASE,
-  status: 'DRAFT',
+  type: ContractType.LEASE_AGREEMENT,
+  leaseType: LeaseType.LAND_LEASE_MISC,
+  status: Status.DRAFT,
   propertyDesignations: [],
-  leaseholders: [],
-  grantors: [],
+  lessees: [],
+  lessors: [],
   omrade: '',
   andamal: '',
   arrendetid: '',
@@ -315,10 +334,10 @@ export interface CasedataContractAttachment {
   };
 }
 
-export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
+export const saveContract: (contract: AvtalsData) => Promise<Contract> = (contract) => {
   let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
   const apiContract: Contract =
-    contract.contractType === ContractType.PURCHASE_AGREEMENT
+    contract.type === ContractType.PURCHASE_AGREEMENT
       ? kopeavtalToContract(contract as KopeAvtalsData)
       : lagenhetsArrendeToContract(contract as LagenhetsArrendeData);
 
@@ -397,7 +416,7 @@ export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | La
     .then((res) => {
       if (res.data.type === ContractType.PURCHASE_AGREEMENT) {
         return contractToKopeavtal(res.data as Contract);
-      } else if (res.data.type === ContractType.LAND_LEASE) {
+      } else if (res.data.type === ContractType.LEASE_AGREEMENT) {
         return contractToLagenhetsArrende(res.data as Contract);
       } else {
         console.error('Unknown contract type: ', res.data.type);
@@ -420,16 +439,16 @@ export const renderContractPdf: (
   }
 
   const templateIdentifier =
-    contract.type === 'PURCHASE_AGREEMENT'
+    contract.type === ContractType.PURCHASE_AGREEMENT
       ? `mex.contract.purchaseagreement`
-      : contract.type === 'LAND_LEASE'
+      : contract.type === ContractType.LEASE_AGREEMENT
       ? `mex.contract.landlease`
       : 'mex.contract.purchaseagreement';
 
   const renderBody: TemplateSelector = {
     identifier: templateIdentifier,
     parameters: {
-      header: contract.type === 'PURCHASE_AGREEMENT' ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
+      header: contract.type === ContractType.PURCHASE_AGREEMENT ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
       description: `<b>Avtals ID:</b> ${contract.contractId}<br />
                     <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
       isDraft: isDraft,
@@ -478,8 +497,12 @@ export const contractRoles: string[] = [
 export const prettyContractRoles: { [key: string]: string } = {
   BUYER: 'Köpare',
   SELLER: 'Säljare',
-  LEASEHOLDER: 'Arrendator',
   GRANTOR: 'Upplåtare',
+  LEASEHOLDER: 'Arrendator',
+  LESSOR: 'Upplåtare',
+  LESSEE: 'Arrendator',
+  CONTACT_PERSON: 'Kontaktperson',
+  PRIMARY_BILLING_PARTY: 'Fakturamottagare',
 };
 
 export const prettyPaymentPeriods: {
@@ -492,45 +515,21 @@ export const prettyPaymentPeriods: {
   prepaid: 'Förskott',
 };
 
-export const contractStakeholderToKopeavtalStakeholder = (s: ContractStakeholder): KopeavtalStakeholder => {
-  return {
-    firstName: s.firstName,
-    lastName: s.lastName,
-    partyId: s.partyId,
-    organizationName: s.organizationName,
-    organizationNumber: s.organizationNumber,
-    phoneNumbers: [...(s.phoneNumber ? [{ value: s.phoneNumber }] : [])],
-    emails: [...(s.emailAddress ? [{ value: s.emailAddress }] : [])],
-    street: s.address.streetAddress,
-    zip: s.address.postalCode,
-    city: s.address.town,
-    type: s.type,
-    roles: s.roles,
-    careof: s.address.careOf,
-    // TODO Cannot stor partOwnership in stakeholder yet, API is lacking
-    partOwnership: '',
-    extraInformation: s.extraInformation || s.parameters?.find((p) => p.key === 'extraInformation')?.values[0],
-  } as KopeavtalStakeholder;
-};
-
-const casedataRoleToContractRole = (stakeholder: CasedataOwnerOrContact): string[] => {
-  const roles: string[] = [];
-  if (stakeholder.roles?.includes(Role.SELLER)) {
-    roles.push('SELLER');
+const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
+  switch (role) {
+    case Role.BUYER:
+      return ContractStakeholderRole.BUYER;
+    case Role.SELLER:
+      return ContractStakeholderRole.SELLER;
+    case Role.LEASEHOLDER:
+      return ContractStakeholderRole.LESSEE;
+    case Role.GRANTOR:
+      return ContractStakeholderRole.LESSOR;
+    case Role.APPLICANT:
+    //   return ContractStakeholderRole.APPLICANT;
+    default:
+      return ContractStakeholderRole.CONTACT_PERSON; // Default role
   }
-  if (stakeholder.roles?.includes(Role.BUYER)) {
-    roles.push('BUYER');
-  }
-  if (stakeholder.roles?.includes(Role.LEASEHOLDER)) {
-    roles.push('LEASEHOLDER');
-  }
-  if (stakeholder.roles?.includes(Role.GRANTOR)) {
-    roles.push('GRANTOR');
-  }
-  if (stakeholder.roles?.includes(Role.PROPERTY_OWNER)) {
-    roles.push('PROPERTY_OWNER');
-  }
-  return roles;
 };
 
 export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOwnerOrContact): ContractStakeholder => {
@@ -538,7 +537,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
   const phone = stakeholder.phoneNumbers?.[0] || '';
   const email = stakeholder.emails?.[0] || '';
   const address: Address = {
-    type: 'POSTAL_ADDRESS',
+    type: AddressType.POSTAL_ADDRESS,
     streetAddress: stakeholder.street || '',
     postalCode: stakeholder.zip || '',
     town: stakeholder.city || '',
@@ -546,10 +545,10 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
     attention: '',
     careOf: stakeholder.careof || '',
   };
-  const contractStakeholderType = stakeholder.stakeholderType === 'PERSON' ? 'PERSON' : 'COMPANY';
+  const contractStakeholderType = stakeholder.stakeholderType as StakeholderType;
   return {
     ...(stakeholder.stakeholderType && { type: contractStakeholderType }),
-    roles: casedataRoleToContractRole(stakeholder),
+    roles: stakeholder.roles.map(toContractStakeholderRole),
     ...(stakeholder.personalNumber && { personalNumber: stakeholder.personalNumber }),
     ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
     ...(stakeholder.organizationNumber && { organizationNumber: stakeholder.organizationNumber }),
@@ -563,49 +562,15 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
   };
 };
 
-export const kopeavtalStakeholderToContractStakeholder = (stakeholder: KopeavtalStakeholder): ContractStakeholder => {
-  // const phone = stakeholder.contactInformation?.find(c => c.contactType === 'PHONE')?.value;
-  const phone = stakeholder.phoneNumbers?.[0] || '';
-  const email = stakeholder.emails?.[0] || '';
-  const address: Address = {
-    type: 'POSTAL_ADDRESS',
-    streetAddress: stakeholder.street || '',
-    postalCode: stakeholder.zip || '',
-    town: stakeholder.city || '',
-    country: '',
-    attention: '',
-    careOf: stakeholder.careof || '',
-  };
-  return {
-    ...(stakeholder.type && { type: stakeholder.type }),
-    roles: stakeholder.roles,
-    ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
-    ...(stakeholder.organizationNumber && { organizationNumber: stakeholder.organizationNumber }),
-    ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
-    ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
-    ...(stakeholder.partyId && { partyId: stakeholder.partyId }),
-    parameters: [
-      {
-        key: 'extraInformation',
-        values: [stakeholder.extraInformation],
-      },
-    ],
-    ...(phone && { phone }),
-    ...(email && { email }),
-    ...(address && { address }),
-  };
-};
-
 export const kopeavtalToContract = (kopeavtal: KopeAvtalsData): Contract => {
   return {
     propertyDesignations: kopeavtal.propertyDesignations,
     contractId: kopeavtal.contractId,
     type: ContractType.PURCHASE_AGREEMENT,
-    landLeaseType: 'LEASEHOLD',
+    leaseType: undefined,
     status: kopeavtal.status,
-    usufructType: 'OTHER',
     externalReferenceId: kopeavtal.externalReferenceId.toString(),
-    stakeholders: [...kopeavtal.buyers, ...kopeavtal.sellers].map(kopeavtalStakeholderToContractStakeholder),
+    stakeholders: [...kopeavtal.buyers, ...kopeavtal.sellers],
     indexTerms: [
       {
         header: 'Överlåtelseförklaring',
@@ -706,14 +671,10 @@ export const contractToKopeavtal = (contract: Contract): KopeAvtalsData => {
     ...defaultKopeavtal,
     contractId: contract.contractId,
     externalReferenceId: contract.externalReferenceId,
-    contractType: ContractType.PURCHASE_AGREEMENT,
-    status: contract.status as 'ACTIVE' | 'DRAFT',
-    buyers: contract.stakeholders
-      .filter((s) => s.roles.includes('BUYER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
-    sellers: contract.stakeholders
-      .filter((s) => s.roles.includes('SELLER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
+    type: ContractType.PURCHASE_AGREEMENT,
+    status: contract.status,
+    buyers: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.BUYER)),
+    sellers: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.SELLER)),
     overlatelseforklaring: contract.indexTerms.find((t) => t.header === 'Överlåtelseförklaring')?.terms[0].term,
     kopeskilling: contract.indexTerms.find((t) => t.header === 'Köpeskilling och betalning')?.terms[0].term,
     tilltrade: contract.indexTerms.find((t) => t.header === 'Tillträde')?.terms[0].term,
@@ -732,14 +693,11 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
   return {
     propertyDesignations: lagenhetsarrende.propertyDesignations,
     contractId: lagenhetsarrende.contractId,
-    type: ContractType.LAND_LEASE,
-    landLeaseType: 'LEASEHOLD',
+    type: ContractType.LEASE_AGREEMENT,
+    leaseType: lagenhetsarrende.leaseType,
     status: lagenhetsarrende.status,
-    usufructType: 'OTHER',
     externalReferenceId: lagenhetsarrende.externalReferenceId.toString(),
-    stakeholders: [...lagenhetsarrende.leaseholders, ...lagenhetsarrende.grantors].map(
-      kopeavtalStakeholderToContractStakeholder
-    ),
+    stakeholders: [...lagenhetsarrende.lessees, ...lagenhetsarrende.lessors],
     indexTerms: [
       {
         header: 'Område och upplåtelse',
@@ -778,7 +736,7 @@ export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeDat
         ],
       },
       {
-        header: 'Bygglov och tilstånd',
+        header: 'Bygglov och tillstånd',
         terms: [
           {
             description: 'content',
@@ -908,14 +866,11 @@ export const contractToLagenhetsArrende = (contract: Contract): LagenhetsArrende
     ...defaultLagenhetsarrende,
     contractId: contract.contractId,
     externalReferenceId: contract.externalReferenceId,
-    contractType: ContractType.LAND_LEASE,
-    status: contract.status as 'ACTIVE' | 'DRAFT',
-    leaseholders: contract.stakeholders
-      .filter((s) => s.roles.includes('LEASEHOLDER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
-    grantors: contract.stakeholders
-      .filter((s) => s.roles.includes('PROPERTY_OWNER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
+    type: ContractType.LEASE_AGREEMENT,
+    leaseType: contract.leaseType,
+    status: contract.status,
+    lessees: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSEE)),
+    lessors: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSOR)),
     omrade: contract.indexTerms.find((t) => t.header === 'Område och upplåtelse')?.terms[0].term,
     andamal: contract.indexTerms.find((t) => t.header === 'Ändamål')?.terms[0].term,
     arrendetid: contract.indexTerms.find((t) => t.header === 'Arrendetid och uppsägning')?.terms[0].term,
@@ -940,10 +895,12 @@ export const contractToLagenhetsArrende = (contract: Contract): LagenhetsArrende
 };
 
 export const getContractStakeholderName: (c: KopeavtalStakeholder | LagenhetsArrendeStakeholder) => string = (c) =>
-  c.type === 'COMPANY' || c.type === 'ASSOCIATION' ? c.organizationName : `${c.firstName} ${c.lastName}`;
+  c.type === 'COMPANY' || c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY'
+    ? c.organizationName
+    : `${c.firstName} ${c.lastName}`;
 
-export const getContractType = (contract: ContractData) => {
-  return contract.contractType === ContractType.PURCHASE_AGREEMENT
+export const getContractType = (contract: AvtalsData) => {
+  return contract.type === ContractType.PURCHASE_AGREEMENT
     ? kopeavtalToContract(contract as KopeAvtalsData)
     : lagenhetsArrendeToContract(contract as LagenhetsArrendeData);
 };

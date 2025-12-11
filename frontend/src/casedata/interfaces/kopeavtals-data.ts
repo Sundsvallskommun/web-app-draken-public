@@ -1,10 +1,7 @@
-import { BaseContract } from '@casedata/services/contract-service';
-import { CasedataOwnerOrContact } from './stakeholder';
+import { Contract, Stakeholder as ContractStakeholder } from './contracts';
 
-export type KopeavtalStakeholder = Omit<Omit<CasedataOwnerOrContact, 'personId'>, 'stakeholderType'> & {
-  partyId: string;
-  partOwnership?: string;
-  type: 'PERSON' | 'COMPANY' | 'ASSOCIATION';
+export type KopeavtalStakeholder = ContractStakeholder & {
+  personalNumber?: string;
 };
 
 export interface KopeavtalsTemplate {
@@ -101,7 +98,7 @@ export interface KopeavtalsTemplate {
   };
 }
 
-export type KopeAvtalsData = BaseContract & {
+export type KopeAvtalsData = Contract & {
   buyers: KopeavtalStakeholder[];
   sellers: KopeavtalStakeholder[];
   overlatelseforklaring: string;

@@ -50,6 +50,8 @@ export enum MEXRelation {
   ALTERNATE = 'Suppleant',
   SECRETARY = 'Sekreterare',
   CONTACT_PERSON = 'Kontaktperson',
+  LESSOR = 'Upplåtare',
+  LESSEE = 'Arrendator',
 }
 
 export enum PTRelation {

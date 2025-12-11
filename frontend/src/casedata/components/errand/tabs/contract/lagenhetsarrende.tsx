@@ -11,7 +11,11 @@ import renderContractTermCheckboxList from '@casedata/services/contract-render-s
 import { TermGroup } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { MEXRelation } from '@casedata/interfaces/role';
-import { getContractStakeholderName, saveDoneMarksOnErrande } from '@casedata/services/contract-service';
+import {
+  getContractStakeholderName,
+  prettyContractRoles,
+  saveDoneMarksOnErrande,
+} from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -39,10 +43,10 @@ export const Lagenhetsarrende: React.FC<{
   changeBadgeColor;
   onSave;
   existingContract: LagenhetsArrendeData;
-  leaseholders: LagenhetsArrendeStakeholder[];
-  grantors: LagenhetsArrendeStakeholder[];
+  lessees: LagenhetsArrendeStakeholder[];
+  lessors: LagenhetsArrendeStakeholder[];
   updateStakeholders: () => void;
-}> = ({ changeBadgeColor, onSave, existingContract, leaseholders, grantors, updateStakeholders }) => {
+}> = ({ changeBadgeColor, onSave, existingContract, lessees, lessors, updateStakeholders }) => {
   const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
   const { register, watch, setValue, control, getValues, trigger } = useFormContext<
     LagenhetsArendeTemplate & LagenhetsArrendeData
@@ -113,40 +117,42 @@ export const Lagenhetsarrende: React.FC<{
   }, [user, errand]);
 
   useEffect(() => {
-    leaseholders.forEach(async (s: LagenhetsArrendeStakeholder, idx) => {
+    lessees.forEach(async (s: LagenhetsArrendeStakeholder, idx) => {
       const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
       s.personalNumber = ssn;
-      setValue('leaseholders', leaseholders);
+      setValue('lessees', lessees);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaseholders]);
+  }, [lessees]);
 
   const { replace: replaceLeaseholders } = useFieldArray({
     control,
-    keyName: 'leaseholderId',
-    name: 'leaseholders',
+    keyName: 'lesseeId',
+    name: 'lessees',
   });
 
   useEffect(() => {
-    grantors.forEach(async (s: LagenhetsArrendeStakeholder, idx) => {
+    lessors.forEach(async (s: LagenhetsArrendeStakeholder, idx) => {
+      console.log('populating ssn for lessor:', s);
       const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
       s.personalNumber = ssn;
-      setValue('grantors', grantors);
+      console.log('setting values for lessors:', lessors);
+      setValue('lessors', lessors);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grantors]);
+  }, [lessors]);
 
   const { replace: replaceGrantholders } = useFieldArray({
     control,
-    keyName: 'grantorId',
-    name: 'grantors',
+    keyName: 'lessorId',
+    name: 'lessors',
   });
 
   useEffect(() => {
-    replaceLeaseholders(leaseholders);
-    replaceGrantholders(grantors);
+    replaceLeaseholders(lessees);
+    replaceGrantholders(lessors);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaseholders, grantors]);
+  }, [lessees, lessors]);
 
   useEffect(() => {
     setValue('propertyDesignations', getErrandPropertyDesignations(errand));
@@ -313,34 +319,44 @@ export const Lagenhetsarrende: React.FC<{
         }}
       >
         <div className="flex flex-col gap-16">
-          <Table dense background data-cy="grantor-table">
+          <Table dense background data-cy="lessor-table">
             <Table.Header>
-              <Table.HeaderColumn>Fastighetsägare</Table.HeaderColumn>
+              <Table.HeaderColumn>Upplåtare</Table.HeaderColumn>
               <Table.HeaderColumn>Adress</Table.HeaderColumn>
+              <Table.HeaderColumn>Roll</Table.HeaderColumn>
             </Table.Header>
             <Table.Body>
-              {grantors?.length > 0 ? (
-                grantors.map((b, idx) => (
+              {lessors?.length > 0 ? (
+                lessors.map((b, idx) => (
                   <Table.Row key={`row-${idx}`}>
                     <Table.Column className="flex flex-col items-start justify-center !gap-0">
                       <div>
                         <strong>{getContractStakeholderName(b)}</strong>
                       </div>
                       <div>
-                        {b.type === 'COMPANY' || b.type === 'ASSOCIATION' ? b.organizationNumber : b.personalNumber}
+                        {b.type === 'COMPANY' || b.type === 'ASSOCIATION' || b.type === 'MUNICIPALITY'
+                          ? b.organizationNumber
+                          : b.personalNumber}
                       </div>
                     </Table.Column>
                     <Table.Column className="flex flex-col items-start justify-center !gap-0">
-                      {b.street && b.zip && b.city ? (
+                      {b.address?.streetAddress && b.address?.postalCode && b.address?.town ? (
                         <>
                           <div>
-                            <strong>{b.street}</strong>
+                            <strong>{b?.address?.streetAddress}</strong>
                           </div>
-                          <div>{b.careof}</div>
+                          <div>{b?.address?.careOf}</div>
                           <div>
-                            {b.zip} {b.city}
+                            {b?.address?.postalCode} {b?.address?.town}
                           </div>
                         </>
+                      ) : (
+                        <strong>(saknas)</strong>
+                      )}
+                    </Table.Column>
+                    <Table.Column className="flex flex-col items-start justify-center !gap-0">
+                      {b.roles?.length > 0 ? (
+                        b.roles.map((role, idx) => <div key={`role-${idx}`}>{prettyContractRoles[role]}</div>)
                       ) : (
                         <strong>(saknas)</strong>
                       )}
@@ -358,34 +374,44 @@ export const Lagenhetsarrende: React.FC<{
               )}
             </Table.Body>
           </Table>
-          <Table dense background data-cy="leaseholder-table">
+          <Table dense background data-cy="lessee-table">
             <Table.Header>
               <Table.HeaderColumn>Arrendatorer</Table.HeaderColumn>
               <Table.HeaderColumn>Adress</Table.HeaderColumn>
+              <Table.HeaderColumn>Roll</Table.HeaderColumn>
             </Table.Header>
             <Table.Body>
-              {leaseholders?.length > 0 ? (
-                leaseholders.map((b, idx) => (
-                  <Table.Row key={`leaseholder-${idx}`}>
+              {lessees?.length > 0 ? (
+                lessees.map((b, idx) => (
+                  <Table.Row key={`lessee-${idx}`}>
                     <Table.Column className="flex flex-col items-start justify-center !gap-0">
                       <div>
                         <strong>{getContractStakeholderName(b)}</strong>
                       </div>
                       <div>
-                        {b.type === 'COMPANY' || b.type === 'ASSOCIATION' ? b.organizationNumber : b.personalNumber}
+                        {b.type === 'COMPANY' || b.type === 'ASSOCIATION' || b.type === 'MUNICIPALITY'
+                          ? b.organizationNumber
+                          : b.personalNumber}
                       </div>
                     </Table.Column>
                     <Table.Column className="flex flex-col items-start justify-center !gap-0">
-                      {b.street && b.zip && b.city ? (
+                      {b.address?.streetAddress && b.address?.postalCode && b.address?.town ? (
                         <>
                           <div>
-                            <strong>{b.street}</strong>
+                            <strong>{b.address.streetAddress}</strong>
                           </div>
-                          <div>{b.careof}</div>
+                          <div>{b.address.careOf}</div>
                           <div>
-                            {b.zip} {b.city}
+                            {b.address.postalCode} {b.address.town}
                           </div>
                         </>
+                      ) : (
+                        <strong>(saknas)</strong>
+                      )}
+                    </Table.Column>
+                    <Table.Column className="flex flex-col items-start justify-center !gap-0">
+                      {b.roles?.length > 0 ? (
+                        b.roles.map((role, idx) => <div key={`role-${idx}`}>{prettyContractRoles[role]}</div>)
                       ) : (
                         <strong>(saknas)</strong>
                       )}
@@ -2407,7 +2433,7 @@ export const Lagenhetsarrende: React.FC<{
       </Disclosure>
       <Disclosure
         icon={<Icon icon={<LucideIcon name="file-plus-2" />} />}
-        data-cy="soilbeam-disclosure"
+        data-cy="landCode-disclosure"
         header={<h2 className="text-h4-sm md:text-h4-md">Hänvisning till Jordabalken</h2>}
         label={doneMark.findIndex((temp) => temp === 'jordabalken') !== -1 ? 'Komplett' : ''}
         labelColor={watch().jordabalken?.length > 0 ? 'success' : `warning`}
@@ -2429,7 +2455,7 @@ export const Lagenhetsarrende: React.FC<{
               Fyll i villkor
             </Button>
             <Checkbox
-              data-cy="manual-text-checkbox-soilbeam"
+              data-cy="manual-text-checkbox-landCode"
               onChange={() => {
                 setEditJordabalken(!editJordabalken);
               }}
@@ -2444,7 +2470,7 @@ export const Lagenhetsarrende: React.FC<{
             label={'Hänvisning till Jordabalken'}
           >
             <Modal.Content>
-              <Table dense background data-cy="soilbeam-table">
+              <Table dense background data-cy="landCode-table">
                 <Table.Header>
                   <Table.HeaderColumn>Välj hänvisning till Jordabalken</Table.HeaderColumn>
                 </Table.Header>
@@ -2542,7 +2568,7 @@ export const Lagenhetsarrende: React.FC<{
           </Modal>
           <FormControl id="jordabalken" className="w-full">
             <Input type="hidden" {...register('jordabalken')} />
-            <div className="h-[42rem] -mb-48" data-cy="soilbeam-richtext-wrapper">
+            <div className="h-[42rem] -mb-48" data-cy="landCode-richtext-wrapper">
               <ContractTextEditorWrapper
                 val={jordabalken}
                 label="jordabalken"
@@ -2646,7 +2672,7 @@ export const Lagenhetsarrende: React.FC<{
                 <FormLabel>Ange antal av extra underskriftsrader för fastighetsägare</FormLabel>
                 <Input
                   type="number"
-                  data-cy="signature-propertyowner"
+                  data-cy="signature-lessor"
                   value={getValues().signatureTerms.condition.emptyRowPropertyowner?.conditionText}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setValue('signatureTerms.condition.emptyRowPropertyowner.conditionText', e.target.value);
@@ -2655,7 +2681,7 @@ export const Lagenhetsarrende: React.FC<{
                 <FormLabel>Ange antal av extra underskriftsrader för arrendator</FormLabel>
                 <Input
                   type="number"
-                  data-cy="signature-leaseholder"
+                  data-cy="signature-lessee"
                   value={getValues().signatureTerms.condition.emptyRowLeaseholder?.conditionText}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setValue('signatureTerms.condition.emptyRowLeaseholder.conditionText', e.target.value);
