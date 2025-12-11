@@ -137,6 +137,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="new-message-button"]').should('exist').click();
       // FIXME Need to use first since two message composer components are rendered,
       // on for the sidebar and one for the message tab. Not good.
+      cy.get('[data-cy="send-message-button"]').should('be.disabled');
       cy.get('[data-cy="useEmail-radiobutton-true"]').first().click();
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
