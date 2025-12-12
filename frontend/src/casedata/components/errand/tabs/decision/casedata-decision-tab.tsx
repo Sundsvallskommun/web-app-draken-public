@@ -583,6 +583,7 @@ export const CasedataDecisionTab: React.FC<{
               <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
                 <Combobox
+                  data-cy="law-select"
                   multiple
                   placeholder="Välj lagrum"
                   value={initialLawValues}
