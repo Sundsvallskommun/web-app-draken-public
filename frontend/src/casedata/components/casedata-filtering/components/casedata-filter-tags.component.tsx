@@ -1,3 +1,4 @@
+import { Channels } from '@casedata/interfaces/channels';
 import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Priority } from '@casedata/interfaces/priority';
@@ -11,13 +12,12 @@ import {
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import { Chip } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import dayjs from 'dayjs';
 import { useFormContext } from 'react-hook-form';
 import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
 
 interface CasedataFilterTagsProps {
-  administrators: (SupportAdmin | Admin)[];
+  administrators: Admin[];
 }
 
 export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administrators }) => {
@@ -30,6 +30,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
   const admins = watch('admins');
   const propertyDesignation = watch('propertyDesignation');
   const phases = watch('phase');
+  const channels = watch('channel');
   const stakeholderType = watch('stakeholderType');
 
   const { selectedErrandStatuses }: { selectedErrandStatuses: string[] } = useAppContext();
@@ -42,6 +43,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
     admins.length > 0 ||
     propertyDesignation ||
     phases?.length > 0 ||
+    channels?.length > 0 ||
     stakeholderType?.length > 0;
 
   const handleRemoveType = (type: string) => {
@@ -76,6 +78,11 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
   const handleRemovePhase = (phase: string) => {
     const newPhases = phases.filter((casePhase) => casePhase !== phase);
     setValue('phase', newPhases);
+  };
+
+  const handleRemoveChannel = (channel: string) => {
+    const newChannels = channels.filter((caseChannel) => caseChannel !== channel);
+    setValue('channel', newChannels);
   };
 
   const handleRemoveStakeholderType = (types: string) => {
@@ -149,6 +156,17 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
         phases.map((phase, phaseIndex) => (
           <Chip data-cy={`tag-phase-${phase}`} key={`casePhase-${phaseIndex}`} onClick={() => handleRemovePhase(phase)}>
             {ErrandPhasePT[phase as keyof typeof ErrandPhasePT]}
+          </Chip>
+        ))}
+
+      {channels &&
+        channels.map((channel, channelIndex) => (
+          <Chip
+            data-cy={`tag-channel-${channel}`}
+            key={`caseChannel-${channelIndex}`}
+            onClick={() => handleRemoveChannel(channel)}
+          >
+            {Channels[channel as keyof typeof Channels]}
           </Chip>
         ))}
 

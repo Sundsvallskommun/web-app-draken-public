@@ -1,3 +1,4 @@
+import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Attachment } from './attachment';
 import { GenericExtraParameters } from './extra-parameters';
 import { CreateStakeholderDto } from './stakeholder';
@@ -28,13 +29,6 @@ export interface Decision {
   validFrom: string;
   validTo: string;
   attachments?: Attachment[];
-}
-
-export interface Law {
-  heading: string;
-  sfs: string;
-  chapter: string;
-  article: string;
 }
 
 export type DecisionType = 'PROPOSED' | 'RECOMMENDED' | 'FINAL' | 'UNKNOWN_DECISION_TYPE';

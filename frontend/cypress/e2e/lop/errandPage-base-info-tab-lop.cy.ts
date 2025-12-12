@@ -20,6 +20,16 @@ import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 import { mockEmployee } from './fixtures/mockEmployee';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
+import {
+  clearSearchResultOnPersonNumberChange,
+  disabledIncompleteContactForm,
+  displayManuallyAddStakeholderModal,
+  searchAndSaveContactPersonStakeholder,
+  searchAndSavePersonStakeholder,
+  sendCorrectDataOnManualAddPerson,
+  supportManagementEmployeeSearch,
+  supportManagementPersonSearch,
+} from '../utils/stakeholder-search-cy';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Errand page', () => {
@@ -150,21 +160,10 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getErrandWithoutStakeholders');
 
       // Person
-      cy.get('[data-cy="search-person-form-PRIMARY"').click();
-      cy.get('[data-cy="contact-personNumber-owner"]').type('WORD!');
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-      cy.get('[data-cy="personal-number-error-message"')
-        .should('exist')
-        .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
-      cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-      cy.get('[data-cy="personal-number-error-message"').should('not.exist');
+      supportManagementPersonSearch();
 
       // Employee
-      cy.get('[data-cy="search-employee-form-PRIMARY"').click();
-      cy.get('[data-cy="contact-personNumber-owner"]').clear().type('mockusername');
-      cy.get('[data-cy="contact-personNumber-owner"]').parent().find('button').should('be.enabled');
-      cy.get('[data-cy="personal-number-error-message"').should('not.exist');
+      supportManagementEmployeeSearch();
     });
 
     it('shows the correct contact person information', () => {
@@ -275,24 +274,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getMe');
       cy.wait('@getErrandWithoutStakeholders');
       cy.wait('@getMessages');
-      // // cy.wait('@getNotes');
       cy.wait('@getSupportMetadata');
 
-      cy.get('[data-cy="add-manually-button-owner"]').should('exist');
-      cy.get('[data-cy="add-manually-button-owner"]').should('be.enabled');
-      cy.get('[data-cy="add-manually-button-owner"]').click();
-
-      cy.get('[data-cy="contact-externalIdType-owner"]').should('exist');
-      cy.get('[data-cy="contact-externalIdType-owner"]').should('have.value', 'PRIVATE');
-      cy.get('[data-cy="contact-role-owner"]').should('exist');
-      cy.get('[data-cy="contact-role-owner"]').should('have.value', 'PRIMARY');
-      cy.get('[data-cy="contact-externalId-owner"]').should('exist');
-      cy.get('[data-cy="contact-personNumber"]').should('exist');
-      cy.get('[data-cy="contact-firstName"]').should('exist');
-      cy.get('[data-cy="contact-lastName"]').should('exist');
-      cy.get('[data-cy="contact-address"]').should('exist');
-      cy.get('[data-cy="contact-careOf"]').should('exist');
-      cy.get('[data-cy="contact-zipCode"]').should('exist');
+      displayManuallyAddStakeholderModal();
     });
 
     it('shows the add contact person form when button is pressed', () => {
@@ -309,26 +293,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getMe');
       cy.wait('@getErrandWithoutStakeholders');
       cy.wait('@getMessages');
-      // cy.wait('@getNotes');
       cy.wait('@getSupportMetadata');
 
       cy.get('[data-cy="search-person-form-CONTACT"').click();
-      cy.get('[data-cy="add-manually-button-owner"]').should('exist');
-      cy.get('[data-cy="add-manually-button-owner"]').should('be.enabled');
-      cy.get('[data-cy="add-manually-button-owner"]').click();
 
-      cy.get('[data-cy="contact-externalIdType-person"]').should('exist');
-      cy.get('[data-cy="contact-externalIdType-person"]').should('have.value', 'PRIVATE');
-      cy.get('[data-cy="contact-role-person"]').should('exist');
-      cy.get('[data-cy="contact-role-person"]').should('have.value', 'CONTACT');
-      cy.get('[data-cy="contact-externalId-person"]').should('exist');
-      cy.get('[data-cy="contact-personNumber"]').should('exist');
-      cy.get('[data-cy="contact-firstName"]').should('exist');
-      cy.get('[data-cy="contact-lastName"]').should('exist');
-      cy.get('[data-cy="contact-address"]').should('exist');
-      cy.get('[data-cy="contact-careOf"]').should('exist');
-      cy.get('[data-cy="contact-zipCode"]').should('exist');
-      cy.get('[data-cy="contact-city"]').should('exist');
+      displayManuallyAddStakeholderModal();
     });
 
     it('disables incomplete contact form', () => {
@@ -343,8 +312,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
-      cy.get('[data-cy="add-manually-button-owner"]').click();
-      cy.get('[data-cy="submit-contact-button"]').should('be.disabled');
+      disabledIncompleteContactForm();
     });
 
     it('shows search result and sends correct data for a person', () => {
@@ -361,31 +329,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
-      cy.get('[data-cy="search-person-form-PRIMARY"').click();
-      cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-      cy.get('[data-cy="personal-number-error-message"').should('not.exist');
-      cy.get('[data-cy="contact-form"] button').contains('Sök').click();
-      cy.get('[data-cy="search-result"').should('exist');
-      cy.get('[data-cy="search-result"').contains('Kim Svensson').should('exist');
-      cy.get('[data-cy="search-result"').contains(Cypress.env('mockPersonNumber')).should('exist');
-      cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].address).should('exist');
-      cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].postalCode).should('exist');
-      cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].city).should('exist');
 
-      // Submit it
-      cy.get('[data-cy="submit-contact-person-button"]').click();
-      cy.get('[data-cy="save-button"]').click();
-      cy.wait('@patchErrandContacts').should(({ request, response }) => {
-        expect(request.body.stakeholders.length).to.equal(1);
-        const s: SupportStakeholderFormModel = request.body.stakeholders[0];
-        expect(s.firstName).to.equal(mockAdressResponse.data.givenname);
-        expect(s.organizationName).to.equal('');
-        expect(s.lastName).to.equal(mockAdressResponse.data.lastname);
-        expect(s.externalIdType).to.equal('PRIVATE');
-        expect(s.role).to.equal('PRIMARY');
-        expect([200, 304]).to.include(response && response.statusCode);
-      });
+      searchAndSavePersonStakeholder(mockAdressResponse);
     });
 
     it('shows search result and sends correct data for an employee', () => {
@@ -444,32 +389,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
-      cy.get('[data-cy="search-person-form-PRIMARY"').click();
-      cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-      cy.get('[data-cy="personal-number-error-message"').should('not.exist');
-      cy.get('[data-cy="contact-form"] button').contains('Sök').click();
-      cy.get('[data-cy="search-result"').should('exist');
-      cy.get('[data-cy="search-result"').contains('Kim Svensson').should('exist');
-      cy.get('[data-cy="search-result"').contains(Cypress.env('mockPersonNumber')).should('exist');
-      cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].address).should('exist');
-      cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].postalCode).should('exist');
-      cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].city).should('exist');
 
-      // Change personnumber
-      cy.get('[data-cy="contact-personNumber-owner"]').type('1');
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-      cy.get('[data-cy="personal-number-error-message"').should('exist');
-
-      // Open manual form, it should be empty
-      cy.get('[data-cy="add-manually-button-owner"]').click();
-      cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
-      cy.get('[data-cy="contact-firstName"]').should('have.value', '');
-      cy.get('[data-cy="contact-lastName"]').should('have.value', '');
-      cy.get('[data-cy="contact-address"]').should('have.value', '');
-      cy.get('[data-cy="contact-careOf"]').should('have.value', '');
-      cy.get('[data-cy="contact-zipCode"]').should('have.value', '');
+      clearSearchResultOnPersonNumberChange(mockAdressResponse);
     });
 
     it('sends the correct applicant data for manually filled form, for a person', () => {
@@ -491,31 +412,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.wait('@getMessages');
       // cy.wait('@getNotes');
       cy.wait('@getSupportMetadata');
-      cy.get('[data-cy="add-manually-button-owner"]').click();
 
-      cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
-      cy.get('[data-cy="contact-firstName"]').type('Test');
-      cy.get('[data-cy="contact-lastName"]').type('Testsson');
-      cy.get('[data-cy="contact-address"]').type('Testaddress');
-      cy.get('[data-cy="contact-careOf"]').type('TestcareOf');
-      cy.get('[data-cy="contact-zipCode"]').type('12345');
-      cy.get('[data-cy="contact-city"]').type('Teststaden');
-      cy.get('[data-cy="submit-contact-button"]').click();
-      cy.get('[data-cy="save-button"]').click();
-      cy.wait('@patchErrandContacts').should(({ request, response }) => {
-        expect(request.body.stakeholders.length).to.equal(1);
-        const s: SupportStakeholderFormModel = request.body.stakeholders[0];
-        expect(s.firstName).to.equal('Test');
-        expect(s.lastName).to.equal('Testsson');
-        expect(s.address).to.equal('Testaddress');
-        expect(s.careOf).to.equal('TestcareOf');
-        expect(s.zipCode).to.equal('12345');
-        expect(s.city).to.equal('Teststaden');
-        expect(s.externalIdType).to.equal('PRIVATE');
-        expect(s.role).to.equal('PRIMARY');
-        expect([200, 304]).to.include(response && response.statusCode);
-      });
+      sendCorrectDataOnManualAddPerson();
     });
 
     it('sends the correct applicant data for manually filled form, for an employee', () => {
@@ -672,45 +570,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
-      cy.get('[data-cy="search-person-form-PRIMARY"').click();
-      cy.get('[data-cy="contact-personNumber-owner"]').type(Cypress.env('mockPersonNumber'));
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('have.text', 'Sök').click();
 
-      cy.get('[data-cy="contact-externalId-owner"]').should('have.value', mockPersonIdResponse.data.personId);
-      cy.wait('@getAddress');
-      cy.get('[data-cy="stakeholder-name"]').should(
-        'have.text',
-        mockAdressResponse.data.givenname + ' ' + mockAdressResponse.data.lastname
-      );
-      cy.get('[data-cy="stakeholder-adress"]').should(
-        'have.text',
-        mockAdressResponse.data.addresses[0].address +
-          ' ' +
-          mockAdressResponse.data.addresses[0].postalCode +
-          ' ' +
-          mockAdressResponse.data.addresses[0].city
-      );
-      cy.get('[data-cy="stakeholder-phone"]').should('exist');
-      cy.get('[data-cy="new-email-input"]').should('exist').first().type(Cypress.env('mockEmail'));
-      cy.get('[data-cy="add-new-email-button"]').should('exist').contains('Lägg till').click();
-      cy.get('[data-cy="newPhoneNumber"]').should('exist').type(Cypress.env('mockPhoneNumberCountryCode'));
-      cy.get('[data-cy="newPhoneNumber-button"]').should('exist').contains('Lägg till').click();
-      cy.get('[data-cy="submit-contact-person-button"]').should('exist').contains('Lägg till ärendeägare').click();
-      cy.get('[data-cy="save-button"]').click();
-      cy.wait('@patchErrandContacts').should(({ request, response }) => {
-        expect(request.body.stakeholders.length).to.equal(1);
-        const m = mockAdressResponse.data;
-        const s: SupportStakeholderFormModel = request.body.stakeholders[0];
-        expect(s.firstName).to.equal(m.givenname);
-        expect(s.lastName).to.equal(m.lastname);
-        expect(s.role).to.equal('PRIMARY');
-        expect(s.externalIdType).to.equal('PRIVATE');
-        expect(s.contactChannels && s.contactChannels.length > 0, 'Expected contactChannels to have entries').to.be
-          .true;
-        expect(s.contactChannels![0].value).to.equal(Cypress.env('mockEmail'));
-        expect(s.contactChannels![1].value).to.equal(Cypress.env('mockPhoneNumberCountryCode'));
-        expect([200, 304]).to.include(response && response.statusCode);
-      });
+      searchAndSaveContactPersonStakeholder(mockAdressResponse, mockPersonIdResponse);
     });
   });
 });

@@ -217,11 +217,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('Can use searchfield', () => {
       cy.get('[data-cy="query-filter"]').should('exist').type('Text goes here');
+      cy.get('button').contains('Sök').should('exist').click();
       cy.intercept('GET', '**/errands*', emptyMockErrands).as(`emptyQuery-filterSearch`);
       cy.wait(`@emptyQuery-filterSearch`);
       cy.get('Caption#errandTableCaption').contains('Det finns inga ärenden').should('exist');
 
       cy.get('[data-cy="query-filter"]').should('exist').clear().type('balder');
+      cy.get('button').contains('Sök').should('exist').click();
       cy.intercept('GET', '**/errands*', mockErrands_base).as(`listedQuery-filterSearch`);
       cy.wait(`@listedQuery-filterSearch`);
       cy.get('[data-cy="main-casedata-table"] .sk-table-tbody-tr').should(
