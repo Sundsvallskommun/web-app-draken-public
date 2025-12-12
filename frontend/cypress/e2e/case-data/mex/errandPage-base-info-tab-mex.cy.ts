@@ -14,7 +14,7 @@ import { mockOrganization } from 'cypress/e2e/case-data/fixtures/mockOrganizatio
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import dayjs from 'dayjs';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
@@ -55,6 +55,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
+
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');

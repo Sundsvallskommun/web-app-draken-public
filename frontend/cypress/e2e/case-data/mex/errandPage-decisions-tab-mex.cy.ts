@@ -11,7 +11,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
@@ -36,7 +36,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');

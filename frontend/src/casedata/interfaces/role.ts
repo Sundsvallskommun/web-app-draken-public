@@ -34,7 +34,6 @@ export enum Role {
 
 export enum MEXRelation {
   APPLICANT = 'Ärendeägare',
-  LEASEHOLDER = 'Arrendator',
   COMPANY_SIGNATORY = 'Firmatecknare',
   CASHIER = 'Kassör',
   BUYER = 'Köpare',
@@ -50,8 +49,11 @@ export enum MEXRelation {
   ALTERNATE = 'Suppleant',
   SECRETARY = 'Sekreterare',
   CONTACT_PERSON = 'Kontaktperson',
-  LESSOR = 'Upplåtare',
-  LESSEE = 'Arrendator',
+  GRANTOR = 'Upplåtare',
+  LEASEHOLDER = 'Arrendator',
+  // FIXME adjust roles for contract(?)
+  // LESSOR = 'Upplåtare',
+  // LESSEE = 'Arrendator',
 }
 
 export enum PTRelation {

@@ -32,12 +32,12 @@ export enum Status {
  * @example "ASSOCIATION"
  */
 export enum StakeholderType {
-  PERSON = "PERSON",
-  COMPANY = "COMPANY",
-  ASSOCIATION = "ASSOCIATION",
-  MUNICIPALITY = "MUNICIPALITY",
-  REGION = "REGION",
-  OTHER = "OTHER",
+  PERSON = 'PERSON',
+  COMPANY = 'COMPANY',
+  ASSOCIATION = 'ASSOCIATION',
+  MUNICIPALITY = 'MUNICIPALITY',
+  REGION = 'REGION',
+  OTHER = 'OTHER',
 }
 
 /**

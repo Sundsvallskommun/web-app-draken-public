@@ -133,6 +133,8 @@ export const mockLeaseAgreement = {
     status: 'DRAFT',
     type: ContractType.LEASE_AGREEMENT,
     leaseType: LeaseType.USUFRUCT_MOORING,
+    propertyDesignations: ['AVTALSFASTIGHET 1:123', 'AVTALSFASTIGHET 2:456'],
+    notices: [],
     stakeholders: [
       {
         type: 'PERSON',
@@ -284,6 +286,31 @@ export const mockLeaseAgreement = {
         ],
       },
     ],
+    attachmentMetaData: [
+      {
+        id: 1,
+        category: 'CONTRACT',
+        filename: 'mock-contract.pdf',
+        mimeType: 'application/pdf',
+        note: '',
+      },
+    ],
+  },
+  message: 'success',
+};
+
+export const mockContractAttachment = {
+  data: {
+    attachmentData: {
+      content: 'JVBERi0xLjcKJeLjz9MKO==',
+    },
+    metadata: {
+      id: 1,
+      category: 'CONTRACT',
+      filename: 'mock-contract.pdf',
+      mimeType: 'application/pdf',
+      note: '',
+    },
   },
   message: 'success',
 };

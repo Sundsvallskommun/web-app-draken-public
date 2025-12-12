@@ -1,25 +1,25 @@
 /// <reference types="cypress" />
 
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
+import { mockEstateInfo } from '../fixtures/mockEstateInfo';
+import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
-import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
-import { mockEstateInfo } from '../fixtures/mockEstateInfo';
-import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
-import { mockPurchaseAgreement } from '../fixtures/mockContract';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
-import { mockAsset } from '../fixtures/mockAsset';
 import { preventProcessExtraParameters } from '../utils/utils';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 
 const checkExtraParameter = (extraParameters: ExtraParameter[], key: string, value: string) => {
   const param = extraParameters.find((p: any) => p.key === key);
@@ -46,14 +46,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
-      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
