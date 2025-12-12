@@ -430,7 +430,7 @@ export const MessageComposer: React.FC<{
       setValue('messageBody', defaultSignature());
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
-      setValue('contactMeans', !!errand.externalCaseId ? 'webmessage' : 'email');
+      setValue('contactMeans', 'email');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message, errand]);
