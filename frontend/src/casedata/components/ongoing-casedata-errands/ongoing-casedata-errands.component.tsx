@@ -49,6 +49,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const statusFilter = watchFilter('status');
   const propertyDesignation = watchFilter('propertyDesignation');
   const phaseFilter = watchFilter('phase');
+  const channelFilter = watchFilter('channel');
   const stakeholderTypeFilter = watchFilter('stakeholderType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
@@ -196,6 +197,9 @@ export const OngoingCaseDataErrands: React.FC = () => {
       if (phaseFilter && phaseFilter.length > 0) {
         fObj['phase'] = phaseFilter;
       }
+      if (channelFilter && channelFilter.length > 0) {
+        fObj['channel'] = channelFilter.join(',');
+      }
       if (stakeholderTypeFilter && stakeholderTypeFilter.length > 0) {
         fObj['stakeholderType'] = stakeholderTypeFilter;
       }
@@ -215,6 +219,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
       enddate,
       propertyDesignation,
       phaseFilter,
+      channelFilter,
       stakeholderTypeFilter,
     ]
   );
@@ -233,6 +238,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
     (getValues().enddate !== '' ? 1 : 0) +
     (getValues().startdate !== '' ? 1 : 0) +
     getValues().phase.length +
+    (getValues().channel?.length || 0) +
     getValues().priority.length +
     (getValues().propertyDesignation && getValues().propertyDesignation !== '' ? 1 : 0) +
     (ownerFilter ? 1 : 0);
