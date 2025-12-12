@@ -1,7 +1,6 @@
 import { useFormContext } from 'react-hook-form';
 import { Chip } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { Admin } from '@common/services/user-service';
 import {
   AttestationFilter,
@@ -10,7 +9,7 @@ import {
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 
 interface AttestationFilterTagsProps {
-  administrators: (SupportAdmin | Admin)[];
+  administrators: Admin[];
 }
 
 export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps> = () => {

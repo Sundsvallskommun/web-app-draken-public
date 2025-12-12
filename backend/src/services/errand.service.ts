@@ -26,6 +26,8 @@ export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) =>
 export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, errandId: string) => CreateErrandDto = (errandData, errandId) => {
   const newErrand: CreateErrandDto = {
     ...(errandId && { id: parseInt(errandId, 10) }),
+
+    ...('channel' in errandData && errandData.channel ? { channel: errandData.channel } : {}),
     ...(errandData.caseType && { caseType: errandData.caseType }),
     ...(errandData.priority && { priority: errandData.priority as any }),
     ...(errandData.description && { description: errandData.description }),

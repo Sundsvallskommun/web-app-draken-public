@@ -12,7 +12,6 @@ import {
   AttestationTableForm,
 } from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
 import store from '@supportmanagement/services/storage-service';
-import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   getBillingRecord,
   getBillingRecords,
@@ -37,7 +36,7 @@ export const AttestationTab = () => {
   const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState(undefined);
 
-  const { setSupportErrand, setSupportAdmins, setBillingRecords, supportAdmins, municipalityId } = useAppContext();
+  const { setSupportErrand, setBillingRecords, administrators, municipalityId } = useAppContext();
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -124,11 +123,6 @@ export const AttestationTab = () => {
     //eslint-disable-next-line
   }, [billingRecords]);
 
-  useEffect(() => {
-    getSupportAdmins().then(setSupportAdmins);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useDebounceEffect(
     () => {
       const fObj = {};
@@ -168,7 +162,7 @@ export const AttestationTab = () => {
             <AttestationsFilteringComponent
               ownerFilterHandler={ownerFilteringHandler}
               ownerFilter={ownerFilter}
-              administrators={supportAdmins}
+              administrators={administrators}
             />
           </FormProvider>
         </div>
