@@ -88,7 +88,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
         {}
       );
-      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary.sk-disclosure-header-icon')
+      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary.sk-disclosure-header-button')
         .should('exist')
         .click();
 

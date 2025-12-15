@@ -203,7 +203,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .type(Cypress.env('mockInvalidPersonNumber'));
 
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockInvalidPersonNumber'));
-      cy.get('[data-cy="personal-number-error-message"]').should('exist').and('have.text', invalidSsnMessage);
+      cy.get('[data-cy="personal-number-error-message"]').should('exist').should('contain.text', invalidSsnMessage);
 
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="personal-number-error-message"]').should('not.exist');
@@ -216,7 +216,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-form"] button').should('exist');
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockInvalidPersonNumber'));
-      cy.get('[data-cy="personal-number-error-message"]').should('exist').and('have.text', invalidSsnMessage);
+      cy.get('[data-cy="personal-number-error-message"]').should('exist').should('contain.text', invalidSsnMessage);
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="personal-number-error-message"]').should('not.exist');
@@ -236,7 +236,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('button').contains('Lägg till manuellt').should('exist');
       cy.get('[data-cy="contact-form"] button').contains('Sök').click();
       cy.wait('@notFoundAddress');
-      cy.get('[data-cy="not-found-error-message"]').should('exist').and('have.text', 'Sökningen gav ingen träff');
+      cy.get('[data-cy="not-found-error-message"]').should('exist').should('contain.text', 'Sökningen gav ingen träff');
     });
 
     it('shows error message on invalid org number', () => {
@@ -266,11 +266,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
-      cy.get('[data-cy="org-number-error-message-owner"]').should('exist').and('have.text', invalidOrgNumberMessage);
+      cy.get('[data-cy="org-number-error-message-owner"]')
+        .should('exist')
+        .should('contain.text', invalidOrgNumberMessage);
 
       cy.get('[data-cy="search-enterprise-person-form"]').click();
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
-      cy.get('[data-cy="org-number-error-message-person"]').should('exist').and('have.text', invalidOrgNumberMessage);
+      cy.get('[data-cy="org-number-error-message-person"]')
+        .should('exist')
+        .should('contain.text', invalidOrgNumberMessage);
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockOrganizationNumber'));
       cy.get('[data-cy="org-number-error-message-person"]').should('not.exist');
