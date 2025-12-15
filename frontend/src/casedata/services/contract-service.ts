@@ -28,6 +28,8 @@ import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
+import { getErrandPropertyDesignations } from './casedata-facilities-service';
+import { getFacilityInfo } from '@common/services/facilities-service';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
@@ -310,9 +312,6 @@ const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
 };
 
 const toContractStakeholderType = (type: StakeholderType): ContractStakeholderType => {
-  if (type === 'ORGANIZATION') {
-    return ContractStakeholderType.COMPANY;
-  }
   return type as ContractStakeholderType;
 };
 
@@ -394,8 +393,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       ...(data.indexAdjusted && { indexYear: 2025 }),
       ...(data.indexAdjusted && { indexNumber: 419.35 }),
       ...(data.indexAdjusted && { indexationRate: 1 }),
-      // FIXME indexType saknas i APIet
-      // ...(data.indexAdjusted && {indexType: 'KPI 80'}),
+      ...(data.indexAdjusted && { indexType: 'KPI 80' }),
     };
   }
   return {
@@ -444,7 +442,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
 };
 
 export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => string = (c) =>
-  c.type === 'COMPANY' || c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY'
+  c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY' || c.type === 'ORGANIZATION'
     ? c.organizationName
     : `${c.firstName} ${c.lastName}`;
 
@@ -555,3 +553,23 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   };
   return a;
 }
+
+export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
+  errand: IErrand
+) => {
+  const infos = await Promise.allSettled(
+    errand.facilities
+      .filter((facility) => facility.address)
+      .map((facility) => facility.address?.propertyDesignation)
+      .map(getFacilityInfo)
+      .map(async (p) => (await p).data)
+  );
+  return infos
+    .filter((info) => info.status === 'fulfilled')
+    .map((info) => {
+      return {
+        name: info.value?.designation || '',
+        district: info.value?.district || '',
+      };
+    });
+};

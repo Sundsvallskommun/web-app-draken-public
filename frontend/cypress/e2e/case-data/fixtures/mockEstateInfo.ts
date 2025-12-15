@@ -1,8 +1,9 @@
 // This person number is for test purposes, from the Swedish Tax Agency
 export const MOCK_PERSON_NUMBER = Cypress.env('mockPersonNumber');
-export const mockEstateInfo = {
+export const mockEstateInfo11 = {
   data: {
-    designation: 'SUNDSVALL SUNDSVALL 1:1',
+    designation: 'SUNDSVALL 1:1',
+    district: 'Låtsasdistrikt',
     objectidentifier: '909a6a80-aaaa-aaaa-aaaa-ed8f66444c3f',
     totalArea: 1555,
     totalAreaWater: 0,
@@ -283,3 +284,21 @@ export const mockEstateInfo = {
   },
   message: 'success',
 };
+
+export const mockEstateInfo12 = {
+  data: {
+    designation: 'SUNDSVALL 1:2',
+    district: 'Låtsasdistrikt',
+    objectidentifier: '909a6a80-aaaa-aaaa-aaaa-ed8f66444c3g',
+    totalArea: 1555,
+    totalAreaWater: 0,
+    totalAreaLand: 1555,
+    ownerChanges: [],
+    ownership: [],
+    mortage: [],
+    previousOwnership: [],
+    actions: [],
+  },
+  message: 'success',
+};
+
