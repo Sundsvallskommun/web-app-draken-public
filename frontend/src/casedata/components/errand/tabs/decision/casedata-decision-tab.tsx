@@ -690,10 +690,12 @@ export const CasedataDecisionTab: React.FC<{
           )}
         </div>
 
-        <div className="pb-20">
-          <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
-          <ServiceListComponent services={services} readOnly />
-        </div>
+        {isPT() ? (
+          <div className="pb-20">
+            <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
+            <ServiceListComponent services={services} readOnly />
+          </div>
+        ) : null}
 
         <div className="flex justify-start gap-md">
           <Button
