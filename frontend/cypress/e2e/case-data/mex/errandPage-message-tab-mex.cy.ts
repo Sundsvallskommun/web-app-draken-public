@@ -12,6 +12,7 @@ import { mockAsset } from '../fixtures/mockAsset';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Message tab', () => {
@@ -26,11 +27,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept(
-        'GET',
-        '**/contract/2024-01026',
-        mockMexErrand_base.data.extraParameters.find((param) => param.key === 'contractId')?.values[0]
-      ).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -137,11 +137,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="new-message-button"]').should('exist').click();
       // FIXME Need to use first since two message composer components are rendered,
       // on for the sidebar and one for the message tab. Not good.
-      cy.get('[data-cy="useEmail-radiobutton-true"]').first().click();
+      cy.get('[data-cy="send-message-button"]').should('be.disabled');
+      cy.get('[data-cy="useEmail-radiobutton-true"]').first().click({ force: true });
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
       cy.get('.ql-editor').should('exist');
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('not.be.disabled').first().type('Mock message');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').first().children().type('Mock message');
 
       const ownerEmail = mockMexErrand_base.data.stakeholders
         .find((stakeholder) => stakeholder.roles.includes('APPLICANT'))
@@ -151,10 +152,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist')
         .first()
         .select(ownerEmail + ' (Ärendeägare)');
-      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test.com');
+      cy.get('[data-cy="new-email-input"]').should('exist').first().clear().type('test.com');
       cy.get('[data-cy="add-new-email-button"]').should('be.disabled');
-      cy.get('[data-cy="new-email-input"]').should('exist').clear().type('test@example.com');
-      cy.get('[data-cy="add-new-email-button"]').should('be.enabled').click({ force: true });
+      cy.get('[data-cy="new-email-input"]').should('exist').first().clear().type('test@example.com');
+      cy.get('[data-cy="add-new-email-button"]').should('be.enabled').first().click({ force: true });
 
       // Add existing attachment
       cy.get('[data-cy="select-errand-attachment"]').should('exist').first().select(1);
@@ -162,13 +163,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="browse-button"]').should('exist').click({ force: true });
 
       // Try to add empty attachment
-      cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/empty-attachment.txt', { force: true });
+      cy.get('input[type=file]').last().selectFile('cypress/e2e/case-data/files/empty-attachment.txt', { force: true });
       cy.get('[id="newAttachments-error"]')
         .should('exist')
         .contains('Bilagan du försöker lägga till är tom. Försök igen.');
 
       // Add new attachment
-      cy.get('input[type=file]').selectFile('cypress/e2e/case-data/files/attachment.txt', { force: true });
+      cy.get('input[type=file]').last().selectFile('cypress/e2e/case-data/files/attachment.txt', { force: true });
       cy.get('[data-cy="attachment-wrapper"] .sk-icon').should('exist');
 
       cy.get('[data-cy="send-message-button"]').first().should('be.enabled').click({ force: true });

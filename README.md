@@ -13,7 +13,7 @@ För MEX (Mark och exploatering):
 | CaseData        |    11.5 |
 | Messaging       |     7.9 |
 | Templating      |     2.0 |
-| Contract        |     2.1 |
+| Contract        |     3.0 |
 | Employee        |     2.0 |
 | Party           |     2.0 |
 | SimulatorServer |     2.0 |

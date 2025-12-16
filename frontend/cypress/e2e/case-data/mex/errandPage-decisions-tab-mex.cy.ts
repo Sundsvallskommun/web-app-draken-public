@@ -11,7 +11,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockContract } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
@@ -30,13 +30,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
-      cy.intercept('GET', '**/contract/**', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/**', mockPurchaseAgreement).as('getContract');
       cy.intercept('POST', '**/templates/phrases*', mockPhrases).as('getPhrases');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -70,7 +73,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
 
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select(2);
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor').should('exist').clear().type('Mock text', { delay: 100 });
       cy.get('[data-cy="save-decision-button"]').should('exist').click();
       cy.get('button').should('exist').contains('Ja').click();
 
@@ -82,8 +85,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
-      cy.contains('Förslag till beslut måste anges').should('exist');
+      cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor').should('exist').clear().type('Mock text', { delay: 100 });
+      cy.contains('Beslut måste anges').should('exist');
       cy.get('[data-cy="save-decision-button"]').should('exist').should('be.enabled');
       cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('be.disabled');
     });

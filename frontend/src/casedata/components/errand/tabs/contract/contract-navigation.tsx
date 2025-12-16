@@ -1,4 +1,4 @@
-import { ContractType } from '@casedata/services/contract-service';
+import { ContractType } from '@casedata/interfaces/contracts';
 import { Badge, Link } from '@sk-web-gui/react';
 
 export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ contractType }) => {
@@ -6,38 +6,24 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
     contractType === ContractType.PURCHASE_AGREEMENT
       ? [
           { key: 'parties', label: 'Parter' },
-          { key: 'overlatelse', label: 'Överlåtelseförklaring' },
-          { key: 'payment', label: 'Köpeskilling och betalning' },
-          { key: 'access', label: 'Tillträde' },
-          { key: 'pollution', label: 'Markföroreningar' },
-          { key: 'forest', label: 'Skog' },
-          { key: 'seller-obligations', label: 'Säljarens förpliktelser' },
-          { key: 'expenses', label: 'Utgifter och kostnader' },
-          { key: 'property', label: 'Fastighetsbildning' },
-          { key: 'other', label: 'Övriga villkor' },
+          { key: 'area', label: 'Område' },
+          { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
+          { key: 'lopande', label: 'Löpande fakturering' },
+          { key: 'engangs', label: 'Engångsfakturering' },
+          { key: 'signerade', label: 'Signerade avtal' },
         ]
-      : contractType === ContractType.LAND_LEASE
+      : contractType === ContractType.LEASE_AGREEMENT
       ? [
           { key: 'parties', label: 'Parter' },
-          { key: 'area', label: 'Område och upplåtelse' },
-          { key: 'purpose', label: 'Ändamål' },
-          { key: 'arrendetid', label: 'Arrendetid och uppsägning' },
-          { key: 'arrendeavgift', label: 'Arrendeavgift' },
-          { key: 'bygglov', label: 'Bygglov och tillstånd' },
-          { key: 'subletting', label: 'Överlåtelse och underupplåtelse' },
-          { key: 'inskrivning', label: 'Inskrivning' },
-          { key: 'skick', label: 'Skick och skötsel' },
-          { key: 'ledningar', label: 'Ledningar' },
-          { key: 'expenses', label: 'Kostnader' },
-          { key: 'pollution', label: 'Markföroreningar' },
-          { key: 'upphorande', label: 'Arrendets upphörande och återställning av området' },
-          { key: 'damages', label: 'Skada och ansvar' },
-          { key: 'special', label: 'Särskilda bestämmelser' },
-          { key: 'jordabalk', label: 'Hänvisning till Jordabalken' },
+          { key: 'area', label: 'Område' },
+          { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
+          { key: 'lopande', label: 'Löpande fakturering' },
+          { key: 'engangs', label: 'Engångsfakturering' },
+          { key: 'signerade', label: 'Signerade avtal' },
         ]
       : [];
   return (
-    <div className="w-1/5 pl-40 lg:visible invisible">
+    <div className="w-1/4 pl-40 lg:visible invisible">
       <h2 className="text-h4-sm md:text-h4-md mb-md">Innehåll</h2>
       {headers.map((h) => (
         <div className="flex gap-12 items-center mb-7" data-cy={`badge-${h.key}`} key={`badge-${h.key}`}>

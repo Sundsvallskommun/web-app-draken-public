@@ -11,7 +11,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTCaseTypes } from 'cypress/e2e/case-data/fixtures/mockCaseTypes';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockContract } from '../fixtures/mockContract';
+import { mockPurchaseAgreement } from '../fixtures/mockContract';
 
 //NOTE: copied structure from MEX - needs cleanup and detail fix to match PT
 
@@ -29,7 +29,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', /\/errand\/\d*\/attachments/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
-      cy.intercept('GET', '**/contract/*', mockContract);
+      cy.intercept('GET', '**/contract/*', mockPurchaseAgreement);
       cy.visit('/registrera');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     });

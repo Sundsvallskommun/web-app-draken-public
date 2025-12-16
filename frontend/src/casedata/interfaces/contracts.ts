@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -9,15 +10,149 @@
  * ---------------------------------------------------------------
  */
 
+/**
+ * Time unit
+ * @example "MONTHS"
+ */
+export enum TimeUnit {
+  DAYS = "DAYS",
+  MONTHS = "MONTHS",
+  YEARS = "YEARS",
+}
+
+/** Status */
+export enum Status {
+  ACTIVE = "ACTIVE",
+  DRAFT = "DRAFT",
+  TERMINATED = "TERMINATED",
+}
+
+/**
+ * Stakeholder type
+ * @example "ASSOCIATION"
+ */
+export enum StakeholderType {
+  PERSON = 'PERSON',
+  COMPANY = 'COMPANY',
+  ASSOCIATION = 'ASSOCIATION',
+  MUNICIPALITY = 'MUNICIPALITY',
+  REGION = 'REGION',
+  OTHER = 'OTHER',
+}
+
+/**
+ * Stakeholder role
+ * @example "BUYER"
+ */
+export enum StakeholderRole {
+  BUYER = "BUYER",
+  CONTACT_PERSON = "CONTACT_PERSON",
+  GRANTOR = "GRANTOR",
+  LAND_RIGHT_OWNER = "LAND_RIGHT_OWNER",
+  LEASEHOLDER = "LEASEHOLDER",
+  PROPERTY_OWNER = "PROPERTY_OWNER",
+  POWER_OF_ATTORNEY_CHECK = "POWER_OF_ATTORNEY_CHECK",
+  POWER_OF_ATTORNEY_ROLE = "POWER_OF_ATTORNEY_ROLE",
+  SELLER = "SELLER",
+  SIGNATORY = "SIGNATORY",
+  PRIMARY_BILLING_PARTY = "PRIMARY_BILLING_PARTY",
+  LESSOR = "LESSOR",
+  LESSEE = "LESSEE",
+}
+
+/**
+ * Party
+ * @example "LESSOR"
+ */
+export enum Party {
+  LESSOR = "LESSOR",
+  LESSEE = "LESSEE",
+}
+
+/** Leasehold type */
+export enum LeaseholdType {
+  AGRICULTURE = "AGRICULTURE",
+  APARTMENT = "APARTMENT",
+  BOATING_PLACE = "BOATING_PLACE",
+  BUILDING = "BUILDING",
+  DEPOT = "DEPOT",
+  DWELLING = "DWELLING",
+  LAND_COMPLEMENT = "LAND_COMPLEMENT",
+  LINEUP = "LINEUP",
+  OTHER = "OTHER",
+  PARKING = "PARKING",
+  RECYCLING_STATION = "RECYCLING_STATION",
+  ROAD = "ROAD",
+  SIGNBOARD = "SIGNBOARD",
+  SNOW_DUMP = "SNOW_DUMP",
+  SPORTS_PURPOSE = "SPORTS_PURPOSE",
+  SURFACE_HEAT = "SURFACE_HEAT",
+  TRAIL = "TRAIL",
+}
+
+/** Lease type */
+export enum LeaseType {
+  LAND_LEASE_PUBLIC = "LAND_LEASE_PUBLIC",
+  LAND_LEASE_RESIDENTIAL = "LAND_LEASE_RESIDENTIAL",
+  SITE_LEASE_COMMERCIAL = "SITE_LEASE_COMMERCIAL",
+  USUFRUCT_MOORING = "USUFRUCT_MOORING",
+  USUFRUCT_HUNTING = "USUFRUCT_HUNTING",
+  USUFRUCT_FARMING = "USUFRUCT_FARMING",
+  USUFRUCT_MISC = "USUFRUCT_MISC",
+  OBJECT_LEASE = "OBJECT_LEASE",
+  LAND_LEASE_MISC = "LAND_LEASE_MISC",
+  LEASEHOLD = "LEASEHOLD",
+  OTHER_FEE = "OTHER_FEE",
+}
+
+/** Invoiced in */
+export enum InvoicedIn {
+  ADVANCE = "ADVANCE",
+  ARREARS = "ARREARS",
+}
+
+/**
+ * Interval type
+ * @example "QUARTERLY"
+ */
+export enum IntervalType {
+  YEARLY = "YEARLY",
+  HALF_YEARLY = "HALF_YEARLY",
+  QUARTERLY = "QUARTERLY",
+  MONTHLY = "MONTHLY",
+}
+
+/** Contract type */
+export enum ContractType {
+  LEASE_AGREEMENT = "LEASE_AGREEMENT",
+  PURCHASE_AGREEMENT = "PURCHASE_AGREEMENT",
+}
+
+/** Attachment category */
+export enum AttachmentCategory {
+  CONTRACT = "CONTRACT",
+  OTHER = "OTHER",
+}
+
+/**
+ * Address type
+ * @example "POSTAL_ADDRESS"
+ */
+export enum AddressType {
+  POSTAL_ADDRESS = "POSTAL_ADDRESS",
+  BILLING_ADDRESS = "BILLING_ADDRESS",
+  VISITING_ADDRESS = "VISITING_ADDRESS",
+}
+
 export interface Problem {
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
 }
 
 export interface StatusType {
@@ -28,13 +163,12 @@ export interface StatusType {
 
 /** Address for stakeholder */
 export interface Address {
-  /**
-   * Address type
-   * @example "POSTAL_ADDRESS"
-   */
-  type?: string;
+  /** Address type */
+  type?: AddressType;
   /** @example "Testvägen 18" */
   streetAddress?: string;
+  /** @example "c/o Test Testorsson" */
+  careOf?: string;
   /** @example "123 45" */
   postalCode?: string;
   /** @example "Sundsvall" */
@@ -43,23 +177,18 @@ export interface Address {
   country?: string;
   /** @example "Test Testorsson" */
   attention?: string;
-  /** @example "Testvägen 18" */
-  careOf?: string;
 }
 
 /** Attachment metadata */
-export interface AttachmentMetaData {
+export interface AttachmentMetadata {
   /**
    * The attachment id
    * @format int64
    * @example 1234
    */
   id?: number;
-  /**
-   * The attachment category. Possible values: CONTRACT | OTHER
-   * @example "CONTRACT"
-   */
-  category?: string;
+  /** Attachment category */
+  category?: AttachmentCategory;
   /**
    * The attachment filename
    * @example "LeaseContract12.pdf"
@@ -100,11 +229,8 @@ export interface Contract {
    * @example "123"
    */
   externalReferenceId?: string;
-  /**
-   * Type of lease
-   * @example "LEASEHOLD"
-   */
-  landLeaseType?: string;
+  /** Lease type */
+  leaseType?: LeaseType;
   /**
    * Municipality id for the contract
    * @example "1984"
@@ -115,36 +241,23 @@ export interface Contract {
    * @example "909a6a80-d1a4-90ec-e040-ed8f66444c3f"
    */
   objectIdentity?: string;
-  /**
-   * Status for contract
-   * @example "ACTIVE"
-   */
-  status?: string;
-  /**
-   * Contract type.
-   * @example "LAND_LEASE"
-   */
-  type?: string;
-  /**
-   * Type of right of use
-   * @example "HUNTING"
-   */
-  usufructType?: string;
+  /** Status */
+  status: Status;
+  /** Contract type */
+  type: ContractType;
   /** Leasehold */
   leasehold?: Leasehold;
-  attachmentMetaData?: AttachmentMetaData[];
+  attachmentMetaData?: AttachmentMetadata[];
   additionalTerms?: TermGroup[];
   /** Extra parameters */
   extraParameters?: ExtraParameterGroup[];
   indexTerms?: TermGroup[];
   propertyDesignations?: string[];
   stakeholders?: Stakeholder[];
-  /**
-   * The duration of the lease in years
-   * @format int32
-   * @example 9
-   */
-  leaseDuration?: number;
+  /** Duration */
+  duration?: Duration;
+  /** Extension */
+  extension?: Extension;
   /** Fees */
   fees?: Fees;
   /** Invoicing details */
@@ -161,24 +274,7 @@ export interface Contract {
    * @example "2022-12-31"
    */
   end?: string;
-  /**
-   * Marker for whether an agreement should be extended automatically or not
-   * @default true
-   * @example true
-   */
-  autoExtend?: boolean;
-  /**
-   * Extension period in days
-   * @format int32
-   * @example 30
-   */
-  leaseExtension?: number;
-  /**
-   * Termination period in days
-   * @format int32
-   * @example 30
-   */
-  periodOfNotice?: number;
+  notices?: Notice[];
   /**
    * Leased area (m2)
    * @format int32
@@ -194,6 +290,36 @@ export interface Contract {
 export interface Crs {
   type?: CrsTypeEnum;
   properties?: Record<string, object>;
+}
+
+/** Duration */
+export interface Duration {
+  /**
+   * The lease duration value
+   * @format int32
+   * @example 9
+   */
+  leaseDuration: number;
+  /** Time unit */
+  unit: TimeUnit;
+}
+
+/** Extension */
+export interface Extension {
+  /**
+   * Marker for whether an agreement should be extended automatically or not
+   * @default true
+   * @example true
+   */
+  autoExtend?: boolean;
+  /**
+   * The lease extension value
+   * @format int32
+   * @example 2
+   */
+  leaseExtension: number;
+  /** Time unit */
+  unit: TimeUnit;
 }
 
 /** Extra parameter group */
@@ -246,17 +372,17 @@ export interface Fees {
   currency?: string;
   /**
    * Yearly fee
-   * @example 1000
+   * @example 1000.5
    */
   yearly?: number;
   /**
    * Monthly fee
-   * @example 100
+   * @example 100.5
    */
   monthly?: number;
   /**
    * Total fee
-   * @example 1200
+   * @example 1200.5
    */
   total?: number;
   /**
@@ -276,6 +402,15 @@ export interface Fees {
    * @example 1
    */
   indexNumber?: number;
+  /**
+   * Specifies what proportion of the consumer price index should be used for invoicing.
+   * @min 0
+   * @exclusiveMin false
+   * @max 1
+   * @exclusiveMax false
+   * @example 0.5
+   */
+  indexationRate?: number;
   /** Additional information */
   additionalInformation?: string[];
 }
@@ -287,30 +422,31 @@ export interface GeoJsonObject {
 }
 
 export type GeometryCollection = GeoJsonObject & {
-  geometries?: GeoJsonObject[];
+  geometries?: (
+    | Feature
+    | FeatureCollection
+    | GeometryCollection
+    | LineString
+    | MultiLineString
+    | MultiPoint
+    | MultiPolygon
+    | Point
+    | Polygon
+  )[];
 };
 
 /** Invoicing details */
 export interface Invoicing {
-  /**
-   * How often the lease is invoiced
-   * @example "QUARTERLY"
-   */
-  invoiceInterval?: string;
-  /**
-   * How the lease is invoiced
-   * @example "ADVANCE"
-   */
-  invoicedIn?: string;
+  /** Interval type */
+  invoiceInterval?: IntervalType;
+  /** Invoiced in */
+  invoicedIn?: InvoicedIn;
 }
 
 /** Leasehold */
 export interface Leasehold {
-  /**
-   * Type of leasehold
-   * @example "OTHER"
-   */
-  purpose?: string;
+  /** Leasehold type */
+  purpose?: LeaseholdType;
   /**
    * description
    * @example "A simple description of the leasehold"
@@ -345,6 +481,35 @@ export type MultiPolygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][][];
 };
 
+/** Notice */
+export interface Notice {
+  /** Party */
+  party?: Party;
+  /**
+   * The period of notice
+   * @format int32
+   * @example 3
+   */
+  periodOfNotice: number;
+  /** Time unit */
+  unit: TimeUnit;
+}
+
+/** Parameter model */
+export interface Parameter {
+  /**
+   * Parameter key
+   * @minLength 1
+   */
+  key: string;
+  /** Parameter display name */
+  displayName?: string;
+  /** Parameter group name */
+  group?: string;
+  /** Parameter values */
+  values?: string[];
+}
+
 export type Point = GeoJsonObject & {
   coordinates?: LngLatAlt;
 };
@@ -353,20 +518,11 @@ export type Polygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][];
 };
 
-export interface StakeholderParameter {
-  key?: string;
-  displayName?: string;
-  values?: string[];
-}
-
 /** List of stakeholders */
 export interface Stakeholder {
-  /**
-   * Type of stakeholder, possible values: PERSON | COMPANY | ASSOCIATION
-   * @example "ASSOCIATION"
-   */
-  type?: string;
-  roles?: string[];
+  /** Stakeholder type */
+  type?: StakeholderType;
+  roles?: StakeholderRole[];
   /**
    * Name of the organization
    * @example "Sundsvalls kommun"
@@ -404,9 +560,8 @@ export interface Stakeholder {
   emailAddress?: string;
   /** Address for stakeholder */
   address?: Address;
-
-  parameters?: StakeholderParameter[];
-  extraInformation?: string;
+  /** Parameters for the stakeholder */
+  parameters?: Parameter[];
 }
 
 /** Term */
@@ -452,10 +607,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   parameters?: Record<string, object>;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -488,14 +643,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
+  title?: string;
+  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
   parameters?: Record<string, object>;
   status?: StatusType;
-  title?: string;
-  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -524,7 +679,7 @@ export interface Attachment {
   /** Attachment content */
   attachmentData: AttachmentData;
   /** Attachment metadata */
-  metaData: AttachmentMetaData;
+  metadata: AttachmentMetadata;
 }
 
 /** Attachment content */
@@ -579,6 +734,6 @@ export interface PagingMetaData {
 }
 
 export enum CrsTypeEnum {
-  Name = 'name',
-  Link = 'link',
+  Name = "name",
+  Link = "link",
 }

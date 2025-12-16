@@ -1,332 +1,127 @@
+import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
   Address,
-  AttachmentMetaData,
+  AddressType,
+  Attachment,
+  AttachmentCategory,
   Contract,
   Stakeholder as ContractStakeholder,
-  TermGroup,
+  StakeholderRole as ContractStakeholderRole,
+  StakeholderType as ContractStakeholderType,
+  ContractType,
+  Fees,
+  InvoicedIn,
+  LeaseType,
+  Parameter,
+  Party,
+  Status,
+  TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { IErrand, RegisterErrandData } from '@casedata/interfaces/errand';
-import { KopeAvtalsData, KopeavtalStakeholder, KopeavtalsTemplate } from '@casedata/interfaces/kopeavtals-data';
-import {
-  LagenhetsArendeTemplate,
-  LagenhetsArrendeData,
-  LagenhetsArrendeStakeholder,
-} from '@casedata/interfaces/lagenhetsarrende-data';
+import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
-import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { AxiosResponse } from 'axios';
-import { replaceExtraParameter, saveExtraParameters } from './casedata-extra-parameters-service';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { saveExtraParameters } from './casedata-extra-parameters-service';
+import { UploadFile } from '@sk-web-gui/react';
+import { base64ToFile } from '@common/services/attachment-service';
 
-export enum ContractType {
-  LAND_LEASE = 'LAND_LEASE',
-  PURCHASE_AGREEMENT = 'PURCHASE_AGREEMENT',
-}
+export const contractTypes = [
+  { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
+  { label: 'Köpeavtal', key: ContractType.PURCHASE_AGREEMENT },
+];
 
-export interface BaseContract {
-  contractId: string;
-  externalReferenceId?: string;
-  contractType: ContractType;
-  status: 'ACTIVE' | 'DRAFT';
-  propertyDesignations: string[];
-  attachmentMetaData: AttachmentMetaData[];
-  additionalTerms?: TermGroup[];
-}
+export const leaseTypes = [
+  { label: 'Allmän platsupplåtelse', key: LeaseType.LAND_LEASE_PUBLIC },
+  { label: 'Anläggningsarrende', key: LeaseType.SITE_LEASE_COMMERCIAL },
+  { label: 'Bostadsarrende', key: LeaseType.LAND_LEASE_RESIDENTIAL },
+  { label: 'Båtplats', key: LeaseType.USUFRUCT_MOORING },
+  { label: 'Hyresobjekt', key: LeaseType.OBJECT_LEASE },
+  { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
+  { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
+  { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
+  { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Tomträtt', key: LeaseType.LEASEHOLD },
+];
 
-export type ContractData = KopeAvtalsData | LagenhetsArrendeData;
-
-const defaultKopeavtalTemplate: KopeavtalsTemplate = {
-  overlatelseforklaringTerms: {
-    includeBuildingsOnProperties: 'false',
-    mapAttachments: '',
-    mapAttachmentReference: '',
-    includeBuildingsInArea: 'true',
-  },
-  kopeskillingTerms: {
-    amountText: '',
-    amountNumber: 0,
-    paymentCondition: 'onDate',
-    condition: {
-      header: 'Betalning på angivet datum',
-      conditionText: '',
-    },
-  },
-  tilltradeTerms: {
-    timeOfAccess: 'onDate',
-    accessDate: '',
-  },
-  markfororeningarTerms: {
-    detailPlan: '',
-    propertyOrArea: '',
-    condition: {
-      pollutionGuaranteeBuildable: undefined,
-      pollutionGuaranteeExtended: undefined,
-      pollutionGuaranteeInspected: undefined,
-    },
-  },
-  skogTerms: {
-    condition: {
-      noClaims: undefined,
-      huntingRights: undefined,
-      noLogging: undefined,
-      noUnsoldLoggingRights: undefined,
-      takeOverAllAgreements: undefined,
-    },
-  },
-  forpliktelserTerms: {
-    condition: {
-      insurance: undefined,
-      cleaning: undefined,
-    },
-  },
-  utgifterTerms: {
-    condition: {
-      fees: undefined,
-      taxes: undefined,
-      regulation: undefined,
-      lagfart: undefined,
-    },
-  },
-  fastighetsbildningTerms: {
-    condition: {
-      kringkostnader: undefined,
-      taxes: undefined,
-      regulation: undefined,
-    },
-  },
-  otherTerms: {
-    condition: {
-      inspected: undefined,
-      asis: undefined,
-      fees: undefined,
-      keys: undefined,
-      deedPaidByBuyer: undefined,
-    },
-  },
-  signatureTerms: {
-    condition: {
-      emptyRowSeller: undefined,
-      emptyRowBuyer: undefined,
-      example: undefined,
-    },
-  },
+export const roleLabels: { [key in ContractStakeholderRole]: string } = {
+  BUYER: 'Köpare',
+  CONTACT_PERSON: 'Kontaktperson',
+  GRANTOR: 'Upplåtare',
+  LAND_RIGHT_OWNER: 'LAND_RIGHT_OWNER',
+  LEASEHOLDER: 'LEASEHOLDER',
+  PROPERTY_OWNER: 'PROPERTY_OWNER',
+  POWER_OF_ATTORNEY_CHECK: 'POWER_OF_ATTORNEY_CHECK',
+  POWER_OF_ATTORNEY_ROLE: 'POWER_OF_ATTORNEY_ROLE',
+  SELLER: 'SELLER',
+  SIGNATORY: 'SIGNATORY',
+  PRIMARY_BILLING_PARTY: 'PRIMARY_BILLING_PARTY',
+  LESSOR: 'LESSOR',
+  LESSEE: 'LESSEE',
 };
 
-export const defaultKopeavtal: KopeAvtalsData = {
-  ...defaultKopeavtalTemplate,
-  status: 'DRAFT',
-  contractType: ContractType.PURCHASE_AGREEMENT,
+export const defaultKopeavtal: ContractData = {
+  status: Status.DRAFT,
+  type: ContractType.PURCHASE_AGREEMENT,
   contractId: '',
   propertyDesignations: [],
   buyers: [],
   sellers: [],
-  overlatelseforklaring: '',
-  kopeskilling: '',
-  tilltrade: '',
-  markfororeningar: '',
-  skog: '',
-  forpliktelser: '',
-  utgifter: '',
-  fastighetsbildning: '',
-  other: '',
-  attachmentMetaData: [],
-  signature: '',
+  generateInvoice: undefined,
+  indexAdjusted: undefined,
 };
 
-export const defaultLagenhetsArrendeTemplate: LagenhetsArendeTemplate = {
-  omradeTerms: {
-    areaType: 'land',
-    areaSize: '',
-    propertiesInvolved: [],
-    condition: {
-      areaType: { header: 'Typ av område', conditionText: '' },
-      propertiesInvolved: { header: 'Fastigheter', conditionText: '' },
-      areaSize: { header: 'Områdets storlek', conditionText: '' },
-      mapAttachments: { header: 'Kartbilagor', conditionText: '' },
-      mapAttachmentReference: { header: 'Referens till kartbilagor', conditionText: '' },
-    },
-  },
-  andamalTerms: {
-    clarification: '',
-    bygglovExists: 'false',
-    condition: {
-      byggnad: undefined,
-      batplats: undefined,
-      idrattsandamal: undefined,
-      led: undefined,
-      parkering: undefined,
-      skylt: undefined,
-      snotipp: undefined,
-      tomtkomplement: undefined,
-      upplag: undefined,
-      uppstallning: undefined,
-      ytjordvarme: undefined,
-      vag: undefined,
-      atervinningsstation: undefined,
-      clarification: undefined,
-      bygglovExists: undefined,
-      other: undefined,
-      consent: undefined,
-      detailedplan: undefined,
-    },
-  },
-  arrendetidTerms: {
-    startDate: '',
-    endDate: '',
-    monthsNotice: '',
-    autoRenewal: '',
-  },
-  arrendeavgiftTerms: {
-    yearly: 'true',
-    byYear: 'false',
-    byLease: 'false',
-    indexAdjustedFee: 'false',
-    period: 'yearly',
-    yearlyFee: 0,
-    feeByYear: 0,
-    associatedFeeYear: 0,
-    feeByLease: 0,
-    indexYear: 0,
-    indexFee: 0,
-    prepaid: 'false',
-    yearOrQuarter: 'year',
-    preOrPost: 'pre',
-  },
-  bygglovTerms: {
-    condition: {
-      permitFees: undefined,
-      buildingOwnership: undefined,
-    },
-  },
-  overlatelseTerms: {
-    condition: {
-      subletting: undefined,
-    },
-  },
-  inskrivningTerms: {
-    condition: {
-      inskrivning: undefined,
-    },
-  },
-  skickTerms: {
-    condition: {
-      nuisance: undefined,
-      accessibility: undefined,
-    },
-  },
-  ledningarTerms: {
-    condition: {
-      ledningar: undefined,
-    },
-  },
-  kostnaderTerms: {
-    condition: {
-      kostnader: undefined,
-    },
-  },
-  markfororeningarTerms: {
-    condition: {
-      pollutionAvoidance: undefined,
-      verificationResponsibility: undefined,
-      testDone: undefined,
-      testingAtEnd: undefined,
-      testingAtTransfer: undefined,
-    },
-  },
-  upphorandeTerms: {
-    noRefundLeaseFeeAmount: 0,
-    condition: {
-      restorationCleaning: undefined,
-      restorationBuildingRemoval: undefined,
-      noRefundLeaseFee: undefined,
-      inspectionRequirements: undefined,
-      inspectionLandWater: undefined,
-    },
-  },
-  skadaansvarTerms: {
-    condition: {
-      skadeaterstallning: undefined,
-      skadestandsskyldighet: undefined,
-      befrielse: undefined,
-      begransning: undefined,
-      anpassat: undefined,
-    },
-  },
-  sarskildaTerms: {
-    condition: {
-      sarskilda: undefined,
-    },
-  },
-  jordabalkenTerms: {
-    condition: {
-      jordabalken: undefined,
-    },
-    replaces: undefined,
-  },
-  signatureTerms: {
-    condition: {
-      emptyRowPropertyowner: undefined,
-      emptyRowLeaseholder: undefined,
-      example: undefined,
-    },
-  },
-};
-
-export const defaultLagenhetsarrende: BaseContract & LagenhetsArrendeData = {
-  ...defaultLagenhetsArrendeTemplate,
+export const defaultLagenhetsarrende: ContractData = {
   attachmentMetaData: [],
   contractId: '',
   externalReferenceId: '',
-  contractType: ContractType.LAND_LEASE,
-  status: 'DRAFT',
+  type: ContractType.LEASE_AGREEMENT,
+  leaseType: LeaseType.LAND_LEASE_MISC,
+  status: Status.DRAFT,
   propertyDesignations: [],
-  leaseholders: [],
-  grantors: [],
-  omrade: '',
-  andamal: '',
-  arrendetid: '',
-  arrendeavgift: '',
-  bygglov: '',
-  overlatelse: '',
-  inskrivning: '',
-  skick: '',
-  ledningar: '',
-  kostnader: '',
-  markfororeningar: '',
-  upphorande: '',
-  skadaansvar: '',
-  sarskilda: '',
-  jordabalken: '',
-  signature: '',
+  lessees: [],
+  lessors: [],
+  notices: [
+    {
+      party: Party.LESSEE,
+      periodOfNotice: 3,
+      unit: TimeUnit.MONTHS,
+    },
+    {
+      party: Party.LESSOR,
+      periodOfNotice: 3,
+      unit: TimeUnit.MONTHS,
+    },
+  ],
+  extraParameters: [
+    {
+      name: 'InvoiceInfo',
+      parameters: {
+        markup: '',
+      },
+    },
+  ],
+  generateInvoice: 'true',
+  indexAdjusted: undefined,
 };
 
-export interface CasedataContractAttachment {
-  attachmentData: {
-    content: string;
-  };
-  metaData: {
-    category: string;
-    filename: string;
-    mimeType: string;
-    note: string;
-  };
-}
-
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
+  console.log('Saving contract', contract);
   let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
   const apiContract: Contract =
-    contract.contractType === ContractType.PURCHASE_AGREEMENT
-      ? kopeavtalToContract(contract as KopeAvtalsData)
-      : lagenhetsArrendeToContract(contract as LagenhetsArrendeData);
+    contract.type === ContractType.PURCHASE_AGREEMENT
+      ? kopeavtalToContract(contract)
+      : lagenhetsArrendeToContract(contract);
 
+  console.log('Processed:', apiContract);
   if (contract.contractId) {
-    const url = `contract/${contract.contractId}`;
+    const url = `contracts/${contract.contractId}`;
     apiCall = apiService.put<ApiResponse<Contract>, Contract>(url, apiContract);
   } else {
-    const url = `contract`;
+    const url = `contracts`;
     apiCall = apiService.post<ApiResponse<Contract>, Contract>(url, apiContract);
   }
   return apiCall
@@ -343,7 +138,7 @@ export const deleteContract: (contractId: string) => Promise<AxiosResponse<boole
   if (!contractId) {
     console.error('No contract id found, cannot delete. Returning.');
   }
-  const url = `contract/${contractId}`;
+  const url = `contracts/${contractId}`;
   return apiService.deleteRequest<boolean>(url).catch((e) => {
     console.error('Something went wrong when deleting contract: ', contractId);
     throw e;
@@ -354,9 +149,9 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
   if (!contractId) {
     console.error('No contract id found, cannot fetch. Returning.');
   }
-  const url = `contract/${contractId}`;
+  const url = `contracts/${contractId}`;
   return apiService
-    .get<ApiResponse<KopeAvtalsData>>(url)
+    .get<ApiResponse<ContractData>>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contract: ', contractId);
@@ -365,9 +160,9 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
 };
 
 export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
-  const url = `contract`;
+  const url = `contracts`;
   return apiService
-    .get<ApiResponse<KopeAvtalsData[]>>(url)
+    .get<ApiResponse<ContractData[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contracts');
@@ -385,7 +180,7 @@ export const saveContractToErrand = (municipalityId: string, contractId: string,
   return saveExtraParameters(municipalityId, data, errand);
 };
 
-export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | LagenhetsArrendeData> = (errand) => {
+export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (errand) => {
   if (!errand) {
     return Promise.reject('No errand found, cannot fetch contract. Returning.');
   }
@@ -397,7 +192,7 @@ export const getErrandContract: (errand: IErrand) => Promise<KopeAvtalsData | La
     .then((res) => {
       if (res.data.type === ContractType.PURCHASE_AGREEMENT) {
         return contractToKopeavtal(res.data as Contract);
-      } else if (res.data.type === ContractType.LAND_LEASE) {
+      } else if (res.data.type === ContractType.LEASE_AGREEMENT) {
         return contractToLagenhetsArrende(res.data as Contract);
       } else {
         console.error('Unknown contract type: ', res.data.type);
@@ -420,16 +215,16 @@ export const renderContractPdf: (
   }
 
   const templateIdentifier =
-    contract.type === 'PURCHASE_AGREEMENT'
+    contract.type === ContractType.PURCHASE_AGREEMENT
       ? `mex.contract.purchaseagreement`
-      : contract.type === 'LAND_LEASE'
+      : contract.type === ContractType.LEASE_AGREEMENT
       ? `mex.contract.landlease`
       : 'mex.contract.purchaseagreement';
 
   const renderBody: TemplateSelector = {
     identifier: templateIdentifier,
     parameters: {
-      header: contract.type === 'PURCHASE_AGREEMENT' ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
+      header: contract.type === ContractType.PURCHASE_AGREEMENT ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
       description: `<b>Avtals ID:</b> ${contract.contractId}<br />
                     <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
       isDraft: isDraft,
@@ -478,8 +273,12 @@ export const contractRoles: string[] = [
 export const prettyContractRoles: { [key: string]: string } = {
   BUYER: 'Köpare',
   SELLER: 'Säljare',
-  LEASEHOLDER: 'Arrendator',
   GRANTOR: 'Upplåtare',
+  LEASEHOLDER: 'Arrendator',
+  LESSOR: 'Upplåtare',
+  LESSEE: 'Arrendator',
+  CONTACT_PERSON: 'Kontaktperson',
+  PRIMARY_BILLING_PARTY: 'Fakturamottagare',
 };
 
 export const prettyPaymentPeriods: {
@@ -492,53 +291,37 @@ export const prettyPaymentPeriods: {
   prepaid: 'Förskott',
 };
 
-export const contractStakeholderToKopeavtalStakeholder = (s: ContractStakeholder): KopeavtalStakeholder => {
-  return {
-    firstName: s.firstName,
-    lastName: s.lastName,
-    partyId: s.partyId,
-    organizationName: s.organizationName,
-    organizationNumber: s.organizationNumber,
-    phoneNumbers: [...(s.phoneNumber ? [{ value: s.phoneNumber }] : [])],
-    emails: [...(s.emailAddress ? [{ value: s.emailAddress }] : [])],
-    street: s.address.streetAddress,
-    zip: s.address.postalCode,
-    city: s.address.town,
-    type: s.type,
-    roles: s.roles,
-    careof: s.address.careOf,
-    // TODO Cannot stor partOwnership in stakeholder yet, API is lacking
-    partOwnership: '',
-    extraInformation: s.extraInformation || s.parameters?.find((p) => p.key === 'extraInformation')?.values[0],
-  } as KopeavtalStakeholder;
+const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
+  switch (role) {
+    case Role.BUYER:
+      return ContractStakeholderRole.BUYER;
+    case Role.SELLER:
+      return ContractStakeholderRole.SELLER;
+    case Role.LEASEHOLDER:
+      return ContractStakeholderRole.LESSEE;
+    case Role.GRANTOR:
+      return ContractStakeholderRole.LESSOR;
+    case Role.PROPERTY_OWNER:
+      return ContractStakeholderRole.LESSOR;
+    case Role.APPLICANT:
+    //   return ContractStakeholderRole.APPLICANT;
+    default:
+      return ContractStakeholderRole.CONTACT_PERSON; // Default role
+  }
 };
 
-const casedataRoleToContractRole = (stakeholder: CasedataOwnerOrContact): string[] => {
-  const roles: string[] = [];
-  if (stakeholder.roles?.includes(Role.SELLER)) {
-    roles.push('SELLER');
+const toContractStakeholderType = (type: StakeholderType): ContractStakeholderType => {
+  if (type === 'ORGANIZATION') {
+    return ContractStakeholderType.COMPANY;
   }
-  if (stakeholder.roles?.includes(Role.BUYER)) {
-    roles.push('BUYER');
-  }
-  if (stakeholder.roles?.includes(Role.LEASEHOLDER)) {
-    roles.push('LEASEHOLDER');
-  }
-  if (stakeholder.roles?.includes(Role.GRANTOR)) {
-    roles.push('GRANTOR');
-  }
-  if (stakeholder.roles?.includes(Role.PROPERTY_OWNER)) {
-    roles.push('PROPERTY_OWNER');
-  }
-  return roles;
+  return type as ContractStakeholderType;
 };
 
 export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOwnerOrContact): ContractStakeholder => {
-  // const phone = stakeholder.contactInformation?.find(c => c.contactType === 'PHONE')?.value;
   const phone = stakeholder.phoneNumbers?.[0] || '';
   const email = stakeholder.emails?.[0] || '';
   const address: Address = {
-    type: 'POSTAL_ADDRESS',
+    type: AddressType.POSTAL_ADDRESS,
     streetAddress: stakeholder.street || '',
     postalCode: stakeholder.zip || '',
     town: stakeholder.city || '',
@@ -546,10 +329,15 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
     attention: '',
     careOf: stakeholder.careof || '',
   };
-  const contractStakeholderType = stakeholder.stakeholderType === 'PERSON' ? 'PERSON' : 'COMPANY';
+  const parameters: Parameter[] = [
+    {
+      key: 'extraParameter',
+      values: [stakeholder.extraInformation ?? ''],
+    },
+  ];
   return {
-    ...(stakeholder.stakeholderType && { type: contractStakeholderType }),
-    roles: casedataRoleToContractRole(stakeholder),
+    ...(stakeholder.stakeholderType && { type: toContractStakeholderType(stakeholder.stakeholderType) }),
+    roles: stakeholder.roles.map(toContractStakeholderRole),
     ...(stakeholder.personalNumber && { personalNumber: stakeholder.personalNumber }),
     ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
     ...(stakeholder.organizationNumber && { organizationNumber: stakeholder.organizationNumber }),
@@ -557,408 +345,120 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
     ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
     ...(stakeholder.personId && { partyId: stakeholder.personId }),
     ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
+    ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
+    parameters: parameters,
     ...(phone && { phone }),
     ...(email && { email }),
     ...(address && { address }),
   };
 };
 
-export const kopeavtalStakeholderToContractStakeholder = (stakeholder: KopeavtalStakeholder): ContractStakeholder => {
-  // const phone = stakeholder.contactInformation?.find(c => c.contactType === 'PHONE')?.value;
-  const phone = stakeholder.phoneNumbers?.[0] || '';
-  const email = stakeholder.emails?.[0] || '';
-  const address: Address = {
-    type: 'POSTAL_ADDRESS',
-    streetAddress: stakeholder.street || '',
-    postalCode: stakeholder.zip || '',
-    town: stakeholder.city || '',
-    country: '',
-    attention: '',
-    careOf: stakeholder.careof || '',
-  };
+export const kopeavtalToContract = (data: ContractData): Contract => {
   return {
-    ...(stakeholder.type && { type: stakeholder.type }),
-    roles: stakeholder.roles,
-    ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
-    ...(stakeholder.organizationNumber && { organizationNumber: stakeholder.organizationNumber }),
-    ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
-    ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
-    ...(stakeholder.partyId && { partyId: stakeholder.partyId }),
-    parameters: [
-      {
-        key: 'extraInformation',
-        values: [stakeholder.extraInformation],
-      },
-    ],
-    ...(phone && { phone }),
-    ...(email && { email }),
-    ...(address && { address }),
-  };
-};
-
-export const kopeavtalToContract = (kopeavtal: KopeAvtalsData): Contract => {
-  return {
-    propertyDesignations: kopeavtal.propertyDesignations,
-    contractId: kopeavtal.contractId,
+    propertyDesignations: data.propertyDesignations,
+    contractId: data.contractId,
     type: ContractType.PURCHASE_AGREEMENT,
-    landLeaseType: 'LEASEHOLD',
-    status: kopeavtal.status,
-    usufructType: 'OTHER',
-    externalReferenceId: kopeavtal.externalReferenceId.toString(),
-    stakeholders: [...kopeavtal.buyers, ...kopeavtal.sellers].map(kopeavtalStakeholderToContractStakeholder),
-    indexTerms: [
-      {
-        header: 'Överlåtelseförklaring',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.overlatelseforklaring,
-          },
-        ],
-      },
-      {
-        header: 'Köpeskilling och betalning',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.kopeskilling,
-          },
-        ],
-      },
-      {
-        header: 'Tillträde',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.tilltrade,
-          },
-        ],
-      },
-      {
-        header: 'Markföroreningar',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.markfororeningar,
-          },
-        ],
-      },
-      {
-        header: 'Skog',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.skog,
-          },
-        ],
-      },
-      {
-        header: 'Förpliktelser',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.forpliktelser,
-          },
-        ],
-      },
-      {
-        header: 'Utgifter och kostnader',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.utgifter,
-          },
-        ],
-      },
-      {
-        header: 'Fastighetsbildning',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.fastighetsbildning,
-          },
-        ],
-      },
-      {
-        header: 'Övriga villkor',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.other,
-          },
-        ],
-      },
-      {
-        header: 'Underskrifter',
-        terms: [
-          {
-            description: 'content',
-            term: kopeavtal.signature,
-          },
-        ],
-      },
-    ],
+    leaseType: undefined,
+    status: data.status,
+    stakeholders: [...data.buyers, ...data.sellers],
+    externalReferenceId: data.externalReferenceId.toString(),
+    extraParameters: data.extraParameters,
+    additionalTerms: data.additionalTerms,
   };
 };
 
-export const contractToKopeavtal = (contract: Contract): KopeAvtalsData => {
+export const contractToKopeavtal = (contract: Contract): ContractData => {
   return {
     ...defaultKopeavtal,
-    contractId: contract.contractId,
-    externalReferenceId: contract.externalReferenceId,
-    contractType: ContractType.PURCHASE_AGREEMENT,
-    status: contract.status as 'ACTIVE' | 'DRAFT',
-    buyers: contract.stakeholders
-      .filter((s) => s.roles.includes('BUYER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
-    sellers: contract.stakeholders
-      .filter((s) => s.roles.includes('SELLER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
-    overlatelseforklaring: contract.indexTerms.find((t) => t.header === 'Överlåtelseförklaring')?.terms[0].term,
-    kopeskilling: contract.indexTerms.find((t) => t.header === 'Köpeskilling och betalning')?.terms[0].term,
-    tilltrade: contract.indexTerms.find((t) => t.header === 'Tillträde')?.terms[0].term,
-    markfororeningar: contract.indexTerms.find((t) => t.header === 'Markföroreningar')?.terms[0].term,
-    skog: contract.indexTerms.find((t) => t.header === 'Skog')?.terms[0].term,
-    forpliktelser: contract.indexTerms.find((t) => t.header === 'Förpliktelser')?.terms[0].term,
-    utgifter: contract.indexTerms.find((t) => t.header === 'Utgifter och kostnader')?.terms[0].term,
-    fastighetsbildning: contract.indexTerms.find((t) => t.header === 'Fastighetsbildning')?.terms[0].term,
-    other: contract.indexTerms.find((t) => t.header === 'Övriga villkor')?.terms[0].term,
+    ...contract,
+    buyers: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.BUYER)),
+    sellers: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.SELLER)),
     attachmentMetaData: contract.attachmentMetaData,
-    signature: contract.indexTerms.find((t) => t.header === 'Underskrifter')?.terms[0].term,
   };
 };
 
-export const lagenhetsArrendeToContract = (lagenhetsarrende: LagenhetsArrendeData): Contract => {
+export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
+  console.log('transforming to contract: ', data);
+  let fees: Fees = undefined;
+  if (data.generateInvoice) {
+    const yearlyNumber = Number.parseFloat(data.fees.yearly.toString());
+    fees = {
+      yearly: yearlyNumber,
+      monthly: 0,
+      total: yearlyNumber,
+      currency: 'SEK',
+      additionalInformation: [
+        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
+        data.fees?.additionalInformation?.[1] ?? '',
+      ],
+      ...(data.indexAdjusted && { indexYear: 2025 }),
+      ...(data.indexAdjusted && { indexNumber: 419.35 }),
+      ...(data.indexAdjusted && { indexationRate: 1.0 }),
+      // FIXME indexType saknas i APIet
+      // ...(data.indexAdjusted && {indexType: 'KPI 80'}),
+    };
+  }
   return {
-    propertyDesignations: lagenhetsarrende.propertyDesignations,
-    contractId: lagenhetsarrende.contractId,
-    type: ContractType.LAND_LEASE,
-    landLeaseType: 'LEASEHOLD',
-    status: lagenhetsarrende.status,
-    usufructType: 'OTHER',
-    externalReferenceId: lagenhetsarrende.externalReferenceId.toString(),
-    stakeholders: [...lagenhetsarrende.leaseholders, ...lagenhetsarrende.grantors].map(
-      kopeavtalStakeholderToContractStakeholder
-    ),
-    indexTerms: [
-      {
-        header: 'Område och upplåtelse',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.omrade,
-          },
-        ],
-      },
-      {
-        header: 'Ändamål',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.andamal,
-          },
-        ],
-      },
-      {
-        header: 'Arrendetid och uppsägning',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.arrendetid,
-          },
-        ],
-      },
-      {
-        header: 'Arrendeavgift',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.arrendeavgift,
-          },
-        ],
-      },
-      {
-        header: 'Bygglov och tilstånd',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.bygglov,
-          },
-        ],
-      },
-      {
-        header: 'Överlåtelse och underupplåtelse',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.overlatelse,
-          },
-        ],
-      },
-      {
-        header: 'Inskrivning',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.inskrivning,
-          },
-        ],
-      },
-      {
-        header: 'Skick och skötsel',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.skick,
-          },
-        ],
-      },
-      {
-        header: 'Ledningar',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.ledningar,
-          },
-        ],
-      },
-      {
-        header: 'Kostnader',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.kostnader,
-          },
-        ],
-      },
-      {
-        header: 'Markföroreningar',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.markfororeningar,
-          },
-        ],
-      },
-      {
-        header: 'Arrendets upphörande och återställning av området',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.upphorande,
-          },
-        ],
-      },
-      {
-        header: 'Skada och ansvar',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.skadaansvar,
-          },
-        ],
-      },
-      ...(lagenhetsarrende.additionalTerms?.[0]?.header && lagenhetsarrende.additionalTerms?.[0]?.terms?.[0]?.term
-        ? [
-            {
-              header: lagenhetsarrende.additionalTerms?.[0]?.header.toString(),
-              terms: [
-                {
-                  description: 'content',
-                  term: lagenhetsarrende.additionalTerms?.[0]?.terms[0]?.term.toString(),
-                },
-              ],
-            },
-          ]
-        : []),
-      {
-        header: 'Särskilda bestämmelser',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.sarskilda,
-          },
-        ],
-      },
-      {
-        header: 'Hänvisning till jordabalken',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.jordabalken,
-          },
-        ],
-      },
-      {
-        header: 'Underskrifter',
-        terms: [
-          {
-            description: 'content',
-            term: lagenhetsarrende.signature,
-          },
-        ],
-      },
-    ],
-    additionalTerms: lagenhetsarrende.additionalTerms,
+    extension: {
+      autoExtend: data.extension?.autoExtend,
+      unit: data.extension?.unit,
+      ...(data?.extension?.autoExtend && { leaseExtension: data.extension?.leaseExtension }),
+    },
+    fees: fees,
+    invoicing: {
+      invoicedIn: InvoicedIn.ADVANCE,
+      invoiceInterval: data.invoicing?.invoiceInterval,
+    },
+    start: data.start,
+    end: data.end,
+    notices: data.notices,
+    propertyDesignations: data.propertyDesignations,
+    contractId: data.contractId,
+    type: ContractType.LEASE_AGREEMENT,
+    leaseType: data.leaseType,
+    status: data.status,
+    externalReferenceId: data.externalReferenceId.toString(),
+    stakeholders: [...data.lessees, ...data.lessors],
+    extraParameters: data.extraParameters,
+    additionalTerms: data.additionalTerms,
   };
 };
 
-export const contractToLagenhetsArrende = (contract: Contract): LagenhetsArrendeData => {
-  const lagenhetsarrende: LagenhetsArrendeData = {
+export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
+  const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
-    contractId: contract.contractId,
-    externalReferenceId: contract.externalReferenceId,
-    contractType: ContractType.LAND_LEASE,
-    status: contract.status as 'ACTIVE' | 'DRAFT',
-    leaseholders: contract.stakeholders
-      .filter((s) => s.roles.includes('LEASEHOLDER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
-    grantors: contract.stakeholders
-      .filter((s) => s.roles.includes('PROPERTY_OWNER'))
-      .map(contractStakeholderToKopeavtalStakeholder),
-    omrade: contract.indexTerms.find((t) => t.header === 'Område och upplåtelse')?.terms[0].term,
-    andamal: contract.indexTerms.find((t) => t.header === 'Ändamål')?.terms[0].term,
-    arrendetid: contract.indexTerms.find((t) => t.header === 'Arrendetid och uppsägning')?.terms[0].term,
-    arrendeavgift: contract.indexTerms.find((t) => t.header === 'Arrendeavgift')?.terms[0].term,
-    bygglov: contract.indexTerms.find((t) => t.header === 'Bygglov och tilstånd')?.terms[0].term,
-    overlatelse: contract.indexTerms.find((t) => t.header === 'Överlåtelse och underupplåtelse')?.terms[0].term,
-    inskrivning: contract.indexTerms.find((t) => t.header === 'Inskrivning')?.terms[0].term,
-    skick: contract.indexTerms.find((t) => t.header === 'Skick och skötsel')?.terms[0].term,
-    ledningar: contract.indexTerms.find((t) => t.header === 'Ledningar')?.terms[0].term,
-    kostnader: contract.indexTerms.find((t) => t.header === 'Kostnader')?.terms[0].term,
-    markfororeningar: contract.indexTerms.find((t) => t.header === 'Markföroreningar')?.terms[0].term,
-    upphorande: contract.indexTerms.find((t) => t.header === 'Arrendets upphörande och återställning av området')
-      ?.terms[0].term,
-    skadaansvar: contract.indexTerms.find((t) => t.header === 'Skada och ansvar')?.terms[0].term,
-    sarskilda: contract.indexTerms.find((t) => t.header === 'Särskilda bestämmelser')?.terms[0].term,
-    jordabalken: contract.indexTerms.find((t) => t.header === 'Hänvisning till jordabalken')?.terms[0].term,
+    ...contract,
+    lessees: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSEE)),
+    lessors: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSOR)),
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
-    signature: contract.indexTerms.find((t) => t.header === 'Underskrifter')?.terms[0].term,
+    fees: {
+      ...contract.fees,
+      additionalInformation: contract.fees?.additionalInformation ?? [
+        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
+        '',
+      ],
+    },
   };
   return lagenhetsarrende;
 };
 
-export const getContractStakeholderName: (c: KopeavtalStakeholder | LagenhetsArrendeStakeholder) => string = (c) =>
-  c.type === 'COMPANY' || c.type === 'ASSOCIATION' ? c.organizationName : `${c.firstName} ${c.lastName}`;
-
-export const getContractType = (contract: ContractData) => {
-  return contract.contractType === ContractType.PURCHASE_AGREEMENT
-    ? kopeavtalToContract(contract as KopeAvtalsData)
-    : lagenhetsArrendeToContract(contract as LagenhetsArrendeData);
-};
+export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => string = (c) =>
+  c.type === 'COMPANY' || c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY'
+    ? c.organizationName
+    : `${c.firstName} ${c.lastName}`;
 
 export const fetchSignedContractAttachment: (
   municipalityId: string,
   contractId: string,
   attachmentId: number
-) => Promise<ApiResponse<CasedataContractAttachment>> = (municipalityId, contractId, attachmentId) => {
+) => Promise<ApiResponse<Attachment>> = (municipalityId, contractId, attachmentId) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
   const url = `contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`;
   return apiService
-    .get<ApiResponse<CasedataContractAttachment>>(url)
+    .get<ApiResponse<Attachment>>(url)
     .then((res) => {
       return res.data;
     })
@@ -975,22 +475,23 @@ export const saveSignedContractAttachment = (
   note: string
 ) => {
   const attachmentPromise = attachment.map(async (attachment) => {
-    const fileData = await toBase64(attachment.file[0]);
+    console.log('Processing attachment', attachment);
+    const fileData = await toBase64(attachment.file);
 
-    const formData: CasedataContractAttachment = {
+    const formData: Attachment = {
       attachmentData: {
         content: fileData,
       },
-      metaData: {
-        category: 'CONTRACT',
-        filename: attachment.file[0].name,
-        mimeType: attachment.file[0].type,
+      metadata: {
+        category: AttachmentCategory.CONTRACT,
+        filename: attachment.file.name,
+        mimeType: attachment.file.type,
         note: note,
       },
     };
 
-    apiService
-      .post<boolean, CasedataContractAttachment>(`contracts/${municipalityId}/${contractId}/attachments`, formData)
+    return apiService
+      .post<boolean, Attachment>(`contracts/${municipalityId}/${contractId}/attachments`, formData)
       .then((res) => {
         return res;
       })
@@ -1022,28 +523,35 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
     });
 };
 
-export const saveDoneMarksOnErrande = (municipalityId: string, errand: IErrand, inKey: string, element: string[]) => {
-  if (!municipalityId) {
-    console.error('No municipalityId found. Cannot update set marks of contract.');
-    return;
-  }
-  if (!errand.id) {
-    console.error('No id found. Cannot update set marks of contract.');
-    return;
+export function mapContractAttachmentToUploadFile<TExtraMeta extends object = object>(
+  attachment: Attachment
+): UploadFile<TExtraMeta> {
+  let file: File;
+  if (attachment.attachmentData.content) {
+    file = base64ToFile(
+      attachment.attachmentData.content,
+      `${attachment.metadata.filename}`,
+      attachment.metadata.mimeType
+    );
+  } else {
+    file = new File([], `${attachment.metadata.filename}`, { type: attachment.metadata.mimeType });
   }
 
-  const newParameter: ExtraParameter = {
-    key: inKey,
-    values: element,
+  const a: UploadFile<TExtraMeta> = {
+    id: attachment.metadata.id?.toString() ?? crypto.randomUUID(),
+    file,
+    meta: {
+      name: attachment.metadata.filename.replace(/\.[^/.]+$/, ''),
+      ending: attachment.metadata.filename.split('.')?.[1] ?? '',
+      category: attachment.metadata.category,
+      note: attachment.metadata.note,
+      mimeType: attachment.metadata.mimeType,
+      version: '',
+      created: '',
+      updated: '',
+      ...({} as TExtraMeta),
+      isValidAttachment: attachment.attachmentData.content,
+    },
   };
-  const e: Partial<RegisterErrandData> = {
-    id: errand.id.toString(),
-    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
-  };
-  return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${errand.id}`, e)
-    .catch((e) => {
-      console.error('Something went wrong when triggering errand phase change', e);
-      throw e;
-    });
-};
+  return a;
+}

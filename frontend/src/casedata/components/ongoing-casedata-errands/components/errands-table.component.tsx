@@ -154,9 +154,12 @@ export const ErrandsTable: React.FC = () => {
             errand.updated
           )}
         </Table.Column>
-        <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
+        <Table.Column scope="row" className={isPT() && 'max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
           {isPT() ? (
-            <>{getShortLabel(errand.caseType)}</>
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+              <div className="font-bold">{getShortLabel(errand.caseType)}</div>
+              <div className="italic">{errand.channel}</div>
+            </div>
           ) : (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
               <div>{CaseLabels.ALL[errand.caseType] ?? ''}</div>

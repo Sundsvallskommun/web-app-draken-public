@@ -7,15 +7,15 @@ import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments'
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContract } from '../fixtures/mockContract';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
-import { mockAsset } from '../fixtures/mockAsset';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -36,7 +36,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
 
       cy.intercept('POST', '**/stakeholders/**', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');

@@ -14,7 +14,7 @@ import { mockOrganization } from 'cypress/e2e/case-data/fixtures/mockOrganizatio
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import dayjs from 'dayjs';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContract } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
@@ -45,7 +45,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/101/messages', mockMessages);
       cy.intercept('GET', /\/errand\/\d*\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
@@ -55,6 +55,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
+
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
@@ -395,8 +400,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="organization-search-result"]').find('p').contains(mockOrganization.data.name).should('exist');
 
       cy.get('button').contains('Lägg till ärendeägare').should('be.disabled');
-      cy.get('[data-cy="new-email-input"]').type(Cypress.env('mockEmail'));
-      cy.get('[data-cy="add-new-email-button"]').click();
+      cy.get('[data-cy="new-email-input"]').first().type(Cypress.env('mockEmail'));
+      cy.get('[data-cy="add-new-email-button"]').first().click();
 
       cy.get('[data-cy="newPhoneNumber"]').clear().type(Cypress.env('mockPhoneNumber'));
       cy.get('[data-cy="newPhoneNumber-button"]').click();
@@ -442,8 +447,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-form"] button').contains('Sök').click();
 
       // Add email and remove it
-      cy.get('[data-cy="new-email-input"]').type(email_1);
-      cy.get('[data-cy="add-new-email-button"]').click();
+      cy.get('[data-cy="new-email-input"]').first().type(email_1);
+      cy.get('[data-cy="add-new-email-button"]').first().click();
       cy.get('[data-cy="email-tag-0"]').should('exist');
       cy.get('[data-cy="email-tag-0"]').click();
       cy.get('[data-cy="email-tag-0"]').should('not.exist');
@@ -456,10 +461,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="phone-tag-0"]').should('not.exist');
 
       // Add two emails and two phones and save errand
-      cy.get('[data-cy="new-email-input"]').type(email_1);
-      cy.get('[data-cy="add-new-email-button"]').click();
-      cy.get('[data-cy="new-email-input"]').type(email_2);
-      cy.get('[data-cy="add-new-email-button"]').click();
+      cy.get('[data-cy="new-email-input"]').first().type(email_1);
+      cy.get('[data-cy="add-new-email-button"]').first().click();
+      cy.get('[data-cy="new-email-input"]').first().type(email_2);
+      cy.get('[data-cy="add-new-email-button"]').first().click();
 
       cy.get('[data-cy="newPhoneNumber"]').clear().type(phonenumber_1);
       cy.get('[data-cy="newPhoneNumber-button"]').click();
@@ -572,8 +577,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-city"]').clear().type('Teststaden');
       cy.get('[data-cy="contact-extrainfo"]').clear().type('Some information');
 
-      cy.get('[data-cy="new-email-input"]').type('test@example.com');
-      cy.get('[data-cy="add-new-email-button"]').click();
+      cy.get('[data-cy="new-email-input"]').filter(':visible').type('test@example.com');
+      cy.get('[data-cy="add-new-email-button"]').filter(':visible').click();
       cy.get('[data-cy="newPhoneNumber"]').clear().type('+46701740635');
       cy.get('[data-cy="newPhoneNumber-button"]').click();
 

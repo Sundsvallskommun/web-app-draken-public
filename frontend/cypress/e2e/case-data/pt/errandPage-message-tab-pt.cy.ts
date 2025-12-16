@@ -10,7 +10,7 @@ import { mockAddress } from '../fixtures/mockAddress';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockAsset } from '../fixtures/mockAsset';
 import { Role } from '@casedata/interfaces/role';
-import { mockContract } from '../fixtures/mockContract';
+import { mockPurchaseAgreement } from '../fixtures/mockContract';
 
 //Needs fixing
 onlyOn(Cypress.env('application_name') === 'PT', () => {
@@ -31,7 +31,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
     });
 
     const goToMessageTab = () => {

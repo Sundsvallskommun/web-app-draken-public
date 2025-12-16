@@ -9,6 +9,7 @@ import { mockAdmins } from '../fixtures/mockAdmins';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
 import { CaseLabels } from '../../../../src/casedata/interfaces/case-label';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Overview page', () => {
@@ -17,6 +18,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
       cy.visit('/oversikt');
       cy.wait('@getErrands');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

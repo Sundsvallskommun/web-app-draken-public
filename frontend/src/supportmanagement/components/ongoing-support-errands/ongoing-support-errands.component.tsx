@@ -354,9 +354,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
             <div>
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden'
-                  ? ' : ' + (solvedSupportErrands ? solvedSupportErrands : '')
-                  : null}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (solvedSupportErrands ?? '') : null}
               </h1>
             </div>
             <div>

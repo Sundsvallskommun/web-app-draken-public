@@ -18,7 +18,7 @@ export const mockPortalPersonData_internal = {
       '2|28|Kommunstyrelsekontoret¤3|440|KSK Avdelningar¤4|2835|KSK AVD Digital Transformation¤5|11211|KSK Avd Strategi och styrning¤6|10925|KSK Avd Strategi och styrning',
     isManager: false,
     loginName: 'INTERNALUSER',
-    referenceNumber: 'TE11PE123',
+    referenceNumber: '1TE11PE123',
   },
   message: 'success',
 };
