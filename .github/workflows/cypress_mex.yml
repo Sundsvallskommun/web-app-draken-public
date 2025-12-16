@@ -36,6 +36,7 @@ jobs:
           start: yarn start:mex
           wait-on: "http://localhost:3000"
           spec: cypress/e2e/case-data/mex**/*.cy.ts
+          config: viewportHeight=720,viewportWidth=1280
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT_PUBLIC_APPLICATION: MEX
