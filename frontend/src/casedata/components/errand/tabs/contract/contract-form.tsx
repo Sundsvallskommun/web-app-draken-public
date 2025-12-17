@@ -2,7 +2,6 @@ import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/
 import { ContractType, IntervalType, StakeholderRole, TimeUnit } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
-import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
   getContractStakeholderName,
@@ -26,7 +25,7 @@ import {
   Table,
   Textarea,
 } from '@sk-web-gui/react';
-import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractAttachments } from './contract-attachments';
 
@@ -162,7 +161,6 @@ export const ContractForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
-  // const toPropertyDesignation = (pd) => (pd.name ? `${pd.name} ${pd.district}` : pd);
   const toPropertyDesignation = (pd) => (pd.name ? pd.name : pd);
 
   const saveButton = () => {
