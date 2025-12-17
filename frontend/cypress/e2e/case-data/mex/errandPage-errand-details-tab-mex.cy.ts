@@ -85,7 +85,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     };
 
     const checkEstateInfo = () => {
-      cy.get('[data-cy="suggestion-list"]').should('exist').click();
+      cy.get('[data-cy="suggestion-list"]').should('exist');
+      cy.get('[data-cy="suggestion-list"] label').first().should('exist').click();
       cy.get('[data-cy="estate-table"').should('exist');
       cy.get('[data-cy="realEstate-0"]')
         .should('exist')
@@ -127,7 +128,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     };
 
     it('search property designation', () => {
-      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation);
+      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation).as(
+        'getEstatePropertyByDesignation'
+      );
       cy.intercept('GET', '**/estateInfo/**', mockEstateInfo11).as('getEstateInfo');
       cy.intercept(
         'GET',
@@ -139,6 +142,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       goToErrandInformationTab();
 
       cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall 3:109', { delay: 100 });
+      cy.wait('@getEstatePropertyByDesignation');
 
       checkEstateInfo();
     });
