@@ -1,6 +1,6 @@
 import { useAppContext } from '@contexts/app.context';
 import { Table } from '@sk-web-gui/react';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isOpenEErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useMemo, useState } from 'react';
 import { CParameter } from 'src/data-contracts/backend/data-contracts';
 
@@ -10,8 +10,6 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   }: {
     supportErrand: SupportErrand;
   } = useAppContext();
-
-  const isOpenEErrand = !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 
   const simpleParams = useMemo(
     () =>
@@ -60,8 +58,10 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
         <div className="rounded-lg gap-md p-16">
-          {isOpenEErrand || simpleParams.length > 0 ? <h3 className="text-h3-md mb-12">Grunduppgifter</h3> : null}
-          {isOpenEErrand ? (
+          {isOpenEErrand(supportErrand) || simpleParams.length > 0 ? (
+            <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
+          ) : null}
+          {isOpenEErrand(supportErrand) ? (
             <div className="flex flex-row gap-md">
               <strong>Ärendenummer i e-tjänst</strong>
               <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>

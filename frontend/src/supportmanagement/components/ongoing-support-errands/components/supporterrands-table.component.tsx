@@ -1,12 +1,11 @@
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isKC } from '@common/services/application-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useSupportErrandTable } from '@supportmanagement/components/support-errand/support-errand-table.component';
+import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
 

@@ -417,6 +417,10 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   parameters: [],
 };
 
+export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (supportErrand) => {
+  return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
+};
+
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
 };
