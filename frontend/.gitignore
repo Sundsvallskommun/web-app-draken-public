@@ -9,6 +9,10 @@
 /coverage
 /cypress/videos
 /cypress/screenshots
+# Cypress visual regression - ignore failure artifacts
+cypress/snapshots/**/__diff_output__/
+cypress/snapshots/**/*.diff.png
+cypress/snapshots/**/*.actual.png
 /cypress/downloads
 .nyc_output
 

@@ -1,5 +1,9 @@
 import '@cypress/code-coverage/support'
+import { addMatchImageSnapshotCommand } from '@simonsmith/cypress-image-snapshot/command';
 
-beforeEach(() => {
-  cy.intercept('GET', '**/supporterrands*', {}).as('getSupportErrands');
+addMatchImageSnapshotCommand({
+  failureThreshold: 0.3,
+  failureThresholdType: 'percent',
+  capture: 'viewport',
+  comparisonMethod: 'ssim',
 });

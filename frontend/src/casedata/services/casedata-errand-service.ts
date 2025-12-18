@@ -154,7 +154,7 @@ export const getCaseLabels = () => {
   const isTest = getApplicationEnvironment() === 'TEST';
 
   if (isPT()) {
-    return isTest ? { ...PTCaseLabel, ...FTCaseLabel } : { ...PTCaseLabel };
+    return { ...PTCaseLabel, ...FTCaseLabel };
   }
 
   if (isMEX()) {
