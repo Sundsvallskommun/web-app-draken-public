@@ -1,5 +1,5 @@
 import { MAX_FILE_SIZE_MB } from '@casedata/services/casedata-attachment-service';
-import { isIK, isKC, isLOP, isMEX } from '@common/services/application-service';
+import { isMEX } from '@common/services/application-service';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister } from 'react-hook-form';
@@ -316,13 +316,8 @@ const FileUpload: React.FC<{
           <ul className="flex flex-col" data-cy="attachment-wrapper">
             {fields.map((field, index) => {
               return (
-                <li
-                  className={`${
-                    isIK() || isLOP() ? 'border-1 rounded-16 p-16 border-divider' : ''
-                  } flex flex-col gap-16`}
-                  key={field.id}
-                >
-                  <div className={`${!isKC() || isIK() || isLOP() ? 'border rounded p-16 my-sm' : 'my-sm'} w-full`}>
+                <li className="flex flex-col gap-16" key={field.id}>
+                  <div className="my-sm w-full">
                     {!editing && (
                       <div className="flex justify-between">
                         <div className="flex w-5/6 gap-10">

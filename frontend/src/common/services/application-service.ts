@@ -14,4 +14,6 @@ export const isMSVA = () => process.env.NEXT_PUBLIC_APPLICATION === 'MSVA';
 
 export const isROB = () => process.env.NEXT_PUBLIC_APPLICATION === 'ROB';
 
+export const isSE = () => process.env.NEXT_PUBLIC_APPLICATION === 'SE';
+
 export const getApplicationEnvironment = () => (process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST' ? 'TEST' : null);

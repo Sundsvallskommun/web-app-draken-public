@@ -1,5 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { isIK, isKA, isLOP } from '@common/services/application-service';
+import { isIK, isKA, isLOP, isSE } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
@@ -70,7 +70,7 @@ const getClosingMessageBody = (): string => {
     060-19 26 00, telefontid 9:00-12:00<br>`;
   }
 
-  if (isIK()) {
+  if (isIK() || isSE()) {
     return `Hej,<br><br>
     Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
     Med vänliga hälsningar<br>
