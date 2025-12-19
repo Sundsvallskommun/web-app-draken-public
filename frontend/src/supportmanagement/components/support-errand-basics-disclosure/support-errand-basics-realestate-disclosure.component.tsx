@@ -47,14 +47,15 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
 
   return (
     <div className="mt-md">
-      <Disclosure
-        disabled={supportErrandIsEmpty(supportErrand)}
-        variant="alt"
-        icon={<LucideIcon name="map-pin" />}
-        header="Fastigheter"
-        data-cy={`facility-disclosure`}
-      >
-        <Facilities setValue={setValue} setUnsaved={props.setUnsavedFacility} facilities={facilities}></Facilities>
+      <Disclosure disabled={supportErrandIsEmpty(supportErrand)} variant="alt" data-cy={`facility-disclosure`}>
+        <Disclosure.Header>
+          <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
+          <Disclosure.Title>Fastigheter</Disclosure.Title>
+          <Disclosure.Button />
+        </Disclosure.Header>
+        <Disclosure.Content>
+          <Facilities setValue={setValue} setUnsaved={props.setUnsavedFacility} facilities={facilities}></Facilities>
+        </Disclosure.Content>
       </Disclosure>
     </div>
   );

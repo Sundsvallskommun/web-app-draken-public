@@ -160,88 +160,93 @@ export const LinkedErrandsDisclosure: React.FC<{
     <Disclosure
       disabled={appConfig.isSupportManagement ? supportErrandIsEmpty(errand as SupportErrand) : false}
       variant="alt"
-      icon={<LucideIcon name="link-2" />}
-      header="Kopplade ärenden"
       data-cy={`connected-errands-disclosure`}
     >
-      <h2 className="pt-[1.2rem] text-h2-md">Kopplingar skapade från detta ärende</h2>
-      <p className="my-[2.4rem]">Nedan väljer du vilket ärende du vill länka med detta ärende.</p>
+      <Disclosure.Header>
+        <Disclosure.Icon icon={<LucideIcon name="link-2" />} />
+        <Disclosure.Title>Kopplade ärenden</Disclosure.Title>
+        <Disclosure.Button />
+      </Disclosure.Header>
+      <Disclosure.Content>
+        <h2 className="pt-[1.2rem] text-h2-md">Kopplingar skapade från detta ärende</h2>
+        <p className="my-[2.4rem]">Nedan väljer du vilket ärende du vill länka med detta ärende.</p>
 
-      {isLoadingToErrands ? (
-        <div className="flex justify-center items-center h-[5rem]">
-          <Spinner />
-        </div>
-      ) : (
-        <>
-          <p className="text-label-small">Sök ärende</p>
-          <SearchField
-            className="w-[52rem] mb-[2.4rem]"
-            placeholder="Sök på ett specifikt ärendenummer eller fastighet"
-            value={query}
-            onSearch={(e) => {
-              setSearching(true);
-              getErrandStatus(municipalityId, e).then((res) => {
+        {isLoadingToErrands ? (
+          <div className="flex justify-center items-center h-[5rem]">
+            <Spinner />
+          </div>
+        ) : (
+          <>
+            <p className="text-label-small">Sök ärende</p>
+            <SearchField
+              className="w-[52rem] mb-[2.4rem]"
+              placeholder="Sök på ett specifikt ärendenummer eller fastighet"
+              value={query}
+              onSearch={(e) => {
+                setSearching(true);
+                getErrandStatus(municipalityId, e).then((res) => {
+                  setSearching(false);
+                  setSearchedErrands(res);
+                });
+              }}
+              onReset={() => {
                 setSearching(false);
-                setSearchedErrands(res);
-              });
-            }}
-            onReset={() => {
-              setSearching(false);
-              setQuery('');
-              setSearchedErrands([]);
-            }}
-            searchLabel={searching ? 'Söker' : 'Sök'}
-            onChange={(e) => {
-              setQuery(e.target.value);
-            }}
-          />
+                setQuery('');
+                setSearchedErrands([]);
+              }}
+              searchLabel={searching ? 'Söker' : 'Sök'}
+              onChange={(e) => {
+                setQuery(e.target.value);
+              }}
+            />
 
-          {searchedErrands.length > 0 && (
+            {searchedErrands.length > 0 && (
+              <RelationsToTable
+                errands={searchedErrands}
+                linkedStates={relations}
+                handleLinkClick={(index) => handleLinkClick(index)}
+                title=""
+                dataCy="searchresults-table"
+              />
+            )}
+            {appConfig.features.useStakeholderRelations && (
+              <>
+                <RelationsToTable
+                  errands={ongoingErrands}
+                  linkedStates={relations}
+                  handleLinkClick={(index) => handleLinkClick(index)}
+                  title="Pågående"
+                  dataCy="ongoingerrands-table"
+                />
+
+                <RelationsToTable
+                  errands={closedErrands}
+                  linkedStates={relations}
+                  handleLinkClick={(index) => handleLinkClick(index)}
+                  title="Avslutade"
+                  dataCy="closederrands-table"
+                />
+              </>
+            )}
             <RelationsToTable
-              errands={searchedErrands}
+              errands={resolvedOtherErrands}
               linkedStates={relations}
               handleLinkClick={(index) => handleLinkClick(index)}
-              title=""
-              dataCy="searchresults-table"
+              title="Kopplingar till annan ärendeägare"
+              dataCy="othererrands-table"
             />
-          )}
-          {appConfig.features.useStakeholderRelations && (
-            <>
-              <RelationsToTable
-                errands={ongoingErrands}
-                linkedStates={relations}
-                handleLinkClick={(index) => handleLinkClick(index)}
-                title="Pågående"
-                dataCy="ongoingerrands-table"
-              />
-
-              <RelationsToTable
-                errands={closedErrands}
-                linkedStates={relations}
-                handleLinkClick={(index) => handleLinkClick(index)}
-                title="Avslutade"
-                dataCy="closederrands-table"
-              />
-            </>
-          )}
-          <RelationsToTable
-            errands={resolvedOtherErrands}
-            linkedStates={relations}
-            handleLinkClick={(index) => handleLinkClick(index)}
-            title="Kopplingar till annan ärendeägare"
-            dataCy="othererrands-table"
-          />
-        </>
-      )}
-      <h2 className="py-[2.4rem] text-h2-md">Kopplingar skapade till detta ärende</h2>
-      <p className="mb-[1.2rem]">Nedan kan du se ärenden kopplade till detta ärende.</p>
-      {isLoadingFromErrands ? (
-        <div className="flex justify-center items-center h-[5rem]">
-          <Spinner />
-        </div>
-      ) : (
-        <RelationsFromTable errands={relationFromErrands} title="Ärenden" dataCy="ongoingerrands-table" />
-      )}
+          </>
+        )}
+        <h2 className="py-[2.4rem] text-h2-md">Kopplingar skapade till detta ärende</h2>
+        <p className="mb-[1.2rem]">Nedan kan du se ärenden kopplade till detta ärende.</p>
+        {isLoadingFromErrands ? (
+          <div className="flex justify-center items-center h-[5rem]">
+            <Spinner />
+          </div>
+        ) : (
+          <RelationsFromTable errands={relationFromErrands} title="Ärenden" dataCy="ongoingerrands-table" />
+        )}
+      </Disclosure.Content>
     </Disclosure>
   );
 };

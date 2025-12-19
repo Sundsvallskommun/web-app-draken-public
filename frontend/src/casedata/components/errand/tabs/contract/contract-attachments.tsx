@@ -50,6 +50,7 @@ export const ContractAttachments: React.FC<{
 
   useEffect(() => {
     loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract, municipalityId]);
 
   const handleRemoveFile = (file: UploadFile) => {
