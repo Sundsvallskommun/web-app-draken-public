@@ -3,7 +3,7 @@ import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-cased
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
@@ -161,13 +161,15 @@ export default function Layout({ title, children }) {
             </PopupMenu>
           }
           bottomContent={
-            ((isMEX() && !isMinLargeDevice) || (isPT() && !isMinLargeDevice)) &&
+            appConfig.features.useUiPhases &&
+            !isMinLargeDevice &&
             (pathName === '/registrera' || pathName.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
-          {((isMEX() && isMinLargeDevice) || (isPT() && isMinLargeDevice)) &&
+          {appConfig.features.useUiPhases &&
+          isMinLargeDevice &&
           (pathName === '/registrera' || pathName.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}
@@ -214,8 +216,6 @@ export default function Layout({ title, children }) {
           // NOTE: do stuff with cookies?
         }}
       />
-
-      {/* <Footer color="gray" /> */}
     </>
   );
 }

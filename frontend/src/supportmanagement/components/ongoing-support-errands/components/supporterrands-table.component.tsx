@@ -1,46 +1,22 @@
-import { Priority } from '@casedata/interfaces/priority';
-import { PriorityComponent } from '@common/components/priority/priority.component';
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isKC } from '@common/services/application-service';
-import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useOngoingSupportErrandLabels } from '@supportmanagement/components/support-errand/support-labels.component';
-import {
-  Channels,
-  Status,
-  SupportErrand,
-  getLabelCategory,
-  getLabelSubType,
-  getLabelType,
-} from '@supportmanagement/services/support-errand-service';
+import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
+import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
-import { getAdminName } from '@supportmanagement/services/support-stakeholder-service';
-import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-support-errands.component';
-import { SupportStatusLabelComponent } from './support-status-label.component';
-import { Admin } from '@common/services/user-service';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
-  const {
-    supportErrands: data,
-    supportMetadata,
-    administrators,
-    municipalityId,
-    selectedSupportErrandStatuses,
-  }: AppContextInterface = useAppContext();
+  const { supportErrands: data, municipalityId, selectedSupportErrandStatuses }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
-  const pageSize = watch('pageSize');
   const totalPages = watch('totalPages');
   const page = watch('page');
-  const [categories, setCategories] = useState<Category[]>();
 
   const currentStatusHaserrands =
     data.errands.filter((e) => {
@@ -48,10 +24,6 @@ export const SupportErrandsTable: React.FC = () => {
     }).length !== 0
       ? true
       : false;
-
-  useEffect(() => {
-    setCategories(supportMetadata?.categories);
-  }, [supportMetadata]);
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',
@@ -118,11 +90,13 @@ export const SupportErrandsTable: React.FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.id}`, '_blank');
   };
 
-  const headers = useOngoingSupportErrandLabels(selectedSupportErrandStatuses).map((header, index) => (
+  const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses);
+
+  const headers = errandTableObject.map((column, index) => (
     <Table.HeaderColumn key={`header-${index}`} sticky={true}>
-      {header.screenReaderOnly ? (
-        <span className="sr-only">{header.label}</span>
-      ) : header.sortable ? (
+      {column.screenReaderOnly ? (
+        <span className="sr-only">{column.label}</span>
+      ) : column.sortable ? (
         <Table.SortButton
           isActive={
             isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
@@ -130,32 +104,15 @@ export const SupportErrandsTable: React.FC = () => {
           sortOrder={sortOrders[sortOrder] as SortMode}
           onClick={() => handleSort(index)}
         >
-          {header.label}
+          {column.label}
         </Table.SortButton>
       ) : (
-        header.label
+        column.label
       )}
     </Table.HeaderColumn>
   ));
 
-  const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
-    const primaryStakeholder = errand.stakeholders.find((primary) => primary.role === 'PRIMARY');
-    if (primaryStakeholder) {
-      const { firstName, lastName, contactChannels } = primaryStakeholder;
-      if (firstName && lastName) return `${firstName} ${lastName}`;
-
-      const emailChannel = contactChannels.find((channel) => channel.type === 'EMAIL');
-      if (emailChannel?.value) return emailChannel.value;
-    }
-    return '';
-  };
-
-  const findLatestNotification = (errand: SupportErrand) => {
-    return sortBy(errand?.activeNotifications, 'created').reverse()[0];
-  };
-
   const rows = (data.errands || []).map((errand: SupportErrand, index) => {
-    const notification = findLatestNotification(errand);
     return (
       <Table.Row
         tabIndex={0}
@@ -166,85 +123,9 @@ export const SupportErrandsTable: React.FC = () => {
         onClick={() => openErrandeInNewWindow(errand)}
         className="cursor-pointer"
       >
-        <Table.Column>
-          <SupportStatusLabelComponent status={errand.status} resolution={errand.resolution} />
-        </Table.Column>
-        <Table.Column>
-          {!!notification ? (
-            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-              <div>
-                <time dateTime={dayjs(notification?.created).format('YYYY-MM-DD HH:mm')}>
-                  {notification?.created ? dayjs(notification?.created).format('YYYY-MM-DD HH:mm') : ''}
-                </time>
-              </div>
-              <div className="italic">{truncate(notification?.description, 30)}</div>
-            </div>
-          ) : (
-            dayjs(errand.touched).format('YYYY-MM-DD HH:mm')
-          )}
-        </Table.Column>
-        <Table.HeaderColumn
-          scope="row"
-          className="w-[200px] whitespace-nowrap overflow-hidden text-ellipsis table-caption"
-        >
-          {appConfig.features.useThreeLevelCategorization ? (
-            <div>{getLabelCategory(errand, supportMetadata)?.displayName || ''}</div>
-          ) : null}
-          {appConfig.features.useTwoLevelCategorization ? (
-            <div>{categories?.find((t) => t.name === errand.category)?.displayName || errand.category}</div>
-          ) : null}
-
-          <div className="font-normal">{errand.errandNumber}</div>
-        </Table.HeaderColumn>
-        <Table.Column scope="row">
-          <div className="max-w-[280px]">
-            {appConfig.features.useThreeLevelCategorization ? (
-              <div>
-                <div>{getLabelType(errand)?.displayName || ''}</div>
-                <div>{getLabelSubType(errand)?.displayName || ''}</div>
-              </div>
-            ) : null}
-            {appConfig.features.useTwoLevelCategorization ? (
-              <>
-                <p className="m-0">
-                  {categories?.find((t) => t.name === errand.category)?.types.find((t) => t.name === errand.type)
-                    ?.displayName || errand.type}
-                </p>
-              </>
-            ) : null}
-          </div>
-        </Table.Column>
-        <Table.Column>
-          <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-            <div>{Channels[errand?.channel]}</div>
-            <div className="m-0 italic truncate">
-              {truncate(errand?.title !== 'Empty errand' ? errand?.title : null, 30) || null}
-            </div>
-          </div>
-        </Table.Column>
-        <Table.Column className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-          <div>
-            <time dateTime={errand.created}>{dayjs(errand.created).format('YYYY-MM-DD, HH:mm')}</time>
-          </div>
-          <div>
-            <p className="m-0 italic truncate">{primaryStakeholderNameorEmail(errand)}</p>
-          </div>
-        </Table.Column>
-        <Table.Column>
-          <PriorityComponent priority={Priority[errand.priority]} />
-        </Table.Column>
-        {errand.status === Status.SUSPENDED ? (
-          <Table.Column>
-            <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo)}</time>
-          </Table.Column>
-        ) : null}
-        <Table.Column>
-          {getAdminName(
-            administrators?.find((a: Admin) =>
-              errand.assignedUserId ? a.adAccount === errand.assignedUserId : a.adAccount === errand.assignedUserId
-            )
-          )}
-        </Table.Column>
+        {errandTableObject.map((column, index) => (
+          <Table.Column key={`cell-${index}`}>{column?.render(errand)}</Table.Column>
+        ))}
       </Table.Row>
     );
   });

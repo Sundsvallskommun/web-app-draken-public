@@ -264,7 +264,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       >
         <div className="w-full py-24 px-32">
           <div className="flex">
-            <div className="w-3/4">
+            <div className="w-3/4" data-cy="contract-wrapper">
               <div>
                 <h2 className="text-h2-md">{contractTypes.find((ct) => ct.key === contractType)?.label}</h2>
                 <p className="py-16">

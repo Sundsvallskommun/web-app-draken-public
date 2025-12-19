@@ -123,7 +123,7 @@ export const ContractAttachments: React.FC<{
           saveSignedContractAttachment(municipalityId, existingContract?.contractId, files, '')
             .then((res) => {
               if (!res) {
-                throw new Error();
+                throw new Error('Error saving attachment');
               }
               getErrand(municipalityId, errand.id.toString()).then((res) => {
                 setErrand(res.errand);

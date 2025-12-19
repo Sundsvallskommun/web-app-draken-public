@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["@simonsmith/cypress-image-snapshot/types"],
     "target": "es6",
     "lib": [
       "dom",
@@ -78,12 +79,12 @@
     ".next-MSVA/types/**/*.ts",
     ".next-PT/types/**/*.ts",
     ".next-ROB/types/**/*.ts",
+    ".next-IAF/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
-    "src/common/components/localization-provider",
     "src/common/components/localization-provider",
     ".next-SE/types/**/*.ts"
   ],

@@ -1,5 +1,7 @@
 import { useAppContext } from '@common/contexts/app.context';
+import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import {
@@ -14,11 +16,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
+import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { MessagePortal } from './sidebar/message-portal.component';
-import { appConfig } from '@config/appconfig';
 
 let formSchema = yup
   .object({
@@ -149,13 +150,17 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                     <div className="container m-auto pl-0 pr-24 md:pr-40">
                       <div className="w-full flex flex-wrap flex-col justify-between gap-24">
                         {!supportErrandIsEmpty(supportErrand) ? (
-                          <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {appConfig.features.useThreeLevelCategorization
-                              ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ??
-                                '(Ärendetyp saknas)'
-                              : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                  ?.displayName}
-                          </h1>
+                          <>
+                            <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
+                              {appConfig.features.useThreeLevelCategorization
+                                ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ??
+                                  '(Ärendetyp saknas)'
+                                : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
+                                    ?.displayName}
+                            </h1>
+                            {/* TODO: Add some logic or featureflag for this component to be displayed */}
+                            {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                          </>
                         ) : supportErrand ? (
                           <div className="flex justify-between items-center pt-8">
                             <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
