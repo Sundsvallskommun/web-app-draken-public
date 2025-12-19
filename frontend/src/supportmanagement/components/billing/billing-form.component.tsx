@@ -54,11 +54,20 @@ const BillingForm: React.FC<{
           readOnly={getValues().status !== 'NEW'}
         >
           <Select.Option value={''}>Välj faktureringstyp</Select.Option>
-          {invoiceSettings.invoiceTypes.map((invoiceType) => (
-            <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
-              {invoiceType.invoiceType}
-            </Select.Option>
-          ))}
+          {invoiceSettings.invoiceTypes
+            .filter((i) => {
+              // Manager is either INTERNAL or EXTERNAL. Only show invoice types that
+              // have invoice rows for the current manager type
+              return (
+                (getValues().type === 'INTERNAL' && i?.internal?.invoiceRows?.length > 0) ||
+                (getValues().type === 'EXTERNAL' && i?.external?.invoiceRows?.length > 0)
+              );
+            })
+            .map((invoiceType) => (
+              <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
+                {invoiceType.invoiceType}
+              </Select.Option>
+            ))}
         </Select>
         {errors.invoice?.description && (
           <div className="text-error">

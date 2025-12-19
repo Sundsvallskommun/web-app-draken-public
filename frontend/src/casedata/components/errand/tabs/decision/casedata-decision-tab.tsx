@@ -93,7 +93,7 @@ let formSchema = yup
     descriptionPlaintext: yup.string(),
     errandId: yup.number(),
     errandCaseType: yup.string(),
-    law: yup.array().min(1, 'Lagrum måste anges'),
+    law: isPT() ? yup.array().min(1, 'Lagrum måste anges') : yup.array(),
     outcome: yup
       .string()
       .required('Beslut måste anges')
@@ -261,7 +261,6 @@ export const CasedataDecisionTab: React.FC<{
 
   const save = async (data: DecisionFormModel) => {
     try {
-      setIsLoading(true);
       const rendered = await renderBeslutPdf(errand, data, services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
@@ -447,10 +446,10 @@ export const CasedataDecisionTab: React.FC<{
       .showConfirmation('Spara beslut', 'Vill du spara detta beslut?', 'Ja', 'Nej', 'info', 'info')
       .then(async (confirmed) => {
         if (confirmed) {
+          setIsLoading(true);
           await saveCasedataErrand();
-
           const data = getValues();
-          save(data);
+          await save(data);
 
           return Promise.resolve(true);
         }
@@ -693,10 +692,12 @@ export const CasedataDecisionTab: React.FC<{
           )}
         </div>
 
-        <div className="pb-20">
-          <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
-          <ServiceListComponent services={services} readOnly />
-        </div>
+        {isPT() ? (
+          <div className="pb-20">
+            <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
+            <ServiceListComponent services={services} readOnly />
+          </div>
+        ) : null}
 
         <div className="flex justify-start gap-md">
           <Button
