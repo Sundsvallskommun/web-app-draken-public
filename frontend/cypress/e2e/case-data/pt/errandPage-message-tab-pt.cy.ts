@@ -16,6 +16,7 @@ import { mockPurchaseAgreement } from '../fixtures/mockContract';
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Message tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', /\/pt\/casedata\/\d+\/errand\/errandNumber\/\w+-\d+-\d+$/, mockPTErrand_base).as(
         'getErrandById'
       );

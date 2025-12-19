@@ -1,6 +1,9 @@
-import { defineConfig } from 'cypress';
 import codeCoverageTask from '@cypress/code-coverage/task';
 import { addMatchImageSnapshotPlugin } from '@simonsmith/cypress-image-snapshot/plugin';
+import { defineConfig } from 'cypress';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export default defineConfig({
   retries: 2,
