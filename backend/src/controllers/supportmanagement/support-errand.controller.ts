@@ -35,7 +35,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
+import { isIK, isKA, isKC, isLOP, isMSVA, isROB, isSE } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
 import { Type as TypeTransformer } from 'class-transformer';
@@ -658,7 +658,7 @@ export class SupportErrandController {
             category: 'SALARY',
             type: 'SALARY.UNCATEGORIZED',
           }
-        : isIK()
+        : isIK() || isSE()
         ? {
             category: 'KSK_SERVICE_CENTER',
             type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
@@ -679,7 +679,7 @@ export class SupportErrandController {
           },
       labels: isLOP()
         ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
-        : isIK()
+        : isIK() || isSE()
         ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
         : isKA()
         ? getDefaultLabels({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' })

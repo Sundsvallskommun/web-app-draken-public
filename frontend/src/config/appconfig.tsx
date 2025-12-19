@@ -29,6 +29,9 @@ interface AppConfigFeatures {
   useRelations: boolean;
   useMyPages: boolean;
   useUiPhases: boolean;
+  useClosingMessageCheckbox: boolean;
+  useMultipleContactChannels: boolean;
+  useClosedAsDefaultResolution: boolean;
 }
 
 export const appConfig: AppConfig = {
@@ -59,5 +62,8 @@ export const appConfig: AppConfig = {
     useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true', //Temporary
     useMyPages: process.env.NEXT_PUBLIC_USE_MY_PAGES === 'true',
     useUiPhases: process.env.NEXT_PUBLIC_USE_UI_PHASES === 'true',
+    useClosingMessageCheckbox: process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX === 'true',
+    useMultipleContactChannels: process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS === 'true',
+    useClosedAsDefaultResolution: process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION === 'true',
   },
 };

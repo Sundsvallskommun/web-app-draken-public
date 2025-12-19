@@ -3,7 +3,7 @@ import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-cased
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
@@ -141,14 +141,12 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIK() || isKA() || isLOP() || isMEX() ? (
-                      <PopupMenu.Item>
-                        <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                          <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
-                          ärende
-                        </Link>
-                      </PopupMenu.Item>
-                    ) : null}
+                    <PopupMenu.Item>
+                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                        <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
+                        ärende
+                      </Link>
+                    </PopupMenu.Item>
                   </PopupMenu.Group>
 
                   {userMenuGroups.map((group, groupindex) => (
