@@ -1,3 +1,4 @@
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -24,11 +25,11 @@ const getMessageSourceLabel = (message: MessageNode, errand: IErrand) => {
   }
 
   if (message.messageType === 'MINASIDOR' && message.direction === 'INBOUND') {
-    return 'Draken';
+    return errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
   }
 
   if (message.messageType === 'DRAKEN') {
-    return 'Draken';
+    return errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
   }
 
   return '(okänd mottagare)';
