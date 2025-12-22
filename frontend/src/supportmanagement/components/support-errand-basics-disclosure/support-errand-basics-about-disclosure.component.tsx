@@ -26,14 +26,9 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   const { setValue } = formControls;
 
   useEffect(() => {
-    setValue('id', supportErrand.id);
-    setValue('caseId', supportErrand.externalTags?.find((t) => t.key === 'caseId')?.value);
-    if (supportErrand.externalTags) {
-      setValue('caseId', supportErrand.externalTags?.find((t) => t.key === 'caseId')?.value);
-    }
+    setValue('id', supportErrand.id, { shouldDirty: false });
+    setValue('caseId', supportErrand.externalTags?.find((t) => t.key === 'caseId')?.value, { shouldDirty: false });
   }, [setValue, supportErrand]);
-
-  useEffect(() => {});
   return (
     <Disclosure variant="alt" header="Om ärendet" icon={<LucideIcon name="info" />} initalOpen={true}>
       <SupportErrandBasicsAboutForm supportErrand={supportErrand} />

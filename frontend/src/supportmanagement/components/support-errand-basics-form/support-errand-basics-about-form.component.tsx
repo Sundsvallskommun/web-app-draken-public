@@ -13,7 +13,7 @@ import {
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
@@ -48,6 +48,12 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   } = formControls;
 
   const { description } = watch();
+  const userHasEditedDescription = useRef(false);
+
+  // Reset the edit flag when errand changes (new errand loaded)
+  useEffect(() => {
+    userHasEditedDescription.current = false;
+  }, [supportErrand.id]);
 
   useEffect(() => {
     if (supportMetadata) {
@@ -96,13 +102,19 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       <div className="flex my-24 gap-xl">
         <FormControl id="description" className="w-full" data-cy="errand-description-richtext-wrapper">
           <FormLabel>Ärendebeskrivning</FormLabel>
-          <TextEditor
-            className="w-full h-[15rem] case-description-editor"
-            readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
-            disableToolbar
-            onChange={(e) => setValue('description', e.target.value.markup, { shouldDirty: true })}
-            value={{ markup: description }}
-          />
+          <div onFocusCapture={() => { userHasEditedDescription.current = true; }}>
+            <TextEditor
+              className="w-full h-[15rem] case-description-editor"
+              readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
+              disableToolbar
+              onChange={(e) => {
+                const newValue = e.target.value.markup;
+                // Only mark as dirty if user has actually interacted with the editor
+                setValue('description', newValue, { shouldDirty: userHasEditedDescription.current });
+              }}
+              value={{ markup: description }}
+            />
+          </div>
         </FormControl>
       </div>
 
