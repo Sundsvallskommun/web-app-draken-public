@@ -67,7 +67,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   useEffect(() => {
     setFormIsValid(formState.isValid);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formState]);
+  }, [formState.isValid]);
 
   const { caseType, priority } = watch();
   const caseTypesHiddenFromRegistation = Object.keys(CaseTypesHiddenFromRegistration);

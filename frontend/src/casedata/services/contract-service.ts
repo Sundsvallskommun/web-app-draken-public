@@ -156,7 +156,6 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
     .get<ApiResponse<ContractData>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching contract: ', contractId);
       throw e;
     });
 };
@@ -202,7 +201,6 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
       }
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching contract: ', contractId);
       throw e;
     });
 };
