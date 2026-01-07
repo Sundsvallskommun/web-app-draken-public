@@ -1,5 +1,5 @@
 import { SearchField } from '@sk-web-gui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface CaseQueryFilter {
@@ -14,6 +14,13 @@ export const CasedataFilterQuery: React.FC = () => {
   const { watch, setValue } = useFormContext<CaseQueryFilter>();
   const value = watch('query');
   const [query, setQuery] = useState<string>(value);
+
+  useEffect(() => {
+    if (query === '') {
+      setValue('query', '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   return (
     <SearchField

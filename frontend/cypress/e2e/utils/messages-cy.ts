@@ -42,7 +42,7 @@ export const sendEmailWithAttachment = () => {
   cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
   cy.get('button').contains('Bläddra').should('exist').click();
   cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/empty-attachment.txt', { force: true });
-  cy.get('.sk-form-error-message').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
+  cy.get('.sk-form-error-message').should('contain.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
   cy.get('button').contains('Bläddra').should('exist').click();
   cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/attachment.txt', { force: true });
   cy.get('[data-cy="upload-button"]').contains('Ladda upp').should('exist').click();

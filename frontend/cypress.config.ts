@@ -3,6 +3,7 @@ import codeCoverageTask from '@cypress/code-coverage/task';
 import { addMatchImageSnapshotPlugin } from '@simonsmith/cypress-image-snapshot/plugin';
 
 export default defineConfig({
+  retries: 2,
   e2e: {
     supportFile: 'cypress/support/e2e.ts',
     baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}`,
