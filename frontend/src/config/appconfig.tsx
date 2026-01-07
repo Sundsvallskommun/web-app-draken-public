@@ -1,3 +1,5 @@
+import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
+
 export interface AppConfig {
   applicationName: string;
   isCaseData: boolean;
@@ -61,3 +63,41 @@ export const appConfig: AppConfig = {
     useUiPhases: process.env.NEXT_PUBLIC_USE_UI_PHASES === 'true',
   },
 };
+
+function resetAllFlagsToFalse() {
+  appConfig.isCaseData = false;
+  appConfig.isSupportManagement = false;
+
+  (Object.keys(appConfig.features) as (keyof AppConfigFeatures)[]).forEach((key) => {
+    appConfig.features[key] = false;
+  });
+}
+
+export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
+  if (!flags || flags.length === 0) {
+    return;
+  }
+
+  resetAllFlagsToFalse();
+
+  flags.forEach((flag) => {
+    if (!(flag.name in appConfig.features) && flag.name !== 'isCaseData' && flag.name !== 'isSupportManagement') {
+      console.warn('Unknown feature flag from backend:', flag.name);
+      return;
+    }
+
+    if (flag.name === 'isCaseData') {
+      appConfig.isCaseData = flag.enabled;
+      return;
+    }
+
+    if (flag.name === 'isSupportManagement') {
+      appConfig.isSupportManagement = flag.enabled;
+      return;
+    }
+
+    if (flag.name in appConfig.features) {
+      appConfig.features[flag.name] = flag.enabled;
+    }
+  });
+}
