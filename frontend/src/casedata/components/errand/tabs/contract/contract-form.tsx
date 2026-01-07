@@ -2,9 +2,12 @@ import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/
 import { ContractType, IntervalType, StakeholderRole, TimeUnit } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
-import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
-import { getContractStakeholderName, prettyContractRoles } from '@casedata/services/contract-service';
+import {
+  getContractStakeholderName,
+  getErrandPropertyInformation,
+  prettyContractRoles,
+} from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -43,7 +46,7 @@ export const ContractForm: React.FC<{
     user,
   }: { municipalityId: string; errand: IErrand; user: User; setErrand: Dispatch<SetStateAction<IErrand>> } =
     useAppContext();
-  const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
+  const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger, reset } =
     useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
   const [lessorNoticeIndex, setLessorNoticeIndex] = useState(1);
@@ -130,6 +133,18 @@ export const ContractForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyers, sellers]);
 
+  const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
+    []
+  );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getErrandPropertyInformation(errand);
+      setErrandPropertyDesignations(data);
+    };
+    fetchData();
+  }, [errand]);
+
   useEffect(() => {
     if (existingContract) {
       if (existingContract.type === ContractType.LEASE_AGREEMENT) {
@@ -146,6 +161,8 @@ export const ContractForm: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
+
+  const toPropertyDesignation = (pd) => (pd.name ? pd.name : pd);
 
   const saveButton = () => {
     return (
@@ -196,7 +213,7 @@ export const ContractForm: React.FC<{
                   <strong>{getContractStakeholderName(b)}</strong>
                 </div>
                 <div>
-                  {b.type === 'COMPANY' || b.type === 'ASSOCIATION' || b.type === 'MUNICIPALITY'
+                  {b.type === 'ASSOCIATION' || b.type === 'MUNICIPALITY' || b.type === 'ORGANIZATION'
                     ? b.organizationNumber
                     : b.personalNumber}
                 </div>
@@ -330,16 +347,25 @@ export const ContractForm: React.FC<{
                   <Checkbox.Group
                     data-cy="property-designation-checkboxgroup"
                     name="propertyDesignations"
-                    defaultValue={getValues().propertyDesignations}
+                    value={watch().propertyDesignations.map((pd) => pd.name)}
+                    onChange={(e) => {
+                      const selected = e.map((pd) => {
+                        const totalPropertyDesignations = [
+                          ...(errandPropertyDesignations ?? []),
+                          ...(existingContract?.propertyDesignations || []),
+                        ];
+                        return totalPropertyDesignations.find((epd) => epd.name === pd);
+                      });
+                      setValue('propertyDesignations', selected);
+                    }}
                   >
                     {[
                       ...new Set([
-                        ...getErrandPropertyDesignations(errand),
-                        ...(existingContract?.propertyDesignations || []),
+                        ...errandPropertyDesignations.map(toPropertyDesignation),
+                        ...(existingContract?.propertyDesignations || []).map(toPropertyDesignation),
                       ]),
                     ].map((p, idx) => (
                       <Checkbox
-                        {...register('propertyDesignations')}
                         data-cy={`property-designation-checkbox-${p.replace(/\s+/g, '-')}`}
                         key={`facility-${idx}`}
                         value={p}

@@ -24,6 +24,7 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockAsset } from '../fixtures/mockAsset';
 import { preventProcessExtraParameters } from '../utils/utils';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
@@ -71,6 +72,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errand/*', mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
 
     it('shows the correct base errand information', () => {

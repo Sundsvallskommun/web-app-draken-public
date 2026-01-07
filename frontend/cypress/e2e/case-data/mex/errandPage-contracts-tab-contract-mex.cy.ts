@@ -10,6 +10,7 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
+import { Role } from '@casedata/interfaces/role';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
@@ -23,9 +24,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
-import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
-import { IErrand } from '@casedata/interfaces/errand';
-import { Role } from '@casedata/interfaces/role';
+import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 const takeElementSnapshot = (dataCySelector: string) => {
   cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
@@ -68,15 +67,17 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
 
-    const contractText = {
+    const contractText: { data: Contract } = {
       data: {
         contractId: '2024-01026',
         externalReferenceId: '123123',
-        status: 'ACTIVE',
-        propertyDesignations: ['SUNDSVALL BLA'],
-        type: 'LEASE_AGREEMENT',
+        status: Status.ACTIVE,
+        propertyDesignations: [],
+        type: ContractType.LEASE_AGREEMENT,
       },
     };
 
@@ -113,9 +114,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         {}
       );
       visitErrandContractTab();
-      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary.sk-disclosure-header-icon')
-        .should('exist')
-        .click();
+      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
       cy.get('[data-cy="contract-upload-field"]').should('exist');
       cy.get('[data-cy="contract-attachment-item-1"]').should('exist');
@@ -211,9 +210,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
 
-      const buildSelector = (p) => `[data-cy="property-designation-checkbox-${p.replace(/\s+/g, '-')}"]`;
+      const buildSelector = (p: { name: string; district?: string }) =>
+        `[data-cy="property-designation-checkbox-${p.name.replace(/\s+/g, '-')}"]`;
 
-      const errandProperties = getErrandPropertyDesignations(mockMexErrand_base.data as unknown as IErrand);
+      // const errandProperties = getErrandPropertyDesignations(mockMexErrand_base.data as unknown as IErrand);
+      const errandProperties = mockMexErrand_base.data.facilities
+        .filter((facility) => facility.address)
+        .map((f) => {
+          return { name: f.address?.propertyDesignation || '', district: 'Låtsasdistrikt' };
+        });
       const errandPropertiesCySelectors = errandProperties.map(buildSelector);
 
       const contractProperties = mockLeaseAgreement.data.propertyDesignations;
@@ -241,7 +246,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
-        expect(leaseAgreement.propertyDesignations).to.deep.equal([...errandProperties, ...contractProperties]);
+        expect(leaseAgreement.propertyDesignations).to.deep.equal([...contractProperties, ...errandProperties]);
       });
     });
 
