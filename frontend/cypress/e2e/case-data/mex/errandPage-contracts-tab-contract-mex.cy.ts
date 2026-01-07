@@ -114,9 +114,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         {}
       );
       visitErrandContractTab();
-      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary.sk-disclosure-header-icon')
-        .should('exist')
-        .click();
+      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
       cy.get('[data-cy="contract-upload-field"]').should('exist');
       cy.get('[data-cy="contract-attachment-item-1"]').should('exist');
