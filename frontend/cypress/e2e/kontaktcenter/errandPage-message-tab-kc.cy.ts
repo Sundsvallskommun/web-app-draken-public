@@ -83,7 +83,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       sendSmsMessage();
     });
 
-    it.only('sends email with attachment', () => {
+    it('sends email with attachment', () => {
       sendEmailWithAttachment();
     });
   });
