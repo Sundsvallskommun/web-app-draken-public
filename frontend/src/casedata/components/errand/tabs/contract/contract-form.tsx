@@ -133,9 +133,9 @@ export const ContractForm: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyers, sellers]);
 
-  const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
-    []
-  );
+  const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<
+    { name: string; district?: string }[]
+  >([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -349,30 +349,36 @@ export const ContractForm: React.FC<{
                     name="propertyDesignations"
                     value={watch().propertyDesignations.map((pd) => pd.name)}
                     onChange={(e) => {
-                      const selected = e.map((pd) => {
-                        const totalPropertyDesignations = [
-                          ...(errandPropertyDesignations ?? []),
-                          ...(existingContract?.propertyDesignations || []),
-                        ];
-                        return totalPropertyDesignations.find((epd) => epd.name === pd);
-                      });
+                      const totalPropertyDesignations = [
+                        ...(errandPropertyDesignations ?? []),
+                        ...(existingContract?.propertyDesignations || []),
+                      ];
+                      const selected = e.map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName));
                       setValue('propertyDesignations', selected);
                     }}
                   >
-                    {[
-                      ...new Set([
-                        ...errandPropertyDesignations.map(toPropertyDesignation),
-                        ...(existingContract?.propertyDesignations || []).map(toPropertyDesignation),
-                      ]),
-                    ].map((p, idx) => (
-                      <Checkbox
-                        data-cy={`property-designation-checkbox-${p.replace(/\s+/g, '-')}`}
-                        key={`facility-${idx}`}
-                        value={p}
-                      >
-                        {p}
-                      </Checkbox>
-                    ))}
+                    {(() => {
+                      const combined = [
+                        ...(errandPropertyDesignations ?? []),
+                        ...(existingContract?.propertyDesignations || []),
+                      ];
+                      const uniqueByName = combined.reduce((acc, pd) => {
+                        const name = toPropertyDesignation(pd);
+                        if (!acc.has(name)) {
+                          acc.set(name, pd);
+                        }
+                        return acc;
+                      }, new Map<string, { name?: string; district?: string }>());
+                      return Array.from(uniqueByName.entries()).map(([name, pd], idx) => (
+                        <Checkbox
+                          data-cy={`property-designation-checkbox-${name.replace(/\s+/g, '-')}`}
+                          key={`facility-${idx}`}
+                          value={name}
+                        >
+                          {pd.district ? `${name} (${pd.district})` : name}
+                        </Checkbox>
+                      ));
+                    })()}
                   </Checkbox.Group>
                 ) : (
                   <span>Inga fastighetsbeteckningar finns angivna på ärendet</span>

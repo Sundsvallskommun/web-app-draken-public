@@ -29,7 +29,8 @@ import { saveExtraParameters } from './casedata-extra-parameters-service';
 import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
 import { getErrandPropertyDesignations } from './casedata-facilities-service';
-import { getFacilityInfo } from '@common/services/facilities-service';
+import { getFacilityByDesignation } from '@common/services/facilities-service';
+import { EstateInfoSearch } from '@common/interfaces/estate-details';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
@@ -552,22 +553,22 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   return a;
 }
 
-export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
+export const getErrandPropertyInformation: (
   errand: IErrand
-) => {
-  const infos = await Promise.allSettled(
-    errand.facilities
-      .filter((facility) => facility.address)
-      .map((facility) => facility.address?.propertyDesignation)
-      .map(getFacilityInfo)
-      .map(async (p) => (await p).data)
-  );
+) => Promise<{ name: string; district: string }[]> = async (errand: IErrand) => {
+  const designations = errand.facilities
+    .filter((facility) => facility.address?.propertyDesignation)
+    .map((facility) => facility.address?.propertyDesignation);
+
+  const infos = await Promise.allSettled(designations.map((d) => getFacilityByDesignation(d)));
+
   return infos
-    .filter((info) => info.status === 'fulfilled')
-    .map((info) => {
-      return {
-        name: info.value?.designation || '',
-        district: info.value?.district || '',
-      };
+    .filter((info): info is PromiseFulfilledResult<ApiResponse<EstateInfoSearch[]>> => info.status === 'fulfilled')
+    .flatMap((info) => {
+      const estates = info.value?.data || [];
+      return estates.map((estate) => ({
+        name: estate.designation || '',
+        district: estate.districtname || '',
+      }));
     });
 };
