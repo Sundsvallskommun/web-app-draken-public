@@ -25,6 +25,7 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
 
 const takeElementSnapshot = (dataCySelector: string) => {
   cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
@@ -41,6 +42,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
+      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation).as(
+        'getEstatePropertyByDesignation'
+      );
 
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/stakeholders/personNumber').as('getStakeholders');
