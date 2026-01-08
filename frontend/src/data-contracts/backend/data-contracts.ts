@@ -590,6 +590,7 @@ export interface TemplateSelector {
 
 export interface FeatureFlagDto {
   name: string;
+  value?: string;
   enabled: boolean;
 }
 

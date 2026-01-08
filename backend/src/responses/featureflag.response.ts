@@ -1,12 +1,15 @@
 import { ApiResponse } from '@/services/api.service';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsString, ValidateNested } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 export class FeatureFlag {
   @IsInt()
   id: number;
   @IsString()
   name: string;
+  @IsString()
+  @IsOptional()
+  value?: string;
   @IsBoolean()
   enabled: boolean;
   @IsString()

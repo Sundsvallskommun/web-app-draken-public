@@ -34,9 +34,10 @@ export class FeatureFlagController {
         return flag.application === this.application && namespaces.includes(flag.namespace);
       });
 
-      const featureFlagRes: FeatureFlagDto[] = filteredFlags.map(flags => ({
-        name: flags.name,
-        enabled: flags.enabled,
+      const featureFlagRes: FeatureFlagDto[] = filteredFlags.map(flag => ({
+        name: flag.name,
+        value: flag.value,
+        enabled: flag.enabled,
       }));
 
       return featureFlagRes;
