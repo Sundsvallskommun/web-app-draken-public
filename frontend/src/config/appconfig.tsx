@@ -4,6 +4,7 @@ export interface AppConfig {
   applicationName: string;
   isCaseData: boolean;
   isSupportManagement: boolean;
+  reopenSupportErrandLimit: string;
   features: AppConfigFeatures;
 }
 
@@ -37,6 +38,7 @@ export const appConfig: AppConfig = {
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
   isCaseData: process.env.NEXT_PUBLIC_IS_CASEDATA === 'true',
   isSupportManagement: process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT === 'true',
+  reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
     useErrandExport: process.env.NEXT_PUBLIC_USE_ERRAND_EXPORT === 'true',
     useThreeLevelCategorization: process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION === 'true',
@@ -67,6 +69,7 @@ export const appConfig: AppConfig = {
 function resetAllFlagsToFalse() {
   appConfig.isCaseData = false;
   appConfig.isSupportManagement = false;
+  appConfig.reopenSupportErrandLimit = '30';
 
   (Object.keys(appConfig.features) as (keyof AppConfigFeatures)[]).forEach((key) => {
     appConfig.features[key] = false;
@@ -81,7 +84,12 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
   resetAllFlagsToFalse();
 
   flags.forEach((flag) => {
-    if (!(flag.name in appConfig.features) && flag.name !== 'isCaseData' && flag.name !== 'isSupportManagement') {
+    if (
+      !(flag.name in appConfig.features) &&
+      flag.name !== 'isCaseData' &&
+      flag.name !== 'isSupportManagement' &&
+      flag.name !== 'reopenSupportErrandLimit'
+    ) {
       console.warn('Unknown feature flag from backend:', flag.name);
       return;
     }
@@ -93,6 +101,11 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
 
     if (flag.name === 'isSupportManagement') {
       appConfig.isSupportManagement = flag.enabled;
+      return;
+    }
+
+    if (flag.name === 'reopenSupportErrandLimit' && flag.enabled) {
+      appConfig.reopenSupportErrandLimit = flag.value;
       return;
     }
 

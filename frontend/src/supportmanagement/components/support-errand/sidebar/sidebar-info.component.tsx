@@ -32,6 +32,7 @@ import { ForwardErrandComponent } from './forward-errand.component';
 import { StartProcessComponent } from './start-process.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
+import { appConfig } from '@config/appconfig';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -391,7 +392,7 @@ export const SidebarInfo: React.FC<{
   };
 
   const hasClosedErrandPassedLimit = () => {
-    const limit = process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT;
+    const limit = appConfig.reopenSupportErrandLimit;
     const lastModified = dayjs(supportErrand.modified);
     return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
   };
