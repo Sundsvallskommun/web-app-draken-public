@@ -37,6 +37,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
       cy.intercept('GET', '**/me', mockMe).as('getMe');
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand).as(
         'getErrand'
       );
