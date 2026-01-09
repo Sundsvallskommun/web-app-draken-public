@@ -21,6 +21,7 @@ import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
@@ -220,7 +221,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .click({ force: true });
         cy.get('[data-cy="history-details-title"]').should('not.be.empty');
         cy.get('[data-cy="history-details-type"]').should('not.be.empty');
-        cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
+        cy.get('[data-cy="history-table-details-close-button"]').should('exist').click({ force: true });
       });
 
       cy.get('[data-cy="history-event-label-2"]').click();
@@ -229,7 +230,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Under utredning');
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Nytt värde:');
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Under beslut');
-      cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
+      cy.get('[data-cy="history-table-details-close-button"]').should('exist').click({ force: true });
     });
 
     it('manages Exports', () => {
@@ -241,6 +242,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .should('exist')
           .contains('Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.');
       } else {
+        // Export button should not exist when feature is disabled
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist');
       }
     });

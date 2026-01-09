@@ -36,6 +36,7 @@ export const replaceExtraParameter = (extraParameters: ExtraParameter[], newPara
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand details tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
