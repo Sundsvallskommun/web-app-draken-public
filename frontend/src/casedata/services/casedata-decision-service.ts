@@ -11,6 +11,7 @@ import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
+import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
 import { isFTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
@@ -65,12 +66,6 @@ export interface DecisionTemplatesResult {
   templates: DecisionTemplate[];
   signature: string;
   byId: Record<string, DecisionTemplate>;
-}
-
-interface TemplateApiResponse {
-  identifier?: string;
-  name?: string;
-  content?: string;
 }
 
 export async function fetchDecisionTemplates(app: string, userName: string): Promise<DecisionTemplatesResult> {

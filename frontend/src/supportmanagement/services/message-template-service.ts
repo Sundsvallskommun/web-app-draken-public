@@ -20,7 +20,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 export const EMAIL_INFORMATION_TEXT =
   '<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>';
 
-interface TemplateApiResponse {
+export interface TemplateApiResponse {
   identifier?: string;
   name?: string;
   description?: string;
@@ -62,6 +62,7 @@ export interface TemplateInfo {
   identifier: string;
   name: string;
   content: string;
+  defaultValues?: Array<{ fieldName: string; value: string }>;
 }
 
 export interface TemplateResult {
@@ -101,6 +102,7 @@ export async function fetchTemplatesWithMetadata(
         identifier: t.identifier!,
         name: t.name || t.identifier!,
         content: base64Decode(t.content!),
+        defaultValues: t.defaultValues,
       }));
 
     const byId: Record<string, TemplateInfo> = {};
