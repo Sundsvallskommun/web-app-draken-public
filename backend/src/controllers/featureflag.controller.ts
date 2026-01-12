@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { FeatureFlagDto } from '@/dtos/featureflag.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -25,7 +26,7 @@ export class FeatureFlagController {
     }
 
     try {
-      const url = `${process.env.ADMINPANEL_URL}/featureflags`;
+      const url = `${process.env.ADMINPANEL_URL}/featureflags/${MUNICIPALITY_ID}`;
       const res = await this.apiService.get<FeatureFlagsApiResponse>({ baseURL: url }, req.user);
 
       const namespaces = [this.caseDataNamespace, this.supportManagementNamespace];
