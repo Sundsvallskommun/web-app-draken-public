@@ -1,10 +1,10 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { isIK, isKA, isLOP } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
+import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
@@ -45,42 +45,16 @@ export interface Message {
   messageId?: string;
 }
 
-const getClosingMessageBody = (): string => {
-  if (isKA()) {
-    return `Hej,<br><br>
-      Ditt ärende är löst och har nu avslutats av handläggare.<br><br>
-      Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>
-      Med vänlig hälsning,<br><br>
-      <strong>Kontaktcenter</strong><br>
-      Ånge kommun<br>
-      Torggatan 10<br>
-      841 81 Ånge<br>
-      <a href="mailto:ange@ange.se">ange@ange.se</a><br>
-      0690-25 01 00<br>
-      <a href="https://www.ange.se">www.ange.se</a><br>`;
+const getClosingMessageBody = async (userName: string): Promise<string> => {
+  const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'default';
+
+  const content = await getClosingTemplate(app, { user: userName });
+  if (!content) {
+    console.error(`Could not get closing-template: ${app}.email.closing`);
+    return '';
   }
 
-  if (isLOP()) {
-    return `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
-    Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>
-    Servicecenter Lön och pension<br>
-    Sundsvalls kommun<br>
-    <a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>
-    060-19 26 00, telefontid 9:00-12:00<br>`;
-  }
-
-  if (isIK()) {
-    return `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
-    Med vänliga hälsningar<br>
-    Intern Kundtjänst<br>
-    <a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a><br>
-    060-191565<br>`;
-  }
-
-  return `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>`;
+  return content;
 };
 
 const getPlaintextMessageBody = (htmlMessage: string): string => {
@@ -96,9 +70,9 @@ const getPlaintextMessageBody = (htmlMessage: string): string => {
   return sanitized(transformed).trim();
 };
 
-export const sendClosingMessage = (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
+export const sendClosingMessage = async (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
   const contactChannels = applicantContactChannel(supportErrand);
-  const messageBody = getClosingMessageBody();
+  const messageBody = await getClosingMessageBody(adminName);
   const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
   return sendMessage({

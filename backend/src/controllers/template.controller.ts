@@ -1,12 +1,13 @@
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { DetailedTemplateResponse } from '@/data-contracts/templating/data-contracts';
 import { RequestWithUser } from '@interfaces/auth.interface';
+import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
-import authMiddleware from '@middlewares/auth.middleware';
 import { IsObject, IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Post, Req, UseBefore } from 'routing-controllers';
+import { Body, Controller, Get, HttpCode, Param, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { MUNICIPALITY_ID } from '@/config';
-import { apiServiceName } from '@/config/api-config';
 
 interface ResponseData {
   data: any;
@@ -111,5 +112,72 @@ export class TemplateController {
       throw e;
     });
     return { data: response.data, message: `Decision PDF rendered` };
+  }
+
+  @Get('/templates')
+  @OpenAPI({ summary: 'Fetch templates by identifier prefix' })
+  @UseBefore(authMiddleware)
+  async getMessageTemplates(
+    @Req() req: RequestWithUser,
+    @QueryParam('prefix') prefix: string = '',
+    @QueryParam('type') type: string = '',
+    @QueryParam('excludeVariants') excludeVariants: string = '',
+  ): Promise<ResponseData> {
+    const namespace = prefix === 'internal.' ? 'CONTACTSUNDSVALL' : CASEDATA_NAMESPACE || SUPPORTMANAGEMENT_NAMESPACE;
+    const baseUrl = `${this.SERVICE}/${MUNICIPALITY_ID}/templates`;
+    const searchUrl = namespace ? `${baseUrl}?namespace=${namespace}` : baseUrl;
+
+    const searchResult = await this.apiService.get<DetailedTemplateResponse[]>({ url: searchUrl }, req.user);
+
+    const allTemplates = searchResult.data || [];
+
+    let filteredTemplates = prefix ? allTemplates.filter((t: DetailedTemplateResponse) => t.identifier?.startsWith(prefix)) : allTemplates;
+
+    if (type) {
+      filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
+        const parts = t.identifier?.split('.') || [];
+        return parts.length >= 2 && parts[1] === type;
+      });
+    }
+
+    if (excludeVariants) {
+      const excludeList = excludeVariants.split(',').map(v => v.trim());
+      filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
+        const parts = t.identifier?.split('.') || [];
+        return parts.length < 3 || !excludeList.includes(parts[2]);
+      });
+    }
+
+    const latestByIdentifier = new Map<string, DetailedTemplateResponse>();
+    for (const t of filteredTemplates) {
+      const existing = latestByIdentifier.get(t.identifier);
+      if (!existing || (t.version && existing.version && t.version > existing.version)) {
+        latestByIdentifier.set(t.identifier, t);
+      }
+    }
+    filteredTemplates = Array.from(latestByIdentifier.values());
+
+    const templatesWithContent = await Promise.all(
+      filteredTemplates.map(async (t: DetailedTemplateResponse) => {
+        if (t.content) {
+          return t;
+        }
+
+        const detailUrl = `${this.SERVICE}/${MUNICIPALITY_ID}/templates/${t.identifier}`;
+        const detailResult = await this.apiService.get<DetailedTemplateResponse>({ url: detailUrl }, req.user);
+        return detailResult.data;
+      }),
+    );
+
+    return { data: templatesWithContent, message: 'success' };
+  }
+
+  @Get('/templates/:identifier')
+  @OpenAPI({ summary: 'Fetch a single template by identifier' })
+  @UseBefore(authMiddleware)
+  async getMessageTemplate(@Req() req: RequestWithUser, @Param('identifier') identifier: string): Promise<ResponseData> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/templates/${identifier}`;
+    const res = await this.apiService.get<DetailedTemplateResponse>({ url }, req.user);
+    return { data: res.data, message: 'success' };
   }
 }

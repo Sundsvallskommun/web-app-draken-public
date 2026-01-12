@@ -3,7 +3,8 @@
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
-  beslutsmallMapping,
+  DecisionTemplatesResult,
+  fetchDecisionTemplates,
   getFinalDecisonWithHighestId,
   getLawMapping,
   renderBeslutPdf,
@@ -25,6 +26,7 @@ import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { ContractData } from '@casedata/interfaces/contract-data';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -43,7 +45,6 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -64,7 +65,6 @@ import { CasedataMessageTabFormModel } from '../messages/message-composer.compon
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-import { ContractData } from '@casedata/interfaces/contract-data';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -135,7 +135,6 @@ export const CasedataDecisionTab: React.FC<{
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
-  const selectedBeslut = 1;
   const [error, setError] = useState<string>();
   const quillRef = useRef(null);
   const saveConfirm = useConfirm();
@@ -144,6 +143,7 @@ export const CasedataDecisionTab: React.FC<{
   const [existingContract, setExistingContract] = useState<ContractData>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
+  const [decisionTemplates, setDecisionTemplates] = useState<DecisionTemplatesResult | null>(null);
 
   const [initialLawValues] = useState<string[]>(() => {
     const sortedDec = [...errand.decisions].sort(
@@ -167,6 +167,14 @@ export const CasedataDecisionTab: React.FC<{
       setServiceSchema(schema);
     })();
   }, [municipalityId, assetType]);
+
+  useEffect(() => {
+    if (isMEX() && !decisionTemplates) {
+      const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'mex';
+      const userName = errand.administratorName || `${user.firstName} ${user.lastName}`;
+      fetchDecisionTemplates(app, userName).then(setDecisionTemplates);
+    }
+  }, [decisionTemplates, errand.administratorName, user]);
 
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
@@ -206,7 +214,7 @@ export const CasedataDecisionTab: React.FC<{
       personalNumber: getOwnerStakeholder(errand)?.personalNumber,
       errandCaseType: errand.caseType,
       law: [],
-      decisionTemplate: isPT() ? '' : beslutsmallMapping[0].label,
+      decisionTemplate: '',
       outcome: '',
       validFrom: '',
       validTo: '',
@@ -459,14 +467,6 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const onRichTextChange = (delta?) => {
-    setValue('description', sanitized(delta.ops[0].retain > 1 ? quillRef.current.root.innerHTML : undefined), {
-      shouldDirty: true,
-    });
-    setValue('descriptionPlaintext', quillRef.current.getText());
-    trigger('description');
-  };
-
   const sortedDec = [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
   const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
 
@@ -491,28 +491,23 @@ export const CasedataDecisionTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand.id]);
 
-  const changeTemplate = (InTemplate) => {
-    let content = 'Hej!<br><br>';
-
-    if (InTemplate === 'Förfrågan arrende avslag privatperson') {
-      content +=
-        'Tack för din förfrågan. Vi kommer dock att avslå ditt önskemål om att arrendera mark från kommunen. Vi har i dagsläget inte resurser att prioritera förfrågningar som dessa om nya arrenden för privatpersoner. Vi måste prioritera ärenden som rör företag, föreningar och kommunala verksamheter. <br><br><em>Valbar:</em><br>I de fall privatpersoner använder kommunal mark som exempelvis angränsar till privat fastighet måste privat egendom avlägsnas om kommunen behöver tillträde till marken.';
-    } else if (InTemplate === 'Förfrågan mark för småhus, nekande svar') {
-      content +=
-        'Tack för din förfrågan om att köpa mark för att bebygga med småhus.<br><br>Sundsvalls kommun har flera småhustomter till salu <a href="https://sundsvall.se/bygga-bo-och-miljo/bostader-bostadsomraden-mark-och-offentliga-lokaler/smahustomter" target="_blank">Småhustomter (sundsvall.se)</a>. På webbsidan kan du registrera din e-post för att få vårt nyhetsbrev som skickas ut i samband med att nya småhustomter släpps till försäljning. <br><br>Mark- och exploateringsavdelningen jobbar aktivt med att ta fram nya områden för småhustomter, du kan läsa om pågående planarbeten <a href="https://www.sundsvallvaxer.se/" target="_blank">Sundsvall växer (sundsvallvaxer.se)</a>. <br><br>Kommunen säljer inte mark för småhus utöver de småhustomter som vi erbjuder via hemsidan. I och med detta svar avslutas ditt ärende hos oss.';
-    } else if (InTemplate === 'Förfrågan avskrivs') {
-      content +=
-        'Vi har mottagit din förfrågan avseende NN. Det ingår bl.a. i mark- och exploateringsavdelningens uppdrag att bedöma om mark ska arrenderas ut/försäljas. Vi har beslutat att tillsvidare inte handlägga den här typen av ärenden.<br><br>Ditt ärende avskrivs härmed.';
+  const changeTemplate = (templateIdentifier: string) => {
+    if (!templateIdentifier || !decisionTemplates) {
+      setValue('description', '', { shouldDirty: true });
+      setValue('descriptionPlaintext', '');
+      return;
     }
-    content +=
-      '<br><br>Med vänliga hälsningar<br><br>Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen<br>Handläggare ' +
-      errand.administratorName +
-      '<br>';
 
-    if (InTemplate === '') {
-      content = '';
+    const template = decisionTemplates.byId[templateIdentifier];
+    if (!template) {
+      setValue('description', '', { shouldDirty: true });
+      setValue('descriptionPlaintext', '');
+      return;
     }
-    onRichTextChange();
+
+    const content = template.content + decisionTemplates.signature;
+    setValue('description', content, { shouldDirty: true });
+    setValue('descriptionPlaintext', content.replace(/<[^>]+>/g, ''));
   };
 
   const isSent = () => {
@@ -641,11 +636,7 @@ export const CasedataDecisionTab: React.FC<{
           {isMEX() ? (
             <FormControl className="w-full">
               <FormLabel>Välj beslutsmall</FormLabel>
-              <Input
-                type="hidden"
-                {...register('decisionTemplate')}
-                value={beslutsmallMapping.find((l) => l.id === selectedBeslut).label}
-              />
+              <Input type="hidden" {...register('decisionTemplate')} />
               <Select
                 className="w-full"
                 data-cy="decisionTemplate-select"
@@ -659,9 +650,9 @@ export const CasedataDecisionTab: React.FC<{
                 value={getValues('decisionTemplate')}
               >
                 <Select.Option value="">Välj beslutsmall</Select.Option>
-                {beslutsmallMapping.map((decisionTemplate, index) => (
-                  <Select.Option key={index} value={decisionTemplate.label}>
-                    {decisionTemplate.label}
+                {decisionTemplates?.templates.map((template) => (
+                  <Select.Option key={template.identifier} value={template.identifier}>
+                    {template.name}
                   </Select.Option>
                 ))}
               </Select>

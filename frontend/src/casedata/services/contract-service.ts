@@ -23,11 +23,11 @@ import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/st
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { base64ToFile } from '@common/services/attachment-service';
 import { toBase64 } from '@common/utils/toBase64';
+import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
-import { UploadFile } from '@sk-web-gui/react';
-import { base64ToFile } from '@common/services/attachment-service';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },

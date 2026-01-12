@@ -1,35 +1,32 @@
 import { User } from '@common/interfaces/user';
-import { TFunction } from 'i18next';
-import { isKA } from '@common/services/application-service';
+import { getEmailTemplate, getSmsTemplate } from '@supportmanagement/services/message-template-service';
 
-export function getDefaultEmailBody(user: User, t: TFunction): string {
-  if (isKA()) {
-    return t('messages:templates.email.KA.normal', {
-      user: `${user.firstName} ${user.lastName}`,
-      defaultValue: t('messages:templates.email.default'),
-    });
+const APP = process.env.NEXT_PUBLIC_APPLICATION;
+
+export async function getDefaultEmailBody(user: User, variant: string = 'default'): Promise<string> {
+  const content = await getEmailTemplate(APP, variant, {
+    user: `${user.firstName} ${user.lastName}`,
+  });
+
+  if (!content) {
+    console.error(`Failed to fetch email template: ${APP}.email.${variant}`);
+    return '';
   }
 
-  const app = process.env.NEXT_PUBLIC_APPLICATION;
-  return t(`messages:templates.email.${app}`, {
-    user: `${user.firstName} ${user.lastName}`,
-    defaultValue: t('messages:templates.email.default'),
-  });
+  return content;
 }
 
-export function getDefaultSmsBody(user: User, t: TFunction): string {
-  if (isKA()) {
-    return t('messages:templates.sms.KA.normal', {
-      user: user.firstName,
-      defaultValue: t('messages:templates.sms.default'),
-    });
+export async function getDefaultSmsBody(user: User, variant: string = 'default'): Promise<string> {
+  const content = await getSmsTemplate(APP, variant, {
+    user: user.firstName,
+  });
+
+  if (!content) {
+    console.error(`Failed to fetch sms template: ${APP}.sms.${variant}`);
+    return '';
   }
 
-  const app = process.env.NEXT_PUBLIC_APPLICATION;
-  return t(`messages:templates.sms.${app}`, {
-    user: user.firstName,
-    defaultValue: t('messages:templates.sms.default'),
-  });
+  return content;
 }
 
 export function removeEmailInformation(contactMeans: string, template: string): string {

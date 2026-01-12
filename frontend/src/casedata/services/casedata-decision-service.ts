@@ -55,20 +55,63 @@ export const getLawMapping = (errand: IErrand): Law[] => {
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
 
-export const beslutsmallMapping = [
-  {
-    id: 1,
-    label: 'Förfrågan arrende avslag privatperson',
-  },
-  {
-    id: 2,
-    label: 'Förfrågan avskrivs',
-  },
-  {
-    id: 3,
-    label: 'Förfrågan mark för småhus, nekande svar',
-  },
-];
+export interface DecisionTemplate {
+  identifier: string;
+  name: string;
+  content: string;
+}
+
+export interface DecisionTemplatesResult {
+  templates: DecisionTemplate[];
+  signature: string;
+  byId: Record<string, DecisionTemplate>;
+}
+
+interface TemplateApiResponse {
+  identifier?: string;
+  name?: string;
+  content?: string;
+}
+
+export async function fetchDecisionTemplates(app: string, userName: string): Promise<DecisionTemplatesResult> {
+  try {
+    const prefix = `${app}.decision.`;
+    const response = await apiService.get<ApiResponse<TemplateApiResponse[]>>(
+      `templates?prefix=${prefix}`
+    );
+
+    const allTemplates = response.data?.data || [];
+
+    const templates: DecisionTemplate[] = allTemplates
+      .filter((t) => {
+        if (!t.identifier || !t.content) return false;
+        const parts = t.identifier.split('.');
+        // Exclude signature templates by name convention
+        return parts.length === 3 && parts[2] !== 'signature';
+      })
+      .map((t) => ({
+        identifier: t.identifier!,
+        name: t.name || t.identifier!,
+        content: base64Decode(t.content!),
+      }));
+
+    const signatureTemplate = allTemplates.find((t) => t.identifier === `${app}.decision.signature`);
+    let signature = '';
+    if (signatureTemplate?.content) {
+      signature = base64Decode(signatureTemplate.content).replace(/\{\{user\}\}/g, userName);
+    }
+
+    const byId: Record<string, DecisionTemplate> = {};
+    for (const t of templates) {
+      byId[t.identifier] = t;
+    }
+
+    return { templates, signature, byId };
+  } catch (error) {
+    console.error('Failed to fetch decision templates', error);
+    return { templates: [], signature: '', byId: {} };
+  }
+}
 
 export const saveDecision: (
   municipalityId: string,
