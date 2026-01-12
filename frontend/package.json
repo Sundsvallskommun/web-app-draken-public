@@ -81,7 +81,7 @@
     "@tailwindcss/forms": "^0.5.10",
     "ajv": "^8.17.1",
     "ajv-errors": "^3.0.0",
-    "axios": "^1.11.0",
+    "axios": "^1.13.2",
     "cypress-intercept-formdata": "^0.6.0",
     "dayjs": "^1.11.13",
     "envalid": "^8.1.0",
