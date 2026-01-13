@@ -28,6 +28,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
       );
@@ -170,7 +171,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
         'postMessage'
       );
-      cy.get('[data-cy="save-button"]').contains('Spara ärende').should('exist').click();
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
 
       cy.get(`article.sk-modal-dialog`).should('exist');
@@ -207,7 +207,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
         'postMessage'
       );
-      cy.get('[data-cy="save-button"]').contains('Spara ärende').should('exist').click();
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
 
       cy.get(`article.sk-modal-dialog`).should('exist');
@@ -245,7 +244,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
         'postMessage'
       );
-      cy.get('[data-cy="save-button"]').contains('Spara ärende').should('exist').click();
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
 
       cy.get(`article.sk-modal-dialog`).should('exist');
@@ -359,7 +357,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         mockForwardSupportErrandToMEX
       ).as('postMessage');
 
-      cy.get('[data-cy="save-button"]').contains('Spara ärende').should('exist').click();
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
       cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
       cy.get('[data-cy="resolution-input"]').should('exist').select('Mark och exploatering (MEX)');

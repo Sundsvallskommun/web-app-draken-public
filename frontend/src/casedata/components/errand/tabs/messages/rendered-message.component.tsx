@@ -1,3 +1,4 @@
+import { Channels } from '@casedata/interfaces/channels';
 import { Role } from '@casedata/interfaces/role';
 import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
@@ -138,7 +139,7 @@ export const RenderedMessage: React.FC<{
                     case 'DRAKEN':
                       return (
                         <>
-                          <Monitor size="1.5rem" className="align-sub mx-sm" /> Via Draken
+                          <Monitor size="1.5rem" className="align-sub mx-sm" /> Via {errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}
                         </>
                       );
                     case 'MINASIDOR':

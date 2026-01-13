@@ -1,11 +1,13 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
+import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import { getApplicationEnvironment, isIK, isKA, isKC, isLOP, isMEX, isPT } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -15,8 +17,6 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
-import { AngeSymbol } from '@styles/ange-symbol';
 
 export default function Layout({ title, children }) {
   const {
@@ -141,14 +141,12 @@ export default function Layout({ title, children }) {
                 </PopupMenu.Group>
                 <PopupMenu.Items>
                   <PopupMenu.Group>
-                    {isKC() || isIK() || isKA() || isLOP() || isMEX() ? (
-                      <PopupMenu.Item>
-                        <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                          <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
-                          ärende
-                        </Link>
-                      </PopupMenu.Item>
-                    ) : null}
+                    <PopupMenu.Item>
+                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                        <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
+                        ärende
+                      </Link>
+                    </PopupMenu.Item>
                   </PopupMenu.Group>
 
                   {userMenuGroups.map((group, groupindex) => (
@@ -163,13 +161,15 @@ export default function Layout({ title, children }) {
             </PopupMenu>
           }
           bottomContent={
-            ((isMEX() && !isMinLargeDevice) || (isPT() && !isMinLargeDevice)) &&
+            appConfig.features.useUiPhases &&
+            !isMinLargeDevice &&
             (pathName === '/registrera' || pathName.includes('arende')) ? (
               <UiPhaseWrapper />
             ) : null
           }
         >
-          {((isMEX() && isMinLargeDevice) || (isPT() && isMinLargeDevice)) &&
+          {appConfig.features.useUiPhases &&
+          isMinLargeDevice &&
           (pathName === '/registrera' || pathName.includes('arende')) ? (
             <UiPhaseWrapper />
           ) : null}
@@ -216,8 +216,6 @@ export default function Layout({ title, children }) {
           // NOTE: do stuff with cookies?
         }}
       />
-
-      {/* <Footer color="gray" /> */}
     </>
   );
 }

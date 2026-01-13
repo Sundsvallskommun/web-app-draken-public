@@ -25,6 +25,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/billing/2281/billingrecords**', mockBillingRecords).as('getBillingRecords');
       cy.intercept('GET', '**/countsupporterrands/**', mockCount).as('getCount');
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');

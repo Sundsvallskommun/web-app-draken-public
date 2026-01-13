@@ -26,6 +26,7 @@ import { isSupportErrandLocked } from '@supportmanagement/services/support-erran
 import { useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
 import { FacilityDetails } from './facilities-details';
+import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 
 export const Facilities: React.FC<{
   setValue: UseFormSetValue<any>;
@@ -54,7 +55,6 @@ export const Facilities: React.FC<{
   const { register } = useForm();
 
   const [selectedEstate, setSelectedEstate] = useState<EstateInformation>();
-  const searchValue = '';
 
   useEffect(() => {
     setRealEstates(props.facilities);
@@ -87,6 +87,15 @@ export const Facilities: React.FC<{
     }
   };
 
+  useDebounceEffect(
+    () => {
+      setSearchResult([]);
+      onSearchHandler(searchQuery);
+    },
+    500,
+    [searchQuery]
+  );
+
   const openEstateInfo = (inEstate: string, inIndex: number) => {
     const spinnerElement = document.getElementById('realEstate-spinner-' + inIndex);
     const linkElement = document.getElementById('realEstate-link-' + inIndex);
@@ -111,6 +120,30 @@ export const Facilities: React.FC<{
           linkElement.style.display = 'block';
         }
       });
+  };
+
+  const ResultList: React.FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
+    const data = result ?? [];
+    return searchResult.length > 0 ? (
+      <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full" key={`searchList-${searchQuery}`}>
+        {data.map((estate, index) => (
+          <SearchField.SuggestionsOption
+            key={`searchHit-${searchQuery}-${index}`}
+            value={searchType === 'ADDRESS' ? `${estate.address}` : estate.designation}
+            onChange={(event) => {
+              event.stopPropagation();
+              setRealEstates([...realEstates, makeFacility(estate)]);
+              setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
+              setInternalUnsaved(true);
+              setUnsaved(true);
+            }}
+            data-cy={`searchHit-${index}`}
+          >
+            {searchType === 'ADDRESS' ? `${estate.address}` : removeMunicipalityName(estate.designation)}
+          </SearchField.SuggestionsOption>
+        ))}
+      </SearchField.SuggestionsList>
+    ) : null;
   };
 
   return (
@@ -149,41 +182,24 @@ export const Facilities: React.FC<{
         </fieldset>
         <Input type="text" {...register('propertyDesignation')} hidden />
 
-        <SearchField.Suggestions autofilter={true}>
+        <SearchField.Suggestions autofilter={false}>
           <SearchField.SuggestionsInput
             disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
-              onSearchHandler(event.target.value);
             }}
             data-cy="facility-search"
             showSearchButton={false}
           />
-          <>
-            {/* TODO add spinner to search  */}
-            {searchResult.length >= 0 && (
-              <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full">
-                {searchResult.map((estate, index) => (
-                  <SearchField.SuggestionsOption
-                    key={`searchHit-${index}`}
-                    value={searchValue}
-                    onChange={(event) => {
-                      event.stopPropagation();
-                      setRealEstates([...realEstates, makeFacility(estate)]);
-                      setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
-                      setInternalUnsaved(true);
-                      setUnsaved(true);
-                    }}
-                    data-cy={`searchHit-${index}`}
-                  >
-                    {searchType === 'ADDRESS' ? `${estate.address}` : removeMunicipalityName(estate.designation)}
-                  </SearchField.SuggestionsOption>
-                ))}
-              </SearchField.SuggestionsList>
-            )}
-          </>
+          <ResultList result={searchResult} />
         </SearchField.Suggestions>
+        {showSpinner ? (
+          <div className="m-lg flex gap-16" data-cy="search-spinner">
+            <Spinner size={2} />
+            <span>Söker</span>
+          </div>
+        ) : null}
 
         <FacilityDetails
           label="Fastighetsinformation"

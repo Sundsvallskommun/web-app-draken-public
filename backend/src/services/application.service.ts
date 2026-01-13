@@ -13,3 +13,7 @@ export const isKA = () => process.env.APPLICATION === 'KA';
 export const isPT = () => process.env.APPLICATION === 'PT';
 
 export const isMEX = () => process.env.APPLICATION === 'MEX';
+
+export const isIAF = () => process.env.APPLICATION === 'IAF';
+
+export const isSE = () => process.env.APPLICATION === 'SE';

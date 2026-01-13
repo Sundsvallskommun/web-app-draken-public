@@ -1,5 +1,5 @@
 import { InternalRole } from '@/interfaces/users.interface';
-import { isIK, isKA, isKC, isLOP, isMEX, isMSVA, isPT, isROB } from './application.service';
+import { isIAF, isIK, isKA, isKC, isLOP, isMEX, isMSVA, isPT, isROB, isSE } from './application.service';
 
 // export type RoleADMapping = {
 //   [key in ADRole]: InternalRole;
@@ -23,7 +23,7 @@ if (isMEX()) {
 } else if (isKA()) {
   mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_ka_admin';
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_ka_developer';
-} else if (isIK()) {
+} else if (isIK() || isSE()) {
   mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_admin';
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_lop_developer';
 } else if (isLOP()) {
@@ -34,6 +34,11 @@ if (isMEX()) {
   mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_admin';
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_lop_developer';
 } else if (isROB()) {
+  mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_admin';
+  mapping[process.env.SUPERADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_superadmin';
+  mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_lop_developer';
+} else if (isIAF()) {
+  //TODO: Change mapping
   mapping[process.env.ADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_admin';
   mapping[process.env.SUPERADMIN_GROUP.toLocaleLowerCase()] = 'draken_lop_superadmin';
   mapping[process.env.DEVELOPER_GROUP.toLocaleLowerCase()] = 'draken_lop_developer';

@@ -28,6 +28,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
       );
@@ -171,7 +172,6 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
         'postMessage'
       );
-      cy.get('[data-cy="save-button"]').contains('Spara ärende').should('be.enabled').click();
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
 
       cy.get(`article.sk-modal-dialog`).should('exist');
