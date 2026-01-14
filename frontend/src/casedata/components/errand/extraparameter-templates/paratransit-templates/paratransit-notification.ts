@@ -150,6 +150,17 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     ],
   },
   {
+    field: 'personal.maxWalkingDistance',
+    value: '',
+    label: 'Hur långt klarar den sökande att gå på plan mark i meter?',
+    description: '',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    required: true,
+  },
+  {
     field: 'external.mobilityAid.boolean',
     value: '',
     label: 'Behöver den sökande förflyttningshjälpmedel?',

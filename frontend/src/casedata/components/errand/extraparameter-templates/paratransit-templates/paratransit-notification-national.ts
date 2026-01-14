@@ -128,6 +128,17 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
     repeatableGroup: journeyFieldsGroup,
   } as any,
   {
+    field: 'personal.maxWalkingDistance',
+    value: '',
+    label: 'Hur långt klarar den sökande att gå på plan mark i meter?',
+    description: '',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    required: true,
+  },
+  {
     field: 'personal.mobilityAidNeeded',
     value: '',
     label: 'Behöver den sökande förflyttningshjälpmedel?',
