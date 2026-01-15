@@ -482,6 +482,25 @@ export class SupportErrandController {
     return resToSend;
   };
 
+  @Get('/supporterrands/errandnumber/:errandNumber')
+  @OpenAPI({ summary: 'Return an errand by number' })
+  @UseBefore(authMiddleware)
+  async getSupportErrandByErrandNumber(
+    @Req() req: RequestWithUser,
+    @Param('errandNumber') errandNumber: string,
+    @Res() response: any,
+  ): Promise<SupportErrand> {
+    if (!MUNICIPALITY_ID) {
+      console.error('No municipality id found, needed to fetch errands.');
+      logger.error('No municipality id found, needed to fetch errands.');
+      return response.status(400).send('Municipality id missing');
+    }
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands?filter=errandNumber:'${errandNumber}'`;
+    const errandResponse = await this.apiService.get<any>({ url }, req.user);
+    const errandData = errandResponse.data.content[0];
+    return response.send((await this.preparedErrandResponse(errandData, req)).data);
+  }
+
   @Get('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Return an errand by id' })
   @UseBefore(authMiddleware)

@@ -7,6 +7,7 @@ import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import {
   SupportErrand,
   defaultSupportErrandInformation,
+  getSupportErrandByErrandNumber,
   getSupportErrandById,
   initiateSupportErrand,
   supportErrandIsEmpty,
@@ -32,7 +33,7 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
+export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
@@ -78,9 +79,9 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
         setUser(user);
       })
       .catch((e) => {});
-    if (props.id) {
+    if (errandNumber) {
       setIsLoading(true);
-      getSupportErrandById(props.id, municipalityId)
+      getSupportErrandByErrandNumber(errandNumber)
         .then((res) => {
           if (res.error) {
             toastMessage({
@@ -109,7 +110,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
         initiateSupportErrand(municipalityId)
           .then((result) =>
             setTimeout(() => {
-              router.push(`/arende/${municipalityId}/${result.id}`);
+              router.push(`/arende/${result.errandNumber}`);
             }, 10)
           )
           .catch((e) => {
@@ -125,7 +126,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, municipalityId, props.id]);
+  }, [router, municipalityId, errandNumber]);
 
   return (
     <FormProvider {...methods}>

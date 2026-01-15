@@ -36,7 +36,7 @@ export const SaveButtonComponent: React.FC<{
   useEffect(() => {
     setTimeout(() => {
       if (errandNumber && window.location.pathname.includes('registrera') && !formState.isDirty) {
-        router.push(`/arende/${municipalityId}/${errandNumber}`);
+        router.push(`/arende/${errandNumber}`);
       }
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
