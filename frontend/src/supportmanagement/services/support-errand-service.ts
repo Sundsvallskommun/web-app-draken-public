@@ -202,6 +202,7 @@ export const ongoingStatusesROB = [
   Status.REVIEW,
   Status.SECURITY_CLEARENCE,
   Status.FEEDBACK_CLOSURE,
+  Status.SUBPACKAGE_HANDLED,
 ];
 
 export const suspendedStatuses = [Status.SUSPENDED];
