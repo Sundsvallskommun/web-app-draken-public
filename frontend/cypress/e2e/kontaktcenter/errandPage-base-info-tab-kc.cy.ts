@@ -71,7 +71,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     it('shows the correct base errand information', () => {
-      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
+      cy.visit('/arende/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('[data-cy="category-input"]').children().contains('IAF').should('exist');
@@ -86,7 +86,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     it('allows updating errand information', () => {
-      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
+      cy.visit('/arende/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -140,7 +140,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
@@ -155,7 +155,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     it('shows the correct contact person information', () => {
-      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
+      cy.visit('/arende/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('[data-cy="stakeholder-name"]').contains('Kim Svensson').should('exist');
@@ -187,7 +187,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     //     customer: [],
     //   }).as('getErrandWithoutStakeholders');
     //   cy.intercept('GET', '**/me', { ...mockMe, data: { ...mockMe.data, username: 'testuser' } }).as('getMe');
-    //   cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+    //   cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
     //   cy.wait('@getErrandWithoutStakeholders');
     //   cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     //   cy.get('[data-cy="add-manually-button-owner"]').should('be.disabled');
@@ -202,7 +202,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrandWithoutStakeholders');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('[data-cy="add-manually-button-owner"]').should('exist');
@@ -217,7 +217,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getSupportAdmins');
       cy.wait('@getMe');
@@ -236,7 +236,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getSupportAdmins');
       cy.wait('@getMe');
@@ -256,7 +256,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
@@ -277,7 +277,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         customer: [],
       }).as('getErrandWithoutStakeholders');
 
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
       searchAndSavePersonStakeholder(mockAdressResponse);
@@ -294,7 +294,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
       cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
@@ -336,7 +336,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
@@ -354,7 +354,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
       cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
@@ -401,7 +401,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getSupportAdmins');
       cy.wait('@getMe');
@@ -424,7 +424,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
       cy.get('[data-cy="save-button"]').should('be.disabled');
@@ -451,7 +451,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-000-537b5805be27');
+      cy.visit('/arende/3f0e57b2-2876-4cb8-000-537b5805be27');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
       cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
@@ -479,7 +479,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('PATCH', '**/supporterrands/2281/3f0e57b2-2876-4cb8-000-537b5805be27', mockSupportErrand).as(
         'patchErrandContacts'
       );
-      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
+      cy.visit('/arende/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('[data-cy="edit-stakeholder-button-CONTACT-0"]').first().click();
@@ -517,7 +517,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
           },
         ],
       }).as('getErrandWithOrganizationStakeholder');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithOrganizationStakeholder');
       cy.get('[data-cy="edit-stakeholder-button-PRIMARY-0"]').first().click();
@@ -542,7 +542,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
@@ -563,7 +563,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         customer: [],
       }).as('getErrandWithoutStakeholders');
 
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
 
@@ -612,7 +612,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         facilityType: 'BOSTAD',
       };
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as('getit');
-      cy.visit('/arende/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27');
+      cy.visit('/arende/3f0e57b2-2876-4cb8-aa71-537b5805be27');
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
         ...mockSupportErrand,
         id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',

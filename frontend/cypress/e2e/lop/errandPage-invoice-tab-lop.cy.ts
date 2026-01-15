@@ -54,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     const goToInvoiceTab = () => {
-      cy.visit('arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getSupportErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('button').contains('Fakturering').should('exist').click();

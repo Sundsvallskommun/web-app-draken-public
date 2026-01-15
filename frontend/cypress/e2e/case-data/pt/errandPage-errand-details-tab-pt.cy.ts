@@ -36,7 +36,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     const goToErrandInformationTab = () => {
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();
     };

@@ -52,7 +52,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         message: 'success',
       }).as('getAssets');
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     });

@@ -66,7 +66,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -87,7 +87,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetSelfAssignAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -108,7 +108,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -135,7 +135,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -164,7 +164,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -200,7 +200,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -236,7 +236,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
         mockSetAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -291,7 +291,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -333,7 +333,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -347,7 +347,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'getErrand'
       );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 

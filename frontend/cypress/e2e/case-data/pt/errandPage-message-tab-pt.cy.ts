@@ -37,7 +37,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     const goToMessageTab = () => {
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrandById');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('button').contains('Meddelanden').should('exist').click();
