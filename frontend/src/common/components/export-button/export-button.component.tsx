@@ -1,6 +1,7 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { downloadPdf, exportErrands } from '@common/services/export-service';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
@@ -43,8 +44,10 @@ export const ExportButton: React.FC<ExportButtonProps> = (props) => {
 
   return (
     <Button
+      variant="secondary"
       loading={isExportLoading}
       loadingText="Exporterar..."
+      leftIcon={<LucideIcon name="download" />}
       onClick={async () => {
         const confirmed = await exportConfirm.showConfirmation(
           'Exportera listan?',
