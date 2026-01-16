@@ -1,6 +1,7 @@
 export const mockEmptySupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
   // title: 'Empty errand',
+  errandNumber: 'KC-00000000',
   priority: 'MEDIUM',
   customer: { id: 'abcdefg', type: 'EMPLOYEE' },
   externalTags: [{ key: 'caseId', value: '20230222-186' }],
@@ -18,6 +19,7 @@ export const mockEmptySupportErrand = {
 
 export const mockSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  errandNumber: 'KC-00000001',
   title: 'Empty errand',
   priority: 'MEDIUM',
   stakeholders: [
@@ -82,6 +84,7 @@ export const mockSupportErrand = {
 
 export const mockDifferentUserSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  errandNumber: 'KC-00000001',
   title: 'Empty errand',
   priority: 'MEDIUM',
   stakeholders: [

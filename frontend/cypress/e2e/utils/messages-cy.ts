@@ -1,7 +1,7 @@
 import { interceptFormData } from 'cypress-intercept-formdata';
 
 export const goToMessageTab = () => {
-  cy.visit('arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+  cy.visit('arende/KC-00000001');
   cy.wait('@getSupportErrand');
   cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
   cy.get('button').contains('Meddelanden').should('exist').click();
