@@ -146,3 +146,50 @@ export const getLatestMetadataSchema: (municipalityId: string, schemaName: strin
       throw e;
     });
 };
+
+export async function updateServiceStatuses(
+  municipalityId: string,
+  partyId: string,
+  errandNumber: string,
+  decisionOutcome: string
+): Promise<void> {
+  const newStatus = decisionOutcome === 'APPROVAL' ? 'APPROVED' : 'DENIED';
+
+  const response = await getAssets({
+    municipalityId,
+    partyId,
+    assetId: errandNumber,
+    type: 'FTErrandAssets',
+  });
+
+  const assets = response.data ?? [];
+
+  for (const asset of assets) {
+    if (!asset.jsonParameters?.length) continue;
+
+    const updatedParams = asset.jsonParameters.map((param) => {
+      try {
+        const parsed = JSON.parse(param.value);
+        if (parsed.status === 'PENDING') {
+          parsed.status = newStatus;
+        }
+        return { ...param, value: JSON.stringify(parsed) };
+      } catch {
+        return param;
+      }
+    });
+
+    await updateAsset(municipalityId, asset.id, {
+      origin: asset.origin,
+      partyId: asset.partyId,
+      assetId: asset.assetId,
+      type: asset.type,
+      issued: asset.issued ?? null,
+      validTo: asset.validTo ?? null,
+      status: asset.status,
+      description: asset.description ?? '',
+      additionalParameters: asset.additionalParameters ?? {},
+      jsonParameters: updatedParams,
+    });
+  }
+}
