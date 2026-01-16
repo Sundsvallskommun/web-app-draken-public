@@ -28,7 +28,7 @@ import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
-    cy.visit('/arende/2281/PRH-2022-000019');
+    cy.visit('/arende/PRH-2022-000019');
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -312,7 +312,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/organization', mockOrganization).as('postOrganization');
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

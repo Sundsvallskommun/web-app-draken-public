@@ -23,7 +23,7 @@ import { mockPermits } from '../fixtures/mockPermits';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   const visit = () => {
-    cy.visit('/arende/2281/PRH-2022-000019');
+    cy.visit('/arende/PRH-2022-000019');
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -241,7 +241,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachmentsPT).as('getErrandAttachments');
       cy.intercept('PATCH', `**/errands/${mockPTErrand_base.data.id}`, mockPTErrand_base).as('patchErrand');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrandById');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -389,7 +389,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         `**/errands/${mockPTErrand_base.data.id}/stakeholders/${contact[0].id}`,
         mockPTErrand_base
       ).as('patchErrand');
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

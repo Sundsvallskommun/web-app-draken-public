@@ -89,7 +89,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     const visitErrandContractTab = () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
-      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
+      cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getContract');
@@ -104,7 +104,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/errand/101', mockMexErrand_base_without_contract).as('getErrandByIdNoContract');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base_without_contract).as('getErrandNoContract');
-      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
+      cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrandNoContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });

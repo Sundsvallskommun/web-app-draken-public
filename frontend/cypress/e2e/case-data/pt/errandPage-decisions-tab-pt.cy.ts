@@ -34,7 +34,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
       cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
 
-      cy.visit(`/arende/2281/${mockPTErrand_base.data.errandNumber}`);
+      cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(6).should('have.text', 'Beslut').click({ force: true });

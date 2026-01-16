@@ -73,7 +73,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@postErrand');
       cy.wait('@getErrandById');
       cy.wait('@getErrandAttachments');
-      cy.visit(`/arende/2281/${mockMexErrand_base.data.errandNumber}`);
+      cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
     });
 
     it('Can cancel the process, going back to overview', () => {

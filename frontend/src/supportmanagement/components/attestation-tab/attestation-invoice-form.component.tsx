@@ -174,7 +174,7 @@ export const AttestationInvoiceForm: React.FC<{
               <Table.Column>
                 {selectedRecord.extraParameters?.['errandId'] ? (
                   <NextLink
-                    href={`/arende/${municipalityId}/${selectedRecord.extraParameters?.['errandId']}`}
+                    href={`/arende/${selectedRecord.extraParameters?.['errandId']}`}
                     target="_blank"
                     className="underline"
                   >
