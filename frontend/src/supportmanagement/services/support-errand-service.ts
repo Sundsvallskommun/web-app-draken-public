@@ -140,6 +140,7 @@ export enum Status {
   REVIEW = 'REVIEW',
   SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
   FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
+  SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
 }
 
 export enum StatusLabel {
@@ -162,6 +163,7 @@ export enum StatusLabelROB {
   REVIEW = 'Avstämning',
   SECURITY_CLEARENCE = 'Säkerhetsprövning',
   FEEDBACK_CLOSURE = 'Återkoppling och avslut',
+  SUBPACKAGE_HANDLED = 'Delpaket hanterad',
   PENDING = 'Komplettering',
   SUSPENDED = 'Parkerat',
   ASSIGNED = 'Tilldelat',
@@ -200,6 +202,7 @@ export const ongoingStatusesROB = [
   Status.REVIEW,
   Status.SECURITY_CLEARENCE,
   Status.FEEDBACK_CLOSURE,
+  Status.SUBPACKAGE_HANDLED,
 ];
 
 export const suspendedStatuses = [Status.SUSPENDED];
@@ -300,7 +303,6 @@ export enum Resolution {
   RECRUITED_MORE = 'RECRUITED_MORE',
   CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
-  SUB_PACKAGE_READY = 'SUB_PACKAGE_READY',
 }
 
 export enum ResolutionLabelLOP {
@@ -340,7 +342,6 @@ export enum ResolutionLabelROB {
   RECRUITED_FEWER = 'Rekryterat färre',
   RECRUITED_MORE = 'Rekryterat fler',
   CANCELLED = 'Avbruten',
-  SUB_PACKAGE_READY = 'Delpaket klart',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
