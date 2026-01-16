@@ -1,7 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
-import { phaseChangeInProgress } from '@casedata/services/process-service';
+import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -99,8 +98,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             variant="secondary"
             disabled={
               disabled ||
-              phaseChangeInProgress(errand) ||
-              errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
+              isErrandLocked(errand) ||
               !errand?.administrator ||
               user.username.toLocaleLowerCase() !== errand?.administrator?.adAccount?.toLocaleLowerCase()
             }

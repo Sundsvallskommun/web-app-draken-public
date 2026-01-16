@@ -7,6 +7,7 @@ import {
   getAssets,
   updateAsset,
 } from '@casedata/services/asset-service';
+import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.compontant';
@@ -177,16 +178,18 @@ export const CasedataServicesTab: React.FC = () => {
         service kunden har rätt till vid sina resor.
       </p>
 
-      <div className="mt-24 max-w-full">
-        <SchemaForm
-          schema={schema}
-          uiSchema={serviceUiSchema}
-          formData={formData}
-          onChange={(fd) => setFormData(fd)}
-          onSubmit={handleSubmit}
-          objectFieldTemplate={ServicesObjectFieldTemplate}
-        />
-      </div>
+      {!isErrandLocked(errand) && (
+        <div className="mt-24 max-w-full">
+          <SchemaForm
+            schema={schema}
+            uiSchema={serviceUiSchema}
+            formData={formData}
+            onChange={(fd) => setFormData(fd)}
+            onSubmit={handleSubmit}
+            objectFieldTemplate={ServicesObjectFieldTemplate}
+          />
+        </div>
+      )}
 
       <div className="mt-32 pt-24">
         <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
@@ -195,7 +198,7 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} />
+          <ServiceListComponent services={services} onRemove={removeService} readOnly={isErrandLocked(errand)} />
         )}
       </div>
     </div>
