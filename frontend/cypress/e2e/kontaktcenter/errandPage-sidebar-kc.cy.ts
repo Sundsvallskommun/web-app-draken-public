@@ -306,7 +306,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       );
 
       cy.visit('/arende/KC-00000001');
-      cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();

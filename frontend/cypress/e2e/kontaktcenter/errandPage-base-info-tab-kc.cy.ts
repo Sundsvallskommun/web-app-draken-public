@@ -637,7 +637,6 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/estateByPropertyDesignation/Balder%201', mockFacilitiesData).as(
         'getFacilityByDesignationBalder1'
       );
-      cy.wait('@getErrandWithoutStakeholders');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       // add
