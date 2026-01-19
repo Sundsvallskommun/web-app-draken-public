@@ -1,7 +1,7 @@
+import { logger } from '@/utils/logger';
 import { AUTHORIZED_GROUPS } from '@config';
 import { InternalRole, Permissions } from '@interfaces/users.interface';
 import { roleADMapping } from './ad-role.service';
-import { logger } from '@/utils/logger';
 
 export function authorizeGroups(groups) {
   logger.info(`authorizing groups ${groups}`);
@@ -19,75 +19,29 @@ export const defaultPermissions: () => Permissions = () => ({
 });
 
 enum RoleOrderEnum {
-  'draken_lop_superadmin',
-  'draken_lop_admin',
-  'draken_ks_admin',
-  'draken_mex_admin',
-  'draken_pt_admin',
-  'draken_lop_developer',
-  'draken_ks_developer',
-  'draken_mex_developer',
-  'draken_pt_developer',
+  'draken_developer',
+  'draken_admin',
+  'draken_superadmin',
 }
 
 const roles = new Map<InternalRole, Partial<Permissions>>([
   [
-    'draken_pt_developer',
-    {
-      canEditCasedata: true,
-    },
-  ],
-  [
-    'draken_mex_developer',
-    {
-      canEditCasedata: true,
-    },
-  ],
-  [
-    'draken_ks_developer',
-    {
-      canEditSupportManagement: true,
-    },
-  ],
-  [
-    'draken_lop_developer',
+    'draken_developer',
     {
       canEditSupportManagement: true,
       canViewAttestations: true,
-    },
-  ],
-  [
-    'draken_pt_admin',
-    {
       canEditCasedata: true,
     },
   ],
   [
-    'draken_mex_admin',
+    'draken_admin',
     {
+      canEditSupportManagement: true,
       canEditCasedata: true,
     },
   ],
   [
-    'draken_ks_admin',
-    {
-      canEditSupportManagement: true,
-    },
-  ],
-  [
-    'draken_ka_admin',
-    {
-      canEditSupportManagement: true,
-    },
-  ],
-  [
-    'draken_lop_admin',
-    {
-      canEditSupportManagement: true,
-    },
-  ],
-  [
-    'draken_lop_superadmin',
+    'draken_superadmin',
     {
       canEditSupportManagement: true,
       canViewAttestations: true,
