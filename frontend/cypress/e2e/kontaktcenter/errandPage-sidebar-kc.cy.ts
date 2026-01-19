@@ -21,6 +21,7 @@ import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mock } from 'node:test';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand page', () => {
@@ -299,6 +300,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     it('Can manage Vidarebefodra', () => {
+      cy.intercept('GET', `**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand);
       cy.intercept('POST', `**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX).as(
         'forwardToMex'
       );
