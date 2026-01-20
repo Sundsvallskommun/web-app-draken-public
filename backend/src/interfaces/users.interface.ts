@@ -18,6 +18,6 @@ export interface Permissions {
 }
 
 /** Internal roles */
-export type InternalRole = 'draken_developer' | 'draken_admin' | 'draken_superadmin';
+export type InternalRole = 'draken_developer' | 'draken_admin' | 'draken_superadmin' | 'draken_casedata_developer' | 'draken_casedata_admin';
 
 export type InternalRoleMap = Map<InternalRole, Partial<Permissions>>;

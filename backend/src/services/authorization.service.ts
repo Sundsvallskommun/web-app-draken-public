@@ -22,6 +22,8 @@ enum RoleOrderEnum {
   'draken_developer',
   'draken_admin',
   'draken_superadmin',
+  'draken_casedata_developer',
+  'draken_casedata_admin',
 }
 
 const roles = new Map<InternalRole, Partial<Permissions>>([
@@ -30,14 +32,12 @@ const roles = new Map<InternalRole, Partial<Permissions>>([
     {
       canEditSupportManagement: true,
       canViewAttestations: true,
-      canEditCasedata: true,
     },
   ],
   [
     'draken_admin',
     {
       canEditSupportManagement: true,
-      canEditCasedata: true,
     },
   ],
   [
@@ -46,6 +46,18 @@ const roles = new Map<InternalRole, Partial<Permissions>>([
       canEditSupportManagement: true,
       canViewAttestations: true,
       canEditAttestations: true,
+    },
+  ],
+  [
+    'draken_casedata_developer',
+    {
+      canEditCasedata: true,
+    },
+  ],
+  [
+    'draken_casedata_admin',
+    {
+      canEditCasedata: true,
     },
   ],
 ]);
