@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import { CaseTypes, FTCaseType, FTNationalCaseTypes, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -120,6 +120,10 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
 
 export const isFTErrand = (errand: IErrand) => {
   return Object.values(FTCaseType).includes(errand.caseType as FTCaseType);
+};
+
+export const isFTNationalErrand = (errand: IErrand) => {
+  return Object.values(FTNationalCaseTypes).includes(errand.caseType as FTNationalCaseTypes);
 };
 
 export const findPriorityKeyForPriorityLabel = (key: string) =>
