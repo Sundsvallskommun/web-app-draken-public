@@ -188,7 +188,6 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Elrullstol', value: 'ELECTRIC_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Elscooter/elmoped', value: 'ELECTRIC_SCOOTER', name: 'mobilityAids' },
         { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
-        { label: 'Manuell rullstol (hopfällb)', value: 'MANUAL_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Vagn', value: 'TROLLEY', name: 'mobilityAids' },
         { label: 'Syrgas', value: 'OXYGEN', name: 'mobilityAids' },
         { label: 'Bälteskudde', value: 'BELT_PILLOW', name: 'mobilityAids' },
