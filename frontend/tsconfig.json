@@ -45,10 +45,8 @@
     ]
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "cypress/**/*.ts",
-    "cypress/**/*.tsx",
+    "src/**/*.{ts,tsx}",
+    "cypress/**/*.{ts,tsx}",
     ".next-IK/types/**/*.ts",
     ".next-KA/types/**/*.ts",
     ".next-KC/types/**/*.ts",
