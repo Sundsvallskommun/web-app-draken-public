@@ -62,7 +62,7 @@ export class EstateInfoController {
           .catch(e => {
             throw new HttpException(400, 'Could not find estate information for objectidentifier: ' + res.data[0].objectidentifier);
           });
-        return { data: result.data, message: 'success' } as ResponseData;
+        return { data: { ...result.data, districtname: res.data[indexOfEstate].districtname }, message: 'success' } as ResponseData;
       }
     } else {
       throw new HttpException(400, 'Bad Request');

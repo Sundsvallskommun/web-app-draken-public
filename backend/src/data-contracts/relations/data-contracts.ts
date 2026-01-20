@@ -20,14 +20,14 @@ export enum Direction {
 }
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  detail?: string;
+  title?: string;
 }
 
 export interface StatusType {
@@ -38,10 +38,7 @@ export interface StatusType {
 
 /** Relation between objects */
 export interface Relation {
-  /**
-   * Unique id for the relation
-   * @example "f4de6b8b-f727-4ed1-9959-b9d5bde1922f"
-   */
+  /** Unique id for the relation */
   id?: string;
   /**
    * Type of relation. Valid types can be fetch via /relation-types
@@ -51,18 +48,16 @@ export interface Relation {
   /**
    * Timestamp when relations was created
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   created?: string;
   /**
    * Timestamp when relations was last modified
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   modified?: string;
-  /** Resource identifier for source and target */
+  /** Source identifiers */
   source: ResourceIdentifier;
-  /** Resource identifier for source and target */
+  /** Target identifiers */
   target: ResourceIdentifier;
 }
 
@@ -71,13 +66,11 @@ export interface ResourceIdentifier {
   /**
    * Unique id for the object
    * @minLength 1
-   * @example "some-id"
    */
   resourceId: string;
   /**
    * Type of object
    * @minLength 1
-   * @example "case"
    */
   type: string;
   /**
@@ -108,10 +101,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -131,7 +124,7 @@ export interface ConstraintViolationProblem {
 }
 
 export interface ThrowableProblem {
-  cause?: ThrowableProblem;
+  cause?: any;
   stackTrace?: {
     classLoaderName?: string;
     moduleName?: string;
@@ -144,14 +137,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  detail?: string;
+  title?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -180,23 +173,13 @@ export interface RelationType {
   /**
    * Name of type
    * @minLength 1
-   * @example "DUPLICATES"
    */
   name: string;
-  /**
-   * Display value
-   * @example "Duplicates"
-   */
+  /** Display value */
   displayName?: string;
-  /**
-   * Inverse value of type (if applicable)
-   * @example "IS DUPLICATED BY"
-   */
+  /** Inverse value of type (if applicable) */
   counterName?: string;
-  /**
-   * Display value
-   * @example "Is duplicated by"
-   */
+  /** Display value */
   counterDisplayName?: string;
 }
 
@@ -233,7 +216,10 @@ export interface PagingAndSortingMetaData {
    */
   totalPages?: number;
   sortBy?: string[];
-  /** The sort order direction */
+  /**
+   * The sort order direction
+   * @example "ASC"
+   */
   sortDirection?: Direction;
 }
 
