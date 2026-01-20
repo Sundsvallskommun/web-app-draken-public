@@ -28,17 +28,17 @@ import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
-import { getErrandPropertyDesignations } from './casedata-facilities-service';
 import { getFacilityByDesignation } from '@common/services/facilities-service';
 import { EstateInfoSearch } from '@common/interfaces/estate-details';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
   { label: 'Köpeavtal', key: ContractType.PURCHASE_AGREEMENT },
+  { label: 'Upplåtelse av allmän plats', key: 'LAND_LEASE_PUBLIC' },
+  { label: 'Korttidsarrende', key: 'SHORT_TERM_LEASE_AGREEMENT' },
 ];
 
 export const leaseTypes = [
-  { label: 'Allmän platsupplåtelse', key: LeaseType.LAND_LEASE_PUBLIC },
   { label: 'Anläggningsarrende', key: LeaseType.SITE_LEASE_COMMERCIAL },
   { label: 'Bostadsarrende', key: LeaseType.LAND_LEASE_RESIDENTIAL },
   { label: 'Båtplats', key: LeaseType.USUFRUCT_MOORING },
@@ -99,6 +99,10 @@ export const defaultLagenhetsarrende: ContractData = {
       unit: TimeUnit.MONTHS,
     },
   ],
+  extension: {
+    autoExtend: false,
+    unit: TimeUnit.DAYS,
+  },
   extraParameters: [
     {
       name: 'InvoiceInfo',
@@ -386,7 +390,9 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
+        `Avgift, ${
+          leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
+        }. Fastigheter: ${data.propertyDesignations.map((p) => p.name).join(', ')}`,
         data.fees?.additionalInformation?.[1] ?? '',
       ],
       ...(data.indexAdjusted && { indexYear: 2025 }),
@@ -431,8 +437,10 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     additionalTerms: contract.additionalTerms,
     fees: {
       ...contract.fees,
-      additionalInformation: contract.fees?.additionalInformation ?? [
-        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
+      additionalInformation: [
+        `Avgift, ${
+          leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
+        }. Fastigheter: ${contract.propertyDesignations.map((p) => p.name).join(', ')}`,
         '',
       ],
     },
