@@ -2,11 +2,7 @@
   "compilerOptions": {
     "types": ["@simonsmith/cypress-image-snapshot/types"],
     "target": "es6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     //TODO: ENABLE STRICT MODE
@@ -27,36 +23,16 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@pages/*": [
-        "src/pages/*"
-      ],
-      "@public/*": [
-        "src/public/*"
-      ],
-      "@config/*": [
-        "src/config/*"
-      ],
-      "@contexts/*": [
-        "src/common/contexts/*"
-      ],
-      "@supportmanagement/*": [
-        "src/supportmanagement/*"
-      ],
-      "@casedata/*": [
-        "src/casedata/*"
-      ],
-      "@common/*": [
-        "src/common/*"
-      ],
-      "@jestRoot/*": [
-        ".jest/*"
-      ],
-      "@styles/*": [
-        "src/styles/*"
-      ],
-      "@cypress/*": [
-        "cypress/*"
-      ]
+      "@pages/*": ["src/pages/*"],
+      "@public/*": ["src/public/*"],
+      "@config/*": ["src/config/*"],
+      "@contexts/*": ["src/common/contexts/*"],
+      "@supportmanagement/*": ["src/supportmanagement/*"],
+      "@casedata/*": ["src/casedata/*"],
+      "@common/*": ["src/common/*"],
+      "@jestRoot/*": [".jest/*"],
+      "@styles/*": ["src/styles/*"],
+      "@cypress/*": ["cypress/*"]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],
@@ -69,8 +45,10 @@
     ]
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "cypress/**/*.ts",
+    "cypress/**/*.tsx",
     ".next-IK/types/**/*.ts",
     ".next-KA/types/**/*.ts",
     ".next-KC/types/**/*.ts",
@@ -82,13 +60,9 @@
     ".next-IAF/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    "next-env.d.ts",
-    "node_modules/dayjs/plugin/utc.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
     ".next-SE/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
