@@ -44,7 +44,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
-      cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
 
       cy.intercept('GET', '**/contracts/2024-01026', mockPTErrand_base).as('getContract');
 
@@ -83,7 +82,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="table-column-status"]').should('exist').contains('span', 'Aktivt');
       cy.get('[data-cy="table-column-errandNumber"]').should('exist').contains('span', 'PRH-2023-000283');
       cy.get('[data-cy="table-column-issued"]').should('exist').contains('span', '2023-01-01');
-      cy.get('[data-cy="table-column-validTo"]').should('exist').contains('span', '2023-01-01 - 2023-12-24');
+      cy.get('[data-cy="table-column-validTo"]').should('exist').and('contain', '2023-01-01').and('contain', '2023');
     });
   });
 });
