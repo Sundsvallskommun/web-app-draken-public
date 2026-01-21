@@ -518,30 +518,32 @@ export const ContractForm: React.FC<{
                 </FormControl>
               </div>
 
-              <div className="flex justify-between gap-32 items-start mb-md">
-                <FormControl id={`extension`} className="flex-grow max-w-[45%]">
-                  <FormLabel>Enhet</FormLabel>
-                  <Select
-                    className="w-full"
-                    {...register('extension.unit')}
-                    placeholder="Månad/år"
-                    data-cy="extension-unit-selector"
-                  >
-                    <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                    <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                    <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-                  </Select>
-                </FormControl>
-                <FormControl className="flex-grow max-w-[45%]">
-                  <FormLabel>Antal</FormLabel>
-                  <Input {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
-                  {formState.errors.extension?.leaseExtension && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{formState.errors.extension?.leaseExtension?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
+              {watch().extension?.autoExtend && (
+                <div className="flex justify-between gap-32 items-start mb-md">
+                  <FormControl id={`extension`} className="flex-grow max-w-[45%]">
+                    <FormLabel>Enhet</FormLabel>
+                    <Select
+                      className="w-full"
+                      {...register('extension.unit')}
+                      placeholder="Månad/år"
+                      data-cy="extension-unit-selector"
+                    >
+                      <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                      <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                      <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                    </Select>
+                  </FormControl>
+                  <FormControl className="flex-grow max-w-[45%]">
+                    <FormLabel>Antal</FormLabel>
+                    <Input {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
+                    {formState.errors.extension?.leaseExtension && (
+                      <div className="my-sm text-error">
+                        <FormErrorMessage>{formState.errors.extension?.leaseExtension?.message}</FormErrorMessage>
+                      </div>
+                    )}
+                  </FormControl>
+                </div>
+              )}
               {saveButton()}
             </div>
           </Disclosure.Content>
@@ -675,6 +677,7 @@ export const ContractForm: React.FC<{
                       {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                       data-cy="invoice-markup-input"
                     />
+                    <small>Om fakturamottagaren är ett företag måste referens anges.</small>
                     <Input
                       type="hidden"
                       {...register(`extraParameters.${invoiceInfoIndex}.name`)}
@@ -731,16 +734,16 @@ export const ContractForm: React.FC<{
         </Disclosure.Content>
       </Disclosure>
       <Disclosure
-        data-cy="signerade-disclosure"
+        data-cy="bilagor-disclosure"
         color="gronsta"
         variant="alt"
         onClick={() => {
-          changeBadgeColor(`badge-signerade`);
+          changeBadgeColor(`badge-bilagor`);
         }}
       >
         <Disclosure.Header>
           <Disclosure.Icon icon={<LucideIcon name="file-pen" />} />
-          <Disclosure.Title>Signerade avtal</Disclosure.Title>
+          <Disclosure.Title>Avtalsbilagor</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
