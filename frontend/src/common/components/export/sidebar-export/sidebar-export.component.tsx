@@ -25,7 +25,7 @@ export const SidebarExport: React.FC = () => {
     defaultValues: {
       basicInformation: true,
       errandInformation: true,
-      attachments: true,
+      attachments: false,
       messages: true,
       notes: true,
       investigationText: true,
@@ -38,11 +38,12 @@ export const SidebarExport: React.FC = () => {
 
   const handleSubmit = () => {
     setIsExportLoading(true);
-    const excludeParameters = Object.entries(getValues())
-      .map(([key, value]) => !value && key)
+
+    const includeParameters = Object.entries(getValues())
+      .map(([key, value]) => value && key)
       .filter(Boolean);
 
-    exportSingleErrand(municipalityId, errand, excludeParameters)
+    exportSingleErrand(municipalityId, errand, includeParameters)
       .then((pdf) => {
         downloadPdf(
           pdf,
@@ -58,11 +59,6 @@ export const SidebarExport: React.FC = () => {
             });
           }
         );
-      })
-      .then(() => {
-        if (!excludeParameters.includes('attachments')) {
-          errand.attachments.forEach((a) => downloadAttachment(a, errand));
-        }
       })
       .catch((error) => {
         setIsExportLoading(false);
@@ -83,13 +79,10 @@ export const SidebarExport: React.FC = () => {
 
       <FormControl className="w-full">
         <Checkbox {...register('basicInformation')} key="basicInformation" data-cy="basicInformation">
-          Inkludera grundinformation
+          Inkludera grunduppgifter
         </Checkbox>
         <Checkbox {...register('errandInformation')} key="errandInformation" data-cy="errandInformation">
           Inkludera ärendeuppgifter
-        </Checkbox>
-        <Checkbox {...register('attachments')} key="attachments" data-cy="attachments">
-          Inkludera bilagor
         </Checkbox>
         <Checkbox {...register('messages')} key="messages" data-cy="messages">
           Inkludera meddelanden

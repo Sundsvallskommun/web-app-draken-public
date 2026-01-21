@@ -19,6 +19,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', /2281\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');

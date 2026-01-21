@@ -34,6 +34,7 @@ import { SupportNotificationController } from './controllers/supportmanagement/s
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
+import { FeatureFlagController } from './controllers/featureflag.controller';
 
 validateEnv();
 
@@ -72,6 +73,7 @@ const app = new App([
   SupportConversationController,
   MetadataController,
   ExtraParameterController,
+  FeatureFlagController,
 ]);
 
 app.listen();

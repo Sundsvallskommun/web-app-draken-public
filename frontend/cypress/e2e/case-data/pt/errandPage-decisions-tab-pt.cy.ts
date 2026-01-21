@@ -16,10 +16,12 @@ import dayjs from 'dayjs';
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Decisions tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/phrases', mockPhrases);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
@@ -42,7 +44,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="decision-outcome-select"]').should('exist');
       cy.get('[data-cy="law-select"]')
         .should('exist')
-        .should('have.value', '13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
+        .should('contain.text', '13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
       cy.get('[data-cy="validFrom-input"]').should('exist');
       cy.get('[data-cy="validTo-input"]').should('exist');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');

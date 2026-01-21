@@ -12,7 +12,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
-import { isFTErrand } from './casedata-errand-service';
+import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
@@ -264,6 +264,8 @@ export const renderPdf: (
 
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && isFTNationalErrand(errand)) {
+    identifier = `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
     identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
@@ -322,33 +324,26 @@ export const renderPdf: (
   renderBody.parameters['description'] = formData.description;
 
   if (isPT() && isFTErrand(errand)) {
-    const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
-      if (law.article && law.sfs) {
-        if (!acc[law.sfs]) {
-          acc[law.sfs] = [];
-        }
-        acc[law.sfs].push(law.article);
-      }
-      return acc;
-    }, {} as Record<string, string[]>);
+    const lawReferences =
+      (formData.law as Law[])
+        ?.filter((law) => law.article)
+        .map((law) => `${law.article}§`)
+        .join(', ') ?? '';
 
-    const lawReferences = lawsBySfs
-      ? Object.entries(lawsBySfs)
-          .map(([sfs, articles]) => {
-            return `${articles.join('§, ')}§ (${sfs})`;
-          })
-          .join(', ')
-      : '';
     renderBody.parameters['lawReferences'] = lawReferences;
 
     if (services && services.length > 0) {
       renderBody.parameters['services'] = services.map((service) => {
         const serviceData: any = {
-          restyp: service.restyp,
+          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
           validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
           validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
           validityType: service.validityType,
         };
+
+        if (service.transportMode?.length > 0) {
+          serviceData.transportMode = service.transportMode.join(', ');
+        }
 
         if (service.aids?.length > 0) {
           serviceData.aids = service.aids.join(', ');

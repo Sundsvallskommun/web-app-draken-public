@@ -1,5 +1,6 @@
-import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
+import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
@@ -22,6 +23,10 @@ import { applicantHasContactChannel, getAdminName } from '@supportmanagement/ser
 import { useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 
+const getDefaultResolution = (): Resolution => {
+  return appConfig.features.useClosedAsDefaultResolution ? Resolution.CLOSED : Resolution.SOLVED;
+};
+
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
     administrators,
@@ -37,9 +42,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedResolution, setSelectedResolution] = useState<Resolution>(
-    isROB() ? Resolution.NEED_MET : isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
-  );
+  const [selectedResolution, setSelectedResolution] = useState<Resolution>(getDefaultResolution());
 
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
 
@@ -132,7 +135,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                   {Object.entries(
                     isLOP()
                       ? ResolutionLabelLOP
-                      : isIK()
+                      : isIK() || isSE()
                       ? ResolutionLabelIK
                       : isKA()
                       ? ResolutionLabelKA
@@ -156,7 +159,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               </FormControl>
             </Modal.Content>
             <Modal.Footer className="flex flex-col">
-              {(isLOP() || isIK() || isKA()) && (
+              {appConfig.features.useClosingMessageCheckbox && (
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"

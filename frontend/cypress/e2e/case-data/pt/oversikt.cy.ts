@@ -17,6 +17,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('POST', '**/personid*', mockPersonId).as('personIdSearch');
