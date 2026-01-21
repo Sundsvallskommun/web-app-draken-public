@@ -1,6 +1,7 @@
 import { EstateInformation } from '@common/interfaces/estate-details';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Header, Table, Tabs, cx } from '@sk-web-gui/react';
+import { capitalize } from 'underscore.string';
 
 export const FacilityDetails: React.FC<{
   show: boolean;
@@ -102,6 +103,7 @@ export const FacilityDetails: React.FC<{
         <div className="m-32">
           <h2 className="text-h4-md mb-16 mx-8" data-cy="estate-designation">
             {estate?.designation}
+            <br />({estate?.districtname})
           </h2>
           <Tabs tabslistClassName="ml-12 pt-14">
             <Tabs.Item>
@@ -174,7 +176,7 @@ export const FacilityDetails: React.FC<{
                       {estate?.actions.map((action, id) => (
                         <Table.Row key={`atgarder-${id}`}>
                           <Table.Column data-cy="action-type">
-                            <strong>{action.actionType1}</strong>
+                            <strong>{capitalize(action.actionType1)}</strong>
                           </Table.Column>
                           <Table.Column data-cy="action-date">{action.actionDate}</Table.Column>
                           <Table.Column data-cy="action-file-designation">{action.fileDesignation}</Table.Column>

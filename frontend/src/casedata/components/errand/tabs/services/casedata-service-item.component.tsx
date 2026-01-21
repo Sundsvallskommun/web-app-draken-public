@@ -22,7 +22,7 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, r
           <div className="flex justify-between items-center">
             <div className="text-base font-bold text-dark-secondary">
               {service.restyp}
-              {service.validityType === 'vinterfardtjanst' ? ' (Vinterfärdtjänst)' : ''}
+              {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
             </div>
             <div className="text-md font-normal text-dark-secondary whitespace-nowrap">
               {service?.validityType === 'tillsvidare'
@@ -32,6 +32,10 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, r
           </div>
 
           <div className="flex gap-16 items-center text-md flex-wrap">
+            <div className="flex items-center gap-4 text-dark-secondary">
+              <LucideIcon name="car" size={16} />
+              <span>{service?.transportMode?.length > 0 ? service?.transportMode?.join(', ') : 'Inget valt färdsätt'}</span>
+            </div>
             <div className="flex items-center gap-4 text-dark-secondary">
               <LucideIcon name="cog" size={16} />
               <span>{service?.aids?.length > 0 ? service?.aids?.join(', ') : 'Inga valda hjälpmedel'}</span>

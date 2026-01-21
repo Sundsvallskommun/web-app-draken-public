@@ -51,6 +51,7 @@ export const Facilities: React.FC<{
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
   const [internalUnsaved, setInternalUnsaved] = useState<boolean>(false);
+  const [searchKey, setSearchKey] = useState<number>(0);
 
   const { register } = useForm();
 
@@ -136,10 +137,15 @@ export const Facilities: React.FC<{
               setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
               setInternalUnsaved(true);
               setUnsaved(true);
+              setSearchQuery('');
+              setSearchResult([]);
+              setSearchKey((prev) => prev + 1);
             }}
             data-cy={`searchHit-${index}`}
           >
-            {searchType === 'ADDRESS' ? `${estate.address}` : removeMunicipalityName(estate.designation)}
+            {`${searchType === 'ADDRESS' ? estate.address : removeMunicipalityName(estate.designation)} (${
+              estate.districtname
+            })`}
           </SearchField.SuggestionsOption>
         ))}
       </SearchField.SuggestionsList>
@@ -182,7 +188,7 @@ export const Facilities: React.FC<{
         </fieldset>
         <Input type="text" {...register('propertyDesignation')} hidden />
 
-        <SearchField.Suggestions autofilter={false}>
+        <SearchField.Suggestions autofilter={false} key={`search-field-${searchKey}`}>
           <SearchField.SuggestionsInput
             disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             value={searchQuery}
@@ -214,6 +220,7 @@ export const Facilities: React.FC<{
         <Table background={true} data-cy="estate-table">
           <Table.Header>
             <Table.HeaderColumn>Fastigheter</Table.HeaderColumn>
+            <Table.HeaderColumn>Distriktnamn</Table.HeaderColumn>
             <Table.HeaderColumn>
               <span className="sr-only">Visa fastighetsinformation</span>
             </Table.HeaderColumn>
@@ -223,14 +230,13 @@ export const Facilities: React.FC<{
           </Table.Header>
           <Table.Body data-cy={`facility-table`}>
             {realEstates === undefined || realEstates.length === 0 ? (
-              <Table.Row>
-                <Table.Column>Inga fastigheter tillagda</Table.Column>
-              </Table.Row>
+              <Table.Column>Inga fastigheter tillagda</Table.Column>
             ) : (
               <>
                 {realEstates.map((realEstate, index) => (
                   <Table.Row key={`realEstate-${index}`} data-cy={`realEstate-${index}`}>
                     <Table.Column className="font-bold">{realEstate.address?.propertyDesignation}</Table.Column>
+                    <Table.Column>{realEstate?.extraParameters?.districtname}</Table.Column>
                     <Table.Column>
                       <div className="w-96 flex justify-center">
                         <Spinner id={`realEstate-spinner-${index}`} size={2} className="hidden" />
