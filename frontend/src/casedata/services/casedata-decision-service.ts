@@ -335,11 +335,15 @@ export const renderPdf: (
     if (services && services.length > 0) {
       renderBody.parameters['services'] = services.map((service) => {
         const serviceData: any = {
-          restyp: service.restyp,
+          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
           validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
           validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
           validityType: service.validityType,
         };
+
+        if (service.transportMode?.length > 0) {
+          serviceData.transportMode = service.transportMode.join(', ');
+        }
 
         if (service.aids?.length > 0) {
           serviceData.aids = service.aids.join(', ');
