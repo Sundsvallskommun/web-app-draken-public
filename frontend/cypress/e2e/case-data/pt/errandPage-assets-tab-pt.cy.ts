@@ -35,6 +35,12 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
       cy.intercept('POST', '**/stakeholders/personNumber', mockPTErrand_base.data.stakeholders);
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
+      cy.intercept(
+        'GET',
+        '**/assets?municipalityId=2281&partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&assetId=PRH-2022-000019&type=FTErrandAssets',
+        {}
+      );
+
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
