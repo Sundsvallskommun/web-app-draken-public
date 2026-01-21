@@ -1,7 +1,7 @@
 import type { UiSchema } from '@rjsf/utils';
 
 export const serviceUiSchema: UiSchema = {
-  'ui:order': ['type', 'additionalAids', 'mobilityAids', 'validityType', 'validFrom', 'validTo', 'notes'],
+  'ui:order': ['type', 'transportMode', 'additionalAids', 'mobilityAids', 'isWinterService', 'validityType', 'validFrom', 'validTo', 'notes'],
 
   type: {
     'ui:widget': 'select',
@@ -9,6 +9,16 @@ export const serviceUiSchema: UiSchema = {
     'ui:options': {
       layout: 'paired',
       className: 'w-full max-w-[48rem]',
+    },
+  },
+
+  transportMode: {
+    'ui:widget': 'ComboboxWidget',
+    'ui:options': {
+      layout: 'paired',
+      multiple: true,
+      className: 'w-full max-w-[48rem]',
+      placeholder: 'Välj färdsätt',
     },
   },
 
@@ -25,9 +35,18 @@ export const serviceUiSchema: UiSchema = {
   mobilityAids: {
     'ui:widget': 'ComboboxWidget',
     'ui:options': {
+      layout: 'paired',
       multiple: true,
-      className: 'w-full',
+      className: 'w-full max-w-[48rem]',
       placeholder: 'Välj förflyttningshjälpmedel',
+    },
+  },
+
+  isWinterService: {
+    'ui:widget': 'RadiobuttonWidget',
+    'ui:options': {
+      inline: true,
+      className: 'w-full',
     },
   },
 

@@ -7,10 +7,12 @@ export interface Service {
   restyp: string;
   aids: string[];
   addon: string[];
+  transportMode: string[];
   comment: string;
   startDate: string;
   endDate: string;
-  validityType: 'tidsbegransad' | 'tillsvidare' | 'vinterfardtjanst';
+  isWinterService: boolean;
+  validityType: 'tidsbegransad' | 'tillsvidare';
 }
 
 function normalizeArray(values: any): string[] {
@@ -27,15 +29,19 @@ export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, 
   const validityType: Service['validityType'] = fd?.validityType ?? 'tillsvidare';
   const mobilityIds = normalizeArray(fd?.mobilityAids);
   const addonIds = normalizeArray(fd?.additionalAids);
+  const transportModeIds = normalizeArray(fd?.transportMode);
+  const isWinterService = fd?.isWinterService === 'ja' || fd?.isWinterService === true;
 
   return {
     id,
     restyp: enumTitleOf(schema, 'type', fd?.type ?? ''),
     aids: enumTitlesOfArray(schema, 'mobilityAids', mobilityIds),
     addon: enumTitlesOfArray(schema, 'additionalAids', addonIds),
+    transportMode: enumTitlesOfArray(schema, 'transportMode', transportModeIds),
     comment: typeof fd?.notes === 'string' ? fd.notes : '',
     startDate: fd?.validFrom ?? '',
     endDate: validityType === 'tillsvidare' ? '' : fd?.validTo ?? '',
+    isWinterService,
     validityType,
   };
 }
