@@ -58,7 +58,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
 
-      cy.visit(`/arende/2281/${mockMexErrand_base.data.errandNumber}`);
+      cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(5).should('have.text', 'Beslut').click({ force: true });

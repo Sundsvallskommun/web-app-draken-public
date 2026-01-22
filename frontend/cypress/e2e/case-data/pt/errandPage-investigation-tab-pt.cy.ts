@@ -49,7 +49,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         'getConversationMessages'
       );
 
-      cy.visit(`/arende/${mockPTErrand_base.data.municipalityId}/${mockPTErrand_base.data.errandNumber}`);
+      cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(5).should('have.text', 'Utredning').click({ force: true });

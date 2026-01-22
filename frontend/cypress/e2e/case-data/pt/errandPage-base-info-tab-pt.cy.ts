@@ -23,7 +23,7 @@ import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   const visit = () => {
-    cy.visit('/arende/2281/PRH-2022-000019');
+    cy.visit('/arende/PRH-2022-000019');
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -195,7 +195,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         `**/errands/${mockPTErrand_base.data.id}/stakeholders/${contact[0].id}`,
         mockPTErrand_base
       ).as('patchErrand');
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

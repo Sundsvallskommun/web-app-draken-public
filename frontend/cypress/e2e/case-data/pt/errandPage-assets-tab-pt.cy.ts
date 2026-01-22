@@ -59,7 +59,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       );
       cy.intercept('PATCH', '**/errands/**/extraparameters', {});
 
-      cy.visit(`/arende/2281/${mockPTErrand_base.data.errandNumber}`);
+      cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button')
