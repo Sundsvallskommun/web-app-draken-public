@@ -15,6 +15,7 @@ export const makeFacility: (estate: EstateInfoSearch) => FacilityDTO = (estate) 
 export const makeAddress: (estate: EstateInfoSearch) => FacilityAddressDTO = (estate) => {
   return {
     propertyDesignation: estate.designation,
+    street: estate.address || '',
   };
 };
 

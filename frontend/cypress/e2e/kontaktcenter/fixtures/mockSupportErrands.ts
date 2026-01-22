@@ -1515,13 +1515,19 @@ export const mockFacilitiesData = {
     {
       designation: 'SUNDSVALL BALDER 1',
       objectidentifier: '909a6a80-6ded-90ec-e040-ed8f66444c3f',
+      address: 'Testgatan 1',
+      districtname: 'Testdistrikt 1',
     },
     {
       designation: 'SUNDSVALL BALDER GA:1',
+      address: 'Testgatan 2',
+      districtname: 'Testdistrikt 2',
     },
     {
       designation: 'SUNDSVALL BALDER S:1',
       objectidentifier: '909a6a82-a001-90ec-e040-ed8f66444c3f',
+      address: 'Testgatan 3',
+      districtname: 'Testdistrikt 3',
     },
   ],
   message: 'success',
@@ -1531,4 +1537,25 @@ export const mockSaveFacilities = {
   id: 'c3132d0d-c733-4779-b5a5-a0e7358ef36d',
   name: 'propertyDesignation',
   value: 'SUNDSVALL BALDER 1',
+};
+
+export const mockSupportErrandWithFacilities = {
+  ...mockSupportErrand,
+  parameters: [
+    {
+      key: 'propertyDesignation',
+      displayName: 'Fastighetsbeteckning',
+      values: ['SUNDSVALL BALDER 1'],
+    },
+    {
+      key: 'districtname',
+      displayName: 'Distriktnamn',
+      values: ['Testdistrikt 1'],
+    },
+    {
+      key: 'street',
+      displayName: 'Adress',
+      values: ['Testgatan 1'],
+    },
+  ],
 };
