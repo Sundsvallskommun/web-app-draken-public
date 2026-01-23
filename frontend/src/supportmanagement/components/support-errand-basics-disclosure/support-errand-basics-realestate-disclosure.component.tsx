@@ -27,11 +27,12 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
     let facilitiesFromErrande = [] as FacilityDTO[];
     const estates = props.supportErrand?.parameters?.filter((obj) => obj.key === 'propertyDesignation')[0]?.values;
     const districtnames = props.supportErrand?.parameters?.filter((obj) => obj.key === 'districtname')[0]?.values;
+    const streets = props.supportErrand?.parameters?.filter((obj) => obj.key === 'street')[0]?.values;
 
     if (estates !== undefined) {
       estates.forEach((facility, index) => {
         let obj = {} as FacilityDTO;
-        obj.address = { propertyDesignation: facility };
+        obj.address = { propertyDesignation: facility, street: streets?.[index] || '' };
         obj.extraParameters = { districtname: districtnames?.[index] || '' };
         facilitiesFromErrande.push(obj);
       });

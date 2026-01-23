@@ -9,6 +9,7 @@ export interface supportmanagementFacility {
 export interface FacilitiesPayload {
   propertyDesignations: string[];
   districtnames: string[];
+  streets: string[];
 }
 
 export const saveFacilityInfo = (id, facilities) => {
@@ -17,6 +18,7 @@ export const saveFacilityInfo = (id, facilities) => {
   const payload: FacilitiesPayload = {
     propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation) || [],
     districtnames: facilities?.map((f) => f.extraParameters?.districtname || '') || [],
+    streets: facilities?.map((f) => f.address?.street || '') || [],
   };
 
   return apiService

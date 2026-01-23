@@ -40,6 +40,7 @@ export type OwnerChanges = {
 export type EstateInformation = {
   district?: string;
   districtname?: string;
+  address?: string;
   designation: string;
   objectidentifier: string;
   totalArea: number;
