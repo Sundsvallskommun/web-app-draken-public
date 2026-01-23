@@ -53,7 +53,7 @@ export const NotificationItem: React.FC<{ notification: NotificationType }> = ({
         <div>
           <strong>{notification.description + ' › '}</strong>
           <NextLink
-            href={appConfig.isCaseData ? `/arende/${notification.errandNumber}` : `/arende/${notification.errandId}`}
+            href={`/arende/${notification.errandNumber}`}
             target="_blank"
             onClick={handleAcknowledge}
             className="underline whitespace-nowrap"
