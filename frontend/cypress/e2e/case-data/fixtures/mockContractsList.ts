@@ -1,4 +1,4 @@
-import { ContractPaginatedResponse, ContractType, LeaseType, Status, StakeholderType } from '@casedata/interfaces/contracts';
+import { ContractPaginatedResponse, ContractType, LeaseType, Status, StakeholderRole, StakeholderType, TimeUnit, IntervalType } from '@casedata/interfaces/contracts';
 
 export const mockContractsList: ContractPaginatedResponse = {
   contracts: [
@@ -192,6 +192,150 @@ export const mockContractsListFiltered: ContractPaginatedResponse = {
           type: StakeholderType.ORGANIZATION,
           roles: [],
           organizationName: 'Testföretag AB',
+        },
+      ],
+    },
+  ],
+  _meta: {
+    page: 1,
+    limit: 12,
+    count: 1,
+    totalRecords: 1,
+    totalPages: 1,
+  },
+};
+
+// Detailed mock contract with all fields for detail view testing
+export const mockContractDetailLeaseAgreement: ContractPaginatedResponse = {
+  contracts: [
+    {
+      contractId: '2049-00010',
+      externalReferenceId: 'EXT-12345',
+      status: Status.ACTIVE,
+      type: ContractType.LEASE_AGREEMENT,
+      leaseType: LeaseType.LEASEHOLD,
+      start: '2024-01-01',
+      end: '2026-12-31',
+      propertyDesignations: [
+        { name: 'SUNDSVALL TESTMARK 1:100', district: 'Sundsvall Norra' },
+        { name: 'SUNDSVALL TESTMARK 1:101', district: 'Sundsvall Norra' },
+      ],
+      stakeholders: [
+        {
+          type: StakeholderType.ORGANIZATION,
+          roles: [StakeholderRole.LESSOR],
+          organizationName: 'Sundsvalls Kommun',
+          organizationNumber: '212000-2411',
+          address: {
+            streetAddress: 'Storgatan 1',
+            postalCode: '85230',
+            town: 'Sundsvall',
+          },
+        },
+        {
+          type: StakeholderType.PERSON,
+          roles: [StakeholderRole.LESSEE],
+          firstName: 'Anna',
+          lastName: 'Arrendator',
+          address: {
+            streetAddress: 'Arrendevägen 10',
+            careOf: '',
+            postalCode: '85240',
+            town: 'Sundsvall',
+          },
+        },
+        {
+          type: StakeholderType.PERSON,
+          roles: [StakeholderRole.LESSEE],
+          firstName: 'Bengt',
+          lastName: 'Arrendator',
+          address: {
+            streetAddress: 'Arrendevägen 10',
+            careOf: '',
+            postalCode: '85240',
+            town: 'Sundsvall',
+          },
+        },
+      ],
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
+      extension: {
+        autoExtend: true,
+        unit: TimeUnit.YEARS,
+        leaseExtension: '5',
+      },
+      fees: {
+        yearly: 25000,
+        additionalInformation: ['Arrendeavgift för mark', 'Kompletterande info'],
+      },
+      invoicing: {
+        invoiceInterval: IntervalType.YEARLY,
+      },
+      indexAdjusted: true,
+      attachmentMetaData: [
+        {
+          id: 1,
+          category: 'CONTRACT',
+          filename: 'signerat-avtal.pdf',
+          mimeType: 'application/pdf',
+          note: 'Signerat arrendeavtal',
+        },
+      ],
+    },
+  ],
+  _meta: {
+    page: 1,
+    limit: 12,
+    count: 1,
+    totalRecords: 1,
+    totalPages: 1,
+  },
+};
+
+export const mockContractDetailPurchaseAgreement: ContractPaginatedResponse = {
+  contracts: [
+    {
+      contractId: '2049-00011',
+      externalReferenceId: 'EXT-67890',
+      status: Status.DRAFT,
+      type: ContractType.PURCHASE_AGREEMENT,
+      start: '2024-06-15',
+      propertyDesignations: [
+        { name: 'SUNDSVALL KÖPMARK 2:200', district: 'Sundsvall Södra' },
+      ],
+      stakeholders: [
+        {
+          type: StakeholderType.ORGANIZATION,
+          roles: [StakeholderRole.SELLER],
+          organizationName: 'Sundsvalls Kommun',
+          organizationNumber: '212000-2411',
+          address: {
+            streetAddress: 'Storgatan 1',
+            postalCode: '85230',
+            town: 'Sundsvall',
+          },
+        },
+        {
+          type: StakeholderType.PERSON,
+          roles: [StakeholderRole.BUYER],
+          firstName: 'Kalle',
+          lastName: 'Köpare',
+          address: {
+            streetAddress: 'Köpvägen 20',
+            careOf: '',
+            postalCode: '85250',
+            town: 'Sundsvall',
+          },
         },
       ],
     },

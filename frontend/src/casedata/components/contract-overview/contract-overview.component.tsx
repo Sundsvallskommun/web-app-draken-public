@@ -1,11 +1,17 @@
-import { Contract, ContractPaginatedResponse } from '@casedata/interfaces/contracts';
-import { ContractFilterParams, fetchContracts } from '@casedata/services/contract-service';
+import { Contract, ContractPaginatedResponse, ContractType } from '@casedata/interfaces/contracts';
+import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/services/contract-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
+import { ContractDetailWrapper } from './contract-detail-wrapper.component';
+import { ContractDetailForm } from './contract-detail-form.component';
+
+const getContractTypeLabel = (type: ContractType): string => {
+  return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
+};
 
 export const ContractOverview: React.FC = () => {
   const filterForm = useForm<ContractFilter>({ defaultValues: ContractFilterValues });
@@ -25,6 +31,18 @@ export const ContractOverview: React.FC = () => {
 
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedContract, setSelectedContract] = useState<Contract | undefined>();
+  const [showSelectedContract, setShowSelectedContract] = useState(false);
+
+  const handleRowClick = (contract: Contract) => {
+    setSelectedContract(contract);
+    setShowSelectedContract(true);
+  };
+
+  const closeHandler = () => {
+    setSelectedContract(undefined);
+    setShowSelectedContract(false);
+  };
 
   const queryFilter = watchFilter('query');
   const statusFilter = watchFilter('status');
@@ -128,8 +146,8 @@ export const ContractOverview: React.FC = () => {
   );
 
   return (
-    <div className="w-full">
-      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+    <div className="w-full h-screen relative flex flex-col overflow-hidden">
+      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24 flex-shrink-0">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
             <ContractsFilteringComponent />
@@ -137,7 +155,7 @@ export const ContractOverview: React.FC = () => {
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full">
+      <main className="px-24 md:px-40 pb-40 w-full flex-1 overflow-auto">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>
@@ -145,12 +163,28 @@ export const ContractOverview: React.FC = () => {
             </div>
             <div>
               <FormProvider {...tableForm}>
-                <ContractsTable contracts={contracts} isLoading={isLoading} />
+                <ContractsTable
+                  contracts={contracts}
+                  isLoading={isLoading}
+                  onRowClick={handleRowClick}
+                />
               </FormProvider>
             </div>
           </div>
         </div>
       </main>
+
+      {selectedContract && (
+        <ContractDetailWrapper
+          show={showSelectedContract}
+          label={getContractTypeLabel(selectedContract.type)}
+          closeHandler={closeHandler}
+        >
+          <ContractDetailForm
+            selectedContract={selectedContract}
+          />
+        </ContractDetailWrapper>
+      )}
     </div>
   );
 };

@@ -65,7 +65,8 @@ export const contractTableLabels = [
 export const ContractsTable: React.FC<{
   contracts: Contract[];
   isLoading: boolean;
-}> = ({ contracts, isLoading }) => {
+  onRowClick?: (contract: Contract) => void;
+}> = ({ contracts, isLoading, onRowClick }) => {
   const { watch, setValue, register } = useFormContext<ContractTableForm>();
   const [rowHeight, setRowHeight] = useState<string>('normal');
 
@@ -127,7 +128,12 @@ export const ContractsTable: React.FC<{
     const terminationDate = '-';
 
     return (
-      <Table.Row key={contract.contractId || index}>
+      <Table.Row
+        key={contract.contractId || index}
+        className={onRowClick ? 'cursor-pointer hover:bg-background-200' : ''}
+        onClick={() => onRowClick?.(contract)}
+        data-cy={`contract-row-${index}`}
+      >
         <Table.Column>{propertyNames}</Table.Column>
         <Table.Column>{uniqueDistricts}</Table.Column>
         <Table.Column>{contract.contractId || '-'}</Table.Column>

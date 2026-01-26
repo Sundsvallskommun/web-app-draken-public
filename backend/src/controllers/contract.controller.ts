@@ -70,7 +70,7 @@ export class CasedataContractsController {
     // Use query for property designation search (both name and district)
     if (query) {
       const encodedQuery = encodeURIComponent(query);
-      url += `&propertyDesignationNames=${encodedQuery}`;
+      url += `&contractId=${encodedQuery}`;
     }
 
     // Build filter params (prepared for future API support)

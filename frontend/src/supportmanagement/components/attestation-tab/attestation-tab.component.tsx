@@ -155,8 +155,8 @@ export const AttestationTab = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+    <div className="w-full h-screen relative flex flex-col overflow-hidden">
+      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24 flex-shrink-0">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
             <AttestationsFilteringComponent
@@ -168,7 +168,7 @@ export const AttestationTab = () => {
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full">
+      <main className="px-24 md:px-40 pb-40 w-full flex-1 overflow-auto">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>

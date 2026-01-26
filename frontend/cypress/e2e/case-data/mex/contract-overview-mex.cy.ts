@@ -3,10 +3,13 @@
 import { onlyOn } from '@cypress/skip-test';
 import { mockNotifications } from '../../../../cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockContractAttachment } from '../fixtures/mockContract';
 import {
   mockContractsList,
   mockContractsListEmpty,
   mockContractsListFiltered,
+  mockContractDetailLeaseAgreement,
+  mockContractDetailPurchaseAgreement,
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
@@ -213,6 +216,210 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/contracts?*', mockContractsList).as('getSortedContracts');
       cy.get('[data-cy="contracts-table"] th').contains('Avtalstyp').click();
       cy.wait('@getSortedContracts');
+    });
+
+    describe('Contract detail panel', () => {
+      beforeEach(() => {
+        // Intercept attachment requests to prevent 401 errors
+        cy.intercept('GET', '**/contracts/**/attachments/**', mockContractAttachment).as('getContractAttachment');
+      });
+
+      it('opens contract detail panel when clicking a row', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        // Click on the first contract row
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // The detail panel should appear
+        cy.get('[data-cy="close-contract-wrapper"]').should('be.visible');
+      });
+
+      it('displays correct contract type in panel header for lease agreement', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Header should show "Arrende" for lease agreement
+        cy.get('[data-cy="contract-detail-panel"]').contains('Arrende').should('be.visible');
+      });
+
+      it('displays correct contract type in panel header for purchase agreement', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailPurchaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Header should show "Köpeavtal" for purchase agreement
+        cy.get('[data-cy="contract-detail-panel"]').contains('Köpeavtal').should('be.visible');
+      });
+
+      it('displays parties disclosure with party tables for lease agreement', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Parties disclosure should be visible and initially open
+        cy.get('[data-cy="parties-disclosure"]').should('be.visible');
+
+        // Upplåtare table should show lessor
+        cy.get('[data-cy="Upplåtare-table"]').should('exist');
+        cy.get('[data-cy="Upplåtare-table"]').contains('Sundsvalls Kommun').should('exist');
+
+        // Arrendatorer table should show lessees
+        cy.get('[data-cy="Arrendatorer-table"]').should('exist');
+        cy.get('[data-cy="Arrendatorer-table"]').contains('Anna Arrendator').should('exist');
+        cy.get('[data-cy="Arrendatorer-table"]').contains('Bengt Arrendator').should('exist');
+      });
+
+      it('displays parties disclosure with party tables for purchase agreement', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailPurchaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Parties disclosure should be visible
+        cy.get('[data-cy="parties-disclosure"]').should('be.visible');
+
+        // Säljare table should show seller
+        cy.get('[data-cy="Säljare-table"]').should('exist');
+        cy.get('[data-cy="Säljare-table"]').contains('Sundsvalls Kommun').should('exist');
+
+        // Köpare table should show buyer
+        cy.get('[data-cy="Köpare-table"]').should('exist');
+        cy.get('[data-cy="Köpare-table"]').contains('Kalle Köpare').should('exist');
+      });
+
+      it('displays area disclosure with property designations', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Area disclosure should be visible
+        cy.get('[data-cy="area-disclosure"]').should('be.visible');
+        cy.get('[data-cy="area-disclosure"]').click();
+
+        // Property designations should be displayed
+        cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
+      });
+
+      it('displays avtalstid disclosure for lease agreement', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Avtalstid disclosure should be visible for lease agreements
+        cy.get('[data-cy="avtalstid-disclosure"]').should('be.visible');
+        cy.get('[data-cy="avtalstid-disclosure"]').click();
+
+        // Start and end date fields should exist
+        cy.get('[data-cy="avtalstid-start"]').should('exist');
+        cy.get('[data-cy="avtalstid-end"]').should('exist');
+      });
+
+      it('displays lopande avgift disclosure', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Löpande avgift disclosure should be visible
+        cy.get('[data-cy="lopande-disclosure"]').should('be.visible');
+      });
+
+      it('displays bilagor disclosure', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Bilagor disclosure should be visible
+        cy.get('[data-cy="bilagor-disclosure"]').should('be.visible');
+      });
+
+      it('form fields are read-only in contract detail panel', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Old contract ID input should be read-only
+        cy.get('[data-cy="old-contract-id-input"]').should('have.attr', 'readonly');
+
+        // Open avtalstid disclosure and check date fields
+        cy.get('[data-cy="avtalstid-disclosure"]').click();
+        cy.get('[data-cy="avtalstid-start"]').should('have.attr', 'readonly');
+        cy.get('[data-cy="avtalstid-end"]').should('have.attr', 'readonly');
+      });
+
+      it('does not display save button in read-only mode', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Save button should not exist
+        cy.get('[data-cy="save-contract-button"]').should('not.exist');
+      });
+
+      it('does not display update parties button in read-only mode', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Update parties button should not exist
+        cy.get('[data-cy="update-contract-parties"]').should('not.exist');
+      });
+
+      it('closes contract detail panel when clicking close button', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Panel should be visible
+        cy.get('[data-cy="contract-detail-panel"]').should('be.visible');
+        cy.get('[data-cy="close-contract-wrapper"]').should('be.visible');
+
+        // Click close button
+        cy.get('[data-cy="close-contract-wrapper"]').click();
+
+        // Panel should be removed from DOM
+        cy.get('[data-cy="contract-detail-panel"]').should('not.exist');
+      });
+
+      it('shows backdrop when contract detail panel is open', () => {
+        cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        navigateToContractOverview();
+
+        cy.get('[data-cy="contract-row-0"]').click();
+
+        // Modal wrapper (backdrop) should be visible
+        cy.get('.sk-modal-wrapper').should('exist');
+      });
+
+      it('can click different contract rows to view different contracts', () => {
+        // Use list with multiple contracts
+        cy.intercept('GET', '**/contracts?*', mockContractsList).as('getContracts');
+        navigateToContractOverview();
+
+        // Click first row (lease agreement)
+        cy.get('[data-cy="contract-row-0"]').click();
+        cy.get('[data-cy="contract-detail-panel"]').contains('Arrende').should('be.visible');
+
+        // Close panel
+        cy.get('[data-cy="close-contract-wrapper"]').click();
+        cy.get('[data-cy="contract-detail-panel"]').should('not.exist');
+
+        // Click third row (purchase agreement)
+        cy.get('[data-cy="contract-row-2"]').click();
+        cy.get('[data-cy="contract-detail-panel"]').contains('Köpeavtal').should('be.visible');
+      });
     });
   });
 });
