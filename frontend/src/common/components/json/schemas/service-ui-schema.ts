@@ -1,11 +1,7 @@
 import type { UiSchema } from '@rjsf/utils';
 
 export const serviceUiSchema: UiSchema = {
-  'ui:order': ['type', 'additionalAids', 'mobilityAids', 'validityType', 'validFrom', 'validTo', 'notes', 'status'],
-
-  status: {
-    'ui:widget': 'hidden',
-  },
+  'ui:order': ['type', 'additionalAids', 'mobilityAids', 'validityType', 'validFrom', 'validTo', 'notes'],
 
   type: {
     'ui:widget': 'select',

@@ -38,7 +38,6 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
-import { updateServiceStatuses } from '@casedata/services/asset-service';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
@@ -305,11 +304,6 @@ export const CasedataDecisionTab: React.FC<{
       setIsSaveAndSendLoading(true);
       const rendered = await renderBeslutPdf(errand, data, services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
-
-      // Update service statuses based on decision outcome
-      if (ownerPartyId) {
-        await updateServiceStatuses(municipalityId, ownerPartyId, errand.errandNumber, data.outcome);
-      }
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
