@@ -1,7 +1,10 @@
+import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
+
 export interface AppConfig {
   applicationName: string;
   isCaseData: boolean;
   isSupportManagement: boolean;
+  reopenSupportErrandLimit: string;
   features: AppConfigFeatures;
 }
 
@@ -29,12 +32,16 @@ interface AppConfigFeatures {
   useRelations: boolean;
   useMyPages: boolean;
   useUiPhases: boolean;
+  useClosingMessageCheckbox: boolean;
+  useMultipleContactChannels: boolean;
+  useClosedAsDefaultResolution: boolean;
 }
 
 export const appConfig: AppConfig = {
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
   isCaseData: process.env.NEXT_PUBLIC_IS_CASEDATA === 'true',
   isSupportManagement: process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT === 'true',
+  reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
     useErrandExport: process.env.NEXT_PUBLIC_USE_ERRAND_EXPORT === 'true',
     useThreeLevelCategorization: process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION === 'true',
@@ -59,5 +66,57 @@ export const appConfig: AppConfig = {
     useRelations: process.env.NEXT_PUBLIC_USE_RELATIONS === 'true', //Temporary
     useMyPages: process.env.NEXT_PUBLIC_USE_MY_PAGES === 'true',
     useUiPhases: process.env.NEXT_PUBLIC_USE_UI_PHASES === 'true',
+    useClosingMessageCheckbox: process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX === 'true',
+    useMultipleContactChannels: process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS === 'true',
+    useClosedAsDefaultResolution: process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION === 'true',
   },
 };
+
+function resetAllFlagsToFalse() {
+  appConfig.isCaseData = false;
+  appConfig.isSupportManagement = false;
+  appConfig.reopenSupportErrandLimit = '30';
+
+  (Object.keys(appConfig.features) as (keyof AppConfigFeatures)[]).forEach((key) => {
+    appConfig.features[key] = false;
+  });
+}
+
+export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
+  if (!flags || flags.length === 0) {
+    return;
+  }
+
+  resetAllFlagsToFalse();
+
+  flags.forEach((flag) => {
+    if (
+      !(flag.name in appConfig.features) &&
+      flag.name !== 'isCaseData' &&
+      flag.name !== 'isSupportManagement' &&
+      flag.name !== 'reopenSupportErrandLimit'
+    ) {
+      console.warn('Unknown feature flag from backend:', flag.name);
+      return;
+    }
+
+    if (flag.name === 'isCaseData') {
+      appConfig.isCaseData = flag.enabled;
+      return;
+    }
+
+    if (flag.name === 'isSupportManagement') {
+      appConfig.isSupportManagement = flag.enabled;
+      return;
+    }
+
+    if (flag.name === 'reopenSupportErrandLimit' && flag.enabled) {
+      appConfig.reopenSupportErrandLimit = flag.value;
+      return;
+    }
+
+    if (flag.name in appConfig.features) {
+      appConfig.features[flag.name] = flag.enabled;
+    }
+  });
+}

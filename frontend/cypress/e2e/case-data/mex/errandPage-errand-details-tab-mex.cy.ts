@@ -11,7 +11,7 @@ import { mockAsset } from '../fixtures/mockAsset';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
-import { mockEstateInfo } from '../fixtures/mockEstateInfo';
+import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
@@ -36,11 +36,13 @@ export const replaceExtraParameter = (extraParameters: ExtraParameter[], newPara
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand details tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
@@ -68,10 +70,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
 
     const goToErrandInformationTab = () => {
-      cy.visit('/arende/2281/MEX-2024-000280');
+      cy.visit('/arende/MEX-2024-000280');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrand');
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();
@@ -83,7 +87,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     };
 
     const checkEstateInfo = () => {
-      cy.get('[data-cy="suggestion-list"]').should('exist').click();
+      cy.get('[data-cy="suggestion-list"]').should('exist');
+      cy.get('[data-cy="suggestion-list"] label').first().should('exist').click();
       cy.get('[data-cy="estate-table"').should('exist');
       cy.get('[data-cy="realEstate-0"]')
         .should('exist')
@@ -91,14 +96,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('a').contains('Visa fastighetsinformation').click();
         });
 
-      cy.get('[data-cy="estate-designation"]').should('exist').contains(mockEstateInfo.data?.designation);
+      cy.get('[data-cy="estate-designation"]').should('exist').contains(mockEstateInfo11.data?.designation);
       cy.get('[data-cy="ownership-tab"]').should('exist');
       cy.get('[data-cy="area-and-actions-tab"]').should('exist');
-      cy.get('[data-cy="owner-name"]').should('exist').contains(mockEstateInfo.data?.ownership[0].owner.name);
-      cy.get('[data-cy="owner-address"]').should('exist').contains(mockEstateInfo.data?.ownership[0].owner.address);
+      cy.get('[data-cy="owner-name"]').should('exist').contains(mockEstateInfo11.data?.ownership[0].owner.name);
+      cy.get('[data-cy="owner-address"]').should('exist').contains(mockEstateInfo11.data?.ownership[0].owner.address);
       cy.get('[data-cy="owner-postal-and-city"]')
         .should('exist')
-        .contains(mockEstateInfo.data?.ownership[0].owner.city);
+        .contains(mockEstateInfo11.data?.ownership[0].owner.city);
 
       cy.get('[data-cy="owner-share"]').should('exist');
       cy.get('[data-cy="owner-enrollment"]').should('exist');
@@ -106,16 +111,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="estate-changes"]').should('exist');
 
       cy.get('[data-cy="area-and-actions-tab"]').should('exist').click({ force: true });
-      cy.get('[data-cy="total-area"]').should('exist').contains(mockEstateInfo.data?.totalArea);
-      cy.get('[data-cy="total-area-land"]').should('exist').contains(mockEstateInfo.data?.totalAreaLand);
-      cy.get('[data-cy="total-area-water"]').should('exist').contains(mockEstateInfo.data?.totalAreaWater);
+      cy.get('[data-cy="total-area"]').should('exist').contains(mockEstateInfo11.data?.totalArea);
+      cy.get('[data-cy="total-area-land"]').should('exist').contains(mockEstateInfo11.data?.totalAreaLand);
+      cy.get('[data-cy="total-area-water"]').should('exist').contains(mockEstateInfo11.data?.totalAreaWater);
 
       cy.get('[data-cy="action-table"]').should('exist');
-      cy.get('[data-cy="action-type"]').should('exist').contains(mockEstateInfo.data.actions[0].actionType1);
-      cy.get('[data-cy="action-date"]').should('exist').contains(mockEstateInfo.data.actions[0].actionDate);
+      cy.get('[data-cy="action-type"]').should('exist').contains(mockEstateInfo11.data.actions[0].actionType1);
+      cy.get('[data-cy="action-date"]').should('exist').contains(mockEstateInfo11.data.actions[0].actionDate);
       cy.get('[data-cy="action-file-designation"]')
         .should('exist')
-        .contains(mockEstateInfo.data.actions[0].fileDesignation);
+        .contains(mockEstateInfo11.data.actions[0].fileDesignation);
 
       cy.get('[data-cy="close-estate-info-button"]').should('exist').click({ force: true });
       cy.get('[data-cy="save-and-continue-button"]').should('exist').and('be.enabled');
@@ -125,8 +130,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     };
 
     it('search property designation', () => {
-      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation);
-      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo).as('getEstateInfo');
+      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation).as(
+        'getEstatePropertyByDesignation'
+      );
+      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo11).as('getEstateInfo');
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
@@ -137,13 +144,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       goToErrandInformationTab();
 
       cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall 3:109', { delay: 100 });
+      cy.wait('@getEstatePropertyByDesignation');
 
       checkEstateInfo();
     });
 
     it('search address', () => {
       cy.intercept('GET', '**/estateByAddress/**', mockEstateByAddress);
-      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo11).as('getEstateInfo');
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',

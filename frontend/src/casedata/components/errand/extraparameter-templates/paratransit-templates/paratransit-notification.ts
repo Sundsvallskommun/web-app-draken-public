@@ -150,6 +150,17 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     ],
   },
   {
+    field: 'personal.maxWalkingDistance',
+    value: '',
+    label: 'Hur långt klarar den sökande att gå på plan mark i meter?',
+    description: '',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    required: true,
+  },
+  {
     field: 'external.mobilityAid.boolean',
     value: '',
     label: 'Behöver den sökande förflyttningshjälpmedel?',
@@ -177,6 +188,9 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Elrullstol', value: 'ELECTRIC_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Elscooter/elmoped', value: 'ELECTRIC_SCOOTER', name: 'mobilityAids' },
         { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
+        { label: 'Vagn', value: 'TROLLEY', name: 'mobilityAids' },
+        { label: 'Syrgas', value: 'OXYGEN', name: 'mobilityAids' },
+        { label: 'Bälteskudde', value: 'BELT_PILLOW', name: 'mobilityAids' },
       ],
     },
     dependsOn: [

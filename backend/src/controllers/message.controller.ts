@@ -140,6 +140,9 @@ class MessageResponse implements IMessageResponse {
   email?: string;
   @IsOptional()
   @IsString()
+  htmlMessage?: string;
+  @IsOptional()
+  @IsString()
   userId?: string;
   @IsOptional()
   @IsString()

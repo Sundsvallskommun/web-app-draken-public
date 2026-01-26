@@ -4,6 +4,7 @@ import {
   ContractType,
   IntervalType,
   InvoicedIn,
+  LeaseType,
   Party,
   StakeholderRole,
   Status,
@@ -171,7 +172,12 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
         ? defaultKopeavtal
         : existingContract?.type === ContractType.LEASE_AGREEMENT
         ? defaultLagenhetsarrende
-        : ({ ...defaultKopeavtal, ...defaultLagenhetsarrende, type: ContractType.PURCHASE_AGREEMENT } as ContractData),
+        : ({
+            ...defaultKopeavtal,
+            ...defaultLagenhetsarrende,
+            type: ContractType.LEASE_AGREEMENT,
+            leaseType: LeaseType.LAND_LEASE_MISC,
+          } as ContractData),
     mode: 'onChange',
   });
 
@@ -266,7 +272,10 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           <div className="flex">
             <div className="w-3/4" data-cy="contract-wrapper">
               <div>
-                <h2 className="text-h2-md">{contractTypes.find((ct) => ct.key === contractType)?.label}</h2>
+                <h2 className="text-h2-md">
+                  {contractTypes.find((ct) => ct.key === contractType)?.label}{' '}
+                  <span>{contractForm.getValues().contractId ? `(${contractForm.getValues().contractId})` : null}</span>
+                </h2>
                 <p className="py-16">
                   Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i
                   sin ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som

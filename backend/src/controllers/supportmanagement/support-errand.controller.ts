@@ -35,7 +35,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { isIK, isKA, isKC, isLOP, isMSVA, isROB } from '@/services/application.service';
+import { isIK, isKA, isKC, isLOP, isMSVA, isROB, isSE } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
 import { Type as TypeTransformer } from 'class-transformer';
@@ -482,6 +482,25 @@ export class SupportErrandController {
     return resToSend;
   };
 
+  @Get('/supporterrands/errandnumber/:errandNumber')
+  @OpenAPI({ summary: 'Return an errand by number' })
+  @UseBefore(authMiddleware)
+  async getSupportErrandByErrandNumber(
+    @Req() req: RequestWithUser,
+    @Param('errandNumber') errandNumber: string,
+    @Res() response: any,
+  ): Promise<SupportErrand> {
+    if (!MUNICIPALITY_ID) {
+      console.error('No municipality id found, needed to fetch errands.');
+      logger.error('No municipality id found, needed to fetch errands.');
+      return response.status(400).send('Municipality id missing');
+    }
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands?filter=errandNumber:'${errandNumber}'`;
+    const errandResponse = await this.apiService.get<any>({ url }, req.user);
+    const errandData = errandResponse.data.content[0];
+    return response.send((await this.preparedErrandResponse(errandData, req)).data);
+  }
+
   @Get('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Return an errand by id' })
   @UseBefore(authMiddleware)
@@ -658,7 +677,7 @@ export class SupportErrandController {
             category: 'SALARY',
             type: 'SALARY.UNCATEGORIZED',
           }
-        : isIK()
+        : isIK() || isSE()
         ? {
             category: 'KSK_SERVICE_CENTER',
             type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
@@ -679,7 +698,7 @@ export class SupportErrandController {
           },
       labels: isLOP()
         ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
-        : isIK()
+        : isIK() || isSE()
         ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
         : isKA()
         ? getDefaultLabels({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' })

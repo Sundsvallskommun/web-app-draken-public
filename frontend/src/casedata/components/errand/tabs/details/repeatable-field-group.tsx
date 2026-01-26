@@ -1,4 +1,4 @@
-import { isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/casedata-errand-service';
 import { EXTRAPARAMETER_SEPARATOR, UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -28,7 +28,7 @@ export const RepeatableFieldGroup: React.FC<RepeatableFieldGroupProps> = ({
 }) => {
   const { unregister, setValue } = useFormContext();
   const { errand } = useAppContext();
-  const isReadOnly = isErrandLocked(errand);
+  const isReadOnly = isErrandLocked(errand) || isFTNotificationErrand(errand);
   const [itemIndices, setItemIndices] = useState<number[]>(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       const indices = Object.keys(initialData)

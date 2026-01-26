@@ -10,7 +10,6 @@
  * ---------------------------------------------------------------
  */
 
-/** Version increment mode */
 export enum IncrementMode {
   MAJOR = "MAJOR",
   MINOR = "MINOR",
@@ -24,7 +23,6 @@ export interface DefaultValue {
   value?: string;
 }
 
-/** Metadata */
 export interface Metadata {
   key?: string;
   value?: string;
@@ -72,14 +70,14 @@ export interface TemplateResponse {
 }
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -88,13 +86,9 @@ export interface StatusType {
   reasonPhrase?: string;
 }
 
-/**
- * Search filter expression
- * @example {"or":[{"eq":{"process":"PRH"}},{"eq":{"verksamhet":"SBK"}}]}
- */
-export type Expression = object;
+/** Search filter expression */
+export type Expression = any;
 
-/** Template metadata */
 export interface KeyValue {
   /** @minLength 1 */
   key: string;
@@ -109,11 +103,8 @@ export interface RenderRequest {
   /** Template version */
   version?: string | null;
   metadata?: KeyValue[];
-  /**
-   * Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>")
-   * @example {"someKey":"someValue","otherKey":["otherValue1","otherValue2"],"anotherKey":{"someKey":"BASE64:c29tZUJhc2VFbmNvZGVkVmFsdWU="}}
-   */
-  parameters?: Record<string, object | null>;
+  /** Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>") */
+  parameters?: object | string | null;
 }
 
 export interface RenderResponse {
@@ -128,11 +119,8 @@ export interface DirectRenderRequest {
    * @minLength 1
    */
   content: string;
-  /**
-   * Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>")
-   * @example {"someKey":"someValue","otherKey":["otherValue1","otherValue2"],"anotherKey":{"someKey":"BASE64:c29tZUJhc2VFbmNvZGVkVmFsdWU="}}
-   */
-  parameters?: Record<string, object | null>;
+  /** Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>") */
+  parameters?: object | string | null;
 }
 
 export interface DirectRenderResponse {
@@ -140,8 +128,7 @@ export interface DirectRenderResponse {
   output?: string;
 }
 
-/** @example [{"op":"add|remove|replace","path":"/some/attribute/path","value":"..."}] */
-export type JsonPatch = object;
+export type JsonPatch = any;
 
 /** Detailed template */
 export interface DetailedTemplateResponse {

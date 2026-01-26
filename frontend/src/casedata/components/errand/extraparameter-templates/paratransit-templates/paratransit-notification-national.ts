@@ -128,6 +128,17 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
     repeatableGroup: journeyFieldsGroup,
   } as any,
   {
+    field: 'personal.maxWalkingDistance',
+    value: '',
+    label: 'Hur långt klarar den sökande att gå på plan mark i meter?',
+    description: '',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    required: true,
+  },
+  {
     field: 'personal.mobilityAidNeeded',
     value: '',
     label: 'Behöver den sökande förflyttningshjälpmedel?',
@@ -153,6 +164,9 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Komfortrullstol eller motsvarande', value: 'COMFORT_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Elrullstol', value: 'ELECTRIC_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
+        { label: 'Vagn', value: 'TROLLEY', name: 'mobilityAids' },
+        { label: 'Syrgas', value: 'OXYGEN', name: 'mobilityAids' },
+        { label: 'Bälteskudde', value: 'BELT_PILLOW', name: 'mobilityAids' },
       ],
     },
     section: 'Yttre omständigheter',

@@ -1,25 +1,29 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
-import { mockAttachments, mockAttachmentsPT } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockAttachmentsPT } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
+import dayjs from 'dayjs';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
-import dayjs from 'dayjs';
+import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Decisions tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/phrases', mockPhrases);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
@@ -30,9 +34,22 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('POST', '**/templates/phrases*', mockPhrases).as('getPhrases');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
-      cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
+      cy.intercept('GET', '**/assets?**', {}).as('getAssets');
+      cy.intercept('GET', '**/contracts/2024-01026', mockPTErrand_base).as('getContract');
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.visit(`/arende/2281/${mockPTErrand_base.data.errandNumber}`);
+      cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('PATCH', '**/errands/**/extraparameters', {});
+
+      cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(6).should('have.text', 'Beslut').click({ force: true });
@@ -42,7 +59,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="decision-outcome-select"]').should('exist');
       cy.get('[data-cy="law-select"]')
         .should('exist')
-        .should('have.value', '13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
+        .should('contain.text', '13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
       cy.get('[data-cy="validFrom-input"]').should('exist');
       cy.get('[data-cy="validTo-input"]').should('exist');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
@@ -58,8 +75,8 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.get('[data-cy="law-select"]').should('exist');
-      cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-07-11');
-      cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
+      cy.get('[data-cy="validFrom-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="validTo-input"]').should('exist').should('be.disabled');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
       cy.get('[data-cy="save-decision-button"]').should('exist').click();
       cy.get('button').should('exist').contains('Ja').click();
@@ -100,8 +117,8 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
       cy.get('[data-cy="law-select"]').should('exist');
-      cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-07-11');
-      cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
+      cy.get('[data-cy="validFrom-input"]').should('exist').clear().type('2024-07-11');
+      cy.get('[data-cy="validTo-input"]').should('exist').clear().type('2024-08-11');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
       cy.get('[data-cy="save-decision-button"]').should('exist').click();
       cy.get('button').should('exist').contains('Ja').click();
@@ -134,28 +151,32 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       });
     });
 
-    it('disables save button if no decision is selected', () => {
+    it('shows validation error when no decision is selected', () => {
+      cy.intercept('PUT', '**/decisions/**').as('updateDecision');
+
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
-      cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-07-11');
-      cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
+      cy.get('[data-cy="validFrom-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="validTo-input"]').should('exist').should('be.disabled');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
-      cy.contains('Förslag till beslut måste anges').should('exist');
-      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+
+      cy.contains('Beslut måste anges').should('exist');
+      cy.get('@updateDecision.all').should('have.length', 0);
     });
 
-    it('disables save button if not both start and end date has been entered', () => {
-      cy.get('[data-cy="decision-outcome-select"]').should('exist').select(2);
+    it('shows validation error when dates are incomplete for approval', () => {
+      cy.intercept('PUT', '**/decisions/**').as('updateDecision');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
       cy.get('[data-cy="law-select"]').should('exist');
-      cy.get('[data-cy="decision-outcome-select"]').should('exist');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
 
       cy.get('[data-cy="validFrom-input"]').should('exist').clear();
-      cy.get('[data-cy="validTo-input"]').should('exist').type('2024-08-11');
-      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="validTo-input"]').should('exist').clear().type('2024-08-11');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
 
-      cy.get('[data-cy="validFrom-input"]').should('exist').type('2024-08-11');
-      cy.get('[data-cy="validTo-input"]').should('exist').clear();
-      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+      cy.contains('Giltig från måste anges').should('exist');
+      cy.get('@updateDecision.all').should('have.length', 0);
     });
   });
 });

@@ -24,10 +24,11 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockAsset } from '../fixtures/mockAsset';
 import { preventProcessExtraParameters } from '../utils/utils';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
-    cy.visit('/arende/2281/PRH-2022-000019');
+    cy.visit('/arende/PRH-2022-000019');
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -35,11 +36,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
   };
   describe('Errand page', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', '**/errand/101/messages', mockMessages);
@@ -71,6 +74,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errand/*', mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
 
     it('shows the correct base errand information', () => {
@@ -203,7 +208,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .type(Cypress.env('mockInvalidPersonNumber'));
 
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockInvalidPersonNumber'));
-      cy.get('[data-cy="personal-number-error-message"]').should('exist').and('have.text', invalidSsnMessage);
+      cy.get('[data-cy="personal-number-error-message"]').should('exist').should('contain.text', invalidSsnMessage);
 
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="personal-number-error-message"]').should('not.exist');
@@ -216,7 +221,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contact-form"] button').should('exist');
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockInvalidPersonNumber'));
-      cy.get('[data-cy="personal-number-error-message"]').should('exist').and('have.text', invalidSsnMessage);
+      cy.get('[data-cy="personal-number-error-message"]').should('exist').should('contain.text', invalidSsnMessage);
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockPersonNumber'));
       cy.get('[data-cy="personal-number-error-message"]').should('not.exist');
@@ -236,7 +241,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('button').contains('Lägg till manuellt').should('exist');
       cy.get('[data-cy="contact-form"] button').contains('Sök').click();
       cy.wait('@notFoundAddress');
-      cy.get('[data-cy="not-found-error-message"]').should('exist').and('have.text', 'Sökningen gav ingen träff');
+      cy.get('[data-cy="not-found-error-message"]').should('exist').should('contain.text', 'Sökningen gav ingen träff');
     });
 
     it('shows error message on invalid org number', () => {
@@ -266,11 +271,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="search-enterprise-owner-form"]').click();
       cy.get('[data-cy="contact-personalNumber-owner"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
-      cy.get('[data-cy="org-number-error-message-owner"]').should('exist').and('have.text', invalidOrgNumberMessage);
+      cy.get('[data-cy="org-number-error-message-owner"]')
+        .should('exist')
+        .should('contain.text', invalidOrgNumberMessage);
 
       cy.get('[data-cy="search-enterprise-person-form"]').click();
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockInvalidOrganizationNumber'));
-      cy.get('[data-cy="org-number-error-message-person"]').should('exist').and('have.text', invalidOrgNumberMessage);
+      cy.get('[data-cy="org-number-error-message-person"]')
+        .should('exist')
+        .should('contain.text', invalidOrgNumberMessage);
 
       cy.get('[data-cy="contact-personalNumber-person"]').clear().type(Cypress.env('mockOrganizationNumber'));
       cy.get('[data-cy="org-number-error-message-person"]').should('not.exist');
@@ -303,7 +312,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/organization', mockOrganization).as('postOrganization');
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

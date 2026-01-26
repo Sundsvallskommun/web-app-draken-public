@@ -5,6 +5,7 @@ import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockEmptySupportErrand,
@@ -15,10 +16,6 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
-import cypress from 'cypress';
-import { mockAddress } from '../case-data/fixtures/mockAddress';
-import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 
 //NOT YET IMPLEMENTED IN FE
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
@@ -27,7 +24,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
       cy.intercept('GET', '**/me', mockMe).as('getMe');
-      cy.intercept('GET', '**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand).as(
+      cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand);
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand).as(
         'getErrand'
       );
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(

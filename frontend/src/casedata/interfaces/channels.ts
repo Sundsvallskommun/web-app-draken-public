@@ -3,6 +3,8 @@ export enum Channels {
   ESERVICE = 'E-tjänst',
   WEB_UI = 'Webgränssnitt',
   ESERVICE_KATLA = 'E-tjänst Färdstjänstregistrering',
+  MOBILE = 'Telefon',
+  SYSTEM = 'System',
 }
 
 export enum ApiChannels {
@@ -10,4 +12,6 @@ export enum ApiChannels {
   'E-tjänst' = 'ESERVICE',
   'Webgränssnitt' = 'WEB_UI',
   'E-tjänst Färdtjänstregistrering' = 'ESERVICE_KATLA',
+  'Telefon' = 'MOBILE',
+  'System' = 'SYSTEM',
 }

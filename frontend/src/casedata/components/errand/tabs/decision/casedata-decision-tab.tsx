@@ -20,7 +20,7 @@ import { AppContextInterface, useAppContext } from '@common/contexts/app.context
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -145,7 +145,7 @@ export const CasedataDecisionTab: React.FC<{
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
 
-  const [initialLawValues] = useState<string[]>(() => {
+  const initialLawValues = useMemo(() => {
     const sortedDec = [...errand.decisions].sort(
       (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
     );
@@ -155,8 +155,8 @@ export const CasedataDecisionTab: React.FC<{
       return existingDecision.law.map((law) => law.heading);
     }
 
-    return getLawMapping(errand).map((law) => law.heading);
-  });
+    return [];
+  }, [errand.decisions]);
 
   const ownerPartyId = getOwnerStakeholder(errand)?.personId;
   const assetType = 'FTErrandAssets';
@@ -486,6 +486,7 @@ export const CasedataDecisionTab: React.FC<{
       }
     } else {
       setValue('id', undefined, { shouldDirty: false });
+      setValue('law', [], { shouldDirty: false });
     }
 
     props.setUnsaved(false);
@@ -582,6 +583,7 @@ export const CasedataDecisionTab: React.FC<{
               <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
                 <Combobox
+                  data-cy="law-select"
                   multiple
                   placeholder="Välj lagrum"
                   value={initialLawValues}

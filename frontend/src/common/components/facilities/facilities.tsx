@@ -9,6 +9,7 @@ import {
   makeFacility,
   removeMunicipalityName,
 } from '@common/services/facilities-service';
+import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
 import {
   Button,
@@ -50,11 +51,11 @@ export const Facilities: React.FC<{
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
   const [internalUnsaved, setInternalUnsaved] = useState<boolean>(false);
+  const [searchKey, setSearchKey] = useState<number>(0);
 
   const { register } = useForm();
 
   const [selectedEstate, setSelectedEstate] = useState<EstateInformation>();
-  const searchValue = '';
 
   useEffect(() => {
     setRealEstates(props.facilities);
@@ -87,13 +88,22 @@ export const Facilities: React.FC<{
     }
   };
 
+  useDebounceEffect(
+    () => {
+      setSearchResult([]);
+      onSearchHandler(searchQuery);
+    },
+    500,
+    [searchQuery]
+  );
+
   const openEstateInfo = (inEstate: string, inIndex: number) => {
     const spinnerElement = document.getElementById('realEstate-spinner-' + inIndex);
     const linkElement = document.getElementById('realEstate-link-' + inIndex);
 
     if (spinnerElement && linkElement) {
-      spinnerElement.style.display = 'flex';
-      linkElement.style.display = 'none';
+      spinnerElement.style.visibility = 'visible';
+      linkElement.style.visibility = 'hidden';
     }
     getFacilityInfo(inEstate)
       .then((res) => {
@@ -107,11 +117,42 @@ export const Facilities: React.FC<{
       })
       .finally(() => {
         if (spinnerElement && linkElement) {
-          spinnerElement.style.display = 'none';
-          linkElement.style.display = 'block';
+          spinnerElement.style.visibility = 'hidden';
+          linkElement.style.visibility = 'visible';
         }
       });
   };
+
+  const ResultList: React.FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
+    const data = result ?? [];
+    return searchResult.length > 0 ? (
+      <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full" key={`searchList-${searchQuery}`}>
+        {data.map((estate, index) => (
+          <SearchField.SuggestionsOption
+            key={`searchHit-${searchQuery}-${index}`}
+            value={searchType === 'ADDRESS' ? `${estate.address}` : estate.designation}
+            onChange={(event) => {
+              event.stopPropagation();
+              setRealEstates([...realEstates, makeFacility(estate)]);
+              setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
+              setInternalUnsaved(true);
+              setUnsaved(true);
+              setSearchQuery('');
+              setSearchResult([]);
+              setSearchKey((prev) => prev + 1);
+            }}
+            data-cy={`searchHit-${index}`}
+          >
+            {`${searchType === 'ADDRESS' ? estate.address : removeMunicipalityName(estate.designation)} (${
+              estate.address
+            }, ${estate.districtname})`}
+          </SearchField.SuggestionsOption>
+        ))}
+      </SearchField.SuggestionsList>
+    ) : null;
+  };
+
+  console.log('realestates', realEstates);
 
   return (
     <div>
@@ -149,41 +190,24 @@ export const Facilities: React.FC<{
         </fieldset>
         <Input type="text" {...register('propertyDesignation')} hidden />
 
-        <SearchField.Suggestions autofilter={true}>
+        <SearchField.Suggestions autofilter={false} key={`search-field-${searchKey}`}>
           <SearchField.SuggestionsInput
             disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
-              onSearchHandler(event.target.value);
             }}
             data-cy="facility-search"
             showSearchButton={false}
           />
-          <>
-            {/* TODO add spinner to search  */}
-            {searchResult.length >= 0 && (
-              <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full">
-                {searchResult.map((estate, index) => (
-                  <SearchField.SuggestionsOption
-                    key={`searchHit-${index}`}
-                    value={searchValue}
-                    onChange={(event) => {
-                      event.stopPropagation();
-                      setRealEstates([...realEstates, makeFacility(estate)]);
-                      setValue('facilities', [...realEstates, makeFacility(estate)], { shouldDirty: true });
-                      setInternalUnsaved(true);
-                      setUnsaved(true);
-                    }}
-                    data-cy={`searchHit-${index}`}
-                  >
-                    {searchType === 'ADDRESS' ? `${estate.address}` : removeMunicipalityName(estate.designation)}
-                  </SearchField.SuggestionsOption>
-                ))}
-              </SearchField.SuggestionsList>
-            )}
-          </>
+          <ResultList result={searchResult} />
         </SearchField.Suggestions>
+        {showSpinner ? (
+          <div className="m-lg flex gap-16" data-cy="search-spinner">
+            <Spinner size={2} />
+            <span>Söker</span>
+          </div>
+        ) : null}
 
         <FacilityDetails
           label="Fastighetsinformation"
@@ -197,7 +221,8 @@ export const Facilities: React.FC<{
       <div>
         <Table background={true} data-cy="estate-table">
           <Table.Header>
-            <Table.HeaderColumn>Fastigheter</Table.HeaderColumn>
+            <Table.HeaderColumn>Fastighet</Table.HeaderColumn>
+            <Table.HeaderColumn>Adress</Table.HeaderColumn>
             <Table.HeaderColumn>
               <span className="sr-only">Visa fastighetsinformation</span>
             </Table.HeaderColumn>
@@ -207,17 +232,21 @@ export const Facilities: React.FC<{
           </Table.Header>
           <Table.Body data-cy={`facility-table`}>
             {realEstates === undefined || realEstates.length === 0 ? (
-              <Table.Row>
-                <Table.Column>Inga fastigheter tillagda</Table.Column>
-              </Table.Row>
+              <Table.Column>Inga fastigheter tillagda</Table.Column>
             ) : (
               <>
                 {realEstates.map((realEstate, index) => (
                   <Table.Row key={`realEstate-${index}`} data-cy={`realEstate-${index}`}>
                     <Table.Column className="font-bold">{realEstate.address?.propertyDesignation}</Table.Column>
                     <Table.Column>
-                      <div className="w-96 flex justify-center">
-                        <Spinner id={`realEstate-spinner-${index}`} size={2} className="hidden" />
+                      <div>
+                        <div>{realEstate?.address?.street}</div>
+                        <div>{realEstate?.extraParameters?.districtname}</div>
+                      </div>
+                    </Table.Column>
+                    <Table.Column>
+                      <div className="relative flex justify-center items-center">
+                        <Spinner id={`realEstate-spinner-${index}`} size={2} className="absolute invisible" />
                         <Link
                           disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
                           id={`realEstate-link-${index}`}

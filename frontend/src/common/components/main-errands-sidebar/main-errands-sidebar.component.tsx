@@ -4,7 +4,7 @@ import { CaseStatusValues } from '@casedata/components/casedata-filtering/compon
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { getApplicationEnvironment } from '@common/services/application-service';
-import { attestationEnabled, isNotificicationEnabled } from '@common/services/feature-flag-service';
+import { attestationEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -84,9 +84,7 @@ export const MainErrandsSidebar: React.FC<{
               </span>
             </div>
           )}
-          {isNotificicationEnabled() && (
-            <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
-          )}
+          <NotificationsBell toggleShow={() => setShowNotifications(!showNotifications)} />
         </div>
         <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
         <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
@@ -152,7 +150,7 @@ export const MainErrandsSidebar: React.FC<{
         </div>
       </div>
 
-      {isNotificicationEnabled() && <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />}
+      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
     </aside>
   );
 };

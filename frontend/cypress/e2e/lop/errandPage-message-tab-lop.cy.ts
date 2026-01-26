@@ -22,7 +22,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+      cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand);
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand).as(
         'getSupportErrand'
       );
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
@@ -49,11 +51,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     it('views messages in inbox', () => {
       cy.intercept(
         'PUT',
-        `**/supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication/*/viewed/true`,
+        `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication/*/viewed/true`,
         mockSupportErrandCommunication
       ).as('viewed');
 
-      goToMessageTab();
+      goToMessageTab(mockSupportErrand.errandNumber);
       if (
         cy
           .get('[data-cy="message-container"] .sk-avatar')
@@ -83,11 +85,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       );
       cy.intercept(
         'PUT',
-        `**/supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication/*/viewed/true`,
+        `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication/*/viewed/true`,
         mockMissingRootMessage
       );
 
-      cy.visit('arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getSupportErrandMissingRoot');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('button').contains('Meddelanden').should('exist').click();
@@ -110,12 +112,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('sends sms', () => {
-      goToMessageTab();
+      goToMessageTab(mockSupportErrand.errandNumber);
       sendSmsMessage();
     });
 
     it('sends email with attachment', () => {
-      goToMessageTab();
+      goToMessageTab(mockSupportErrand.errandNumber);
       sendEmailWithAttachment();
     });
   });
