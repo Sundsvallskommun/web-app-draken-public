@@ -207,11 +207,10 @@ export const CasedataServicesTab: React.FC = () => {
         service kunden har rätt till vid sina resor.
       </p>
 
-<<<<<<< HEAD
       {!isErrandLocked(errand) && (
         <div className="mt-24 max-w-full">
           <SchemaForm
-            schema={schema}
+            schema={filteredSchema}
             uiSchema={serviceUiSchema}
             formData={formData}
             onChange={(fd) => setFormData(fd)}
@@ -220,18 +219,6 @@ export const CasedataServicesTab: React.FC = () => {
           />
         </div>
       )}
-=======
-      <div className="mt-24 max-w-full">
-        <SchemaForm
-          schema={filteredSchema}
-          uiSchema={serviceUiSchema}
-          formData={formData}
-          onChange={(fd) => setFormData(fd)}
-          onSubmit={handleSubmit}
-          objectFieldTemplate={ServicesObjectFieldTemplate}
-        />
-      </div>
->>>>>>> origin/develop
 
       <div className="mt-32 pt-24">
         <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
