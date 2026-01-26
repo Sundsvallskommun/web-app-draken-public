@@ -26,7 +26,7 @@ export const APIS = [
   },
   {
     name: 'messaging',
-    version: '7.9',
+    version: '7.10',
   },
   {
     name: 'case-data',
