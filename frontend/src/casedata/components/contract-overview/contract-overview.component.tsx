@@ -1,13 +1,13 @@
 import { Contract, ContractPaginatedResponse, ContractType } from '@casedata/interfaces/contracts';
 import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/services/contract-service';
+import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { ContractDetailForm } from './contract-detail-form.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
-import { ContractDetailWrapper } from './contract-detail-wrapper.component';
-import { ContractDetailForm } from './contract-detail-form.component';
 
 const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
@@ -175,15 +175,16 @@ export const ContractOverview: React.FC = () => {
       </main>
 
       {selectedContract && (
-        <ContractDetailWrapper
+        <DetailPanelWrapper
           show={showSelectedContract}
           label={getContractTypeLabel(selectedContract.type)}
+          closeAriaLabel="Stäng avtal"
           closeHandler={closeHandler}
+          icon="file-text"
+          dataCy="contract-detail"
         >
-          <ContractDetailForm
-            selectedContract={selectedContract}
-          />
-        </ContractDetailWrapper>
+          <ContractDetailForm selectedContract={selectedContract} />
+        </DetailPanelWrapper>
       )}
     </div>
   );

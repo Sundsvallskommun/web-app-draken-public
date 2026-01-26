@@ -232,7 +232,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get('[data-cy="contract-row-0"]').click();
 
         // The detail panel should appear
-        cy.get('[data-cy="close-contract-wrapper"]').should('be.visible');
+        cy.get('[data-cy="close-contract-detail-wrapper"]').should('be.visible');
       });
 
       it('displays correct contract type in panel header for lease agreement', () => {
@@ -384,10 +384,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
         // Panel should be visible
         cy.get('[data-cy="contract-detail-panel"]').should('be.visible');
-        cy.get('[data-cy="close-contract-wrapper"]').should('be.visible');
+        cy.get('[data-cy="close-contract-detail-wrapper"]').should('be.visible');
 
         // Click close button
-        cy.get('[data-cy="close-contract-wrapper"]').click();
+        cy.get('[data-cy="close-contract-detail-wrapper"]').click();
 
         // Panel should be removed from DOM
         cy.get('[data-cy="contract-detail-panel"]').should('not.exist');
@@ -413,7 +413,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get('[data-cy="contract-detail-panel"]').contains('Arrende').should('be.visible');
 
         // Close panel
-        cy.get('[data-cy="close-contract-wrapper"]').click();
+        cy.get('[data-cy="close-contract-detail-wrapper"]').click();
         cy.get('[data-cy="contract-detail-panel"]').should('not.exist');
 
         // Click third row (purchase agreement)

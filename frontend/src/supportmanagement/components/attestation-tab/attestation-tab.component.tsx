@@ -1,8 +1,8 @@
+import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
-import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
   AttestationFilter,
   AttestationValues,
@@ -187,13 +187,16 @@ export const AttestationTab = () => {
       </main>
 
       {selectedRecord && (
-        <AttestationInvoiceWrapperComponent
+        <DetailPanelWrapper
           show={showSelectedRecord}
-          label={'Attestering av fakturapost'}
+          label="Attestering av fakturapost"
+          closeAriaLabel="Stäng fakturapost"
           closeHandler={() => {
             setSelectedRecord(undefined);
             setShowSelectedRecord(false);
           }}
+          icon="glasses"
+          dataCy="invoice"
         >
           <AttestationInvoiceForm
             selectedrecord={selectedRecord}
@@ -201,7 +204,7 @@ export const AttestationTab = () => {
               getBillingRecord(recordId, municipalityId).then(setSelectedRecord);
             }}
           />
-        </AttestationInvoiceWrapperComponent>
+        </DetailPanelWrapper>
       )}
     </div>
   );
