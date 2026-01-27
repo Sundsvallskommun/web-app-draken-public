@@ -2,7 +2,7 @@ import { Contract, ContractPaginatedResponse, ContractType } from '@casedata/int
 import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/services/contract-service';
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useSnackbar } from '@sk-web-gui/react';
+import { Button, Link, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ContractDetailForm } from './contract-detail-form.component';
@@ -147,27 +147,32 @@ export const ContractOverview: React.FC = () => {
 
   return (
     <div className="w-full h-screen relative flex flex-col overflow-hidden">
-      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24 flex-shrink-0">
-        <div className="container px-0 flex flex-wrap gap-16 items-center">
-          <FormProvider {...filterForm}>
-            <ContractsFilteringComponent />
-          </FormProvider>
-        </div>
+      <div className="box-border px-40 py-19 w-full flex justify-end items-center shadow-lg min-h-[6rem] max-small-device-max:px-24 flex-shrink-0">
+        <Link
+          href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+          target="_blank"
+          data-cy="register-new-errand-button"
+        >
+          <Button color={'vattjom'} variant={'primary'}>
+            Nytt ärende
+          </Button>
+        </Link>
       </div>
 
       <main className="px-24 md:px-40 pb-40 w-full flex-1 overflow-auto">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>
-              <h1 className="p-0 m-0">Avtal</h1>
+              <h1 className="p-0 m-0">Alla avtal</h1>
+            </div>
+            <div className="container px-0 flex flex-wrap gap-16 items-center">
+              <FormProvider {...filterForm}>
+                <ContractsFilteringComponent />
+              </FormProvider>
             </div>
             <div>
               <FormProvider {...tableForm}>
-                <ContractsTable
-                  contracts={contracts}
-                  isLoading={isLoading}
-                  onRowClick={handleRowClick}
-                />
+                <ContractsTable contracts={contracts} isLoading={isLoading} onRowClick={handleRowClick} />
               </FormProvider>
             </div>
           </div>

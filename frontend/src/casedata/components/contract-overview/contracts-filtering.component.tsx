@@ -53,7 +53,7 @@ export const ContractFilterStatusComponent: React.FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Avtalsstatus
+        Status
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <PopupMenu.Items autoFocus={false}>
@@ -123,7 +123,7 @@ export const ContractFilterLeaseTypeComponent: React.FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Avtals-subtyp
+        Undertyp
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] h-auto overflow-y-auto">
         <PopupMenu.Items autoFocus={false}>
@@ -219,54 +219,33 @@ export const ContractFilterQueryComponent: React.FC = () => {
         setValue('query', '');
       }}
       title="Sök"
-      placeholder="Sök avtal"
+      placeholder="Sök i avtal"
     />
   );
 };
 
 export const ContractsFilteringComponent: React.FC = () => {
-  const [show, setShow] = useState<boolean>(true);
-
   return (
     <div className="flex flex-col w-full gap-16 py-19">
-      <div className="w-full flex items-start md:items-center justify-between md:flex-row gap-16">
-        <div className="w-full">
+      <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
+        <div className="relative max-md:w-full">
           <ContractFilterQueryComponent />
         </div>
-        <div className="flex gap-16">
-          <Button
-            className="w-full md:w-auto"
-            onClick={() => setShow(!show)}
-            data-cy="show-filters-button"
-            color="vattjom"
-            variant={show ? 'tertiary' : 'primary'}
-            inverted={!show}
-            leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
-          >
-            {show ? 'Dölj filter' : 'Visa filter'}
-          </Button>
+
+        <div className="relative max-md:w-full">
+          <ContractFilterStatusComponent />
         </div>
-      </div>
 
-      <div className={cx(show ? 'visible' : 'hidden')}>
-        <div className="flex gap-16 items-center">
-          <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
-            <div className="relative max-md:w-full">
-              <ContractFilterTypeComponent />
-            </div>
+        <div className="relative max-md:w-full">
+          <ContractFilterTypeComponent />
+        </div>
 
-            <div className="relative max-md:w-full">
-              <ContractFilterLeaseTypeComponent />
-            </div>
+        <div className="relative max-md:w-full">
+          <ContractFilterLeaseTypeComponent />
+        </div>
 
-            <div className="relative max-md:w-full">
-              <ContractFilterDatesComponent />
-            </div>
-
-            <div className="relative max-md:w-full">
-              <ContractFilterStatusComponent />
-            </div>
-          </div>
+        <div className="relative max-md:w-full">
+          <ContractFilterDatesComponent />
         </div>
       </div>
     </div>
