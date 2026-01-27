@@ -1,9 +1,9 @@
 import { Contract, ContractType, Stakeholder, StakeholderType } from '@casedata/interfaces/contracts';
 import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
-import { Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
+import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import { LucideIcon } from 'node_modules/@sk-web-gui/lucide-icon/dist/types/lucide-icon';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -82,8 +82,9 @@ export const contractTableLabels = [
   { label: 'Avtalstyp', sortable: true, column: 'type' },
   { label: 'Avtalssubtyp', sortable: true, column: 'leaseType' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
-  { label: 'Avtalsperiod', sortable: true, column: 'start' },
-  { label: 'Uppsägningsdatum', sortable: true, column: 'terminationDate' },
+  { label: 'Avtalsperiod', sortable: true, column: 'end' },
+  { label: 'Uppsägningsdatum', sortable: false, column: '' },
+  { label: '', sortable: false, column: '' },
 ];
 
 export const ContractsTable: React.FC<{
@@ -149,8 +150,28 @@ export const ContractsTable: React.FC<{
         '-'
       );
     const period = formatPeriod(contract.start, contract.end);
-    // Uppsägningsdatum - termination notice date (placeholder for now, may need calculation or API field)
-    const terminationDate = '-';
+
+    const lessorNoticeDate = (contract) => {
+      const notice = contract.notices.find((notice) => notice.party === 'LESSOR');
+      const period = notice.periodOfNotice;
+      const endDate = dayjs(contract.end);
+      if (!endDate.isValid()) return '-';
+      let noticeDate;
+      switch (notice.unit) {
+        case 'YEARS':
+          noticeDate = endDate.subtract(period, 'year');
+          break;
+        case 'MONTHS':
+          noticeDate = endDate.subtract(period, 'month');
+          break;
+        case 'DAYS':
+          noticeDate = endDate.subtract(period, 'day');
+          break;
+        default:
+          return '-';
+      }
+      return noticeDate?.format('YYYY-MM-DD') ?? '-';
+    };
 
     return (
       <Table.Row
@@ -170,7 +191,16 @@ export const ContractsTable: React.FC<{
         <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>{parties}</Table.Column>
         <Table.Column>{period}</Table.Column>
-        <Table.Column>{terminationDate}</Table.Column>
+        <Table.Column>{lessorNoticeDate(contract)}</Table.Column>
+        <Table.Column>
+          <Button
+            variant="tertiary"
+            size="sm"
+            iconButton
+            leftIcon={<LucideIcon name={'arrow-right'} />}
+            onClick={() => onRowClick?.(contract)}
+          ></Button>
+        </Table.Column>
       </Table.Row>
     );
   });
