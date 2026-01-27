@@ -89,20 +89,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contract-status-filter"]').should('exist');
     });
 
-    // it('can toggle filter visibility', () => {
-    //   navigateToContractOverview();
-    //   // Filters should be visible by default
-    //   cy.get('[data-cy="contract-type-filter"]').should('be.visible');
-
-    //   // Click to hide filters
-    //   cy.get('[data-cy="show-filters-button"]').click();
-    //   cy.get('[data-cy="contract-type-filter"]').should('not.be.visible');
-
-    //   // Click to show filters again
-    //   cy.get('[data-cy="show-filters-button"]').click();
-    //   cy.get('[data-cy="contract-type-filter"]').should('be.visible');
-    // });
-
     it('can use the search field', () => {
       navigateToContractOverview();
       cy.get('[data-cy="contract-query-filter"]').should('exist').type('BALDER');

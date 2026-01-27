@@ -8,6 +8,18 @@ export const mockContractsList: ContractPaginatedResponse = {
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.LEASEHOLD,
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       start: '2024-01-01',
       end: '2025-12-31',
       propertyDesignations: [{ name: 'TESTKOMMUN TESTFASTIGHET 1:1', district: 'Testdistrikt Norra' }],
@@ -32,6 +44,18 @@ export const mockContractsList: ContractPaginatedResponse = {
       leaseType: LeaseType.USUFRUCT_MOORING,
       start: '2023-06-01',
       end: '2024-05-31',
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       propertyDesignations: [{ name: 'TESTKOMMUN HAMNEN 2:3', district: 'Testdistrikt Södra' }],
       stakeholders: [
         {
@@ -52,6 +76,18 @@ export const mockContractsList: ContractPaginatedResponse = {
       externalReferenceId: '103',
       status: Status.DRAFT,
       type: ContractType.PURCHASE_AGREEMENT,
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       start: '2024-03-15',
       propertyDesignations: [{ name: 'TESTKOMMUN ÅKERN 3:45', district: 'Testdistrikt Västra' }],
       stakeholders: [
@@ -75,6 +111,18 @@ export const mockContractsList: ContractPaginatedResponse = {
       status: Status.TERMINATED,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.LAND_LEASE_RESIDENTIAL,
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       start: '2020-01-01',
       end: '2023-12-31',
       propertyDesignations: [
@@ -100,6 +148,18 @@ export const mockContractsList: ContractPaginatedResponse = {
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.SITE_LEASE_COMMERCIAL,
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       start: '2024-01-01',
       end: '2029-12-31',
       propertyDesignations: [{ name: 'TESTKOMMUN CENTRUM 5:55', district: 'Testdistrikt Norra' }],
@@ -134,6 +194,18 @@ export const mockContractsListPage2: ContractPaginatedResponse = {
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.USUFRUCT_HUNTING,
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       start: '2024-02-01',
       end: '2025-01-31',
       propertyDesignations: [{ name: 'TESTKOMMUN JAKTMARK 6:99', district: 'Testdistrikt Västra' }],
@@ -179,6 +251,18 @@ export const mockContractsListFiltered: ContractPaginatedResponse = {
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.LEASEHOLD,
+      notices: [
+        {
+          party: 'LESSEE',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '6',
+        },
+        {
+          party: 'LESSOR',
+          unit: TimeUnit.MONTHS,
+          periodOfNotice: '12',
+        },
+      ],
       start: '2024-01-01',
       end: '2025-12-31',
       propertyDesignations: [{ name: 'TESTKOMMUN TESTFASTIGHET 1:1', district: 'Testdistrikt Norra' }],

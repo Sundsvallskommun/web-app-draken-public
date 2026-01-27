@@ -152,12 +152,12 @@ export const ContractsTable: React.FC<{
     const period = formatPeriod(contract.start, contract.end);
 
     const lessorNoticeDate = (contract) => {
-      const notice = contract.notices.find((notice) => notice.party === 'LESSOR');
-      const period = notice.periodOfNotice;
-      const endDate = dayjs(contract.end);
+      const notice = contract?.notices?.find((notice) => notice.party === 'LESSOR');
+      const period = notice?.periodOfNotice;
+      const endDate = dayjs(contract?.end);
       if (!endDate.isValid()) return '-';
       let noticeDate;
-      switch (notice.unit) {
+      switch (notice?.unit) {
         case 'YEARS':
           noticeDate = endDate.subtract(period, 'year');
           break;
