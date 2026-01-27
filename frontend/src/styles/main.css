@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+@import '@sk-web-gui/core/style.css';
+@source "@sk-web-gui/core";
+/* @import '@sk-web-gui/core/styles.css'; */
+/* @config "../../tailwind.config.ts"; */
+
+/* Custom base styles */
+@layer base {
+  .container {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 1440px;
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .btn {
+    font-family: raleway, sans-serif;
+  }
+
+  /* Sticky footer */
+  html,
+  body,
+  #__next {
+    min-height: 100vh;
+  }
+
+  #__next {
+    display: flex;
+    flex-direction: column;
+  }
+
+  main.container {
+    flex: 1 0 auto;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Custom styles for the rich text editor used in errand description field */
+  .case-description-editor {
+    min-height: 15rem;
+    max-height: 60rem;
+    resize: vertical;
+    overflow: hidden;
+  }
+
+  .case-description-editor .ql-container {
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .case-description-editor .ql-editor {
+    font-size: 16px;
+  }
+
+  .wrapping-list-item .sk-form-file-upload-list-item-innerwrapper {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+@custom-variant medium-device-max (@media (max-width: 800px));
+@custom-variant large-device-max (@media (max-width: 960px));
