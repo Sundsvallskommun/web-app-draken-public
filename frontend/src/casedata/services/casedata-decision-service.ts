@@ -324,11 +324,23 @@ export const renderPdf: (
   renderBody.parameters['description'] = formData.description;
 
   if (isPT() && isFTErrand(errand)) {
-    const lawReferences =
-      (formData.law as Law[])
-        ?.filter((law) => law.article)
-        .map((law) => `${law.article}§`)
-        .join(', ') ?? '';
+    const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
+      if (law.article && law.sfs) {
+        if (!acc[law.sfs]) {
+          acc[law.sfs] = [];
+        }
+        acc[law.sfs].push(law.article);
+      }
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    const lawReferences = lawsBySfs
+      ? Object.entries(lawsBySfs)
+          .map(([sfs, articles]) => {
+            return `${articles.join('§, ')}§ (${sfs})`;
+          })
+          .join(', ')
+      : '';
 
     renderBody.parameters['lawReferences'] = lawReferences;
 
