@@ -7,7 +7,7 @@ interface DetailPanelWrapperProps {
   label: string;
   closeAriaLabel: string;
   closeHandler: () => void;
-  icon: string;
+  icon: 'glasses' | 'file-text';
   children: React.ReactNode;
   dataCy?: string;
 }
