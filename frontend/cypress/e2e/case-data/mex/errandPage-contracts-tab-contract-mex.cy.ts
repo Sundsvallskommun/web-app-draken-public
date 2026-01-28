@@ -342,7 +342,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it.only('manages creating a new lease agreement with correct default values', () => {
+    it('manages creating a new lease agreement with correct default values', () => {
       visitErrandWithoutContract();
       cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
       cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.USUFRUCT_MOORING);
@@ -559,6 +559,132 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             },
           ],
         });
+      });
+    });
+
+    describe('Non-DRAFT contract restrictions', () => {
+      describe('ACTIVE contract', () => {
+        const mockActiveLeaseAgreement = {
+          ...mockLeaseAgreement,
+          data: {
+            ...mockLeaseAgreement.data,
+            status: 'ACTIVE',
+            notices: [
+              { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
+              { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
+            ],
+            fees: {
+              currency: 'SEK',
+              monthly: 0,
+              yearly: 1000,
+              total: 1000,
+              additionalInformation: ['Avgift, båtplats. Fastigheter: AVTALSFASTIGHET 1:123', ''],
+            },
+            invoicing: {
+              invoiceInterval: 'YEARLY',
+              invoicedIn: 'ADVANCE',
+            },
+            extraParameters: [
+              { name: 'errandId', parameters: { errandId: '101' } },
+              { name: 'InvoiceInfo', parameters: { markup: 'REF123' } },
+            ],
+            generateInvoice: 'true',
+          },
+        };
+
+        beforeEach(() => {
+          // Override the contract intercept to return ACTIVE status
+          cy.intercept('GET', '**/contracts/2024-01026', mockActiveLeaseAgreement).as('getActiveContract');
+        });
+
+        const visitActiveContractPage = () => {
+          cy.visit(`/arende/${mockMexErrand_base.data.id}`);
+          cy.wait('@getErrand');
+          cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+          cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+          cy.get('[data-cy="contract-type-select"]').should('exist');
+        };
+
+        it('shows warning banner for ACTIVE contracts', () => {
+          visitActiveContractPage();
+          cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
+          cy.get('[data-cy="non-draft-warning-banner"]').should(
+            'contain.text',
+            'Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.'
+          );
+        });
+
+        it('restricts editing of general fields for ACTIVE contracts', () => {
+          visitActiveContractPage();
+          cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
+
+          // Old contract ID should be read-only
+          cy.get('[data-cy="old-contract-id-input"]').should('have.attr', 'readonly');
+
+          // Open area disclosure and check property designations are disabled
+          cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
+          cy.get('[data-cy="property-designation-checkboxgroup"] input[type="checkbox"]').each(($checkbox) => {
+            cy.wrap($checkbox).should('be.disabled');
+          });
+
+          // Open avtalstid disclosure and check fields are read-only/disabled
+          cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+          cy.get('[data-cy="avtalstid-start"]').should('have.attr', 'readonly');
+          cy.get('[data-cy="avtalstid-end"]').should('have.attr', 'readonly');
+          cy.get('[data-cy="lessee-notice-unit"]').should('be.disabled');
+          cy.get('[data-cy="lessee-notice-period"]').should('have.attr', 'readonly');
+          cy.get('[data-cy="lessor-notice-unit"]').should('be.disabled');
+          cy.get('[data-cy="lessor-notice-period"]').should('have.attr', 'readonly');
+
+          // Open lopande disclosure and check fields are read-only/disabled
+          cy.get('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').should('exist').click();
+          cy.get('[data-cy="generate-invoice-true-radiobutton"]').should('be.disabled');
+          cy.get('[data-cy="generate-invoice-false-radiobutton"]').should('be.disabled');
+          cy.get('[data-cy="fees-yearly-input"]').should('have.attr', 'readonly');
+          cy.get('[data-cy="indexed-true-radiobutton"]').should('be.disabled');
+          cy.get('[data-cy="indexed-false-radiobutton"]').should('be.disabled');
+          cy.get('[data-cy="invoice-interval-yearly-radiobutton"]').should('be.disabled');
+          cy.get('[data-cy="invoice-interval-halfyearly-radiobutton"]').should('be.disabled');
+          cy.get('[data-cy="invoice-interval-quarterly-radiobutton"]').should('be.disabled');
+        });
+
+        it('allows editing of invoice reference and supplementary text for ACTIVE contracts', () => {
+          visitActiveContractPage();
+          cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
+
+          // Open lopande disclosure
+          cy.get('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').should('exist').click();
+
+          // Invoice reference (markup) should still be editable
+          cy.get('[data-cy="invoice-markup-input"]').should('not.have.attr', 'readonly');
+          cy.get('[data-cy="invoice-markup-input"]').clear().type('NEW-REF-456');
+          cy.get('[data-cy="invoice-markup-input"]').should('have.value', 'NEW-REF-456');
+
+          // Kompletterande avitext should still be editable
+          cy.get('[data-cy="fees-additional-information-1-input"]').should('not.have.attr', 'readonly');
+          cy.get('[data-cy="fees-additional-information-1-input"]').clear().type('Extra info');
+          cy.get('[data-cy="fees-additional-information-1-input"]').should('have.value', 'Extra info');
+        });
+
+        it('shows "Uppdatera fakturamottagare" button for ACTIVE contracts', () => {
+          visitActiveContractPage();
+          cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
+
+          // Button should show different text for non-DRAFT contracts
+          cy.get('[data-cy="update-contract-parties"]').should('exist');
+          cy.get('[data-cy="update-contract-parties"]').should('contain.text', 'Uppdatera fakturamottagare');
+        });
+      });
+
+      it('does not show warning banner for DRAFT contracts', () => {
+        // Uses default beforeEach intercept with DRAFT status
+        cy.visit(`/arende/${mockMexErrand_base.data.id}`);
+        cy.wait('@getErrand');
+        cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+        cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+        cy.get('[data-cy="contract-type-select"]').should('exist');
+        cy.get('[data-cy="non-draft-warning-banner"]').should('not.exist');
+        cy.get('[data-cy="update-contract-parties"]').should('contain.text', 'Uppdatera parter');
       });
     });
   });

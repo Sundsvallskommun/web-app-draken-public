@@ -138,6 +138,21 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     setLessors(_lessors || []);
   };
 
+  // Update only lessees (invoice recipients) from errand - used for non-DRAFT contracts
+  const updateLesseesOnlyFromErrand = () => {
+    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
+      (s, idx) => {
+        const l = casedataStakeholderToContractStakeholder(s);
+        if (idx === 0) {
+          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
+        }
+        return l;
+      }
+    );
+    setLessees(_lessees || []);
+    // NOTE: Does NOT update sellers, buyers, or lessors
+  };
+
   const getStakeholdersFromContract = (contract: ContractData) => {
     let _sellers: StakeholderWithPersonnumber[] = [];
     let _buyers: StakeholderWithPersonnumber[] = [];
@@ -339,6 +354,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                 lessees={lessees}
                 lessors={lessors}
                 updateStakeholders={updateStakeholdersFromErrand}
+                onUpdateLesseesOnly={updateLesseesOnlyFromErrand}
+                contractStatus={existingContract?.status}
               />
             </div>
 

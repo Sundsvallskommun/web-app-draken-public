@@ -523,7 +523,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             expect(stakeholders.length).to.be.greaterThan(0);
 
             // Verify LESSOR is mapped to GRANTOR
-            const grantor = stakeholders.find((s: any) => s.roles?.includes('GRANTOR'));
+            const grantor = stakeholders.find((s: any) => s.roles?.includes('PROPERTY_OWNER'));
             expect(grantor).to.exist;
             expect(grantor.organizationName).to.equal('Sundsvalls Kommun');
 
@@ -537,6 +537,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
           cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
+          cy.intercept('PATCH', `**/errands/999/stakeholders`, mockCreatedErrand).as('patchErrand');
           cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as(
             'patchExtraParameters'
           );
@@ -565,6 +566,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
           cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
+          cy.intercept('PATCH', `**/errands/999/stakeholders`, mockCreatedErrand).as('patchErrand');
           cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as(
             'patchExtraParameters'
           );

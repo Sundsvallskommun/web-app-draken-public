@@ -1,5 +1,5 @@
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
-import { ContractType, IntervalType, StakeholderRole, TimeUnit } from '@casedata/interfaces/contracts';
+import { ContractType, IntervalType, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
@@ -40,6 +40,8 @@ export const ContractForm: React.FC<{
   lessees: StakeholderWithPersonnumber[];
   lessors: StakeholderWithPersonnumber[];
   updateStakeholders?: () => void;
+  contractStatus?: Status;
+  onUpdateLesseesOnly?: () => void;
 }> = ({
   changeBadgeColor,
   onSave,
@@ -50,6 +52,8 @@ export const ContractForm: React.FC<{
   lessees,
   lessors,
   updateStakeholders,
+  contractStatus,
+  onUpdateLesseesOnly,
 }) => {
   const {
     municipalityId,
@@ -66,6 +70,17 @@ export const ContractForm: React.FC<{
   const [loading, setLoading] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
   const [updatingParties, setUpdatingParties] = useState<boolean>(false);
+
+  // Determine if contract is in DRAFT status (new contracts without status default to DRAFT behavior)
+  const isDraft = !contractStatus || contractStatus === Status.DRAFT;
+
+  // Determine if a field type is editable based on contract status
+  // For non-DRAFT contracts, only billing and lessee fields can be edited
+  const isEditable = (fieldType: 'general' | 'billing' | 'lessee') => {
+    if (readOnly) return false;
+    if (isDraft) return true;
+    return fieldType === 'billing' || fieldType === 'lessee';
+  };
 
   useEffect(() => {
     const _a = errand ? validateAction(errand, user) : false;
@@ -276,6 +291,17 @@ export const ContractForm: React.FC<{
 
   return (
     <>
+      {!isDraft && !readOnly && (
+        <div
+          data-cy="non-draft-warning-banner"
+          className="bg-warning-surface-primary p-md rounded-button mb-md flex items-center gap-sm"
+        >
+          <LucideIcon name="info" size={20} />
+          <span>
+            Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.
+          </span>
+        </div>
+      )}
       <Disclosure
         data-cy="parties-disclosure"
         initalOpen
@@ -314,7 +340,11 @@ export const ContractForm: React.FC<{
                   loadingText="Uppdaterar"
                   onClick={() => {
                     setUpdatingParties(true);
-                    updateStakeholders();
+                    if (isDraft) {
+                      updateStakeholders();
+                    } else {
+                      onUpdateLesseesOnly?.();
+                    }
                     setTimeout(async () => {
                       await onSave(getValues()).catch(() => {
                         setUpdatingParties(false);
@@ -323,14 +353,14 @@ export const ContractForm: React.FC<{
                     }, 0);
                   }}
                 >
-                  Uppdatera parter
+                  {isDraft ? 'Uppdatera parter' : 'Uppdatera fakturamottagare'}
                 </Button>
               </div>
             )}
             <div className="flex gap-18 justify-start">
               <FormControl id="oldContractId" className="w-full">
                 <FormLabel>Tidigare avtals-ID</FormLabel>
-                <Input type="text" data-cy="old-contract-id-input" readOnly={readOnly} {...register('externalReferenceId')} />
+                <Input type="text" data-cy="old-contract-id-input" readOnly={!isEditable('general')} {...register('externalReferenceId')} />
                 <small>Om det finns ett äldre avtal, ange dess ID ovan.</small>
               </FormControl>
             </div>
@@ -365,7 +395,7 @@ export const ContractForm: React.FC<{
                     name="propertyDesignations"
                     value={watch().propertyDesignations.map((pd) => pd.name)}
                     onChange={(e) => {
-                      if (readOnly) return;
+                      if (!isEditable('general')) return;
                       const totalPropertyDesignations = [
                         ...(errandPropertyDesignations ?? []),
                         ...(existingContract?.propertyDesignations || []),
@@ -391,7 +421,7 @@ export const ContractForm: React.FC<{
                           data-cy={`property-designation-checkbox-${name.replace(/\s+/g, '-')}`}
                           key={`facility-${idx}`}
                           value={name}
-                          disabled={readOnly}
+                          disabled={!isEditable('general')}
                         >
                           {pd.district ? `${name} (${pd.district})` : name}
                         </Checkbox>
@@ -433,11 +463,11 @@ export const ContractForm: React.FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Området upplåts från</FormLabel>
-                  <Input type="date" readOnly={readOnly} {...register('start')} data-cy="avtalstid-start" />
+                  <Input type="date" readOnly={!isEditable('general')} {...register('start')} data-cy="avtalstid-start" />
                 </FormControl>
                 <FormControl id="endDate" className="w-full">
                   <FormLabel>Området upplåts till</FormLabel>
-                  <Input type="date" readOnly={readOnly} {...register('end')} data-cy="avtalstid-end" />
+                  <Input type="date" readOnly={!isEditable('general')} {...register('end')} data-cy="avtalstid-end" />
                 </FormControl>
               </div>
               <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
@@ -446,7 +476,7 @@ export const ContractForm: React.FC<{
                   <FormLabel>Enhet</FormLabel>
                   <Select
                     className="w-full"
-                    disabled={readOnly}
+                    disabled={!isEditable('general')}
                     {...register(`notices.${lesseeNoticeIndex}.unit`)}
                     placeholder="Månad/år"
                     data-cy="lessee-notice-unit"
@@ -459,7 +489,7 @@ export const ContractForm: React.FC<{
                 <FormControl className="flex-grow max-w-[45%]">
                   <FormLabel>Antal</FormLabel>
                   <Input
-                    readOnly={readOnly}
+                    readOnly={!isEditable('general')}
                     {...register(`notices.${lesseeNoticeIndex}.periodOfNotice`)}
                     placeholder="Ange tal"
                     data-cy="lessee-notice-period"
@@ -487,7 +517,7 @@ export const ContractForm: React.FC<{
                   <FormLabel>Enhet</FormLabel>
                   <Select
                     className="w-full"
-                    disabled={readOnly}
+                    disabled={!isEditable('general')}
                     {...register(`notices.${lessorNoticeIndex}.unit`)}
                     placeholder="Månad/år"
                     data-cy="lessor-notice-unit"
@@ -500,7 +530,7 @@ export const ContractForm: React.FC<{
                 <FormControl className="flex-grow max-w-[45%]">
                   <FormLabel>Antal</FormLabel>
                   <Input
-                    readOnly={readOnly}
+                    readOnly={!isEditable('general')}
                     {...register(`notices.${lessorNoticeIndex}.periodOfNotice`)}
                     placeholder="Ange tal"
                     data-cy="lessor-notice-period"
@@ -526,17 +556,17 @@ export const ContractForm: React.FC<{
                 <FormControl
                   className="flex-grow"
                   onChange={(e) => {
-                    if (readOnly) return;
+                    if (!isEditable('general')) return;
                     setValue('extension.autoExtend', e.target.value === 'true');
                     trigger();
                   }}
                 >
                   <FormLabel>Automatisk förlängning av avtalet</FormLabel>
                   <RadioButton.Group className="flex gap-24" value={watch().extension?.autoExtend ? 'true' : 'false'}>
-                    <RadioButton data-cy="autoextend-true-radiobutton" value={'true'} disabled={readOnly}>
+                    <RadioButton data-cy="autoextend-true-radiobutton" value={'true'} disabled={!isEditable('general')}>
                       Ja
                     </RadioButton>
-                    <RadioButton value={'false'} disabled={readOnly}>Nej</RadioButton>
+                    <RadioButton value={'false'} disabled={!isEditable('general')}>Nej</RadioButton>
                   </RadioButton.Group>
                 </FormControl>
               </div>
@@ -547,7 +577,7 @@ export const ContractForm: React.FC<{
                     <FormLabel>Enhet</FormLabel>
                     <Select
                       className="w-full"
-                      disabled={readOnly}
+                      disabled={!isEditable('general')}
                       {...register('extension.unit')}
                       placeholder="Månad/år"
                       data-cy="extension-unit-selector"
@@ -559,7 +589,7 @@ export const ContractForm: React.FC<{
                   </FormControl>
                   <FormControl className="flex-grow max-w-[45%]">
                     <FormLabel>Antal</FormLabel>
-                    <Input readOnly={readOnly} {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
+                    <Input readOnly={!isEditable('general')} {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
                     {formState.errors.extension?.leaseExtension && (
                       <div className="my-sm text-error">
                         <FormErrorMessage>{formState.errors.extension?.leaseExtension?.message}</FormErrorMessage>
@@ -591,7 +621,7 @@ export const ContractForm: React.FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Avtalets startdatum</FormLabel>
-                  <Input type="date" readOnly={readOnly} {...register('start')} data-cy="avtalstid-start" />
+                  <Input type="date" readOnly={!isEditable('general')} {...register('start')} data-cy="avtalstid-start" />
                 </FormControl>
               </div>
               {saveButton()}
@@ -618,10 +648,10 @@ export const ContractForm: React.FC<{
               <FormControl className="flex-grow" {...register('generateInvoice')}>
                 <FormLabel>Ska detta avtal generera en faktura?</FormLabel>
                 <RadioButton.Group inline className="flex gap-24" name="generateInvoice">
-                  <RadioButton value="true" data-cy="generate-invoice-true-radiobutton" disabled={readOnly}>
+                  <RadioButton value="true" data-cy="generate-invoice-true-radiobutton" disabled={!isEditable('general')}>
                     Ja
                   </RadioButton>
-                  <RadioButton value="false" data-cy="generate-invoice-false-radiobutton" disabled={readOnly}>
+                  <RadioButton value="false" data-cy="generate-invoice-false-radiobutton" disabled={!isEditable('general')}>
                     Nej
                   </RadioButton>
                 </RadioButton.Group>
@@ -632,14 +662,14 @@ export const ContractForm: React.FC<{
                 <div className="flex gap-18 justify-start">
                   <FormControl>
                     <FormLabel>Ange avgift/år</FormLabel>
-                    <Input type="number" readOnly={readOnly} {...register('fees.yearly')} data-cy="fees-yearly-input" />
+                    <Input type="number" readOnly={!isEditable('general')} {...register('fees.yearly')} data-cy="fees-yearly-input" />
                   </FormControl>
                 </div>
                 <div className="flex gap-18 justify-start">
                   <FormControl
                     className="flex-grow"
                     onChange={(e) => {
-                      if (readOnly) return;
+                      if (!isEditable('general')) return;
                       setValue('indexAdjusted', e.target.value);
                     }}
                   >
@@ -650,10 +680,10 @@ export const ContractForm: React.FC<{
                       name="indexAdjusted"
                       value={getValues().indexAdjusted}
                     >
-                      <RadioButton value="true" data-cy="indexed-true-radiobutton" disabled={readOnly}>
+                      <RadioButton value="true" data-cy="indexed-true-radiobutton" disabled={!isEditable('general')}>
                         Ja
                       </RadioButton>
-                      <RadioButton value="false" data-cy="indexed-false-radiobutton" disabled={readOnly}>
+                      <RadioButton value="false" data-cy="indexed-false-radiobutton" disabled={!isEditable('general')}>
                         Nej
                       </RadioButton>
                     </RadioButton.Group>
@@ -664,7 +694,7 @@ export const ContractForm: React.FC<{
                   <FormControl
                     className="flex-grow"
                     onChange={(e) => {
-                      if (readOnly) return;
+                      if (!isEditable('general')) return;
                       setValue('invoicing.invoiceInterval', e.target.value);
                     }}
                   >
@@ -683,13 +713,13 @@ export const ContractForm: React.FC<{
                           : IntervalType.MONTHLY
                       }
                     >
-                      <RadioButton value={IntervalType.YEARLY} data-cy="invoice-interval-yearly-radiobutton" disabled={readOnly}>
+                      <RadioButton value={IntervalType.YEARLY} data-cy="invoice-interval-yearly-radiobutton" disabled={!isEditable('general')}>
                         Årsvis
                       </RadioButton>
-                      <RadioButton value={IntervalType.HALF_YEARLY} data-cy="invoice-interval-halfyearly-radiobutton" disabled={readOnly}>
+                      <RadioButton value={IntervalType.HALF_YEARLY} data-cy="invoice-interval-halfyearly-radiobutton" disabled={!isEditable('general')}>
                         Halvårsvis
                       </RadioButton>
-                      <RadioButton value={IntervalType.QUARTERLY} data-cy="invoice-interval-quarterly-radiobutton" disabled={readOnly}>
+                      <RadioButton value={IntervalType.QUARTERLY} data-cy="invoice-interval-quarterly-radiobutton" disabled={!isEditable('general')}>
                         Kvartalsvis
                       </RadioButton>
                     </RadioButton.Group>
@@ -700,7 +730,7 @@ export const ContractForm: React.FC<{
                     <FormLabel>Ange fakturans referensnummer</FormLabel>
                     <Input
                       type="text"
-                      readOnly={readOnly}
+                      readOnly={!isEditable('billing')}
                       {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                       data-cy="invoice-markup-input"
                     />
@@ -732,7 +762,7 @@ export const ContractForm: React.FC<{
                       maxLengthWarningText="Maxlängd 50 tecken"
                       rows={3}
                       className="w-full"
-                      readOnly={readOnly}
+                      readOnly={!isEditable('billing')}
                       {...register('fees.additionalInformation.1')}
                       data-cy="fees-additional-information-1-input"
                     ></Textarea>
@@ -775,7 +805,7 @@ export const ContractForm: React.FC<{
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          <ContractAttachments existingContract={existingContract} readOnly={readOnly} />
+          <ContractAttachments existingContract={existingContract} readOnly={!isEditable('general')} />
         </Disclosure.Content>
       </Disclosure>
     </>
