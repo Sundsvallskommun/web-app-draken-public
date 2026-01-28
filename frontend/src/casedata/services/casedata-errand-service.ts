@@ -193,14 +193,21 @@ export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = 
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
+  const lockedStatuses = [
+    ErrandStatus.Beslutad,
+    ErrandStatus.BeslutVerkstallt,
+    ErrandStatus.BeslutOverklagat,
+    ErrandStatus.ArendeAvslutat,
+    ErrandStatus.Parkerad,
+  ];
+
   if (errand?.status && typeof errand?.status === 'object') {
     return (
-      errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
-      errand?.status?.statusType === ErrandStatus.Parkerad ||
+      lockedStatuses.includes(errand?.status?.statusType as ErrandStatus) ||
       phaseChangeInProgress(errand as IErrand)
     );
   } else {
-    return errand?.status === ErrandStatus.ArendeAvslutat;
+    return lockedStatuses.includes(errand?.status as ErrandStatus);
   }
 };
 

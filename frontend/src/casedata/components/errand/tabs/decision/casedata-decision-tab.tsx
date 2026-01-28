@@ -304,6 +304,7 @@ export const CasedataDecisionTab: React.FC<{
       setIsSaveAndSendLoading(true);
       const rendered = await renderBeslutPdf(errand, data, services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
       const recipientEmail = owner?.emails?.[0]?.value;
@@ -587,6 +588,7 @@ export const CasedataDecisionTab: React.FC<{
                   placeholder="Välj lagrum"
                   value={initialLawValues}
                   size="sm"
+                  disabled={isErrandLocked(errand) || isSent()}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
                     const newLaws = getLawMapping(errand).filter((law) => selected.includes(law.heading));
@@ -616,7 +618,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validFrom')}
                   size="sm"
-                  disabled={isSent() || outcome !== 'APPROVAL'}
+                  disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validFrom-input"
                 />
@@ -631,7 +633,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validTo')}
                   size="sm"
-                  disabled={isSent() || outcome !== 'APPROVAL'}
+                  disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validTo-input"
                 />
@@ -653,6 +655,7 @@ export const CasedataDecisionTab: React.FC<{
                 data-cy="decisionTemplate-select"
                 name="decisionTemplate"
                 size="sm"
+                disabled={isErrandLocked(errand) || isSent()}
                 onChange={(e) => {
                   setValue('decisionTemplate', e.currentTarget.value, { shouldDirty: true });
                   changeTemplate(e.currentTarget.value);
@@ -676,6 +679,7 @@ export const CasedataDecisionTab: React.FC<{
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
           <TextEditor
             className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
+            readOnly={isErrandLocked(errand) || isSent()}
             onChange={(e) => {
               setValue('description', e.target.value.markup, {
                 shouldDirty: true,

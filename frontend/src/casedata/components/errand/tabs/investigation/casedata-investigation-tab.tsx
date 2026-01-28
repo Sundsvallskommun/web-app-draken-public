@@ -338,6 +338,7 @@ export const CasedataInvestigationTab: React.FC<{
                     data-cy="investigation-law-select"
                     name="law"
                     size="sm"
+                    disabled={isErrandLocked(errand) || !allowed}
                     onChange={(e) => {
                       setValue(
                         'law',
@@ -409,6 +410,7 @@ export const CasedataInvestigationTab: React.FC<{
             <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
               <TextEditor
                 className={cx(`mb-md h-[80%]`)}
+                readOnly={isErrandLocked(errand) || !allowed}
                 onChange={(e) => {
                   setValue('description', e.target.value.markup);
                   trigger('description');
@@ -438,10 +440,7 @@ export const CasedataInvestigationTab: React.FC<{
                     return confirmed ? () => true : () => {};
                   });
               })}
-              disabled={
-                !isFTErrand(props.errand) &&
-                (!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty)
-              }
+              disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
               leftIcon={<LucideIcon name="check" className="mr-sm" />}
               loading={isLoading}
               loadingText="Sparar"
@@ -468,6 +467,7 @@ export const CasedataInvestigationTab: React.FC<{
                       return confirmed ? () => true : () => {};
                     });
                 }}
+                disabled={!allowed || isErrandLocked(errand)}
                 loading={isLoading}
                 loadingText="Återställer mall"
               >

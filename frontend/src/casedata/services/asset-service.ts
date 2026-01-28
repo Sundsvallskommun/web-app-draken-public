@@ -146,3 +146,4 @@ export const getLatestMetadataSchema: (municipalityId: string, schemaName: strin
       throw e;
     });
 };
+
