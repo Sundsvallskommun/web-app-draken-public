@@ -5,7 +5,14 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
-export default function SidebarLayout({ title, children, showAttestationTable, setShowAttestationTable }) {
+export default function SidebarLayout({
+  title,
+  children,
+  showAttestationTable,
+  setShowAttestationTable,
+  showContractTable,
+  setShowContractTable,
+}) {
   const hostName = window.location.hostname;
 
   const [open, setOpen] = useState(true);
@@ -23,6 +30,8 @@ export default function SidebarLayout({ title, children, showAttestationTable, s
             setOpen={setOpen}
             showAttestationTable={showAttestationTable}
             setShowAttestationTable={setShowAttestationTable}
+            showContractTable={showContractTable}
+            setShowContractTable={setShowContractTable}
           />{' '}
           <div className={`w-full grow flex ${open ? 'pl-[32rem]' : 'pl-[5.6rem]'} transition-all`}>{children}</div>
         </div>
