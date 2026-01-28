@@ -476,7 +476,6 @@ export const SidebarInfo: React.FC<{
                 aria-label="Välj prioritet"
                 {...register('priority')}
                 value={priority}
-                disabled={!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId}
               >
                 {!supportErrand?.priority ? <Select.Option>Välj prioritet</Select.Option> : null}
                 {selectablePriorities.map((c: { key: string; label: string }, index) => (
