@@ -44,7 +44,7 @@ export interface StakeholderData extends Data {
 
 export interface CasedataOwnerOrContact {
   id: string;
-  clientId: string; // Random client side ID, needed for UI purposes before the stakeholder is saved. When saved it will get a id from the backend.
+  clientId?: string; // Random client side ID, needed for UI purposes before the stakeholder is saved. When saved it will get a id from the backend.
   stakeholderType: StakeholderType;
   roles: Role[];
   newRole: Role;

@@ -516,6 +516,20 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             expect(interception.request.body).to.have.property('priority', 'MEDIUM');
             expect(interception.request.body.description).to.include('Ändra faktureringsuppgifter');
             expect(interception.request.body.description).to.include('2049-00010');
+
+            // Verify stakeholders from contract are included
+            const stakeholders = interception.request.body.stakeholders;
+            expect(stakeholders).to.be.an('array');
+            expect(stakeholders.length).to.be.greaterThan(0);
+
+            // Verify LESSOR is mapped to GRANTOR
+            const grantor = stakeholders.find((s: any) => s.roles?.includes('GRANTOR'));
+            expect(grantor).to.exist;
+            expect(grantor.organizationName).to.equal('Sundsvalls Kommun');
+
+            // Verify LESSEE is mapped to LEASEHOLDER
+            const leaseholders = stakeholders.filter((s: any) => s.roles?.includes('LEASEHOLDER'));
+            expect(leaseholders.length).to.equal(2);
           });
         });
 
