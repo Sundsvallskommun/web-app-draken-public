@@ -10,11 +10,10 @@ import {
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.compontant';
-import { serviceUiSchema } from '@common/components/json/schemas/service-ui-schema';
-import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import type { RJSFSchema } from '@rjsf/utils';
+import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { useSnackbar } from '@sk-web-gui/react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
@@ -54,6 +53,7 @@ function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSc
 export const CasedataServicesTab: React.FC = () => {
   const { municipalityId, errand } = useAppContext();
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
+  const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [editing, setEditing] = useState<Service | null>(null);
   const [schemaId, setSchemaId] = useState<string>('');
@@ -73,6 +73,9 @@ export const CasedataServicesTab: React.FC = () => {
       const { schema, schemaId } = await getLatestRjsfSchema(municipalityId, assetType);
       setSchema(schema);
       setSchemaId(schemaId);
+
+      const fetchedUiSchema = await getUiSchemaForSchema(municipalityId, schemaId);
+      setUiSchema(fetchedUiSchema);
     })();
   }, [municipalityId, assetType]);
   const { services, loading, error, refetch } = useErrandServices({
@@ -207,14 +210,16 @@ export const CasedataServicesTab: React.FC = () => {
       </p>
 
       <div className="mt-24 max-w-full">
-        <SchemaForm
-          schema={filteredSchema}
-          uiSchema={serviceUiSchema}
-          formData={formData}
-          onChange={(fd) => setFormData(fd)}
-          onSubmit={handleSubmit}
-          objectFieldTemplate={ServicesObjectFieldTemplate}
-        />
+        {uiSchema && (
+          <SchemaForm
+            schema={filteredSchema}
+            uiSchema={uiSchema}
+            formData={formData}
+            onChange={(fd) => setFormData(fd)}
+            onSubmit={handleSubmit}
+            objectFieldTemplate={ServicesObjectFieldTemplate}
+          />
+        )}
       </div>
 
       <div className="mt-32 pt-24">
