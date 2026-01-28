@@ -17,8 +17,21 @@ export class EstateInfoController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('estateinfo');
 
+  @Get('/singleEstateByPropertyDesignation/:query')
+  @OpenAPI({ summary: 'Fetch info for estate by designation' })
+  @UseBefore(authMiddleware)
+  async fetchSingleEstateByPropertyDesignation(@Req() req: RequestWithUser, @Param('query') query: string) {
+    if (query.length < 2) {
+      throw new HttpException(400, 'Bad Request');
+    }
+
+    const url = `${this.SERVICE}/estate-one-designation`;
+    const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: query } }, req.user);
+    return { data: res.data, message: 'success' } as ResponseData;
+  }
+
   @Get('/estateByPropertyDesignation/:query')
-  @OpenAPI({ summary: 'Fetch info for estate by address' })
+  @OpenAPI({ summary: 'Fetch info for estate by designation' })
   @UseBefore(authMiddleware)
   async fetchEstateByPropertyDesignation(@Req() req: RequestWithUser, @Param('query') query: string) {
     if (query.length < 2) {
