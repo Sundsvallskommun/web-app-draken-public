@@ -104,7 +104,7 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
           });
         });
     } else {
-      if (&& supportErrandIsEmpty(supportErrand) && !isLoading) {
+      if (supportErrandIsEmpty(supportErrand) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand()

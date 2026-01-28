@@ -33,7 +33,7 @@ export class CasedataNotesController {
     @Param('id') errandId: number,
     @Body() noteData: CreateErrandNoteDto,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const allowed = await validateAction(MUNICIPALITY_ID, errandId.toString(), req.user);
+    const allowed = await validateAction(errandId.toString(), req.user);
     if (noteIsTjansteanteckning(noteData.noteType) && !allowed) {
       // Public notes ("tjänsteanteckningar") are not allowed to be created by the user other than the errands administrator
       throw new HttpException(403, 'Not allowed');

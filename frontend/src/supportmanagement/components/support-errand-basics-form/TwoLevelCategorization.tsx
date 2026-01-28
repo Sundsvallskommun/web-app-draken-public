@@ -28,7 +28,7 @@ export const TwoLevelCategorization: React.FC = () => {
     if (supportMetadata) {
       setCategoriesList(supportMetadata?.categories);
     } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
+      getSupportMetadata().then((data) => {
         setCategoriesList(data.metadata?.categories);
       });
     }

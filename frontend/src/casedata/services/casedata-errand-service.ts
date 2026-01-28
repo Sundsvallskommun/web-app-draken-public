@@ -515,7 +515,7 @@ export const useErrands = (
           }),
       ];
 
-      return Promise.allSettled([errandPromise, ...fetchPromises]);
+      return Promise.allSettled(fetchPromises);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

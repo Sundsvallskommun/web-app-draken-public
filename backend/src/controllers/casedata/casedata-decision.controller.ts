@@ -36,7 +36,7 @@ export class CaseDataDecisionsController {
     @Param('id') errandId: number,
     @Body() decisionData: Decision,
   ): Promise<{ data: string; message: string }> {
-    const allowed = await validateAction(MUNICIPALITY_ID, errandId.toString(), req.user);
+    const allowed = await validateAction(errandId.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -72,7 +72,7 @@ export class CaseDataDecisionsController {
     @Param('decisionId') decisionId: number,
     @Body() decisionData: Decision,
   ): Promise<{ data: string; message: string }> {
-    const allowed = await validateAction(MUNICIPALITY_ID, errandId.toString(), req.user);
+    const allowed = await validateAction(errandId.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }

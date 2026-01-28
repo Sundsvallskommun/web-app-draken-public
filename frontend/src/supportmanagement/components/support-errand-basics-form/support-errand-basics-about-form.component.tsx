@@ -59,7 +59,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     if (supportMetadata) {
       setContactReasonList(supportMetadata?.contactReasons);
     } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
+      getSupportMetadata().then((data) => {
         setContactReasonList(data.metadata?.contactReasons);
       });
     }

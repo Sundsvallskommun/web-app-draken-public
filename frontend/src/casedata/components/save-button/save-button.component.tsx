@@ -7,7 +7,7 @@ import { deepFlattenToObject } from '@common/services/helper-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const SaveButtonComponent: React.FC<{

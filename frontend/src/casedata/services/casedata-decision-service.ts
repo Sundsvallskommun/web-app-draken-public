@@ -334,7 +334,7 @@ export const renderPdf: (
 
     const lawReferences = lawsBySfs
       ? Object.entries(lawsBySfs)
-          .map(([sfs, articles]) => {
+          .map(([sfs, articles]: [string, string[]]) => {
             return `${articles.join('§, ')}§ (${sfs})`;
           })
           .join(', ')

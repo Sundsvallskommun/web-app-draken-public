@@ -13,6 +13,7 @@ import {
 import {
   ContactChannel,
   ErrandAttachment,
+  ErrandLabel,
   ExternalTag,
   Notification,
   PageErrand,
@@ -293,7 +294,7 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   businessRelated?: boolean;
   @IsOptional()
   @IsArray()
-  labels?: string[];
+  labels?: ErrandLabel[];
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -656,11 +657,15 @@ export class SupportErrandController {
             type: 'UNCATEGORIZED',
           },
       labels: isLOP()
-        ? ['SALARY', 'SALARY.UNCATEGORIZED', 'SALARY.UNCATEGORIZED.UNCATEGORIZED']
+        ? [{ resourcePath: 'SALARY' }, { resourcePath: 'SALARY.UNCATEGORIZED' }, { resourcePath: 'SALARY.UNCATEGORIZED.UNCATEGORIZED' }]
         : isIK()
-        ? ['KSK_SERVICE_CENTER', 'KSK_SERVICE_CENTER.UNCATEGORIZED']
+        ? [{ resourcePath: 'KSK_SERVICE_CENTER' }, { resourcePath: 'KSK_SERVICE_CENTER.UNCATEGORIZED' }]
         : isKA()
-        ? ['ADMINISTRATION', 'ADMINISTRATION.CONTACT_CENTER', 'ADMINISTRATION.CONTACT_CENTER.GENERAL']
+        ? [
+            { resourcePath: 'ADMINISTRATION' },
+            { resourcePath: 'ADMINISTRATION.CONTACT_CENTER' },
+            { resourcePath: 'ADMINISTRATION.CONTACT_CENTER.GENERAL' },
+          ]
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,

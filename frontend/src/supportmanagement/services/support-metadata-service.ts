@@ -6,7 +6,7 @@ export type SupportType = Type;
 
 export type SupportMetadata = MetadataResponse;
 
-export const getSupportMetadata: () => Promise<{ metadata: SupportMetadata; error?: string }> = () => {
+export const getSupportMetadata: (municipalityId?: string) => Promise<{ metadata: SupportMetadata; error?: string }> = (municipalityId) => {
   let url = `supportmetadata`;
   return apiService
     .get<SupportMetadata>(url)
