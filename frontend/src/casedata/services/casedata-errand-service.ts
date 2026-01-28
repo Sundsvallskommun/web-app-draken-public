@@ -234,11 +234,11 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       phase: e.phase,
       channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
       municipalityId: e.municipalityId || municipalityId,
-      stakeholders: e.stakeholders.map(stakeholder2Contact),
+      stakeholders: (e.stakeholders ?? []).map(stakeholder2Contact),
       facilities: e.facilities,
       created: e.created ? dayjs(e.created).format('YYYY-MM-DD HH:mm') : '',
       updated: e.updated ? dayjs(e.updated).format('YYYY-MM-DD HH:mm') : '',
-      notes: e.notes.sort((a, b) =>
+      notes: e.notes?.sort((a, b) =>
         dayjs(a.updated).isAfter(dayjs(b.updated)) ? -1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? 1 : 0
       ),
       decisions: e.decisions,
@@ -255,7 +255,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
     };
     return ierrand;
   } catch (e) {
-    console.error('Error: could not map errands.');
+    console.error('Error: could not map errands.', e);
   }
 };
 

@@ -400,6 +400,218 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get('[data-cy="contract-row-2"]').click();
         cy.get('[data-cy="contract-detail-panel"]').contains('Köpeavtal').should('be.visible');
       });
+
+      describe('Ändra faktureringsuppgifter button', () => {
+        // Full errand data with all required fields for mapErrandToIErrand
+        const errandData = {
+          id: 999,
+          errandNumber: 'MEX-2024-000999',
+          caseType: 'MEX_OTHER',
+          channel: 'WEB_UI',
+          phase: 'Aktualisering',
+          priority: 'MEDIUM',
+          status: {
+            statusType: 'Ärende inkommit',
+            description: 'Ärende inkommit',
+          },
+          statuses: [],
+          municipalityId: '2281',
+          description: 'Ändra faktureringsuppgifter för avtal 2049-00010',
+          stakeholders: [],
+          extraParameters: [],
+          notes: [],
+          decisions: [],
+          facilities: [],
+          attachments: [],
+          notifications: [],
+          relatesTo: [],
+          created: '2024-01-01T10:00:00.000Z',
+          updated: '2024-01-01T10:00:00.000Z',
+        };
+
+        // POST /errands response needs data.data structure
+        const mockCreatedErrandResponse = {
+          data: errandData,
+        };
+
+        // GET /errand/:id response uses data.data structure
+        const mockCreatedErrand = {
+          data: errandData,
+        };
+
+        it('displays the Ändra faktureringsuppgifter button in contract detail panel', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+
+          cy.get('[data-cy="contract-detail-edit-button"]')
+            .should('be.visible')
+            .and('contain.text', 'Ändra faktureringsuppgifter');
+        });
+
+        it('button is enabled when contract has contractId', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+
+          cy.get('[data-cy="contract-detail-edit-button"]').should('not.be.disabled');
+        });
+
+        it('shows confirmation dialog when clicking the button', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Confirmation dialog should appear
+          cy.contains('Ändra faktureringsuppgifter').should('be.visible');
+          cy.contains('Vill du skapa ett nytt ärende för att ändra faktureringsuppgifter för avtal 2049-00010?').should(
+            'be.visible'
+          );
+          cy.contains('Ja, skapa ärende').should('be.visible');
+          cy.contains('Avbryt').should('be.visible');
+        });
+
+        it('does not create errand when clicking Avbryt in confirmation dialog', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('POST', '**/errands', cy.spy().as('postErrandSpy')).as('postErrand');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Click cancel button
+          cy.contains('Avbryt').click();
+
+          // Dialog should close
+          cy.contains('Vill du skapa ett nytt ärende för att ändra faktureringsuppgifter').should('not.exist');
+
+          // POST should not have been called
+          cy.get('@postErrandSpy').should('not.have.been.called');
+        });
+
+        it('creates errand with correct data when confirming', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
+          cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
+          cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as(
+            'patchExtraParameters'
+          );
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Confirm the dialog
+          cy.contains('Ja, skapa ärende').click();
+
+          // Wait for the POST request and verify the data
+          cy.wait('@postErrand').then((interception) => {
+            expect(interception.request.body).to.have.property('caseType', 'MEX_OTHER');
+            expect(interception.request.body).to.have.property('channel', 'WEB_UI');
+            expect(interception.request.body).to.have.property('phase', 'Aktualisering');
+            expect(interception.request.body).to.have.property('priority', 'MEDIUM');
+            expect(interception.request.body.description).to.include('Ändra faktureringsuppgifter');
+            expect(interception.request.body.description).to.include('2049-00010');
+          });
+        });
+
+        it('saves contractId as extraParameter after creating errand', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
+          cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
+          cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as(
+            'patchExtraParameters'
+          );
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Confirm the dialog
+          cy.contains('Ja, skapa ärende').click();
+
+          // Wait for errand creation and fetch first
+          cy.wait('@postErrand');
+          cy.wait('@getCreatedErrand');
+
+          // Wait for extraParameters PATCH and verify contractId is included
+          cy.wait('@patchExtraParameters').then((interception) => {
+            const extraParams = interception.request.body;
+            const contractIdParam = extraParams.find((p: { key: string }) => p.key === 'contractId');
+            expect(contractIdParam).to.exist;
+            expect(contractIdParam.values).to.include('2049-00010');
+          });
+        });
+
+        it('shows success toast and navigates to new errand after creation', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
+          cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
+          cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as(
+            'patchExtraParameters'
+          );
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Confirm the dialog
+          cy.contains('Ja, skapa ärende').click();
+
+          cy.wait('@postErrand');
+          cy.wait('@getCreatedErrand');
+          cy.wait('@patchExtraParameters');
+
+          // Success toast should be shown
+          cy.contains('Ärende skapat').should('be.visible');
+
+          // Should navigate to the new errand page
+          cy.url().should('include', '/arende/MEX-2024-000999');
+        });
+
+        it('shows error toast when errand creation fails', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('POST', '**/errands', { statusCode: 500, body: { error: 'Server error' } }).as('postErrandFail');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Confirm the dialog
+          cy.contains('Ja, skapa ärende').click();
+
+          cy.wait('@postErrandFail');
+
+          // Error toast should be shown
+          cy.contains('Något gick fel när ärendet skulle skapas').should('be.visible');
+        });
+
+        it('shows loading state while creating errand', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          // Delay the response to observe loading state
+          cy.intercept('POST', '**/errands', (req) => {
+            req.reply({
+              delay: 1000,
+              body: mockCreatedErrandResponse,
+            });
+          }).as('postErrandDelayed');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="contract-detail-edit-button"]').click();
+
+          // Confirm the dialog
+          cy.contains('Ja, skapa ärende').click();
+
+          // Button should show loading state
+          cy.get('[data-cy="contract-detail-edit-button"]').should('contain.text', 'Skapar ärende...');
+          cy.get('[data-cy="contract-detail-edit-button"]').should('be.disabled');
+        });
+      });
     });
   });
 });

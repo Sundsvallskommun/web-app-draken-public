@@ -7,10 +7,21 @@ import {
   leaseTypes,
 } from '@casedata/services/contract-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Checkbox, FormControl, FormLabel, Select } from '@sk-web-gui/react';
-import React, { useMemo } from 'react';
+import { Button, Checkbox, FormControl, FormLabel, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import React, { useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
+import { useRouter } from 'next/navigation';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
+import { Channels } from '@casedata/interfaces/channels';
+import { ErrandPhase } from '@casedata/interfaces/errand-phase';
+import { Priority } from '@casedata/interfaces/priority';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { IErrand } from '@casedata/interfaces/errand';
+import { saveErrand, getErrand } from '@casedata/services/casedata-errand-service';
+import { saveExtraParameters } from '@casedata/services/casedata-extra-parameters-service';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 
 const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
@@ -29,7 +40,6 @@ export const ContractDetailForm: React.FC<{
     }
   }, [selectedContract]);
 
-  // Extract stakeholders by role
   const lessors = useMemo<StakeholderWithPersonnumber[]>(
     () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.LESSOR)),
     [selectedContract.stakeholders]
@@ -55,8 +65,81 @@ export const ContractDetailForm: React.FC<{
     mode: 'onSubmit',
   });
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const toastMessage = useSnackbar();
+  const confirm = useConfirm();
+  const router = useRouter();
+  const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '2281';
+
   const contractTypeLabel = getContractTypeLabel(selectedContract.type);
   const isDraft = selectedContract.status === Status.DRAFT;
+
+  const handleChangeBillingDetails = async () => {
+    const confirmed = await confirm.showConfirmation(
+      'Ändra faktureringsuppgifter',
+      `Vill du skapa ett nytt ärende för att ändra faktureringsuppgifter för avtal ${selectedContract.contractId}?`,
+      'Ja, skapa ärende',
+      'Avbryt',
+      'info'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const newErrandData: Partial<IErrand> & { municipalityId: string } = {
+        caseType: MEXCaseType.MEX_OTHER,
+        channel: Channels.WEB_UI,
+        phase: ErrandPhase.aktualisering,
+        priority: Priority.MEDIUM,
+        status: { statusType: ErrandStatus.ArendeInkommit },
+        municipalityId: municipalityId,
+        description: `Ändra faktureringsuppgifter för avtal ${selectedContract.contractId}`,
+        stakeholders: [],
+      };
+
+      const result = await saveErrand(newErrandData);
+
+      if (!result.errandSuccessful || !result.errandId) {
+        throw new Error('Failed to create errand');
+      }
+
+      const createdErrand = await getErrand(municipalityId, result.errandId);
+
+      if (!createdErrand.errand) {
+        throw new Error('Failed to fetch created errand');
+      }
+
+      const contractIdParam: ExtraParameter = {
+        key: 'contractId',
+        values: [selectedContract.contractId],
+      };
+
+      await saveExtraParameters(municipalityId, [contractIdParam], createdErrand.errand);
+
+      toastMessage(
+        getToastOptions({
+          message: 'Ärende skapat',
+          status: 'success',
+        })
+      );
+
+      router.push(`/arende/${createdErrand.errand.errandNumber}`);
+    } catch (error) {
+      console.error('Error creating billing change errand:', error);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när ärendet skulle skapas',
+        status: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="px-40 my-lg gap-24">
@@ -68,7 +151,10 @@ export const ContractDetailForm: React.FC<{
             color="vattjom"
             variant="primary"
             leftIcon={<LucideIcon name="external-link" />}
-            disabled
+            disabled={isLoading || !selectedContract.contractId}
+            loading={isLoading}
+            loadingText="Skapar ärende..."
+            onClick={handleChangeBillingDetails}
           >
             Ändra faktureringsuppgifter
           </Button>
