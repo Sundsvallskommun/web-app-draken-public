@@ -28,11 +28,9 @@ export interface SuspendFormProps {
 
 export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    municipalityId,
     supportErrand,
     setSupportErrand,
   }: {
-    municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: any;
   } = useAppContext();
@@ -53,7 +51,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
 
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
-    return setSuspension(supportErrand.id, municipalityId, Status.SUSPENDED, data.date, data.comment)
+    return setSuspension(supportErrand.id, Status.SUSPENDED, data.date, data.comment)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -63,7 +61,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         );
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
       })
       .catch((e) => {
         toastMessage({

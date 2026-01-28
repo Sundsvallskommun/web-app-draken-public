@@ -39,12 +39,12 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const {
-    municipalityId,
+    
     supportErrand,
     setSupportErrand,
     supportMetadata,
   }: {
-    municipalityId: string;
+    
     supportErrand: SupportErrand;
     setSupportErrand: (e: any) => void;
     supportMetadata: SupportMetadata;
@@ -104,10 +104,10 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand) && !isLoading) {
+      if (supportErrandIsEmpty(supportErrand) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
-        initiateSupportErrand(municipalityId)
+        initiateSupportErrand()
           .then((result) =>
             setTimeout(() => {
               router.push(`/arende/${result.errandNumber}`);
@@ -126,7 +126,7 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, municipalityId, errandNumber]);
+  }, [router, errandNumber]);
 
   return (
     <FormProvider {...methods}>

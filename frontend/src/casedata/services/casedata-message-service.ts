@@ -12,12 +12,9 @@ import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
-export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
-  municipalityId,
-  errand
-) => {
+export const sendDecisionMessage: (errand: IErrand) => Promise<boolean> = (errand) => {
   return apiService
-    .post<ApiResponse<MessageResponse>[], { errandId: string }>(`casedata/${municipalityId}/message/decision`, {
+    .post<ApiResponse<MessageResponse>[], { errandId: string }>(`casedata/message/decision`, {
       errandId: errand.id.toString(),
     })
     .then((res) => {
@@ -31,13 +28,11 @@ export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => P
 };
 
 // Use multipart/form-data
-export const sendMessage: (
-  municipalityId: string,
-  errand: IErrand,
-  data: CasedataMessageTabFormModel
-) => Promise<boolean> = async (municipalityId, errand, data) => {
-  const url =
-    data.contactMeans === 'webmessage' ? `casedata/${municipalityId}/webmessage` : `casedata/${municipalityId}/email`;
+export const sendMessage: (errand: IErrand, data: CasedataMessageTabFormModel) => Promise<boolean> = async (
+  errand,
+  data
+) => {
+  const url = data.contactMeans === 'webmessage' ? `casedata/webmessage` : `casedata/email`;
 
   const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails];
   const msgPromises = targets.map(async (target) => {
@@ -88,7 +83,6 @@ export const sendMessage: (
         );
         messageFormData.append('attachUtredning', data.attachUtredning ? 'true' : 'false');
         messageFormData.append('errandId', errand.id.toString());
-        messageFormData.append('municipalityId', municipalityId);
         messageFormData.append('messageClassification', data.messageClassification || '');
         messageFormData.append('reply_to', data.headerReplyTo || '');
         messageFormData.append('references', data.headerReferences || '');
@@ -114,7 +108,7 @@ export const sendMessage: (
                 };
               });
 
-              sendAttachments(municipalityId, errand.id, errand.errandNumber, uploadFiles);
+              sendAttachments(errand.id, errand.errandNumber, uploadFiles);
             }
             data.newAttachments = [];
 
@@ -129,20 +123,18 @@ export const sendMessage: (
   return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
-export const sendSms: (
-  municipalityId: string,
-  errand: IErrand,
-  data: CasedataMessageTabFormModel
-) => Promise<boolean> = async (municipalityId, errand, data) => {
+export const sendSms: (errand: IErrand, data: CasedataMessageTabFormModel) => Promise<boolean> = async (
+  errand,
+  data
+) => {
   const msgPromises = [...data.phoneNumbers].map(async (target) => {
-    const messageData: { errandId: string; municipalityId: string; phonenumber: string; text: string } = {
+    const messageData = {
       phonenumber: Object(target).value.replace('-', ''),
       text: data.messageBodyPlaintext,
       errandId: errand.id.toString(),
-      municipalityId: municipalityId,
     };
     return apiService
-      .post<boolean, any>(`casedata/${municipalityId}/sms`, messageData, {
+      .post<boolean, any>(`casedata/sms`, messageData, {
         headers: { 'Content-Type': 'application/json' },
       })
       .then((res) => {
@@ -255,17 +247,14 @@ const buildTree = (_list: MessageResponse[]) => {
   return roots;
 };
 
-export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Promise<MessageNode[]> = (
-  municipalityId,
-  errand
-) => {
-  if (!errand?.errandNumber || !municipalityId) {
+export const fetchMessagesTree: (errand: IErrand) => Promise<MessageNode[]> = (errand) => {
+  if (!errand?.errandNumber) {
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/errand/${errand?.id}/messages`)
     .then((res) => {
-      return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
+      return res.data.data;
     })
     .then((res) => {
       const tree = buildTree(res);
@@ -277,15 +266,12 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
     });
 };
 
-export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise<MessageResponse[]> = (
-  municipalityId,
-  errand
-) => {
-  if (!errand?.errandNumber || !municipalityId) {
+export const fetchMessages: (errand: IErrand) => Promise<MessageResponse[]> = (errand) => {
+  if (!errand?.errandNumber) {
     console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
   }
   return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+    .get<ApiResponse<MessageResponse[]>>(`casedata/errand/${errand?.id}/messages`)
     .then((res) => {
       const list: MessageResponse[] = res.data.data.sort((a, b) =>
         dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
@@ -298,14 +284,11 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
     });
 };
 
-export const fetchMessage: (municipalityId: string, messageId: string) => Promise<ApiResponse<Message>> = (
-  municipalityId,
-  messageId
-) => {
+export const fetchMessage: (messageId: string) => Promise<ApiResponse<Message>> = (messageId) => {
   if (!messageId) {
     console.error('No message id found, cannot fetch message. Returning.');
   }
-  const url = `casedata/${municipalityId}/messages/${messageId}`;
+  const url = `casedata/messages/${messageId}`;
   return apiService
     .get<ApiResponse<Message>>(url)
     .then((res) => res.data)
@@ -334,14 +317,13 @@ export const messageStatusMap = (s: MessageStatus) => {
 
 export const setMessageViewStatus: (
   errandId: string,
-  municipalityId: string,
   messageId: string,
   isViewed: boolean
-) => Promise<ApiResponse<any>> = (errandId, municipalityId, messageId, isViewed) => {
+) => Promise<ApiResponse<any>> = (errandId, messageId, isViewed) => {
   if (!messageId) {
     console.error('No message id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/viewed/${isViewed}`;
+  const url = `casedata/errand/${errandId}/messages/${messageId}/viewed/${isViewed}`;
   return apiService
     .put<ApiResponse<any>, any>(url, {})
     .then((res) => res.data)

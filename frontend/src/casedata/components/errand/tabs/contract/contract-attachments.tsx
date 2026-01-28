@@ -17,7 +17,7 @@ export const ContractAttachments: React.FC<{
   existingContract: ContractData;
 }> = ({ existingContract }) => {
   const toastMessage = useSnackbar();
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const { errand, setErrand } = useAppContext();
   const removeConfirm = useConfirm();
 
   const viewFileHandler = (attachment: any) => {
@@ -37,7 +37,6 @@ export const ContractAttachments: React.FC<{
     const uploadFiles = await Promise.all(
       existingContract?.attachmentMetaData?.map(async (aM) => {
         const ra: Attachment = await fetchSignedContractAttachment(
-          municipalityId,
           existingContract?.contractId,
           aM.id
         ).then((res) => res.data);
@@ -51,16 +50,16 @@ export const ContractAttachments: React.FC<{
   useEffect(() => {
     loadFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingContract, municipalityId]);
+  }, [existingContract]);
 
   const handleRemoveFile = (file: UploadFile) => {
     removeConfirm
       .showConfirmation('Ta bort signerat avtal?', 'Vill du ta bort denna bilaga?', 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          deleteSignedContractAttachment(municipalityId, existingContract?.contractId, Number.parseInt(file.id))
+          deleteSignedContractAttachment(existingContract?.contractId, Number.parseInt(file.id))
             .then(() => {
-              getErrand(municipalityId, errand.id.toString()).then((res) => {
+              getErrand(errand.id.toString()).then((res) => {
                 setErrand(res.errand);
               });
             })
@@ -121,12 +120,12 @@ export const ContractAttachments: React.FC<{
         data-cy={`contract-upload-field`}
         onChange={(e) => {
           const files = e.target.value;
-          saveSignedContractAttachment(municipalityId, existingContract?.contractId, files, '')
+          saveSignedContractAttachment(existingContract?.contractId, files, '')
             .then((res) => {
               if (!res) {
                 throw new Error('Error saving attachment');
               }
-              getErrand(municipalityId, errand.id.toString()).then((res) => {
+              getErrand(errand.id.toString()).then((res) => {
                 setErrand(res.errand);
                 loadFiles();
                 toastMessage(

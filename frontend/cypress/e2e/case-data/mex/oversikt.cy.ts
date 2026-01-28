@@ -17,9 +17,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
-      cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
+      cy.intercept('GET', '**/casedatanotifications', mockNotifications).as('getNotifications');
       cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
-      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+      cy.intercept('GET', '**/contracts/2024-01026/attachments/1', mockContractAttachment).as(
         'getContractAttachment'
       );
       cy.visit('/oversikt');

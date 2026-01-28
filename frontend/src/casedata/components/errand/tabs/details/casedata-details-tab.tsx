@@ -28,7 +28,7 @@ interface CasedataDetailsProps {
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const toastMessage = useSnackbar();
 
@@ -40,9 +40,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const description = watch('description');
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
-    return saveFacilities(municipalityId, errand.id, estates).then(() => {
+    return saveFacilities(errand.id, estates).then(() => {
       props.setUnsaved(false);
-      return getErrand(municipalityId, errand.id.toString())
+      return getErrand(errand.id.toString())
         .then((res) => {
           setErrand(res.errand);
           toastMessage(

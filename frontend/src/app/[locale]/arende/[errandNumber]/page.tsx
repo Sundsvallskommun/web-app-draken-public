@@ -44,7 +44,7 @@ const Arende: React.FC = () => {
   useEffect(() => {
     appConfig.isSupportManagement &&
       municipalityId &&
-      getSupportMetadata(municipalityId).then((res) => setSupportMetadata(res.metadata));
+      getSupportMetadata().then((res) => setSupportMetadata(res.metadata));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId]);
 

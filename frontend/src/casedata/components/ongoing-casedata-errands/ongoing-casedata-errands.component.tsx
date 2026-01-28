@@ -30,7 +30,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
   const {
-    municipalityId,
     setErrand,
     administrators,
     selectedErrandStatuses,
@@ -54,7 +53,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
-  const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
+  const errands = useErrands(page, pageSize, filterObject, sortObject, extraFilter);
   const initialFocus = useRef(null);
 
   const setInitialFocus = () => {
@@ -268,7 +267,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
                 {sidebarLabel || 'Ärenden'}
                 {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (closedErrands ?? '') : null}
               </h1>
-              {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
+              {appConfig.features.useErrandExport && <ExportButton errands={errands} />}
             </div>
             <div>
               <FormProvider {...tableForm}>

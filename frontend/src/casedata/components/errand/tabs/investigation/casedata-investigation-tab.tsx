@@ -15,7 +15,6 @@ import {
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -33,7 +32,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -76,14 +75,13 @@ export const CasedataInvestigationTab: React.FC<{
 }> = (props) => {
   const toastMessage = useSnackbar();
   const saveConfirm = useConfirm();
-  const { municipalityId, errand, user }: AppContextInterface = useAppContext();
+  const { errand, user }: AppContextInterface = useAppContext();
   const { setErrand } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [firstDescriptionChange, setFirstDescriptionChange] = useState(true);
-  const [firstOutcomeChange, setFirstOutcomeChange] = useState(true);
   const [phrasesAppended, setPhrasesAppended] = useState<boolean>(false);
 
   const confirmContent = {
@@ -138,10 +136,10 @@ export const CasedataInvestigationTab: React.FC<{
 
       if (isFTErrand(props.errand)) {
         data.outcome = 'APPROVAL';
-        await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
+        await saveDecision(props.errand, data, 'PROPOSED');
       } else {
         const rendered = await renderUtredningPdf(errand, data);
-        await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
+        await saveDecision(props.errand, data, 'PROPOSED', rendered.pdfBase64);
       }
 
       setIsLoading(false);
@@ -153,7 +151,7 @@ export const CasedataInvestigationTab: React.FC<{
           status: 'success',
         })
       );
-      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      await getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -170,8 +168,8 @@ export const CasedataInvestigationTab: React.FC<{
   const getPdfPreview = () => {
     const data = getValues();
     renderUtredningPdf(props.errand, data).then(async (d) => {
-      await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
-      await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
+      await saveDecision(props.errand, data, 'PROPOSED', d.pdfBase64);
+      await getErrand(props.errand.id.toString()).then((res) => setErrand(res.errand));
       if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
         const uri = `data:application/pdf;base64,${d.pdfBase64}`;
         const link = document.createElement('a');
@@ -207,7 +205,6 @@ export const CasedataInvestigationTab: React.FC<{
         )
         .then((confirmed) => {
           if (confirmed) {
-            setFirstOutcomeChange(false);
             setValue('outcome', newOutcome, { shouldDirty: true });
             trigger('outcome');
             outcomeModalCallback(newOutcome);
@@ -225,12 +222,9 @@ export const CasedataInvestigationTab: React.FC<{
 
   useEffect(() => {
     setFirstDescriptionChange(true);
-    setFirstOutcomeChange(true);
     const decision = getProposedOrRecommendedDecision(props.errand.decisions);
     if (decision) {
       setValue('outcome', decision.decisionOutcome);
-    } else {
-      setFirstOutcomeChange(false);
     }
     if (decision) {
       setValue('law', decision.law);

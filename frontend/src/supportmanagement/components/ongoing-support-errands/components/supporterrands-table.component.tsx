@@ -83,7 +83,7 @@ export const SupportErrandsTable: React.FC = () => {
 
   const openErrandeInNewWindow = async (errand: SupportErrand) => {
     if (errand.activeNotifications && errand.activeNotifications.length > 0) {
-      await globalAcknowledgeSupportNotification(errand, municipalityId).catch(() => {
+      await globalAcknowledgeSupportNotification(errand).catch(() => {
         throw new Error('Failed to acknowledge notification');
       });
     }

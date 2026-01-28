@@ -57,14 +57,10 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
 export const SupportErrandAttachmentsTab: React.FC<{
   update: () => void;
 }> = (props) => {
-  const { supportErrand, setSupportErrand, supportAttachments, user, municipalityId } = useAppContext();
+  const { supportErrand, setSupportErrand, supportAttachments } = useAppContext();
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
-  const [addNewAttachment, setAddNewAttachment] = useState(false);
   const [modalFetching, setModalFetching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [error, setError] = useState(false);
-  const [sizeError, setSizeError] = useState(false);
-  const [pdfError, setPdfError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [selectedAttachment, setSelectedAttachment] = useState<SupportAttachment>();
@@ -81,7 +77,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   };
 
   const closeModal = async () => {
-    await getSupportErrandById(supportErrand.id.toString(), municipalityId)
+    await getSupportErrandById(supportErrand.id.toString())
       .then((data) => setSupportErrand(data.errand))
       .catch((e) => {
         toastMessage({
@@ -137,18 +133,14 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const attachments = watch('attachments');
 
   const downloadDocument = (a: SupportAttachment) => {
-    getSupportAttachment(supportErrand.id.toString(), municipalityId, a)
-      .then((att) => {
-        const uri = `data:${a.mimeType};base64,${att.base64EncodedString}`;
-        const link = document.createElement('a');
-        link.href = uri;
-        link.setAttribute('download', `${a.fileName}`);
-        document.body.appendChild(link);
-        link.click();
-      })
-      .catch(() => {
-        setPdfError(true);
-      });
+    getSupportAttachment(supportErrand.id.toString(), a).then((att) => {
+      const uri = `data:${a.mimeType};base64,${att.base64EncodedString}`;
+      const link = document.createElement('a');
+      link.href = uri;
+      link.setAttribute('download', `${a.fileName}`);
+      document.body.appendChild(link);
+      link.click();
+    });
   };
 
   const vals: SupportAttachmentFormModel = getValues();
@@ -160,10 +152,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    setSizeError(false);
-  }, [attachments]);
 
   const openHandler = () => {
     setDragDrop(true);
@@ -178,7 +166,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const clickHandler = (attachment) => {
     if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
-      getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
+      getSupportAttachment(supportErrand.id.toString(), attachment)
         .then((res) => setModalAttachment(res))
         .then(() => {
           setModalFetching(false);
@@ -192,7 +180,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const onDelete = () => {
     removeConfirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
       if (confirmed) {
-        return deleteSupportAttachment(supportErrand?.id.toString(), municipalityId, selectedAttachment.id)
+        return deleteSupportAttachment(supportErrand?.id.toString(), selectedAttachment.id)
           .then(() => {
             props.update();
             reset();
@@ -257,7 +245,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
             onClose={() => {
               closeHandler();
               setSelectedAttachment(null);
-              setAddNewAttachment(false);
               reset();
             }}
             label={'Ladda upp bilaga'}
@@ -308,13 +295,10 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       file: a.file,
                     }));
                     setIsLoading(true);
-                    saveSupportAttachments(supportErrand.id.toString(), municipalityId, attachmentsData)
+                    saveSupportAttachments(supportErrand.id.toString(), attachmentsData)
                       .then(() => props.update())
-                      .then(() => setAddNewAttachment(false))
                       .then(() => setSelectedAttachment(null))
                       .then(() => setIsLoading(false))
-                      .then(() => setError(false))
-                      .then(() => setSizeError(false))
                       .then(() => {
                         reset();
                         setAddAttachmentWindowIsOpen(false);
@@ -334,7 +318,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
                             message: 'Max filstorlek överskreds',
                             status: 'error',
                           });
-                          setSizeError(true);
                           setIsLoading(false);
                         } else {
                           toastMessage({
@@ -343,7 +326,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
                             message: 'Bilagan gick inte att spara',
                             status: 'error',
                           });
-                          setError(true);
                           setIsLoading(false);
                         }
                       });
@@ -362,8 +344,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
             inverted
             size="sm"
             onClick={() => {
-              setSizeError(false);
-              setAddNewAttachment(true);
               setAttachmentTypeExists(false);
               reset();
               openHandler();

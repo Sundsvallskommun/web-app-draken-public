@@ -57,14 +57,13 @@ const MESSAGING_SERVICE = apiServiceName('messaging');
 
 export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
 
-export const sendSms = (municipalityId: string, message: SmsRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
-  const url = `${MESSAGING_SERVICE}/${municipalityId}/sms`;
+export const sendSms = (message: SmsRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/sms`;
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, SmsRequest>({ url, data: message }, req.user)
     .then(async res => {
       return saveMessageOnErrand(
-        municipalityId,
         errandData.data,
         {
           message: message.message,
@@ -95,14 +94,13 @@ export const sendSms = (municipalityId: string, message: SmsRequest, req: Reques
     });
 };
 
-export const sendWebMessage = (municipalityId: string, message: WebMessageRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
-  const url = `${MESSAGING_SERVICE}/${municipalityId}/webmessage`;
+export const sendWebMessage = (message: WebMessageRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/webmessage`;
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, req.user)
     .then(async (res: ApiResponse<WebMessageResponse>) => {
       return saveMessageOnErrand(
-        municipalityId,
         errandData.data,
         {
           message: message.message,
@@ -117,7 +115,7 @@ export const sendWebMessage = (municipalityId: string, message: WebMessageReques
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            await notifyContactPersons(municipalityId, errandData.data, req.user);
+            await notifyContactPersons(errandData.data, req.user);
             return { data: res.data, message: `Message sent` };
           } else {
             return { data: res.data, message: `Message sent` };
@@ -134,20 +132,13 @@ export const sendWebMessage = (municipalityId: string, message: WebMessageReques
     });
 };
 
-export const sendEmail = (
-  municipalityId: string,
-  message: EmailRequest,
-  req: RequestWithUser,
-  errandData: ApiResponse<ErrandDTO>,
-  classification: MessageClassification,
-) => {
-  const url = `${MESSAGING_SERVICE}/${municipalityId}/email`;
+export const sendEmail = (message: EmailRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>, classification: MessageClassification) => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/email`;
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, EmailRequest>({ url, data: message }, req.user)
     .then(async res => {
       return saveMessageOnErrand(
-        municipalityId,
         errandData.data,
         {
           message: message.message,
@@ -163,7 +154,7 @@ export const sendEmail = (
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            const notified = await notifyContactPersons(municipalityId, errandData.data, req.user);
+            const notified = await notifyContactPersons(errandData.data, req.user);
             return {
               data: res.data,
               message: notified ? `Message sent, notified contacts.` : `Message sent, but contact notification could not be sent.`,
@@ -186,8 +177,8 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (municipalityId, message, req, errandData, classification) => {
-  const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
+export const sendDigitalMail = (message, req, errandData, classification) => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();
   return apiService
     .post<LetterResponse, LetterRequest>({ url, data: message }, req.user)
@@ -197,7 +188,6 @@ export const sendDigitalMail = (municipalityId, message, req, errandData, classi
         throw new Error('Error: no id returned when sending message');
       }
       return saveMessageOnErrand(
-        municipalityId,
         errandData.data,
         {
           message: message.message,
@@ -212,7 +202,7 @@ export const sendDigitalMail = (municipalityId, message, req, errandData, classi
       )
         .then(async _ => {
           if (NOTIFY_CONTACTS) {
-            await notifyContactPersons(municipalityId, errandData.data, req.user);
+            await notifyContactPersons(errandData.data, req.user);
             return { data: { messageId: id }, message: `Message sent` };
           } else {
             return { data: { messageId: id }, message: `Message sent` };
@@ -230,7 +220,6 @@ export const sendDigitalMail = (municipalityId, message, req, errandData, classi
 };
 
 export const saveMessageOnErrand: (
-  municipalityId: string,
   errand: ErrandDTO,
   message: {
     message: string;
@@ -244,10 +233,10 @@ export const saveMessageOnErrand: (
     email?: string;
   },
   user: User,
-) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
+) => Promise<ApiResponse<any>> = async (errand, message, user) => {
   const apiService = new ApiService();
   // Fetch message info from Messaging and construct SaveMessage object
-  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
+  const messagingUrl = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/messages/${message.id}/metadata`;
   const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
@@ -257,7 +246,7 @@ export const saveMessageOnErrand: (
 
   if (messagingInfo?.content?.attachments && messagingInfo?.content?.attachments?.length > 0) {
     for (const attachment of messagingInfo.content.attachments) {
-      const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments`;
+      const attachmentUrl = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/messages/${message.id}/attachments`;
       const attachmentResponse = await apiService.get<ArrayBuffer>(
         { url: attachmentUrl, params: { fileName: attachment.name ?? attachment.filename }, responseType: 'arraybuffer' },
         user,
@@ -292,7 +281,7 @@ export const saveMessageOnErrand: (
     emailHeaders: emailHeaders,
   };
 
-  const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/messages`;
+  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errand.id}/messages`;
   const saveIdResponse = await apiService
     .post<any, MessageRequest>({ url, data: saveMessage }, user)
     .then(res => {
@@ -305,7 +294,7 @@ export const saveMessageOnErrand: (
     });
 
   if (saveMessage.direction === MessageRequestDirectionEnum.OUTBOUND) {
-    await setMessageViewed(municipalityId, errand.id, message.id, user).catch(e => {
+    await setMessageViewed(errand.id, message.id, user).catch(e => {
       logger.error('Error when saving viewed status:', e);
     });
   }
@@ -339,7 +328,7 @@ const buildEmail = (applicant: StakeholderDTO, contact: StakeholderDTO, message:
   return email;
 };
 
-export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
+export const notifyContactPersons: (errand: ErrandDTO, user: User) => Promise<boolean> = (errand, user) => {
   const apiService = new ApiService();
   const applicant = errand.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
   if (!applicant) {
@@ -356,10 +345,10 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
     .filter(c => c.contactInformation.some(c => c.contactType === 'EMAIL'))
     .map(c => buildEmail(applicant, c, standardMessage));
   const smsPromises = smss.map(async sms => {
-    return apiService.post<AgnosticMessageResponse, SmsMessage>({ url: `${MESSAGING_SERVICE}/${municipalityId}/sms`, data: sms }, user);
+    return apiService.post<AgnosticMessageResponse, SmsMessage>({ url: `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/sms`, data: sms }, user);
   });
   const emailPromises = emails.map(async email => {
-    return apiService.post<AgnosticMessageResponse, EmailRequest>({ url: `${MESSAGING_SERVICE}/${municipalityId}/email`, data: email }, user);
+    return apiService.post<AgnosticMessageResponse, EmailRequest>({ url: `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/email`, data: email }, user);
   });
   return Promise.allSettled([...smsPromises, ...emailPromises]).then(res => {
     const succeeded = res.filter(r => r.status === 'fulfilled').length;
@@ -368,9 +357,9 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
   });
 };
 
-export const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
+export const setMessageViewed = (errandId: number, messageId: string, user: User) => {
   const apiService = new ApiService();
-  const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
+  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
   return apiService.put<any, any>({ url }, user);
 };
 
@@ -478,7 +467,6 @@ export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachme
     .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, user)
     .then(async (res: ApiResponse<WebMessageResponse>) => {
       return saveMessageOnErrand(
-        MUNICIPALITY_ID,
         errand,
         {
           message: message.message,
@@ -546,7 +534,6 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
         throw new Error('Error: no id returned when sending message');
       }
       return saveMessageOnErrand(
-        MUNICIPALITY_ID,
         errand,
         {
           message: message.body,

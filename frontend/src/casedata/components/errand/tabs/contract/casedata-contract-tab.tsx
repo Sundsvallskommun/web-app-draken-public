@@ -92,11 +92,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     })
     .required();
   const {
-    municipalityId,
+    
     errand,
     setErrand,
     user,
-  }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
+  }: { errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
     useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData>(undefined);
@@ -196,13 +196,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     setIsLoading('Sparar avtal..');
     return saveContract(data)
       .then(async (res: Contract) => {
-        await saveContractToErrand(municipalityId, res.contractId, errand);
+        await saveContractToErrand( res.contractId, errand);
         return res;
       })
       .then((res) => {
         setIsLoading(undefined);
         props.setUnsaved(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
+        getErrand( errand.id.toString()).then((res) => {
           setErrand(res.errand);
           toastMessage(
             getToastOptions({

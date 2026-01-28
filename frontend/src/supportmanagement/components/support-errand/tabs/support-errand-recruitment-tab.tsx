@@ -12,7 +12,6 @@ export const SupportErrandRecruitmentTab: React.FC<{
 }> = (props) => {
   const { supportErrand } = useAppContext();
   const [recruitmentParameterGroups, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
-  const [loading, setLoading] = React.useState(false);
 
   const recruitmentForm = useForm<{ [key: string]: Parameter[] }>({
     defaultValues: recruitmentParameterGroups,
@@ -27,9 +26,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
   }, [supportErrand, recruitmentForm]);
 
   const handleSubmit = async () => {
-    setLoading(true);
-    await saveParameters(supportErrand.id, '2281', recruitmentForm.getValues()).then((res) => {
-      setLoading(false);
+    await saveParameters(supportErrand.id, recruitmentForm.getValues()).then((res) => {
       return res;
     });
   };

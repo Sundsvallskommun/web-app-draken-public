@@ -1,8 +1,8 @@
+import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
+import { appConfig } from '@config/appconfig';
 import { All } from '@supportmanagement/interfaces/priority';
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
-import { appConfig } from '@config/appconfig';
-import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
 
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -26,13 +26,8 @@ const formatServiceName = (str: string) => {
   return str.toLocaleLowerCase();
 };
 
-export const createRelation = (
-  municipalityId: string,
-  sourceId: string,
-  sourceErrandNumber: string,
-  targetErrand: CaseStatusResponse
-) => {
-  const url = `${municipalityId}/relations`;
+export const createRelation = (sourceId: string, sourceErrandNumber: string, targetErrand: CaseStatusResponse) => {
+  const url = `/relations`;
 
   const body: Partial<Relation> = {
     type: 'LINK',
@@ -61,8 +56,8 @@ export const createRelation = (
     });
 };
 
-export const deleteRelation = (municipalityId: string, id: string) => {
-  const url = `${municipalityId}/relations/${id}`;
+export const deleteRelation = (id: string) => {
+  const url = `/relations/${id}`;
 
   return apiService
     .deleteRequest<ApiResponse<boolean>>(url)
@@ -73,8 +68,8 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     });
 };
 
-export const getSourceRelations = (municipalityId: string, sourceId: string, sort: string): Promise<Relation[]> => {
-  const url = `${municipalityId}/sourcerelations/${sort}/${sourceId}`;
+export const getSourceRelations = (sourceId: string, sort: string): Promise<Relation[]> => {
+  const url = `/sourcerelations/${sort}/${sourceId}`;
 
   return apiService
     .get<ApiResponse<RelationPagedResponse>>(url)
@@ -86,8 +81,8 @@ export const getSourceRelations = (municipalityId: string, sourceId: string, sor
     });
 };
 
-export const getTargetRelations = (municipalityId: string, targetId: string, sort: string): Promise<Relation[]> => {
-  const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
+export const getTargetRelations = (targetId: string, sort: string): Promise<Relation[]> => {
+  const url = `/targetrelations/${sort}/${targetId}`;
 
   return apiService
     .get<ApiResponse<RelationPagedResponse>>(url)

@@ -11,11 +11,9 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
   const {
-    municipalityId,
     errand,
     setErrand,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  }: { user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } = useAppContext();
 
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -34,7 +32,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
           throw new Error('Errand could not be registered');
         }
 
-        const appealedErrand = await getErrand(municipalityId, res.errandId);
+        const appealedErrand = await getErrand(res.errandId);
         if (!appealedErrand || !appealedErrand.errand) {
           throw new Error('Failed to fetch the appealed errand');
         }

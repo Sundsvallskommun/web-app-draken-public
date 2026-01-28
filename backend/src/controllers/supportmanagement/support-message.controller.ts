@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Communication,
@@ -136,7 +136,7 @@ export class SupportMessageController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
-  @Post('/supportmessage/:municipalityId/:id')
+  @Post('/supportmessage/:id')
   @HttpCode(201)
   @OpenAPI({ summary: 'Send a support message' })
   @UseBefore(authMiddleware)
@@ -145,21 +145,16 @@ export class SupportMessageController {
     @Req() req: RequestWithUser,
     @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
     @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
     @Body() messageDto: SupportMessageDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
-    const allowed = await validateSupportAction(municipalityId, id.toString(), req.user);
+    const allowed = await validateSupportAction(id.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    if (!municipalityId) {
-      console.error('No municipality id found, needed to send message.');
-      logger.error('No municipality id found, needed to send message.');
-      return response.status(400).send('Municipality id missing');
-    }
+
     await validateRequestBody(SupportMessageDto, messageDto);
-    let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication`;
+    let url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/communication`;
     let body: SmsRequest | EmailRequest | WebMessageRequest;
     const MESSAGE_ID = generateMessageId();
     const emailHeaders = {
@@ -219,47 +214,40 @@ export class SupportMessageController {
     return response.status(200).send(res.data);
   }
 
-  @Get('/supportmessage/:municipalityId/errands/:id/communication')
+  @Get('/supportmessage/errands/:id/communication')
   @OpenAPI({ summary: 'Get errand messages' })
   @UseBefore(authMiddleware)
   @ResponseSchema(CCommunication)
-  async fetchSupportMessages(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<Communication[]> {
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication`;
+  async fetchSupportMessages(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<Communication[]> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/communication`;
     const res = await this.apiService.get<Communication[]>({ url }, req.user);
     return response.status(200).send(res.data);
   }
 
-  @Put('/supportmessage/:municipalityId/errands/:id/communication/:communicationID/viewed/:isViewed')
+  @Put('/supportmessage/errands/:id/communication/:communicationID/viewed/:isViewed')
   @OpenAPI({ summary: 'Set viewed status' })
   @UseBefore(authMiddleware)
   async setMessageViewedStatus(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
     @Param('communicationID') communicationID: string,
     @Param('isViewed') isViewed: boolean,
     @Res() response: Communication[],
   ): Promise<{ data: Communication[]; message: string }> {
-    const allowed = await validateSupportAction(municipalityId, id.toString(), req.user);
+    const allowed = await validateSupportAction(id.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/communication/${communicationID}/viewed/${isViewed}`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/communication/${communicationID}/viewed/${isViewed}`;
     const res = await this.apiService.put<any, any>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }
 
-  @Get('/supportmessage/:municipalityId/errand/:errandId/communication/:communicationID/attachments/:attachmentId')
+  @Get('/supportmessage/errand/:errandId/communication/:communicationID/attachments/:attachmentId')
   @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
   @UseBefore(authMiddleware)
   async fetchMessageAttachments(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @Param('errandId') errandId: string,
     @Param('communicationID') communicationID: string,
     @Param('attachmentId') attachmentId: string,
@@ -275,7 +263,7 @@ export class SupportMessageController {
       throw Error('AttachmentId not found');
     }
 
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
 
     const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer' }, req.user).catch(e => {
       logger.error('Something went wrong when fetching attachment for message');

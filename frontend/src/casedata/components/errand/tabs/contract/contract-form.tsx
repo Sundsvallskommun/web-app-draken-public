@@ -41,10 +41,9 @@ export const ContractForm: React.FC<{
   updateStakeholders: () => void;
 }> = ({ changeBadgeColor, onSave, existingContract, buyers, sellers, lessees, lessors, updateStakeholders }) => {
   const {
-    municipalityId,
     errand,
     user,
-  }: { municipalityId: string; errand: IErrand; user: User; setErrand: Dispatch<SetStateAction<IErrand>> } =
+  }: { errand: IErrand; user: User; setErrand: Dispatch<SetStateAction<IErrand>> } =
     useAppContext();
   const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger, reset } =
     useFormContext<ContractData>();
@@ -63,7 +62,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     lessees.forEach(async (s: StakeholderWithPersonnumber) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(s.partyId);
       s.personalNumber = ssn;
       setValue('lessees', lessees);
     });
@@ -78,7 +77,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     lessors.forEach(async (s: StakeholderWithPersonnumber) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(s.partyId);
       s.personalNumber = ssn;
       setValue('lessors', lessors);
     });
@@ -93,7 +92,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     buyers.forEach(async (b: StakeholderWithPersonnumber, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, b.partyId);
+      const ssn = await getSSNFromPersonId(b.partyId);
       b.personalNumber = ssn;
       setValue('buyers', buyers);
     });
@@ -108,7 +107,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     sellers.forEach(async (s: StakeholderWithPersonnumber, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(s.partyId);
       s.personalNumber = ssn;
       setValue('sellers', sellers);
     });

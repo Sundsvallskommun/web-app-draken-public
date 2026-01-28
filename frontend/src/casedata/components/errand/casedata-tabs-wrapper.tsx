@@ -29,7 +29,6 @@ import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-se
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
-    municipalityId,
     errand,
     setErrand,
     messages,
@@ -53,13 +52,13 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
-  async function handleConversation(municipalityId: string, errandId: number) {
+  async function handleConversation(errandId: number) {
     try {
-      const res = await getConversations(municipalityId, errandId);
+      const res = await getConversations(errandId);
       const allMessages: any[] = [];
       for (const conversation of res.data) {
         try {
-          const messages = await getConversationMessages(municipalityId, errandId, conversation.id);
+          const messages = await getConversationMessages(errandId, conversation.id);
           const mappedMessages = messages.data.map((msgRes) => {
             if (Array.isArray(msgRes)) return msgRes;
             if (msgRes) return [msgRes];
@@ -82,7 +81,7 @@ export const CasedataTabsWrapper: React.FC = () => {
   useEffect(() => {
     if (errand && errand.errandNumber) {
       const owner = getOwnerStakeholder(errand);
-      fetchMessages(municipalityId, errand)
+      fetchMessages(errand)
         .then(setMessages)
         .catch((e) => {
           toastMessage({
@@ -92,7 +91,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             status: 'error',
           });
         });
-      fetchMessagesTree(municipalityId, errand)
+      fetchMessagesTree(errand)
         .then(setMessageTree)
         .catch((e) => {
           toastMessage({
@@ -102,7 +101,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             status: 'error',
           });
         });
-      handleConversation(municipalityId, errand.id);
+      handleConversation(errand.id);
       isPT() &&
         owner?.personId &&
         getAssets({ partyId: owner.personId, type: 'PARKINGPERMIT' })
@@ -119,7 +118,7 @@ export const CasedataTabsWrapper: React.FC = () => {
 
     if (errand.id && phaseChangeInProgress(errand)) {
       setTimeout(() => {
-        getErrand(municipalityId, errand.id.toString())
+        getErrand(errand.id.toString())
           .then((res) => {
             setErrand(res.errand);
           })
@@ -197,12 +196,12 @@ export const CasedataTabsWrapper: React.FC = () => {
           setUnsaved={() => {}}
           update={() =>
             setTimeout(() => {
-              getErrand(municipalityId, errand.id.toString())
+              getErrand(errand.id.toString())
                 .then((res) => {
                   setErrand(res.errand);
                   return res;
                 })
-                .then((res) => fetchMessagesTree(municipalityId, errand).then(setMessages))
+                .then((res) => fetchMessagesTree(errand).then(setMessages))
                 .catch((e) => {
                   toastMessage({
                     position: 'bottom',
@@ -211,7 +210,7 @@ export const CasedataTabsWrapper: React.FC = () => {
                     status: 'error',
                   });
                 });
-              handleConversation(municipalityId, errand.id);
+              handleConversation(errand.id);
             }, 500)
           }
         />
@@ -331,7 +330,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             decisionServicesRefetchRef.current = refetch;
           }}
           update={() =>
-            getErrand(municipalityId, errand.id.toString())
+            getErrand(errand.id.toString())
               .then((res) => setErrand(res.errand))
               .catch((e) => {
                 toastMessage({

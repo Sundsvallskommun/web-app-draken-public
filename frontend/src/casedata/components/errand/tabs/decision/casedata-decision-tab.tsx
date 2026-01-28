@@ -130,7 +130,7 @@ export const CasedataDecisionTab: React.FC<{
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
 }> = (props) => {
-  const { municipalityId, user, errand, setErrand }: AppContextInterface = useAppContext();
+  const { user, errand, setErrand }: AppContextInterface = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -163,13 +163,13 @@ export const CasedataDecisionTab: React.FC<{
 
   useEffect(() => {
     (async () => {
-      const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
+      const { schema } = await getLatestRjsfSchema(assetType);
       setServiceSchema(schema);
     })();
-  }, [municipalityId, assetType]);
+  }, [assetType]);
 
   const { services, refetch: refetchServices } = useErrandServices({
-    municipalityId,
+    
     partyId: ownerPartyId,
     errandNumber: errand.errandNumber,
     assetType: assetType,
@@ -236,8 +236,8 @@ export const CasedataDecisionTab: React.FC<{
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {
-    return triggerErrandPhaseChange(municipalityId, errand)
-      .then(() => getErrand(municipalityId, errand.id.toString()))
+    return triggerErrandPhaseChange(errand)
+      .then(() => getErrand(errand.id.toString()))
       .then((res) => setErrand(res.errand))
       .then(() => {
         setIsLoading(false);
@@ -262,7 +262,7 @@ export const CasedataDecisionTab: React.FC<{
   const save = async (data: DecisionFormModel) => {
     try {
       const rendered = await renderBeslutPdf(errand, data, services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -272,7 +272,7 @@ export const CasedataDecisionTab: React.FC<{
           status: 'success',
         })
       );
-      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      await getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -303,7 +303,7 @@ export const CasedataDecisionTab: React.FC<{
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
       const rendered = await renderBeslutPdf(errand, data, services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(errand, data, 'FINAL', rendered.pdfBase64);
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
       const recipientEmail = owner?.emails?.[0]?.value;
@@ -345,15 +345,15 @@ export const CasedataDecisionTab: React.FC<{
         headerReferences: '',
       };
       if (isMEX()) {
-        await sendMessage(municipalityId, errand, messageData);
-      } else if (isPT() && municipalityId === '2260') {
+        await sendMessage(errand, messageData);
+      } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
         // PT Ånge - do nothing, they handle sending themselves
       } else if (isPT()) {
-        await sendDecisionMessage(municipalityId, errand);
+        await sendDecisionMessage(errand);
       } else {
         throw new Error('Kontaktsätt saknas');
       }
-      await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
+      await updateErrandStatus(errand.id.toString(), ErrandStatus.Beslutad);
       await triggerPhaseChange();
       toastMessage(
         getToastOptions({
@@ -402,7 +402,7 @@ export const CasedataDecisionTab: React.FC<{
         error?: string;
       };
       if (isErrandLocked(errand) || isSent()) {
-        const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        const refresh = await getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
         const decision = getFinalDecisonWithHighestId(errand.decisions);
         if (!decision) {
           setIsPreviewLoading(false);
@@ -418,8 +418,8 @@ export const CasedataDecisionTab: React.FC<{
         };
       } else {
         pdfData = await renderBeslutPdf(errand, data, services);
-        const saved = await saveDecision(municipalityId, errand, data, 'FINAL', pdfData.pdfBase64);
-        const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        const saved = await saveDecision(errand, data, 'FINAL', pdfData.pdfBase64);
+        const refresh = await getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
       }
       createAndClickLink(pdfData);
     } catch (error) {

@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
@@ -16,18 +17,14 @@ export class CaseDataHistoryController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
 
-  @Get('/:municipalityId/errands/:errandId/history')
+  @Get('/casedata/errands/:errandId/history')
   @OpenAPI({ summary: 'Fetch history for errand' })
   @UseBefore(authMiddleware)
-  async cases(
-    @Req() req: RequestWithUser,
-    @Param('errandId') errandId: number,
-    @Param('municipalityId') municipalityId: string,
-  ): Promise<ResponseData> {
+  async cases(@Req() req: RequestWithUser, @Param('errandId') errandId: number): Promise<ResponseData> {
     if (!errandId) {
       throw 'Errand id not found. Cannot fetch history.';
     }
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/history`;
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/history`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<string>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;

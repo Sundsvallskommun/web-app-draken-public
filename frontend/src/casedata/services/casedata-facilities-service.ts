@@ -4,15 +4,12 @@ import { FacilityAddressDTO, FacilityDTO } from '@common/interfaces/facilities';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { removeMunicipalityName } from '@common/services/facilities-service';
 
-export const getFacilities: (municipalityId: string, errandId: string) => Promise<FacilityDTO[]> = (
-  municipalityId,
-  errandId
-) => {
-  if (!errandId || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch. Returning empty list.');
+export const getFacilities: (errandId: string) => Promise<FacilityDTO[]> = (errandId) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot fetch. Returning empty list.');
     return Promise.resolve([]);
   }
-  const url = `casedata/${municipalityId}/errand/${errandId}`;
+  const url = `casedata/errand/${errandId}`;
   return apiService
     .get<ApiResponse<ApiErrand>>(url)
     .then((res) => res.data.data.facilities)
@@ -22,12 +19,12 @@ export const getFacilities: (municipalityId: string, errandId: string) => Promis
     });
 };
 
-export const saveFacilities = (municipalityId: string, errandId: number, estate: FacilityDTO[]) => {
-  if (!errandId || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot save. Returning.');
+export const saveFacilities = (errandId: number, estate: FacilityDTO[]) => {
+  if (!errandId) {
+    console.error('No errand id found, cannot save. Returning.');
     return Promise.resolve();
   }
-  const url = `casedata/${municipalityId}/errands/${errandId}/facilities`;
+  const url = `casedata/errands/${errandId}/facilities`;
   return apiService
     .post<ApiResponse<ApiErrand>, Partial<FacilityDTO[]>>(url, estate)
     .then((res) => res.data)

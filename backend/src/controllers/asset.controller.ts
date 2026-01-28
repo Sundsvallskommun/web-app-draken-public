@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { CreateAssetDto, PatchAssetDto } from '@/dtos/assets-dto';
 import { RequestWithUser } from '@interfaces/auth.interface';
@@ -22,7 +23,6 @@ export class AssetController {
   @UseBefore(authMiddleware)
   async listAssets(
     @Req() req: RequestWithUser,
-    @QueryParam('municipalityId') municipalityId?: string,
     @QueryParam('partyId') partyId?: string,
     @QueryParam('type') type?: string,
     @QueryParam('status') status?: string,
@@ -31,7 +31,6 @@ export class AssetController {
     @QueryParam('issued') issued?: string,
     @QueryParam('validTo') validTo?: string,
   ): Promise<ResponseData<Asset[]>> {
-    municipalityId ??= '2281';
     const params = new URLSearchParams();
     if (partyId) params.set('partyId', partyId);
     if (type) params.set('type', type);
@@ -41,7 +40,7 @@ export class AssetController {
     if (issued) params.set('issued', issued);
     if (validTo) params.set('validTo', validTo);
 
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets${params.toString() ? `?${params}` : ''}`;
+    const url = `${this.PARTYASSETS_SERVICE}/${MUNICIPALITY_ID}/assets${params.toString() ? `?${params}` : ''}`;
     const res = await this.apiService.get<Asset[]>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }
@@ -49,13 +48,8 @@ export class AssetController {
   @Post('/assets')
   @OpenAPI({ summary: 'Create an asset' })
   @UseBefore(authMiddleware)
-  async createAsset(
-    @Req() req: RequestWithUser,
-    @QueryParam('municipalityId') municipalityId?: string,
-    @Body() body?: CreateAssetDto,
-  ): Promise<ResponseData<Asset>> {
-    municipalityId ??= '2281';
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets`;
+  async createAsset(@Req() req: RequestWithUser, @Body() body?: CreateAssetDto): Promise<ResponseData<Asset>> {
+    const url = `${this.PARTYASSETS_SERVICE}/${MUNICIPALITY_ID}/assets`;
     const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
     return { data: res.data, message: 'created' };
   }
@@ -63,14 +57,8 @@ export class AssetController {
   @Patch('/assets/:id')
   @OpenAPI({ summary: 'Update an asset' })
   @UseBefore(authMiddleware)
-  async patchAsset(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @QueryParam('municipalityId') municipalityId?: string,
-    @Body() body?: PatchAssetDto,
-  ): Promise<ResponseData<Asset>> {
-    municipalityId ??= '2281';
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
+  async patchAsset(@Req() req: RequestWithUser, @Param('id') id: string, @Body() body?: PatchAssetDto): Promise<ResponseData<Asset>> {
+    const url = `${this.PARTYASSETS_SERVICE}/${MUNICIPALITY_ID}/assets/${encodeURIComponent(id)}`;
     const res = await this.apiService.patch<any, any>({ url, data: body }, req.user);
     return { data: res.data, message: 'updated' };
   }

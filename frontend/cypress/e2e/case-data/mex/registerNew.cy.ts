@@ -23,7 +23,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /2281\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/contract/2024-01026', mockPurchaseAgreement).as('getContract');
-      cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getNotifications');
+      cy.intercept('GET', '**/casedatanotifications', mockNotifications).as('getNotifications');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getRelations');
@@ -34,7 +34,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
-      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+      cy.intercept('GET', '**/contracts/2024-01026/attachments/1', mockContractAttachment).as(
         'getContractAttachment'
       );
       cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');

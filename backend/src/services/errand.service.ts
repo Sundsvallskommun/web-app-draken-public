@@ -1,4 +1,5 @@
 import { CASEDATA_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { CPatchErrandDto, CreateErrandDto } from '@interfaces/errand.interface';
@@ -6,7 +7,6 @@ import { User } from '@interfaces/users.interface';
 import { apiURL } from '@utils/util';
 import ApiService from './api.service';
 import { getLastUpdatedAdministrator } from './stakeholder.service';
-import { apiServiceName } from '@/config/api-config';
 
 const SERVICE = apiServiceName('case-data');
 
@@ -53,10 +53,10 @@ export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, 
   return newErrand;
 };
 
-export const validateAction: (municipalityId: string, errandId: string, user: User) => Promise<boolean> = async (municipalityId, errandId, user) => {
+export const validateAction: (errandId: string, user: User) => Promise<boolean> = async (errandId, user) => {
   let allowed = false;
   const apiService = new ApiService();
-  const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}`;
+  const url = `${CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
   if (existingErrand.data.extraParameters.find(p => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {

@@ -39,10 +39,8 @@ export const SupportErrandInvoiceTab: React.FC<{
   const {
     supportErrand,
     user,
-    municipalityId,
     setSupportErrand,
   }: {
-    municipalityId: string;
     supportErrand: SupportErrand;
     setSupportErrand: (e: SupportErrand) => void;
     user: User;
@@ -96,7 +94,7 @@ export const SupportErrandInvoiceTab: React.FC<{
     const existingRecordId =
       supportErrand && supportErrand.externalTags?.find((t) => t.key === 'billingRecordId')?.value;
     if (existingRecordId) {
-      getBillingRecord(existingRecordId, municipalityId).then((rec) => {
+      getBillingRecord(existingRecordId).then((rec) => {
         setRecord(rec);
         reset(rec);
         setTimeout(() => {
@@ -170,7 +168,7 @@ export const SupportErrandInvoiceTab: React.FC<{
 
   const onSubmit = () => {
     setIsLoading(true);
-    return saveBillingRecord(supportErrand, municipalityId, getValues())
+    return saveBillingRecord(supportErrand, getValues())
       .then(() => {
         setIsLoading(false);
         toastMessage(
@@ -179,7 +177,7 @@ export const SupportErrandInvoiceTab: React.FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
       })
       .catch(() => {
         toastMessage({

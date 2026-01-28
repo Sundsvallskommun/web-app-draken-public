@@ -1,4 +1,5 @@
 import { Law } from '@common/data-contracts/case-data/data-contracts';
+export type { Law };
 import { Attachment } from './attachment';
 import { GenericExtraParameters } from './extra-parameters';
 import { CreateStakeholderDto } from './stakeholder';

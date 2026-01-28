@@ -4,7 +4,6 @@ import type { RJSFSchema } from '@rjsf/utils';
 
 export type GetAssetsParams = {
   partyId: string;
-  municipalityId?: string;
   type?: string;
   status?: string;
   origin?: string;
@@ -28,21 +27,17 @@ export async function getAssets(params: GetAssetsParams): Promise<ApiResponse<As
   return res.data;
 }
 
-export async function createAsset(
-  municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>
-): Promise<ApiResponse<Asset>> {
-  const url = `assets?municipalityId=${municipalityId}`;
+export async function createAsset(payload: Partial<Asset> & Record<string, any>): Promise<ApiResponse<Asset>> {
+  const url = `assets`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
   return res.data;
 }
 
 export async function updateAsset(
-  municipalityId: string,
   id: string,
   payload: Partial<Asset> & Record<string, any>
 ): Promise<ApiResponse<Asset>> {
-  const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const url = `assets/${encodeURIComponent(id)}`;
   const res = await apiService.patch<ApiResponse<Asset>, typeof payload>(url, payload);
   return res.data;
 }
@@ -118,11 +113,8 @@ export function buildUpdateAssetPayload(
     jsonParameters: mergedParams,
   };
 }
-export const getMetadataSchema: (municipalityId: string, schemaId: string) => Promise<ApiResponse<any>> = (
-  municipalityId,
-  schemaId
-) => {
-  const url = `${municipalityId}/metadata/jsonschemas/${schemaId}`;
+export const getMetadataSchema: (schemaId: string) => Promise<ApiResponse<any>> = (schemaId) => {
+  const url = `/metadata/jsonschemas/${schemaId}`;
   return apiService
     .get<ApiResponse<any>>(url)
     .then((res) => res.data)
@@ -132,11 +124,8 @@ export const getMetadataSchema: (municipalityId: string, schemaId: string) => Pr
     });
 };
 
-export const getLatestMetadataSchema: (municipalityId: string, schemaName: string) => Promise<ApiResponse<any>> = (
-  municipalityId,
-  schemaName
-) => {
-  const url = `${municipalityId}/metadata/jsonschemas/${schemaName}/latest`;
+export const getLatestMetadataSchema: (schemaName: string) => Promise<ApiResponse<any>> = (schemaName) => {
+  const url = `/metadata/jsonschemas/${schemaName}/latest`;
 
   return apiService
     .get<ApiResponse<any>>(url)

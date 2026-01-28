@@ -16,7 +16,7 @@ interface ExportParameters {
 }
 
 export const SidebarExport: React.FC = () => {
-  const { municipalityId, errand }: { municipalityId: string; errand: IErrand } = useAppContext();
+  const { errand }: { errand: IErrand } = useAppContext();
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const exportConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -43,7 +43,7 @@ export const SidebarExport: React.FC = () => {
       .map(([key, value]) => value && key)
       .filter(Boolean);
 
-    exportSingleErrand(municipalityId, errand, includeParameters)
+    exportSingleErrand(errand, includeParameters)
       .then((pdf) => {
         downloadPdf(
           pdf,

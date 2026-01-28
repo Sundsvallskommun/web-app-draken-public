@@ -206,7 +206,6 @@ export const withRetries: <T>(retries: number, func: () => Promise<T>) => Promis
 };
 
 export const editAttachment = (
-  municipalityId: string,
   errandId: string,
   attachmentId: string,
   attachmentName: string,
@@ -217,10 +216,7 @@ export const editAttachment = (
     category: attachmentType,
   };
   return apiService
-    .patch<boolean, Partial<Attachment>>(
-      `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`,
-      obj
-    )
+    .patch<boolean, Partial<Attachment>>(`casedata/errands/${errandId}/attachments/${attachmentId}`, obj)
     .then((res) => {
       return res;
     })
@@ -230,12 +226,7 @@ export const editAttachment = (
     });
 };
 
-export const sendAttachments = (
-  municipalityId: string,
-  errandId: number,
-  errandNumber: string,
-  attachmentData: UploadFile[]
-) => {
+export const sendAttachments = (errandId: number, errandNumber: string, attachmentData: UploadFile[]) => {
   const attachmentPromises = attachmentData.map(async (attachment) => {
     const fileItem = attachment.file;
 
@@ -273,7 +264,7 @@ export const sendAttachments = (
 
     const postAttachment = () =>
       apiService
-        .post<boolean, FormData>(`casedata/${municipalityId}/errands/${errandId}/attachments`, formData, {
+        .post<boolean, FormData>(`casedata/errands/${errandId}/attachments`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((res) => res)
@@ -288,7 +279,7 @@ export const sendAttachments = (
   return Promise.all(attachmentPromises).then(() => true);
 };
 
-export const deleteAttachment = (municipalityId: string, errandId: number, attachment: UploadFile) => {
+export const deleteAttachment = (errandId: number, attachment: UploadFile) => {
   if (!attachment.id) {
     console.error('No id found, cannot continue.');
     return;
@@ -296,7 +287,7 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
   const attachmentId = attachment.id;
 
   return apiService
-    .deleteRequest<boolean>(`casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`)
+    .deleteRequest<boolean>(`casedata/errands/${errandId}/attachments/${attachmentId}`)
     .then((res) => {
       return res;
     })
@@ -306,16 +297,15 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
     });
 };
 
-export const fetchAttachment: (
-  municipalityId: string,
-  errandId: number,
-  attachmentId: string
-) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
+export const fetchAttachment: (errandId: number, attachmentId: string) => Promise<ApiResponse<Attachment>> = (
+  errandId,
+  attachmentId
+) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
 
-  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
+  const url = `casedata/errands/${errandId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
     .then((res) => res.data)
@@ -325,14 +315,12 @@ export const fetchAttachment: (
     });
 };
 
-export const fetchErrandAttachments: (
-  municipalityId: string,
-  errandId: number
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId) => {
+export const fetchErrandAttachments: (errandId: number) => Promise<ApiResponse<Attachment[]>> = (errandId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
-  const url = `casedata/${municipalityId}/errand/${errandId}/attachments`;
+
+  const url = `casedata/errand/${errandId}/attachments`;
   return apiService
     .get<ApiResponse<Attachment[]>>(url)
     .then((res) => res.data)
@@ -343,11 +331,10 @@ export const fetchErrandAttachments: (
 };
 
 export const messageAttachment: (
-  municipalityId: string,
   errandId: number,
   messageId: string,
   attachmentId: string
-) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, messageId, attachmentId) => {
+) => Promise<ApiResponse<Attachment[]>> = (errandId, messageId, attachmentId) => {
   if (!errandId) {
     console.error('No errand id found, cannot fetch. Returning.');
   }
@@ -355,7 +342,8 @@ export const messageAttachment: (
     console.error('No attachment id found, cannot fetch. Returning.');
   }
 
-  const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
+  const url = `casedata/errand/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
+
   return apiService
     .get<any>(url)
     .then((res) => res.data)

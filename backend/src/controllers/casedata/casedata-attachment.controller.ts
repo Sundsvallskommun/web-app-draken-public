@@ -1,4 +1,4 @@
-import { CASEDATA_NAMESPACE } from '@/config';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
@@ -9,7 +9,7 @@ import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Req, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 interface ResponseData {
@@ -22,21 +22,20 @@ export class CaseDataAttachmentController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
 
-  @Post('/casedata/:municipalityId/errands/:errandId/attachments')
+  @Post('/casedata/errands/:errandId/attachments')
   @HttpCode(201)
   @OpenAPI({ summary: 'Add an attachment to an errand by errand number' })
   @UseBefore(authMiddleware)
   async newAttachment(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: number,
-    @Param('municipalityId') municipalityId: string,
     @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
     @Body() attachmentData: CreateAttachmentDto,
   ): Promise<{ data: ErrandDTO; message: string }> {
     await validateRequestBody(CreateAttachmentDto, attachmentData);
     const baseURL = apiURL(this.SERVICE);
 
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
     console.log('files:', files);
     const data: CreateAttachmentDto = {
       file: files[0].buffer.toString('base64'),
@@ -54,32 +53,30 @@ export class CaseDataAttachmentController {
     return { data: response.data, message: `Attachment created on errand ${attachmentData.errandNumber}` };
   }
 
-  @Patch('/casedata/:municipalityId/errands/:errandId/attachments/:id')
+  @Patch('/casedata/errands/:errandId/attachments/:id')
   @OpenAPI({ summary: 'Save a modified existing attachment' })
   @UseBefore(authMiddleware)
   async patchAttachment(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: number,
-    @Param('municipalityId') municipalityId: string,
     @Param('id') attachmentId: number,
     @Body() attachmentData: Partial<Attachment>,
   ): Promise<ResponseData> {
     if (!attachmentId) {
       throw 'Id not found. Cannot patch attachment without id.';
     }
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     await this.apiService.patch<any, Partial<Attachment>>({ url, baseURL, data: attachmentData }, req.user);
     return { data: 'ok', message: 'success' } as ResponseData;
   }
 
-  @Put('/casedata/:municipalityId/errands/:errandId/attachments/:id')
+  @Put('/casedata/errands/:errandId/attachments/:id')
   @OpenAPI({ summary: 'Save a modified existing attachment' })
   @UseBefore(authMiddleware)
   async putAttachment(
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: number,
-    @Param('municipalityId') municipalityId: string,
     @Param('id') attachmentId: number,
     @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
     @Body() attachmentData: Attachment,
@@ -89,7 +86,7 @@ export class CaseDataAttachmentController {
       throw 'Id not found. Cannot replace attachment without id.';
     }
 
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const data: Attachment = {
       id: attachmentId,
@@ -105,32 +102,21 @@ export class CaseDataAttachmentController {
     return { data: 'ok', message: 'success' } as ResponseData;
   }
 
-  @Get('/casedata/:municipalityId/errands/:errandId/attachments/:id')
+  @Get('/casedata/errands/:errandId/attachments/:id')
   @OpenAPI({ summary: 'Return an attachment by id' })
   @UseBefore(authMiddleware)
-  async attachment(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @Param('errandId') errandId: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<ResponseData> {
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${id}`;
+  async attachment(@Req() req: RequestWithUser, @Param('id') id: string, @Param('errandId') errandId: string): Promise<ResponseData> {
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Attachment[]>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Get('/casedata/:municipalityId/errand/:errandId/attachments')
+  @Get('/casedata/errand/:errandId/attachments')
   @OpenAPI({ summary: 'Return attachments for an errand by errand id' })
   @UseBefore(authMiddleware)
-  async errandAttachments(
-    @Req() req: RequestWithUser,
-    @Param('errandId') errandId: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
-  ): Promise<ResponseData> {
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
+  async errandAttachments(@Req() req: RequestWithUser, @Param('errandId') errandId: string): Promise<ResponseData> {
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Attachment[]>({ url, baseURL }, req.user).catch(e => {
       if (e.status === 404) {
@@ -144,17 +130,16 @@ export class CaseDataAttachmentController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Delete('/casedata/:municipalityId/errands/:errandId/attachments/:attachmentId')
+  @Delete('/casedata/errands/:errandId/attachments/:attachmentId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Remove an attachment by id' })
   @UseBefore(authMiddleware)
   async removeAttachment(
     @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
     @Param('errandId') errandId: string,
     @Param('attachmentId') attachmentId: number,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     logger.info('Removing attachment:', attachmentId, 'from', baseURL, 'url:', url);
     // TODO validate action but we need errandId for that
@@ -166,7 +151,7 @@ export class CaseDataAttachmentController {
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
   }
 
-  @Get('/casedata/:municipalityId/errand/:errandId/messages/:messageId/attachments/:attachmentId')
+  @Get('/casedata/errand/:errandId/messages/:messageId/attachments/:attachmentId')
   @OpenAPI({ summary: 'Return attachment for a message by errand id and message id' })
   @UseBefore(authMiddleware)
   async messageAttachments(
@@ -174,8 +159,6 @@ export class CaseDataAttachmentController {
     @Param('errandId') errandId: number,
     @Param('messageId') messageId: string,
     @Param('attachmentId') attachmentId: string,
-    @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
   ): Promise<ResponseData> {
     if (!errandId) {
       throw Error('ErrandId not found');
@@ -184,7 +167,7 @@ export class CaseDataAttachmentController {
       throw Error('AttachmentId not found');
     }
 
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
+    const url = `${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<ArrayBuffer>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
       logger.error('Something went wrong when fetching attachment');

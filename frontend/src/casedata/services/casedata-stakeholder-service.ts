@@ -19,15 +19,14 @@ export const getLastUpdatedAdministrator = (stakeholders: Stakeholder[]) => {
   );
 };
 
-export const fetchStakeholder: (
-  municipalityId: string,
-  errandId: number,
-  stakeholderId: string
-) => Promise<ApiResponse<Stakeholder>> = (municipalityId, errandId, stakeholderId) => {
+export const fetchStakeholder: (errandId: number, stakeholderId: string) => Promise<ApiResponse<Stakeholder>> = (
+  errandId,
+  stakeholderId
+) => {
   if (!stakeholderId) {
     console.error('No stakeholder id found, cannot fetch. Returning.');
   }
-  const url = `/casedata/${municipalityId}/errands/${errandId}/stakeholders/${stakeholderId}`;
+  const url = `/casedata/errands/${errandId}/stakeholders/${stakeholderId}`;
   return apiService
     .get<ApiResponse<Stakeholder>>(url)
     .then((res) => res.data)
@@ -138,7 +137,7 @@ export const makeStakeholdersList: (data: Partial<IErrand>) => Partial<CreateSta
   return stakeholders;
 };
 
-export const editStakeholder = (municipalityId: string, errandId: string, contact: CasedataOwnerOrContact) => {
+export const editStakeholder = (errandId: string, contact: CasedataOwnerOrContact) => {
   const stakeholder = makeStakeholder(contact, contact.newRole);
   if (!stakeholder.id) {
     console.error('No id found, cannot update stakeholder.');
@@ -147,7 +146,7 @@ export const editStakeholder = (municipalityId: string, errandId: string, contac
 
   return apiService
     .patch<boolean, Partial<CreateStakeholderDto>>(
-      `casedata/${municipalityId}/errands/${errandId}/stakeholders/${stakeholder.id}`,
+      `casedata/errands/${errandId}/stakeholders/${stakeholder.id}`,
       stakeholder
     )
     .then((res) => {
@@ -159,14 +158,11 @@ export const editStakeholder = (municipalityId: string, errandId: string, contac
     });
 };
 
-export const addStakeholder = (municipalityId: string, errandId: string, contact: CasedataOwnerOrContact) => {
+export const addStakeholder = (errandId: string, contact: CasedataOwnerOrContact) => {
   const stakeholder = makeStakeholder(contact, contact.newRole);
 
   return apiService
-    .patch<boolean, Partial<CreateStakeholderDto>>(
-      `casedata/${municipalityId}/errands/${errandId}/stakeholders`,
-      stakeholder
-    )
+    .patch<boolean, Partial<CreateStakeholderDto>>(`casedata/errands/${errandId}/stakeholders`, stakeholder)
     .then((res) => {
       return res;
     })
@@ -176,7 +172,7 @@ export const addStakeholder = (municipalityId: string, errandId: string, contact
     });
 };
 
-export const setAdministrator = async (municipalityId: string, errand: IErrand, admin: Admin) => {
+export const setAdministrator = async (errand: IErrand, admin: Admin) => {
   const stakeholder: CreateStakeholderDto = {
     roles: [Role.ADMINISTRATOR],
     type: 'PERSON',
@@ -185,20 +181,20 @@ export const setAdministrator = async (municipalityId: string, errand: IErrand, 
     adAccount: admin.adAccount,
   };
 
-  const currentErrande = await getErrand(municipalityId, errand.id.toString());
+  const currentErrande = await getErrand(errand.id.toString());
   const existingAdmins = currentErrande.errand.stakeholders.filter((s) => s.roles.includes(Role.ADMINISTRATOR));
 
   await Promise.all(
     existingAdmins
       .filter((s) => s.adAccount?.toLowerCase() !== admin.adAccount.toLowerCase())
-      .map((s) => removeStakeholder(municipalityId, errand.id.toString(), s.id))
+      .map((s) => removeStakeholder(errand.id.toString(), s.id))
   );
 
   const existingAdmin = existingAdmins.find((s) => s.adAccount?.toLowerCase() === admin.adAccount.toLowerCase());
 
   const url = existingAdmin?.id
-    ? `casedata/${municipalityId}/errands/${errand.id}/stakeholders/${existingAdmin.id}`
-    : `casedata/${municipalityId}/errands/${errand.id}/stakeholders`;
+    ? `casedata/errands/${errand.id}/stakeholders/${existingAdmin.id}`
+    : `casedata/errands/${errand.id}/stakeholders`;
 
   return apiService.patch<boolean, Partial<CreateStakeholderDto>>(url, stakeholder).catch((e) => {
     console.error('Something went wrong when setting administrator', stakeholder);
@@ -206,13 +202,13 @@ export const setAdministrator = async (municipalityId: string, errand: IErrand, 
   });
 };
 
-export const removeStakeholder = (municipalityId: string, errandId: string, stakeholderId: string) => {
+export const removeStakeholder = (errandId: string, stakeholderId: string) => {
   if (!stakeholderId) {
     console.error('No id found, cannot continue.');
     return;
   }
   return apiService
-    .deleteRequest<boolean>(`casedata/${municipalityId}/errands/${errandId}/stakeholders/${stakeholderId}`)
+    .deleteRequest<boolean>(`casedata/errands/${errandId}/stakeholders/${stakeholderId}`)
     .then((res) => {
       return res;
     })
@@ -295,13 +291,10 @@ export const getStakeholderSSN: (c: CasedataOwnerOrContact) => string = (c) => {
   return c.stakeholderType === 'ORGANIZATION' ? c.organizationNumber : c.personalNumber || '(personnummer saknas)';
 };
 
-export const getSSNFromPersonId: (municipalityId: string, personId: string) => Promise<string> = (
-  municipalityId,
-  personId
-) => {
+export const getSSNFromPersonId: (personId?: string) => Promise<string | undefined> = (personId) => {
   if (personId) {
     return apiService
-      .post<ApiResponse<string>, { personId: string }>(`casedata/${municipalityId}/stakeholders/personNumber`, {
+      .post<ApiResponse<string>, { personId: string }>(`casedata/stakeholders/personNumber`, {
         personId,
       })
       .then((res) => res.data.data)
@@ -309,7 +302,6 @@ export const getSSNFromPersonId: (municipalityId: string, personId: string) => P
         console.error('Something went wrong when fetching personnumber: ', personId);
         throw e;
       });
-  } else {
-    return;
   }
+  return Promise.resolve(undefined);
 };

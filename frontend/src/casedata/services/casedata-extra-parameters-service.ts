@@ -274,7 +274,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
   return obj[errand.caseType];
 };
 
-export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {
+export const saveExtraParameters = (data: ExtraParameter[], errand: IErrand) => {
   // This function must not include process-related extra parameters since most of these
   // are read-only and managed by the process-service. Hence the filter for PROCESS_PARAMETER_KEYS.
   const sanitizedParameters: ExtraParameter[] = data
@@ -315,7 +315,7 @@ export const saveExtraParameters = (municipalityId: string, data: ExtraParameter
     .filter((p) => !PROCESS_PARAMETER_KEYS.includes(p.key));
 
   return apiService.patch<any, ExtraParameter[]>(
-    `casedata/${municipalityId}/errands/${errand.id}/extraparameters`,
+    `casedata/errands/${errand.id}/extraparameters`,
     mergedExtraParameters
   );
 };

@@ -1,3 +1,4 @@
+import { MUNICIPALITY_ID } from '@/config';
 import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum, Law } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { DecisionDTO } from '@/interfaces/decision.interface';
@@ -19,24 +20,23 @@ export class CaseDataDecisionsController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
 
-  async isUnsigning(municipalityId: string, errandid: string, decision: Decision, user: User) {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandid}/decisions/${decision.id}`;
+  async isUnsigning(errandid: string, decision: Decision, user: User) {
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandid}/decisions/${decision.id}`;
     const baseURL = apiURL(this.SERVICE);
     const previousDecision = await this.apiService.get<Decision>({ url, baseURL }, user);
     return previousDecision.data.extraParameters?.['signed'] === 'true' && decision.extraParameters?.['signed'] === 'false';
   }
 
-  @Patch('/:municipalityId/errands/:id/decisions')
+  @Patch('/casedata/errands/:id/decisions')
   @HttpCode(201)
   @OpenAPI({ summary: 'Add a decision to an errand by id' })
   @UseBefore(authMiddleware, validationMiddleware(DecisionDTO, 'body'))
   async newDecision(
     @Req() req: RequestWithUser,
     @Param('id') errandId: number,
-    @Param('municipalityId') municipalityId: string,
     @Body() decisionData: Decision,
   ): Promise<{ data: string; message: string }> {
-    const allowed = await validateAction(municipalityId, errandId.toString(), req.user);
+    const allowed = await validateAction(errandId.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -53,7 +53,7 @@ export class CaseDataDecisionsController {
       ...(decisionData.validTo && { validTo: decisionData.validTo }),
       extraParameters: decisionData.extraParameters || {},
     };
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions`;
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions`;
     const baseURL = apiURL(this.SERVICE);
     await this.apiService.patch<any, Decision>({ url, baseURL, data: patchData }, req.user).catch(e => {
       logger.error(`Error when patching decision: ${e}`);
@@ -62,24 +62,23 @@ export class CaseDataDecisionsController {
     return { data: 'true', message: `Decision created on errand ${errandId}` };
   }
 
-  @Put('/:municipalityId/errands/:id/decisions/:decisionId')
+  @Put('/casedata/errands/:id/decisions/:decisionId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Update a decision by id' })
   @UseBefore(authMiddleware, validationMiddleware(DecisionDTO, 'body'))
   async replaceDecision(
     @Req() req: RequestWithUser,
     @Param('id') errandId: number,
-    @Param('municipalityId') municipalityId: string,
     @Param('decisionId') decisionId: number,
     @Body() decisionData: Decision,
   ): Promise<{ data: string; message: string }> {
-    const allowed = await validateAction(municipalityId, errandId.toString(), req.user);
+    const allowed = await validateAction(errandId.toString(), req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
     const baseURL = apiURL(this.SERVICE);
-    if (await this.isUnsigning(municipalityId, errandId.toString(), decisionData, req.user)) {
+    if (await this.isUnsigning(errandId.toString(), decisionData, req.user)) {
       throw new HttpException(400, 'Cannot unsign a signed decision');
     }
     await this.apiService.put<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
@@ -89,17 +88,16 @@ export class CaseDataDecisionsController {
     return { data: 'true', message: `Decision ${decisionId} replaced on errand ${errandId}` };
   }
 
-  @Get('/:municipalityId/errands/:id/decisions/:decisionId')
+  @Get('/casedata/errands/:id/decisions/:decisionId')
   @OpenAPI({ summary: 'Return a decision by id' })
   @UseBefore(authMiddleware)
   async permits(
     @Req() req: RequestWithUser,
     @Param('id') errandId: number,
     @Param('decisionId') decisionId: string,
-    @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<ResponseData> {
-    const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
+    const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Decision>({ url, baseURL }, req.user);
     return { data: res.data, message: 'success' } as ResponseData;

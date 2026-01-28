@@ -176,14 +176,14 @@ export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
     });
 };
 
-export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
+export const saveContractToErrand = (contractId: string, errand: IErrand) => {
   const data: ExtraParameter[] = [
     {
       key: 'contractId',
       values: [contractId],
     },
   ];
-  return saveExtraParameters(municipalityId, data, errand);
+  return saveExtraParameters(data, errand);
 };
 
 export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (errand) => {
@@ -454,14 +454,13 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
     : `${c.firstName} ${c.lastName}`;
 
 export const fetchSignedContractAttachment: (
-  municipalityId: string,
   contractId: string,
   attachmentId: number
-) => Promise<ApiResponse<Attachment>> = (municipalityId, contractId, attachmentId) => {
+) => Promise<ApiResponse<Attachment>> = (contractId, attachmentId) => {
   if (!attachmentId) {
     console.error('No attachment id found, cannot fetch. Returning.');
   }
-  const url = `contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`;
+  const url = `contracts/${contractId}/attachments/${attachmentId}`;
   return apiService
     .get<ApiResponse<Attachment>>(url)
     .then((res) => {
@@ -474,7 +473,6 @@ export const fetchSignedContractAttachment: (
 };
 
 export const saveSignedContractAttachment = (
-  municipalityId: string,
   contractId: string,
   attachment: { id: string; file: File }[],
   note: string
@@ -496,7 +494,7 @@ export const saveSignedContractAttachment = (
     };
 
     return apiService
-      .post<boolean, Attachment>(`contracts/${municipalityId}/${contractId}/attachments`, formData)
+      .post<boolean, Attachment>(`contracts/${contractId}/attachments`, formData)
       .then((res) => {
         return res;
       })
@@ -511,14 +509,14 @@ export const saveSignedContractAttachment = (
   });
 };
 
-export const deleteSignedContractAttachment = (municipalityId: string, contractId: string, attachmentId: number) => {
+export const deleteSignedContractAttachment = (contractId: string, attachmentId: number) => {
   if (!attachmentId) {
     console.error('No id found, cannot continue.');
     return;
   }
 
   return apiService
-    .deleteRequest<boolean>(`contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`)
+    .deleteRequest<boolean>(`contracts/${contractId}/attachments/${attachmentId}`)
     .then((res) => {
       return res;
     })

@@ -26,7 +26,7 @@ export const SaveButtonComponent: React.FC<{
     errand: IErrand;
     municipalityId: string;
   } = useAppContext();
-  const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
+  const errandNumber = errand?.errandNumber;
   const router = useRouter();
   const [internalLoading, setInternalLoading] = useState(false);
 

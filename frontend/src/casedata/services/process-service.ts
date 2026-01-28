@@ -42,18 +42,18 @@ export const phaseChangeInProgress = (errand: IErrand) => {
 export const getUiPhase: (errand: IErrand) => UiPhase = (errand) =>
   errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] as UiPhase;
 
-export const cancelErrandPhaseChange = async (municipalityId: string, errand: IErrand) =>
-  savePhaseAction(municipalityId, 'CANCEL', errand);
+export const cancelErrandPhaseChange = async (errand: IErrand) =>
+  savePhaseAction('CANCEL', errand);
 
-export const triggerErrandPhaseChange = async (municipalityId: string, errand: IErrand) =>
-  savePhaseAction(municipalityId, 'COMPLETE', errand);
+export const triggerErrandPhaseChange = async (errand: IErrand) =>
+  savePhaseAction('COMPLETE', errand);
 
-const savePhaseAction = (municipalityId: string, phaseAction: 'CANCEL' | 'COMPLETE', errand: IErrand) => {
+const savePhaseAction = (phaseAction: 'CANCEL' | 'COMPLETE', errand: IErrand) => {
   if (!errand?.id) {
     return Promise.reject(new Error('No errand id'));
   }
   return apiService.patch<any, ExtraParameter[]>(
-    `casedata/${municipalityId}/errands/${errand.id}/extraparameters/process`,
+    `casedata/errands/${errand.id}/extraparameters/process`,
     [
       {
         key: 'process.phaseAction',

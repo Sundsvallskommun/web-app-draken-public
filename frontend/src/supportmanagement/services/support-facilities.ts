@@ -13,8 +13,7 @@ export interface FacilitiesPayload {
 }
 
 export const saveFacilityInfo = (id, facilities) => {
-  const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID;
-  const url = `supporterrands/saveFacilities/${municipalityId}/${id}`;
+  const url = `supporterrands/saveFacilities/${id}`;
   const payload: FacilitiesPayload = {
     propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation) || [],
     districtnames: facilities?.map((f) => f.extraParameters?.districtname || '') || [],

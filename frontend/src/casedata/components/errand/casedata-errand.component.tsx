@@ -28,7 +28,6 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
         .test('notDefaultCasetype', 'Ärendetyp måste väljas', (val) => !!val && val !== 'Välj ärendetyp'),
       channel: yup.string(),
       description: yup.string(),
-      municipalityId: yup.string().required('Kommun måste anges'),
       phase: yup.string(),
       priority: yup.string(),
       status: yup.object({
@@ -39,12 +38,10 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
 
   const [isLoading, setIsLoading] = useState(false);
   const {
-    municipalityId,
     errand,
     setErrand,
     setUiPhase,
   }: {
-    municipalityId: string;
     errand: IErrand;
     setErrand: any;
     setUiPhase: (phase: UiPhase) => void;
@@ -77,7 +74,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
     if (errandNumber) {
       // Existing errand, load it and show it
       setIsLoading(true);
-      getErrandByErrandNumber(municipalityId, errandNumber)
+      getErrandByErrandNumber(errandNumber)
         .then((res) => {
           if (res.error) {
             toastMessage({

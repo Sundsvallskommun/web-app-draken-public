@@ -58,12 +58,8 @@ export class CasedataContractsController {
   @OpenAPI({ summary: 'Save a new contract' })
   @UseBefore(authMiddleware)
   async create_contract(@Req() req: RequestWithUser, @Body() data: Contract): Promise<{ data: Contract; message: string }> {
-    const errandIdParameter = data.extraParameters.find(p => p.name === 'errandId')?.parameters['errandId'];
-    if (!errandIdParameter) {
-      throw new HttpException(400, 'Missing errand id');
-    }
-    const errandId = errandIdParameter.toString();
-    const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
+    const errandId = data.externalReferenceId.toString();
+    const allowed = await validateContractAction(errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -84,12 +80,8 @@ export class CasedataContractsController {
     if (!id) {
       throw 'Id not found. Cannot edit contract without id.';
     }
-    const errandIdParameter = data.extraParameters.find(p => p.name === 'errandId')?.parameters['errandId'];
-    if (!errandIdParameter) {
-      throw new HttpException(400, 'Missing errand id');
-    }
-    const errandId = errandIdParameter.toString();
-    const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
+    const errandId = data.externalReferenceId.toString();
+    const allowed = await validateContractAction(errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -120,7 +112,7 @@ export class CasedataContractsController {
       })
     ).data;
     const errandId = existingContract.externalReferenceId.toString();
-    const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
+    const allowed = await validateContractAction(errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -131,7 +123,7 @@ export class CasedataContractsController {
     return { data: response.data, message: `Contract ${id} removed` };
   }
 
-  @Get('/contracts/:municipalityId/:contractId/attachments/:attachmentId')
+  @Get('/contracts/:contractId/attachments/:attachmentId')
   @OpenAPI({ summary: 'Fetch signed contract attachment' })
   @UseBefore(authMiddleware)
   async fetchSignedContractAttachment(
@@ -146,7 +138,7 @@ export class CasedataContractsController {
     return { data: res.data, message: 'success' } as ResponseData;
   }
 
-  @Post('/contracts/:municipalityId/:contractId/attachments')
+  @Post('/contracts/:contractId/attachments')
   @HttpCode(201)
   @OpenAPI({ summary: 'Save a signed contract attachment' })
   @UseBefore(authMiddleware)
@@ -166,7 +158,7 @@ export class CasedataContractsController {
     return { data: response.data, message: `Signed contract attachment was saved` };
   }
 
-  @Delete('/contracts/:municipalityId/:contractId/attachments/:attachmentId')
+  @Delete('/contracts/:contractId/attachments/:attachmentId')
   @HttpCode(201)
   @OpenAPI({ summary: 'Delete a signed contract attachment' })
   @UseBefore(authMiddleware)

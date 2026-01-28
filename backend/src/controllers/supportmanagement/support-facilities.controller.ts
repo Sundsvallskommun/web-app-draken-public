@@ -1,4 +1,4 @@
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -15,40 +15,25 @@ type Parameters = {
   values: string[];
 }[];
 
-interface FacilitiesPayload {
-  propertyDesignations: string[];
-  districtnames: string[];
-  streets: string[];
-}
-
 @Controller()
 export class SupportFacilitiesController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
-  @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
+  @Patch('/supporterrands/saveFacilities/:id')
   @OpenAPI({ summary: 'Save facilities by errand' })
   @UseBefore(authMiddleware)
-  async saveFacility(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Param('id') id: string,
-    @Body() facilities: FacilitiesPayload,
-    @Res() response: any,
-  ) {
-    if (!municipalityId || !id) {
+  async saveFacility(@Req() req: RequestWithUser, @Param('id') id: string, @Body() facilities: string[], @Res() response: any) {
+    if (!id) {
+      logger.error('No errand id found, it is needed to save facilities.');
       throw new HttpException(400, 'Bad Request');
     }
 
     const PROPERTY_DESIGNATION_KEY = 'propertyDesignation';
     const PROPERTY_DESIGNATION_DISPLAY_NAME = 'Fastighetsbeteckning';
-    const DISTRICT_NAME_KEY = 'districtname';
-    const DISTRICT_NAME_DISPLAY_NAME = 'Distriktnamn';
-    const STREET_KEY = 'street';
-    const STREET_DISPLAY_NAME = 'Adress';
 
-    const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
+    const supportErrandUrl = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/parameters`;
     const supportBaseURL = apiURL(this.SERVICE);
     const existingParametersResponse = await this.apiService.get<Parameters>({ url: supportErrandUrl, baseURL: supportBaseURL }, req.user);
     const existingParameters = existingParametersResponse?.data;
@@ -57,30 +42,24 @@ export class SupportFacilitiesController {
       return response.status(404).send('No parameters found for errand with id');
     }
 
-    const filteredParameters = existingParameters.filter(p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY);
-
-    const newParameters: Parameters = [
-      ...filteredParameters,
-      {
-        key: PROPERTY_DESIGNATION_KEY,
-        displayName: PROPERTY_DESIGNATION_DISPLAY_NAME,
-        values: facilities.propertyDesignations || [],
-      },
-      {
-        key: DISTRICT_NAME_KEY,
-        displayName: DISTRICT_NAME_DISPLAY_NAME,
-        values: facilities.districtnames || [],
-      },
-      {
-        key: STREET_KEY,
-        displayName: STREET_DISPLAY_NAME,
-        values: facilities.streets || [],
-      },
-    ];
-
-    const url = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
+    let url: string;
+    let body: Parameters | string[] = [];
+    if (existingParameters.find(p => p.key === PROPERTY_DESIGNATION_KEY)) {
+      url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/parameters/propertyDesignation`;
+      body = facilities;
+    } else {
+      url = `${MUNICIPALITY_ID}/${this.namespace}/errands/${id}/parameters`;
+      body = [
+        ...existingParameters,
+        {
+          key: PROPERTY_DESIGNATION_KEY,
+          displayName: PROPERTY_DESIGNATION_DISPLAY_NAME,
+          values: facilities,
+        },
+      ];
+    }
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.patch<any, Parameters>({ url, baseURL, data: newParameters }, req.user).catch(e => {
+    const res = await this.apiService.patch<any, Parameters | string[]>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when patching support errand');
       logger.error(e);
       throw e;

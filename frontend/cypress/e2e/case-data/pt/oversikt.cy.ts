@@ -21,7 +21,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('POST', '**/personid*', mockPersonId).as('personIdSearch');
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', /\/errand\/\d*/, mockErrand_base).as('getErrandById');
-      cy.intercept('GET', '**/casedatanotifications/2281', mockNotifications).as('getSupportNotifications');
+      cy.intercept('GET', '**/casedatanotifications', mockNotifications).as('getSupportNotifications');
       cy.visit('/oversikt');
       cy.wait('@getErrands');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

@@ -27,7 +27,7 @@ import { Relation } from '@common/data-contracts/relations/data-contracts';
 export const LinkedErrandsDisclosure: React.FC<{
   errand: SupportErrand | IErrand;
 }> = ({ errand }) => {
-  const { municipalityId } = useAppContext();
+  const { } = useAppContext();
   const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(false);
   const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(false);
   const [query, setQuery] = useState('');
@@ -47,17 +47,17 @@ export const LinkedErrandsDisclosure: React.FC<{
 
   const handleLinkClick = (id: string) => {
     if (relations.some((relation) => relation.target.resourceId === id)) {
-      deleteRelation(municipalityId, relations.find((relation) => relation.target.resourceId === id)?.id)
+      deleteRelation(relations.find((relation) => relation.target.resourceId === id)?.id)
         .then(async () => {
-          const relatedErrands = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
+          const relatedErrands = await getSourceRelations(errand.id.toString(), sortOrder);
           setRelations(relatedErrands);
         })
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
       const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
-      createRelation(municipalityId, errand.id.toString(), errand.errandNumber, targetErrand)
+      createRelation(errand.id.toString(), errand.errandNumber, targetErrand)
         .then(async () => {
-          const relatedErrands = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
+          const relatedErrands = await getSourceRelations(errand.id.toString(), sortOrder);
           setRelations(relatedErrands);
         })
         .catch((e) => console.error('Failed to create relation:', e));
@@ -68,7 +68,7 @@ export const LinkedErrandsDisclosure: React.FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingToErrands(true);
-        const sourceRelations = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
+        const sourceRelations = await getSourceRelations(errand.id.toString(), sortOrder);
         setRelations(sourceRelations);
 
         if (appConfig.features.useStakeholderRelations) {
@@ -98,8 +98,8 @@ export const LinkedErrandsDisclosure: React.FC<{
 
           const fetchedErrands =
             relatedPerson.type === 'PERSON'
-              ? await getStatusesUsingPartyId(municipalityId, relatedPerson.id)
-              : await getStatusesUsingOrganizationNumber(municipalityId, relatedPerson.id);
+              ? await getStatusesUsingPartyId(relatedPerson.id)
+              : await getStatusesUsingOrganizationNumber(relatedPerson.id);
           setRelationToErrands(sortBy(fetchedErrands, 'status'));
         }
         setIsLoadingToErrands(false);
@@ -118,9 +118,9 @@ export const LinkedErrandsDisclosure: React.FC<{
       try {
         setIsLoadingFromErrands(true);
 
-        const relatedErrands = (await getTargetRelations(municipalityId, errand.id.toString(), sortOrder)) ?? [];
+        const relatedErrands = (await getTargetRelations(errand.id.toString(), sortOrder)) ?? [];
         const relatedErrandStatuses = await Promise.all(
-          relatedErrands?.map((relation) => getErrandStatus(municipalityId, relation.source.type))
+          relatedErrands?.map((relation) => getErrandStatus(relation.source.type))
         );
         setRelationFromErrands(relatedErrandStatuses.flat());
 
@@ -142,7 +142,7 @@ export const LinkedErrandsDisclosure: React.FC<{
           (relation) => !relationToErrands.some((errand) => errand.caseId === relation.target.resourceId)
         ) ?? [];
       const promises = await Promise.all(
-        otherErrands.map((relation) => getErrandStatus(municipalityId, relation.target.type))
+        otherErrands.map((relation) => getErrandStatus(relation.target.type))
       );
 
       setResolvedOtherErrands(promises.flat());
@@ -154,7 +154,7 @@ export const LinkedErrandsDisclosure: React.FC<{
       closedErrands = relationToErrands.filter((errand) => errand.status === 'Klart');
     };
     fetchOtherErrands();
-  }, [municipalityId, relations, relationToErrands]);
+  }, [relations, relationToErrands]);
 
   return (
     <Disclosure
@@ -184,7 +184,7 @@ export const LinkedErrandsDisclosure: React.FC<{
               value={query}
               onSearch={(e) => {
                 setSearching(true);
-                getErrandStatus(municipalityId, e).then((res) => {
+                getErrandStatus(e).then((res) => {
                   setSearching(false);
                   setSearchedErrands(res);
                 });

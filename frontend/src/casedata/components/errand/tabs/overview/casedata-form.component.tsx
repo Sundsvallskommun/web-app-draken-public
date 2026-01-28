@@ -9,9 +9,9 @@ import { LinkedErrandsDisclosure } from '@common/components/linked-errands-discl
 import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select, cx } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect } from 'react';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
 export interface CasedataFormModel {
   id: string;
@@ -67,7 +67,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   useEffect(() => {
     setFormIsValid(formState.isValid);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formState.isValid]);
+  }, [formState]);
 
   const { caseType, priority } = watch();
   const caseTypesHiddenFromRegistation = Object.keys(CaseTypesHiddenFromRegistration);
@@ -82,159 +82,154 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
-            <div className="px-0 pt-0">
-              <div className="flex flex-col md:flex-row gap-lg mb-lg">
-                <FormControl id="channel" className="w-full">
-                  <FormLabel>Kanal</FormLabel>
-                  <Select
-                    {...register('channel')}
-                    readOnly
-                    disabled
-                    className="w-full text-dark-primary"
-                    variant="primary"
-                    size="sm"
-                    value={getValues('channel')}
-                    data-cy="channel-input"
-                    onChange={(e) => {}}
-                  >
-                    {Object.entries(Channels).map((c: [string, string]) => {
-                      const id = c[0];
-                      const label = c[1];
-                      return (
-                        <Select.Option
-                          key={`channel-${id}`}
-                          value={label}
-                          className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                        >
-                          {label}
-                        </Select.Option>
-                      );
-                    })}
-                  </Select>
+          <div className="px-0 pt-0">
+            <div className="flex flex-col md:flex-row gap-lg mb-lg">
+              <FormControl id="channel" className="w-full">
+                <FormLabel>Kanal</FormLabel>
+                <Select
+                  {...register('channel')}
+                  readOnly
+                  disabled
+                  className="w-full text-dark-primary"
+                  variant="tertiary"
+                  size="sm"
+                  value={getValues('channel')}
+                  data-cy="channel-input"
+                  onChange={(e) => {}}
+                >
+                  {Object.entries(Channels).map((c: [string, string]) => {
+                    const id = c[0];
+                    const label = c[1];
+                    return (
+                      <Select.Option
+                        key={`channel-${id}`}
+                        value={label}
+                        className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                      >
+                        {label}
+                      </Select.Option>
+                    );
+                  })}
+                </Select>
 
-                  {errors.channel && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{errors.channel?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-                <FormControl id="municipality" className="w-full">
-                  <FormLabel>Kommun</FormLabel>
-                  <Select
-                    {...register('municipalityId')}
-                    disabled
-                    data-cy="municipality-input"
-                    className="w-full text-dark-primary"
-                    variant="primary"
-                    size="sm"
-                    value={getValues('municipalityId')}
-                    onChange={(e) => {
-                      setValue('municipalityId', e.currentTarget.value, { shouldDirty: true });
-                      setMunicipalityId(e.currentTarget.value);
-                    }}
-                  >
-                    {municipalityIds.map((m) => {
-                      const { id, label } = m;
-                      return (
-                        <Select.Option
-                          key={`municipality-${id}`}
-                          value={id}
-                          className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                        >
-                          {label}
-                        </Select.Option>
-                      );
-                    })}
-                  </Select>
-                  {errors.municipalityId && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{errors.municipalityId?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-lg mb-lg">
-                <Input type="hidden" {...register('phase')} />
-                <Input type="hidden" {...register('status')} />
-                <FormControl id="errandCategory" className="w-full" required>
-                  <FormLabel>Ärendetyp</FormLabel>
-                  <Select
-                    {...register('caseType')}
-                    disabled={isErrandLocked(errand)}
-                    readOnly={errand?.channel === Channels.ESERVICE_KATLA}
-                    data-cy="casetype-input"
-                    value={caseType}
-                    className="w-full text-dark-primary"
-                    variant="primary"
-                    size="sm"
-                    onChange={(e) => {
-                      setValue('caseType', e.currentTarget.value, { shouldDirty: true });
-                      trigger();
-                    }}
-                  >
-                    <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
-                    {Object.entries(getCaseLabels())
-                      .filter(([key]) => {
-                        if (errand?.channel === Channels.ESERVICE_KATLA) return true;
-                        return !caseTypesHiddenFromRegistation.includes(key);
-                      })
-                      .sort((a, b) => a[1].localeCompare(b[1]))
-                      .map(([key, label]: [string, string], index) => {
-                        return (
-                          <Select.Option
-                            className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                            key={`caseType-${key}`}
-                            value={key}
-                          >
-                            {label}
-                          </Select.Option>
-                        );
-                      })}
-                  </Select>
-
-                  {errors.caseType && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{errors.caseType?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-                <FormControl id="priority" className="w-full">
-                  <FormLabel>Prioritet</FormLabel>
-                  <Select
-                    {...register('priority')}
-                    disabled={isErrandLocked(errand)}
-                    data-cy="priority-input"
-                    value={priority}
-                    className="w-full text-dark-primary"
-                    variant="primary"
-                    size="sm"
-                  >
-                    {Object.entries(Priority).map((c: [string, string]) => {
-                      const id = c[0];
-                      const label = c[1];
-                      return (
-                        <Select.Option
-                          key={`priority-${id}`}
-                          value={label}
-                          className={cx(
-                            `cursor-pointer select-none relative py-4 pl-10 pr-4
-                                `
-                          )}
-                        >
-                          {label}
-                        </Select.Option>
-                      );
-                    })}
-                  </Select>
-                  {errors.priority && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{'errors.priority?.message'}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
+                {errors.channel && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>{errors.channel?.message}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+              <FormControl id="municipality" className="w-full">
+                <FormLabel>Kommun</FormLabel>
+                <Select
+                  {...register('municipalityId')}
+                  disabled
+                  data-cy="municipality-input"
+                  className="w-full text-dark-primary"
+                  variant="tertiary"
+                  size="sm"
+                  value={getValues('municipalityId')}
+                  onChange={(e) => {
+                    setValue('municipalityId', e.currentTarget.value, { shouldDirty: true });
+                    setMunicipalityId(e.currentTarget.value);
+                  }}
+                >
+                  {municipalityIds.map((m) => {
+                    const { id, label } = m;
+                    return (
+                      <Select.Option
+                        key={`municipality-${id}`}
+                        value={id}
+                        className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                      >
+                        {label}
+                      </Select.Option>
+                    );
+                  })}
+                </Select>
+                {errors.municipalityId && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>{errors.municipalityId?.message}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
             </div>
+
+            <div className="flex flex-col md:flex-row gap-lg mb-lg">
+              <Input type="hidden" {...register('phase')} />
+              <Input type="hidden" {...register('status')} />
+              <FormControl id="errandCategory" className="w-full" required>
+                <FormLabel>Ärendetyp</FormLabel>
+                <Input type="hidden" {...register('caseType')} />
+                <Select
+                  disabled={isErrandLocked(errand)}
+                  data-cy="casetype-input"
+                  value={caseType}
+                  className="w-full text-dark-primary"
+                  variant="tertiary"
+                  size="sm"
+                  onChange={(e) => {
+                    setValue('caseType', e.currentTarget.value, { shouldDirty: true });
+                    trigger();
+                  }}
+                >
+                  <Select.Option value="Välj ärendetyp">Välj ärendetyp</Select.Option>
+                  {Object.entries(getCaseLabels())
+                    .filter(([key]) => !caseTypesHiddenFromRegistation.includes(key))
+                    .sort((a, b) => a[1].localeCompare(b[1]))
+                    .map(([key, label]: [string, string], index) => {
+                      return (
+                        <Select.Option
+                          className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                          key={`caseType-${key}`}
+                          value={key}
+                        >
+                          {label}
+                        </Select.Option>
+                      );
+                    })}
+                </Select>
+                {errors.caseType && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>{errors.caseType?.message}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+              <FormControl id="priority" className="w-full">
+                <FormLabel>Prioritet</FormLabel>
+                <Select
+                  {...register('priority')}
+                  disabled={isErrandLocked(errand)}
+                  data-cy="priority-input"
+                  value={priority}
+                  className="w-full text-dark-primary"
+                  variant="tertiary"
+                  size="sm"
+                >
+                  {Object.entries(Priority).map((c: [string, string]) => {
+                    const id = c[0];
+                    const label = c[1];
+                    return (
+                      <Select.Option
+                        key={`priority-${id}`}
+                        value={label}
+                        className={cx(
+                          `cursor-pointer select-none relative py-4 pl-10 pr-4
+                                `
+                        )}
+                      >
+                        {label}
+                      </Select.Option>
+                    );
+                  })}
+                </Select>
+                {errors.priority && (
+                  <div className="my-sm text-error">
+                    <FormErrorMessage>{'errors.priority?.message'}</FormErrorMessage>
+                  </div>
+                )}
+              </FormControl>
+            </div>
+          </div>
           </Disclosure.Content>
         </Disclosure>
         {errand?.id ? (

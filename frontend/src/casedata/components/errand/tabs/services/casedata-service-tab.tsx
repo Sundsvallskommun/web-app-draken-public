@@ -52,7 +52,7 @@ function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSc
 }
 
 export const CasedataServicesTab: React.FC = () => {
-  const { municipalityId, errand } = useAppContext();
+  const { errand } = useAppContext();
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [editing, setEditing] = useState<Service | null>(null);
@@ -70,13 +70,12 @@ export const CasedataServicesTab: React.FC = () => {
 
   useEffect(() => {
     (async () => {
-      const { schema, schemaId } = await getLatestRjsfSchema(municipalityId, assetType);
+      const { schema, schemaId } = await getLatestRjsfSchema(assetType);
       setSchema(schema);
       setSchemaId(schemaId);
     })();
-  }, [municipalityId, assetType]);
+  }, [assetType]);
   const { services, loading, error, refetch } = useErrandServices({
-    municipalityId,
     partyId,
     errandNumber: errandNr,
     assetType,
@@ -89,7 +88,7 @@ export const CasedataServicesTab: React.FC = () => {
       try {
         const { assetUuid, paramIndex } = fromCompositeId(compositeId);
 
-        const res = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+        const res = await getAssets({ partyId, assetId: errandNr, type: assetType });
         const asset = (res?.data ?? []).find((a) => a.id === assetUuid);
         if (!asset) {
           await refetch();
@@ -104,7 +103,7 @@ export const CasedataServicesTab: React.FC = () => {
 
         const newParams = params.filter((_, i) => i !== paramIndex);
 
-        await updateAsset(municipalityId, asset.id, {
+        await updateAsset(asset.id, {
           origin: asset.origin,
           partyId: asset.partyId,
           assetId: asset.assetId,
@@ -133,14 +132,14 @@ export const CasedataServicesTab: React.FC = () => {
         );
       }
     },
-    [municipalityId, partyId, errandNr, assetType, refetch, toast]
+    [partyId, errandNr, assetType, refetch, toast]
   );
 
   const handleSubmit = useCallback(
     async (payload: any) => {
-      if (!schema || !municipalityId || !schemaId) return;
+      if (!schema || !schemaId) return;
       try {
-        const list = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+        const list = await getAssets({ partyId, assetId: errandNr, type: assetType });
         const existingFull = (list?.data ?? [])[0];
 
         if (editing || existingFull) {
@@ -150,12 +149,11 @@ export const CasedataServicesTab: React.FC = () => {
               ? existingFull
               : existingFull ??
                 (await (async () => {
-                  const refetchFull = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+                  const refetchFull = await getAssets({ partyId, assetId: errandNr, type: assetType });
                   return (refetchFull?.data ?? [])[0];
                 })());
 
           await updateAsset(
-            municipalityId,
             targetId,
             buildUpdateAssetPayload(
               payload,
@@ -166,7 +164,6 @@ export const CasedataServicesTab: React.FC = () => {
           );
         } else {
           await createAsset(
-            municipalityId,
             buildCreateAssetPayload(payload, schema, {
               schemaId,
               assetType,
@@ -195,7 +192,7 @@ export const CasedataServicesTab: React.FC = () => {
         );
       }
     },
-    [schema, municipalityId, editing, schemaId, assetType, partyId, errandNr, refetch, toast]
+    [schema, editing, schemaId, assetType, partyId, errandNr, refetch, toast]
   );
 
   return (

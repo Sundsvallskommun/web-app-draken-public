@@ -13,7 +13,6 @@ import {
   StatusLabel,
   StatusLabelROB,
   SupportErrand,
-  defaultSupportErrandInformation,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandAdmin,
@@ -43,14 +42,12 @@ export const SidebarInfo: React.FC<{
     supportErrand,
     setSupportErrand,
     administrators,
-    municipalityId,
   }: {
     user: any;
     supportErrand: SupportErrand;
     setSupportErrand: any;
     administrators: Admin[];
     uiPhase: UiPhase;
-    municipalityId: string;
   } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<{ key: string; label: string }[]>([]);
   const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
@@ -107,7 +104,7 @@ export const SidebarInfo: React.FC<{
 
   const update = () => {
     if (supportErrand.id) {
-      getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+      getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
     }
   };
 
@@ -115,9 +112,7 @@ export const SidebarInfo: React.FC<{
     setError(false);
     setIsLoading(true);
 
-    const municipalityId = defaultSupportErrandInformation.municipalityId;
-
-    return updateSupportErrand(municipalityId, getValues())
+    return updateSupportErrand(getValues())
       .then((res) => {
         setIsLoading(false);
         if (
@@ -153,7 +148,7 @@ export const SidebarInfo: React.FC<{
           status: 'success',
         });
         setTimeout(async () => {
-          const e = await getSupportErrandById(getValues().id, municipalityId);
+          const e = await getSupportErrandById(getValues().id);
           setSupportErrand(e.errand);
           reset(e.errand);
         }, 0);
@@ -182,21 +177,9 @@ export const SidebarInfo: React.FC<{
     return handleAction(
       async () => {
         if (admin.adAccount === assigner.adAccount) {
-          await setSupportErrandAdmin(
-            supportErrand.id,
-            municipalityId,
-            admin?.adAccount,
-            Status.ONGOING,
-            assigner.adAccount
-          );
+          await setSupportErrandAdmin(supportErrand.id, admin?.adAccount, Status.ONGOING);
         } else {
-          await setSupportErrandAdmin(
-            supportErrand.id,
-            municipalityId,
-            admin?.adAccount,
-            Status.ASSIGNED,
-            assigner.adAccount
-          );
+          await setSupportErrandAdmin(supportErrand.id, admin?.adAccount, Status.ASSIGNED);
         }
 
         return true;
@@ -257,7 +240,7 @@ export const SidebarInfo: React.FC<{
       .then(() => {
         success();
         setIsLoading(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand.id).then((res) => setSupportErrand(res.errand));
         reset();
       })
       .catch(() => {
@@ -272,7 +255,7 @@ export const SidebarInfo: React.FC<{
     setIsLoading('status');
     setError(false);
     return handleAction(
-      () => setSupportErrandStatus(supportErrand.id, municipalityId, status),
+      () => setSupportErrandStatus(supportErrand.id, status),
       () => toast('success', 'Status ändrades'),
       () => toast('error', 'Något gick fel när status ändrades')
     );
@@ -282,7 +265,7 @@ export const SidebarInfo: React.FC<{
     setIsLoading('suspend');
     setError(false);
     return handleAction(
-      () => setSuspension(supportErrand.id, municipalityId, Status.ONGOING, null, null),
+      () => setSuspension(supportErrand.id, Status.ONGOING, null, null),
       () => toast('success', 'Ärende återupptogs'),
       () => toast('error', 'Något gick fel när ärendet återupptogs')
     );
@@ -294,8 +277,7 @@ export const SidebarInfo: React.FC<{
       setIsLoading('admin');
       setError(false);
       return handleAction(
-        () =>
-          setSupportErrandAdmin(supportErrand.id, municipalityId, admin?.adAccount, Status.ONGOING, admin?.adAccount),
+        () => setSupportErrandAdmin(supportErrand.id, admin?.adAccount, Status.ONGOING),
         () => toast('success', 'Handläggare tilldelades'),
         () => toast('error', 'Något gick fel när handläggare tilldelades')
       );

@@ -3,7 +3,6 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { getImageAspect } from '@casedata/services/casedata-attachment-service';
 import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, Image } from '@sk-web-gui/react';
 import { useRef, useState } from 'react';
@@ -13,7 +12,6 @@ import 'react-image-crop/dist/ReactCrop.css';
 export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
   props
 ) => {
-  const { municipalityId } = useAppContext();
   const imgRef = useRef<HTMLImageElement>(null);
   const [blob, setBlob] = useState<Blob>();
   const [crop, setCrop] = useState<Crop>();
@@ -109,7 +107,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
   }
 
   function onSave() {
-    saveCroppedImage(municipalityId, props.errand.id, props.attachment, blob);
+    saveCroppedImage(props.errand.id, props.attachment, blob);
   }
 
   useDebounceEffect(

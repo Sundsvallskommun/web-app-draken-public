@@ -204,19 +204,16 @@ export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = 
   }
 };
 
-const defaultMunicipality = municipalityIds.find((m) => m.label === 'Sundsvall');
-
 export const emptyErrand: Partial<IErrand> = {
   caseType: '',
   channel: Channels.WEB_UI,
   description: '',
-  municipalityId: defaultMunicipality.id,
   phase: ErrandPhase.aktualisering,
   priority: Priority.MEDIUM,
   status: { statusType: ErrandStatus.ArendeInkommit },
 };
 
-export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId) => {
+export const mapErrandToIErrand: (e: ApiErrand) => IErrand = (e) => {
   const administrator = getLastUpdatedAdministrator(e.stakeholders);
   try {
     const ierrand: IErrand = {
@@ -233,7 +230,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       statuses: e.statuses,
       phase: e.phase,
       channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
-      municipalityId: e.municipalityId || municipalityId,
+      municipalityId: e.municipalityId,
       stakeholders: e.stakeholders.map(stakeholder2Contact),
       facilities: e.facilities,
       created: e.created ? dayjs(e.created).format('YYYY-MM-DD HH:mm') : '',
@@ -259,22 +256,19 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
   }
 };
 
-export const handleErrandResponse: (res: ApiErrand[], municipalityId: string) => IErrand[] = (res, municipalityId) => {
-  const errands = res.map((res) => mapErrandToIErrand(res, municipalityId));
+export const handleErrandResponse: (res: ApiErrand[]) => IErrand[] = (res) => {
+  const errands = res.map((res) => mapErrandToIErrand(res));
   return errands;
 };
 
-export const getErrand: (municipalityId: string, id: string) => Promise<{ errand: IErrand; error?: string }> = (
-  municipalityId,
-  id
-) => {
-  let url = `casedata/${municipalityId}/errand/${id}`;
+export const getErrand: (id: string) => Promise<{ errand: IErrand; error?: string }> = (id) => {
+  const url = `casedata/errand/${id}`;
   return apiService
     .get<ApiResponse<ApiErrand>>(url)
     .then(async (res: any) => {
-      const errand = mapErrandToIErrand(res.data.data, municipalityId);
+      const errand = mapErrandToIErrand(res.data.data);
       let error;
-      const errandAttachments = await fetchErrandAttachments(municipalityId, errand.id);
+      const errandAttachments = await fetchErrandAttachments(errand.id);
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
       }
@@ -287,17 +281,16 @@ export const getErrand: (municipalityId: string, id: string) => Promise<{ errand
     );
 };
 
-export const getErrandByErrandNumber: (
-  municipalityId: string,
-  errandNumber: string
-) => Promise<{ errand: IErrand; error?: string }> = (municipalityId, errandNumber) => {
-  let url = `casedata/${municipalityId}/errand/errandNumber/${errandNumber}`;
+export const getErrandByErrandNumber: (errandNumber: string) => Promise<{ errand: IErrand; error?: string }> = (
+  errandNumber
+) => {
+  const url = `casedata/errand/errandNumber/${errandNumber}`;
   return apiService
     .get<ApiResponse<ApiErrand>>(url)
     .then(async (res: any) => {
-      const errand = mapErrandToIErrand(res.data.data, municipalityId);
+      const errand = mapErrandToIErrand(res.data.data);
       let error: string;
-      const errandAttachments = await fetchErrandAttachments(municipalityId, errand.id);
+      const errandAttachments = await fetchErrandAttachments(errand.id);
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
       }
@@ -308,21 +301,13 @@ export const getErrandByErrandNumber: (
 };
 
 export const getErrands: (
-  municipalityId: string,
   page?: number,
   size?: number,
   filter?: { [key: string]: string | boolean | number },
   sort?: { [key: string]: 'asc' | 'desc' },
   extraParameters?: { [key: string]: string }
-) => Promise<ErrandsData> = (
-  municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
-  page = 0,
-  size = 8,
-  filter = {},
-  sort = { updated: 'desc' },
-  extraParameters = {}
-) => {
-  let url = `casedata/${municipalityId}/errands?page=${page}&size=${size}`;
+) => Promise<ErrandsData> = (page = 0, size = 8, filter = {}, sort = { updated: 'desc' }, extraParameters = {}) => {
+  let url = `casedata/errands?page=${page}&size=${size}`;
 
   const filterQuery = Object.keys(filter)
     .map((key) => key + '=' + filter[key])
@@ -335,9 +320,15 @@ export const getErrands: (
     .map((key) => key + '=' + extraParameters[key])
     .join('&');
 
-  url = filterQuery ? `casedata/${municipalityId}/errands?page=${page}&size=${size}&${filterQuery}` : url;
-  url = sortQuery ? `${url}&${sortQuery}` : url;
-  url = extraParametersQuery ? `${url}&${extraParametersQuery}` : url;
+  if (filterQuery) {
+    url = `${url}&${filterQuery}`;
+  }
+  if (sortQuery) {
+    url = `${url}&${sortQuery}`;
+  }
+  if (extraParametersQuery) {
+    url = `${url}&${extraParametersQuery}`;
+  }
 
   return apiService
     .get<ApiResponse<PagedApiErrandsResponse>>(url)
@@ -345,7 +336,7 @@ export const getErrands: (
       let response = {} as ErrandsData;
       const labels = isPT() ? ongoingCaseDataPTErrandLabels : ongoingCaseDataErrandLabels;
       response = {
-        errands: handleErrandResponse(res.data.data.content, municipalityId),
+        errands: handleErrandResponse(res.data.data.content),
         page: res.data.data.pageable.pageNumber,
         size: res.data.data.pageable.pageSize,
         totalPages: res.data.data.totalPages,
@@ -364,7 +355,6 @@ export const getErrands: (
 };
 
 export const useErrands = (
-  municipalityId: string,
   page?: number,
   size?: number,
   filter?: { [key: string]: string | boolean | number },
@@ -400,7 +390,7 @@ export const useErrands = (
         return;
       }
       setErrands({ ...errands, isLoading: true });
-      const errandPromise = getErrands(municipalityId, page, size, filter, sort, extraParameters)
+      await getErrands(page, size, filter, sort, extraParameters)
         .then((res) => {
           setErrands({ ...res, isLoading: false });
           if (res.error && res.error !== '404') {
@@ -422,13 +412,7 @@ export const useErrands = (
         });
 
       const fetchPromises = [
-        getErrands(
-          municipalityId,
-          page,
-          1,
-          { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') },
-          sort
-        )
+        getErrands(page, 1, { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') }, sort)
           .then((res) => {
             setNewErrands(res.totalElements);
           })
@@ -443,7 +427,6 @@ export const useErrands = (
           }),
 
         getErrands(
-          municipalityId,
           page,
           1,
           {
@@ -466,7 +449,6 @@ export const useErrands = (
           }),
 
         getErrands(
-          municipalityId,
           page,
           1,
           {
@@ -489,7 +471,6 @@ export const useErrands = (
           }),
 
         getErrands(
-          municipalityId,
           page,
           1,
           {
@@ -512,7 +493,6 @@ export const useErrands = (
           }),
 
         getErrands(
-          municipalityId,
           page,
           1,
           {
@@ -535,7 +515,7 @@ export const useErrands = (
           }),
       ];
 
-      return Promise.allSettled([errandPromise, ...fetchPromises]);
+      return Promise.allSettled(fetchPromises);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -604,9 +584,7 @@ interface SaveErrandResponse {
   noteSuccessful: boolean;
 }
 
-export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) => Promise<SaveErrandResponse> = (
-  data
-) => {
+export const saveErrand: (data: Partial<IErrand>) => Promise<SaveErrandResponse> = (data) => {
   let result: SaveErrandResponse = {
     errandSuccessful: false,
     attachmentsSuccessful: false,
@@ -616,10 +594,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
   const errandData: Partial<RegisterErrandData> = createApiErrandData(data);
   return errandData.id
     ? apiService
-        .patch<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(
-          `casedata/${data.municipalityId}/errands/${errandData.id}`,
-          errandData
-        )
+        .patch<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(`casedata/errands/${errandData.id}`, errandData)
         .then(async (res) => {
           result.errandSuccessful = true;
           result.errandId = errandData.id;
@@ -630,13 +605,10 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
           return Promise.reject(result);
         })
     : apiService
-        .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(
-          `casedata/${data.municipalityId}/errands`,
-          errandData
-        )
+        .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(`casedata/errands`, errandData)
         .then(async (res) => {
           result.errandSuccessful = true;
-          result.errand = mapErrandToIErrand(res.data.data, data.municipalityId);
+          result.errand = mapErrandToIErrand(res.data.data);
           result.errandId = res.data.data.id.toString();
           return result;
         })
@@ -649,12 +621,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
         });
 };
 
-export const saveCroppedImage = async (
-  municipalityId: string,
-  errandId: number,
-  attachment: Attachment,
-  _blob: Blob
-) => {
+export const saveCroppedImage = async (errandId: number, attachment: Attachment, _blob: Blob) => {
   if (!attachment?.id) {
     throw 'No attachment id found. Cannot save attachment without id.';
   }
@@ -681,7 +648,7 @@ export const saveCroppedImage = async (
   formData.append(`note`, obj.note);
   formData.append(`extension`, obj.extension);
   formData.append(`mimeType`, obj.mimeType);
-  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachment.id}`;
+  const url = `casedata/errands/${errandId}/attachments/${attachment.id}`;
   return apiService
     .put<boolean, FormData>(url, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -695,13 +662,13 @@ export const saveCroppedImage = async (
     });
 };
 
-export const updateErrandStatus = async (municipalityId: string, id: string, status: ErrandStatus) => {
+export const updateErrandStatus = async (id: string, status: ErrandStatus) => {
   const e: Partial<RegisterErrandData> = {
     id,
     status: { statusType: status },
   };
   return apiService
-    .patch<boolean, Partial<RegisterErrandData>>(`casedata/${municipalityId}/errands/${id}`, e)
+    .patch<boolean, Partial<RegisterErrandData>>(`casedata/errands/${id}`, e)
     .then((res) => {
       return res;
     })
@@ -787,7 +754,6 @@ export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, 
 
 export const setErrandStatus = async (
   errandId: number,
-  municipalityId: string,
   status: ErrandStatus,
   date?: string,
   comment?: string
@@ -796,7 +762,7 @@ export const setErrandStatus = async (
     return Promise.reject('Invalid date');
   }
 
-  const url = `casedata/${municipalityId}/errands/${errandId}`;
+  const url = `casedata/errands/${errandId}`;
   const data: Partial<RegisterErrandData> = {
     id: errandId.toString(),
     status: { statusType: status },
@@ -816,7 +782,7 @@ export const setErrandStatus = async (
           noteType: 'INTERNAL',
           extraParameters: {},
         };
-        await saveErrandNote(municipalityId, errandId.toString(), newNote);
+        await saveErrandNote(errandId.toString(), newNote);
       }
       return res.data;
     })
@@ -826,9 +792,7 @@ export const setErrandStatus = async (
     });
 };
 
-export const appealErrand: (data: Partial<IErrand> & { municipalityId: string }) => Promise<SaveErrandResponse> = (
-  data
-) => {
+export const appealErrand: (data: Partial<IErrand>) => Promise<SaveErrandResponse> = (data) => {
   let result: SaveErrandResponse = {
     errandSuccessful: false,
     attachmentsSuccessful: false,
@@ -852,7 +816,7 @@ export const appealErrand: (data: Partial<IErrand> & { municipalityId: string })
   };
 
   return apiService
-    .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>(`casedata/${data.municipalityId}/errands`, errandData)
+    .post<ApiResponse<ApiErrand>, Partial<RegisterErrandData>>('casedata/errands', errandData)
     .then(async (res) => {
       result.errandSuccessful = true;
       result.errandId = res.data.data.id.toString();

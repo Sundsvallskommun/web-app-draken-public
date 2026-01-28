@@ -13,14 +13,13 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
   show,
   setShow,
 }) => {
-  const { municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
+  const { notifications, setNotifications }: AppContextInterface = useAppContext();
   const { user } = useAppContext();
 
   useEffect(() => {
     const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
 
-    municipalityId &&
-      getNotifications(municipalityId)
+    getNotifications()
         .then((res) => {
           setNotifications(res);
         })
@@ -29,7 +28,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
           return [];
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [municipalityId, show]);
+  }, [show]);
 
   const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
 

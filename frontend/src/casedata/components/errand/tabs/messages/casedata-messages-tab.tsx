@@ -18,17 +18,8 @@ export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    errand,
-    messages,
-    messageTree,
-    setMessages,
-    setMessageTree,
-    conversation,
-    conversationTree,
-    user,
-  } = useAppContext();
+  const { errand, messages, messageTree, setMessages, setMessageTree, conversation, conversationTree, user } =
+    useAppContext();
   const [selectedMessage, setSelectedMessage] = useState<MessageNode>();
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [sortMessages, setSortMessages] = useState<number>(0);
@@ -56,9 +47,9 @@ export const CasedataMessagesTab: React.FC<{
     if (msg.conversationId) {
       console.warn('Not implemented');
     } else {
-      setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId, true)
+      setMessageViewStatus(errand.id.toString(), msg.messageId, true)
         .then(() =>
-          fetchMessagesTree(municipalityId, errand).catch(() => {
+          fetchMessagesTree(errand).catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -69,7 +60,7 @@ export const CasedataMessagesTab: React.FC<{
         )
         .then(setMessageTree)
         .then(() =>
-          fetchMessages(municipalityId, errand).catch(() => {
+          fetchMessages(errand).catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,

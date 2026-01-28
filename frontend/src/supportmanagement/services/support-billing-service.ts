@@ -226,31 +226,23 @@ const satisfyApi = (data: CBillingRecord) => {
   return processed as CBillingRecord;
 };
 
-export const approveBillingRecord: (municipalityId: string, record: CBillingRecord, user: User) => Promise<boolean> = (
-  municipalityId,
-  record,
-  user
-) => {
+export const approveBillingRecord: (record: CBillingRecord, user: User) => Promise<boolean> = (record, user) => {
   let data: CBillingRecord = {
     ...record,
     invoice: { ...record.invoice, ourReference: `${user.firstName} ${user.lastName}` },
   };
-  return setBillingRecordStatus(municipalityId, data, CBillingRecordStatusEnum.APPROVED, user);
+  return setBillingRecordStatus(data, CBillingRecordStatusEnum.APPROVED, user);
 };
 
-export const rejectBillingRecord: (municipalityId: string, record: CBillingRecord, user: User) => Promise<boolean> = (
-  municipalityId,
-  record,
-  user
-) => setBillingRecordStatus(municipalityId, record, CBillingRecordStatusEnum.REJECTED, user);
+export const rejectBillingRecord: (record: CBillingRecord, user: User) => Promise<boolean> = (record, user) =>
+  setBillingRecordStatus(record, CBillingRecordStatusEnum.REJECTED, user);
 
 export const setBillingRecordStatus: (
-  municipalityId: string,
   record: CBillingRecord,
   status: CBillingRecordStatusEnum,
   user: User
-) => Promise<boolean> = (municipalityId, record, status, user) => {
-  const url = `billing/${municipalityId}/billingrecords/${record.id}/status`;
+) => Promise<boolean> = (record, status, user) => {
+  const url = `billing/billingrecords/${record.id}/status`;
   let data: CBillingRecord = {
     ...record,
     ...(status === CBillingRecordStatusEnum.APPROVED && { approvedBy: `${user.firstName} ${user.lastName}` }),
@@ -268,17 +260,16 @@ export const setBillingRecordStatus: (
     });
 };
 
-export const saveBillingRecord: (
-  errand: SupportErrand,
-  municipalityId: string,
-  record: CBillingRecord
-) => Promise<boolean> = (errand, municipalityId, record) => {
-  const url = `billing/${municipalityId}/billingrecords${record.id ? `/${record.id}` : ''}`;
+export const saveBillingRecord: (errand: SupportErrand, record: CBillingRecord) => Promise<boolean> = (
+  errand,
+  record
+) => {
+  const url = `billing/billingrecords${record.id ? `/${record.id}` : ''}`;
   const action = record.id ? apiService.put : apiService.post;
   let data = satisfyApi(record);
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
-      return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
+      return errand ? saveBillingRecordReferenceToErrand(errand, res.data.id) : true;
     })
     .catch((e) => {
       console.error('Something went wrong when updating invoice');
@@ -286,12 +277,11 @@ export const saveBillingRecord: (
     });
 };
 
-const saveBillingRecordReferenceToErrand: (
-  errand: SupportErrand,
-  municipalityId: string,
-  billingRecordId: string
-) => Promise<boolean> = (errand, municipalityId, billingRecordId) => {
-  const url = `supporterrands/${municipalityId}/${errand.id}`;
+const saveBillingRecordReferenceToErrand: (errand: SupportErrand, billingRecordId: string) => Promise<boolean> = (
+  errand,
+  billingRecordId
+) => {
+  const url = `supporterrands/${errand.id}`;
   const tags: CExternalTag[] = errand.externalTags || [];
   const existingTag = tags.find((t) => t.key === 'billingRecordId');
   if (existingTag) {
@@ -450,11 +440,8 @@ export const getOrganization: (
     });
 };
 
-export const getBillingRecord: (recordId: string, municipalityId: string) => Promise<CBillingRecord> = (
-  recordId,
-  municipalityId
-) => {
-  let url = `billing/${municipalityId}/billingrecords/${recordId}`;
+export const getBillingRecord: (recordId: string) => Promise<CBillingRecord> = (recordId) => {
+  let url = `billing/billingrecords/${recordId}`;
   return apiService
     .get<CBillingRecord>(url)
     .then((res) => {
@@ -467,13 +454,12 @@ export const getBillingRecord: (recordId: string, municipalityId: string) => Pro
 };
 
 export const getBillingRecords: (
-  municipalityId: string,
   page?: number,
   size?: number,
   filter?: { [key: string]: string | boolean | number },
   sort?: { [key: string]: 'asc' | 'desc' }
-) => Promise<CPageBillingRecord> = (municipalityId, page = 0, size = 10, filter = {}, sort = { modified: 'desc' }) => {
-  let url = `billing/${municipalityId}/billingrecords?page=${page}&size=${size}`;
+) => Promise<CPageBillingRecord> = (page = 0, size = 10, filter = {}, sort = { modified: 'desc' }) => {
+  let url = `billing/billingrecords?page=${page}&size=${size}`;
   const filterQuery = Object.keys(filter)
     .map((key) => key + '=' + filter[key])
     .join('&');
@@ -494,7 +480,6 @@ export const getBillingRecords: (
 };
 
 export const useBillingRecords = (
-  municipalityId: string,
   page?: number,
   size?: number,
   filter?: { [key: string]: string | boolean | number },
@@ -504,8 +489,7 @@ export const useBillingRecords = (
   const { setIsLoading, setBillingRecords, billingRecords } = useAppContext();
   const fetchBillingRecords = useCallback(
     async (page: number = 0) => {
-      // setIsLoading(true);
-      return getBillingRecords(municipalityId, page, size, filter, sort)
+      return getBillingRecords(page, size, filter, sort)
         .then((res) => {
           setBillingRecords({ ...res });
         })

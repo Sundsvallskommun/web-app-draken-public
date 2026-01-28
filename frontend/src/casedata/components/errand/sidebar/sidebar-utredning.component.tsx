@@ -50,12 +50,7 @@ let formSchema = yup
   .required();
 
 export const SidebarUtredning: React.FC = () => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  }: { municipalityId: string; errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
+  const { errand, setErrand, user }: { errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -84,8 +79,8 @@ export const SidebarUtredning: React.FC = () => {
     try {
       setIsLoading(true);
       const rendered = await renderUtredningPdf(errand, data);
-      await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
-      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      await saveDecision(errand, data, 'PROPOSED', rendered.pdfBase64);
+      await getErrand(errand.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);
       setError(false);
       toastMessage(
