@@ -28,7 +28,7 @@ import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
-import { getFacilityByDesignation } from '@common/services/facilities-service';
+import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
 import { EstateInfoSearch } from '@common/interfaces/estate-details';
 
 export const contractTypes = [
@@ -561,14 +561,14 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   return a;
 }
 
-export const getErrandPropertyInformation: (
+export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
   errand: IErrand
-) => Promise<{ name: string; district: string }[]> = async (errand: IErrand) => {
+) => {
   const designations = errand.facilities
     .filter((facility) => facility.address?.propertyDesignation)
     .map((facility) => facility.address?.propertyDesignation);
 
-  const infos = await Promise.allSettled(designations.map((d) => getFacilityByDesignation(d)));
+  const infos = await Promise.allSettled(designations.map((d) => getSingleFacilityByDesignation(d)));
 
   return infos
     .filter((info): info is PromiseFulfilledResult<ApiResponse<EstateInfoSearch[]>> => info.status === 'fulfilled')

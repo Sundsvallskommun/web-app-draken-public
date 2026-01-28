@@ -144,15 +144,13 @@ export const Facilities: React.FC<{
             data-cy={`searchHit-${index}`}
           >
             {`${searchType === 'ADDRESS' ? estate.address : removeMunicipalityName(estate.designation)} (${
-              estate.address
-            }, ${estate.districtname})`}
+              estate?.address || 'Adress saknas'
+            }, ${estate?.districtname || 'Distrikt saknas'})`}
           </SearchField.SuggestionsOption>
         ))}
       </SearchField.SuggestionsList>
     ) : null;
   };
-
-  console.log('realestates', realEstates);
 
   return (
     <div>
