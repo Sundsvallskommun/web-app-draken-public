@@ -60,6 +60,10 @@ export const APIS = [
     name: 'partyassets',
     version: '3.2',
   },
+  {
+    name: 'jsonschema',
+    version: '1.0',
+  },
 ];
 
 export function apiServiceName(name: string): string {
