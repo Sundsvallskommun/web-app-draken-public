@@ -18,26 +18,27 @@ import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
+import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
+import { mockRelations } from './fixtures/mockRelations';
 
-////////COPIED FROM KC, NEEDS SOME FIXES
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('errand page', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
       );
       cy.intercept(
         'GET',
-        '**/supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication',
+        `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`,
         mockSupportMessages
       ).as('getMessages');
-      cy.intercept('GET', '**/supportnotes/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockComments).as('getNotes');
-      cy.intercept('GET', '**/supporthistory/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportHistory).as(
-        'getHistory'
-      );
+      cy.intercept('GET', `**/supportnotes/2281/${mockSupportErrand.id}`, mockComments).as('getNotes');
+      cy.intercept('POST', `**/supportnotes/2281/${mockSupportErrand.id}`, mockComments).as('addNote');
+      cy.intercept('GET', `**/supporthistory/2281/${mockSupportErrand.id}`, mockSupportHistory).as('getHistory');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
       cy.intercept('POST', `**/address`, mockAdressResponse).as('getAddress');
@@ -47,15 +48,27 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('PATCH', '**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities).as(
         'saveFacilityInfo'
       );
-      cy.intercept('GET', '**/supportnotes/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockComments).as('getNotes');
-      cy.intercept('POST', '**/supportnotes/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockComments).as('addNote');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand).as(
+        'getErrand'
+      );
+      cy.intercept('PATCH', `**/supporterrands/2281/${mockSupportErrand.id}/admin`, mockSetAdminResponse).as(
+        'setAdmin'
+      );
+      cy.intercept('POST', `**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage).as(
+        'postMessage'
+      );
     });
 
     it('shows the correct base errand and sidebar main buttons', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
-        'getErrand'
-      );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -68,15 +81,15 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     it('Can self assign errand', () => {
       cy.intercept(
         'GET',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        `**/supporterrands/errandnumber/${mockDifferentUserSupportErrand.errandNumber}`,
         mockDifferentUserSupportErrand
       ).as('getErrand');
       cy.intercept(
         'PATCH',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+        `**/supporterrands/2281/${mockDifferentUserSupportErrand.id}/admin`,
         mockSetSelfAssignAdminResponse
       ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockDifferentUserSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -89,15 +102,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('Can manage admin changes', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
-        'getErrand'
-      );
-      cy.intercept(
-        'PATCH',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
-        mockSetAdminResponse
-      ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -116,15 +121,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('Can manage status and priority changes', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
-        'getErrand'
-      );
-      cy.intercept(
-        'PATCH',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
-        mockSetAdminResponse
-      ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -145,34 +142,26 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('Can manage forwarding, suspending and solving errand', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
-        'getErrand'
-      );
-      cy.intercept(
-        'PATCH',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
-        mockSetAdminResponse
-      ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       //Can forward the errand
-      cy.intercept('POST', `**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490`, mockForwardSupportMessage).as(
+      cy.intercept('POST', `**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage).as(
         'postMessage'
       );
-      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Vidarebefordra ärendet').click();
+      cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
 
       cy.get(`article.sk-modal-dialog`).should('exist');
 
       cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
       cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej!');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej,');
 
-      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Vidarebefordra ärende').click();
+      cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Överlämna ärende').click();
 
-      cy.get('.sk-dialog').should('exist').contains('Vill du vidarebefordra ärendet?');
+      cy.get('.sk-dialog').should('exist').contains('Vill du överlämna ärendet?');
       cy.get('.sk-dialog .sk-btn-secondary').contains('Nej').should('exist');
       cy.get('.sk-dialog .sk-btn-primary').contains('Ja').should('exist').click();
       cy.wait('@postMessage');
@@ -183,6 +172,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('.sk-modal-dialog .sk-btn-primary').contains('Parkera ärende').click();
       const solveLables = [
         { label: 'Avslutat', id: 'SOLVED' },
+        { label: 'Registrerat i annat system', id: 'REGISTERED_EXTERNAL_SYSTEM' },
         { label: 'Åter till chef', id: 'BACK_TO_MANAGER' },
         { label: 'Åter till HR', id: 'BACK_TO_HR' },
       ];
@@ -190,8 +180,8 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       //can change supportErrand to solved
       cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
       cy.get('article.sk-modal-dialog').should('exist').contains('Välj en lösning');
-      cy.get('[data-cy="solve-radiolist"] li').should('have.length', solveLables.length);
-      cy.get('[data-cy="solve-radiolist"] li input').eq(1).should('have.value', solveLables[1].id).check();
+      cy.get('[data-cy="solve-radiolist"] label').should('have.length', solveLables.length);
+      cy.get('[data-cy="solve-radiolist"] label input').eq(1).should('have.value', solveLables[1].id).check();
       cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist').click();
     });
 
@@ -209,7 +199,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     //     '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
     //     mockSetAdminResponse
     //   ).as('setAdmin');
-    //   cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+    //   cy.visit('/arende/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
     //   cy.wait('@getErrand');
     //   cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -225,7 +215,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     // });
 
     it('Resets suspendedFrom and suspendedTo when reactivating errand', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
         ...mockSupportErrand,
         status: 'SUSPENDED',
         suspension: {
@@ -233,16 +223,11 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           suspendedFrom: '2024-08-12',
         },
       }).as('getErrand');
-      cy.intercept(
-        'PATCH',
-        '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
-        mockSetAdminResponse
-      ).as('setAdmin');
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
-      cy.get(`[data-cy="suspend-button"]`).should('exist').click();
+      cy.get(`[data-cy="resume-button"]`).should('exist').click();
       cy.get('button').contains('Ja').should('exist').click();
 
       cy.wait('@updateErrand').then((interception) => {
@@ -256,10 +241,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     it('Can manage Kommentarer', () => {
       const comment = 'En kommentar med text';
       const updatedComment = 'En uppdaterad kommentar med text';
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
-        'getErrand'
-      );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
@@ -298,10 +280,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     it('Can manage Ärendelogg', () => {
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
-        'getErrand'
-      );
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 

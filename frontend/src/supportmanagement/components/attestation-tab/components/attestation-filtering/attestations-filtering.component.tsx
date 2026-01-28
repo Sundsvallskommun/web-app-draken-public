@@ -18,7 +18,6 @@ import {
   AttestationStatusValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import { useState } from 'react';
 
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
@@ -31,7 +30,7 @@ export const AttestationValues = {
 export const AttestationsFilteringComponent: React.FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
-  administrators?: (SupportAdmin | Admin)[];
+  administrators?: Admin[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const { user } = useAppContext();
   const [show, setShow] = useState<boolean>(true);

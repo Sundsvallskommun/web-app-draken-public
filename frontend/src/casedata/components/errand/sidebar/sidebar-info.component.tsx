@@ -7,14 +7,7 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
-import {
-  cancelErrandPhaseChange,
-  getErrand,
-  isErrandAdmin,
-  isErrandLocked,
-  phaseChangeInProgress,
-  validateAction,
-} from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
@@ -40,6 +33,7 @@ import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
+import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -342,7 +336,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 leftIcon={<LucideIcon name="mail" />}
                 className="w-full mt-16"
                 color="vattjom"
-                data-cy="new-message-button"
+                data-cy="sidebar-new-message-button"
                 variant="secondary"
                 disabled={isErrandLocked(errand) || !allowed}
                 onClick={() => {

@@ -1,5 +1,5 @@
 import { TenantKey } from '@common/interfaces/tenant';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isKC, isLOP, isSE } from '@common/services/application-service';
 import { maybe } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import {
@@ -23,20 +23,11 @@ export const extractContactInfo = (c: SupportStakeholderFormModel | undefined) =
   if (!c) {
     return { name: '(saknas)', adress: '(saknas)', phone: '(saknas)', email: '(saknas)' };
   }
-  const name = maybe(`${c?.firstName || ''} ${c?.lastName || ''}`.trim());
+  const personName = `${c?.firstName || ''} ${c?.lastName || ''}`.trim();
+  const name = maybe(personName || c?.organizationName);
   const adress = normalizeAddress(c?.address, c?.zipCode, c?.city);
-  const phone = maybe(
-    c?.phoneNumbers
-      ?.map((x) => x.value)
-      .filter(Boolean)
-      .join(', ')
-  );
-  const email = maybe(
-    c?.emails
-      ?.map((x) => x.value)
-      .filter(Boolean)
-      .join(', ')
-  );
+  const phone = maybe(c?.phoneNumbers?.map((x) => x.value).join(', '));
+  const email = maybe(c?.emails?.map((x) => x.value).join(', '));
   return { name, adress, phone, email };
 };
 
@@ -70,12 +61,17 @@ type TenantConfig = {
   closingLine?: string;
 };
 
-const kcRole = () => (isLOP() ? 'Handläggare' : isKC() ? 'Kommunvägledare' : isIK() ? 'Kundtjänstmedarbetare' : '');
+const getRoleLabel = () => {
+  if (isIK() || isSE()) return 'Kundtjänstmedarbetare';
+  if (isLOP()) return 'Handläggare';
+  if (isKC()) return 'Kommunvägledare';
+  return '';
+};
 
 const TENANTS: Record<TenantKey, TenantConfig> = {
   sundsvall: {
     departmentName: (e) => (isKC() ? 'Sundsvalls kommun' : appConfig.applicationName),
-    roleLabel: (user) => kcRole() + ` ${user}`,
+    roleLabel: (user) => getRoleLabel() + ` ${user}`,
     phoneNumber: '+46 60 19 10 00',
     showMetaRows: true,
     showPropertyDesignations: true,

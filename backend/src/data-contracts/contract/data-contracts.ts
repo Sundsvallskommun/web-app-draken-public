@@ -10,15 +10,131 @@
  * ---------------------------------------------------------------
  */
 
+/** Time unit */
+export enum TimeUnit {
+  DAYS = "DAYS",
+  MONTHS = "MONTHS",
+  YEARS = "YEARS",
+}
+
+/** Status */
+export enum Status {
+  ACTIVE = "ACTIVE",
+  DRAFT = "DRAFT",
+  TERMINATED = "TERMINATED",
+}
+
+/** Stakeholder type */
+export enum StakeholderType {
+  PERSON = "PERSON",
+  ORGANIZATION = "ORGANIZATION",
+  ASSOCIATION = "ASSOCIATION",
+  MUNICIPALITY = "MUNICIPALITY",
+  REGION = "REGION",
+  OTHER = "OTHER",
+}
+
+/** Stakeholder role */
+export enum StakeholderRole {
+  BUYER = "BUYER",
+  CONTACT_PERSON = "CONTACT_PERSON",
+  GRANTOR = "GRANTOR",
+  LAND_RIGHT_OWNER = "LAND_RIGHT_OWNER",
+  LEASEHOLDER = "LEASEHOLDER",
+  PROPERTY_OWNER = "PROPERTY_OWNER",
+  POWER_OF_ATTORNEY_CHECK = "POWER_OF_ATTORNEY_CHECK",
+  POWER_OF_ATTORNEY_ROLE = "POWER_OF_ATTORNEY_ROLE",
+  SELLER = "SELLER",
+  SIGNATORY = "SIGNATORY",
+  PRIMARY_BILLING_PARTY = "PRIMARY_BILLING_PARTY",
+  LESSOR = "LESSOR",
+  LESSEE = "LESSEE",
+}
+
+/** Party */
+export enum Party {
+  LESSOR = "LESSOR",
+  LESSEE = "LESSEE",
+}
+
+/** Leasehold type */
+export enum LeaseholdType {
+  AGRICULTURE = "AGRICULTURE",
+  APARTMENT = "APARTMENT",
+  BOATING_PLACE = "BOATING_PLACE",
+  BUILDING = "BUILDING",
+  DEPOT = "DEPOT",
+  DWELLING = "DWELLING",
+  LAND_COMPLEMENT = "LAND_COMPLEMENT",
+  LINEUP = "LINEUP",
+  OTHER = "OTHER",
+  PARKING = "PARKING",
+  RECYCLING_STATION = "RECYCLING_STATION",
+  ROAD = "ROAD",
+  SIGNBOARD = "SIGNBOARD",
+  SNOW_DUMP = "SNOW_DUMP",
+  SPORTS_PURPOSE = "SPORTS_PURPOSE",
+  SURFACE_HEAT = "SURFACE_HEAT",
+  TRAIL = "TRAIL",
+}
+
+/** Lease type */
+export enum LeaseType {
+  LAND_LEASE_PUBLIC = "LAND_LEASE_PUBLIC",
+  LAND_LEASE_RESIDENTIAL = "LAND_LEASE_RESIDENTIAL",
+  SITE_LEASE_COMMERCIAL = "SITE_LEASE_COMMERCIAL",
+  USUFRUCT_MOORING = "USUFRUCT_MOORING",
+  USUFRUCT_HUNTING = "USUFRUCT_HUNTING",
+  USUFRUCT_FARMING = "USUFRUCT_FARMING",
+  USUFRUCT_MISC = "USUFRUCT_MISC",
+  OBJECT_LEASE = "OBJECT_LEASE",
+  LAND_LEASE_MISC = "LAND_LEASE_MISC",
+  LEASEHOLD = "LEASEHOLD",
+  OTHER_FEE = "OTHER_FEE",
+}
+
+/** Invoiced in */
+export enum InvoicedIn {
+  ADVANCE = "ADVANCE",
+  ARREARS = "ARREARS",
+}
+
+/** Interval type */
+export enum IntervalType {
+  YEARLY = "YEARLY",
+  HALF_YEARLY = "HALF_YEARLY",
+  QUARTERLY = "QUARTERLY",
+  MONTHLY = "MONTHLY",
+}
+
+/** Contract type */
+export enum ContractType {
+  LEASE_AGREEMENT = "LEASE_AGREEMENT",
+  PURCHASE_AGREEMENT = "PURCHASE_AGREEMENT",
+}
+
+/** Attachment category */
+export enum AttachmentCategory {
+  CONTRACT = "CONTRACT",
+  OTHER = "OTHER",
+}
+
+/** Address type */
+export enum AddressType {
+  POSTAL_ADDRESS = "POSTAL_ADDRESS",
+  BILLING_ADDRESS = "BILLING_ADDRESS",
+  VISITING_ADDRESS = "VISITING_ADDRESS",
+}
+
 export interface Problem {
-  detail?: string;
-  title?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -27,54 +143,37 @@ export interface StatusType {
   reasonPhrase?: string;
 }
 
-/** Address for stakeholder */
 export interface Address {
-  /**
-   * Address type
-   * @example "POSTAL_ADDRESS"
-   */
-  type?: string;
-  /** @example "Testvägen 18" */
+  /** Address type */
+  type?: AddressType;
   streetAddress?: string;
-  /** @example "c/o Test Testorsson" */
   careOf?: string;
-  /** @example "123 45" */
   postalCode?: string;
-  /** @example "Sundsvall" */
   town?: string;
-  /** @example "Sverige" */
   country?: string;
-  /** @example "Test Testorsson" */
   attention?: string;
 }
 
 /** Attachment metadata */
-export interface AttachmentMetaData {
+export interface AttachmentMetadata {
   /**
    * The attachment id
    * @format int64
-   * @example 1234
    */
   id?: number;
-  /**
-   * The attachment category. Possible values: CONTRACT | OTHER
-   * @example "CONTRACT"
-   */
-  category?: string;
+  /** Attachment category */
+  category?: AttachmentCategory;
   /**
    * The attachment filename
-   * @example "LeaseContract12.pdf"
+   * @minLength 1
    */
-  filename?: string;
+  filename: string;
   /**
    * The attachment mime-type
-   * @example "application/pdf"
+   * @minLength 1
    */
-  mimeType?: string;
-  /**
-   * Notes on the attachment
-   * @example "The contract was a little wrinkled when scanned"
-   */
+  mimeType: string;
+  /** Notes on the attachment */
   note?: string;
 }
 
@@ -83,69 +182,37 @@ export interface Contract {
   /**
    * Version for contract
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * Contract id
-   * @example "2024-12345"
-   */
+  /** Contract id */
   contractId?: string;
-  /**
-   * A description
-   * @example "A simple description of the contract"
-   */
+  /** A description  */
   description?: string;
-  /**
-   * External referenceId
-   * @example "123"
-   */
+  /** External referenceId */
   externalReferenceId?: string;
-  /**
-   * Type of lease
-   * @example "LEASEHOLD"
-   */
-  landLeaseType?: string;
-  /**
-   * Municipality id for the contract
-   * @example "1984"
-   */
+  /** Lease type */
+  leaseType?: LeaseType;
+  /** Municipality id for the contract */
   municipalityId?: string;
-  /**
-   * Object identity (from Lantmäteriet)
-   * @example "909a6a80-d1a4-90ec-e040-ed8f66444c3f"
-   */
+  /** Object identity (from Lantmäteriet) */
   objectIdentity?: string;
-  /**
-   * Status for contract
-   * @example "ACTIVE"
-   */
-  status?: string;
-  /**
-   * Contract type.
-   * @example "LAND_LEASE"
-   */
-  type?: string;
-  /**
-   * Type of right of use
-   * @example "HUNTING"
-   */
-  usufructType?: string;
-  /** Leasehold */
+  /** Status */
+  status: Status;
+  /** Contract type */
+  type: ContractType;
+  /** Type of leasehold */
   leasehold?: Leasehold;
-  attachmentMetaData?: AttachmentMetaData[];
+  attachmentMetaData?: AttachmentMetadata[];
   additionalTerms?: TermGroup[];
   /** Extra parameters */
   extraParameters?: ExtraParameterGroup[];
   indexTerms?: TermGroup[];
-  propertyDesignations?: string[];
+  propertyDesignations?: PropertyDesignation[];
   stakeholders?: Stakeholder[];
-  /**
-   * The duration of the lease in years
-   * @format int32
-   * @example 9
-   */
-  leaseDuration?: number;
+  /** Duration */
+  duration?: Duration;
+  /** Extension */
+  extension?: Extension;
   /** Fees */
   fees?: Fees;
   /** Invoicing details */
@@ -153,37 +220,17 @@ export interface Contract {
   /**
    * Lease period start date
    * @format date
-   * @example "2020-01-01"
    */
   start?: string;
   /**
    * Lease period end date
    * @format date
-   * @example "2022-12-31"
    */
   end?: string;
-  /**
-   * Marker for whether an agreement should be extended automatically or not
-   * @default true
-   * @example true
-   */
-  autoExtend?: boolean;
-  /**
-   * Extension period in days
-   * @format int32
-   * @example 30
-   */
-  leaseExtension?: number;
-  /**
-   * Termination period in days
-   * @format int32
-   * @example 30
-   */
-  periodOfNotice?: number;
+  notices?: Notice[];
   /**
    * Leased area (m2)
    * @format int32
-   * @example 150
    */
   area?: number;
   /** Whether the contract is signed by a witness */
@@ -194,27 +241,46 @@ export interface Contract {
 
 export interface Crs {
   type?: CrsTypeEnum;
-  properties?: Record<string, object>;
+  properties?: Record<string, any>;
+}
+
+/** Duration */
+export interface Duration {
+  /**
+   * The lease duration value
+   * @format int32
+   */
+  leaseDuration: number;
+  /** The unit of the duration value */
+  unit: TimeUnit;
+}
+
+/** Extension */
+export interface Extension {
+  /**
+   * Marker for whether an agreement should be extended automatically or not
+   * @default true
+   */
+  autoExtend?: boolean;
+  /**
+   * The lease extension value
+   * @format int32
+   */
+  leaseExtension?: number;
+  /** The unit of the extension value */
+  unit?: TimeUnit;
 }
 
 /** Extra parameter group */
 export interface ExtraParameterGroup {
-  /**
-   * The group name
-   * @example "Fees"
-   */
+  /** The group name */
   name?: string;
-  /**
-   * Parameters
-   * @example {"key1":"value1","key2":"value2"}
-   */
+  /** Parameters */
   parameters?: Record<string, string>;
 }
 
 export interface Feature {
-  crs?: Crs;
-  bbox?: number[];
-  properties?: Record<string, object>;
+  properties?: Record<string, any>;
   geometry?:
     | Feature
     | FeatureCollection
@@ -225,13 +291,11 @@ export interface Feature {
     | MultiPolygon
     | Point
     | Polygon;
+  crs?: Crs;
+  bbox?: number[];
   id?: string;
 }
 
-/**
- * Part(s) of property covered by the lease. Described by GeoJSON using polygon(s)
- * @example {"features":[{"geometry":{"coordinates":[[[1730072021484375,6238137830626575],[17297286987304688,6238050291927199],[17297801971435548,6237922958346664],[17301406860351562,62378194958300900],[17303810119628906,62379149998183050],[17303638458251952,6238066208244492],[1730072021484375,6238137830626575]]],"type":"Polygon"},"properties":{},"type":"Feature"}],"type":"FeatureCollection"}
- */
 export interface FeatureCollection {
   crs?: Crs;
   bbox?: number[];
@@ -240,43 +304,37 @@ export interface FeatureCollection {
 
 /** Fees */
 export interface Fees {
-  /**
-   * The currency of the lease fees
-   * @example "SEK"
-   */
+  /** The currency of the lease fees */
   currency?: string;
-  /**
-   * Yearly fee
-   * @example 1000
-   */
+  /** Yearly fee */
   yearly?: number;
-  /**
-   * Monthly fee
-   * @example 100
-   */
+  /** Monthly fee */
   monthly?: number;
-  /**
-   * Total fee
-   * @example 1200
-   */
+  /** Total fee */
   total?: number;
-  /**
-   * Total fee as text
-   * @example "One thousand two hundred"
-   */
+  /** Total fee as text */
   totalAsText?: string;
+  /**
+   * Index type
+   * @example "KPI 80"
+   */
+  indexType?: string;
   /**
    * Index year
    * @format int32
-   * @example 2021
    */
   indexYear?: number;
   /**
    * Index number
    * @format int32
-   * @example 1
    */
   indexNumber?: number;
+  /**
+   * Specifies what proportion of the consumer price index should be used for invoicing.
+   * @min 0
+   * @max 1
+   */
+  indexationRate?: number;
   /** Additional information */
   additionalInformation?: string[];
 }
@@ -303,29 +361,17 @@ export type GeometryCollection = GeoJsonObject & {
 
 /** Invoicing details */
 export interface Invoicing {
-  /**
-   * How often the lease is invoiced
-   * @example "QUARTERLY"
-   */
-  invoiceInterval?: string;
-  /**
-   * How the lease is invoiced
-   * @example "ADVANCE"
-   */
-  invoicedIn?: string;
+  /** How often the lease is invoiced */
+  invoiceInterval?: IntervalType;
+  /** Invoiced in */
+  invoicedIn?: InvoicedIn;
 }
 
 /** Leasehold */
 export interface Leasehold {
-  /**
-   * Type of leasehold
-   * @example "OTHER"
-   */
-  purpose?: string;
-  /**
-   * description
-   * @example "A simple description of the leasehold"
-   */
+  /** Leasehold type */
+  purpose?: LeaseholdType;
+  /** description  */
   description?: string;
   additionalInformation?: string[];
 }
@@ -356,6 +402,19 @@ export type MultiPolygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][][];
 };
 
+/** Notice */
+export interface Notice {
+  /** The party type */
+  party?: Party;
+  /**
+   * The period of notice
+   * @format int32
+   */
+  periodOfNotice: number;
+  /** The unit of the periodOfNotice value */
+  unit: TimeUnit;
+}
+
 /** Parameter model */
 export interface Parameter {
   /**
@@ -379,48 +438,39 @@ export type Polygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][];
 };
 
-/** List of stakeholders */
+/** PropertyDesignation */
+export interface PropertyDesignation {
+  /**
+   * Name of property designation
+   * @maxLength 255
+   * @example "SUNDSVALL BALDER 5:1"
+   */
+  name?: string;
+  /**
+   * District of property designation
+   * @maxLength 255
+   * @example "Sundsvall"
+   */
+  district?: string;
+}
+
 export interface Stakeholder {
-  /**
-   * Type of stakeholder, possible values: PERSON | COMPANY | ASSOCIATION
-   * @example "ASSOCIATION"
-   */
-  type?: string;
-  roles?: string[];
-  /**
-   * Name of the organization
-   * @example "Sundsvalls kommun"
-   */
+  /** Type of stakeholder */
+  type?: StakeholderType;
+  roles?: StakeholderRole[];
+  /** Name of the organization */
   organizationName?: string;
-  /**
-   * Swedish organization number
-   * @example "212000-2411"
-   */
+  /** Swedish organization number */
   organizationNumber?: string;
-  /**
-   * Stakeholders first name
-   * @example "Test"
-   */
+  /** Stakeholders first name */
   firstName?: string;
-  /**
-   * Stakeholders last name
-   * @example "Testorsson"
-   */
+  /** Stakeholders last name */
   lastName?: string;
-  /**
-   * PartyId
-   * @example "40f14de9-815d-44a5-a34d-b1d38b628e07"
-   */
+  /** PartyId */
   partyId?: string;
-  /**
-   * Phone number for stakeholder
-   * @example "0701231212"
-   */
+  /** Phone number for stakeholder */
   phoneNumber?: string;
-  /**
-   * Email adress for stakeholder
-   * @example "test.testorsson@test.se"
-   */
+  /** Email adress for stakeholder */
   emailAddress?: string;
   /** Address for stakeholder */
   address?: Address;
@@ -430,24 +480,15 @@ export interface Stakeholder {
 
 /** Term */
 export interface Term {
-  /**
-   * Term description
-   * @example "The parties involved in the lease agreement"
-   */
+  /** Term description */
   description?: string;
-  /**
-   * Term (name)
-   * @example "Parties"
-   */
+  /** Term (name) */
   term?: string;
 }
 
 /** Term group */
 export interface TermGroup {
-  /**
-   * The term group header
-   * @example "Basic Terms"
-   */
+  /** The term group header */
   header?: string;
   terms?: Term[];
 }
@@ -471,10 +512,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -494,7 +535,7 @@ export interface ConstraintViolationProblem {
 }
 
 export interface ThrowableProblem {
-  cause?: ThrowableProblem;
+  cause?: any;
   stackTrace?: {
     classLoaderName?: string;
     moduleName?: string;
@@ -507,14 +548,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  detail?: string;
-  title?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -540,10 +581,10 @@ export interface Violation {
 
 /** Attachment */
 export interface Attachment {
-  /** Attachment content */
+  /** Attachment data, i.e. the file */
   attachmentData: AttachmentData;
   /** Attachment metadata */
-  metaData: AttachmentMetaData;
+  metadata: AttachmentMetadata;
 }
 
 /** Attachment content */
@@ -551,7 +592,6 @@ export interface AttachmentData {
   /**
    * BASE64-encoded attachment file content
    * @format base64
-   * @example "QkFTRTY0LWVuY29kZWQgZGF0YQ=="
    */
   content?: string;
 }

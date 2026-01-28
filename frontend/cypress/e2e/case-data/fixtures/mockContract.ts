@@ -1,6 +1,6 @@
-import { MOCK_PERSON_NUMBER } from './mockMexErrand';
+import { ContractType, LeaseType } from '@casedata/interfaces/contracts';
 
-export const mockContract = {
+export const mockPurchaseAgreement = {
   data: {
     contractId: '2024-01026',
     externalReferenceId: '1021',
@@ -10,9 +10,10 @@ export const mockContract = {
     type: 'PURCHASE_AGREEMENT',
     stakeholders: [
       {
-        type: 'COMPANY',
+        type: 'PERSON',
         roles: ['BUYER'],
-        organizationName: 'Testbolaget',
+        firstName: 'Test',
+        lastName: 'Köparsson',
         address: {
           type: 'POSTAL_ADDRESS',
           streetAddress: 'Testvägen 1',
@@ -35,45 +36,6 @@ export const mockContract = {
           country: '',
           attention: '',
         },
-      },
-      {
-        type: 'PERSON',
-        roles: ['PROPERTY_OWNER'],
-        firstName: 'Anna',
-        lastName: 'Testarlund',
-        address: {
-          type: 'POSTAL_ADDRESS',
-          streetAddress: 'Testvägen 13',
-          careOf: '',
-          postalCode: '12345',
-          town: 'Sundsvall',
-          country: '',
-          attention: '',
-        },
-      },
-      {
-        id: 2075,
-        version: 1,
-        created: '2024-05-17T10:50:17.25221+02:00',
-        updated: '2024-05-17T10:50:17.252221+02:00',
-        type: 'PERSON',
-        personalNumber: MOCK_PERSON_NUMBER,
-        firstName: 'My',
-        lastName: 'Testsson',
-        roles: ['ADMINISTRATOR', 'SELLER'],
-        adAccount: 'kctest',
-        addresses: [],
-        address: {
-          type: 'POSTAL_ADDRESS',
-          streetAddress: 'Testvägen 44',
-          careOf: '',
-          postalCode: '12345',
-          town: 'Sundsvall',
-          country: '',
-          attention: '',
-        },
-        contactInformation: [],
-        extraParameters: {},
       },
     ],
     indexTerms: [
@@ -159,6 +121,199 @@ export const mockContract = {
         ],
       },
     ],
+  },
+  message: 'success',
+};
+
+export const mockLeaseAgreement = {
+  data: {
+    contractId: '2024-01026',
+    externalReferenceId: '1021',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: ContractType.LEASE_AGREEMENT,
+    leaseType: LeaseType.USUFRUCT_MOORING,
+    propertyDesignations: [
+      { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
+      { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
+    ],
+    notices: [],
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['LESSOR'],
+        firstName: 'Anna',
+        lastName: 'Testarlund',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['LESSEE'],
+        firstName: 'Bengt',
+        lastName: 'Testarrendator',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Område och upplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Ändamål',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Arrendetid och uppsägning',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Arrendeavgift',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Bygglov och tillstånd',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Överlåtelse och underupplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Inskrivning',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Skick och skötsel',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Ledningar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Kostnader',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Markföroreningar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Arrendets upphörande och återställning av området',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Skada och ansvar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+    attachmentMetaData: [
+      {
+        id: 1,
+        category: 'CONTRACT',
+        filename: 'mock-contract.pdf',
+        mimeType: 'application/pdf',
+        note: '',
+      },
+    ],
+  },
+  message: 'success',
+};
+
+export const mockContractAttachment = {
+  data: {
+    attachmentData: {
+      content: 'JVBERi0xLjcKJeLjz9MKO==',
+    },
+    metadata: {
+      id: 1,
+      category: 'CONTRACT',
+      filename: 'mock-contract.pdf',
+      mimeType: 'application/pdf',
+      note: '',
+    },
   },
   message: 'success',
 };

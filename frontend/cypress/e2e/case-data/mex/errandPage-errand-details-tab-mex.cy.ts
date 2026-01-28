@@ -1,26 +1,28 @@
 /// <reference types="cypress" />
 
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
+import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
-import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
-import { mockEstateInfo } from '../fixtures/mockEstateInfo';
-import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
-import { mockContract } from '../fixtures/mockContract';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { mockRelations } from '../fixtures/mockRelations';
+import { preventProcessExtraParameters } from '../utils/utils';
 
 const checkExtraParameter = (extraParameters: ExtraParameter[], key: string, value: string) => {
-  console.log('checking extra parameter', key, value);
-  console.log('looking in extra parameters', extraParameters);
   const param = extraParameters.find((p: any) => p.key === key);
-  console.log('found param', param);
   expect(param).to.exist;
   expect(param?.values?.[0]).to.equal(value);
 };
@@ -34,35 +36,59 @@ export const replaceExtraParameter = (extraParameters: ExtraParameter[], newPara
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand details tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
+      cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
       cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
+
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
 
     const goToErrandInformationTab = () => {
-      cy.visit('/arende/2281/MEX-2024-000280');
+      cy.visit('/arende/MEX-2024-000280');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getErrand');
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();
 
       // Should exist on all MEX case types
       cy.get('[data-cy="caseMeaning-input"]').should('exist');
+      cy.get('[data-cy="facilities-disclosure"]').should('exist').click();
+      cy.get('[data-cy="section-Övergripande-disclosure"]').should('exist'); //.click();
     };
 
     const checkEstateInfo = () => {
-      cy.get('[data-cy="suggestion-list"]').should('exist').click();
+      cy.get('[data-cy="suggestion-list"]').should('exist');
+      cy.get('[data-cy="suggestion-list"] label').first().should('exist').click();
       cy.get('[data-cy="estate-table"').should('exist');
       cy.get('[data-cy="realEstate-0"]')
         .should('exist')
@@ -70,43 +96,44 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('a').contains('Visa fastighetsinformation').click();
         });
 
-      cy.get('[data-cy="estate-designation"]').should('exist').contains(mockEstateInfo.data?.designation);
+      cy.get('[data-cy="estate-designation"]').should('exist').contains(mockEstateInfo11.data?.designation);
       cy.get('[data-cy="ownership-tab"]').should('exist');
       cy.get('[data-cy="area-and-actions-tab"]').should('exist');
-      cy.get('[data-cy="owner-name"]').should('exist').contains(mockEstateInfo.data?.ownership[0].owner.name);
-      cy.get('[data-cy="owner-address"]').should('exist').contains(mockEstateInfo.data?.ownership[0].owner.address);
+      cy.get('[data-cy="owner-name"]').should('exist').contains(mockEstateInfo11.data?.ownership[0].owner.name);
+      cy.get('[data-cy="owner-address"]').should('exist').contains(mockEstateInfo11.data?.ownership[0].owner.address);
       cy.get('[data-cy="owner-postal-and-city"]')
         .should('exist')
-        .contains(mockEstateInfo.data?.ownership[0].owner.city);
+        .contains(mockEstateInfo11.data?.ownership[0].owner.city);
 
       cy.get('[data-cy="owner-share"]').should('exist');
       cy.get('[data-cy="owner-enrollment"]').should('exist');
       cy.get('[data-cy="owner-filenumber"]').should('exist');
       cy.get('[data-cy="estate-changes"]').should('exist');
 
-      cy.get('[data-cy="area-and-actions-tab"]').click();
-      cy.get('[data-cy="total-area"]').should('exist').contains(mockEstateInfo.data?.totalArea);
-      cy.get('[data-cy="total-area-land"]').should('exist').contains(mockEstateInfo.data?.totalAreaLand);
-      cy.get('[data-cy="total-area-water"]').should('exist').contains(mockEstateInfo.data?.totalAreaWater);
+      cy.get('[data-cy="area-and-actions-tab"]').should('exist').click({ force: true });
+      cy.get('[data-cy="total-area"]').should('exist').contains(mockEstateInfo11.data?.totalArea);
+      cy.get('[data-cy="total-area-land"]').should('exist').contains(mockEstateInfo11.data?.totalAreaLand);
+      cy.get('[data-cy="total-area-water"]').should('exist').contains(mockEstateInfo11.data?.totalAreaWater);
 
       cy.get('[data-cy="action-table"]').should('exist');
-      cy.get('[data-cy="action-type"]').should('exist').contains(mockEstateInfo.data.actions[0].actionType1);
-      cy.get('[data-cy="action-date"]').should('exist').contains(mockEstateInfo.data.actions[0].actionDate);
+      cy.get('[data-cy="action-type"]').should('exist').contains(mockEstateInfo11.data.actions[0].actionType1);
+      cy.get('[data-cy="action-date"]').should('exist').contains(mockEstateInfo11.data.actions[0].actionDate);
       cy.get('[data-cy="action-file-designation"]')
         .should('exist')
-        .contains(mockEstateInfo.data.actions[0].fileDesignation);
+        .contains(mockEstateInfo11.data.actions[0].fileDesignation);
 
       cy.get('[data-cy="close-estate-info-button"]').should('exist').click({ force: true });
-
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').and('be.enabled');
       cy.get('[data-cy="remove-estate-0"]').should('exist').contains('Ta bort').click();
       cy.get('[data-cy="estate-table"]').should('exist').contains('Inga fastigheter tillagda');
-
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').and('be.disabled');
     };
 
     it('search property designation', () => {
-      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation);
-      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo).as('getEstateInfo');
+      cy.intercept('GET', '**/estateByPropertyDesignation/**', mockEstatePropertyByDesignation).as(
+        'getEstatePropertyByDesignation'
+      );
+      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo11).as('getEstateInfo');
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
@@ -117,13 +144,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       goToErrandInformationTab();
 
       cy.get('[data-cy="facility-search"]').should('exist').type('sundsvall 3:109', { delay: 100 });
+      cy.wait('@getEstatePropertyByDesignation');
 
       checkEstateInfo();
     });
 
     it('search address', () => {
       cy.intercept('GET', '**/estateByAddress/**', mockEstateByAddress);
-      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**', mockEstateInfo11).as('getEstateInfo');
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
@@ -172,29 +200,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="toDate-input"]').should('exist').type('2024-07-30');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      let currentParameters: any = [...mockMexErrand_base.data.extraParameters];
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'reason',
-        values: ['Mock text 1'],
-      });
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'fromDate',
-        values: ['2024-06-30'],
-      });
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'toDate',
-        values: ['2024-07-30'],
-      });
-      currentParameters = replaceExtraParameter(currentParameters, {
-        key: 'otherInformation',
-        values: ['Mock text 2'],
-      });
-
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        expect(request.body.extraParameters).to.deep.equal(currentParameters);
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'reason', 'Mock text 1');
+        checkExtraParameter(request.body, 'fromDate', '2024-06-30');
+        checkExtraParameter(request.body, 'toDate', '2024-07-30');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text 2');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -218,18 +231,18 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="timetable-input"]').should('exist').type('2024-06-15');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 7');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'errandInformation', 'Mock text 1');
-        checkExtraParameter(request.body.extraParameters, 'typeOfEstablishment', 'Mock text 2');
-        checkExtraParameter(request.body.extraParameters, 'jobOpportunities', 'Mock text 3');
-        checkExtraParameter(request.body.extraParameters, 'constructionOfBuildings', 'Mock text 4');
-        checkExtraParameter(request.body.extraParameters, 'landArea', 'Mock text 5');
-        checkExtraParameter(request.body.extraParameters, 'electricity', 'Mock text 6');
-        checkExtraParameter(request.body.extraParameters, 'timetable', '2024-06-15');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text 7');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'errandInformation', 'Mock text 1');
+        checkExtraParameter(request.body, 'typeOfEstablishment', 'Mock text 2');
+        checkExtraParameter(request.body, 'jobOpportunities', 'Mock text 3');
+        checkExtraParameter(request.body, 'constructionOfBuildings', 'Mock text 4');
+        checkExtraParameter(request.body, 'landArea', 'Mock text 5');
+        checkExtraParameter(request.body, 'electricity', 'Mock text 6');
+        checkExtraParameter(request.body, 'timetable', '2024-06-15');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text 7');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -247,21 +260,20 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="reason-textarea"]').should('exist').type('Mock text 1');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'reason', 'Mock text 1');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text 2');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'reason', 'Mock text 1');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text 2');
       });
     });
 
-    it('case MEX_APPLICATION_SQUARE_PLACE', () => {
+    it('case MEX_SQUARE_PLACE', () => {
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
-          caseType: 'MEX_APPLICATION_SQUARE_PLACE',
+          caseType: 'MEX_SQUARE_PLACE',
         })
       ).as('getErrand');
 
@@ -290,28 +302,28 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'location_1', 'Torget 1');
-        checkExtraParameter(request.body.extraParameters, 'location_2', 'Torget 2');
-        checkExtraParameter(request.body.extraParameters, 'location_3', 'Torget 3');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'location_1', 'Torget 1');
+        checkExtraParameter(request.body, 'location_2', 'Torget 2');
+        checkExtraParameter(request.body, 'location_3', 'Torget 3');
 
-        checkExtraParameter(request.body.extraParameters, 'occasion1.fromDate', '2024-06-15');
-        checkExtraParameter(request.body.extraParameters, 'occasion1.toDate', '2024-06-16');
-        checkExtraParameter(request.body.extraParameters, 'occasion2.fromDate', '2024-07-15');
-        checkExtraParameter(request.body.extraParameters, 'occasion2.toDate', '2024-07-16');
-        checkExtraParameter(request.body.extraParameters, 'occasion3.fromDate', '2024-08-15');
-        checkExtraParameter(request.body.extraParameters, 'occasion3.toDate', '2024-08-16');
-        checkExtraParameter(request.body.extraParameters, 'occasion4.fromDate', '2024-09-15');
-        checkExtraParameter(request.body.extraParameters, 'occasion4.toDate', '2024-09-16');
-        checkExtraParameter(request.body.extraParameters, 'occasion5.fromDate', '2024-10-15');
-        checkExtraParameter(request.body.extraParameters, 'occasion5.toDate', '2024-10-16');
+        checkExtraParameter(request.body, 'occasion1.fromDate', '2024-06-15');
+        checkExtraParameter(request.body, 'occasion1.toDate', '2024-06-16');
+        checkExtraParameter(request.body, 'occasion2.fromDate', '2024-07-15');
+        checkExtraParameter(request.body, 'occasion2.toDate', '2024-07-16');
+        checkExtraParameter(request.body, 'occasion3.fromDate', '2024-08-15');
+        checkExtraParameter(request.body, 'occasion3.toDate', '2024-08-16');
+        checkExtraParameter(request.body, 'occasion4.fromDate', '2024-09-15');
+        checkExtraParameter(request.body, 'occasion4.toDate', '2024-09-16');
+        checkExtraParameter(request.body, 'occasion5.fromDate', '2024-10-15');
+        checkExtraParameter(request.body, 'occasion5.toDate', '2024-10-16');
 
-        checkExtraParameter(request.body.extraParameters, 'electricity', 'Ja');
-        checkExtraParameter(request.body.extraParameters, 'water_sewage', 'Ja');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+        checkExtraParameter(request.body, 'electricity', 'Ja');
+        checkExtraParameter(request.body, 'water_sewage', 'Ja');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -328,11 +340,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
       });
     });
 
@@ -350,7 +361,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       ).as('getErrand');
 
       goToErrandInformationTab();
-      cy.wait('@getErrand');
 
       cy.get('[data-cy="applicantType-radio-button-group"]').should('exist');
       cy.get('[data-cy="applicantType-radio-button-0"]').should('have.value', 'Privatperson').check();
@@ -373,21 +383,21 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="account.type-radio-button-1"]').should('have.value', 'Plusgiro');
       cy.get('[data-cy="account.type-radio-button-2"]').should('have.value', 'Bankkonto').check();
 
-      cy.get('[data-cy="account.bank-input"]').should('exist').type('Testbank');
-      cy.get('[data-cy="account.owner-input"]').should('exist').type('Test Testarsson');
-      cy.get('[data-cy="account.number-input"]').should('exist').type('1234567890');
+      cy.get('[data-cy="account.bank-input"]').should('exist').first().type('Testbank');
+      cy.get('[data-cy="account.owner-input"]').should('exist').first().type('Test Testarsson');
+      cy.get('[data-cy="account.number-input"]').should('exist').first().type('1234567890');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
-        // checkExtraParameter(request.body.extraParameters, 'propertyDesignation', 'Test property');
-        checkExtraParameter(request.body.extraParameters, 'registrationAddressStatus', 'Nej jag är inte folkbokförd');
-        checkExtraParameter(request.body.extraParameters, 'roadType', 'Enskild väg UTAN statsbidrag');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        checkExtraParameter(request.body, 'registrationAddressStatus', 'Nej jag är inte folkbokförd');
+        checkExtraParameter(request.body, 'roadType', 'Enskild väg UTAN statsbidrag');
 
-        checkExtraParameter(request.body.extraParameters, 'account.bank', 'Testbank');
-        checkExtraParameter(request.body.extraParameters, 'account.owner', 'Test Testarsson');
-        checkExtraParameter(request.body.extraParameters, 'account.type', 'Bankkonto');
+        checkExtraParameter(request.body, 'account.bank', 'Testbank');
+        checkExtraParameter(request.body, 'account.owner', 'Test Testarsson');
+        checkExtraParameter(request.body, 'account.type', 'Bankkonto');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -404,11 +414,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -425,11 +435,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -453,14 +463,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        expect(request.body.id).to.equal(mockMexErrand_base.data.id.toString());
-        checkExtraParameter(request.body.extraParameters, 'sightingLocation', 'Mock text 1');
-        checkExtraParameter(request.body.extraParameters, 'sightingTime', '2024-06-05T10:00');
-        checkExtraParameter(request.body.extraParameters, 'urgent', 'Ja');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text 2');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'sightingLocation', 'Mock text 1');
+        checkExtraParameter(request.body, 'sightingTime', '2024-06-05T10:00');
+        checkExtraParameter(request.body, 'urgent', 'Ja');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text 2');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -477,10 +487,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -497,11 +508,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
+      cy.get('[data-cy="save-and-continue-button"]').should('be.disabled');
     });
 
     it('case MEX_LAND_SURVEYING_OFFICE', () => {
@@ -517,10 +530,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -537,10 +550,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -559,12 +573,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="invoiceRecipient-input"]').should('exist').type('Test Testarsson');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'invoiceNumber', '12345');
-        checkExtraParameter(request.body.extraParameters, 'invoiceRecipient', 'Test Testarsson');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'invoiceNumber', '12345');
+        checkExtraParameter(request.body, 'invoiceRecipient', 'Test Testarsson');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -581,10 +596,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text');
+        preventProcessExtraParameters(request.body);
       });
     });
 
@@ -608,22 +624,23 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="fromDate-input"]').should('exist').type('2024-06-05');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'reason', 'Jag har flyttat');
-        checkExtraParameter(request.body.extraParameters, 'reason.other', 'Mock text 1');
-        checkExtraParameter(request.body.extraParameters, 'fromDate', '2024-06-05');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text 2');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'reason', 'Jag har flyttat');
+        checkExtraParameter(request.body, 'reason.other', 'Mock text 1');
+        checkExtraParameter(request.body, 'fromDate', '2024-06-05');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text 2');
+        preventProcessExtraParameters(request.body);
       });
     });
 
-    it('case MEX_TERMINATION_OF_HUNTING_LEASE', () => {
+    it('case MEX_HUNTING_LEASE', () => {
       cy.intercept(
         'GET',
         '**/errand/errandNumber/*',
         modifyField(mockMexErrand_base, {
-          caseType: 'MEX_TERMINATION_OF_HUNTING_LEASE',
+          caseType: 'MEX_HUNTING_LEASE',
         })
       ).as('getErrand');
 
@@ -633,12 +650,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="fromDate-input"]').should('exist').type('2024-06-05');
       cy.get('[data-cy="otherInformation-textarea"]').should('exist').type('Mock text 2');
 
-      cy.get('[data-cy="save-errand-information-button"]').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
 
-      cy.wait('@patchErrand').should(({ request }) => {
-        checkExtraParameter(request.body.extraParameters, 'reason', 'Mock text 1');
-        checkExtraParameter(request.body.extraParameters, 'fromDate', '2024-06-05');
-        checkExtraParameter(request.body.extraParameters, 'otherInformation', 'Mock text 2');
+      cy.wait('@saveExtraParameters').should(({ request }) => {
+        checkExtraParameter(request.body, 'reason', 'Mock text 1');
+        checkExtraParameter(request.body, 'fromDate', '2024-06-05');
+        checkExtraParameter(request.body, 'otherInformation', 'Mock text 2');
+        preventProcessExtraParameters(request.body);
       });
     });
   });

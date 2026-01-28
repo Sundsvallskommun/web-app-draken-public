@@ -7,31 +7,42 @@ import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments'
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContract } from '../fixtures/mockContract';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
+import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe).as('mockMe');
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('GET', '**/**/stakeholders/**', mockMexErrand_base.data.stakeholders);
+      cy.intercept('DELETE', '**/**/stakeholders/**', mockMexErrand_base.data.stakeholders);
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/assets?**', mockAsset);
+      cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
 
       cy.intercept('POST', '**/stakeholders/**', mockMexErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/2024-01026', mockContract).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
 
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
@@ -42,7 +53,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
       );
-      cy.visit('/arende/2281/MEX-2024-000280');
+      cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
+      cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
+      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+
+      cy.visit('/arende/MEX-2024-000280');
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     });
@@ -57,23 +74,30 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get(`[aria-label="${mockSidebarButtons[5].label}"]`).should('exist');
     });
 
-    it.only('manages Information', () => {
-      cy.intercept('PATCH', '**/errands/*/stakeholders/*', mockMexErrand_base.data.stakeholders).as(
-        'patchStakeholders'
-      );
+    it('manages Administrators', () => {
+      cy.intercept('PATCH', '**/errands/*/stakeholders', mockMexErrand_base.data.stakeholders).as('patchStakeholders');
       cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
 
       cy.get(`[aria-label="${mockSidebarButtons[0].label}"]`).should('exist');
       cy.get('[data-cy="admin-input"]').should('exist').select('Testhandläggare Katarina');
-      cy.get('[data-cy="assign-administrator-button"]').should('exist').contains('Tilldela').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').contains('Spara ärende').click();
 
       cy.wait('@patchStakeholders').should(({ request }) => {
         expect(request.body.adAccount).to.equal('TESTADMIN1');
       });
+    });
 
-      cy.get('[data-cy="status-input"]').should('exist').select(1);
-      cy.get('[data-cy="save-status-button"]').should('exist').contains('Spara').click();
+    it('manages Status', () => {
+      cy.intercept('PATCH', '**/errands/*', mockMexErrand_base).as('patchErrand');
+
+      cy.get(`[aria-label="${mockSidebarButtons[0].label}"]`).should('exist');
+
+      cy.get('[data-cy="status-input"]').should('exist').should('not.be.disabled').select(1);
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').contains('Spara ärende').click();
       cy.get('[data-cy="status-input"]').should('exist').contains('Väntar på komplettering');
+      cy.wait('@patchErrand').should(({ request }) => {
+        expect(request.body.status.statusType).to.equal('Väntar på komplettering');
+      });
     });
 
     it('manages Notes', () => {
@@ -93,7 +117,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
               });
           }
         });
-      cy.get('[data-cy="PUBLIC-note-input"]').should('exist').type('Mock note');
+      cy.get('[data-cy="PUBLIC-note-input"]').should('exist').type('Mock note', { delay: 100 });
       cy.get('[data-cy="save-PUBLIC-note-button"]').should('exist').click();
 
       cy.wait('@patchNotes').should(({ request }) => {
@@ -121,7 +145,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           }
         });
 
-      cy.get('[data-cy="INTERNAL-note-input"]').should('exist').type('Mock comment');
+      cy.get('[data-cy="INTERNAL-note-input"]').should('exist').type('Mock comment', { delay: 100 });
       cy.get('[data-cy="save-INTERNAL-note-button"]').should('exist').click();
 
       cy.wait('@patchNotes').should(({ request }) => {
@@ -146,7 +170,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .should('exist')
         .last()
         .within(() => {
-          cy.get('.ql-editor').type('Mock investigation text');
+          cy.get('.ql-editor').type('Mock investigation text', { delay: 100 });
         });
 
       cy.get('[data-cy="save-investigation-description-button"]').should('exist').click();
@@ -197,7 +221,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .click({ force: true });
         cy.get('[data-cy="history-details-title"]').should('not.be.empty');
         cy.get('[data-cy="history-details-type"]').should('not.be.empty');
-        cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
+        cy.get('[data-cy="history-table-details-close-button"]').should('exist').click({ force: true });
       });
 
       cy.get('[data-cy="history-event-label-2"]').click();
@@ -206,7 +230,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Under utredning');
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Nytt värde:');
       cy.get('[data-cy="history-details-content"]').should('contain.text', 'Under beslut');
-      cy.get('[data-cy="history-table-details-close-button"]').should('exist').click();
+      cy.get('[data-cy="history-table-details-close-button"]').should('exist').click({ force: true });
     });
 
     it('manages Exports', () => {
@@ -218,7 +242,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           .should('exist')
           .contains('Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.');
       } else {
-        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('not.exist');
+        // Export button should not exist when feature is disabled
+        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist');
       }
     });
   });

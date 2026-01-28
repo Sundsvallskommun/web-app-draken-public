@@ -1,23 +1,22 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { User } from '@common/interfaces/user';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Channels,
   ContactChannelType,
   SupportErrand,
+  defaultSupportErrandInformation,
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useTranslation } from 'next-i18next';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
+import { TwoLevelCategorization } from './TwoLevelCategorization';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
@@ -28,18 +27,14 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     supportMetadata,
   }: {
     supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-    supportAdmins: SupportAdmin[];
-    user: User;
   } = useAppContext();
   const { supportErrand } = props;
   const { t } = useTranslation();
-  const [categoriesList, setCategoriesList] = useState<Category[]>();
+
   const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();
   const [causeDescriptionIsOpen, setCauseDescriptionIsOpen] = useState(
     supportErrand.contactReasonDescription !== undefined
   );
-  const [typesList, setTypesList] = useState<SupportType[]>();
 
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
 
@@ -52,23 +47,23 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     formState: { errors },
   } = formControls;
 
-  const { description, category } = watch();
+  const { description } = watch();
+  const userHasEditedDescription = useRef(false);
+
+  // Reset the edit flag when errand changes (new errand loaded)
+  useEffect(() => {
+    userHasEditedDescription.current = false;
+  }, [supportErrand.id]);
 
   useEffect(() => {
     if (supportMetadata) {
-      setCategoriesList(supportMetadata?.categories);
       setContactReasonList(supportMetadata?.contactReasons);
     } else {
-      getSupportMetadata().then((data) => {
-        setCategoriesList(data.metadata?.categories);
+      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
         setContactReasonList(data.metadata?.contactReasons);
       });
     }
   }, [supportMetadata]);
-
-  useEffect(() => {
-    setTypesList(categoriesList?.find((c) => c.name === category)?.types || []);
-  }, [category, categoriesList]);
 
   const checked = document.querySelector('#causecheckbox:checked') !== null;
 
@@ -84,81 +79,13 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 
       {appConfig.features.useTwoLevelCategorization ? (
         <div className="flex gap-24">
-          <div className="flex my-md gap-xl w-1/2">
-            <FormControl id="category" className="w-full">
-              <FormLabel>
-                {t(
-                  `common:basics_tab.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`,
-                  t('common:basics_tab.orderType.default')
-                )}
-              </FormLabel>
-              <Select
-                {...register('category')}
-                disabled={isSupportErrandLocked(supportErrand)}
-                data-cy="category-input"
-                className="w-full text-dark-primary"
-                variant="primary"
-                size="md"
-                value={getValues().category}
-                onChange={(e) => {
-                  setValue('category', e.currentTarget.value, { shouldDirty: true });
-                  setValue('type', undefined, { shouldDirty: true });
-                  trigger('category');
-                  trigger('type');
-                }}
-              >
-                <Select.Option value="">Välj ärendekategori</Select.Option>
-                {categoriesList
-                  ?.sort((a, b) => a.displayName.localeCompare(b.displayName))
-                  .map((categori) => (
-                    <Select.Option value={categori.name} key={`categori-${categori.name}`}>
-                      {categori.displayName}
-                    </Select.Option>
-                  ))}
-              </Select>
-              {errors.category && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>{errors.category?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
-          <div className="flex my-md gap-xl w-1/2">
-            <FormControl id="type" className="w-full">
-              <FormLabel>Ärendetyp*</FormLabel>
-              <Select
-                {...register('type')}
-                disabled={isSupportErrandLocked(supportErrand)}
-                data-cy="type-input"
-                className="w-full text-dark-primary"
-                variant="primary"
-                size="md"
-                value={getValues().type}
-                onChange={(e) => {
-                  setValue('type', e.currentTarget.value, { shouldDirty: true });
-                  trigger('type');
-                }}
-              >
-                <Select.Option value="">Välj ärendetyp</Select.Option>
-                {typesList?.map((type) => (
-                  <Select.Option value={type.name} key={`type-${type.name}`}>
-                    {type.displayName}
-                  </Select.Option>
-                ))}
-              </Select>
-              {errors.type && (
-                <div className="my-sm text-error">
-                  <FormErrorMessage>{errors.type?.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          </div>
+          <TwoLevelCategorization />
         </div>
       ) : null}
 
       {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} />
+          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata} />
         </div>
       ) : null}
 
@@ -173,15 +100,21 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       ) : null}
 
       <div className="flex my-24 gap-xl">
-        <FormControl id="description" className="w-full">
+        <FormControl id="description" className="w-full" data-cy="errand-description-richtext-wrapper">
           <FormLabel>Ärendebeskrivning</FormLabel>
-          <TextEditor
-            className="w-full h-[15rem] case-description-editor"
-            readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
-            disableToolbar
-            onChange={(e) => setValue('description', e.target.value.markup, { shouldDirty: true })}
-            value={{ markup: description }}
-          />
+          <div onFocusCapture={() => { userHasEditedDescription.current = true; }}>
+            <TextEditor
+              className="w-full h-[15rem] case-description-editor"
+              readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}
+              disableToolbar
+              onChange={(e) => {
+                const newValue = e.target.value.markup;
+                // Only mark as dirty if user has actually interacted with the editor
+                setValue('description', newValue, { shouldDirty: userHasEditedDescription.current });
+              }}
+              value={{ markup: description }}
+            />
+          </div>
         </FormControl>
       </div>
 

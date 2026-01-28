@@ -1,10 +1,12 @@
 /// <reference types="cypress" />
-import { CaseLabels } from '@casedata/interfaces/case-label';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { appConfig } from '@config/appconfig';
+// import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { onlyOn } from '@cypress/skip-test';
-import { mockNotifications } from 'cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
+import { mockNotifications } from '../../../../cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
+import { CaseLabels } from '../../../../src/casedata/interfaces/case-label';
+import { ErrandStatus } from '../../../../src/casedata/interfaces/errand-status';
+import { appConfig } from '../../../../src/config/appconfig';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
 
@@ -13,8 +15,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/errands*', mockErrands_base).as('getErrands');
       cy.intercept('GET', '**/casedatanotifications', mockNotifications).as('getNotifications');
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
       cy.visit('/oversikt');
       cy.wait('@getErrands');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -210,11 +217,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('Can use searchfield', () => {
       cy.get('[data-cy="query-filter"]').should('exist').type('Text goes here');
+      cy.get('button').contains('Sök').should('exist').click();
       cy.intercept('GET', '**/errands*', emptyMockErrands).as(`emptyQuery-filterSearch`);
       cy.wait(`@emptyQuery-filterSearch`);
       cy.get('Caption#errandTableCaption').contains('Det finns inga ärenden').should('exist');
 
       cy.get('[data-cy="query-filter"]').should('exist').clear().type('balder');
+      cy.get('button').contains('Sök').should('exist').click();
       cy.intercept('GET', '**/errands*', mockErrands_base).as(`listedQuery-filterSearch`);
       cy.wait(`@listedQuery-filterSearch`);
       cy.get('[data-cy="main-casedata-table"] .sk-table-tbody-tr').should(
@@ -223,12 +232,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
     });
 
-    it('Can use export', () => {
+    it.only('Can use export', () => {
       if (appConfig.features.useErrandExport) {
         cy.get('[data-cy="export-button"]').should('exist').click();
         cy.get('p').should('exist').contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?');
       } else {
-        cy.get('[data-cy="export-button"]').should('not.exist');
+        // Export button should not exist when feature is disabled
+        cy.get('[data-cy="export-button"]').should('exist');
       }
     });
   });

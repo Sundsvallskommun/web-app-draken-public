@@ -3,6 +3,7 @@ import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
+import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
@@ -73,6 +74,7 @@ export interface SupportErrand extends ApiSupportErrand {
   caseId?: string;
   category: string;
   type: string;
+  subType: string;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
 }
@@ -133,6 +135,7 @@ export enum Status {
   REVIEW = 'REVIEW',
   SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
   FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
+  SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
 }
 
 export enum StatusLabel {
@@ -155,6 +158,7 @@ export enum StatusLabelROB {
   REVIEW = 'Avstämning',
   SECURITY_CLEARENCE = 'Säkerhetsprövning',
   FEEDBACK_CLOSURE = 'Återkoppling och avslut',
+  SUBPACKAGE_HANDLED = 'Delpaket hanterad',
   PENDING = 'Komplettering',
   SUSPENDED = 'Parkerat',
   ASSIGNED = 'Tilldelat',
@@ -193,6 +197,7 @@ export const ongoingStatusesROB = [
   Status.REVIEW,
   Status.SECURITY_CLEARENCE,
   Status.FEEDBACK_CLOSURE,
+  Status.SUBPACKAGE_HANDLED,
 ];
 
 export const suspendedStatuses = [Status.SUSPENDED];
@@ -238,23 +243,15 @@ export const findAttestationStatusLabelForAttestationStatusKey = (attestationSta
 
 export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
   errand.labels.length !== 0
-    ? metadata?.labels.labelStructure.find((c) => errand.labels.includes(c.name))
-    : metadata?.labels.labelStructure.find((c) => errand.classification.category === c.name);
+    ? errand.labels.find((label) => label.classification === 'CATEGORY')
+    : metadata?.labels.labelStructure.find((c) => errand.classification.category === c.resourceName);
 
-export const getLabelType = (errand: SupportErrand, metadata: SupportMetadata) => {
-  const types = getLabelCategory(errand, metadata)?.labels;
-  const matchingType = types?.find((t) => errand.labels.includes(t.name));
-  if (matchingType) {
-    return matchingType;
-  }
-  return types?.find((t) => t.name === errand.classification?.type);
+export const getLabelType = (errand: SupportErrand) => {
+  return errand.labels.find((label) => label.classification === 'TYPE');
 };
 
-export const getLabelSubType = (errand: SupportErrand, metadata: SupportMetadata) => {
-  const types = getLabelCategory(errand, metadata)?.labels;
-  const subTypes = types?.find((x) => errand.labels.includes(x.name))?.labels;
-  const matchingSubType = subTypes?.find((s) => errand.labels.includes(s.name));
-  return matchingSubType;
+export const getLabelSubType = (errand: SupportErrand) => {
+  return errand.labels.find((label) => label.classification === 'SUBTYPE');
 };
 
 export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] => {
@@ -264,7 +261,7 @@ export const getLabelTypeFromDisplayName = (displayName: string, metadata: Suppo
 
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label => {
   const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  return allTypesFlattened?.find((t) => t.name === name);
+  return allTypesFlattened?.find((t) => t.resourcePath === name);
 };
 
 export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label => {
@@ -274,7 +271,7 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
       ?.filter((l) => l.labels?.length > 0)
       ?.map((l) => l.labels)
       ?.flat() || [];
-  return allSubTypesFlattened?.find((t) => t.name === name);
+  return allSubTypesFlattened?.find((t) => t.resourcePath === name);
 };
 
 // This might be instance specific in the future, meaning
@@ -415,6 +412,10 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   parameters: [],
 };
 
+export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (supportErrand) => {
+  return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
+};
+
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
 };
@@ -446,7 +447,14 @@ export const useSupportErrands = (
   const fetchErrands = useCallback(
     async (page: number = 0) => {
       setIsLoading(true);
-      await getSupportErrands(page, size, filter, sort)
+      setNewSupportErrands(null);
+      setOngoingSupportErrands(null);
+      setSuspendedSupportErrands(null);
+      setAssignedSupportErrands(null);
+      setSolvedSupportErrands(null);
+      setSupportErrands({ ...supportErrands, isLoading: true });
+
+      const errandPromise = getSupportErrands(page, size, filter, sort)
         .then((res) => {
           setSupportErrands({ ...res, isLoading: false });
         })
@@ -465,6 +473,7 @@ export const useSupportErrands = (
             setNewSupportErrands(res);
           })
           .catch(() => {
+            setNewSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -481,6 +490,7 @@ export const useSupportErrands = (
             setOngoingSupportErrands(res);
           })
           .catch(() => {
+            setOngoingSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -494,6 +504,7 @@ export const useSupportErrands = (
             setSuspendedSupportErrands(res);
           })
           .catch(() => {
+            setSuspendedSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -507,6 +518,7 @@ export const useSupportErrands = (
             setAssignedSupportErrands(res);
           })
           .catch(() => {
+            setAssignedSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -520,6 +532,7 @@ export const useSupportErrands = (
             setSolvedSupportErrands(res);
           })
           .catch(() => {
+            setSolvedSupportErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -529,7 +542,7 @@ export const useSupportErrands = (
           }),
       ];
 
-      return Promise.allSettled(sidebarUpdatePromises);
+      return Promise.allSettled([errandPromise, ...sidebarUpdatePromises]);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -586,6 +599,25 @@ export const getSupportErrandById: (id: string) => Promise<{ errand: SupportErra
     );
 };
 
+export const getSupportErrandByErrandNumber: (
+  errandnumber: string
+) => Promise<{ errand: SupportErrand; error?: string }> = (errandnumber) => {
+  let url = `supporterrands/errandnumber/${errandnumber}`;
+  return apiService
+    .get<ApiSupportErrand>(url)
+    .then((res: any) => {
+      const errand = mapApiSupportErrandToSupportErrand(res.data);
+      return { errand };
+    })
+    .catch(
+      (e) =>
+        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
+          errand: SupportErrand;
+          error?: string;
+        })
+    );
+};
+
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand) {
     return true;
@@ -608,6 +640,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       ...e,
       category: e.classification?.category === 'NONE' ? undefined : e.classification?.category,
       type: e.classification?.type === 'NONE' ? undefined : e.classification?.type,
+      subType: appConfig.features.useThreeLevelCategorization
+        ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
+        : undefined,
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
@@ -700,6 +735,7 @@ export const getSupportErrands: (
       return response;
     })
     .catch((e) => {
+      console.error('Error: could not fetch errands.', e);
       return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };
@@ -783,7 +819,7 @@ export const updateSupportErrand: (
       ...(formdata.category && { category: formdata.category }),
       ...(formdata.type && { type: formdata.type }),
     },
-    labels: formdata.labels,
+    labels: formdata.labels.map((label) => ({ ...label, labels: undefined })),
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
     ...(typeof formdata.contactReasonDescription !== 'undefined' && {
       contactReasonDescription: formdata.contactReasonDescription,

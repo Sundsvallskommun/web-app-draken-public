@@ -164,27 +164,16 @@ export const SupportErrandAttachmentsTab: React.FC<{
   };
 
   const clickHandler = (attachment) => {
-    if (documentMimeTypes.includes(attachment.mimeType)) {
-      downloadDocument(attachment);
-    } else if (imageMimeTypes.includes(attachment.mimeType)) {
+    if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
       getSupportAttachment(supportErrand.id.toString(), attachment)
         .then((res) => setModalAttachment(res))
         .then(() => {
           setModalFetching(false);
         })
-        .then((res) => openModal());
-    }
-    // exclusive exception for .msg
-    else if (attachment.fileName.endsWith(`.msg`)) {
-      downloadDocument(attachment);
+        .then(() => openModal());
     } else {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Fel: okänd filtyp',
-        status: 'error',
-      });
+      downloadDocument(attachment);
     }
   };
 

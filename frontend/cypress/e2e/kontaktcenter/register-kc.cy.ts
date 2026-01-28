@@ -8,26 +8,30 @@ import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockEmptySupportErrand,
   mockSupportAttachments,
-  mockSupportErrand,
   mockSupportErrands,
   mockSupportErrandsEmpty,
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { mock } from 'node:test';
+//TODO:Update mockdata
+import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
+import { mockRelations } from '../lop/fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('register page', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/newerrand/2281', mockEmptySupportErrand).as('initiateErrand');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
       );
-      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
-        'getErrand'
-      );
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockEmptySupportErrand.errandNumber}`,
+        mockEmptySupportErrand
+      ).as('getErrand');
 
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
@@ -41,6 +45,14 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supporterrands/2281?page=1*', mockSupportErrandsEmpty).as('getErrandsEmpty');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
       cy.visit('/registrera');
       cy.get('.sk-cookie-consent-btn-wrapper button').contains('Godkänn alla').click();
       cy.wait('@initiateErrand');
@@ -51,7 +63,12 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="type-input"]').should('exist');
       cy.get('[data-cy="contactReason-input"]').should('exist');
       cy.get('[data-cy="channel-input"]').should('exist');
-      cy.get('[data-cy="description-input"]').should('exist');
+      cy.get('[data-cy="errand-description-richtext-wrapper"]').should('exist');
+      cy.get('[data-cy="errand-description-richtext-wrapper"]')
+        .parent()
+        .within(() => {
+          cy.get("div[class='ql-editor ql-blank']");
+        });
       cy.get('[data-cy="show-contactReasonDescription-input"]').should('exist').check({ force: true });
       cy.get('[data-cy="contactReasonDescription-input"]').should('exist');
     });
@@ -74,7 +91,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       const typ = cat.types[0];
       cy.get('[data-cy="category-input"]').select(cat.displayName);
       cy.get('[data-cy="type-input"]').select(typ.displayName);
-      cy.get('[data-cy="description-input"]').type('Mock description');
+      cy.get('[data-cy="errand-description-richtext-wrapper"]').type('Mock description');
       cy.get('[data-cy="save-button"]').click();
       cy.wait(`@updateErrand`).should(({ request, response }) => {
         expect(request.body).to.deep.equal({
@@ -84,13 +101,14 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
             category: cat.name,
             type: typ.name,
           },
+          description: '<p>Mock description</p>',
           externalTags: mockEmptySupportErrand.externalTags,
           labels: [],
+          parameters: [],
           channel: 'PHONE',
           priority: 'MEDIUM',
           resolution: 'INFORMED',
           stakeholders: [],
-          description: 'Mock description',
           status: 'ONGOING',
           suspension: {},
         });
@@ -111,7 +129,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       const typ = cat.types[2];
       cy.get('[data-cy="category-input"]').select(cat.displayName);
       cy.get('[data-cy="type-input"]').select(typ.displayName);
-      cy.get('[data-cy="description-input"]').type('Mock description');
+      cy.get('[data-cy="errand-description-richtext-wrapper"]').type('Mock description');
       cy.get('[data-cy="contactReason-input"]').select('E-tjänst saknas');
       cy.get('[data-cy="show-contactReasonDescription-input"]').should('exist').check({ force: true });
       cy.get('[data-cy="contactReasonDescription-input"]').should('exist').type('Mock contact reason description');
@@ -128,11 +146,12 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
           contactReason: 'E-tjänst saknas',
           contactReasonDescription: 'Mock contact reason description',
           labels: [],
+          parameters: [],
           channel: 'PHONE',
           priority: 'MEDIUM',
           resolution: 'INFORMED',
           stakeholders: [],
-          description: 'Mock description',
+          description: '<p>Mock description</p>',
           status: 'ONGOING',
           suspension: {},
         });

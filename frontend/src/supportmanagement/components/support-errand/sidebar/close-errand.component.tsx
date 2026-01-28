@@ -1,10 +1,11 @@
-import { isIK, isKA, isLOP, isROB } from '@common/services/application-service';
+import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
+import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Resolution,
   ResolutionLabelIK,
@@ -22,22 +23,26 @@ import { applicantHasContactChannel, getAdminName } from '@supportmanagement/ser
 import { useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 
+const getDefaultResolution = (): Resolution => {
+  return appConfig.features.useClosedAsDefaultResolution ? Resolution.CLOSED : Resolution.SOLVED;
+};
+
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
-    supportAdmins,
+    administrators,
+    
     supportErrand,
     setSupportErrand,
   }: {
-    supportAdmins: SupportAdmin[];
+    administrators: Admin[];
+    
     supportErrand: SupportErrand;
     setSupportErrand: any;
   } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedResolution, setSelectedResolution] = useState<Resolution>(
-    isROB() ? Resolution.NEED_MET : isLOP() || isIK() ? Resolution.CLOSED : Resolution.SOLVED
-  );
+  const [selectedResolution, setSelectedResolution] = useState<Resolution>(getDefaultResolution());
 
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
 
@@ -48,8 +53,8 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
     return closeSupportErrand(supportErrand.id, resolution)
       .then(() => {
         if (msg) {
-          const admin = supportAdmins.find((a) => a.adAccount === supportErrand.assignedUserId);
-          const adminName = getAdminName(admin, supportErrand);
+          const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
+          const adminName = getAdminName(admin);
           return sendClosingMessage(adminName, supportErrand);
         }
       })
@@ -130,7 +135,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                   {Object.entries(
                     isLOP()
                       ? ResolutionLabelLOP
-                      : isIK()
+                      : isIK() || isSE()
                       ? ResolutionLabelIK
                       : isKA()
                       ? ResolutionLabelKA
@@ -154,7 +159,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               </FormControl>
             </Modal.Content>
             <Modal.Footer className="flex flex-col">
-              {(isLOP() || isIK() || isKA()) && (
+              {appConfig.features.useClosingMessageCheckbox && (
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"

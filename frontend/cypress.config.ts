@@ -1,8 +1,14 @@
+import codeCoverageTask from '@cypress/code-coverage/task';
+import { addMatchImageSnapshotPlugin } from '@simonsmith/cypress-image-snapshot/plugin';
 import { defineConfig } from 'cypress';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export default defineConfig({
+  retries: 2,
   e2e: {
-    // supportFile: false,
+    supportFile: 'cypress/support/e2e.ts',
     baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}`,
     env: {
       apiUrl: `${process.env.NEXT_PUBLIC_API_URL}`,
@@ -39,12 +45,36 @@ export default defineConfig({
     // pass when suddenly the tenth, eleventh, or.. fails.
     chromeWebSecurity: false,
     setupNodeEvents(on, config) {
-      require('@cypress/code-coverage/task')(on, config);
-      // include any other plugin code...
+      // Browser launch options for consistent rendering
+      on('before:browser:launch', (browser, launchOptions) => {
+        const width = 1920;
+        const height = 1280;
 
-      // It's IMPORTANT to return the config object
-      // with any changed environment variables
+        if (browser.family === 'chromium' && browser.name !== 'electron') {
+          launchOptions.args.push(`--window-size=${width},${height}`);
+          launchOptions.args.push('--force-device-scale-factor=1');
+
+          // Additional args for consistency in CI
+          if (process.env.CI) {
+            launchOptions.args.push('--disable-dev-shm-usage');
+            launchOptions.args.push('--disable-gpu');
+          }
+        }
+
+        return launchOptions;
+      });
+
+      addMatchImageSnapshotPlugin(on);
+      codeCoverageTask(on, config);
+
       return config;
+    },
+  },
+
+  component: {
+    devServer: {
+      framework: 'next',
+      bundler: 'webpack',
     },
   },
 });

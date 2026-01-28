@@ -4,7 +4,9 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
+import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockEmptySupportErrand,
@@ -20,7 +22,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
       cy.intercept('GET', '**/me', mockMe).as('getMe');
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
+      cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand);
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand).as(
         'getErrand'
       );
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
@@ -34,8 +38,16 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
       );
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
 
-      cy.visit('/arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button')
@@ -55,12 +67,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       mockSupportAttachments.forEach((attachment) => {
         cy.intercept(
           'GET',
-          `**/supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments/${attachment.id}`,
+          `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments/${attachment.id}`,
           attachment
         ).as('getAttachment');
         cy.intercept(
           'DELETE',
-          `**/supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments/${attachment.id}`,
+          `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments/${attachment.id}`,
           attachment
         ).as('getAttachment');
         cy.get(`[data-cy="attachment-${attachment.id}"]`).should('exist');
@@ -70,7 +82,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         cy.wait('@getAttachment');
         if (attachment.mimeType !== 'application/pdf') {
           cy.get('img').should('exist');
-          cy.get('.modal-close-btn').should('exist').click();
+          cy.get('.sk-modal-dialog-close').should('exist').click();
         }
 
         cy.get(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).should('exist').click();
@@ -83,18 +95,18 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     it('Can upload attachment/attachments', () => {
       cy.intercept(
         'POST',
-        `**/supportattachments/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/attachments`,
+        `**/supportattachments/2281/errands/${mockSupportErrand.id}/attachments`,
         'attachment.txt'
       ).as('uploadAttachment');
       cy.get('[data-cy="add-attachment-button"]').should('exist').contains('Ladda upp bilaga').click();
       cy.get('[data-cy="dragdrop-upload"]').should('exist').click();
       //if empty file
       cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/empty-attachment.txt', { force: true });
-      cy.get('.sk-form-error-message').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
+      cy.get('.sk-form-error-message').should('contain.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
 
       //if wrong format file
       cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/testwrongformat.jfif', { force: true });
-      cy.get('.sk-form-error-message').should('have.text', 'Filtypen stöds inte.');
+      cy.get('.sk-form-error-message').should('contain.text', 'Filtypen stöds inte.');
 
       // right format and not empty
       cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/attachment.txt', { force: true });

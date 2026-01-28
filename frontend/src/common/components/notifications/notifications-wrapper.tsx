@@ -20,15 +20,15 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
     const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
 
     getNotifications()
-      .then((res) => {
-        setNotifications(res);
-      })
-      .catch((e) => {
-        console.error('Something went wrong when fetching notifications');
-        return [];
-      });
+        .then((res) => {
+          setNotifications(res);
+        })
+        .catch((e) => {
+          console.error('Something went wrong when fetching notifications');
+          return [];
+        });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [show]);
 
   const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
 

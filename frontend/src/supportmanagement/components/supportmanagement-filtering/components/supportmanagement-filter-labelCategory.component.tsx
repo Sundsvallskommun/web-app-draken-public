@@ -48,14 +48,14 @@ export const SupportManagementFilterLabelCategory: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {allLabelCategories
-            ?.filter((s: Category) => s.displayName.toLowerCase().includes(query.toLowerCase()))
-            .map((s: Category, idx) => (
-              <PopupMenu.Item key={`${s.name}-${idx}`}>
+            ?.filter((s: Label) => s.displayName.toLowerCase().includes(query.toLowerCase()))
+            .map((s: Label, idx) => (
+              <PopupMenu.Item key={`${s.resourcePath}-${idx}`}>
                 <Checkbox
                   labelPosition="left"
-                  value={s.name}
+                  value={s.resourcePath}
                   {...register('labelCategory')}
-                  data-cy={`Verksamhet-filter-${s.name}`}
+                  data-cy={`Verksamhet-filter-${s.resourcePath}`}
                 >
                   {s.displayName}
                 </Checkbox>

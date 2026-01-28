@@ -22,7 +22,7 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, r
           <div className="flex justify-between items-center">
             <div className="text-base font-bold text-dark-secondary">
               {service.restyp}
-              {service.winter ? ' (Vinterfärdtjänst)' : ''}
+              {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
             </div>
             <div className="text-md font-normal text-dark-secondary whitespace-nowrap">
               {service?.validityType === 'tillsvidare'
@@ -31,14 +31,18 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, r
             </div>
           </div>
 
-          <div className="flex gap-16 items-center text-md">
+          <div className="flex gap-16 items-center text-md flex-wrap">
             <div className="flex items-center gap-4 text-dark-secondary">
               <LucideIcon name="car" size={16} />
-              <span>{service?.transport}</span>
+              <span>{service?.transportMode?.length > 0 ? service?.transportMode?.join(', ') : 'Inget valt färdsätt'}</span>
             </div>
             <div className="flex items-center gap-4 text-dark-secondary">
               <LucideIcon name="cog" size={16} />
               <span>{service?.aids?.length > 0 ? service?.aids?.join(', ') : 'Inga valda hjälpmedel'}</span>
+            </div>
+            <div className="flex items-center gap-4 text-dark-secondary">
+              <LucideIcon name="plus-circle" size={16} />
+              <span>{service?.addon?.length > 0 ? service?.addon?.join(', ') : 'Inga valda tillägg'}</span>
             </div>
           </div>
 
@@ -51,7 +55,7 @@ export const ServiceListItem: React.FC<Props> = ({ service: service, onRemove, r
           {!readOnly && (
             <div className="pt-16 flex gap-16">
               <Button size="sm" color="vattjom" onClick={() => onRemove?.(service.id)}>
-                Ta bort
+                Ta bort insats
               </Button>
             </div>
           )}

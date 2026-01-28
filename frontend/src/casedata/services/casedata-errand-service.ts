@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import { CaseTypes, FTCaseType, FTNationalCaseTypes, FTNotificationCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -27,18 +27,17 @@ import {
 
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { Role } from '@casedata/interfaces/role';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useCallback, useEffect } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
-import { replaceExtraParameter } from './casedata-extra-parameters-service';
+import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
+import { phaseChangeInProgress } from './process-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -123,6 +122,14 @@ export const isFTErrand = (errand: IErrand) => {
   return Object.values(FTCaseType).includes(errand.caseType as FTCaseType);
 };
 
+export const isFTNotificationErrand = (errand: IErrand) => {
+  return Object.values(FTNotificationCaseType).includes(errand.caseType as FTNotificationCaseType);
+};
+
+export const isFTNationalErrand = (errand: IErrand) => {
+  return Object.values(FTNationalCaseTypes).includes(errand.caseType as FTNationalCaseTypes);
+};
+
 export const findPriorityKeyForPriorityLabel = (key: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
 
@@ -155,7 +162,7 @@ export const getCaseLabels = () => {
   const isTest = getApplicationEnvironment() === 'TEST';
 
   if (isPT()) {
-    return isTest ? { ...PTCaseLabel, ...FTCaseLabel } : { ...PTCaseLabel };
+    return { ...PTCaseLabel, ...FTCaseLabel };
   }
 
   if (isMEX()) {
@@ -370,29 +377,29 @@ export const useErrands = (
     suspendedErrands,
   } = useAppContext();
 
-  //Fix for slow loading of errands, can be removed when backend is fixed
-  const currentRequestId = useRef<string | null>(null);
-
   const fetchErrands = useCallback(
     async (page: number = 0) => {
-      const requestId = uuidv4();
-      currentRequestId.current = requestId;
       setIsLoading(true);
+      setNewErrands(null);
+      setOngoingErrands(null);
+      setSuspendedErrands(null);
+      setAssignedErrands(null);
+      setClosedErrands(null);
+
       if (!filter) {
         return;
       }
+      setErrands({ ...errands, isLoading: true });
       await getErrands(page, size, filter, sort, extraParameters)
         .then((res) => {
-          if (currentRequestId.current === requestId) {
-            setErrands({ ...res, isLoading: false });
-            if (res.error && res.error !== '404') {
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Ärenden kunde inte hämtas',
-                status: 'error',
-              });
-            }
+          setErrands({ ...res, isLoading: false });
+          if (res.error && res.error !== '404') {
+            toastMessage({
+              position: 'bottom',
+              closeable: false,
+              message: 'Ärenden kunde inte hämtas',
+              status: 'error',
+            });
           }
         })
         .catch(() => {
@@ -407,9 +414,10 @@ export const useErrands = (
       const fetchPromises = [
         getErrands(page, 1, { ...filter, status: newStatuses.map(findStatusKeyForStatusLabel).join(',') }, sort)
           .then((res) => {
-            setNewErrands(res);
+            setNewErrands(res.totalElements);
           })
           .catch((err) => {
+            setNewErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -428,9 +436,10 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setOngoingErrands(res);
+            setOngoingErrands(res.totalElements);
           })
           .catch((err) => {
+            setOngoingErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -449,9 +458,10 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setSuspendedErrands(res);
+            setSuspendedErrands(res.totalElements);
           })
           .catch((err) => {
+            setSuspendedErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -470,9 +480,10 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setAssignedErrands(res);
+            setAssignedErrands(res.totalElements);
           })
           .catch((err) => {
+            setAssignedErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -491,9 +502,10 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setClosedErrands(res);
+            setClosedErrands(res.totalElements);
           })
           .catch((err) => {
+            setClosedErrands(0);
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -502,9 +514,8 @@ export const useErrands = (
             });
           }),
       ];
-      if (currentRequestId.current == requestId) {
-        return Promise.allSettled(fetchPromises);
-      }
+
+      return Promise.allSettled([errandPromise, ...fetchPromises]);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -678,87 +689,53 @@ export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; 
   return { valid: true, reason: '' };
 };
 
+export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
+  const extraParameterLabels = extraParametersToUppgiftMapper(e).reduce((acc, curr) => {
+    {
+      if (curr.field && curr.label) {
+        acc[curr.field] = curr.label;
+      }
+      return acc;
+    }
+  }, {} as Record<string, string>);
+  let requiredExtraParameters = [];
+  if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+    requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
+  } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
+    if (e.caseType === PTCaseType.PARKING_PERMIT || e.caseType === PTCaseType.PARKING_PERMIT_RENEWAL) {
+      requiredExtraParameters = ['disability.duration', 'disability.walkingAbility'];
+      if (e.extraParameters?.find((p) => p.key === 'application.applicant.capacity')?.values?.[0] === 'PASSENGER') {
+        requiredExtraParameters.push('disability.canBeAloneWhileParking');
+      }
+      if (e.extraParameters?.find((p) => p.key === 'disability.walkingAbility')?.values?.[0] === 'true') {
+        requiredExtraParameters.push('disability.walkingDistance.max');
+      }
+    } else if (e.caseType === PTCaseType.LOST_PARKING_PERMIT) {
+      requiredExtraParameters = ['application.lostPermit.policeReportNumber'];
+    }
+  }
+  const missingExtraParameters = [];
+  requiredExtraParameters.forEach((param) => {
+    if (e.extraParameters?.find((p) => p.key === param)?.values?.length === 0) {
+      missingExtraParameters.push(
+        extraParameterLabels?.[param] ? `"${extraParameterLabels[param]}"` : 'Okänd parameter'
+      );
+    }
+  });
+  if (missingExtraParameters.length > 0) {
+    return { valid: false, reason: `${missingExtraParameters.join(', ')}` };
+  }
+  return { valid: true, reason: '' };
+};
+
 export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
   return (
     validateStakeholdersForDecision(e).valid &&
     validateStatusForDecision(e).valid &&
-    validateAttachmentsForDecision(e).valid
+    validateAttachmentsForDecision(e).valid &&
+    validateExtraParametersForDecision(e).valid
   );
 };
-
-export const phaseChangeInProgress = (errand: IErrand) => {
-  if (!errand?.id) {
-    return false;
-  }
-  if (errand.extraParameters.find((p) => p.key === 'process.phaseAction')?.values[0] === 'CANCEL') {
-    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'CANCELED';
-  }
-
-  if (errand.status?.statusType === ErrandStatus.ArendeAvslutat) {
-    return false;
-  }
-  if (typeof errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === 'undefined') {
-    return true;
-  }
-  if (
-    errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad &&
-    !!errand.administrator
-  ) {
-    return true;
-  }
-  if (
-    errand.phase === ErrandPhase.aktualisering ||
-    errand.phase === ErrandPhase.utredning ||
-    errand.phase === ErrandPhase.beslut ||
-    errand.phase === ErrandPhase.verkstalla ||
-    errand.phase === ErrandPhase.uppfoljning
-  ) {
-    return errand.extraParameters?.find((p) => p.key === 'process.phaseAction')?.values[0] === 'COMPLETE';
-  } else {
-    return errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values[0] !== 'WAITING';
-  }
-};
-
-export const cancelErrandPhaseChange = async (errand: IErrand) => {
-  if (!errand.id) {
-    console.error('No id found. Cannot update errand wihout id. Returning.');
-    return;
-  }
-  const newParameter: ExtraParameter = {
-    key: 'process.phaseAction',
-    values: ['CANCEL'],
-  };
-  const e: Partial<RegisterErrandData> = {
-    id: errand.id.toString(),
-    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
-  };
-  return apiService.patch<boolean, Partial<RegisterErrandData>>(`casedata/errands/${errand.id}`, e).catch((e) => {
-    console.error('Something went wrong when cancelling errand phase change', e);
-    throw e;
-  });
-};
-
-export const triggerErrandPhaseChange = async (errand: IErrand) => {
-  if (!errand?.id) {
-    console.error('No id found. Cannot update errand wihout id. Returning.');
-    return;
-  }
-  const newParameter: ExtraParameter = {
-    key: 'process.phaseAction',
-    values: ['COMPLETE'],
-  };
-  const e: Partial<RegisterErrandData> = {
-    id: errand.id.toString(),
-    extraParameters: replaceExtraParameter(errand.extraParameters, newParameter),
-  };
-  return apiService.patch<boolean, Partial<RegisterErrandData>>(`casedata/errands/${errand.id}`, e).catch((e) => {
-    console.error('Something went wrong when triggering errand phase change', e);
-    throw e;
-  });
-};
-
-export const getUiPhase: (errand: IErrand) => UiPhase = (errand) =>
-  errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] as UiPhase;
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;

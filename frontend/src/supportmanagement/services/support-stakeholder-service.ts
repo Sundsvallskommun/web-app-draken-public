@@ -1,14 +1,14 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { SupportAdmin } from './support-admin-service';
 import {
   ContactChannelType,
   SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
+import { Admin } from '@common/services/user-service';
 
-export const getAdminName = (a: SupportAdmin, r: SupportErrand) => {
+export const getAdminName = (a: Admin) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;
 };
 
@@ -19,6 +19,9 @@ export const getApplicantName = (r: SupportErrand) => {
 
 export const getSupportOwnerStakeholder: (e: SupportErrand) => SupportStakeholderFormModel = (e) =>
   e.customer?.filter((s) => s.role.includes('PRIMARY'))?.[0];
+
+export const getSupportReporterStakeholder: (e: SupportErrand) => SupportStakeholderFormModel = (e) =>
+  e.contacts?.filter((s) => s.role.includes('REPORTER'))?.[0];
 
 const trimPhoneNumber = (s: string) => s.trim().replace('-', '');
 
@@ -45,6 +48,18 @@ export const applicantContactChannel = (errand: SupportErrand) => {
     contactMeans: contactChannel.type,
     values: applicant.contactChannels.filter((c) => c.type === contactChannel.type),
   };
+};
+
+export const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
+  const primaryStakeholder = errand.stakeholders.find((primary) => primary.role === 'PRIMARY');
+  if (primaryStakeholder) {
+    const { firstName, lastName, contactChannels } = primaryStakeholder;
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+
+    const emailChannel = contactChannels.find((channel) => channel.type === 'EMAIL');
+    if (emailChannel?.value) return emailChannel.value;
+  }
+  return '';
 };
 
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>

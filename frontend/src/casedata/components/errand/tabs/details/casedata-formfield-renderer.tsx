@@ -1,13 +1,24 @@
-import { isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   OptionBase,
   UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-string-handler-utils';
-import { Checkbox, FormControl, FormLabel, Input, RadioButton, Select, Textarea, cx } from '@sk-web-gui/react';
-import React from 'react';
-import { Controller, UseFormReturn, get } from 'react-hook-form';
+import {
+  Checkbox,
+  Combobox,
+  FormControl,
+  FormLabel,
+  Input,
+  RadioButton,
+  Select,
+  Textarea,
+  cx,
+} from '@sk-web-gui/react';
+import React, { useMemo, useState } from 'react';
+import { UseFormReturn, get } from 'react-hook-form';
+import { RepeatableFieldGroup } from './repeatable-field-group';
 
 interface Props {
   detail: UppgiftField;
@@ -47,6 +58,20 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
   }
 };
 
+const matchesDependency = (candidate: unknown, expected: string | string[]) => {
+  const expectedValues = Array.isArray(expected) ? expected : [expected];
+
+  if (Array.isArray(candidate)) {
+    return candidate.some((value) => expectedValues.includes(String(value).trim()));
+  }
+
+  if (candidate === null || candidate === undefined) {
+    return false;
+  }
+
+  return expectedValues.includes(String(candidate).trim());
+};
+
 function getConditionalValidationRules(
   field: UppgiftField,
   getValues: () => any
@@ -59,11 +84,25 @@ function getConditionalValidationRules(
   return {
     validate: (value: any) => {
       const allValues = getValues();
-      const shouldValidate = field.dependsOn?.some((dep) => {
-        const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-        const depValue = allValues[depName];
-        return Array.isArray(depValue) ? depValue.includes(dep.value) : depValue === dep.value;
-      });
+      const logicOperator = field.dependsOnLogic ?? 'AND';
+
+      let shouldValidate: boolean;
+
+      if (logicOperator === 'OR') {
+        shouldValidate =
+          field.dependsOn?.some((dep) => {
+            const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+            const depValue = allValues[depName];
+            return matchesDependency(depValue, dep.value);
+          }) ?? false;
+      } else {
+        shouldValidate =
+          field.dependsOn?.every((dep) => {
+            const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+            const depValue = allValues[depName];
+            return matchesDependency(depValue, dep.value);
+          }) ?? false;
+      }
 
       if (!shouldValidate) return true;
 
@@ -73,29 +112,95 @@ function getConditionalValidationRules(
 }
 
 export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, errand }) => {
+  //TODO: Refactor this component and use a general form for extraparameters instead of hijacking IErrand form.
+  //      Refactoring of this component should include better rendering from parent component to elimit rerenderings.
+  const [initialComboBoxValue] = useState<string | string[]>(detail.value);
+
   const {
     register,
-    control,
     getValues,
     formState: { errors },
-    setError,
-    clearErrors,
+    watch,
+    setValue,
   } = form;
 
-  const dependentSatisfied =
-    detail.dependsOn?.every((dep) => {
-      const depValue = getValues(dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR));
-      return Array.isArray(depValue) ? depValue.includes(dep.value) : depValue === dep.value;
-    }) ?? true;
-
-  if (!dependentSatisfied) return null;
-
   const fieldKey = detail.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+
+  const dependencyFieldKeys = useMemo(
+    () => detail.dependsOn?.map((dep) => dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)) ?? [],
+    [detail.dependsOn]
+  );
+
+  const allFormValues = watch();
+
+  const dependentSatisfied =
+    detail.dependsOn && detail.dependsOn.length > 0
+      ? (() => {
+          const logicOperator = detail.dependsOnLogic ?? 'AND';
+
+          if (logicOperator === 'OR') {
+            // OR logic: at least one dependency must be satisfied
+            const result = detail.dependsOn.some((dep) => {
+              const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+              const depValue = allFormValues[depName];
+              const matches = matchesDependency(depValue, dep.value);
+              return matches;
+            });
+            return result;
+          } else {
+            // AND logic (default): all dependencies must be satisfied
+            const result = detail.dependsOn.every((dep) => {
+              const depName = dep.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+              const depValue = allFormValues[depName];
+              const matches = matchesDependency(depValue, dep.value);
+              return matches;
+            });
+            return result;
+          }
+        })()
+      : undefined;
+
+  const isVisible = dependentSatisfied !== false;
+
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
+  const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
+  const isDisabled = isErrandLocked(errand) || isFTNotificationErrand(errand);
+
+  const handleChange = (e) => {
+    setValue(fieldKey, e, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  };
+
+  if (!isVisible) return null;
+
+  // Handle repeatable groups
+  if (detail.formField.type === 'repeatableGroup') {
+    const groupConfig = (detail as any).repeatableGroup;
+    const initialData = (detail as any).initialData;
+
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.label && <FormLabel className="mb-md">{detail.label}</FormLabel>}
+        {detail.description && <p className="text-sm text-gray-600 mb-md">{detail.description}</p>}
+        <RepeatableFieldGroup
+          groupName={groupConfig.groupName}
+          basePath={groupConfig.basePath}
+          fields={groupConfig.fields}
+          minItems={groupConfig.repeatableConfig.minItems}
+          addButtonText={groupConfig.repeatableConfig.addButtonText}
+          removeButtonText={groupConfig.repeatableConfig.removeButtonText}
+          initialData={initialData}
+        />
+      </div>
+    );
+  }
 
   return (
-    <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
+    <FormControl className="w-full" key={`${detail.field}-${idx}`}>
       {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
 
       {(detail.formField.type === 'text' ||
@@ -105,10 +210,9 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
           <Input
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
-            className={cx(
-              errand.caseType === 'APPEAL' ? 'w-3/5' : detail.formField.type === 'date' ? 'w-1/2' : 'w-full'
-            )}
+            className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
             data-cy={`${detail.field}-input`}
+            readOnly={isDisabled}
             {...getInputProps(detail)}
           />
           {error && <span className="text-error text-md">{error}</span>}
@@ -117,7 +221,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'select' && (
         <>
-          <Select {...register(fieldKey, validationRules)} className="w-content" data-cy={`${detail.field}-select`}>
+          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`} readOnly={isDisabled}>
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, i) => (
               <Select.Option key={`${o}-${i}`} value={o.value}>
@@ -136,6 +240,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
             className={cx(errand.caseType === 'APPEAL' ? 'w-2/3' : 'w-full')}
             {...register(fieldKey, validationRules)}
             data-cy={`${detail.field}-textarea`}
+            readOnly={isDisabled}
           />
           {error && <span className="text-error text-md">{error}</span>}
         </>
@@ -154,6 +259,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
                 {...register(fieldKey, validationRules)}
                 key={`${option}-${i}`}
                 data-cy={`${detail.field}-radio-button-${i}`}
+                readOnly={isDisabled}
               >
                 {option.label}
               </RadioButton>
@@ -164,41 +270,49 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
       )}
 
       {detail.formField.type === 'checkbox' && (
-        <Controller
-          name={fieldKey}
-          control={control}
-          defaultValue={[]}
-          rules={validationRules}
-          render={({ field: { value, onChange } }) => {
-            const options = (detail.formField as { options: OptionBase[] }).options;
-
-            return (
-              <Checkbox.Group
-                direction="row"
-                value={Array.isArray(value) ? value : []}
-                onChange={(val) => {
-                  onChange(val);
-                  const result = validationRules?.validate?.(val);
-                  if (result !== true) {
-                    setError(fieldKey, { type: 'manual', message: result as string });
-                  } else {
-                    clearErrors(fieldKey);
-                  }
-                }}
+        <>
+          <Checkbox.Group direction="row" defaultValue={detail.value as any}>
+            {options.map((option, index) => (
+              <Checkbox
+                key={`${option.value}-${index}`}
+                value={option.value}
+                data-cy={`${detail.field}-checkbox-${index}`}
+                readOnly={isDisabled}
+                {...register(fieldKey)}
               >
-                {options.map((option, index) => (
-                  <Checkbox
-                    key={`${option.value}-${index}`}
-                    value={option.value}
-                    data-cy={`${detail.field}-checkbox-${index}`}
-                  >
-                    {option.label}
-                  </Checkbox>
-                ))}
-              </Checkbox.Group>
-            );
-          }}
-        />
+                {option.label}
+              </Checkbox>
+            ))}
+          </Checkbox.Group>
+          {error && <span className="text-error text-md">{error}</span>}
+        </>
+      )}
+
+      {detail.formField.type === 'combobox' && (
+        <>
+          <Combobox
+            className="w-full"
+            data-cy={`${detail.field}-combobox`}
+            multiple={Array.isArray(detail.value)}
+            value={initialComboBoxValue}
+            onSelect={(e) => handleChange(e.target.value)}
+            readOnly={isDisabled}
+          >
+            <Combobox.Input className="w-full" placeholder="Sök eller välj" />
+            <Combobox.List>
+              {options.map((option, index) => (
+                <Combobox.Option
+                  key={`${option.value}-${index}`}
+                  value={option.value}
+                  data-cy={`${detail.field}-combobox-option-${index}`}
+                >
+                  {option.label}
+                </Combobox.Option>
+              ))}
+            </Combobox.List>
+          </Combobox>
+          {error && <span className="text-error text-md">{error}</span>}
+        </>
       )}
     </FormControl>
   );

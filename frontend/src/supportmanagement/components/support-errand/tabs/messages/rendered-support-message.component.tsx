@@ -27,7 +27,10 @@ export const RenderedSupportMessage: React.FC<{
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
   const { supportErrand, user }: AppContextInterface = useAppContext();
   const [allowed, setAllowed] = useState(false);
-  const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
+
+  // Changed logic for expanded message to see if it solve problem with unread message counter
+  // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const _a = validateAction(supportErrand, user);
@@ -56,7 +59,8 @@ export const RenderedSupportMessage: React.FC<{
 
   const getMessageOwner = (msg: Message) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
-      const ownerInfomration = supportErrand.stakeholders.filter((stakeholder) => stakeholder.role.includes('PRIMARY'));
+      const ownerInfomration =
+        supportErrand.stakeholders?.filter((stakeholder) => stakeholder.role.includes('PRIMARY')) ?? [];
       const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.contactChannels.some((value) => value.value === msg.sender)

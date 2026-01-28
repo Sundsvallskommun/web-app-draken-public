@@ -3,6 +3,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, saveErrand, updateErrandStatus } from '@casedata/services/casedata-errand-service';
 import {
+  extractRepeatableGroupData,
   EXTRAPARAMETER_SEPARATOR,
   extraParametersToUppgiftMapper,
   saveExtraParameters,
@@ -27,13 +28,11 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
     if (!errand.extraParameters) {
       return [];
     }
-    const uppgifter = extraParametersToUppgiftMapper(data);
-    const uppgifterFields: UppgiftField[] = uppgifter[data.caseType] || baseDetails;
+    const uppgifterFields: UppgiftField[] = extraParametersToUppgiftMapper(data) || baseDetails;
     const fieldNames = uppgifterFields.map((f) =>
       f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR)
     ) as (keyof IErrand)[];
     fieldNames.push('propertyDesignation' as keyof IErrand);
-    fieldNames.push('facilities' as keyof IErrand);
 
     const isValid = await trigger(fieldNames);
 
@@ -80,20 +79,40 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       }
     }
 
-    const extraParams: ExtraParameter[] = fieldNames.map((fieldName) => {
-      const rawValue = getValues()[fieldName];
-      const values: string[] = Array.isArray(rawValue)
-        ? rawValue.map((v) => String(v)).filter((v) => v.trim() !== '')
-        : typeof rawValue === 'string'
-        ? [rawValue.trim()]
-        : rawValue != null
-        ? [String(rawValue).trim()]
-        : [];
-      return {
-        key: fieldName.replace(new RegExp(EXTRAPARAMETER_SEPARATOR, 'g'), '.'),
-        values,
-      };
+    // Extract regular fields
+    const regularFields: ExtraParameter[] = fieldNames
+      .filter((fieldName) => {
+        // Skip repeatable group parent fields (they don't have values themselves)
+        // Example: Parent field (personal.journey), this is the wrapper for repeatable group
+        // Example: Child fields (personal.journey.0.travelFromMunicipality)
+        const field = uppgifterFields.find((f) => f.field.replaceAll('.', EXTRAPARAMETER_SEPARATOR) === fieldName);
+        return field && field.formField.type !== 'repeatableGroup';
+      })
+      .map((fieldName) => {
+        const rawValue = getValues()[fieldName];
+        const values: string[] = Array.isArray(rawValue)
+          ? rawValue.map((v) => String(v)).filter((v) => v.trim() !== '')
+          : typeof rawValue === 'string'
+          ? [rawValue.trim()]
+          : rawValue != null
+          ? [String(rawValue).trim()]
+          : [];
+        return {
+          key: fieldName.replaceAll(EXTRAPARAMETER_SEPARATOR, '.'),
+          values,
+        };
+      });
+
+    const repeatableGroupFields: ExtraParameter[] = [];
+    uppgifterFields.forEach((field) => {
+      if (field.formField.type === 'repeatableGroup' && (field as any).repeatableGroup) {
+        const basePath = (field as any).repeatableGroup.basePath;
+        const groupData = extractRepeatableGroupData(getValues() as unknown as Record<string, unknown>, basePath);
+        repeatableGroupFields.push(...groupData);
+      }
     });
+
+    const extraParams = [...regularFields, ...repeatableGroupFields];
 
     await saveExtraParameters(extraParams, errand);
     return extraParams;

@@ -44,7 +44,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
             })
           );
         });
-        router.replace(`/arende/${process.env.NEXT_PUBLIC_MUNICIPALITY_ID}/${appealedErrand.errand.errandNumber}`);
+        router.replace(`/arende/${appealedErrand.errand.errandNumber}`);
         setIsLoading(false);
         return true;
       })
@@ -62,10 +62,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
   };
 
   const handleClick = (errand: IErrand) => {
-    window.open(
-      `${process.env.NEXT_PUBLIC_BASEPATH}/arende/${process.env.NEXT_PUBLIC_MUNICIPALITY_ID}/${errand.relatesTo?.[0].errandNumber}`,
-      '_blank'
-    );
+    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.relatesTo?.[0].errandNumber}`, '_blank');
   };
 
   return errand.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (

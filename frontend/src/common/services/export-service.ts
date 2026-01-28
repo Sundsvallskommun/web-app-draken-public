@@ -1,12 +1,15 @@
 import { MEXCaseLabel } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { getExtraParametersLabels } from '@casedata/services/casedata-extra-parameters-service';
+import {
+  extraParametersToUppgiftMapper,
+  getExtraParametersLabels,
+} from '@casedata/services/casedata-extra-parameters-service';
 import { Render } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 
-const renderPdf = (url, data, exportParameters) =>
+const renderPdf = (url, data, includeParameters) =>
   apiService
-    .post<ApiResponse<Render>, (IErrand & { caseLabel: string })[]>(url, data, exportParameters)
+    .post<ApiResponse<Render>, (IErrand & { caseLabel: string })[]>(url, data, includeParameters)
     .then((res) => {
       const pdfBase64 = res.data.data.output;
 
@@ -18,11 +21,11 @@ const renderPdf = (url, data, exportParameters) =>
 
 export const exportErrands: (
   errandsData: IErrand[],
-  exportParameters?: string[]
-) => Promise<{ pdfBase64: string; error?: string }> = (errandsData: IErrand[], exportParameters) => {
+  includeParameters?: string[]
+) => Promise<{ pdfBase64: string; error?: string }> = (errandsData: IErrand[], includeParameters) => {
   let url = `/export`;
-  if (exportParameters?.length) {
-    url += `?exclude=${exportParameters.join(',')}`;
+  if (includeParameters?.length) {
+    url += `?include=${includeParameters.join(',')}`;
   }
 
   const preparedErrands = errandsData.map((errand) => ({
@@ -35,17 +38,19 @@ export const exportErrands: (
     caseLabel: MEXCaseLabel[errand.caseType],
   }));
 
-  return renderPdf(url, preparedErrands, exportParameters);
+  return renderPdf(url, preparedErrands, includeParameters);
 };
 
 export const exportSingleErrand: (
   errand: IErrand,
-  exportParameters?: string[]
-) => Promise<{ pdfBase64: string; error?: string }> = (errand: IErrand, exportParameters) => {
+  includeParameters?: string[]
+) => Promise<{ pdfBase64: string; error?: string }> = (errand: IErrand, includeParameters) => {
   let url = `/exportsingle`;
-  if (exportParameters?.length) {
-    url += `?exclude=${exportParameters.join(',')}`;
+  if (includeParameters?.length) {
+    url += `?include=${includeParameters.join(',')}`;
   }
+
+  const mappedParams = extraParametersToUppgiftMapper(errand);
 
   const preparedErrand = {
     ...errand,
@@ -55,13 +60,16 @@ export const exportSingleErrand: (
       file: '',
     })),
     caseLabel: MEXCaseLabel[errand.caseType],
-    extraParameters: errand.extraParameters?.map((ep) => ({
-      ...ep,
-      label: getExtraParametersLabels(errand.caseType)?.[ep.key] || '',
+    extraParameters: mappedParams.map((ep) => ({
+      id: ep.field,
+      key: ep.field,
+      displayName: ep.label,
+      values: Array.isArray(ep.value) ? ep.value : [ep.value],
+      label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
     })),
   };
 
-  return renderPdf(url, preparedErrand, exportParameters);
+  return renderPdf(url, preparedErrand, includeParameters);
 };
 
 const downloadFile = (name: string, url: string) => {

@@ -1,6 +1,5 @@
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { AdUser } from '@/controllers/active-directory.controller';
 import { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
@@ -27,14 +26,6 @@ export const validateSupportAction: (errandId: string, user: User) => Promise<bo
   return Promise.resolve(allowed);
 };
 
-export const checkIfSupportAdministrator: (user: User) => Promise<boolean> = async user => {
-  const apiService = new ApiService();
-  // ÅNGE TODO
-  // Ny version (2.0) av activedirectory med kommunkod i urlen.
-  //
-  // Därtill har domän gjorts konfigurerbar i .env-filen.
-  //
-  const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
-  const res = await apiService.get<AdUser[]>({ url }, user);
-  return res.data.some(u => u.name === user.username);
+export const checkIfSupportAdministrator = (user: User): boolean => {
+  return user?.permissions?.canEditSupportManagement || false;
 };

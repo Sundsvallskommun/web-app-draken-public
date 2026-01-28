@@ -1,6 +1,7 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { getErrand, phaseChangeInProgress, setErrandStatus } from '@casedata/services/casedata-errand-service';
+import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
+import { phaseChangeInProgress } from '@casedata/services/process-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';

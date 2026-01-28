@@ -1,11 +1,8 @@
 {
   "compilerOptions": {
+    "types": ["@simonsmith/cypress-image-snapshot/types"],
     "target": "es6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     //TODO: ENABLE STRICT MODE
@@ -16,7 +13,7 @@
     // "strictFunctionTypes": false,
     // "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "noEmit": false,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -26,33 +23,16 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@pages/*": [
-        "src/pages/*"
-      ],
-      "@public/*": [
-        "src/public/*"
-      ],
-      "@config/*": [
-        "src/config/*"
-      ],
-      "@contexts/*": [
-        "src/common/contexts/*"
-      ],
-      "@supportmanagement/*": [
-        "src/supportmanagement/*"
-      ],
-      "@casedata/*": [
-        "src/casedata/*"
-      ],
-      "@common/*": [
-        "src/common/*"
-      ],
-      "@jestRoot/*": [
-        ".jest/*"
-      ],
-      "@styles/*": [
-        "src/styles/*"
-      ]
+      "@pages/*": ["src/pages/*"],
+      "@public/*": ["src/public/*"],
+      "@config/*": ["src/config/*"],
+      "@contexts/*": ["src/common/contexts/*"],
+      "@supportmanagement/*": ["src/supportmanagement/*"],
+      "@casedata/*": ["src/casedata/*"],
+      "@common/*": ["src/common/*"],
+      "@jestRoot/*": [".jest/*"],
+      "@styles/*": ["src/styles/*"],
+      "@cypress/*": ["cypress/*"]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],
@@ -65,25 +45,22 @@
     ]
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.{ts,tsx}",
+    "cypress/**/*.{ts,tsx}",
+    ".next-IK/types/**/*.ts",
+    ".next-KA/types/**/*.ts",
+    ".next-KC/types/**/*.ts",
+    ".next-LOP/types/**/*.ts",
+    ".next-MEX/types/**/*.ts",
+    ".next-MSVA/types/**/*.ts",
+    ".next-PT/types/**/*.ts",
+    ".next-ROB/types/**/*.ts",
+    ".next-IAF/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
-    ".next-KC/types/**/*.ts",
-    ".next-LOP/types/**/*.ts",
-    ".next-IK/types/**/*.ts",
-    ".next-KA/types/**/*.ts",
-    ".next-ROB/types/**/*.ts",
-    ".next-MSVA/types/**/*.ts",
-    ".next-MEX/types/**/*.ts",
-    ".next-PT/types/**/*.ts",
-    "next-env.d.ts",
-    "node_modules/dayjs/plugin/utc.d.ts",
-    "src/common/components/localization-provider"
+    ".next-SE/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

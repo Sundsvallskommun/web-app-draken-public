@@ -1,3 +1,4 @@
+import { Channels } from '@casedata/interfaces/channels';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   MessageNode,
@@ -209,7 +210,7 @@ export const CasedataMessagesTab: React.FC<{
               onChange={(e) => setFilterSource(Number(e.target.value))}
             >
               <Select.Option value={0}>Alla</Select.Option>
-              <Select.Option value={1}>Draken</Select.Option>
+              <Select.Option value={1}>{errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}</Select.Option>
               <Select.Option value={2}>Digital brevlåda</Select.Option>
               <Select.Option value={3}>E-post</Select.Option>
               <Select.Option value={4}>Mina sidor</Select.Option>

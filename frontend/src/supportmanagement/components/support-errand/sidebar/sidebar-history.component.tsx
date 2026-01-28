@@ -1,11 +1,11 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
+import { Admin } from '@common/services/user-service';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
-import { SupportAdmin } from '@supportmanagement/services/support-admin-service';
 import {
   Channels,
   ResolutionLabelIK,
@@ -23,13 +23,15 @@ import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const {
+    
     supportErrand,
     supportMetadata,
-    supportAdmins,
+    administrators,
   }: {
+    
     supportErrand: SupportErrand;
     supportMetadata: SupportMetadata;
-    supportAdmins: SupportAdmin[];
+    administrators: Admin[];
   } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,9 +78,9 @@ export const SidebarHistory: React.FC<{}> = () => {
     _km['true'] = 'Ja';
     _km['false'] = 'Nej';
     supportMetadata?.categories.forEach((c) => {
-      _km[c.name] = c.displayName;
+      _km[c.name.replaceAll('.', '/')] = c.displayName;
       c.types.forEach((t) => {
-        _km[t.name] = t.displayName;
+        _km[t.name.replaceAll('.', '/')] = t.displayName;
       });
     });
     setKeyMapper(_km);
@@ -86,7 +88,10 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     if (selectedChange) {
-      fetchRevisionDiff(supportErrand.id, selectedChange, keyMapper, supportAdmins)
+      // setSelectedChangeDetails(selectedChange.parsed.diffList);
+      // setIsOpen(true);
+      // TODO Fetch revison diff on modal opening or when fetching events (slow)?
+      fetchRevisionDiff(supportErrand.id, selectedChange, keyMapper, administrators)
         .then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);

@@ -1,29 +1,30 @@
 /// <reference types="cypress" />
 
+import { Role } from '@casedata/interfaces/role';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
-import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMessages } from '../fixtures/mockMessages';
 import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
 import { mockMe } from '../fixtures/mockMe';
+import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
-import { mockAsset } from '../fixtures/mockAsset';
-import { Decision } from '@casedata/interfaces/decision';
-import { mock } from 'node:test';
-import { Role } from '@casedata/interfaces/role';
-import { Stakeholder } from '@casedata/interfaces/stakeholder';
+import { mockRelations } from '../fixtures/mockRelations';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Investigation tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/phrases', mockPhrases);
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('GET', '**/parking-permits/', mockPermits);
       cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
@@ -35,9 +36,20 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
       cy.intercept('PUT', '**/errands/*/decisions/*', mockPTErrand_base).as('updateDecision');
-      cy.intercept('GET', '**/contract/2024-01026', mockPTErrand_base).as('getContract');
+      cy.intercept('GET', '**/contracts/2024-01026', mockPTErrand_base).as('getContract');
+      cy.intercept('GET', '**/assets?**', {}).as('getAssets');
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
 
-      cy.visit(`/arende/${mockPTErrand_base.data.municipalityId}/${mockPTErrand_base.data.errandNumber}`);
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+
+      cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(5).should('have.text', 'Utredning').click({ force: true });
@@ -57,6 +69,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('can edit investigation fields', () => {
+      cy.intercept('PATCH', '**/errands/**/extraparameters', {});
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
 
       cy.get('[data-cy="investigation-law-select"]')
@@ -70,7 +83,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       const decidedBy = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.ADMINISTRATOR))!;
 
-      const { created, updated, personId, personalNumber, ...sanitizedStakeholder } = decidedBy;
+      const { id, created, updated, personId, personalNumber, ...sanitizedStakeholder } = decidedBy;
 
       cy.wait('@updateDecision').should(({ request }) => {
         expect(request.body.id).to.equal(29);

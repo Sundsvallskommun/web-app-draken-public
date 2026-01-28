@@ -1,5 +1,6 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
+import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionType, Law } from '@casedata/interfaces/decision';
@@ -10,7 +11,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import dayjs from 'dayjs';
-import { isFTErrand } from './casedata-errand-service';
+import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
@@ -27,8 +28,11 @@ const lawMappingFT: Law[] = [
   { heading: '5§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '5' },
   { heading: '6§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '6' },
   { heading: '7§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '7' },
+  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '8' },
   { heading: '9§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '9' },
+  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '10' },
   { heading: '12§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '12' },
+  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '13' },
   { heading: '16§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '16' },
 ];
 
@@ -101,7 +105,7 @@ export const saveDecision: (
     decisionType,
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,
-    law: getLawMapping(errand),
+    law: formData.law,
     validFrom:
       isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : undefined,
     validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : undefined,
@@ -216,23 +220,26 @@ export const getPhrases: (
 
 export const renderUtredningPdf: (
   errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d) => {
-  return renderPdf(errand, d, 'investigation');
+  d: UtredningFormModel | DecisionFormModel,
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
+  return renderPdf(errand, d, 'investigation', services);
 };
 
 export const renderBeslutPdf: (
   errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d) => {
-  return renderPdf(errand, d, 'decision');
+  d: UtredningFormModel | DecisionFormModel,
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
+  return renderPdf(errand, d, 'decision', services);
 };
 
 export const renderPdf: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
-  templateType: 'investigation' | 'decision'
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType) => {
+  templateType: 'investigation' | 'decision',
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
   const decision = errand.decisions.find(
     (d) =>
       (templateType === 'decision' && d.decisionType === 'FINAL') ||
@@ -255,8 +262,10 @@ export const renderPdf: (
 
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && isFTNationalErrand(errand)) {
+    identifier = `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
-    identifier = 'sbk.ft.general';
+    identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
@@ -311,6 +320,55 @@ export const renderPdf: (
     renderBody.parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
   }
   renderBody.parameters['description'] = formData.description;
+
+  if (isPT() && isFTErrand(errand)) {
+    const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
+      if (law.article && law.sfs) {
+        if (!acc[law.sfs]) {
+          acc[law.sfs] = [];
+        }
+        acc[law.sfs].push(law.article);
+      }
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    const lawReferences = lawsBySfs
+      ? Object.entries(lawsBySfs)
+          .map(([sfs, articles]) => {
+            return `${articles.join('§, ')}§ (${sfs})`;
+          })
+          .join(', ')
+      : '';
+
+    renderBody.parameters['lawReferences'] = lawReferences;
+
+    if (services && services.length > 0) {
+      renderBody.parameters['services'] = services.map((service) => {
+        const serviceData: any = {
+          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
+          validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
+          validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
+          validityType: service.validityType,
+        };
+
+        if (service.transportMode?.length > 0) {
+          serviceData.transportMode = service.transportMode.join(', ');
+        }
+
+        if (service.aids?.length > 0) {
+          serviceData.aids = service.aids.join(', ');
+        }
+
+        if (service.addon?.length > 0) {
+          serviceData.addon = service.addon.join(', ');
+        }
+
+        return serviceData;
+      });
+    } else {
+      renderBody.parameters['services'] = [];
+    }
+  }
 
   return apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)

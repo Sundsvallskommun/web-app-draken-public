@@ -27,10 +27,16 @@ export interface Error {
 }
 
 export interface EstateDesignationResponse {
+  /** The adress of the estate. */
+  address?: string;
   /** The designation of the estate. */
   designation?: string;
   /** The unique identifier of the estate. */
   objectidentifier?: string;
+  /** The district name of the estate. */
+  districtname?: string;
+  /** The district code of the estate. */
+  districtcode?: string;
 }
 
 export interface EstateAddressResponse {
@@ -40,6 +46,10 @@ export interface EstateAddressResponse {
   designation?: string;
   /** The unique identifier of the estate. */
   objectidentifier?: string;
+  /** The district name of the estate. */
+  districtname?: string;
+  /** The district code of the estate. */
+  districtcode?: string;
 }
 
 export interface EstateData {

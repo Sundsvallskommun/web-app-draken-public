@@ -3,7 +3,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
 import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
-import { getErrand, getUiPhase, isFTErrand, phaseChangeInProgress } from '@casedata/services/casedata-errand-service';
+import { getErrand, isFTErrand } from '@casedata/services/casedata-errand-service';
 import {
   countUnreadMessages,
   fetchMessages,
@@ -15,7 +15,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment, isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { CasedataAttachments } from './tabs/attachments/casedata-attachments.component';
 import { CasedataContractTab } from './tabs/contract/casedata-contract-tab';
@@ -25,6 +25,7 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -45,6 +46,9 @@ export const CasedataTabsWrapper: React.FC = () => {
   const [unsavedUtredning, setUnsavedUtredning] = useState(false);
   const [unsavedDecision, setUnsavedDecision] = useState(false);
   const toastMessage = useSnackbar();
+
+  // Ref to store the refetch function for Decision tab services
+  const decisionServicesRefetchRef = useRef<(() => void) | null>(null);
 
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
@@ -322,6 +326,9 @@ export const CasedataTabsWrapper: React.FC = () => {
       content: errand && (
         <CasedataDecisionTab
           setUnsaved={setUnsavedDecision}
+          onRefetchServices={(refetch) => {
+            decisionServicesRefetchRef.current = refetch;
+          }}
           update={() =>
             getErrand(errand.id.toString())
               .then((res) => setErrand(res.errand))
@@ -386,6 +393,19 @@ export const CasedataTabsWrapper: React.FC = () => {
       currentTab = current;
   }
 
+  // Handle tab changes to refetch services when switching to Decision tab
+  // Note: This is needed to refetch services when going to decision tab
+  const handleTabChange = (newTabIndex: number) => {
+    setCurrent(newTabIndex);
+
+    const visibleTabs = tabs.filter((tab) => tab?.visibleFor?.includes(errand.phase) || !errand.phase);
+    const activatedTab = visibleTabs[newTabIndex];
+
+    if (activatedTab?.label === 'Beslut' && decisionServicesRefetchRef.current) {
+      decisionServicesRefetchRef.current();
+    }
+  };
+
   return (
     <div className="mb-xl">
       <WarnIfUnsavedChanges
@@ -400,7 +420,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           // TODO uncomment to set Avtal tab to be active when in TEST environment
           // current={getApplicationEnvironment() === 'TEST' ? 3 : current}
           current={currentTab}
-          onTabChange={() => {}}
+          onTabChange={handleTabChange}
           size={'sm'}
         >
           {tabs

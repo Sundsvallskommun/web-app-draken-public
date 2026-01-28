@@ -25,7 +25,7 @@ export interface UtredningFormModel {
   personalNumber?: string;
   errandCaseType?: string;
   description: string;
-  law: Law;
+  law: Law[];
   outcome: string;
   validFrom?: string;
   validTo?: string;
@@ -40,7 +40,7 @@ let formSchema = yup
     personalNumber: yup.string(),
     errandCaseType: yup.string(),
     description: yup.string().required('Text måste anges'),
-    law: yup.object(),
+    law: yup.array(),
     outcome: yup.string(),
     validFrom: yup.string(),
     validTo: yup.string(),
@@ -104,6 +104,7 @@ export const SidebarUtredning: React.FC = () => {
 
   const onSubmit = () => {
     const data = getValues();
+    data.law = [];
     save(data);
   };
 

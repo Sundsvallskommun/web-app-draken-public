@@ -2,29 +2,16 @@
 
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
+import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { default as NextLink } from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 const Registrera: React.FC = () => {
-  const { setAdministrators, setSubPage, setMunicipalityId } = useAppContext();
-
-  useEffect(() => {
-    getAdminUsers().then((data) => {
-      setAdministrators(data);
-    });
-    setSubPage('Registrera ärende');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { setAdministrators, setMunicipalityId } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
@@ -32,6 +19,17 @@ const Registrera: React.FC = () => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
+
+  useEffect(() => {
+    getFeatureFlags().then((res) => {
+      applyRuntimeFeatureFlags(res.data);
+    });
+    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
+    getAdminUsers().then((data) => {
+      setAdministrators(data);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">

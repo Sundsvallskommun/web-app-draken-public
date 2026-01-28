@@ -2,7 +2,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
 import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
-import { getAdminUsers, getMe } from '@common/services/user-service';
+import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
 import store from '@supportmanagement/services/storage-service';
@@ -31,7 +31,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   const {
     setErrand,
-    setAdministrators,
     administrators,
     selectedErrandStatuses,
     setSelectedErrandStatuses,
@@ -49,6 +48,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const statusFilter = watchFilter('status');
   const propertyDesignation = watchFilter('propertyDesignation');
   const phaseFilter = watchFilter('phase');
+  const channelFilter = watchFilter('channel');
   const stakeholderTypeFilter = watchFilter('stakeholderType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
@@ -160,13 +160,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
     //eslint-disable-next-line
   }, [errands]);
 
-  useEffect(() => {
-    getAdminUsers().then((data) => {
-      setAdministrators(data);
-    });
-    //eslint-disable-next-line
-  }, []);
-
   useDebounceEffect(
     () => {
       const fObj = {};
@@ -203,6 +196,9 @@ export const OngoingCaseDataErrands: React.FC = () => {
       if (phaseFilter && phaseFilter.length > 0) {
         fObj['phase'] = phaseFilter;
       }
+      if (channelFilter && channelFilter.length > 0) {
+        fObj['channel'] = channelFilter.join(',');
+      }
       if (stakeholderTypeFilter && stakeholderTypeFilter.length > 0) {
         fObj['stakeholderType'] = stakeholderTypeFilter;
       }
@@ -222,6 +218,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
       enddate,
       propertyDesignation,
       phaseFilter,
+      channelFilter,
       stakeholderTypeFilter,
     ]
   );
@@ -240,6 +237,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
     (getValues().enddate !== '' ? 1 : 0) +
     (getValues().startdate !== '' ? 1 : 0) +
     getValues().phase.length +
+    (getValues().channel?.length || 0) +
     getValues().priority.length +
     (getValues().propertyDesignation && getValues().propertyDesignation !== '' ? 1 : 0) +
     (ownerFilter ? 1 : 0);
@@ -267,9 +265,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
             <div className="flex justify-between">
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden'
-                  ? ' : ' + (closedErrands.totalElements ? closedErrands.totalElements : '')
-                  : null}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (closedErrands ?? '') : null}
               </h1>
               {appConfig.features.useErrandExport && <ExportButton errands={errands} />}
             </div>

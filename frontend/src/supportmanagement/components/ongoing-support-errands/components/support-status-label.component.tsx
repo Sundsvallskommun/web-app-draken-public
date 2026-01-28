@@ -80,6 +80,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
       inverted = true;
       break;
     case 'FEEDBACK_CLOSURE':
+    case 'SUBPACKAGE_HANDLED':
       color = 'error';
       inverted = true;
       break;

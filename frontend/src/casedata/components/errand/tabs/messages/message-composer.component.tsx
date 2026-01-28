@@ -1,6 +1,7 @@
 'use client';
 
 import { Attachment } from '@casedata/interfaces/attachment';
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
@@ -53,7 +54,7 @@ import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
-  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor';
+  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor' | 'katla';
   messageClassification: string;
   messageTemplate?: string;
   emails: { value: string }[];
@@ -245,10 +246,16 @@ export const MessageComposer: React.FC<{
     const renderedHtml = await renderMessageWithTemplates(data.messageBody);
     data.messageBody = renderedHtml.html;
 
-    if (data.contactMeans === 'draken' || data.contactMeans === 'minasidor') {
-      const conversationId = await getOrCreateConversationId(errand, contactMeans, props?.message?.conversationId);
+    if (data.contactMeans === 'draken' || data.contactMeans === 'minasidor' || data.contactMeans === 'katla') {
+      const conversationId = await getOrCreateConversationId(
+        
+        errand,
+        contactMeans,
+        props?.message?.conversationId
+      );
 
       sendConversationMessage(
+        
         errand.id,
         conversationId,
         data.messageBody,
@@ -423,7 +430,7 @@ export const MessageComposer: React.FC<{
       setValue('messageBody', defaultSignature());
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
-      setValue('contactMeans', !!errand.externalCaseId ? 'webmessage' : 'email');
+      setValue('contactMeans', 'email');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message, errand]);
@@ -507,6 +514,19 @@ export const MessageComposer: React.FC<{
                     {...register('contactMeans')}
                   >
                     Mina sidor
+                  </RadioButton>
+                )}
+                {errand.channel === Channels.ESERVICE_KATLA && (
+                  <RadioButton
+                    tabIndex={props.show ? 0 : -1}
+                    data-cy="useKatla-radiobutton-true"
+                    className="mr-sm"
+                    name="useKatla"
+                    id="useKatla"
+                    value={'katla'}
+                    {...register('contactMeans')}
+                  >
+                    Katla
                   </RadioButton>
                 )}
               </RadioButton.Group>
@@ -648,9 +668,10 @@ export const MessageComposer: React.FC<{
           {contactMeans === 'email' ||
           contactMeans === 'webmessage' ||
           contactMeans === 'draken' ||
-          contactMeans === 'minasidor' ? (
+          contactMeans === 'minasidor' ||
+          contactMeans === 'katla' ? (
             <>
-              {contactMeans === 'webmessage' || contactMeans === 'minasidor'
+              {contactMeans === 'webmessage' || contactMeans === 'minasidor' || contactMeans === 'katla'
                 ? errand.stakeholders
                     .filter((o) => o.roles.indexOf(Role.APPLICANT) !== -1)
                     .map((filteredOwner, idx) => (

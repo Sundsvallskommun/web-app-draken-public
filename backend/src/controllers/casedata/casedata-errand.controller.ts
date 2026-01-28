@@ -18,7 +18,7 @@ import ApiService from '@services/api.service';
 import { makeErrandApiData } from '@services/errand.service';
 import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
 
@@ -113,6 +113,8 @@ export class CaseDataErrandController {
     @QueryParam('sort') sort: string,
     @QueryParam('stakeholderType') stakeholderType: string,
     @QueryParam('propertyDesignation') propertyDesignation: string,
+    @QueryParam('channel') channel: string,
+    @Res() response: any,
   ): Promise<ResponseData> {
     let url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands?page=${page || 0}&size=${size || 8}`;
     const baseURL = apiURL(this.SERVICE);
@@ -204,6 +206,14 @@ export class CaseDataErrandController {
 
     if (propertyDesignation) {
       filterList.push(`facilities.address.propertyDesignation~'*${propertyDesignation}*'`);
+    }
+
+    if (channel) {
+      const channelQuery = [];
+      channel.split(',').forEach(s => {
+        channelQuery.push(`channel:'${s}'`);
+      });
+      filterList.push(`(${channelQuery.join(' or ')})`);
     }
 
     let filter = filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';

@@ -1,6 +1,6 @@
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Errand, MessageResponse as IMessageResponse } from '@/data-contracts/case-data/data-contracts';
+import { Errand, MessageResponse as IMessageResponse, Stakeholder } from '@/data-contracts/case-data/data-contracts';
 import { RenderRequest, RenderResponse } from '@/data-contracts/templating/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -10,6 +10,7 @@ import { apiURL } from '@/utils/util';
 import dayjs from 'dayjs';
 import { Body, Controller, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+import { PROCESS_PARAMETER_KEYS } from './casedata/extraparameter.controller';
 
 @Controller()
 export class ExportController {
@@ -23,7 +24,7 @@ export class ExportController {
   async exportErrands(
     @Req() req: RequestWithUser,
     @Body() data: (Errand & { caseLabel: string })[],
-    @QueryParam('exclude') exclude: string,
+    @QueryParam('include') include: string,
   ): Promise<any> {
     const renderRequest: RenderRequest = {
       identifier: 'sbk.errands.export',
@@ -50,26 +51,41 @@ export class ExportController {
   async exportSingleErrand(
     @Req() req: RequestWithUser,
     @Body() data: Errand & { administratorName: string; caseLabel: string; attachments: any[] },
-    @QueryParam('exclude') exclude: string,
+    @QueryParam('include') include: string,
   ): Promise<any> {
-    let basicInformation = {};
-    if (!exclude?.includes('basicInformation')) {
+    const templateStakeholder = (
+      s: Stakeholder & { street: string; zip: string; city: string; phoneNumbers: { value: string }[]; emails: { value: string }[] },
+    ) => {
+      return {
+        name: s.firstName + ' ' + s.lastName,
+        street: s.street,
+        zip: s.zip,
+        city: s.city,
+        email: s.emails?.map(v => v.value).join(', ') ?? 'E-post saknas',
+        phone: s.phoneNumbers?.map(v => v.value).join(', ') ?? 'Telefonnummer saknas',
+      };
+    };
+
+    let basicInformation = undefined;
+    if (include?.includes('basicInformation')) {
       basicInformation = {
         administratorName: data.administratorName,
-        errandNumber: data.errandNumber,
         caseLabel: data.caseLabel,
         status: data.status,
         phase: data.phase,
         channel: data.channel,
         priority: data.priority,
         description: data.description,
+        facilities: data.facilities.map(f => f?.address?.propertyDesignation ?? 'Fastighetsbeteckning saknas') ?? [],
+        applicants: data.stakeholders.filter(s => s.roles.includes('APPLICANT'))?.map(templateStakeholder),
+        contacts: data.stakeholders.filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))?.map(templateStakeholder),
         created: dayjs(data.created).format('YYYY-MM-DD HH:mm:ss'),
         updated: dayjs(data.updated).format('YYYY-MM-DD HH:mm:ss'),
       };
     }
 
     let messages = [];
-    if (!exclude?.includes('messages')) {
+    if (include?.includes('messages')) {
       const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/messages`;
       const baseURL = apiURL(this.SERVICE);
       const res = await this.apiService.get<IMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
@@ -80,7 +96,7 @@ export class ExportController {
     }
 
     let notes = [];
-    if (!exclude?.includes('notes')) {
+    if (include?.includes('notes')) {
       notes = data.notes
         .filter(n => n.noteType !== 'INTERNAL')
         .map(n => ({
@@ -89,21 +105,13 @@ export class ExportController {
         }));
     }
 
-    let attachments = [];
-    if (!exclude?.includes('attachment')) {
-      attachments = data.attachments.map(a => ({
-        ...a,
-        created: dayjs(a.created).format('YYYY-MM-DD HH:MM:ss'),
-      }));
-    }
-
     let extraParameters = [];
-    if (!exclude?.includes('extraParameters')) {
-      extraParameters = data.extraParameters.filter(p => !p.key.includes('process'));
+    if (include?.includes('errandInformation')) {
+      extraParameters = data.extraParameters.filter(p => !PROCESS_PARAMETER_KEYS.includes(p.key));
     }
 
     let decisions = [];
-    if (!exclude?.includes('decisions')) {
+    if (include?.includes('investigationText')) {
       decisions = data.decisions
         .filter(d => d.decisionType === 'PROPOSED')
         .map(d => ({
@@ -116,10 +124,10 @@ export class ExportController {
       identifier: 'sbk.singleerrand.export',
       parameters: {
         errand: {
-          ...basicInformation,
+          errandNumber: data.errandNumber,
+          ...(basicInformation && { basicInformation }),
           messages,
           notes,
-          attachments,
           decisions,
           extraParameters,
         },

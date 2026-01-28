@@ -1,7 +1,7 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Checkbox, Disclosure, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import React, { useEffect } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
@@ -65,67 +65,69 @@ export const SupportErrandRecruitmentTab: React.FC<{
         >
           {Object.entries(recruitmentParameterGroups).map(([key, param]: [string, Parameter[]], index) => {
             return (
-              <Disclosure
-                key={`disclosure-${key}`}
-                header={param[0].displayName}
-                variant="alt"
-                icon={<LucideIcon name="text" />}
-                label={
-                  param.every((p, p_idx) => recruitmentForm.getValues(`${key}.${p_idx}.values.1`) === 'true')
-                    ? 'Komplett'
-                    : null
-                }
-              >
-                {param.map((val, index) => {
-                  return (
-                    <div key={`${val.key}-${index}`} className="pb-16">
-                      <Input {...recruitmentForm.register(`${key}.${index}.key`)} hidden />
-                      <Input {...recruitmentForm.register(`${key}.${index}.group`)} value={val.group} hidden />
-                      <Input
-                        {...recruitmentForm.register(`${key}.${index}.displayName`)}
-                        value={val.displayName}
-                        hidden
-                      />
-                      <FormLabel className="block pb-16" {...recruitmentForm.register(`${key}.${index}.values.0`)}>
-                        {val.group}
-                      </FormLabel>
-                      <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
-                      {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`)) ? (
-                        <Checkbox
-                          defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
-                          onChange={(e) => {
-                            recruitmentForm.setValue(
-                              `${key}.${index}.values.1`,
-                              e.currentTarget.checked === true ? 'true' : 'false'
-                            );
-                          }}
-                          className="mb-16"
-                        >
-                          {val.values[0]}
-                        </Checkbox>
-                      ) : null}
-
-                      {recruitmentForm.getValues(`${key}.${index}.values.3`) === 'number' ? (
-                        <div>
-                          <Input
-                            {...recruitmentForm.register(`${key}.${index}.values.2`)}
-                            type="text"
-                            inputMode="numeric"
-                            pattern="\d*"
-                          />
-                        </div>
-                      ) : (
-                        <Textarea
-                          className="w-full"
-                          rows={3}
-                          {...recruitmentForm.register(`${key}.${index}.values.2`)}
-                          placeholder="Anteckningar..."
-                          value={recruitmentForm.getValues(`${key}.${index}.values.2`)}
+              <Disclosure key={`disclosure-${key}`} variant="alt">
+                <Disclosure.Header>
+                  <Disclosure.Icon icon={<LucideIcon name="text" />} />
+                  <Disclosure.Title>{param[0].displayName}</Disclosure.Title>
+                  {param.every((p, p_idx) => recruitmentForm.getValues(`${key}.${p_idx}.values.1`) === 'true') && (
+                    <Label rounded inverted color="gronsta">
+                      Komplett
+                    </Label>
+                  )}
+                  <Disclosure.Button />
+                </Disclosure.Header>
+                <Disclosure.Content>
+                  {param.map((val, index) => {
+                    return (
+                      <div key={`${val.key}-${index}`} className="pb-16">
+                        <Input {...recruitmentForm.register(`${key}.${index}.key`)} hidden />
+                        <Input {...recruitmentForm.register(`${key}.${index}.group`)} value={val.group} hidden />
+                        <Input
+                          {...recruitmentForm.register(`${key}.${index}.displayName`)}
+                          value={val.displayName}
+                          hidden
                         />
-                      )}
-                    </div>
-                  );
-                })}
+                        <FormLabel className="block pb-16" {...recruitmentForm.register(`${key}.${index}.values.0`)}>
+                          {val.group}
+                        </FormLabel>
+                        <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
+                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`)) ? (
+                          <Checkbox
+                            defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
+                            onChange={(e) => {
+                              recruitmentForm.setValue(
+                                `${key}.${index}.values.1`,
+                                e.currentTarget.checked === true ? 'true' : 'false'
+                              );
+                            }}
+                            className="mb-16"
+                          >
+                            {val.values[0]}
+                          </Checkbox>
+                        ) : null}
+
+                        {recruitmentForm.getValues(`${key}.${index}.values.3`) === 'number' ? (
+                          <div>
+                            <Input
+                              {...recruitmentForm.register(`${key}.${index}.values.2`)}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="\d*"
+                            />
+                          </div>
+                        ) : (
+                          <Textarea
+                            className="w-full"
+                            rows={3}
+                            {...recruitmentForm.register(`${key}.${index}.values.2`)}
+                            placeholder="Anteckningar..."
+                            value={recruitmentForm.getValues(`${key}.${index}.values.2`)}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </Disclosure.Content>
               </Disclosure>
             );
           })}

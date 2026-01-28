@@ -8,13 +8,15 @@ import {
   updateAsset,
 } from '@casedata/services/asset-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.compontant';
+import { serviceUiSchema } from '@common/components/json/schemas/service-ui-schema';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import type { RJSFSchema } from '@rjsf/utils';
 import { useSnackbar } from '@sk-web-gui/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
 import { Service } from './casedata-service-mapper';
 import { useErrandServices } from './useErrandService';
@@ -23,6 +25,31 @@ const fromCompositeId = (id: string) => {
   const [assetUuid, idxStr] = id.split('#');
   return { assetUuid, paramIndex: Number(idxStr) };
 };
+
+//Temporary transport mode filtering based on case type until final specicication is done.
+//Final solution should be export to json schema API with different schema per case type.
+const TRANSPORT_MODE_BY_CASE_TYPE: Record<string, string[]> = {
+  PARATRANSIT: ['vanligt_sate_personbil', 'fordon_hogt_insteg', 'rullstolsplats', 'rullstolsplats_stor'],
+  PARATRANSIT_RENEWAL: ['vanligt_sate_personbil', 'fordon_hogt_insteg', 'rullstolsplats', 'rullstolsplats_stor'],
+  PARATRANSIT_NOTIFICATION: ['vanligt_sate_personbil', 'fordon_hogt_insteg', 'rullstolsplats', 'rullstolsplats_stor'],
+
+  PARATRANSIT_NATIONAL: ['tag', 'buss', 'flyg', 'bat', 'personbilstaxi', 'rullstolstaxi'],
+  PARATRANSIT_NOTIFICATION_NATIONAL: ['tag', 'buss', 'flyg', 'bat', 'personbilstaxi', 'rullstolstaxi'],
+};
+
+function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSchema | null {
+  if (!schema) return null;
+  const allowedModes = TRANSPORT_MODE_BY_CASE_TYPE[caseType];
+  if (!allowedModes) return schema;
+
+  const filtered = JSON.parse(JSON.stringify(schema));
+  if (filtered.properties?.transportMode?.items?.oneOf) {
+    filtered.properties.transportMode.items.oneOf = filtered.properties.transportMode.items.oneOf.filter(
+      (opt: { const: string }) => allowedModes.includes(opt.const)
+    );
+  }
+  return filtered;
+}
 
 export const CasedataServicesTab: React.FC = () => {
   const { errand } = useAppContext();
@@ -36,6 +63,10 @@ export const CasedataServicesTab: React.FC = () => {
 
   const partyId = getOwnerStakeholder(errand).personId;
   const errandNr = errand.errandNumber!;
+
+  const filteredSchema = useMemo(() => {
+    return filterSchemaByCase(schema, errand?.caseType ?? '');
+  }, [schema, errand?.caseType]);
 
   useEffect(() => {
     (async () => {
@@ -165,15 +196,22 @@ export const CasedataServicesTab: React.FC = () => {
   );
 
   return (
-    <div className="w-full py-24 px-32">
+    <div className="w-full max-w-full py-24 px-32 overflow-x-hidden">
       <h2 className="text-h4-sm md:text-h4-md">Insatser</h2>
       <p className="mt-sm text-md">
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
         service kunden har rätt till vid sina resor.
       </p>
 
-      <div className="mt-24">
-        <SchemaForm schema={schema} formData={formData} onChange={(fd) => setFormData(fd)} onSubmit={handleSubmit} />
+      <div className="mt-24 max-w-full">
+        <SchemaForm
+          schema={filteredSchema}
+          uiSchema={serviceUiSchema}
+          formData={formData}
+          onChange={(fd) => setFormData(fd)}
+          onSubmit={handleSubmit}
+          objectFieldTemplate={ServicesObjectFieldTemplate}
+        />
       </div>
 
       <div className="mt-32 pt-24">

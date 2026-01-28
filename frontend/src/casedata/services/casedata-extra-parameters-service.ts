@@ -18,9 +18,7 @@ import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
-import { notificationChange_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-change';
 import { notificationNational_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-national';
-import { notificationNationalRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-national-renewal';
 import { notificationRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-renewal';
 import { notificationRiak_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-riak';
 import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-appeal';
@@ -30,8 +28,69 @@ import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import escapeStringRegexp from 'escape-string-regexp';
+import { PROCESS_PARAMETER_KEYS } from './process-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
+
+export const groupRepeatableParameters = (
+  extraParameters: ExtraParameter[],
+  basePath: string
+): Record<number, Record<string, string | string[]>> => {
+  const grouped: Record<number, Record<string, string | string[]>> = {};
+
+  // Handle case where extraParameters is undefined or not an array
+  if (!extraParameters || !Array.isArray(extraParameters)) {
+    return grouped;
+  }
+
+  const escapedBasePath = escapeStringRegexp(basePath);
+  const pattern = new RegExp(`^${escapedBasePath}\\.(\\d+)\\.(.+)$`);
+
+  extraParameters.forEach((param) => {
+    const match = param.key.match(pattern);
+    if (match) {
+      const index = parseInt(match[1], 10);
+      const fieldKey = match[2];
+
+      if (!grouped[index]) {
+        grouped[index] = {};
+      }
+
+      // Keep arrays for multi-value fields (combobox), single value for others
+      const values = param.values ?? [];
+      grouped[index][fieldKey] = values.length > 1 ? values : values[0] ?? '';
+    }
+  });
+
+  return grouped;
+};
+
+// Example: "personal@journey@0@destination" -> { key: "personal.journey.0.destination", values: ["Stockholm"] }
+export const extractRepeatableGroupData = (rawValues: Record<string, unknown>, basePath: string): ExtraParameter[] => {
+  const extracted: ExtraParameter[] = [];
+  const formKeyPrefix = basePath.replaceAll('.', EXTRAPARAMETER_SEPARATOR);
+  const escapedPrefix = escapeStringRegexp(formKeyPrefix);
+  const escapedSeparator = escapeStringRegexp(EXTRAPARAMETER_SEPARATOR);
+  const pattern = new RegExp(`^${escapedPrefix}${escapedSeparator}(\\d+)${escapedSeparator}(.+)$`);
+
+  Object.keys(rawValues).forEach((key) => {
+    const match = key.match(pattern);
+    if (match) {
+      const index = match[1];
+      const fieldName = match[2];
+      const value = rawValues[key];
+
+      const backendKey = `${basePath}.${index}.${fieldName}`;
+      extracted.push({
+        key: backendKey,
+        values: Array.isArray(value) ? value : [String(value ?? '')],
+      });
+    }
+  });
+
+  return extracted;
+};
 
 export type OptionBase = {
   label: string;
@@ -47,25 +106,29 @@ export interface UppgiftField {
     | { type: 'date'; options?: { min?: string; max?: string } }
     | { type: 'datetime-local'; options?: { min?: string; max?: string } }
     | { type: 'textarea'; options?: { placeholder?: string } }
+    | { type: 'combobox'; options: OptionBase[] }
     | { type: 'select'; options: OptionBase[] }
     | { type: 'radio'; options: OptionBase[]; inline?: boolean }
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
-    | { type: 'checkbox'; options: OptionBase[] };
+    | { type: 'checkbox'; options: OptionBase[] }
+    | { type: 'repeatableGroup' };
   section: string;
+  dependsOnLogic?: 'AND' | 'OR';
   dependsOn?: {
     field: string;
-    value: string;
+    value: string | string[];
     validationMessage?: string;
   }[];
   description?: string;
+  required?: boolean;
+  pairWith?: string;
+  repeatableGroup?: any;
 }
 
 const caseTypeTemplateAlias: Record<string, string> = {
   PARATRANSIT: 'PARATRANSIT_NOTIFICATION',
-  PARATRANSIT_CHANGE: 'PARATRANSIT_NOTIFICATION_CHANGE',
   PARATRANSIT_RENEWAL: 'PARATRANSIT_NOTIFICATION_RENEWAL',
   PARATRANSIT_NATIONAL: 'PARATRANSIT_NOTIFICATION_NATIONAL',
-  PARATRANSIT_NATIONAL_RENEWAL: 'PARATRANSIT_NOTIFICATION_NATIONAL_RENEWAL',
   PARATRANSIT_RIAK: 'PARATRANSIT_NOTIFICATION_RIAK',
   PARATRANSIT_BUS_CARD: 'PARATRANSIT_NOTIFICATION_BUS_CARD',
 };
@@ -76,18 +139,14 @@ export interface ExtraParametersObject {
 
 const template: ExtraParametersObject = {
   PARATRANSIT: notification_UppgiftFieldTemplate,
-  PARATRANSIT_CHANGE: notificationChange_UppgiftFieldTemplate,
   PARATRANSIT_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NATIONAL: notificationNational_UppgiftFieldTemplate,
-  PARATRANSIT_NATIONAL_RENEWAL: notificationNationalRenewal_UppgiftFieldTemplate,
   PARATRANSIT_RIAK: notificationRiak_UppgiftFieldTemplate,
   PARATRANSIT_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
 
   PARATRANSIT_NOTIFICATION: notification_UppgiftFieldTemplate,
-  PARATRANSIT_NOTIFICATION_CHANGE: notificationChange_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_NATIONAL: notificationNational_UppgiftFieldTemplate,
-  PARATRANSIT_NOTIFICATION_NATIONAL_RENEWAL: notificationNationalRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RIAK: notificationRiak_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
 
@@ -128,7 +187,7 @@ export const getExtraParametersLabels = (caseType: string): { [key: string]: str
   }, {});
 };
 
-export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraParametersObject> = (errand) => {
+export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<UppgiftField[]> = (errand) => {
   // Create base template encompassing all case types
   const obj: Partial<ExtraParametersObject> = { ...template };
 
@@ -138,18 +197,45 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
   // If the field is not found in the errand extraparameters, the default value
   // from the template will be used.
 
+  const caseType = errand.caseType;
+  const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
+  const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+
+  obj[caseType] = caseTypeTemplate?.map((field) => ({ ...field })) || [];
+
+  // First: handle repeatable groups
+  caseTypeTemplate?.forEach((templateField) => {
+    if (templateField.formField.type === 'repeatableGroup' && (templateField as any).repeatableGroup) {
+      const basePath = (templateField as any).repeatableGroup.basePath;
+      const groupedData = groupRepeatableParameters(errand.extraParameters, basePath);
+
+      if (Object.keys(groupedData).length > 0) {
+        const a: UppgiftField[] = obj[caseType];
+        const i = a.findIndex((f) => f.field === templateField.field);
+
+        if (i > -1) {
+          (obj[caseType][i] as any).initialData = groupedData;
+        }
+      }
+    }
+  });
+
+  // Second: handle regular fields
   errand.extraParameters.forEach((param) => {
     try {
-      const caseType = errand.caseType;
       const field = param['key'];
 
-      const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-      const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+      // Skip fields that are part of repeatable groups
+      if (/\.\d+\./.test(field)) {
+        return;
+      }
+
       const templateField = caseTypeTemplate?.find((f) => f.field === field);
 
-      if (caseType && field && templateField) {
-        const { label, formField, section, dependsOn } = templateField;
+      if (field && templateField) {
+        const { label, formField, section, dependsOn, dependsOnLogic, description, required } = templateField;
         const isCheckbox = formField.type === 'checkbox';
+        const isMultiValueField = isCheckbox || Array.isArray(templateField.value);
         // If the field is a checkbox, its values are in a string formatted
         // comma-separated list in the first element of the param.values array
         const rawValues = Array.isArray(param.values) ? param.values : [];
@@ -158,9 +244,8 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
           .map((v) => v.trim())
           .filter(Boolean);
 
-        const value = isCheckbox ? normalized : rawValues[0] ?? '';
+        const value = isMultiValueField ? normalized : rawValues[0] ?? '';
 
-        obj[caseType] = obj[caseType] || [];
         const data: UppgiftField = {
           field,
           value,
@@ -168,6 +253,9 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
           formField,
           section,
           dependsOn,
+          dependsOnLogic,
+          description,
+          required,
         };
 
         const a: UppgiftField[] = obj[caseType];
@@ -179,29 +267,57 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<ExtraP
         }
       }
     } catch (error) {
-      console.warn('Kunde inte mappa extraParameter:', param, error);
+      console.warn('Could not map extraParameter:', param, error);
     }
   });
 
-  return obj;
+  return obj[errand.caseType];
 };
 
 export const saveExtraParameters = (data: ExtraParameter[], errand: IErrand) => {
-  const nullFilteredData: ExtraParameter[] = data
-    .filter((d) => d.values[0] !== null && typeof d.values[0] !== 'undefined')
+  // This function must not include process-related extra parameters since most of these
+  // are read-only and managed by the process-service. Hence the filter for PROCESS_PARAMETER_KEYS.
+  const sanitizedParameters: ExtraParameter[] = data
+    .filter((p) => !PROCESS_PARAMETER_KEYS.includes(p.key))
     .map((param) => ({
       ...param,
-      values: param.values.flatMap((v) => (typeof v === 'string' ? [v] : [])),
+      values: (param.values ?? [])
+        .map((value) => (value === null || typeof value === 'undefined' ? '' : String(value).trim()))
+        .filter((value) => value !== ''),
     }));
 
-  let newExtraParameters = [...errand.extraParameters];
-  nullFilteredData.forEach((p) => {
-    newExtraParameters = replaceExtraParameter(newExtraParameters, p);
+  const repeatableGroupPaths = new Set<string>();
+  sanitizedParameters.forEach((param) => {
+    const match = param.key.match(/^(.+)\.\d+\..+$/);
+    if (match) {
+      repeatableGroupPaths.add(match[1]);
+    }
   });
-  return apiService.patch<any, { id: string; extraParameters: ExtraParameter[] }>(`casedata/errands/${errand.id}`, {
-    id: errand.id.toString(),
-    extraParameters: newExtraParameters,
-  });
+
+  const mergedExtraParameters = errand.extraParameters
+    .filter((existing) => {
+      if (sanitizedParameters.some((param) => param.key === existing.key)) {
+        return false;
+      }
+
+      // Remove if it's part of a repeatable group that we're updating
+      for (const basePath of repeatableGroupPaths) {
+        const escapedBasePath = escapeStringRegexp(basePath);
+        const pattern = new RegExp(`^${escapedBasePath}\\.\\d+\\..+$`);
+        if (pattern.test(existing.key)) {
+          return false;
+        }
+      }
+
+      return true;
+    })
+    .concat(sanitizedParameters)
+    .filter((p) => !PROCESS_PARAMETER_KEYS.includes(p.key));
+
+  return apiService.patch<any, ExtraParameter[]>(
+    `casedata/errands/${errand.id}/extraparameters`,
+    mergedExtraParameters
+  );
 };
 
 // If parameter exists, replace the existing one, otherwise append to list

@@ -6,12 +6,16 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 export const makeFacility: (estate: EstateInfoSearch) => FacilityDTO = (estate) => {
   return {
     address: makeAddress(estate),
+    extraParameters: {
+      districtname: estate.districtname || '',
+    },
   };
 };
 
 export const makeAddress: (estate: EstateInfoSearch) => FacilityAddressDTO = (estate) => {
   return {
     propertyDesignation: estate.designation,
+    street: estate.address || '',
   };
 };
 

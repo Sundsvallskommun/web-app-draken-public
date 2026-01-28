@@ -4,7 +4,6 @@ import { attestationEnabled } from '@common/services/feature-flag-service';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import store from '@supportmanagement/services/storage-service';
-import { getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -56,8 +55,8 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const {
     supportMetadata,
     setSupportErrand,
-    setSupportAdmins,
-    supportAdmins,
+    administrators,
+    
     selectedSupportErrandStatuses,
     setSelectedSupportErrandStatuses,
     setSidebarLabel,
@@ -223,14 +222,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     //eslint-disable-next-line
   }, [errands]);
 
-  useEffect(() => {
-    // getAdminUsers().then((data) => {
-    //   setAdministrators(data);
-    // });
-    getSupportAdmins().then(setSupportAdmins);
-    //eslint-disable-next-line
-  }, []);
-
   useDebounceEffect(
     () => {
       const fObj = {};
@@ -258,7 +249,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         // and we want to be able to filter on multiple types with the same displayName
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat();
         const matchedTypes = allTypesFlattened.filter((l) => labelTypeFilter.includes(l.displayName));
-        const matchedTypeNames = matchedTypes.map((t) => t.name);
+        const matchedTypeNames = matchedTypes.map((t) => t.resourcePath);
         fObj['labelType'] = matchedTypeNames.join(',');
       }
       if (labelSubTypeFilter && labelSubTypeFilter.length > 0) {
@@ -273,7 +264,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
           .map((l) => l.labels)
           .flat();
         const matchedSubTypes = allSubTypesFlattened.filter((l) => labelSubTypeFilter.includes(l.displayName));
-        const matchedSubTypeNames = matchedSubTypes.map((t) => t.name);
+        const matchedSubTypeNames = matchedSubTypes.map((t) => t.resourcePath);
         fObj['labelSubType'] = matchedSubTypeNames.join(',');
       }
       if (channelFilter && channelFilter.length > 0) {
@@ -351,7 +342,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
               numberOfFilters={numberOfFilters}
               ownerFilterHandler={ownerFilteringHandler}
               ownerFilter={ownerFilter}
-              administrators={supportAdmins}
+              administrators={administrators}
             />
           </FormProvider>
         </div>
@@ -363,9 +354,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
             <div>
               <h1 className="p-0 m-0">
                 {sidebarLabel || 'Ärenden'}
-                {sidebarLabel === 'Avslutade ärenden'
-                  ? ' : ' + (solvedSupportErrands ? solvedSupportErrands : '')
-                  : null}
+                {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (solvedSupportErrands ?? '') : null}
               </h1>
             </div>
             <div>

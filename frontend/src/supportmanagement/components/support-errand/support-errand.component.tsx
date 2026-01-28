@@ -1,12 +1,13 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { SupportAdmin, getSupportAdmins } from '@supportmanagement/services/support-admin-service';
 import {
   SupportErrand,
   defaultSupportErrandInformation,
+  getSupportErrandByErrandNumber,
   getSupportErrandById,
   initiateSupportErrand,
   supportErrandIsEmpty,
@@ -16,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
@@ -31,22 +33,20 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
+export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const {
-    municipalityId,
+    
     supportErrand,
     setSupportErrand,
-    setSupportAdmins,
     supportMetadata,
   }: {
-    municipalityId: string;
+    
     supportErrand: SupportErrand;
     setSupportErrand: (e: any) => void;
-    setSupportAdmins: (admins: SupportAdmin[]) => void;
     supportMetadata: SupportMetadata;
   } = useAppContext();
   const toastMessage = useSnackbar();
@@ -69,11 +69,6 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
   const { theme } = useGui();
 
   useEffect(() => {
-    getSupportAdmins().then(setSupportAdmins);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     setCategoriesList(supportMetadata?.categories);
   }, [supportMetadata]);
 
@@ -84,9 +79,9 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
         setUser(user);
       })
       .catch((e) => {});
-    if (props.id) {
+    if (errandNumber) {
       setIsLoading(true);
-      getSupportErrandById(props.id)
+      getSupportErrandByErrandNumber(errandNumber)
         .then((res) => {
           if (res.error) {
             toastMessage({
@@ -109,13 +104,13 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand) && !isLoading) {
+      if (&& supportErrandIsEmpty(supportErrand) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand()
           .then((result) =>
             setTimeout(() => {
-              router.push(`/arende/${municipalityId}/${result.id}`);
+              router.push(`/arende/${result.errandNumber}`);
             }, 10)
           )
           .catch((e) => {
@@ -131,7 +126,7 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, municipalityId, props.id]);
+  }, [router, errandNumber]);
 
   return (
     <FormProvider {...methods}>
@@ -156,12 +151,17 @@ export const SupportErrandComponent: React.FC<{ id?: string }> = (props) => {
                     <div className="container m-auto pl-0 pr-24 md:pr-40">
                       <div className="w-full flex flex-wrap flex-col justify-between gap-24">
                         {!supportErrandIsEmpty(supportErrand) ? (
-                          <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {
-                              categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                ?.displayName
-                            }
-                          </h1>
+                          <>
+                            <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
+                              {appConfig.features.useThreeLevelCategorization
+                                ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ??
+                                  '(Ärendetyp saknas)'
+                                : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
+                                    ?.displayName}
+                            </h1>
+                            {/* TODO: Add some logic or featureflag for this component to be displayed */}
+                            {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                          </>
                         ) : supportErrand ? (
                           <div className="flex justify-between items-center pt-8">
                             <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">

@@ -5,13 +5,13 @@ import type { RJSFSchema } from '@rjsf/utils';
 export interface Service {
   id: string;
   restyp: string;
-  transport: string;
   aids: string[];
   addon: string[];
-  winter: boolean;
+  transportMode: string[];
   comment: string;
   startDate: string;
   endDate: string;
+  isWinterService: boolean;
   validityType: 'tidsbegransad' | 'tillsvidare';
 }
 
@@ -26,21 +26,23 @@ function normalizeArray(values: any): string[] {
 }
 
 export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, id: string): Service {
-  const validityType: Service['validityType'] = fd?.validityType === 'tillsvidare' ? 'tillsvidare' : 'tidsbegransad';
+  const validityType: Service['validityType'] = fd?.validityType ?? 'tillsvidare';
   const mobilityIds = normalizeArray(fd?.mobilityAids);
   const addonIds = normalizeArray(fd?.additionalAids);
+  const transportModeIds = normalizeArray(fd?.transportMode);
+  const isWinterService = fd?.isWinterService === 'ja' || fd?.isWinterService === true;
 
   return {
     id,
     restyp: enumTitleOf(schema, 'type', fd?.type ?? ''),
-    transport: enumTitleOf(schema, 'cartype', fd?.cartype ?? ''),
     aids: enumTitlesOfArray(schema, 'mobilityAids', mobilityIds),
     addon: enumTitlesOfArray(schema, 'additionalAids', addonIds),
+    transportMode: enumTitlesOfArray(schema, 'transportMode', transportModeIds),
     comment: typeof fd?.notes === 'string' ? fd.notes : '',
     startDate: fd?.validFrom ?? '',
     endDate: validityType === 'tillsvidare' ? '' : fd?.validTo ?? '',
+    isWinterService,
     validityType,
-    winter: !!fd?.winter,
   };
 }
 

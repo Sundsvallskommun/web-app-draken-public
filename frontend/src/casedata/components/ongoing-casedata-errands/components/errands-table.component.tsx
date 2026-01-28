@@ -78,7 +78,7 @@ export const ErrandsTable: React.FC = () => {
         throw new Error('Failed to acknowledge notification');
       });
     }
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.errandNumber}`, '_blank');
+    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
 
   const primaryStakeholderNameorEmail = (errand: IErrand) => {
@@ -154,9 +154,12 @@ export const ErrandsTable: React.FC = () => {
             errand.updated
           )}
         </Table.Column>
-        <Table.Column scope="row" className={isPT() && 'font-bold max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
+        <Table.Column scope="row" className={isPT() && 'max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
           {isPT() ? (
-            <>{getShortLabel(errand.caseType)}</>
+            <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
+              <div className="font-bold">{getShortLabel(errand.caseType)}</div>
+              <div className="italic">{errand.channel}</div>
+            </div>
           ) : (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
               <div>{CaseLabels.ALL[errand.caseType] ?? ''}</div>
@@ -196,7 +199,7 @@ export const ErrandsTable: React.FC = () => {
         <Table.Column sticky>
           <div className="w-full flex justify-end">
             <NextLink
-              href={`/arende/${municipalityId}/${errand.errandNumber}`}
+              href={`/arende/${errand.errandNumber}`}
               onClick={(e) => e.stopPropagation()}
               target="_blank"
               data-icon={isMaxMediumDevice}
@@ -244,107 +247,108 @@ export const ErrandsTable: React.FC = () => {
 
   return (
     <div className="max-w-full overflow-x-hidden">
-      {data.isLoading && (
+      {data.isLoading ? (
         <div className="z-100 absolute top-0 bottom-0 left-0 right-0 bg-background-content opacity-50 w-full h-full flex items-center justify-center">
           <div>
             <Spinner size={4} />
           </div>
         </div>
-      )}
-      <Table data-cy="main-casedata-table" dense={rowHeight === 'dense'} aria-describedby="errandTableCaption">
-        {rows?.length === 0 || data.error === '404' ? (
-          <caption id="errandTableCaption" className="my-32">
-            Det finns inga ärenden
-          </caption>
-        ) : data.error ? (
-          <caption id="errandTableCaption" className="my-32">
-            Det gick inte att hämta ärenden {data.error}
-          </caption>
-        ) : (
-          page && (
-            <caption id="errandTableCaption" className="sr-only">
-              Ärenden, sida {page + 1} av {totalPages}
+      ) : (
+        <Table data-cy="main-casedata-table" dense={rowHeight === 'dense'} aria-describedby="errandTableCaption">
+          {rows?.length === 0 || data.error === '404' ? (
+            <caption id="errandTableCaption" className="my-32">
+              Det finns inga ärenden
             </caption>
-          )
-        )}
-        {data.errands.length > 0 && (
-          <>
-            <Table.Header>
-              {headers}
-              <Table.HeaderColumn sticky>
-                <span className="sr-only">Hantera</span>
-              </Table.HeaderColumn>
-            </Table.Header>
-            <Table.Body>{rows}</Table.Body>
-          </>
-        )}
+          ) : data.error ? (
+            <caption id="errandTableCaption" className="my-32">
+              Det gick inte att hämta ärenden {data.error}
+            </caption>
+          ) : (
+            page && (
+              <caption id="errandTableCaption" className="sr-only">
+                Ärenden, sida {page + 1} av {totalPages}
+              </caption>
+            )
+          )}
+          {data.errands.length > 0 && (
+            <>
+              <Table.Header>
+                {headers}
+                <Table.HeaderColumn sticky>
+                  <span className="sr-only">Hantera</span>
+                </Table.HeaderColumn>
+              </Table.Header>
+              <Table.Body>{rows}</Table.Body>
+            </>
+          )}
 
-        <Table.Footer>
-          <div className="sk-table-bottom-section sk-table-pagination-mobile">
-            <label className="sk-table-bottom-section-label" htmlFor="paginationSelect">
-              Sida:
-            </label>
-            <Select
-              id="paginationSelect"
-              size="sm"
-              variant="tertiary"
-              value={(page || 0).toString()}
-              onSelectValue={(value) => setValue('page', parseInt(value, 10))}
-            >
-              {totalPages &&
-                Array.from(Array(totalPages).keys()).map((page) => (
-                  <Select.Option key={`pagipage-${page}`} value={page}>
-                    {page + 1}
-                  </Select.Option>
-                ))}
-            </Select>
-          </div>
-          <div className="sk-table-bottom-section">
-            <label className="sk-table-bottom-section-label" htmlFor="pageSize">
-              Rader per sida:
-            </label>
-            <Input
-              {...register('pageSize')}
-              size="sm"
-              id="pageSize"
-              type="number"
-              min={1}
-              max={1000}
-              className="max-w-[6rem]"
-            />
-          </div>
-          <div className="sk-table-paginationwrapper">
-            <Pagination
-              showFirst
-              showLast
-              pagesBefore={1}
-              pagesAfter={1}
-              showConstantPages={true}
-              fitContainer
-              pages={totalPages}
-              activePage={page + 1}
-              changePage={(page) => {
-                setValue('page', page - 1);
-              }}
-            />
-          </div>
-          <div className="sk-table-bottom-section">
-            <label className="sk-table-bottom-section-label" htmlFor="rowHeight">
-              Radhöjd:
-            </label>
-            <Select
-              size="sm"
-              id="rowHeight"
-              variant="tertiary"
-              onChange={(e) => setRowHeight(e.target.value)}
-              value={rowHeight}
-            >
-              <Select.Option value="normal">Normal</Select.Option>
-              <Select.Option value="dense">Tät</Select.Option>
-            </Select>
-          </div>
-        </Table.Footer>
-      </Table>
+          <Table.Footer>
+            <div className="sk-table-bottom-section sk-table-pagination-mobile">
+              <label className="sk-table-bottom-section-label" htmlFor="paginationSelect">
+                Sida:
+              </label>
+              <Select
+                id="paginationSelect"
+                size="sm"
+                variant="tertiary"
+                value={(page || 0).toString()}
+                onSelectValue={(value) => setValue('page', parseInt(value, 10))}
+              >
+                {totalPages &&
+                  Array.from(Array(totalPages).keys()).map((page) => (
+                    <Select.Option key={`pagipage-${page}`} value={page}>
+                      {page + 1}
+                    </Select.Option>
+                  ))}
+              </Select>
+            </div>
+            <div className="sk-table-bottom-section">
+              <label className="sk-table-bottom-section-label" htmlFor="pageSize">
+                Rader per sida:
+              </label>
+              <Input
+                {...register('pageSize')}
+                size="sm"
+                id="pageSize"
+                type="number"
+                min={1}
+                max={1000}
+                className="max-w-[6rem]"
+              />
+            </div>
+            <div className="sk-table-paginationwrapper">
+              <Pagination
+                showFirst
+                showLast
+                pagesBefore={1}
+                pagesAfter={1}
+                showConstantPages={true}
+                fitContainer
+                pages={totalPages}
+                activePage={page + 1}
+                changePage={(page) => {
+                  setValue('page', page - 1);
+                }}
+              />
+            </div>
+            <div className="sk-table-bottom-section">
+              <label className="sk-table-bottom-section-label" htmlFor="rowHeight">
+                Radhöjd:
+              </label>
+              <Select
+                size="sm"
+                id="rowHeight"
+                variant="tertiary"
+                onChange={(e) => setRowHeight(e.target.value)}
+                value={rowHeight}
+              >
+                <Select.Option value="normal">Normal</Select.Option>
+                <Select.Option value="dense">Tät</Select.Option>
+              </Select>
+            </div>
+          </Table.Footer>
+        </Table>
+      )}
     </div>
   );
 };

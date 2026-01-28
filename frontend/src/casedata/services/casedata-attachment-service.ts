@@ -17,6 +17,11 @@ import { UploadFile } from '@sk-web-gui/react';
 export const MAX_FILE_SIZE_MB = 50;
 
 export const documentMimeTypes = [
+  'video/quicktime',
+  'video/mp4',
+  'video/mpeg',
+  'video/x-ms-wmv',
+  'video/x-msvideo',
   'application/pdf',
   'application/rtf',
   'application/msword',
@@ -32,6 +37,11 @@ export const documentMimeTypes = [
 ];
 
 export const ACCEPTED_UPLOAD_FILETYPES = [
+  'mov',
+  'mp4',
+  'mpeg',
+  'wmv',
+  'avi',
   'bmp',
   'gif',
   'tif',

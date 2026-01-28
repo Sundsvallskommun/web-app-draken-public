@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { getErrand, validateAction } from '@casedata/services/casedata-errand-service';
+import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   UppgiftField,
@@ -33,15 +33,11 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const toastMessage = useSnackbar();
 
   const [realEstates, setRealEstates] = useState<FacilityDTO[]>([]);
-  useEffect(() => {
-    const _a = validateAction(errand, user);
-  }, [user, errand]);
-
   const form = useFormContext<IErrand>();
 
   const { watch, setValue, trigger } = form;
 
-  const { description } = watch();
+  const description = watch('description');
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
     return saveFacilities(errand.id, estates).then(() => {
@@ -71,25 +67,27 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
-    const uppgifter = extraParametersToUppgiftMapper(errand);
-    const uppgifterFields: UppgiftField[] = uppgifter[errand.caseType] || baseDetails;
+    const uppgifterFields: UppgiftField[] = extraParametersToUppgiftMapper(errand) || baseDetails;
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand.facilities);
 
     uppgifterFields?.forEach((f) => {
       const key = f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
-      const isCheckbox = f.formField.type === 'checkbox';
       const rawValue = f.value;
-
-      setValue<any>(
-        key,
-        isCheckbox
-          ? Array.isArray(rawValue)
-            ? rawValue
-            : rawValue?.split(',').filter((v) => v !== '') ?? []
-          : rawValue
-      );
+      if (f.formField.type === 'checkbox' || Array.isArray(rawValue)) {
+        const normalizedArray = Array.isArray(rawValue)
+          ? rawValue
+          : typeof rawValue === 'string'
+          ? rawValue
+              .split(',')
+              .map((v) => v.trim())
+              .filter((v) => v !== '')
+          : [];
+        setValue<any>(key, normalizedArray, { shouldDirty: false });
+      } else {
+        setValue<any>(key, rawValue, { shouldDirty: false });
+      }
     });
 
     setValue('description', errand.description || '');
@@ -101,34 +99,41 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Disclosure variant="alt" header={label} icon={<LucideIcon name={icon as any} />}>
-          {isAppeal && label === 'Övergripande' && (
-            <div className="px-0">
-              <FormControl className="w-full" key="relatesTo">
-                <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
-                <Input
-                  type="text"
-                  value={errand.relatesTo[0]?.errandNumber}
-                  readOnly={true}
-                  className={cx('w-3/5')}
-                  data-cy="relatesTo-input"
-                  placeholder="t.ex. PRH-2024-000275"
-                />
-              </FormControl>
-            </div>
-          )}
+        <Disclosure variant="alt" data-cy={`section-${label}-disclosure`} initalOpen>
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<LucideIcon name={icon as any} />} />
+            <Disclosure.Title>{label}</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            {isAppeal && label === 'Övergripande' && (
+              <div className="px-0">
+                <FormControl className="w-full" key="relatesTo">
+                  <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
+                  <Input
+                    type="text"
+                    value={errand.relatesTo[0]?.errandNumber}
+                    readOnly={true}
+                    className={cx('w-3/5')}
+                    data-cy="relatesTo-input"
+                    placeholder="t.ex. PRH-2024-000275"
+                  />
+                </FormControl>
+              </div>
+            )}
 
-          <div className="px-0">
-            {fields?.map((detail, idx) => (
-              <CasedataFormFieldRenderer
-                key={`${detail.field}-${idx}`}
-                detail={detail}
-                idx={idx}
-                form={form}
-                errand={errand}
-              />
-            ))}
-          </div>
+            <div className="px-0">
+              {fields?.map((detail, idx) => (
+                <CasedataFormFieldRenderer
+                  key={`${detail.field}-${idx}`}
+                  detail={detail}
+                  idx={idx}
+                  form={form}
+                  errand={errand}
+                />
+              ))}
+            </div>
+          </Disclosure.Content>
         </Disclosure>
       </div>
     );
@@ -166,13 +171,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               </>
             ) : null}
             {appConfig.features.useFacilities ? (
-              <Disclosure variant="alt" header="Fastigheter" icon={<LucideIcon name="map-pin" />}>
-                <Facilities
-                  facilities={realEstates}
-                  setUnsaved={props.setUnsaved}
-                  setValue={setValue}
-                  onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
-                />
+              <Disclosure variant="alt" data-cy="facilities-disclosure">
+                <Disclosure.Header>
+                  <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
+                  <Disclosure.Title>Fastigheter</Disclosure.Title>
+                  <Disclosure.Button />
+                </Disclosure.Header>
+                <Disclosure.Content>
+                  <Facilities
+                    facilities={realEstates}
+                    setUnsaved={props.setUnsaved}
+                    setValue={setValue}
+                    onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
+                  />
+                </Disclosure.Content>
               </Disclosure>
             ) : null}
             {sections.map(({ label, icon }, idx) => {
