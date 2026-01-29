@@ -294,11 +294,13 @@ export const ContractForm: React.FC<{
       {!isDraft && !readOnly && (
         <div
           data-cy="non-draft-warning-banner"
-          className="bg-warning-surface-primary p-md rounded-button mb-md flex items-center gap-sm"
+          className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary"
         >
-          <LucideIcon name="info" size={20} />
-          <span>
-            Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.
+          <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+          <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
+            <p className="mt-0">
+              Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.
+            </p>
           </span>
         </div>
       )}
