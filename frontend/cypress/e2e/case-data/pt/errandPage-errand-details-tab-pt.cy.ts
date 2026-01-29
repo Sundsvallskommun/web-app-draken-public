@@ -8,10 +8,12 @@ import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { modifyField } from '../fixtures/mockMexErrand';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
+import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand details tab', () => {
@@ -28,15 +30,25 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('POST', '**/stakeholders/personNumber', mockPTErrand_base.data.stakeholders);
-      cy.intercept('GET', '**/contract/**', mockPurchaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/**', mockPurchaseAgreement).as('getContract');
+      cy.intercept('GET', '**/assets?**', {}).as('getAssets');
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('PATCH', '**/errands/*', mockPTErrand_base).as('patchErrand');
       cy.intercept('POST', '**/errands/*/facilities', mockPTErrand_base);
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
     });
 
     const goToErrandInformationTab = () => {
-      cy.visit('/arende/2281/PRH-2022-000019');
+      cy.visit('/arende/PRH-2022-000019');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();
     };
@@ -58,12 +70,11 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.get('[data-cy="application.reason-textarea"]').should('exist').and('have.value', 'Kan inte gå');
 
-      cy.get('input[name="CRUTCH"]').should('exist').should('not.be.checked');
-      cy.get('input[name="CRUTCH"]').should('exist').should('not.be.checked');
-      cy.get('input[name="ROLLER"]').should('exist').should('be.checked');
-      cy.get('input[name="WHEELCHAIR"]').should('exist').should('not.be.checked');
-      cy.get('input[name="EWHEELCHAIR"]').should('exist').should('be.checked');
-      cy.get('input[name="NONE"]').should('exist').should('not.be.checked');
+      cy.get('input[value="Krycka/kryckor/käpp"]').should('exist').should('not.be.checked');
+      cy.get('input[value="Rullator"]').should('exist').should('be.checked');
+      cy.get('input[value="Rullstol (manuell)"]').should('exist').should('not.be.checked');
+      cy.get('input[value="Elrullstol"]').should('exist').should('be.checked');
+      cy.get('input[value="Inget"]').should('exist').should('not.be.checked');
 
       cy.get('input[name="disability@walkingAbility"][value="true"]').should('exist').should('not.be.checked');
       cy.get('input[name="disability@walkingAbility"][value="false"]').should('exist').should('be.checked');

@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const Arende: React.FC = () => {
   const pathName = usePathname();
-  const [errandId, setErrandId] = useState<string>();
+  const [errandNumber, setErrandNumber] = useState<string>();
   const { municipalityId, setMunicipalityId, setSupportMetadata, setAdministrators } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
@@ -36,10 +36,8 @@ const Arende: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const municipality = pathName?.split('/')[2];
-    const errandNumber = pathName?.split('/')[3];
-    municipality && setMunicipalityId(municipality);
-    errandNumber && setErrandId(errandNumber);
+    const errandNumber = pathName?.split('/')[2];
+    errandNumber && setErrandNumber(errandNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -64,9 +62,9 @@ const Arende: React.FC = () => {
         </NextLink>
 
         {appConfig.isCaseData
-          ? !!errandId && <CasedataErrandComponent id={errandId} />
+          ? !!errandNumber && <CasedataErrandComponent errandNumber={errandNumber} />
           : appConfig.isSupportManagement
-          ? !!errandId && !!municipalityId && <SupportErrandComponent id={errandId} />
+          ? !!errandNumber && !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />
           : null}
       </Layout>
     </div>

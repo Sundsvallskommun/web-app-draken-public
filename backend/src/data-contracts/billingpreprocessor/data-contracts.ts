@@ -16,10 +16,7 @@ export enum Type {
   INTERNAL = "INTERNAL",
 }
 
-/**
- * Billing status model
- * @example "APPROVED"
- */
+/** Billing status model */
 export enum Status {
   NEW = "NEW",
   APPROVED = "APPROVED",
@@ -28,14 +25,14 @@ export enum Status {
 }
 
 export interface Problem {
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
 }
 
 export interface StatusType {
@@ -63,10 +60,10 @@ export interface ConstraintViolationProblem {
   violations?: Violation[];
   title?: string;
   message?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -86,7 +83,7 @@ export interface ConstraintViolationProblem {
 }
 
 export interface ThrowableProblem {
-  cause?: ThrowableProblem;
+  cause?: any;
   stackTrace?: {
     classLoaderName?: string;
     moduleName?: string;
@@ -99,14 +96,14 @@ export interface ThrowableProblem {
     nativeMethod?: boolean;
   }[];
   message?: string;
-  title?: string;
-  detail?: string;
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, object>;
+  parameters?: Record<string, any>;
   status?: StatusType;
+  title?: string;
+  detail?: string;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -132,102 +129,56 @@ export interface Violation {
 
 /** Account information model */
 export interface AccountInformation {
-  /**
-   * Cost center
-   * @example "15800100"
-   */
+  /** Cost center */
   costCenter?: string;
-  /**
-   * Subaccount
-   * @example "936300"
-   */
+  /** Subaccount */
   subaccount?: string;
-  /**
-   * Department
-   * @example "920360"
-   */
+  /** Department */
   department?: string;
-  /**
-   * Accural key
-   * @example "5647"
-   */
+  /** Accural key */
   accuralKey?: string;
-  /**
-   * Activity
-   * @example "5756"
-   */
+  /** Activity */
   activity?: string;
-  /**
-   * Article
-   * @example "Electric bicycle"
-   */
+  /** Article */
   article?: string;
-  /**
-   * Project
-   * @example "11041"
-   */
+  /** Project */
   project?: string;
-  /**
-   * Counterpart
-   * @example "11830000"
-   */
+  /** Counterpart */
   counterpart?: string;
-  /**
-   * Amount
-   * @example 1399.95
-   */
+  /** Amount */
   amount?: number;
 }
 
 /** Address details model */
 export interface AddressDetails {
-  /**
-   * Street name and number. Mandatory for EXTERNAL billing record.
-   * @example "Sesame Street 7"
-   */
+  /** Street name and number. Mandatory for EXTERNAL billing record. */
   street?: string;
-  /**
-   * Care of name
-   * @example "Abby Cadabby"
-   */
+  /** Care of name */
   careOf?: string;
-  /**
-   * Postal code. Mandatory for EXTERNAL billing record.
-   * @example "12345"
-   */
+  /** Postal code. Mandatory for EXTERNAL billing record. */
   postalCode?: string;
-  /**
-   * City. Mandatory for EXTERNAL billing record.
-   * @example "Grouchytown"
-   */
+  /** City. Mandatory for EXTERNAL billing record. */
   city?: string;
 }
 
 /** Billing record model */
 export interface BillingRecord {
-  /**
-   * Unique id for the billing record
-   * @example "71258e7d-5285-46ce-b9b2-877f8cad8edd"
-   */
+  /** Unique id for the billing record */
   id?: string;
   /**
    * Billing category
-   * @pattern ACCESS_CARD|CUSTOMER_INVOICE|SALARY_AND_PENSION|ISYCASE
+   * @pattern ACCESS_CARD|CUSTOMER_INVOICE|SALARY_AND_PENSION|ISYCASE|MEX_INVOICE
    */
   category: string;
   /** Billing type model */
   type: Type;
   /** Billing status model */
   status: Status;
-  /**
-   * Information regarding the person that has approved the billing record
-   * @example "Big Bird"
-   */
+  /** Information regarding the person that has approved the billing record */
   approvedBy?: string;
   /**
    * Timestamp when the billing record got approved status
    * @format date-time
-   * @example "2022-11-21T16:57:13.988+02:00"
    */
   approved?: string;
   /** Billing recipient model */
@@ -237,20 +188,20 @@ export interface BillingRecord {
   /**
    * Timestamp when the billing record was created
    * @format date-time
-   * @example "2022-10-31T14:30:00.001+02:00"
    */
   created?: string;
   /**
    * Timestamp when the billing record was last modified
    * @format date-time
-   * @example "2022-11-14T08:57:42.358+02:00"
    */
   modified?: string;
-  /**
-   * A map of extra parameters for custom values on the billing record
-   * @example {"caseId":"abc123","uuid":"82a400cf-eb02-4a18-962d-fde55440868f"}
-   */
+  /** A map of extra parameters for custom values on the billing record */
   extraParameters?: Record<string, string>;
+  /**
+   * The date when the billing record should be transferred to Raindance. If not specified, defaults to the next 15th of the month.
+   * @format date
+   */
+  transferDate?: string;
 }
 
 /** Invoice model */
@@ -258,42 +209,31 @@ export interface Invoice {
   /**
    * Customer number in Raindance
    * @minLength 1
-   * @example "16"
    */
   customerId: string;
   /**
    * Description of the invoice
    * @minLength 1
-   * @example "Errand number: 2113-01784"
    */
   description: string;
-  /**
-   * Our reference
-   * @example "Harvey Kneeslapper"
-   */
+  /** Our reference */
   ourReference?: string;
   /**
    * Customer reference
    * @minLength 1
-   * @example "Alice Snuffleupagus"
    */
   customerReference: string;
   /**
    * Date for the invoice
    * @format date
-   * @example "2022-12-24"
    */
   date?: string;
   /**
    * Due date for the invoice
    * @format date
-   * @example "2022-12-24"
    */
   dueDate?: string;
-  /**
-   * Total sum of all invoice rows
-   * @example 1399.95
-   */
+  /** Total sum of all invoice rows */
   totalAmount?: number;
   /** @minItems 1 */
   invoiceRows: InvoiceRow[];
@@ -303,26 +243,16 @@ export interface Invoice {
 export interface InvoiceRow {
   descriptions?: string[];
   detailedDescriptions?: string[];
-  /**
-   * Total sum of invoice row
-   * @example 1399.95
-   */
+  /** Total sum of invoice row */
   totalAmount?: number;
   /**
    * VAT code for invoice row
    * @pattern 00|06|12|25
-   * @example "25"
    */
   vatCode?: string;
-  /**
-   * Cost per unit
-   * @example 155.55
-   */
+  /** Cost per unit */
   costPerUnit?: number;
-  /**
-   * Total amount of units
-   * @example 9
-   */
+  /** Total amount of units */
   quantity?: number;
   /** Account information */
   accountInformation?: AccountInformation[];
@@ -330,73 +260,83 @@ export interface InvoiceRow {
 
 /** Billing recipient model */
 export interface Recipient {
-  /**
-   * Unique id for the person issuing the billing record. Mandatory for EXTERNAL billing record if legalId is null.
-   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
-   */
+  /** Unique id for the person issuing the billing record. Mandatory for EXTERNAL billing record if legalId is null. */
   partyId?: string;
-  /**
-   * LegalId for the organization issuing the billing record. Mandatory for EXTERNAL billing record if partyId is null.
-   * @example "3456789123"
-   */
+  /** LegalId for the organization issuing the billing record. Mandatory for EXTERNAL billing record if partyId is null. */
   legalId?: string;
-  /**
-   * Name of issuing organization of the billing record if the recipient is an organization
-   * @example "Sesame Merc AB"
-   */
+  /** Name of issuing organization of the billing record if the recipient is an organization */
   organizationName?: string;
-  /**
-   * First name of the billing record recipient
-   * @example "Alice"
-   */
+  /** First name of the billing record recipient */
   firstName?: string;
-  /**
-   * Last name of the billing record recipient
-   * @example "Snuffleupagus"
-   */
+  /** Last name of the billing record recipient */
   lastName?: string;
-  /**
-   * User id of the billing record recipient
-   * @example "ALI22SNU"
-   */
+  /** User id of the billing record recipient */
   userId?: string;
   /** Address details model */
   addressDetails: AddressDetails;
 }
 
+/** InvoiceFile status model */
+export interface InvoiceFileStatus {
+  id?: string;
+  name?: string;
+  type?: string;
+  status?: string;
+  municipalityId?: string;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  sentAt?: string;
+}
+
 export interface PageBillingRecord {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  pageable?: PageableObject;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
-  sort?: SortObject;
-  /** @format int32 */
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  paged?: boolean;
-  /** @format int64 */
-  offset?: number;
   sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
-  sorted?: boolean;
   empty?: boolean;
+  sorted?: boolean;
   unsorted?: boolean;
+}
+
+export enum GetFileStatusesForMonthParamsMonthEnum {
+  JANUARY = "JANUARY",
+  FEBRUARY = "FEBRUARY",
+  MARCH = "MARCH",
+  APRIL = "APRIL",
+  MAY = "MAY",
+  JUNE = "JUNE",
+  JULY = "JULY",
+  AUGUST = "AUGUST",
+  SEPTEMBER = "SEPTEMBER",
+  OCTOBER = "OCTOBER",
+  NOVEMBER = "NOVEMBER",
+  DECEMBER = "DECEMBER",
 }

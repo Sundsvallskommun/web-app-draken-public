@@ -78,7 +78,7 @@ export const ErrandsTable: React.FC = () => {
         throw new Error('Failed to acknowledge notification');
       });
     }
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${municipalityId}/${errand.errandNumber}`, '_blank');
+    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
 
   const primaryStakeholderNameorEmail = (errand: IErrand) => {
@@ -199,7 +199,7 @@ export const ErrandsTable: React.FC = () => {
         <Table.Column sticky>
           <div className="w-full flex justify-end">
             <NextLink
-              href={`/arende/${municipalityId}/${errand.errandNumber}`}
+              href={`/arende/${errand.errandNumber}`}
               onClick={(e) => e.stopPropagation()}
               target="_blank"
               data-icon={isMaxMediumDevice}

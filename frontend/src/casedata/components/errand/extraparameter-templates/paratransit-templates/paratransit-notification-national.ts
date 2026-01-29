@@ -130,7 +130,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.maxWalkingDistance',
     value: '',
-    label: 'Hur långt klarar den sökande att gå på plan mark i meter?',
+    label: 'Hur långt klarar den sökande att gå på plan mark? Ange i antalet meter.',
     description: '',
     formField: {
       type: 'textarea',
@@ -164,6 +164,9 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Komfortrullstol eller motsvarande', value: 'COMFORT_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Elrullstol', value: 'ELECTRIC_WHEELCHAIR', name: 'mobilityAids' },
         { label: 'Ledarhund', value: 'GUIDE_DOG', name: 'mobilityAids' },
+        { label: 'Vagn', value: 'TROLLEY', name: 'mobilityAids' },
+        { label: 'Syrgas', value: 'OXYGEN', name: 'mobilityAids' },
+        { label: 'Bälteskudde', value: 'BELT_PILLOW', name: 'mobilityAids' },
       ],
     },
     section: 'Yttre omständigheter',
@@ -175,29 +178,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
       },
     ],
   },
-  {
-    field: 'personal.walkingDistance',
-    value: '',
-    label: 'Hur långt klarar den sökande att gå på plan mark? Ange i antalet meter',
-    formField: {
-      type: 'textarea',
-    },
-    section: 'Yttre omständigheter',
-    dependsOnLogic: 'OR',
-    dependsOn: [
-      {
-        field: 'personal.mobilityAids',
-        value: ['WALKER', 'CRUTCH_CANE_POLES'],
-        validationMessage: 'Vänligen ange hur långt du kan gå på plan mark i meter (minst 4 tecken).',
-      },
-      {
-        field: 'personal.mobilityAidNeeded',
-        value: 'NO',
-        validationMessage: 'Vänligen ange hur långt du kan gå på plan mark i meter (minst 4 tecken).',
-      },
-    ],
-  },
-  {
+    {
     field: 'personal.needForEscort',
     value: '',
     label: 'Behöver den sökande aktiv hjälp av en ledsagare under själva resan?',

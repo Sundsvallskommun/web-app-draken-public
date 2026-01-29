@@ -52,7 +52,9 @@ const CommonNestedPhoneArrayV2 = ({
           Lägg till
         </Button>
       </div>
-      <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
+      {errors?.newPhoneNumber?.message && (
+        <FormErrorMessage className="text-error">{errors?.newPhoneNumber?.message}</FormErrorMessage>
+      )}
       {fields.length > 0 ? (
         <div className="flex items-center w-full flex-wrap justify-start gap-md py-sm">
           {fields.map((field: { id: string; value: string }, k) => {

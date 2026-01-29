@@ -89,7 +89,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     const visitErrandContractTab = () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
-      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
+      cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getContract');
@@ -104,7 +104,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/errand/101', mockMexErrand_base_without_contract).as('getErrandByIdNoContract');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base_without_contract).as('getErrandNoContract');
-      cy.visit(`/arende/${mockMexErrand_base.data.municipalityId}/${mockMexErrand_base.data.id}`);
+      cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrandNoContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
@@ -119,7 +119,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         {}
       );
       visitErrandContractTab();
-      cy.get('[data-cy="signerade-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="bilagor-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
       cy.get('[data-cy="contract-upload-field"]').should('exist');
       cy.get('[data-cy="contract-attachment-item-1"]').should('exist');
@@ -146,7 +146,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
         { key: 'lopande', label: 'Löpande avgift' },
         { key: 'engangs', label: 'Engångsfakturering' },
-        { key: 'signerade', label: 'Signerade avtal' },
+        { key: 'bilagor', label: 'Avtalsbilagor' },
       ];
 
       //lease agreements
@@ -160,7 +160,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="avtalstid-disclosure"]').contains('Avtalstid och uppsägning').should('exist');
       cy.get('[data-cy="lopande-disclosure"]').contains('Löpande avgift').should('exist');
       cy.get('[data-cy="engangs-disclosure"]').contains('Engångsfakturering').should('exist');
-      cy.get('[data-cy="signerade-disclosure"]').contains('Signerade avtal').should('exist');
+      cy.get('[data-cy="bilagor-disclosure"]').contains('Avtalsbilagor').should('exist');
       takeElementSnapshot('contract-wrapper');
     });
 
@@ -334,12 +334,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           monthly: 0,
           yearly: 120,
           total: 120,
-          additionalInformation: ['Avgift, båtplats', 'Foobar'],
+          additionalInformation: [
+            'Avgift, båtplats. Fastigheter: AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
+            'Foobar',
+          ],
         });
       });
     });
 
-    it('manages creating a new lease agreement with correct default values', () => {
+    it.only('manages creating a new lease agreement with correct default values', () => {
       visitErrandWithoutContract();
       cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
       cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.USUFRUCT_MOORING);
@@ -388,16 +391,17 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           { party: 'LESSOR', periodOfNotice: 3, unit: TimeUnit.MONTHS },
         ]);
         expect(leaseAgreement.extension).to.deep.equal({
+          autoExtend: false,
           unit: TimeUnit.DAYS,
         });
         expect(leaseAgreement).to.deep.equal({
-          extension: { unit: 'DAYS' },
+          extension: { autoExtend: false, unit: 'DAYS' },
           fees: {
             yearly: null,
             monthly: 0,
             total: null,
             currency: 'SEK',
-            additionalInformation: ['Avgift, båtplats', ''],
+            additionalInformation: ['Avgift, båtplats. Fastigheter: ', ''],
           },
           invoicing: { invoicedIn: 'ADVANCE' },
           start: '',

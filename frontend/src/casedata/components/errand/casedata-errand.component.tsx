@@ -19,7 +19,7 @@ import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { getUiPhase } from '@casedata/services/process-service';
 
-export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
+export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
   let formSchema = yup
     .object({
       caseType: yup
@@ -74,10 +74,10 @@ export const CasedataErrandComponent: React.FC<{ id?: string }> = (props) => {
         setUser(user);
       })
       .catch((e) => {});
-    if (props.id) {
+    if (errandNumber) {
       // Existing errand, load it and show it
       setIsLoading(true);
-      getErrandByErrandNumber(municipalityId, props.id)
+      getErrandByErrandNumber(municipalityId, errandNumber)
         .then((res) => {
           if (res.error) {
             toastMessage({

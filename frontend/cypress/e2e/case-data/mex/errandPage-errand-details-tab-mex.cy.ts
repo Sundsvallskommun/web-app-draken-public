@@ -75,7 +75,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     const goToErrandInformationTab = () => {
-      cy.visit('/arende/2281/MEX-2024-000280');
+      cy.visit('/arende/MEX-2024-000280');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrand');
       cy.get('button').contains('Ärendeuppgifter').should('exist').click();

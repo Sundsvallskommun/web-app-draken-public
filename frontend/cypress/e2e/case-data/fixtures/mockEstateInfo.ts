@@ -272,7 +272,7 @@ export const mockEstateInfo11 = {
     ],
     actions: [
       {
-        actionType1: 'avstyckning',
+        actionType1: 'Avstyckning',
         actionType2: '',
         fileDesignation: '21-ABC-123',
         actionDate: '19380526',
@@ -301,4 +301,3 @@ export const mockEstateInfo12 = {
   },
   message: 'success',
 };
-

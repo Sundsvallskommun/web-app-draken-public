@@ -20,6 +20,11 @@ export interface EmployeeSize {
   name?: string | null;
 }
 
+export interface EngagementRole {
+  description?: string | null;
+  code?: string | null;
+}
+
 export interface LEAddress {
   addressArea?: string | null;
   adressNumber?: string | null;
@@ -100,6 +105,42 @@ export interface LiquidationOrRestructuring {
   fromDate?: string | null;
   name?: string | null;
   code?: string | null;
+}
+
+export interface OrganizationEngagement {
+  name?: string | null;
+  identity?: OrganizationIdentity;
+  relations?: OrganizationEngagementRelation[] | null;
+  source?: string | null;
+}
+
+export interface OrganizationEngagementRelation {
+  description?: string | null;
+  code?: string | null;
+  type?: string | null;
+}
+
+export interface OrganizationEngagements {
+  engagements?: OrganizationEngagement[] | null;
+  /** @format int32 */
+  beneficialOwnershipMarking?: number | null;
+}
+
+export interface OrganizationIdentity {
+  code?: string | null;
+  type?: string | null;
+}
+
+/** Håller information om en persons företags engagemang */
+export interface PersonEngagement {
+  organizationNumber?: string | null;
+  name?: string | null;
+  form?: string | null;
+  formShort?: string | null;
+  roles?: EngagementRole[] | null;
+  isAuthorizedSignatory?: boolean | null;
+  isSoleTrader?: boolean | null;
+  source?: string | null;
 }
 
 export interface ProblemDetails {
