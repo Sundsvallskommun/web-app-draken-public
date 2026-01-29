@@ -1,10 +1,11 @@
 import { User } from '@common/interfaces/user';
 import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 import { apiService } from './api-service';
-import { getApplicationEnvironment, isKC, isLOP, isPT } from './application-service';
+import { getApplicationEnvironment, isLOP, isMEX, isPT } from './application-service';
 
 export const isAppealEnabled = () => isPT() && getApplicationEnvironment() === 'TEST';
 export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;
+export const contractsEnabled = () => isMEX() && getApplicationEnvironment() === 'TEST';
 
 export const getFeatureFlags = async () => {
   return await apiService
