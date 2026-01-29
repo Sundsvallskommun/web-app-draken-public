@@ -5,6 +5,7 @@ import {
   Attachment,
   AttachmentCategory,
   Contract,
+  ContractPaginatedResponse,
   Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
   StakeholderType as ContractStakeholderType,
@@ -165,16 +166,57 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
     });
 };
 
-export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
-  const url = `contracts`;
+export interface ContractFilterParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  query?: string;
+  status?: string;
+  contractType?: string;
+  leaseType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export const fetchContracts: (params?: ContractFilterParams) => Promise<ContractPaginatedResponse> = (params = {}) => {
+  const { page = 1, limit = 12, sortBy, sortOrder, query, status, contractType, leaseType, startDate, endDate } = params;
+
+  let url = `contracts?page=${page}&limit=${limit}`;
+
+  if (sortBy) {
+    url += `&sortBy=${sortBy}&sortOrder=${sortOrder || 'desc'}`;
+  }
+  if (query) {
+    url += `&query=${encodeURIComponent(query)}`;
+  }
+  if (status) {
+    url += `&status=${status}`;
+  }
+  if (contractType) {
+    url += `&contractType=${contractType}`;
+  }
+  if (leaseType) {
+    url += `&leaseType=${leaseType}`;
+  }
+  if (startDate) {
+    url += `&startDate=${startDate}`;
+  }
+  if (endDate) {
+    url += `&endDate=${endDate}`;
+  }
+
   return apiService
-    .get<ApiResponse<ContractData[]>>(url)
+    .get<ContractPaginatedResponse>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contracts');
       throw e;
     });
 };
+
+// Keep for backwards compatibility
+export const fetchAllContracts = fetchContracts;
 
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
   const data: ExtraParameter[] = [

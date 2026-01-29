@@ -1,5 +1,6 @@
 'use client';
 
+import { ContractOverview } from '@casedata/components/contract-overview/contract-overview.component';
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
@@ -11,10 +12,12 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import { useEffect, useState } from 'react';
 import { getAdminUsers } from '@common/services/user-service';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
+import { isMEX } from '@common/services/application-service';
 
 const Oversikt: React.FC = () => {
   const { user, municipalityId, setSupportMetadata, setAdministrators, setMunicipalityId } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
+  const [showContractTable, setShowContractTable] = useState<boolean>(false);
 
   useEffect(() => {
     getFeatureFlags().then((res) => {
@@ -41,6 +44,8 @@ const Oversikt: React.FC = () => {
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
+          setShowContractTable={setShowContractTable}
+          showContractTable={showContractTable}
         >
           {appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
             <AttestationTab />
@@ -55,8 +60,10 @@ const Oversikt: React.FC = () => {
           title={`${appConfig.applicationName} - Översikt`}
           setShowAttestationTable={setShowAttestationTable}
           showAttestationTable={showAttestationTable}
+          setShowContractTable={setShowContractTable}
+          showContractTable={showContractTable}
         >
-          <OngoingCaseDataErrands />
+          {isMEX() && showContractTable ? <ContractOverview /> : <OngoingCaseDataErrands />}
         </SidebarLayout>
       ) : null}
       <DeployInfoBanner />
