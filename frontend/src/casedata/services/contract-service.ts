@@ -36,8 +36,8 @@ import { EstateInfoSearch } from '@common/interfaces/estate-details';
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
   { label: 'Köpeavtal', key: ContractType.PURCHASE_AGREEMENT },
-  { label: 'Upplåtelse av allmän plats', key: 'LAND_LEASE_PUBLIC' },
-  { label: 'Korttidsarrende', key: 'SHORT_TERM_LEASE_AGREEMENT' },
+  { label: 'Upplåtelse av allmän plats', key: ContractType.LAND_LEASE_PUBLIC },
+  { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
 ];
 
 export const leaseTypes = [
@@ -701,7 +701,7 @@ export const fetchContractInvoices: (
         invoiceDate: record.invoice?.date,
         dueDate: record.invoice?.dueDate,
         amount: record.invoice?.totalAmount,
-        invoiceNumber: '-', // Use billing record ID as placeholder for invoice number
+        invoiceNumber: '-', // Which field to use for invoice number is unknown at this time
       }));
 
       return {

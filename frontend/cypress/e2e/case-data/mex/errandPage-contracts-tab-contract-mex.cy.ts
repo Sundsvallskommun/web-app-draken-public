@@ -146,7 +146,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         { key: 'area', label: 'Område' },
         { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
         { key: 'lopande', label: 'Löpande avgift' },
-        { key: 'engangs', label: 'Engångsfakturering' },
         { key: 'bilagor', label: 'Avtalsbilagor' },
       ];
 
@@ -160,7 +159,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="area-disclosure"]').contains('Område').should('exist');
       cy.get('[data-cy="avtalstid-disclosure"]').contains('Avtalstid och uppsägning').should('exist');
       cy.get('[data-cy="lopande-disclosure"]').contains('Löpande avgift').should('exist');
-      cy.get('[data-cy="engangs-disclosure"]').contains('Engångsfakturering').should('exist');
       cy.get('[data-cy="bilagor-disclosure"]').contains('Avtalsbilagor').should('exist');
       // takeElementSnapshot('contract-wrapper');
     });

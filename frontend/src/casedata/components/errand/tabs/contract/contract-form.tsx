@@ -363,7 +363,12 @@ export const ContractForm: React.FC<{
             <div className="flex gap-18 justify-start">
               <FormControl id="oldContractId" className="w-full">
                 <FormLabel>Tidigare avtals-ID</FormLabel>
-                <Input type="text" data-cy="old-contract-id-input" readOnly={!isEditable('general')} {...register('externalReferenceId')} />
+                <Input
+                  type="text"
+                  data-cy="old-contract-id-input"
+                  readOnly={!isEditable('general')}
+                  {...register('externalReferenceId')}
+                />
                 <small>Om det finns ett äldre avtal, ange dess ID ovan.</small>
               </FormControl>
             </div>
@@ -466,7 +471,12 @@ export const ContractForm: React.FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Området upplåts från</FormLabel>
-                  <Input type="date" readOnly={!isEditable('general')} {...register('start')} data-cy="avtalstid-start" />
+                  <Input
+                    type="date"
+                    readOnly={!isEditable('general')}
+                    {...register('start')}
+                    data-cy="avtalstid-start"
+                  />
                 </FormControl>
                 <FormControl id="endDate" className="w-full">
                   <FormLabel>Området upplåts till</FormLabel>
@@ -569,7 +579,9 @@ export const ContractForm: React.FC<{
                     <RadioButton data-cy="autoextend-true-radiobutton" value={'true'} disabled={!isEditable('general')}>
                       Ja
                     </RadioButton>
-                    <RadioButton value={'false'} disabled={!isEditable('general')}>Nej</RadioButton>
+                    <RadioButton value={'false'} disabled={!isEditable('general')}>
+                      Nej
+                    </RadioButton>
                   </RadioButton.Group>
                 </FormControl>
               </div>
@@ -592,7 +604,12 @@ export const ContractForm: React.FC<{
                   </FormControl>
                   <FormControl className="flex-grow max-w-[45%]">
                     <FormLabel>Antal</FormLabel>
-                    <Input readOnly={!isEditable('general')} {...register('extension.leaseExtension')} placeholder="Ange tal" data-cy="extension-input" />
+                    <Input
+                      readOnly={!isEditable('general')}
+                      {...register('extension.leaseExtension')}
+                      placeholder="Ange tal"
+                      data-cy="extension-input"
+                    />
                     {formState.errors.extension?.leaseExtension && (
                       <div className="my-sm text-error">
                         <FormErrorMessage>{formState.errors.extension?.leaseExtension?.message}</FormErrorMessage>
@@ -624,7 +641,12 @@ export const ContractForm: React.FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Avtalets startdatum</FormLabel>
-                  <Input type="date" readOnly={!isEditable('general')} {...register('start')} data-cy="avtalstid-start" />
+                  <Input
+                    type="date"
+                    readOnly={!isEditable('general')}
+                    {...register('start')}
+                    data-cy="avtalstid-start"
+                  />
                 </FormControl>
               </div>
               {saveButton()}
@@ -651,10 +673,18 @@ export const ContractForm: React.FC<{
               <FormControl className="flex-grow" {...register('generateInvoice')}>
                 <FormLabel>Ska detta avtal generera en faktura?</FormLabel>
                 <RadioButton.Group inline className="flex gap-24" name="generateInvoice">
-                  <RadioButton value="true" data-cy="generate-invoice-true-radiobutton" disabled={!isEditable('general')}>
+                  <RadioButton
+                    value="true"
+                    data-cy="generate-invoice-true-radiobutton"
+                    disabled={!isEditable('general')}
+                  >
                     Ja
                   </RadioButton>
-                  <RadioButton value="false" data-cy="generate-invoice-false-radiobutton" disabled={!isEditable('general')}>
+                  <RadioButton
+                    value="false"
+                    data-cy="generate-invoice-false-radiobutton"
+                    disabled={!isEditable('general')}
+                  >
                     Nej
                   </RadioButton>
                 </RadioButton.Group>
@@ -665,7 +695,12 @@ export const ContractForm: React.FC<{
                 <div className="flex gap-18 justify-start">
                   <FormControl>
                     <FormLabel>Ange avgift/år</FormLabel>
-                    <Input type="number" readOnly={!isEditable('general')} {...register('fees.yearly')} data-cy="fees-yearly-input" />
+                    <Input
+                      type="number"
+                      readOnly={!isEditable('general')}
+                      {...register('fees.yearly')}
+                      data-cy="fees-yearly-input"
+                    />
                   </FormControl>
                 </div>
                 <div className="flex gap-18 justify-start">
@@ -716,13 +751,25 @@ export const ContractForm: React.FC<{
                           : IntervalType.MONTHLY
                       }
                     >
-                      <RadioButton value={IntervalType.YEARLY} data-cy="invoice-interval-yearly-radiobutton" disabled={!isEditable('general')}>
+                      <RadioButton
+                        value={IntervalType.YEARLY}
+                        data-cy="invoice-interval-yearly-radiobutton"
+                        disabled={!isEditable('general')}
+                      >
                         Årsvis
                       </RadioButton>
-                      <RadioButton value={IntervalType.HALF_YEARLY} data-cy="invoice-interval-halfyearly-radiobutton" disabled={!isEditable('general')}>
+                      <RadioButton
+                        value={IntervalType.HALF_YEARLY}
+                        data-cy="invoice-interval-halfyearly-radiobutton"
+                        disabled={!isEditable('general')}
+                      >
                         Halvårsvis
                       </RadioButton>
-                      <RadioButton value={IntervalType.QUARTERLY} data-cy="invoice-interval-quarterly-radiobutton" disabled={!isEditable('general')}>
+                      <RadioButton
+                        value={IntervalType.QUARTERLY}
+                        data-cy="invoice-interval-quarterly-radiobutton"
+                        disabled={!isEditable('general')}
+                      >
                         Kvartalsvis
                       </RadioButton>
                     </RadioButton.Group>
@@ -792,23 +839,6 @@ export const ContractForm: React.FC<{
         </Disclosure.Header>
         <Disclosure.Content>
           <ContractInvoicesTable contractId={existingContract?.contractId} municipalityId={municipalityId} />
-        </Disclosure.Content>
-      </Disclosure>
-      <Disclosure
-        data-cy="engangs-disclosure"
-        color="gronsta"
-        variant="alt"
-        onClick={() => {
-          changeBadgeColor?.(`badge-engangs`);
-        }}
-      >
-        <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
-          <Disclosure.Title>Engångsfakturering</Disclosure.Title>
-          <Disclosure.Button />
-        </Disclosure.Header>
-        <Disclosure.Content>
-          <div className="flex flex-col gap-24">Engångsfakturering</div>
         </Disclosure.Content>
       </Disclosure>
       <Disclosure
