@@ -18,7 +18,7 @@ export const APIS = [
   },
   {
     name: 'estateinfo',
-    version: '2.0',
+    version: '2.1',
   },
   {
     name: 'templating',
