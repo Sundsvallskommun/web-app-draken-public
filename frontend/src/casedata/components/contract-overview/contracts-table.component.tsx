@@ -1,8 +1,9 @@
 import { Contract, ContractType, Stakeholder, StakeholderType } from '@casedata/interfaces/contracts';
 import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
-import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
+import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -32,6 +33,29 @@ const getStakeholderName = (stakeholder: Stakeholder): string => {
   return stakeholder.organizationName || '-';
 };
 
+const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
+  switch (status) {
+    case 'DRAFT':
+      return (
+        <Label rounded inverted={true} color="tertiary" className={`max-h-full h-auto text-center whitespace-nowrap`}>
+          Utkast
+        </Label>
+      );
+    case 'ACTIVE':
+      return (
+        <Label rounded inverted={true} color="gronsta" className={`max-h-full h-auto text-center whitespace-nowrap`}>
+          Aktiv
+        </Label>
+      );
+    case 'TERMINATED':
+      return (
+        <Label rounded inverted={false} color="tertiary" className={`max-h-full h-auto text-center whitespace-nowrap`}>
+          Avslutad
+        </Label>
+      );
+  }
+};
+
 const formatDate = (date?: string): string => {
   if (!date) return '';
   return dayjs(date).format('YYYY-MM-DD');
@@ -52,14 +76,15 @@ const formatPeriod = (start?: string, end?: string): React.ReactNode => {
 };
 
 export const contractTableLabels = [
+  { label: 'Status', sortable: true, column: 'status' },
   { label: 'Fastighetsbeteckning', sortable: false, column: 'propertyDesignations' },
   { label: 'Distrikt', sortable: false, column: 'district' },
-  { label: 'Avtals-ID', sortable: true, column: 'contractId' },
   { label: 'Avtalstyp', sortable: true, column: 'type' },
   { label: 'Avtalssubtyp', sortable: true, column: 'leaseType' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
-  { label: 'Avtalsperiod', sortable: true, column: 'start' },
-  { label: 'Uppsägningsdatum', sortable: true, column: 'terminationDate' },
+  { label: 'Avtalsperiod', sortable: true, column: 'end' },
+  { label: 'Uppsägningsdatum', sortable: false, column: '' },
+  { label: '', sortable: false, column: '' },
 ];
 
 export const ContractsTable: React.FC<{
@@ -105,6 +130,7 @@ export const ContractsTable: React.FC<{
   ));
 
   const rows = contracts.map((contract, index) => {
+    const status = contract.status || '-';
     const propertyNames =
       contract.propertyDesignations
         ?.map((p) => p.name)
@@ -124,8 +150,28 @@ export const ContractsTable: React.FC<{
         '-'
       );
     const period = formatPeriod(contract.start, contract.end);
-    // Uppsägningsdatum - termination notice date (placeholder for now, may need calculation or API field)
-    const terminationDate = '-';
+
+    const lessorNoticeDate = (contract) => {
+      const notice = contract?.notices?.find((notice) => notice.party === 'LESSOR');
+      const period = notice?.periodOfNotice;
+      const endDate = dayjs(contract?.end);
+      if (!endDate.isValid()) return '-';
+      let noticeDate;
+      switch (notice?.unit) {
+        case 'YEARS':
+          noticeDate = endDate.subtract(period, 'year');
+          break;
+        case 'MONTHS':
+          noticeDate = endDate.subtract(period, 'month');
+          break;
+        case 'DAYS':
+          noticeDate = endDate.subtract(period, 'day');
+          break;
+        default:
+          return '-';
+      }
+      return noticeDate?.format('YYYY-MM-DD') ?? '-';
+    };
 
     return (
       <Table.Row
@@ -134,14 +180,27 @@ export const ContractsTable: React.FC<{
         onClick={() => onRowClick?.(contract)}
         data-cy={`contract-row-${index}`}
       >
+        <Table.Column>{<CasedataStatusLabelComponent status={status} />}</Table.Column>
         <Table.Column>{propertyNames}</Table.Column>
         <Table.Column>{uniqueDistricts}</Table.Column>
-        <Table.Column>{contract.contractId || '-'}</Table.Column>
-        <Table.Column>{getContractTypeLabel(contract.type)}</Table.Column>
+        <Table.Column>
+          <div className="flex flex-col">
+            <div>{getContractTypeLabel(contract.type)}</div> <div>{contract?.contractId ?? '-'}</div>
+          </div>
+        </Table.Column>
         <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>{parties}</Table.Column>
         <Table.Column>{period}</Table.Column>
-        <Table.Column>{terminationDate}</Table.Column>
+        <Table.Column>{lessorNoticeDate(contract)}</Table.Column>
+        <Table.Column>
+          <Button
+            variant="tertiary"
+            size="sm"
+            iconButton
+            leftIcon={<LucideIcon name={'arrow-right'} />}
+            onClick={() => onRowClick?.(contract)}
+          ></Button>
+        </Table.Column>
       </Table.Row>
     );
   });
