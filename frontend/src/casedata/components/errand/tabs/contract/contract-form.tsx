@@ -29,6 +29,7 @@ import {
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractAttachments } from './contract-attachments';
+import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
 
 export const ContractForm: React.FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -774,6 +775,23 @@ export const ContractForm: React.FC<{
             ) : null}
             {saveButton()}
           </div>
+        </Disclosure.Content>
+      </Disclosure>
+      <Disclosure
+        data-cy="fakturor-disclosure"
+        color="gronsta"
+        variant="alt"
+        onClick={() => {
+          changeBadgeColor?.(`badge-fakturor`);
+        }}
+      >
+        <Disclosure.Header>
+          <Disclosure.Icon icon={<LucideIcon name="receipt" />} />
+          <Disclosure.Title>Fakturor</Disclosure.Title>
+          <Disclosure.Button />
+        </Disclosure.Header>
+        <Disclosure.Content>
+          <ContractInvoicesTable contractId={existingContract?.contractId} municipalityId={municipalityId} />
         </Disclosure.Content>
       </Disclosure>
       <Disclosure

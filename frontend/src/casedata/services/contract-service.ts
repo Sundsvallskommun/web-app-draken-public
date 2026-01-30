@@ -18,6 +18,7 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
+import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
@@ -180,7 +181,18 @@ export interface ContractFilterParams {
 }
 
 export const fetchContracts: (params?: ContractFilterParams) => Promise<ContractPaginatedResponse> = (params = {}) => {
-  const { page = 1, limit = 12, sortBy, sortOrder, query, status, contractType, leaseType, startDate, endDate } = params;
+  const {
+    page = 1,
+    limit = 12,
+    sortBy,
+    sortOrder,
+    query,
+    status,
+    contractType,
+    leaseType,
+    startDate,
+    endDate,
+  } = params;
 
   let url = `contracts?page=${page}&limit=${limit}`;
 
@@ -603,9 +615,9 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   return a;
 }
 
-export const getErrandPropertyInformation: (
+export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
   errand: IErrand
-) => Promise<{ name: string; district: string }[]> = async (errand: IErrand) => {
+) => {
   const designations = errand.facilities
     .filter((facility) => facility.address?.propertyDesignation)
     .map((facility) => facility.address?.propertyDesignation);
@@ -620,5 +632,86 @@ export const getErrandPropertyInformation: (
         name: estate.designation || '',
         district: estate.districtname || '',
       }));
+    });
+};
+
+// Contract Invoices
+
+export interface ContractInvoice {
+  id: string;
+  status: CBillingRecordStatusEnum;
+  invoiceDate?: string;
+  dueDate?: string;
+  amount?: number;
+  invoiceNumber?: string;
+}
+
+export interface ContractInvoicesResponse {
+  invoices: ContractInvoice[];
+  totalCount: number;
+  totalPages: number;
+}
+
+export const invoiceStatusLabels: Record<CBillingRecordStatusEnum, string> = {
+  [CBillingRecordStatusEnum.NEW]: 'Ny',
+  [CBillingRecordStatusEnum.APPROVED]: 'Godkänd',
+  [CBillingRecordStatusEnum.INVOICED]: 'Fakturerad',
+  [CBillingRecordStatusEnum.REJECTED]: 'Avslagen',
+};
+
+export const invoiceStatusColors: Record<CBillingRecordStatusEnum, 'tertiary' | 'vattjom' | 'gronsta' | 'error'> = {
+  [CBillingRecordStatusEnum.NEW]: 'tertiary',
+  [CBillingRecordStatusEnum.APPROVED]: 'vattjom',
+  [CBillingRecordStatusEnum.INVOICED]: 'gronsta',
+  [CBillingRecordStatusEnum.REJECTED]: 'error',
+};
+
+export const fetchContractInvoices: (
+  municipalityId: string,
+  contractId: string,
+  page?: number,
+  size?: number
+) => Promise<ContractInvoicesResponse> = async (municipalityId, contractId, page = 0, size = 10) => {
+  if (!municipalityId || !contractId) {
+    console.error('Missing municipalityId or contractId for fetching contract invoices');
+    return { invoices: [], totalCount: 0, totalPages: 0 };
+  }
+
+  const url = `billing/${municipalityId}/contracts/${contractId}/invoices?page=${page}&size=${size}`;
+
+  return apiService
+    .get<{
+      content?: Array<{
+        id?: string;
+        status: CBillingRecordStatusEnum;
+        invoice?: {
+          date?: string;
+          dueDate?: string;
+          totalAmount?: number;
+        };
+      }>;
+      totalElements?: number;
+      totalPages?: number;
+    }>(url)
+    .then((res) => {
+      const content = res.data?.content || [];
+      const invoices: ContractInvoice[] = content.map((record) => ({
+        id: record.id || '',
+        status: record.status,
+        invoiceDate: record.invoice?.date,
+        dueDate: record.invoice?.dueDate,
+        amount: record.invoice?.totalAmount,
+        invoiceNumber: '-', // Use billing record ID as placeholder for invoice number
+      }));
+
+      return {
+        invoices,
+        totalCount: res.data?.totalElements || 0,
+        totalPages: res.data?.totalPages || 0,
+      };
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching contract invoices:', e);
+      return { invoices: [], totalCount: 0, totalPages: 0 };
     });
 };

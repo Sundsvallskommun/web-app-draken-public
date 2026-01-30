@@ -3,7 +3,7 @@ import { BillingRecord, Status } from '@/data-contracts/billingpreprocessor/data
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { CBillingRecord, CPageBillingRecord } from '@/interfaces/billing-interface';
 import authMiddleware from '@/middlewares/auth.middleware';
-import { hasPermissions } from '@/middlewares/permissions.middleware';
+import { hasAnyPermission, hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
@@ -13,7 +13,7 @@ import { Body, Controller, Get, Param, Post, Put, QueryParam, Req, Res, UseBefor
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 @Controller()
-@UseBefore(hasPermissions(['canEditSupportManagement']))
+@UseBefore(hasAnyPermission(['canEditSupportManagement', 'canEditCasedata']))
 export class BillingController {
   private apiService = new ApiService();
   private SERVICE = apiServiceName('billingpreprocessor');
@@ -146,6 +146,39 @@ export class BillingController {
     const url = `${municipalityId}/billingrecords/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);
+    return response.status(200).send(res.data);
+  }
+
+  @Get('/billing/:municipalityId/contracts/:contractId/invoices')
+  @OpenAPI({ summary: 'Get billing records for a specific contract' })
+  @ResponseSchema(CPageBillingRecord)
+  @UseBefore(authMiddleware, hasPermissions(['canEditCasedata']))
+  async getContractInvoices(
+    @Req() req: RequestWithUser,
+    @QueryParam('page') page: number,
+    @QueryParam('size') size: number,
+    @Param('municipalityId') municipalityId: string,
+    @Param('contractId') contractId: string,
+    @Res() response: any,
+  ): Promise<CPageBillingRecord> {
+    if (!municipalityId) {
+      console.error('No municipality id found, needed to fetch contract invoices.');
+      logger.error('No municipality id found, needed to fetch contract invoices.');
+      return response.status(400).send('Municipality id missing');
+    }
+    if (!contractId) {
+      console.error('No contract id found, needed to fetch contract invoices.');
+      logger.error('No contract id found, needed to fetch contract invoices.');
+      return response.status(400).send('Contract id missing');
+    }
+
+    // Filtering not possible yet - necessary parameters unknown
+    // const filter = `&filter=category:'MEX_INVOICE' and extraParameters.contractId:'${contractId}'`;
+    const filter = ``;
+    let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 10}`;
+    url += filter;
+
+    const res = await this.apiService.get<CPageBillingRecord>({ url }, req.user);
     return response.status(200).send(res.data);
   }
 }
