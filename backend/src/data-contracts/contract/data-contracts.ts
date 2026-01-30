@@ -55,6 +55,7 @@ export enum StakeholderRole {
 export enum Party {
   LESSOR = "LESSOR",
   LESSEE = "LESSEE",
+  ALL = "ALL",
 }
 
 /** Leasehold type */
@@ -80,7 +81,6 @@ export enum LeaseholdType {
 
 /** Lease type */
 export enum LeaseType {
-  LAND_LEASE_PUBLIC = "LAND_LEASE_PUBLIC",
   LAND_LEASE_RESIDENTIAL = "LAND_LEASE_RESIDENTIAL",
   SITE_LEASE_COMMERCIAL = "SITE_LEASE_COMMERCIAL",
   USUFRUCT_MOORING = "USUFRUCT_MOORING",
@@ -111,6 +111,8 @@ export enum IntervalType {
 export enum ContractType {
   LEASE_AGREEMENT = "LEASE_AGREEMENT",
   PURCHASE_AGREEMENT = "PURCHASE_AGREEMENT",
+  LAND_LEASE_PUBLIC = "LAND_LEASE_PUBLIC",
+  SHORT_TERM_LEASE_AGREEMENT = "SHORT_TERM_LEASE_AGREEMENT",
 }
 
 /** Attachment category */
@@ -413,6 +415,11 @@ export interface Notice {
   periodOfNotice: number;
   /** The unit of the periodOfNotice value */
   unit: TimeUnit;
+  /**
+   * The date of notice
+   * @format date
+   */
+  noticeDate?: string;
 }
 
 /** Parameter model */

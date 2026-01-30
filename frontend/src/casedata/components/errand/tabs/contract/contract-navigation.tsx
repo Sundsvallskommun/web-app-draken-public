@@ -9,7 +9,6 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
           { key: 'area', label: 'Område' },
           { key: 'startdatum', label: 'Avtalsstartdatum' },
           { key: 'lopande', label: 'Löpande avgift' },
-          { key: 'engangs', label: 'Engångsfakturering' },
           { key: 'bilagor', label: 'Avtalsbilagor' },
         ]
       : contractType === ContractType.LEASE_AGREEMENT
@@ -18,7 +17,6 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
           { key: 'area', label: 'Område' },
           { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
           { key: 'lopande', label: 'Löpande avgift' },
-          { key: 'engangs', label: 'Engångsfakturering' },
           { key: 'bilagor', label: 'Avtalsbilagor' },
         ]
       : [];
