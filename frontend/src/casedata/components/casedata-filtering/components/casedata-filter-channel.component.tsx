@@ -1,4 +1,4 @@
-import { Channels } from '@casedata/interfaces/channels';
+import { AppChannels, Channels } from '@casedata/interfaces/channels';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
@@ -28,13 +28,15 @@ export const CasedataFilterChannel: React.FC = () => {
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full">
         <PopupMenu.Items autoFocus={false}>
-          {Object.entries(Channels).map((c: [string, string], idx) => (
-            <PopupMenu.Item key={`${c[1]}-${idx}`}>
-              <Checkbox labelPosition="left" value={c[0]} {...register('channel')} data-cy={`channel-filter-${c[0]}`}>
-                {c[1]}
-              </Checkbox>
-            </PopupMenu.Item>
-          ))}
+          {Object.entries(Channels)
+            .filter((c) => AppChannels[process.env.NEXT_PUBLIC_APPLICATION]?.includes(c[1]))
+            .map((c: [string, string], idx) => (
+              <PopupMenu.Item key={`${c[1]}-${idx}`}>
+                <Checkbox labelPosition="left" value={c[0]} {...register('channel')} data-cy={`channel-filter-${c[0]}`}>
+                  {c[1]}
+                </Checkbox>
+              </PopupMenu.Item>
+            ))}
         </PopupMenu.Items>
       </PopupMenu.Panel>
     </PopupMenu>
