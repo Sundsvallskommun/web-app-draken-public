@@ -63,7 +63,8 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
           mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'RECOMMENDED')?.description
         );
       cy.get('[data-cy="investigation-law-select"]').should('exist').should('have.value', '');
-      cy.get('[data-cy="investigation-law-select"]').select('13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
+      cy.get('[data-cy="investigation-law-select"]').select('20§ förvaltningslagen');
+      cy.get('[data-cy="investigation-law-select"]').select('13 kap. 8 § trafikförordningen');
       cy.get('[data-cy="outcome-select"]').should('exist').should('have.value', 'APPROVAL');
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').contains('Utredningstext');
     });
@@ -72,9 +73,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('PATCH', '**/errands/**/extraparameters', {});
       cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
 
-      cy.get('[data-cy="investigation-law-select"]')
-        .should('exist')
-        .select('13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
+      cy.get('[data-cy="investigation-law-select"]').should('exist').select('13 kap. 8 § trafikförordningen');
       cy.get('[data-cy="outcome-select"]').should('exist').select('REJECTION');
       cy.get('button').should('exist').contains('Ja').click();
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').clear().type('Mock text');
@@ -93,7 +92,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         expect(request.body.decidedBy).to.deep.equal(sanitizedStakeholder);
         expect(request.body.law).to.deep.equal([
           {
-            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+            heading: '13 kap. 8 § trafikförordningen',
             sfs: 'Trafikförordningen (1998:1276)',
             chapter: '13',
             article: '8',
