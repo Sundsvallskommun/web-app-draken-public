@@ -16,6 +16,16 @@ export const hasPermissions = (permissions: Array<keyof Permissions>) => async (
   }
 };
 
+export const hasAnyPermission = (permissions: Array<keyof Permissions>) => async (req: Request, res: Response, next: NextFunction) => {
+  const userPermissions = req.user?.permissions || [];
+  if (permissions.some(permission => userPermissions[permission])) {
+    next();
+  } else {
+    logger.error('Missing permissions');
+    next(new HttpException(403, 'Missing permissions'));
+  }
+};
+
 export const hasRoles = (roles: Array<KeyOfMap<InternalRoleMap>>) => async (req: Request, res: Response, next: NextFunction) => {
   const endpointPermissions = getPermissions(roles);
   const userPermissions = getPermissions(req.user?.groups || []);

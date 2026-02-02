@@ -10,6 +10,8 @@ import {
   mockContractsListFiltered,
   mockContractDetailLeaseAgreement,
   mockContractDetailPurchaseAgreement,
+  mockContractInvoices,
+  mockContractInvoicesEmpty,
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
@@ -399,6 +401,127 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Click third row (purchase agreement)
         cy.get('[data-cy="contract-row-2"]').click();
         cy.get('[data-cy="contract-detail-panel"]').contains('Köpeavtal').should('be.visible');
+      });
+
+      describe('Contract invoices (Fakturor)', () => {
+        it('displays fakturor disclosure section', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+
+          // Fakturor disclosure should be visible
+          cy.get('[data-cy="fakturor-disclosure"]').should('exist');
+        });
+
+        it('displays invoices table when opening fakturor disclosure', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getContractInvoices');
+
+          // Invoices table should be visible
+          cy.get('[data-cy="contract-invoices-table"]').should('exist');
+        });
+
+        it('displays correct invoice data in table', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getContractInvoices');
+
+          // Check first invoice row
+          cy.get('[data-cy="invoice-row-0"]').should('exist');
+          cy.get('[data-cy="invoice-status-0"]').should('contain.text', 'Ny');
+          cy.get('[data-cy="invoice-date-0"]').should('contain.text', '2024-01-15');
+          cy.get('[data-cy="invoice-due-date-0"]').should('contain.text', '2024-02-15');
+          cy.get('[data-cy="invoice-number-0"]').should('contain.text', '-');
+        });
+
+        it('displays correct status labels with correct colors', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getContractInvoices');
+
+          // Check status labels
+          cy.get('[data-cy="invoice-status-0"]').should('contain.text', 'Ny');
+          cy.get('[data-cy="invoice-status-1"]').should('contain.text', 'Godkänd');
+          cy.get('[data-cy="invoice-status-2"]').should('contain.text', 'Fakturerad');
+          cy.get('[data-cy="invoice-status-3"]').should('contain.text', 'Avslagen');
+        });
+
+        it('displays download PDF button for each invoice', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getContractInvoices');
+
+          // Check download buttons exist
+          cy.get('[data-cy="invoice-download-pdf-0"]').should('exist').should('contain.text', 'Hämta pdf');
+          cy.get('[data-cy="invoice-download-pdf-1"]').should('exist');
+          cy.get('[data-cy="invoice-download-pdf-2"]').should('exist');
+          cy.get('[data-cy="invoice-download-pdf-3"]').should('exist');
+        });
+
+        it('displays empty state when no invoices exist', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoicesEmpty).as(
+            'getContractInvoices'
+          );
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getContractInvoices');
+
+          // Empty state message should be visible
+          cy.get('[data-cy="invoices-empty"]').should('exist');
+          cy.contains('Inga fakturor finns kopplade till detta avtal').should('be.visible');
+        });
+
+        it('displays loading state while fetching invoices', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          // Delay the response to observe loading state
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', (req) => {
+            req.reply({
+              delay: 500,
+              body: mockContractInvoices,
+            });
+          }).as('getContractInvoicesDelayed');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          // Loading state should be visible initially
+          cy.get('[data-cy="invoices-loading"]').should('exist');
+
+          // Wait for loading to complete
+          cy.wait('@getContractInvoicesDelayed');
+
+          // Loading state should be gone and table visible
+          cy.get('[data-cy="invoices-loading"]').should('not.exist');
+          cy.get('[data-cy="contract-invoices-table"]').should('exist');
+        });
       });
 
       describe('Ändra faktureringsuppgifter button', () => {
