@@ -30,15 +30,15 @@ export interface Problem {
   /** @format uri */
   type?: string;
   parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
+  status?: StatusType;
 }
 
 export interface StatusType {
+  reasonPhrase?: string;
   /** @format int32 */
   statusCode?: number;
-  reasonPhrase?: string;
 }
 
 export interface ConstraintViolationProblem {
@@ -101,9 +101,9 @@ export interface ThrowableProblem {
   /** @format uri */
   type?: string;
   parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
+  status?: StatusType;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;
@@ -299,11 +299,11 @@ export interface PageBillingRecord {
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
   empty?: boolean;
 }
@@ -316,8 +316,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {

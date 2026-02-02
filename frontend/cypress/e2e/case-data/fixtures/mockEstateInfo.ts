@@ -2,8 +2,9 @@
 export const MOCK_PERSON_NUMBER = Cypress.env('mockPersonNumber');
 export const mockEstateInfo11 = {
   data: {
-    designation: 'SUNDSVALL 1:1',
-    district: 'Låtsasdistrikt',
+    designation: 'TESTSTAD 1:1',
+    districtname: 'Låtsasdistrikt',
+    districtcode: '',
     objectidentifier: '909a6a80-aaaa-aaaa-aaaa-ed8f66444c3f',
     totalArea: 1555,
     totalAreaWater: 0,
@@ -287,8 +288,9 @@ export const mockEstateInfo11 = {
 
 export const mockEstateInfo12 = {
   data: {
-    designation: 'SUNDSVALL 1:2',
-    district: 'Låtsasdistrikt',
+    designation: 'TESTSTAD 1:2',
+    districtname: 'Låtsasdistrikt',
+    districtcode: '',
     objectidentifier: '909a6a80-aaaa-aaaa-aaaa-ed8f66444c3g',
     totalArea: 1555,
     totalAreaWater: 0,
@@ -299,5 +301,15 @@ export const mockEstateInfo12 = {
     previousOwnership: [],
     actions: [],
   },
+  message: 'success',
+};
+
+export const mockSingleEstateByPropertyDesignation11 = {
+  data: [mockEstateInfo11.data],
+  message: 'success',
+};
+
+export const mockSingleEstateByPropertyDesignation12 = {
+  data: [mockEstateInfo12.data],
   message: 'success',
 };

@@ -1,5 +1,75 @@
 import { ContractPaginatedResponse, ContractType, LeaseType, Status, StakeholderRole, StakeholderType, TimeUnit, IntervalType } from '@casedata/interfaces/contracts';
 
+// Mock contract invoices response
+export const mockContractInvoices = {
+  content: [
+    {
+      id: 'INV-001',
+      status: 'NEW',
+      category: 'MEX_INVOICE',
+      invoice: {
+        date: '2024-01-15',
+        dueDate: '2024-02-15',
+        totalAmount: 25000,
+      },
+      extraParameters: {
+        contractId: '2049-00010',
+      },
+    },
+    {
+      id: 'INV-002',
+      status: 'APPROVED',
+      category: 'MEX_INVOICE',
+      invoice: {
+        date: '2024-04-15',
+        dueDate: '2024-05-15',
+        totalAmount: 25000,
+      },
+      extraParameters: {
+        contractId: '2049-00010',
+      },
+    },
+    {
+      id: 'INV-003',
+      status: 'INVOICED',
+      category: 'MEX_INVOICE',
+      invoice: {
+        date: '2024-07-15',
+        dueDate: '2024-08-15',
+        totalAmount: 25000,
+      },
+      extraParameters: {
+        contractId: '2049-00010',
+      },
+    },
+    {
+      id: 'INV-004',
+      status: 'REJECTED',
+      category: 'MEX_INVOICE',
+      invoice: {
+        date: '2024-10-15',
+        dueDate: '2024-11-15',
+        totalAmount: 12500,
+      },
+      extraParameters: {
+        contractId: '2049-00010',
+      },
+    },
+  ],
+  totalElements: 4,
+  totalPages: 1,
+  size: 10,
+  number: 0,
+};
+
+export const mockContractInvoicesEmpty = {
+  content: [],
+  totalElements: 0,
+  totalPages: 0,
+  size: 10,
+  number: 0,
+};
+
 export const mockContractsList: ContractPaginatedResponse = {
   contracts: [
     {
