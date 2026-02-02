@@ -13,9 +13,11 @@ import {
   mockSaveFacilities,
   mockSupportAttachments,
   mockSupportErrand,
+  mockSupportErrandWithFacilities,
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { mockNotifications } from './fixtures/mockSupportNotifications';
 //TODO:Update mockdata
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
@@ -69,6 +71,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       );
       cy.intercept('GET', '**/party/*/statuses', mockStakeholderStatus).as('getStakeholderStatuses');
       cy.intercept('GET', '**/2281/*/statuses', mockStakeholderStatus).as('getOrganizationStakeholderStatuses');
+      cy.intercept('GET', '**/supportnotifications/2281', mockNotifications).as('getSupportNotifications');
     });
 
     it('shows the correct base errand information', () => {
@@ -648,9 +651,11 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-form-combobox-list-option').contains('BALDER 1').click();
       cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').should('be.enabled');
 
-      // check
+      // check property designation, street and districtname are shown in table
       cy.get('[data-cy="facility-table"]').contains('Visa fastighetsinformation');
       cy.get('[data-cy="facility-table"]').contains('SUNDSVALL BALDER 1');
+      cy.get('[data-cy="facility-table"]').contains('Testgatan 1');
+      cy.get('[data-cy="facility-table"]').contains('Testdistrikt 1');
 
       // Save
       cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').click();
@@ -663,6 +668,23 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="facility-table"]').contains('Inga fastigheter tillagda');
       cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').click();
       cy.get('[data-cy="manage-sidebar"] [data-cy="save-button"]').contains('Spara ärende').should('be.disabled');
+    });
+
+    it('displays saved facilities with street address when loading errand', () => {
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrandWithFacilities).as(
+        'getErrandWithFacilities'
+      );
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
+      cy.wait('@getErrandWithFacilities');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      // Open facilities disclosure
+      cy.get('[data-cy="facility-disclosure"]').click();
+
+      // Verify saved facility data is displayed correctly in table
+      cy.get('[data-cy="facility-table"]').contains('SUNDSVALL BALDER 1');
+      cy.get('[data-cy="facility-table"]').contains('Testgatan 1');
+      cy.get('[data-cy="facility-table"]').contains('Testdistrikt 1');
     });
   });
 });

@@ -103,7 +103,8 @@ export const FacilityDetails: React.FC<{
         <div className="m-32">
           <h2 className="text-h4-md mb-16 mx-8" data-cy="estate-designation">
             {estate?.designation}
-            <br />({estate?.districtname})
+            <br />
+            {`(${estate?.address}, ${estate?.districtname})`}
           </h2>
           <Tabs tabslistClassName="ml-12 pt-14">
             <Tabs.Item>

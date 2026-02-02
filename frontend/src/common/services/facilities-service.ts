@@ -15,11 +15,24 @@ export const makeFacility: (estate: EstateInfoSearch) => FacilityDTO = (estate) 
 export const makeAddress: (estate: EstateInfoSearch) => FacilityAddressDTO = (estate) => {
   return {
     propertyDesignation: estate.designation,
+    street: estate.address || '',
   };
 };
 
 export const getFacilityByAddress = (query: string) => {
   const url = `estateByAddress/${query}`;
+
+  return apiService
+    .get<ApiResponse<EstateInfoSearch[]>>(url)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching estateInfo: ' + query);
+      throw e;
+    });
+};
+
+export const getSingleFacilityByDesignation = (query: string) => {
+  const url = `singleEstateByPropertyDesignation/${query}`;
 
   return apiService
     .get<ApiResponse<EstateInfoSearch[]>>(url)
