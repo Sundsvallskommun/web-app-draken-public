@@ -703,10 +703,12 @@ export class SupportErrandController {
           },
       labels: isLOP()
         ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
-        : isIK() || isSE()
+        : isIK()
         ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
         : isKA()
         ? getDefaultLabels({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' })
+        : isSE()
+        ? getDefaultLabels({ category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' })
         : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
