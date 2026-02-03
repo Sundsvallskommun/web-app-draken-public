@@ -695,7 +695,7 @@ export class SupportErrandController {
         : isSE()
         ? {
             category: 'UNCATEGORIZED',
-            type: 'UNCATEGORIZED.UNCATEGORISED',
+            type: 'UNCATEGORIZED/UNCATEGORISED',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
