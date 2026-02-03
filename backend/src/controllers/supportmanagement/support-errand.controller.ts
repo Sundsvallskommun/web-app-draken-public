@@ -677,7 +677,7 @@ export class SupportErrandController {
             category: 'SALARY',
             type: 'SALARY.UNCATEGORIZED',
           }
-        : isIK() || isSE()
+        : isIK()
         ? {
             category: 'KSK_SERVICE_CENTER',
             type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
@@ -691,6 +691,11 @@ export class SupportErrandController {
         ? {
             category: 'COMPLETE_RECRUITMENT',
             type: 'COMPLETE_RECRUITMENT.RETAKE',
+          }
+        : isSE()
+        ? {
+            category: 'UNCATEGORIZED',
+            type: 'UNCATEGORIZED.UNCATEGORISED',
           }
         : {
             category: 'CONTACT_SUNDSVALL',
