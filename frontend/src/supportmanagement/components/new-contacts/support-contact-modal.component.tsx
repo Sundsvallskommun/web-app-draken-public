@@ -47,6 +47,8 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
 }) => {
   const { supportMetadata, supportErrand } = useAppContext();
 
+  const personnumber = form.watch('personNumber');
+
   return (
     <Modal
       show={manual || editing}
@@ -76,18 +78,32 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
             <>
               <div className="flex gap-lg">
                 <FormControl id={`contact-personnumber`} className="w-1/2">
-                  <FormLabel>Personnummer</FormLabel>
-                  <Input
-                    size="sm"
-                    disabled={disabled}
-                    readOnly
-                    data-cy={`contact-personNumber`}
-                    className={cx(
-                      form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                      'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                    )}
-                    {...form.register(`personNumber`)}
-                  />
+                  <FormLabel>{personnumber ? 'Personnummer' : 'Användarnamn'}</FormLabel>
+                  {personnumber ? (
+                    <Input
+                      size="sm"
+                      disabled={disabled}
+                      readOnly
+                      data-cy={`contact-personNumber`}
+                      className={cx(
+                        form.formState.errors.personNumber ? 'border-2 border-error' : null,
+                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
+                      )}
+                      {...form.register(`personNumber`)}
+                    />
+                  ) : (
+                    <Input
+                      size="sm"
+                      disabled={disabled}
+                      readOnly
+                      data-cy={`contact-username`}
+                      className={cx(
+                        form.formState.errors.personNumber ? 'border-2 border-error' : null,
+                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
+                      )}
+                      {...form.register(`username`)}
+                    />
+                  )}
 
                   {form.formState.errors.personNumber && (
                     <div className="my-sm text-error">
