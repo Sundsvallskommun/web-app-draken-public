@@ -50,7 +50,7 @@ export function useErrandServices({
         params.forEach((p, idx) => {
           if (!p?.value || p?.key !== assetType) return;
 
-          const parsed = JSON.parse(p.value);
+          const parsed = typeof p.value === 'string' ? JSON.parse(p.value) : p.value;
           if (!parsed) return;
           const compositeId = `${a.id}#${idx}`;
           const s = mapFormToServiceFromPayload(parsed, schema, compositeId);

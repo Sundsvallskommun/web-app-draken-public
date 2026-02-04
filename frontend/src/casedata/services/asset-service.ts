@@ -91,7 +91,7 @@ export function buildCreateAssetPayload(
     jsonParameters: [
       {
         key: assetType,
-        value: JSON.stringify(formData),
+        value: formData,
         schemaId,
       },
     ],
