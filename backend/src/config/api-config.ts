@@ -18,7 +18,7 @@ export const APIS = [
   },
   {
     name: 'estateinfo',
-    version: '2.0',
+    version: '2.1',
   },
   {
     name: 'templating',
@@ -26,7 +26,7 @@ export const APIS = [
   },
   {
     name: 'messaging',
-    version: '7.9',
+    version: '7.10',
   },
   {
     name: 'case-data',
@@ -34,7 +34,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '12.0',
+    version: '12.3',
   },
   {
     name: 'billingpreprocessor',

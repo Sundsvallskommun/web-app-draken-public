@@ -31,6 +31,18 @@ export const getFacilityByAddress = (query: string) => {
     });
 };
 
+export const getSingleFacilityByDesignation = (query: string) => {
+  const url = `singleEstateByPropertyDesignation/${query}`;
+
+  return apiService
+    .get<ApiResponse<EstateInfoSearch[]>>(url)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when fetching estateInfo: ' + query);
+      throw e;
+    });
+};
+
 export const getFacilityByDesignation = (query: string) => {
   const url = `estateByPropertyDesignation/${query}`;
 

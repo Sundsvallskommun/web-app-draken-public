@@ -5,6 +5,7 @@ import {
   Attachment,
   AttachmentCategory,
   Contract,
+  ContractPaginatedResponse,
   Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
   StakeholderType as ContractStakeholderType,
@@ -28,7 +29,7 @@ import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
-import { getFacilityByDesignation } from '@common/services/facilities-service';
+import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
 import { EstateInfoSearch } from '@common/interfaces/estate-details';
 
 export const contractTypes = [
@@ -165,16 +166,57 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
     });
 };
 
-export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
-  const url = `contracts`;
+export interface ContractFilterParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  query?: string;
+  status?: string;
+  contractType?: string;
+  leaseType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export const fetchContracts: (params?: ContractFilterParams) => Promise<ContractPaginatedResponse> = (params = {}) => {
+  const { page = 1, limit = 12, sortBy, sortOrder, query, status, contractType, leaseType, startDate, endDate } = params;
+
+  let url = `contracts?page=${page}&limit=${limit}`;
+
+  if (sortBy) {
+    url += `&sortBy=${sortBy}&sortOrder=${sortOrder || 'desc'}`;
+  }
+  if (query) {
+    url += `&query=${encodeURIComponent(query)}`;
+  }
+  if (status) {
+    url += `&status=${status}`;
+  }
+  if (contractType) {
+    url += `&contractType=${contractType}`;
+  }
+  if (leaseType) {
+    url += `&leaseType=${leaseType}`;
+  }
+  if (startDate) {
+    url += `&startDate=${startDate}`;
+  }
+  if (endDate) {
+    url += `&endDate=${endDate}`;
+  }
+
   return apiService
-    .get<ApiResponse<ContractData[]>>(url)
+    .get<ContractPaginatedResponse>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contracts');
       throw e;
     });
 };
+
+// Keep for backwards compatibility
+export const fetchAllContracts = fetchContracts;
 
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
   const data: ExtraParameter[] = [
@@ -561,14 +603,14 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   return a;
 }
 
-export const getErrandPropertyInformation: (
+export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
   errand: IErrand
-) => Promise<{ name: string; district: string }[]> = async (errand: IErrand) => {
+) => {
   const designations = errand.facilities
     .filter((facility) => facility.address?.propertyDesignation)
     .map((facility) => facility.address?.propertyDesignation);
 
-  const infos = await Promise.allSettled(designations.map((d) => getFacilityByDesignation(d)));
+  const infos = await Promise.allSettled(designations.map((d) => getSingleFacilityByDesignation(d)));
 
   return infos
     .filter((info): info is PromiseFulfilledResult<ApiResponse<EstateInfoSearch[]>> => info.status === 'fulfilled')

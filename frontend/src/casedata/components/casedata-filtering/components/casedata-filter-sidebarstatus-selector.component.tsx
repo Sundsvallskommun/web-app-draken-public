@@ -14,7 +14,11 @@ import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useMemo } from 'react';
 
-export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean }> = ({ iconButton }) => {
+export const CasedataFilterSidebarStatusSelector: React.FC<{
+  showContractTable: boolean;
+  setShowContractTable: (show: boolean) => void;
+  iconButton: boolean;
+}> = ({ showContractTable, setShowContractTable, iconButton }) => {
   const {
     setSelectedErrandStatuses,
     selectedErrandStatuses,
@@ -99,9 +103,10 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
             onClick={() => {
               updateStatusFilter(button.statuses as ErrandStatus[]);
               setSidebarLabel(button.label);
+              setShowContractTable(false);
             }}
             aria-label={`status-button-${button.key}`}
-            variant={buttonIsActive ? 'primary' : 'ghost'}
+            variant={buttonIsActive && !showContractTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
             leftIcon={<LucideIcon name={button.icon as any} />}
             key={button.key}
@@ -115,8 +120,8 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{ iconButton: boolean
                 ) : (
                   <Badge
                     className="min-w-fit px-4"
-                    inverted={!buttonIsActive}
-                    color={buttonIsActive ? 'tertiary' : 'vattjom'}
+                    inverted={!buttonIsActive || showContractTable}
+                    color={buttonIsActive && !showContractTable ? 'tertiary' : 'vattjom'}
                     counter={button.totalStatusErrands > 999 ? '999+' : button.totalStatusErrands}
                   />
                 )}

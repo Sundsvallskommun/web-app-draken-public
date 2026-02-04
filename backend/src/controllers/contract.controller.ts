@@ -1,6 +1,6 @@
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Contract } from '@/data-contracts/contract/data-contracts';
+import { Contract, ContractPaginatedResponse } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
@@ -8,7 +8,7 @@ import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 export interface ResponseData {
@@ -44,13 +44,65 @@ export class CasedataContractsController {
   }
 
   @Get('/contracts')
-  @OpenAPI({ summary: 'Fetch all contracts' })
+  @OpenAPI({ summary: 'Fetch all contracts with pagination' })
   @UseBefore(authMiddleware)
-  async fetch_contracts(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
-    const url = `${MUNICIPALITY_ID}/contracts/${id}`;
+  async fetch_contracts(
+    @Req() req: RequestWithUser,
+    @QueryParam('page') page: number,
+    @QueryParam('limit') limit: number,
+    @QueryParam('sortBy') sortBy: string,
+    @QueryParam('sortOrder') sortOrder: string,
+    @QueryParam('query') query: string,
+    @QueryParam('status') status: string,
+    @QueryParam('contractType') contractType: string,
+    @QueryParam('leaseType') leaseType: string,
+    @QueryParam('startDate') startDate: string,
+    @QueryParam('endDate') endDate: string,
+    @Res() response: any,
+  ): Promise<ContractPaginatedResponse> {
+    // Build base URL with pagination (page is 1-based)
+    let url = `${MUNICIPALITY_ID}/contracts?page=${page || 1}&limit=${limit || 12}`;
+
+    // NOTE: The contract API does not yet support sorting, filtering, and search.
+    // The parameters are accepted here to prepare for future API support.
+    // When the API supports these features, uncomment the code below.
+
+    // Use query for property designation search (both name and district)
+    if (query) {
+      const encodedQuery = encodeURIComponent(query);
+      url += `&contractId=${encodedQuery}`;
+    }
+
+    // Build filter params (prepared for future API support)
+    // if (status) {
+    //   url += `&status=${status}`;
+    // }
+    // if (contractType) {
+    //   url += `&type=${contractType}`;
+    // }
+    if (leaseType) {
+      url += `&leaseType=${leaseType}`;
+    }
+    // if (startDate) {
+    //   url += `&startDate=${startDate}`;
+    // }
+    // if (endDate) {
+    //   url += `&endDate=${endDate}`;
+    // }
+
+    // Build sort param (prepared for future API support)
+    // if (sortBy) {
+    //   const order = sortOrder || 'desc';
+    //   url += `&sort=${sortBy},${order}`;
+    // }
+
+    logger.info(
+      `Fetching contracts with params: page=${page}, limit=${limit}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
+    );
+
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<Contract[]>({ url, baseURL }, req.user);
-    return { data: res.data, message: 'success' } as ResponseData;
+    const res = await this.apiService.get<ContractPaginatedResponse>({ url, baseURL }, req.user);
+    return response.status(200).send(res.data);
   }
 
   @Post('/contracts')
