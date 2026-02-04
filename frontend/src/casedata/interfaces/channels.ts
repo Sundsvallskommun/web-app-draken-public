@@ -15,3 +15,7 @@ export enum ApiChannels {
   'Telefon' = 'MOBILE',
   'System' = 'SYSTEM',
 }
+export const AppChannels = {
+  MEX: [Channels.EMAIL, Channels.ESERVICE, Channels.WEB_UI, Channels.MOBILE, Channels.SYSTEM],
+  PT: [Channels.EMAIL, Channels.ESERVICE, Channels.WEB_UI, Channels.ESERVICE_KATLA, Channels.MOBILE, Channels.SYSTEM],
+};
