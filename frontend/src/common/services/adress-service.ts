@@ -172,10 +172,11 @@ export const parseAdministrationInfo: (orgTree: string) => {
   };
 };
 
-export const searchADUser: (username: string, domain?: string) => Promise<AddressResult> = async (
+export const searchADUser: (
   username: string,
-  domain?: string
-) => {
+  domain?: string,
+  keepPersonId?: boolean
+) => Promise<AddressResult> = async (username: string, domain?: string, keepPersonId?: boolean) => {
   if (!domain) {
     domain = 'PERSONAL';
   }
@@ -184,7 +185,7 @@ export const searchADUser: (username: string, domain?: string) => Promise<Addres
     .get<any>(`portalpersondata/${domain}/${username}`)
     .then((res) => {
       return {
-        personId: res.data.data.personid,
+        personId: keepPersonId ? res.data.data.personid : undefined,
         firstName: res.data.data.givenname,
         lastName: res.data.data.lastname,
         email: res.data.data.email,
@@ -222,10 +223,10 @@ export const searchADUserByPersonNumber: (personalNumber: string) => Promise<Add
         .then((res) => res.data.data)
         .then((res) => {
           if (res.length > 1) {
-            const promises = res.map((user) => searchADUser(user.loginname, user.domain));
+            const promises = res.map((user) => searchADUser(user.loginname, user.domain, true));
             return Promise.all(promises).then((results) => results);
           } else {
-            return searchADUser(res[0].loginname, res[0].domain);
+            return searchADUser(res[0].loginname, res[0].domain, true);
           }
         });
 };
