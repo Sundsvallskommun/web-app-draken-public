@@ -18,7 +18,6 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
-  Icon,
   Input,
   Label,
   RadioButton,
@@ -326,7 +325,9 @@ export const ContractForm: React.FC<{
                 {partyTable('Säljare', sellers)}
                 {partyTable('Köpare', buyers)}
               </>
-            ) : getValues().type === ContractType.LEASE_AGREEMENT ? (
+            ) : getValues().type === ContractType.LEASE_AGREEMENT ||
+              getValues().type === ContractType.LAND_LEASE_PUBLIC ||
+              getValues().type === ContractType.SHORT_TERM_LEASE_AGREEMENT ? (
               <>
                 {partyTable('Upplåtare', lessors)}
                 {partyTable('Arrendatorer', lessees)}
@@ -445,7 +446,38 @@ export const ContractForm: React.FC<{
           </div>
         </Disclosure.Content>
       </Disclosure>
-      {getValues().type === ContractType.LEASE_AGREEMENT ? (
+      {getValues().type === ContractType.PURCHASE_AGREEMENT ? (
+        <Disclosure
+          data-cy="startdatum-disclosure"
+          color="gronsta"
+          variant="alt"
+          onClick={() => {
+            changeBadgeColor?.(`badge-startdatum`);
+          }}
+        >
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
+            <Disclosure.Title>Avtalsstartdatum</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className="flex flex-col gap-24">
+              <div className="flex gap-18 justify-start">
+                <FormControl id="startDate" className="w-full">
+                  <FormLabel>Avtalets startdatum</FormLabel>
+                  <Input
+                    type="date"
+                    readOnly={!isEditable('general')}
+                    {...register('start')}
+                    data-cy="avtalstid-start"
+                  />
+                </FormControl>
+              </div>
+              {saveButton()}
+            </div>
+          </Disclosure.Content>
+        </Disclosure>
+      ) : (
         <Disclosure
           data-cy="avtalstid-disclosure"
           color="gronsta"
@@ -618,37 +650,6 @@ export const ContractForm: React.FC<{
                   </FormControl>
                 </div>
               )}
-              {saveButton()}
-            </div>
-          </Disclosure.Content>
-        </Disclosure>
-      ) : (
-        <Disclosure
-          data-cy="startdatum-disclosure"
-          color="gronsta"
-          variant="alt"
-          onClick={() => {
-            changeBadgeColor?.(`badge-startdatum`);
-          }}
-        >
-          <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
-            <Disclosure.Title>Avtalsstartdatum</Disclosure.Title>
-            <Disclosure.Button />
-          </Disclosure.Header>
-          <Disclosure.Content>
-            <div className="flex flex-col gap-24">
-              <div className="flex gap-18 justify-start">
-                <FormControl id="startDate" className="w-full">
-                  <FormLabel>Avtalets startdatum</FormLabel>
-                  <Input
-                    type="date"
-                    readOnly={!isEditable('general')}
-                    {...register('start')}
-                    data-cy="avtalstid-start"
-                  />
-                </FormControl>
-              </div>
               {saveButton()}
             </div>
           </Disclosure.Content>
