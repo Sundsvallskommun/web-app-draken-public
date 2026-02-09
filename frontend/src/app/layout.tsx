@@ -1,4 +1,5 @@
-import '@styles/tailwind.scss';
+import '@styles/main.css';
+import '@styles/raleway.scss';
 import { ReactNode } from 'react';
 
 import i18nConfig from './i18nConfig';
