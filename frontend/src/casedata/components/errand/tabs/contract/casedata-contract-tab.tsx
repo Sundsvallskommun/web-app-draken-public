@@ -45,7 +45,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
       notices: yup.array().when('type', {
-        is: (type: ContractType) => type === ContractType.LEASE_AGREEMENT,
+        is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
           schema
             .of(
