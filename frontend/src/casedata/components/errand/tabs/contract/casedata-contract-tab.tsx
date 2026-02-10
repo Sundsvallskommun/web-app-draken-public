@@ -28,7 +28,7 @@ import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -105,6 +105,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const [lessees, setLessees] = useState<StakeholderWithPersonnumber[]>([]);
   const [lessors, setLessors] = useState<StakeholderWithPersonnumber[]>([]);
   const toastMessage = useSnackbar();
+  const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -322,28 +323,40 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                 )}
               </div>
 
-              <FormControl id="isDraft" className="my-md">
-                <FormLabel>
-                  Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
-                </FormLabel>
-                <Checkbox
-                  disabled={loading !== undefined || isErrandLocked(errand) || !allowed}
-                  checked={contractForm.getValues().status === 'DRAFT' ? true : false}
-                  value={contractForm.getValues().status}
-                  onChange={() => {
-                    contractForm.setValue(
-                      'status',
-                      contractForm.getValues()?.status === Status.ACTIVE ? Status.DRAFT : Status.ACTIVE
-                    );
-                    contractForm.trigger('status');
-                    onSave(contractForm.getValues());
-                  }}
-                  indeterminate={false}
-                >
-                  Markera som utkast
-                </Checkbox>
-                <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
-              </FormControl>
+              {contractForm.getValues().status === Status.DRAFT && (
+                <FormControl id="isDraft" className="my-md">
+                  <FormLabel>
+                    Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
+                  </FormLabel>
+                  <Checkbox
+                    disabled={loading !== undefined || isErrandLocked(errand) || !allowed}
+                    checked={true}
+                    value={contractForm.getValues().status}
+                    onChange={() => {
+                      confirm
+                        .showConfirmation(
+                          'Bekräfta statusändring',
+                          'När avtalet inte längre är ett utkast kan du inte redigera något annat än fakturareferens och fakturamottagare. Är du säker?',
+                          'Ja',
+                          'Nej',
+                          'info',
+                          'info'
+                        )
+                        .then((confirmed) => {
+                          if (confirmed) {
+                            contractForm.setValue('status', Status.ACTIVE);
+                            contractForm.trigger('status');
+                            onSave(contractForm.getValues());
+                          }
+                        });
+                    }}
+                    indeterminate={false}
+                  >
+                    Markera som utkast
+                  </Checkbox>
+                  <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
+                </FormControl>
+              )}
               <Input type="hidden" readOnly name="id" {...contractForm.register('contractId')} />
               <ContractForm
                 changeBadgeColor={changeBadgeColor}
