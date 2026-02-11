@@ -77,7 +77,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
-      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
       cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(

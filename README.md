@@ -53,6 +53,8 @@ För PT (Parkeringstillstånd):
 | LegalEntity     |     2.0 |
 | Relations       |     1.1 |
 | CaseStatus      |     4.1 |
+| PartyAssets     |     3.2 |
+| JsonSchema      |     1.0 |
 
 För LOP (Lön och pension):
 

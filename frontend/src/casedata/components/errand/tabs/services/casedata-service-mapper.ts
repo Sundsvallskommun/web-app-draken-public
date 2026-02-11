@@ -50,7 +50,7 @@ export function extractFormDataFromAsset(asset: Asset, schemaId: string): any | 
   const jp = asset.jsonParameters?.find((p) => p.schemaId === schemaId) ?? asset.jsonParameters?.[0];
   if (!jp?.value) return null;
   try {
-    return JSON.parse(jp.value);
+    return typeof jp.value === 'string' ? JSON.parse(jp.value) : jp.value;
   } catch {
     return null;
   }
