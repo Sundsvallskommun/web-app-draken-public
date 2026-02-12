@@ -4,7 +4,6 @@ import {
   ContractType,
   IntervalType,
   InvoicedIn,
-  LeaseType,
   Party,
   StakeholderRole,
   Status,
@@ -265,6 +264,9 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
   const contractType = contractForm.watch('type') as ContractType;
   useEffect(() => {
+    if (contractType && contractType !== ContractType.LEASE_AGREEMENT) {
+      contractForm.setValue('leaseType', undefined);
+    }
     contractForm.trigger();
   }, [contractType, contractForm]);
 
