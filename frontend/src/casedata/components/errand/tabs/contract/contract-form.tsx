@@ -6,6 +6,7 @@ import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-serv
 import {
   getContractStakeholderName,
   getErrandPropertyInformation,
+  isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
@@ -175,7 +176,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     if (existingContract) {
-      if (existingContract.type === ContractType.LEASE_AGREEMENT) {
+      if (isLeaseAgreement(existingContract.type)) {
         // Find index for lessee and lessor notices
         const lesseeIndex = existingContract.notices?.findIndex((n) => n.party === 'LESSEE');
         const lessorIndex = existingContract.notices?.findIndex((n) => n.party === 'LESSOR');
@@ -325,9 +326,7 @@ export const ContractForm: React.FC<{
                 {partyTable('Säljare', sellers)}
                 {partyTable('Köpare', buyers)}
               </>
-            ) : getValues().type === ContractType.LEASE_AGREEMENT ||
-              getValues().type === ContractType.LAND_LEASE_PUBLIC ||
-              getValues().type === ContractType.SHORT_TERM_LEASE_AGREEMENT ? (
+            ) : isLeaseAgreement(getValues().type) ? (
               <>
                 {partyTable('Upplåtare', lessors)}
                 {partyTable('Arrendatorer', lessees)}

@@ -20,6 +20,7 @@ import {
   defaultKopeavtal,
   defaultLagenhetsarrende,
   getErrandContract,
+  isLeaseAgreement,
   leaseTypes,
   saveContract,
   saveContractToErrand,
@@ -162,7 +163,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     if (contract.type === ContractType.PURCHASE_AGREEMENT) {
       _sellers = contract.sellers;
       _buyers = contract.buyers;
-    } else if (contract.type === ContractType.LEASE_AGREEMENT) {
+    } else if (isLeaseAgreement(contract.type)) {
       _lessees = contract.lessees || [];
       _lessors = contract.lessors || [];
     }
@@ -184,16 +185,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const contractForm = useForm<ContractData>({
     resolver: yupResolver(formSchema) as Resolver<ContractData>,
     defaultValues:
-      existingContract?.type === ContractType.PURCHASE_AGREEMENT
-        ? defaultKopeavtal
-        : existingContract?.type === ContractType.LEASE_AGREEMENT
-        ? defaultLagenhetsarrende
-        : ({
-            ...defaultKopeavtal,
-            ...defaultLagenhetsarrende,
-            type: ContractType.LEASE_AGREEMENT,
-            leaseType: LeaseType.LAND_LEASE_MISC,
-          } as ContractData),
+      existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
     mode: 'onChange',
   });
 
