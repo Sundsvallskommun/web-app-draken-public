@@ -3,12 +3,16 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import sanitized from '@common/services/sanitizer-service';
+import { Button } from '@sk-web-gui/button';
+import { useState } from 'react';
 
-const getMessageSourceLabel = (message: MessageNode, errand: IErrand) => {
+const MAX_VISIBLE_RECIPIENTS = 2;
+
+const getMessageSourceLabel = (message: MessageNode, errand: IErrand): string | string[] => {
   if (!message) return '';
 
   if (message.messageType === 'EMAIL') {
-    return message.recipients.join(', ');
+    return message.recipients;
   }
 
   if (message.messageType === 'SMS') {
@@ -35,11 +39,44 @@ const getMessageSourceLabel = (message: MessageNode, errand: IErrand) => {
   return '(okänd mottagare)';
 };
 
+interface EmailRecipientsProps {
+  recipients: string[];
+}
+
+const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const totalCount = recipients.length;
+  const hasMore = totalCount > MAX_VISIBLE_RECIPIENTS;
+  const visibleRecipients = isExpanded ? recipients : recipients.slice(0, MAX_VISIBLE_RECIPIENTS);
+  const hiddenCount = totalCount - MAX_VISIBLE_RECIPIENTS;
+
+  return (
+    <span>
+      {sanitized(visibleRecipients.join(', '))}
+      {hasMore && !isExpanded && (
+        <Button variant="link" className="ml-4" onClick={() => setIsExpanded(true)}>
+          + {hiddenCount} {hiddenCount === 1 ? 'annan' : 'andra'}
+        </Button>
+      )}
+      {isExpanded && (
+        <Button variant="link" className="ml-4" onClick={() => setIsExpanded(false)}>
+          Visa färre
+        </Button>
+      )}
+    </span>
+  );
+};
+
 export const RenderMessageReciever: React.FC<{ selectedMessage: MessageNode; errand: IErrand }> = ({
   selectedMessage,
   errand,
 }) => {
-  const nameOfReciever = getMessageSourceLabel(selectedMessage, errand);
+  const reciever = getMessageSourceLabel(selectedMessage, errand);
 
-  return <>{sanitized(nameOfReciever)}</>;
+  if (Array.isArray(reciever)) {
+    return <EmailRecipients recipients={reciever} />;
+  }
+
+  return <>{sanitized(reciever)}</>;
 };
