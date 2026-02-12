@@ -348,12 +348,21 @@ export const ContractForm: React.FC<{
                     } else {
                       onUpdateLesseesOnly?.();
                     }
-                    setTimeout(async () => {
-                      await onSave(getValues()).catch(() => {
-                        setUpdatingParties(false);
-                      });
-                      setUpdatingParties(false);
-                    }, 0);
+                    setTimeout(
+                      handleSubmit(
+                        async () => {
+                          await onSave(getValues()).catch(() => {
+                            setUpdatingParties(false);
+                          });
+                          setUpdatingParties(false);
+                        },
+                        (e) => {
+                          console.error('Error validating form after updating parties:', e);
+                          setUpdatingParties(false);
+                        }
+                      ),
+                      0
+                    );
                   }}
                 >
                   {isDraft ? 'Uppdatera parter' : 'Uppdatera fakturamottagare'}
