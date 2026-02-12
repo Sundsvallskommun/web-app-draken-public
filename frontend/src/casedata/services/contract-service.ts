@@ -252,7 +252,7 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
     .then((res) => {
       if (res.data.type === ContractType.PURCHASE_AGREEMENT) {
         return contractToKopeavtal(res.data as Contract);
-      } else if (res.data.type === ContractType.LEASE_AGREEMENT) {
+      } else if ([ContractType.LEASE_AGREEMENT, ContractType.LAND_LEASE_PUBLIC, ContractType.SHORT_TERM_LEASE_AGREEMENT].includes(res.data.type)) {
         return contractToLagenhetsArrende(res.data as Contract);
       } else {
         console.error('Unknown contract type: ', res.data.type);
@@ -471,7 +471,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     notices: data.notices,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
-    type: ContractType.LEASE_AGREEMENT,
+    type: data.type,
     leaseType: data.leaseType,
     status: data.status,
     externalReferenceId: data.externalReferenceId.toString(),
