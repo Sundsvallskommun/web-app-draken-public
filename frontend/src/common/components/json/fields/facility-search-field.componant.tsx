@@ -44,11 +44,11 @@ export function FacilitySearchField(props: FieldProps) {
         orgName: employment.orgName,
         manager: employment.manager
           ? {
-              personId: employment.manager.personId ?? undefined,
-              givenname: employment.manager.givenname ?? undefined,
-              lastname: employment.manager.lastname ?? undefined,
-              emailAddress: employment.manager.emailAddress ?? undefined,
-            }
+            personId: employment.manager.personId ?? undefined,
+            givenname: employment.manager.givenname ?? undefined,
+            lastname: employment.manager.lastname ?? undefined,
+            emailAddress: employment.manager.emailAddress ?? undefined,
+          }
           : undefined,
       });
     },
@@ -156,7 +156,7 @@ export function FacilitySearchField(props: FieldProps) {
       {hasSelection && (
         <div className="border-1 rounded-12 bg-background-content w-full mt-16">
           <div className="rounded-t-12 bg-vattjom-background-200 h-[4rem] flex items-center">
-            <strong className="px-[1rem]">Plats där avvikelsen inträffat</strong>
+            <strong className="px-[1rem]">Plats där händelsen inträffat</strong>
           </div>
           <div className="p-[1rem]">
             <div className="flex justify-between items-start">
@@ -177,7 +177,7 @@ export function FacilitySearchField(props: FieldProps) {
                       </Button>
                     )}
                   </>
-                : <>
+                  : <>
                     <Button
                       type="button"
                       variant="primary"
