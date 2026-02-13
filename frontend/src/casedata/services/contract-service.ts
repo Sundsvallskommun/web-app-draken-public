@@ -5,7 +5,6 @@ import {
   Attachment,
   AttachmentCategory,
   Contract,
-  ContractPaginatedResponse,
   Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
   StakeholderType as ContractStakeholderType,
@@ -13,6 +12,7 @@ import {
   Fees,
   InvoicedIn,
   LeaseType,
+  PageContract,
   Parameter,
   Party,
   Status,
@@ -185,9 +185,9 @@ export interface ContractFilterParams {
   endDate?: string;
 }
 
-export const fetchContracts: (params?: ContractFilterParams) => Promise<ContractPaginatedResponse> = (params = {}) => {
+export const fetchContracts: (params?: ContractFilterParams) => Promise<PageContract> = (params = {}) => {
   const {
-    page = 1,
+    page = 0,
     limit = 12,
     sortBy,
     sortOrder,
@@ -224,7 +224,7 @@ export const fetchContracts: (params?: ContractFilterParams) => Promise<Contract
   }
 
   return apiService
-    .get<ContractPaginatedResponse>(url)
+    .get<PageContract>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contracts');

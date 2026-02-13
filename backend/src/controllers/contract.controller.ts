@@ -1,6 +1,6 @@
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Contract, ContractPaginatedResponse } from '@/data-contracts/contract/data-contracts';
+import { Contract, PageContract } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
@@ -59,49 +59,48 @@ export class CasedataContractsController {
     @QueryParam('startDate') startDate: string,
     @QueryParam('endDate') endDate: string,
     @Res() response: any,
-  ): Promise<ContractPaginatedResponse> {
-    // Build base URL with pagination (page is 1-based)
-    let url = `${MUNICIPALITY_ID}/contracts?page=${page || 1}&limit=${limit || 12}`;
+  ): Promise<PageContract> {
+    let url = `${MUNICIPALITY_ID}/contracts?page=${page ?? 0}&limit=${limit || 12}`;
 
-    // NOTE: The contract API does not yet support sorting, filtering, and search.
-    // The parameters are accepted here to prepare for future API support.
-    // When the API supports these features, uncomment the code below.
+    const filterList: string[] = [];
 
-    // Use query for property designation search (both name and district)
     if (query) {
-      const encodedQuery = encodeURIComponent(query);
-      url += `&contractId=${encodedQuery}`;
+      filterList.push(`contractId~'*${query}*'`);
     }
-
-    // Build filter params (prepared for future API support)
-    // if (status) {
-    //   url += `&status=${status}`;
-    // }
-    // if (contractType) {
-    //   url += `&type=${contractType}`;
-    // }
+    if (status) {
+      const ss = status.split(',').map(s => `status:'${s}'`);
+      filterList.push(`(${ss.join(' or ')})`);
+    }
+    if (contractType) {
+      const ct = contractType.split(',').map(t => `type:'${t}'`);
+      filterList.push(`(${ct.join(' or ')})`);
+    }
     if (leaseType) {
-      url += `&leaseType=${leaseType}`;
+      const lt = leaseType.split(',').map(l => `leaseType:'${l}'`);
+      filterList.push(`(${lt.join(' or ')})`);
     }
-    // if (startDate) {
-    //   url += `&startDate=${startDate}`;
-    // }
-    // if (endDate) {
-    //   url += `&endDate=${endDate}`;
-    // }
+    if (startDate) {
+      filterList.push(`start>='${startDate}'`);
+    }
+    if (endDate) {
+      filterList.push(`end<='${endDate}'`);
+    }
 
-    // Build sort param (prepared for future API support)
-    // if (sortBy) {
-    //   const order = sortOrder || 'desc';
-    //   url += `&sort=${sortBy},${order}`;
-    // }
+    if (filterList.length > 0) {
+      url += `&filter=${filterList.join(' and ')}`;
+    }
+
+    if (sortBy) {
+      const order = sortOrder || 'desc';
+      url += `&sort=${sortBy},${order}`;
+    }
 
     logger.info(
       `Fetching contracts with params: page=${page}, limit=${limit}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
     );
 
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<ContractPaginatedResponse>({ url, baseURL }, req.user);
+    const res = await this.apiService.get<PageContract>({ url, baseURL }, req.user);
     return response.status(200).send(res.data);
   }
 
@@ -209,7 +208,6 @@ export class CasedataContractsController {
   ): Promise<{ data: CasedataContractAttachment; message: string }> {
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
-    console.log('Saving contract attachment with data:', { metadata: data.metaData });
     const response = await this.apiService.post<CasedataContractAttachment, CasedataContractAttachment>({ url, baseURL, data }, req.user).catch(e => {
       logger.error('Something went wrong when saving signed contract attachment');
       logger.error(e);

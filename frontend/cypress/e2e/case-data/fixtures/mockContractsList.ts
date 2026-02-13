@@ -1,4 +1,4 @@
-import { ContractPaginatedResponse, ContractType, LeaseType, Status, StakeholderRole, StakeholderType, TimeUnit, IntervalType } from '@casedata/interfaces/contracts';
+import { PageContract, ContractType, LeaseType, Status, StakeholderRole, StakeholderType, TimeUnit, IntervalType } from '@casedata/interfaces/contracts';
 
 // Mock contract invoices response
 export const mockContractInvoices = {
@@ -70,8 +70,8 @@ export const mockContractInvoicesEmpty = {
   number: 0,
 };
 
-export const mockContractsList: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractsList: PageContract = {
+  content: [
     {
       contractId: '2049-00001',
       externalReferenceId: '101',
@@ -247,17 +247,14 @@ export const mockContractsList: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 5,
-    totalRecords: 5,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 5,
+  totalPages: 1,
 };
 
-export const mockContractsListPage2: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractsListPage2: PageContract = {
+  content: [
     {
       contractId: '2049-00006',
       externalReferenceId: '106',
@@ -293,28 +290,22 @@ export const mockContractsListPage2: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 2,
-    limit: 12,
-    count: 1,
-    totalRecords: 6,
-    totalPages: 2,
-  },
+  number: 1,
+  size: 12,
+  totalElements: 6,
+  totalPages: 2,
 };
 
-export const mockContractsListEmpty: ContractPaginatedResponse = {
-  contracts: [],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 0,
-    totalRecords: 0,
-    totalPages: 0,
-  },
+export const mockContractsListEmpty: PageContract = {
+  content: [],
+  number: 0,
+  size: 12,
+  totalElements: 0,
+  totalPages: 0,
 };
 
-export const mockContractsListFiltered: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractsListFiltered: PageContract = {
+  content: [
     {
       contractId: '2049-00001',
       externalReferenceId: '101',
@@ -350,18 +341,15 @@ export const mockContractsListFiltered: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 1,
-    totalRecords: 1,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 1,
+  totalPages: 1,
 };
 
 // Detailed mock contract with all fields for detail view testing
-export const mockContractDetailLeaseAgreement: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractDetailLeaseAgreement: PageContract = {
+  content: [
     {
       contractId: '2049-00010',
       externalReferenceId: 'EXT-12345',
@@ -447,17 +435,14 @@ export const mockContractDetailLeaseAgreement: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 1,
-    totalRecords: 1,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 1,
+  totalPages: 1,
 };
 
-export const mockContractDetailPurchaseAgreement: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractDetailPurchaseAgreement: PageContract = {
+  content: [
     {
       contractId: '2049-00011',
       externalReferenceId: 'EXT-67890',
@@ -494,11 +479,8 @@ export const mockContractDetailPurchaseAgreement: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 1,
-    totalRecords: 1,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 1,
+  totalPages: 1,
 };
