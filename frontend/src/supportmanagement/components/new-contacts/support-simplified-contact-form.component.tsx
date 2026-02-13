@@ -23,7 +23,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import React, { useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 import { SupportContactModal } from './support-contact-modal.component';
@@ -174,7 +174,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   const form = useForm<SupportStakeholderFormModel>({
     defaultValues: contact,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-    resolver: yupResolver(yupContact),
+    resolver: yupResolver(yupContact) as unknown as Resolver<SupportStakeholderFormModel>,
   });
 
   const { register, control, handleSubmit, watch, setValue, formState, reset } = form;

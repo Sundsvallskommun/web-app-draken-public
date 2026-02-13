@@ -182,7 +182,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   }, [errand, existingContract]);
 
   const contractForm = useForm<ContractData>({
-    resolver: yupResolver(formSchema) as Resolver<ContractData>,
+    resolver: yupResolver(formSchema) as unknown as Resolver<ContractData>,
     defaultValues:
       existingContract?.type === ContractType.PURCHASE_AGREEMENT
         ? defaultKopeavtal

@@ -12,23 +12,23 @@
 
 /** Type of event */
 export enum EventType {
-  CREATE = 'CREATE',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  UNKNOWN = 'UNKNOWN',
+  CREATE = "CREATE",
+  UPDATE = "UPDATE",
+  DELETE = "DELETE",
+  UNKNOWN = "UNKNOWN",
 }
 
 /** ConversationType model */
 export enum ConversationType {
-  INTERNAL = 'INTERNAL',
-  EXTERNAL = 'EXTERNAL',
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
 }
 
 /** Priority model */
 export enum Priority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
 }
 
 export interface Problem {
@@ -410,12 +410,15 @@ export interface Errand {
   errandNumber?: string;
   /** Title for the errand */
   title?: string;
+  /** Priority model */
   priority?: Priority;
   stakeholders?: Stakeholder[];
   /** @uniqueItems true */
   externalTags?: ExternalTag[];
   /** Parameters for the errand */
   parameters?: Parameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
   /** Classification model */
   classification?: Classification;
   /** Status for the errand */
@@ -492,6 +495,27 @@ export interface ExternalTag {
   key?: string;
   /** Value for external tag */
   value?: string;
+}
+
+export type JsonNode = any;
+
+/** JSON Parameter model */
+export interface JsonParameter {
+  /**
+   * Parameter key/name
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * JSON structure value
+   * @example {"firstName":"Joe","lastName":"Doe"}
+   */
+  value: JsonNode;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
 }
 
 export interface Notification {
@@ -863,10 +887,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1026,10 +1050,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1131,10 +1155,10 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1182,19 +1206,19 @@ export interface CountResponse {
 
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */
 export enum CommunicationDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 /** The communication was delivered by */
 export enum CommunicationCommunicationTypeEnum {
-  SMS = 'SMS',
-  EMAIL = 'EMAIL',
-  WEB_MESSAGE = 'WEB_MESSAGE',
+  SMS = "SMS",
+  EMAIL = "EMAIL",
+  WEB_MESSAGE = "WEB_MESSAGE",
 }
 
 /** Type of message (user or system created) */
 export enum MessageTypeEnum {
-  USER_CREATED = 'USER_CREATED',
-  SYSTEM_CREATED = 'SYSTEM_CREATED',
+  USER_CREATED = "USER_CREATED",
+  SYSTEM_CREATED = "SYSTEM_CREATED",
 }

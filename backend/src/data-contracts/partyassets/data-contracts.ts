@@ -121,24 +121,6 @@ export interface Violation {
   message?: string;
 }
 
-export interface JsonSchemaCreateRequest {
-  /**
-   * Schema name
-   * @minLength 1
-   */
-  name: string;
-  /**
-   * Schema version on the format [major version].[minor version]
-   * @minLength 1
-   * @pattern ^(\d+\.)?(\d+)$
-   */
-  version: string;
-  /** The JSON schema, specified by: https://json-schema.org/draft/2020-12/schema */
-  value: string;
-  /** Description of the schema purpose */
-  description?: string;
-}
-
 export interface AssetCreateRequest {
   /**
    * Asset id
@@ -186,15 +168,17 @@ export interface AssetJsonParameter {
   key: string;
   /**
    * Parameter value with the JSON structure
-   * @minLength 1
+   * @example {"firstName":"Joe","lastName":"Doe"}
    */
-  value: string;
+  value: JsonNode;
   /**
    * Schema ID
    * @minLength 1
    */
   schemaId: string;
 }
+
+export type JsonNode = any;
 
 export interface AssetUpdateRequest {
   /** Case reference ids */
@@ -212,29 +196,6 @@ export interface AssetUpdateRequest {
   additionalParameters?: Record<string, string>;
   /** JSON parameters */
   jsonParameters?: AssetJsonParameter[];
-}
-
-export interface JsonSchema {
-  /** Schema ID. The ID is composed by the municipalityId, schema name and version. I.e.: [municipality_id]_[schema_name]_[schema_version] */
-  id?: string;
-  /** Schema name */
-  name?: string;
-  /** Schema version on the format [major version].[minor version] */
-  version?: string;
-  /**
-   * The number of schema references. I.e. number of json-objects that references the schema.
-   * @format int64
-   */
-  numberOfReferences?: number;
-  /** The JSON schema */
-  value?: string;
-  /** Description of the schema purpose */
-  description?: string;
-  /**
-   * Created timestamp
-   * @format date-time
-   */
-  created?: string;
 }
 
 export interface Asset {

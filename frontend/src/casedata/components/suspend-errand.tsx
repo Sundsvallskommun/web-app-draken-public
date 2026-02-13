@@ -8,7 +8,7 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 const yupSuspendForm = yup.object().shape({
@@ -46,7 +46,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     formState,
     formState: { errors },
   } = useForm<SuspendFormProps>({
-    resolver: yupResolver(yupSuspendForm),
+    resolver: yupResolver(yupSuspendForm) as unknown as Resolver<SuspendFormProps>,
     defaultValues: { date: dayjs().add(30, 'day').format('YYYY-MM-DD'), comment: '' },
     mode: 'onChange',
   });
