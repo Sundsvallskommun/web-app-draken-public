@@ -52,6 +52,11 @@ export const leaseTypes = [
   { label: 'Tomträtt', key: LeaseType.LEASEHOLD },
 ];
 
+export const isLeaseAgreement = (contractType: ContractType) =>
+  [ContractType.LEASE_AGREEMENT, ContractType.LAND_LEASE_PUBLIC, ContractType.SHORT_TERM_LEASE_AGREEMENT].includes(
+    contractType
+  );
+
 export const roleLabels: { [key in ContractStakeholderRole]: string } = {
   BUYER: 'Köpare',
   CONTACT_PERSON: 'Kontaktperson',
@@ -252,7 +257,7 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
     .then((res) => {
       if (res.data.type === ContractType.PURCHASE_AGREEMENT) {
         return contractToKopeavtal(res.data as Contract);
-      } else if ([ContractType.LEASE_AGREEMENT, ContractType.LAND_LEASE_PUBLIC, ContractType.SHORT_TERM_LEASE_AGREEMENT].includes(res.data.type)) {
+      } else if (isLeaseAgreement(res.data.type)) {
         return contractToLagenhetsArrende(res.data as Contract);
       } else {
         console.error('Unknown contract type: ', res.data.type);
@@ -276,7 +281,7 @@ export const renderContractPdf: (
   const templateIdentifier =
     contract.type === ContractType.PURCHASE_AGREEMENT
       ? `mex.contract.purchaseagreement`
-      : contract.type === ContractType.LEASE_AGREEMENT
+      : isLeaseAgreement(contract.type)
       ? `mex.contract.landlease`
       : 'mex.contract.purchaseagreement';
 

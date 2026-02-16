@@ -573,6 +573,98 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
+    it('manages creating a new LAND_LEASE_PUBLIC contract with correct default values', () => {
+      visitErrandWithoutContract();
+
+      // Select the new contract type
+      cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LAND_LEASE_PUBLIC);
+
+      // Verify NO lease subtype dropdown is shown (only for LEASE_AGREEMENT)
+      cy.get('[data-cy="contract-subtype-select"]').should('not.exist');
+
+      // Verify lease agreement UI is shown (lessors/lessees, not buyers/sellers)
+      cy.get('[data-cy="Upplåtare-table"]').should('exist');
+      cy.get('[data-cy="Arrendatorer-table"]').should('exist');
+      cy.get('[data-cy="Köpare-table"]').should('not.exist');
+      cy.get('[data-cy="Säljare-table"]').should('not.exist');
+
+      // Verify stakeholders are populated correctly
+      cy.get('[data-cy="Upplåtare-table"]')
+        .find('[data-cy="Upplåtare-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Upplåtare');
+        });
+
+      cy.get('[data-cy="Arrendatorer-table"]')
+        .find('[data-cy="Arrendatorer-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Arrendatorsson');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Arrendator');
+        });
+
+      // Save and verify contract type in request
+      cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
+
+      cy.wait('@postContract').should(({ request }) => {
+        const contract: Contract = request.body;
+        expect(contract.type).to.equal(ContractType.LAND_LEASE_PUBLIC);
+        // Verify no leaseType is set
+        expect(contract.leaseType).to.be.undefined;
+        // Verify it has lease agreement structure (lessors/lessees)
+        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
+        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).to.be.true;
+      });
+    });
+
+    it('manages creating a new SHORT_TERM_LEASE_AGREEMENT contract with correct default values', () => {
+      visitErrandWithoutContract();
+
+      // Select the new contract type
+      cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.SHORT_TERM_LEASE_AGREEMENT);
+
+      // Verify NO lease subtype dropdown is shown (only for LEASE_AGREEMENT)
+      cy.get('[data-cy="contract-subtype-select"]').should('not.exist');
+
+      // Verify lease agreement UI is shown (lessors/lessees, not buyers/sellers)
+      cy.get('[data-cy="Upplåtare-table"]').should('exist');
+      cy.get('[data-cy="Arrendatorer-table"]').should('exist');
+      cy.get('[data-cy="Köpare-table"]').should('not.exist');
+      cy.get('[data-cy="Säljare-table"]').should('not.exist');
+
+      // Verify stakeholders are populated correctly
+      cy.get('[data-cy="Upplåtare-table"]')
+        .find('[data-cy="Upplåtare-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Upplåtare');
+        });
+
+      cy.get('[data-cy="Arrendatorer-table"]')
+        .find('[data-cy="Arrendatorer-row-0"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Arrendatorsson');
+          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Arrendator');
+        });
+
+      // Save and verify contract type in request
+      cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
+
+      cy.wait('@postContract').should(({ request }) => {
+        const contract: Contract = request.body;
+        expect(contract.type).to.equal(ContractType.SHORT_TERM_LEASE_AGREEMENT);
+        // Verify no leaseType is set
+        expect(contract.leaseType).to.be.undefined;
+        // Verify it has lease agreement structure (lessors/lessees)
+        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
+        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).to.be.true;
+      });
+    });
+
     describe('Non-DRAFT contract restrictions', () => {
       describe('ACTIVE contract', () => {
         // Use a different contract ID to avoid caching issues from earlier tests

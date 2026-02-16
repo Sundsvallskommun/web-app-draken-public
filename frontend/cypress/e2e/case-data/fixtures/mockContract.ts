@@ -302,6 +302,126 @@ export const mockLeaseAgreement = {
   message: 'success',
 };
 
+export const mockLandLeasePublic = {
+  data: {
+    contractId: '2024-01027',
+    externalReferenceId: '1021',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: ContractType.LAND_LEASE_PUBLIC,
+    propertyDesignations: [
+      { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
+      { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
+    ],
+    notices: [],
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['LESSOR'],
+        firstName: 'Anna',
+        lastName: 'Testarlund',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['LESSEE'],
+        firstName: 'Bengt',
+        lastName: 'Testarrendator',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Område och upplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+    attachmentMetaData: [],
+  },
+  message: 'success',
+};
+
+export const mockShortTermLeaseAgreement = {
+  data: {
+    contractId: '2024-01028',
+    externalReferenceId: '1021',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: ContractType.SHORT_TERM_LEASE_AGREEMENT,
+    propertyDesignations: [
+      { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
+      { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
+    ],
+    notices: [],
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['LESSOR'],
+        firstName: 'Anna',
+        lastName: 'Testarlund',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['LESSEE'],
+        firstName: 'Bengt',
+        lastName: 'Testarrendator',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Område och upplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+    attachmentMetaData: [],
+  },
+  message: 'success',
+};
+
 export const mockContractAttachment = {
   data: {
     attachmentData: {
