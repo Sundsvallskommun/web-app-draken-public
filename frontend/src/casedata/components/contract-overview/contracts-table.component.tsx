@@ -80,7 +80,8 @@ export const contractTableLabels = [
   { label: 'Fastighetsbeteckning', sortable: false, column: 'propertyDesignations' },
   { label: 'Distrikt', sortable: false, column: 'district' },
   { label: 'Avtalstyp', sortable: true, column: 'type' },
-  { label: 'Avtalssubtyp', sortable: true, column: 'leaseType' },
+  { label: 'Undertyp', sortable: true, column: 'leaseType' },
+  { label: 'Avtals-id', sortable: true, column: 'id' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
   { label: 'Avtalsperiod', sortable: true, column: 'end' },
   { label: 'Uppsägningsdatum', sortable: false, column: '' },
@@ -121,7 +122,7 @@ export const ContractsTable: React.FC<{
           sortOrder={sortOrders[sortOrder] as SortMode}
           onClick={() => handleSort(header.column)}
         >
-          {header.label}
+          <span className="whitespace-nowrap">{header.label}</span>
         </Table.SortButton>
       ) : (
         header.label
@@ -183,12 +184,14 @@ export const ContractsTable: React.FC<{
         <Table.Column>{<CasedataStatusLabelComponent status={status} />}</Table.Column>
         <Table.Column>{propertyNames}</Table.Column>
         <Table.Column>{uniqueDistricts}</Table.Column>
+        <Table.Column>{getContractTypeLabel(contract.type)}</Table.Column>
+        <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>
-          <div className="flex flex-col">
-            <div>{getContractTypeLabel(contract.type)}</div> <div>{contract?.contractId ?? '-'}</div>
+          <div className="flex flex-col gap-6">
+            <div>{contract?.contractId ?? '-'}</div>
+            <div>{contract?.externalReferenceId ?? '-'}</div>
           </div>
         </Table.Column>
-        <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>{parties}</Table.Column>
         <Table.Column>{period}</Table.Column>
         <Table.Column>{lessorNoticeDate(contract)}</Table.Column>
