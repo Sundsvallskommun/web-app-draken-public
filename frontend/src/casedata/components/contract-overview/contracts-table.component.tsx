@@ -272,7 +272,6 @@ export const ContractsTable: React.FC<{
                 pages={totalPages}
                 activePage={page + 1}
                 changePage={(page) => {
-                  console.log('User clicked page: ', page);
                   setValue('page', page - 1);
                 }}
               />
