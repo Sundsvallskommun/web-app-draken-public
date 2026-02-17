@@ -12,26 +12,26 @@
 
 /** Time unit */
 export enum TimeUnit {
-  DAYS = "DAYS",
-  MONTHS = "MONTHS",
-  YEARS = "YEARS",
+  DAYS = 'DAYS',
+  MONTHS = 'MONTHS',
+  YEARS = 'YEARS',
 }
 
 /** Status */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  DRAFT = "DRAFT",
-  TERMINATED = "TERMINATED",
+  ACTIVE = 'ACTIVE',
+  DRAFT = 'DRAFT',
+  TERMINATED = 'TERMINATED',
 }
 
 /** Stakeholder type */
 export enum StakeholderType {
-  PERSON = "PERSON",
-  ORGANIZATION = "ORGANIZATION",
-  ASSOCIATION = "ASSOCIATION",
-  MUNICIPALITY = "MUNICIPALITY",
-  REGION = "REGION",
-  OTHER = "OTHER",
+  PERSON = 'PERSON',
+  ORGANIZATION = 'ORGANIZATION',
+  ASSOCIATION = 'ASSOCIATION',
+  MUNICIPALITY = 'MUNICIPALITY',
+  REGION = 'REGION',
+  OTHER = 'OTHER',
 }
 
 /** Stakeholder role */
@@ -89,7 +89,6 @@ export enum LeaseType {
   USUFRUCT_MISC = 'USUFRUCT_MISC',
   OBJECT_LEASE = 'OBJECT_LEASE',
   LAND_LEASE_MISC = 'LAND_LEASE_MISC',
-  LEASEHOLD = 'LEASEHOLD',
   OTHER_FEE = 'OTHER_FEE',
 }
 
@@ -113,6 +112,7 @@ export enum ContractType {
   PURCHASE_AGREEMENT = 'PURCHASE_AGREEMENT',
   LAND_LEASE_PUBLIC = 'LAND_LEASE_PUBLIC',
   SHORT_TERM_LEASE_AGREEMENT = 'SHORT_TERM_LEASE_AGREEMENT',
+  LEASEHOLD = 'LEASEHOLD',
 }
 
 /** Attachment category */
@@ -645,6 +645,6 @@ export interface PagingMetaData {
 }
 
 export enum CrsTypeEnum {
-  Name = "name",
-  Link = "link",
+  Name = 'name',
+  Link = 'link',
 }
