@@ -613,7 +613,7 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
       note: attachment.metadata.note,
       mimeType: attachment.metadata.mimeType,
       version: '',
-      created: '',
+      created: attachment.metadata.created ?? '',
       updated: '',
       ...({} as TExtraMeta),
       isValidAttachment: attachment.attachmentData.content,
