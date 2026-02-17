@@ -102,10 +102,10 @@ export class CasedataContractsController {
       filterList.push(`(${lt.join(' or ')})`);
     }
     if (startDate) {
-      filterList.push(`start>='${startDate}'`);
+      filterList.push(`startDate>='${startDate}'`);
     }
     if (endDate) {
-      filterList.push(`end<='${endDate}'`);
+      filterList.push(`endDate<='${endDate}'`);
     }
 
     if (filterList.length > 0) {

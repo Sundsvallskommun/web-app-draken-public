@@ -18,7 +18,7 @@ export const ContractOverview: React.FC = () => {
   const { watch: watchFilter } = filterForm;
 
   const tableForm = useForm<ContractTableForm>({
-    defaultValues: { sortColumn: 'start', sortOrder: 'desc', pageSize: 12, page: 0 },
+    defaultValues: { sortColumn: 'startDate', sortOrder: 'desc', pageSize: 12, page: 0 },
   });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
 

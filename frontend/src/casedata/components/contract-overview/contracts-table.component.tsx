@@ -150,7 +150,7 @@ export const ContractsTable: React.FC<{
       ) : (
         '-'
       );
-    const period = formatPeriod(contract.start, contract.end);
+    const period = formatPeriod(contract.startDate, contract.endDate);
 
     const lessorNoticeDate = (contract) => {
       const notice = contract?.notices?.find((notice) => notice.party === 'LESSOR');
