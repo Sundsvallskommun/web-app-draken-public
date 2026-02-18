@@ -137,7 +137,7 @@ export const mockLeaseAgreement = {
       { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
       { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
     ],
-    notices: [],
+    notice: { terms: [] },
     stakeholders: [
       {
         type: 'PERSON',
@@ -313,7 +313,7 @@ export const mockLandLeasePublic = {
       { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
       { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
     ],
-    notices: [],
+    notice: { terms: [] },
     stakeholders: [
       {
         type: 'PERSON',
@@ -373,7 +373,7 @@ export const mockShortTermLeaseAgreement = {
       { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
       { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
     ],
-    notices: [],
+    notice: { terms: [] },
     stakeholders: [
       {
         type: 'PERSON',

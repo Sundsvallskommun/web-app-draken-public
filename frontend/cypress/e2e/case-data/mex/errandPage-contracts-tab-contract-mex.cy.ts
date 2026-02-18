@@ -292,7 +292,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
-        expect(leaseAgreement.notices).to.deep.equal([
+        expect(leaseAgreement.notice.terms).to.deep.equal([
           { party: 'LESSEE', periodOfNotice: '15', unit: TimeUnit.DAYS },
           { party: 'LESSOR', periodOfNotice: '1', unit: TimeUnit.MONTHS },
         ]);
@@ -397,7 +397,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         expect(lessee.firstName).to.equal(
           mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.LEASEHOLDER))?.firstName ?? ''
         );
-        expect(leaseAgreement.notices).to.deep.equal([
+        expect(leaseAgreement.notice.terms).to.deep.equal([
           { party: 'LESSEE', periodOfNotice: 3, unit: TimeUnit.MONTHS },
           { party: 'LESSOR', periodOfNotice: 3, unit: TimeUnit.MONTHS },
         ]);
@@ -415,12 +415,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             additionalInformation: ['Avgift, båtplats. Fastigheter: ', ''],
           },
           invoicing: { invoicedIn: 'ADVANCE' },
-          start: '',
-          end: '',
-          notices: [
-            { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
-            { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
-          ],
+          startDate: '',
+          endDate: '',
+          notice: {
+            terms: [
+              { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
+              { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
+            ],
+          },
           propertyDesignations: [],
           contractId: '',
           type: 'LEASE_AGREEMENT',
@@ -506,7 +508,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@postContract').should(({ request }) => {
         const purchaseAgreement: Contract = request.body;
         expect(purchaseAgreement.type).to.equal(ContractType.PURCHASE_AGREEMENT);
-        expect(purchaseAgreement.start).to.equal('');
+        expect(purchaseAgreement.startDate).to.equal('');
         expect(purchaseAgreement.leaseType).to.be.undefined;
         const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
         const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
@@ -530,7 +532,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           ],
           status: Status.DRAFT,
           type: ContractType.PURCHASE_AGREEMENT,
-          start: '',
+          startDate: '',
           stakeholders: [
             {
               type: 'PERSON',
@@ -676,10 +678,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             ...mockLeaseAgreement.data,
             contractId: activeContractId,
             status: 'ACTIVE',
-            notices: [
-              { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
-              { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
-            ],
+            notice: {
+              terms: [
+                { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
+                { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
+              ],
+            },
             fees: {
               currency: 'SEK',
               monthly: 0,
