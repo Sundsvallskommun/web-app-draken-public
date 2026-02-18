@@ -197,7 +197,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                       disabled={isAcknowledging}
                       className="absolute right-0 top-1/2 -translate-y-1/2"
                     >
-                      Kvittera ({selectedIds.size})
+                      Markera som läst ({selectedIds.size})
                     </Button>
                   )}
                 </div>
