@@ -62,7 +62,7 @@ export const ContractForm: React.FC<{
     user,
   }: { municipalityId: string; errand: IErrand; user: User; setErrand: Dispatch<SetStateAction<IErrand>> } =
     useAppContext();
-  const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger, reset } =
+  const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
     useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
   const [lessorNoticeIndex, setLessorNoticeIndex] = useState(1);
@@ -71,6 +71,8 @@ export const ContractForm: React.FC<{
   const [loading, setLoading] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
   const [updatingParties, setUpdatingParties] = useState<boolean>(false);
+
+  const contractType = watch().type;
 
   // Determine if contract is in DRAFT status (new contracts without status default to DRAFT behavior)
   const isDraft = !contractStatus || contractStatus === Status.DRAFT;
@@ -668,176 +670,182 @@ export const ContractForm: React.FC<{
           </Disclosure.Content>
         </Disclosure>
       )}
-      <Disclosure
-        data-cy="lopande-disclosure"
-        color="gronsta"
-        variant="alt"
-        onClick={() => {
-          changeBadgeColor?.(`badge-lopande`);
-        }}
-      >
-        <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
-          <Disclosure.Title>Löpande avgift</Disclosure.Title>
-          <Disclosure.Button />
-        </Disclosure.Header>
-        <Disclosure.Content>
-          <div className="flex flex-col gap-24">
-            <div className="flex gap-18 justify-start">
-              <FormControl className="flex-grow" {...register('generateInvoice')}>
-                <FormLabel>Ska detta avtal generera en faktura?</FormLabel>
-                <RadioButton.Group inline className="flex gap-24" name="generateInvoice">
-                  <RadioButton
-                    value="true"
-                    data-cy="generate-invoice-true-radiobutton"
-                    disabled={!isEditable('general')}
-                  >
-                    Ja
-                  </RadioButton>
-                  <RadioButton
-                    value="false"
-                    data-cy="generate-invoice-false-radiobutton"
-                    disabled={!isEditable('general')}
-                  >
-                    Nej
-                  </RadioButton>
-                </RadioButton.Group>
-              </FormControl>
+      {contractType === ContractType.LEASE_AGREEMENT && (
+        <Disclosure
+          data-cy="lopande-disclosure"
+          color="gronsta"
+          variant="alt"
+          onClick={() => {
+            changeBadgeColor?.(`badge-lopande`);
+          }}
+        >
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
+            <Disclosure.Title>Löpande avgift</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className="flex flex-col gap-24">
+              <div className="flex gap-18 justify-start">
+                <FormControl className="flex-grow" {...register('generateInvoice')}>
+                  <FormLabel>Ska detta avtal generera en faktura?</FormLabel>
+                  <RadioButton.Group inline className="flex gap-24" name="generateInvoice">
+                    <RadioButton
+                      value="true"
+                      data-cy="generate-invoice-true-radiobutton"
+                      disabled={!isEditable('general')}
+                    >
+                      Ja
+                    </RadioButton>
+                    <RadioButton
+                      value="false"
+                      data-cy="generate-invoice-false-radiobutton"
+                      disabled={!isEditable('general')}
+                    >
+                      Nej
+                    </RadioButton>
+                  </RadioButton.Group>
+                </FormControl>
+              </div>
+              {getValues().generateInvoice === 'true' ? (
+                <>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl>
+                      <FormLabel>Ange avgift/år</FormLabel>
+                      <Input
+                        type="number"
+                        readOnly={!isEditable('general')}
+                        {...register('fees.yearly')}
+                        data-cy="fees-yearly-input"
+                      />
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl
+                      className="flex-grow"
+                      onChange={(e) => {
+                        if (!isEditable('general')) return;
+                        setValue('indexAdjusted', e.target.value);
+                      }}
+                    >
+                      <FormLabel>Ska detta avtal indexregleras?</FormLabel>
+                      <RadioButton.Group
+                        inline
+                        className="flex gap-24"
+                        name="indexAdjusted"
+                        value={getValues().indexAdjusted}
+                      >
+                        <RadioButton value="true" data-cy="indexed-true-radiobutton" disabled={!isEditable('general')}>
+                          Ja
+                        </RadioButton>
+                        <RadioButton
+                          value="false"
+                          data-cy="indexed-false-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Nej
+                        </RadioButton>
+                      </RadioButton.Group>
+                      <small>Indexreglering baseras på nuvarande år (Oktober månad)</small>
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl
+                      className="flex-grow"
+                      onChange={(e) => {
+                        if (!isEditable('general')) return;
+                        setValue('invoicing.invoiceInterval', e.target.value);
+                      }}
+                    >
+                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <RadioButton.Group
+                        inline
+                        className="flex gap-24"
+                        name="invoiceInterval"
+                        value={
+                          watch().invoicing?.invoiceInterval === IntervalType.YEARLY
+                            ? IntervalType.YEARLY
+                            : watch().invoicing?.invoiceInterval === IntervalType.HALF_YEARLY
+                            ? IntervalType.HALF_YEARLY
+                            : watch().invoicing?.invoiceInterval === IntervalType.QUARTERLY
+                            ? IntervalType.QUARTERLY
+                            : IntervalType.MONTHLY
+                        }
+                      >
+                        <RadioButton
+                          value={IntervalType.YEARLY}
+                          data-cy="invoice-interval-yearly-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Årsvis
+                        </RadioButton>
+                        <RadioButton
+                          value={IntervalType.HALF_YEARLY}
+                          data-cy="invoice-interval-halfyearly-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Halvårsvis
+                        </RadioButton>
+                        <RadioButton
+                          value={IntervalType.QUARTERLY}
+                          data-cy="invoice-interval-quarterly-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Kvartalsvis
+                        </RadioButton>
+                      </RadioButton.Group>
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl>
+                      <FormLabel>Ange fakturans referensnummer</FormLabel>
+                      <Input
+                        type="text"
+                        readOnly={!isEditable('billing')}
+                        {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
+                        data-cy="invoice-markup-input"
+                      />
+                      <small>Om fakturamottagaren är ett företag måste referens anges.</small>
+                      <Input
+                        type="hidden"
+                        {...register(`extraParameters.${invoiceInfoIndex}.name`)}
+                        value={getValues().extraParameters?.[invoiceInfoIndex]?.name ?? 'InvoiceInfo'}
+                      />
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl className="flex-grow">
+                      <FormLabel>Avitext</FormLabel>
+                      <Textarea
+                        rows={3}
+                        className="w-full"
+                        readOnly
+                        {...register('fees.additionalInformation.0')}
+                        data-cy="fees-additional-information-0-input"
+                      ></Textarea>
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl className="flex-grow">
+                      <FormLabel>Kompletterande avitext</FormLabel>
+                      <Textarea
+                        maxLength={50}
+                        maxLengthWarningText="Maxlängd 50 tecken"
+                        rows={3}
+                        className="w-full"
+                        readOnly={!isEditable('billing')}
+                        {...register('fees.additionalInformation.1')}
+                        data-cy="fees-additional-information-1-input"
+                      ></Textarea>
+                    </FormControl>
+                  </div>
+                </>
+              ) : null}
+              {saveButton()}
             </div>
-            {getValues().generateInvoice === 'true' ? (
-              <>
-                <div className="flex gap-18 justify-start">
-                  <FormControl>
-                    <FormLabel>Ange avgift/år</FormLabel>
-                    <Input
-                      type="number"
-                      readOnly={!isEditable('general')}
-                      {...register('fees.yearly')}
-                      data-cy="fees-yearly-input"
-                    />
-                  </FormControl>
-                </div>
-                <div className="flex gap-18 justify-start">
-                  <FormControl
-                    className="flex-grow"
-                    onChange={(e) => {
-                      if (!isEditable('general')) return;
-                      setValue('indexAdjusted', e.target.value);
-                    }}
-                  >
-                    <FormLabel>Ska detta avtal indexregleras?</FormLabel>
-                    <RadioButton.Group
-                      inline
-                      className="flex gap-24"
-                      name="indexAdjusted"
-                      value={getValues().indexAdjusted}
-                    >
-                      <RadioButton value="true" data-cy="indexed-true-radiobutton" disabled={!isEditable('general')}>
-                        Ja
-                      </RadioButton>
-                      <RadioButton value="false" data-cy="indexed-false-radiobutton" disabled={!isEditable('general')}>
-                        Nej
-                      </RadioButton>
-                    </RadioButton.Group>
-                    <small>Indexreglering baseras på nuvarande år (Oktober månad)</small>
-                  </FormControl>
-                </div>
-                <div className="flex gap-18 justify-start">
-                  <FormControl
-                    className="flex-grow"
-                    onChange={(e) => {
-                      if (!isEditable('general')) return;
-                      setValue('invoicing.invoiceInterval', e.target.value);
-                    }}
-                  >
-                    <FormLabel>Avgift ska betalas</FormLabel>
-                    <RadioButton.Group
-                      inline
-                      className="flex gap-24"
-                      name="invoiceInterval"
-                      value={
-                        watch().invoicing?.invoiceInterval === IntervalType.YEARLY
-                          ? IntervalType.YEARLY
-                          : watch().invoicing?.invoiceInterval === IntervalType.HALF_YEARLY
-                          ? IntervalType.HALF_YEARLY
-                          : watch().invoicing?.invoiceInterval === IntervalType.QUARTERLY
-                          ? IntervalType.QUARTERLY
-                          : IntervalType.MONTHLY
-                      }
-                    >
-                      <RadioButton
-                        value={IntervalType.YEARLY}
-                        data-cy="invoice-interval-yearly-radiobutton"
-                        disabled={!isEditable('general')}
-                      >
-                        Årsvis
-                      </RadioButton>
-                      <RadioButton
-                        value={IntervalType.HALF_YEARLY}
-                        data-cy="invoice-interval-halfyearly-radiobutton"
-                        disabled={!isEditable('general')}
-                      >
-                        Halvårsvis
-                      </RadioButton>
-                      <RadioButton
-                        value={IntervalType.QUARTERLY}
-                        data-cy="invoice-interval-quarterly-radiobutton"
-                        disabled={!isEditable('general')}
-                      >
-                        Kvartalsvis
-                      </RadioButton>
-                    </RadioButton.Group>
-                  </FormControl>
-                </div>
-                <div className="flex gap-18 justify-start">
-                  <FormControl>
-                    <FormLabel>Ange fakturans referensnummer</FormLabel>
-                    <Input
-                      type="text"
-                      readOnly={!isEditable('billing')}
-                      {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
-                      data-cy="invoice-markup-input"
-                    />
-                    <small>Om fakturamottagaren är ett företag måste referens anges.</small>
-                    <Input
-                      type="hidden"
-                      {...register(`extraParameters.${invoiceInfoIndex}.name`)}
-                      value={getValues().extraParameters?.[invoiceInfoIndex]?.name ?? 'InvoiceInfo'}
-                    />
-                  </FormControl>
-                </div>
-                <div className="flex gap-18 justify-start">
-                  <FormControl className="flex-grow">
-                    <FormLabel>Avitext</FormLabel>
-                    <Textarea
-                      rows={3}
-                      className="w-full"
-                      readOnly
-                      {...register('fees.additionalInformation.0')}
-                      data-cy="fees-additional-information-0-input"
-                    ></Textarea>
-                  </FormControl>
-                </div>
-                <div className="flex gap-18 justify-start">
-                  <FormControl className="flex-grow">
-                    <FormLabel>Kompletterande avitext</FormLabel>
-                    <Textarea
-                      maxLength={50}
-                      maxLengthWarningText="Maxlängd 50 tecken"
-                      rows={3}
-                      className="w-full"
-                      readOnly={!isEditable('billing')}
-                      {...register('fees.additionalInformation.1')}
-                      data-cy="fees-additional-information-1-input"
-                    ></Textarea>
-                  </FormControl>
-                </div>
-              </>
-            ) : null}
-            {saveButton()}
-          </div>
-        </Disclosure.Content>
-      </Disclosure>
+          </Disclosure.Content>
+        </Disclosure>
+      )}
       <Disclosure
         data-cy="fakturor-disclosure"
         color="gronsta"
