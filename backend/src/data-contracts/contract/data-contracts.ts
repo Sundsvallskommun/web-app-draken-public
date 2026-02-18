@@ -407,7 +407,7 @@ export type MultiPolygon = GeoJsonObject & {
 /** Notice */
 export interface Notice {
   /** The party type */
-  party?: Party;
+  party: Party;
   /**
    * The period of notice
    * @format int32
@@ -431,8 +431,6 @@ export interface Parameter {
   key: string;
   /** Parameter display name */
   displayName?: string;
-  /** Parameter group name */
-  group?: string;
   /** Parameter values */
   values?: string[];
 }
@@ -603,45 +601,43 @@ export interface AttachmentData {
   content?: string;
 }
 
-/** Paginated response for contracts */
-export interface ContractPaginatedResponse {
-  contracts?: Contract[];
-  /** PagingMetaData model */
-  _meta?: PagingMetaData;
+export type SpecificationContractEntity = any;
+
+export interface PageContract {
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int32 */
+  size?: number;
+  content?: Contract[];
+  /** @format int32 */
+  number?: number;
+  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  sort?: SortObject;
+  empty?: boolean;
 }
 
-/** PagingMetaData model */
-export interface PagingMetaData {
-  /**
-   * Current page
-   * @format int32
-   * @example 5
-   */
-  page?: number;
-  /**
-   * Displayed objects per page
-   * @format int32
-   * @example 20
-   */
-  limit?: number;
-  /**
-   * Displayed objects on current page
-   * @format int32
-   * @example 13
-   */
-  count?: number;
-  /**
-   * Total amount of hits based on provided search parameters
-   * @format int64
-   * @example 98
-   */
-  totalRecords?: number;
-  /**
-   * Total amount of pages based on provided search parameters
-   * @format int32
-   * @example 23
-   */
-  totalPages?: number;
+export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  paged?: boolean;
+  /** @format int32 */
+  pageNumber?: number;
+  /** @format int32 */
+  pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
+}
+
+export interface SortObject {
+  empty?: boolean;
+  sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export enum CrsTypeEnum {

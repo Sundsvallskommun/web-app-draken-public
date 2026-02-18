@@ -233,15 +233,13 @@ export const ContractsTable: React.FC<{
                 id="paginationSelect"
                 size="sm"
                 variant="tertiary"
-                value={(page || 1).toString()}
-                onSelectValue={(value) => {
-                  setValue('page', parseInt(value, 10));
-                }}
+                value={(page || 0).toString()}
+                onSelectValue={(value) => setValue('page', parseInt(value, 10))}
               >
                 {totalPages &&
-                  Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <Select.Option key={`pagipage-${p}`} value={p}>
-                      {p}
+                  Array.from(Array(totalPages).keys()).map((page) => (
+                    <Select.Option key={`pagipage-${page}`} value={page}>
+                      {page + 1}
                     </Select.Option>
                   ))}
               </Select>
@@ -269,9 +267,10 @@ export const ContractsTable: React.FC<{
                 showConstantPages={true}
                 fitContainer
                 pages={totalPages}
-                activePage={page}
-                changePage={(p) => {
-                  setValue('page', p);
+                activePage={page + 1}
+                changePage={(page) => {
+                  console.log('User clicked page: ', page);
+                  setValue('page', page - 1);
                 }}
               />
             </div>

@@ -63,7 +63,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('displays contract data in the table', () => {
       navigateToContractOverview();
-      cy.get('[data-cy="contracts-table"] tbody tr').should('have.length', mockContractsList.contracts?.length);
+      cy.get('[data-cy="contracts-table"] tbody tr').should('have.length', mockContractsList.content?.length);
 
       // Check first row data
       cy.get('[data-cy="contracts-table"] tbody tr')
@@ -97,7 +97,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
       cy.get('[data-cy="contract-query-filter"]').parent().find('button').contains('Sök').click();
       cy.wait('@getFilteredContracts');
-      cy.get('[data-cy="contracts-table"] tbody tr').should('have.length', mockContractsListFiltered.contracts?.length);
+      cy.get('[data-cy="contracts-table"] tbody tr').should('have.length', mockContractsListFiltered.content?.length);
     });
 
     it('can filter by contract type', () => {

@@ -1,4 +1,4 @@
-import { Contract, ContractPaginatedResponse, ContractType } from '@casedata/interfaces/contracts';
+import { Contract, ContractType, PageContract } from '@casedata/interfaces/contracts';
 import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/services/contract-service';
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
@@ -18,7 +18,7 @@ export const ContractOverview: React.FC = () => {
   const { watch: watchFilter } = filterForm;
 
   const tableForm = useForm<ContractTableForm>({
-    defaultValues: { sortColumn: 'start', sortOrder: 'desc', pageSize: 12, page: 1 },
+    defaultValues: { sortColumn: 'start', sortOrder: 'desc', pageSize: 12, page: 0 },
   });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
 
@@ -33,6 +33,9 @@ export const ContractOverview: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedContract, setSelectedContract] = useState<Contract | undefined>();
   const [showSelectedContract, setShowSelectedContract] = useState(false);
+  const [contractsResponse, setContractsResponse] = useState<PageContract | null>(null);
+
+  const [filterObject, setFilterObject] = useState<{ [key: string]: string }>({});
 
   const handleRowClick = (contract: Contract) => {
     setSelectedContract(contract);
@@ -51,81 +54,87 @@ export const ContractOverview: React.FC = () => {
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
 
-  // Ensure pageSize is a valid number, fallback to 12
   const validPageSize = pageSize && !isNaN(Number(pageSize)) && Number(pageSize) > 0 ? Number(pageSize) : 12;
 
-  // Build filter object
+  useDebounceEffect(
+    () => {
+      const fObj: { [key: string]: string } = {};
+      if (queryFilter?.trim()) {
+        fObj['query'] = queryFilter.trim();
+      }
+      if (statusFilter && statusFilter.length > 0) {
+        fObj['status'] = statusFilter.join(',');
+      }
+      if (contractTypeFilter && contractTypeFilter.length > 0) {
+        fObj['contractType'] = contractTypeFilter.join(',');
+      }
+      if (leaseTypeFilter && leaseTypeFilter.length > 0) {
+        fObj['leaseType'] = leaseTypeFilter.join(',');
+      }
+      if (startdate?.trim()) {
+        fObj['startDate'] = startdate.trim();
+      }
+      if (enddate?.trim()) {
+        fObj['endDate'] = enddate.trim();
+      }
+      setFilterObject(fObj);
+    },
+    200,
+    [queryFilter, statusFilter, contractTypeFilter, leaseTypeFilter, startdate, enddate]
+  );
+
+  useEffect(() => {
+    setTableValue('page', 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterObject, sortColumn, sortOrder, validPageSize]);
+
+  useEffect(() => {
+    if (contractsResponse) {
+      setContracts(contractsResponse.content || []);
+      setTableValue('page', contractsResponse.number || 0);
+      setTableValue('totalElements', contractsResponse.totalElements || 0);
+      setTableValue('totalPages', contractsResponse.totalPages || 1);
+      setTableValue('size', contractsResponse.size || 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractsResponse]);
+
   const filterParams = useMemo<ContractFilterParams>(() => {
     const params: ContractFilterParams = {
-      page: page || 1,
+      page: page ?? 0,
       limit: validPageSize,
       sortBy: sortColumn,
-      sortOrder,
+      sortOrder: sortOrder,
     };
 
-    if (queryFilter) {
-      params.query = queryFilter.trim();
+    if (filterObject.query) {
+      params.query = filterObject.query;
     }
-    if (statusFilter && statusFilter.length > 0) {
-      params.status = statusFilter.join(',');
+    if (filterObject.status) {
+      params.status = filterObject.status;
     }
-    if (contractTypeFilter && contractTypeFilter.length > 0) {
-      params.contractType = contractTypeFilter.join(',');
+    if (filterObject.contractType) {
+      params.contractType = filterObject.contractType;
     }
-    if (leaseTypeFilter && leaseTypeFilter.length > 0) {
-      params.leaseType = leaseTypeFilter.join(',');
+    if (filterObject.leaseType) {
+      params.leaseType = filterObject.leaseType;
     }
-    if (startdate) {
-      params.startDate = startdate.trim();
+    if (filterObject.startDate) {
+      params.startDate = filterObject.startDate;
     }
-    if (enddate) {
-      params.endDate = enddate.trim();
+    if (filterObject.endDate) {
+      params.endDate = filterObject.endDate;
     }
 
     return params;
-  }, [
-    page,
-    validPageSize,
-    sortColumn,
-    sortOrder,
-    queryFilter,
-    statusFilter,
-    contractTypeFilter,
-    leaseTypeFilter,
-    startdate,
-    enddate,
-  ]);
+  }, [page, validPageSize, sortColumn, sortOrder, filterObject]);
 
-  // Reset page when filters or sort changes (but not when page itself changes)
-  useEffect(() => {
-    setTableValue('page', 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    sortColumn,
-    sortOrder,
-    validPageSize,
-    queryFilter,
-    statusFilter,
-    contractTypeFilter,
-    leaseTypeFilter,
-    startdate,
-    enddate,
-  ]);
-
-  // Fetch contracts when params change (debounced)
   useDebounceEffect(
     () => {
       setIsLoading(true);
       fetchContracts(filterParams)
-        .then((res: ContractPaginatedResponse) => {
-          setContracts(res.contracts || []);
-          // Update pagination metadata from server response
-          const meta = res._meta;
-          if (meta) {
-            setTableValue('totalElements', meta.totalRecords || 0);
-            setTableValue('totalPages', meta.totalPages || 1);
-            setTableValue('size', meta.count || 0);
-          }
+        .then((res: PageContract) => {
+          setContractsResponse(res);
         })
         .catch((e) => {
           console.error('Error fetching contracts:', e);
