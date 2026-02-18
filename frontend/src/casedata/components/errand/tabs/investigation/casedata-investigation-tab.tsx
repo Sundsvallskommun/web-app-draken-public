@@ -15,7 +15,6 @@ import {
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -85,6 +84,7 @@ export const CasedataInvestigationTab: React.FC<{
   const [firstDescriptionChange, setFirstDescriptionChange] = useState(true);
   const [firstOutcomeChange, setFirstOutcomeChange] = useState(true);
   const [phrasesAppended, setPhrasesAppended] = useState<boolean>(false);
+  const skipNextOnChange = useRef(false);
 
   const confirmContent = {
     title: 'Spara utredning',
@@ -94,13 +94,6 @@ export const CasedataInvestigationTab: React.FC<{
     title: 'Återställ mall',
     content: 'Vill du återställa den här mallen?',
   };
-
-  useEffect(() => {
-    if (isFTErrand(props.errand)) {
-      setValue('description', FT_INVESTIGATION_TEXT);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
@@ -252,6 +245,10 @@ export const CasedataInvestigationTab: React.FC<{
       outcome: decision?.decisionOutcome,
     });
     setValue('errandNumber', props.errand.errandNumber);
+    if (isFTErrand(props.errand) && !decision) {
+      skipNextOnChange.current = true;
+      setValue('description', FT_INVESTIGATION_TEXT, { shouldDirty: false });
+    }
     props.setUnsaved(false);
     trigger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,6 +335,7 @@ export const CasedataInvestigationTab: React.FC<{
                     data-cy="investigation-law-select"
                     name="law"
                     size="sm"
+                    disabled={isErrandLocked(errand) || !allowed}
                     onChange={(e) => {
                       setValue(
                         'law',
@@ -409,8 +407,15 @@ export const CasedataInvestigationTab: React.FC<{
             <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
               <TextEditor
                 className={cx(`mb-md h-[80%]`)}
+                readOnly={isErrandLocked(errand) || !allowed}
                 onChange={(e) => {
-                  setValue('description', e.target.value.markup);
+                  // Skip the first onChange after template load (TextEditor normalizes HTML)
+                  if (skipNextOnChange.current) {
+                    skipNextOnChange.current = false;
+                    setValue('description', e.target.value.markup, { shouldDirty: false });
+                  } else {
+                    setValue('description', e.target.value.markup, { shouldDirty: true });
+                  }
                   trigger('description');
                 }}
                 value={{ markup: description }}
@@ -438,10 +443,7 @@ export const CasedataInvestigationTab: React.FC<{
                     return confirmed ? () => true : () => {};
                   });
               })}
-              disabled={
-                !isFTErrand(props.errand) &&
-                (!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty)
-              }
+              disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
               leftIcon={<LucideIcon name="check" className="mr-sm" />}
               loading={isLoading}
               loadingText="Sparar"
@@ -468,6 +470,7 @@ export const CasedataInvestigationTab: React.FC<{
                       return confirmed ? () => true : () => {};
                     });
                 }}
+                disabled={!allowed || isErrandLocked(errand)}
                 loading={isLoading}
                 loadingText="Återställer mall"
               >

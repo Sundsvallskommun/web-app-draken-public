@@ -3,8 +3,8 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
-import { getApplicationEnvironment } from '@common/services/application-service';
-import { attestationEnabled } from '@common/services/feature-flag-service';
+import { getApplicationEnvironment, isMEX } from '@common/services/application-service';
+import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -23,9 +23,11 @@ import { AngeSymbol } from '@styles/ange-symbol';
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable;
   setShowAttestationTable;
+  showContractTable;
+  setShowContractTable;
   open;
   setOpen;
-}> = ({ showAttestationTable, setShowAttestationTable, open, setOpen }) => {
+}> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
@@ -99,7 +101,11 @@ export const MainErrandsSidebar: React.FC<{
           ) : null}
           {appConfig.isCaseData ? (
             <FormProvider {...casedataFilterForm}>
-              <CasedataFilterSidebarStatusSelector iconButton={!open} />
+              <CasedataFilterSidebarStatusSelector
+                showContractTable={showContractTable}
+                setShowContractTable={setShowContractTable}
+                iconButton={!open}
+              />
             </FormProvider>
           ) : null}
         </div>
@@ -135,6 +141,22 @@ export const MainErrandsSidebar: React.FC<{
             </div>
           </>
         )}
+        {contractsEnabled() ? (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              <Button
+                onClick={() => setShowContractTable(true)}
+                leftIcon={<LucideIcon name="file-text" />}
+                className={`${open && 'justify-start'} ${!showContractTable && 'hover:bg-dark-ghost'}`}
+                variant={showContractTable ? 'primary' : 'ghost'}
+                iconButton={!open}
+              >
+                {open && <span className="w-full flex justify-between">Avtalsöversikt</span>}
+              </Button>
+            </div>
+          </>
+        ) : null}
         <div
           className={cx('absolute bottom-[2.4rem]', open ? 'right-[2.4rem]' : 'left-1/2 transform -translate-x-1/2')}
         >

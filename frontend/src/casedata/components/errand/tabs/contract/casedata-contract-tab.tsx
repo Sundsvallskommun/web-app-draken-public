@@ -4,7 +4,6 @@ import {
   ContractType,
   IntervalType,
   InvoicedIn,
-  LeaseType,
   Party,
   StakeholderRole,
   Status,
@@ -20,6 +19,7 @@ import {
   defaultKopeavtal,
   defaultLagenhetsarrende,
   getErrandContract,
+  isLeaseAgreement,
   leaseTypes,
   saveContract,
   saveContractToErrand,
@@ -28,7 +28,7 @@ import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -44,18 +44,21 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
-      notices: yup.array().when('type', {
-        is: (type: ContractType) => type === ContractType.LEASE_AGREEMENT,
+      notice: yup.object().when('type', {
+        is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
-          schema
-            .of(
-              yup.object({
-                party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
-                periodOfNotice: yup.string().required('Antal måste anges'),
-                unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
-              })
-            )
-            .min(2),
+          schema.shape({
+            terms: yup
+              .array()
+              .of(
+                yup.object({
+                  party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
+                  periodOfNotice: yup.string().required('Antal måste anges'),
+                  unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
+                })
+              )
+              .min(2),
+          }),
         otherwise: (schema) => schema,
       }),
       extension: yup.object({
@@ -105,6 +108,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const [lessees, setLessees] = useState<StakeholderWithPersonnumber[]>([]);
   const [lessors, setLessors] = useState<StakeholderWithPersonnumber[]>([]);
   const toastMessage = useSnackbar();
+  const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
     const _a = validateAction(errand, user);
@@ -138,6 +142,21 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     setLessors(_lessors || []);
   };
 
+  // Update only lessees (invoice recipients) from errand - used for non-DRAFT contracts
+  const updateLesseesOnlyFromErrand = () => {
+    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
+      (s, idx) => {
+        const l = casedataStakeholderToContractStakeholder(s);
+        if (idx === 0) {
+          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
+        }
+        return l;
+      }
+    );
+    setLessees(_lessees || []);
+    // NOTE: Does NOT update sellers, buyers, or lessors
+  };
+
   const getStakeholdersFromContract = (contract: ContractData) => {
     let _sellers: StakeholderWithPersonnumber[] = [];
     let _buyers: StakeholderWithPersonnumber[] = [];
@@ -146,7 +165,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     if (contract.type === ContractType.PURCHASE_AGREEMENT) {
       _sellers = contract.sellers;
       _buyers = contract.buyers;
-    } else if (contract.type === ContractType.LEASE_AGREEMENT) {
+    } else if (isLeaseAgreement(contract.type)) {
       _lessees = contract.lessees || [];
       _lessors = contract.lessors || [];
     }
@@ -168,16 +187,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const contractForm = useForm<ContractData>({
     resolver: yupResolver(formSchema) as Resolver<ContractData>,
     defaultValues:
-      existingContract?.type === ContractType.PURCHASE_AGREEMENT
-        ? defaultKopeavtal
-        : existingContract?.type === ContractType.LEASE_AGREEMENT
-        ? defaultLagenhetsarrende
-        : ({
-            ...defaultKopeavtal,
-            ...defaultLagenhetsarrende,
-            type: ContractType.LEASE_AGREEMENT,
-            leaseType: LeaseType.LAND_LEASE_MISC,
-          } as ContractData),
+      existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
     mode: 'onChange',
   });
 
@@ -257,6 +267,9 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
   const contractType = contractForm.watch('type') as ContractType;
   useEffect(() => {
+    if (contractType && contractType !== ContractType.LEASE_AGREEMENT) {
+      contractForm.setValue('leaseType', undefined);
+    }
     contractForm.trigger();
   }, [contractType, contractForm]);
 
@@ -307,28 +320,40 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                 )}
               </div>
 
-              <FormControl id="isDraft" className="my-md">
-                <FormLabel>
-                  Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
-                </FormLabel>
-                <Checkbox
-                  disabled={loading !== undefined || isErrandLocked(errand) || !allowed}
-                  checked={contractForm.getValues().status === 'DRAFT' ? true : false}
-                  value={contractForm.getValues().status}
-                  onChange={() => {
-                    contractForm.setValue(
-                      'status',
-                      contractForm.getValues()?.status === Status.ACTIVE ? Status.DRAFT : Status.ACTIVE
-                    );
-                    contractForm.trigger('status');
-                    onSave(contractForm.getValues());
-                  }}
-                  indeterminate={false}
-                >
-                  Markera som utkast
-                </Checkbox>
-                <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
-              </FormControl>
+              {contractForm.getValues().status === Status.DRAFT && (
+                <FormControl id="isDraft" className="my-md">
+                  <FormLabel>
+                    Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
+                  </FormLabel>
+                  <Checkbox
+                    disabled={loading !== undefined || isErrandLocked(errand) || !allowed}
+                    checked={true}
+                    value={contractForm.getValues().status}
+                    onChange={() => {
+                      confirm
+                        .showConfirmation(
+                          'Bekräfta statusändring',
+                          'När avtalet inte längre är ett utkast kan du inte redigera något annat än fakturareferens och fakturamottagare. Är du säker?',
+                          'Ja',
+                          'Nej',
+                          'info',
+                          'info'
+                        )
+                        .then((confirmed) => {
+                          if (confirmed) {
+                            contractForm.setValue('status', Status.ACTIVE);
+                            contractForm.trigger('status');
+                            onSave(contractForm.getValues());
+                          }
+                        });
+                    }}
+                    indeterminate={false}
+                  >
+                    Markera som utkast
+                  </Checkbox>
+                  <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
+                </FormControl>
+              )}
               <Input type="hidden" readOnly name="id" {...contractForm.register('contractId')} />
               <ContractForm
                 changeBadgeColor={changeBadgeColor}
@@ -339,6 +364,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                 lessees={lessees}
                 lessors={lessors}
                 updateStakeholders={updateStakeholdersFromErrand}
+                onUpdateLesseesOnly={updateLesseesOnlyFromErrand}
+                contractStatus={existingContract?.status}
               />
             </div>
 

@@ -20,7 +20,7 @@ import { CasedataContractsController } from './controllers/contract.controller';
 import { EstateInfoController } from './controllers/estateInfo.controller';
 import { HealthController } from './controllers/health.controller';
 import { MessageController } from './controllers/message.controller';
-import { MetadataController } from './controllers/metadata.controller';
+import { JsonSchemaController } from './controllers/jsonschema.controller';
 import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
@@ -71,7 +71,7 @@ const app = new App([
   CaseStatusController,
   CaseDataConversationController,
   SupportConversationController,
-  MetadataController,
+  JsonSchemaController,
   ExtraParameterController,
   FeatureFlagController,
 ]);

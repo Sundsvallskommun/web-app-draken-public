@@ -17,10 +17,16 @@ import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
   {
-    heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+    heading: '13 kap. 8 § trafikförordningen',
     sfs: 'Trafikförordningen (1998:1276)',
     chapter: '13',
     article: '8',
+  },
+  {
+    heading: '20§ förvaltningslagen',
+    sfs: 'Förvaltningslagen (2017:900)',
+    chapter: '',
+    article: '20',
   },
 ];
 
@@ -39,7 +45,20 @@ const lawMappingFT: Law[] = [
 
 export const getLawMapping = (errand: IErrand): Law[] => {
   if (isPT()) {
-    return isFTErrand(errand) ? lawMappingFT : lawMapping;
+    const baseLawMapping = isFTErrand(errand) ? lawMappingFT : lawMapping;
+
+    const existingLaws =
+      errand.decisions
+        ?.flatMap((d) => d.law || [])
+        .filter(
+          (existingLaw) => existingLaw.heading && !baseLawMapping.some((l) => l.heading === existingLaw.heading)
+        ) || [];
+
+    const uniqueExistingLaws = existingLaws.filter(
+      (law, index, self) => index === self.findIndex((l) => l.heading === law.heading)
+    );
+
+    return [...baseLawMapping, ...uniqueExistingLaws];
   }
 
   return [

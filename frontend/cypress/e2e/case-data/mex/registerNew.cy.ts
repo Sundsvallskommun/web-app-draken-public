@@ -37,7 +37,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
         'getContractAttachment'
       );
-      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
       cy.visit('/registrera');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
     });

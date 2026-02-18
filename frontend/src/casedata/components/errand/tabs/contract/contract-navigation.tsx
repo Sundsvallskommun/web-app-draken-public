@@ -2,37 +2,33 @@ import { ContractType } from '@casedata/interfaces/contracts';
 import { Badge, Link } from '@sk-web-gui/react';
 
 export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ contractType }) => {
-  const headers: { key: string; label: string }[] =
+  const headers: { key: string; label: string; initiallyOpen?: boolean }[] =
     contractType === ContractType.PURCHASE_AGREEMENT
       ? [
-          { key: 'parties', label: 'Parter' },
-          { key: 'area', label: 'Område' },
-          { key: 'startdatum', label: 'Avtalsstartdatum' },
-          { key: 'lopande', label: 'Löpande avgift' },
-          { key: 'engangs', label: 'Engångsfakturering' },
-          { key: 'bilagor', label: 'Avtalsbilagor' },
+          { key: 'parties', label: 'Parter', initiallyOpen: true },
+          { key: 'area', label: 'Område', initiallyOpen: false },
+          { key: 'startdatum', label: 'Avtalsstartdatum', initiallyOpen: false },
+          { key: 'lopande', label: 'Löpande avgift', initiallyOpen: false },
+          { key: 'bilagor', label: 'Avtalsbilagor', initiallyOpen: false },
         ]
-      : contractType === ContractType.LEASE_AGREEMENT
-      ? [
-          { key: 'parties', label: 'Parter' },
-          { key: 'area', label: 'Område' },
-          { key: 'avtalstid', label: 'Avtalstid och uppsägning' },
-          { key: 'lopande', label: 'Löpande avgift' },
-          { key: 'engangs', label: 'Engångsfakturering' },
-          { key: 'bilagor', label: 'Avtalsbilagor' },
-        ]
-      : [];
+      : [
+          { key: 'parties', label: 'Parter', initiallyOpen: true },
+          { key: 'area', label: 'Område', initiallyOpen: false },
+          { key: 'avtalstid', label: 'Avtalstid och uppsägning', initiallyOpen: false },
+          { key: 'lopande', label: 'Löpande avgift', initiallyOpen: false },
+          { key: 'bilagor', label: 'Avtalsbilagor', initiallyOpen: false },
+        ];
   return (
     <div className="w-1/4 pl-40 lg:visible invisible">
       <h2 className="text-h4-sm md:text-h4-md mb-md">Innehåll</h2>
       {headers.map((h) => (
-        <div className="flex gap-12 items-center mb-7" data-cy={`badge-${h.key}`} key={`badge-${h.key}`}>
+        <div className="flex flex-wrap gap-12 items-center mb-7" data-cy={`badge-${h.key}`} key={`badge-${h.key}`}>
           <Badge
             id={`badge-${h.key}`}
             counter=""
             rounded
             className="!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px]"
-            style={{ backgroundColor: 'lightgray' }}
+            style={{ backgroundColor: h.initiallyOpen ? 'black' : 'lightgray' }}
           />
           <Link variant="tertiary">{h.label}</Link>
         </div>

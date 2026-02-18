@@ -1,12 +1,12 @@
 export const mockEstatePropertyByDesignation = {
   data: [
     {
-      designation: 'SUNDSVALL 1:1',
+      designation: 'TESTSTAD 1:1',
       districtname: 'Låtsasdistrikt',
       objectidentifier: '909a6a80-aaaa-aaaa-aaaa-ed8f66444c3f',
     },
     {
-      designation: 'SUNDSVALL 1:2',
+      designation: 'TESTSTAD 1:2',
       districtname: 'Låtsasdistrikt',
       objectidentifier: '909a6a80-aaaa-aaaa-aaaa-ed8f66444c3f',
     },
@@ -21,7 +21,7 @@ export const mockEstatePropertyByDesignation = {
       objectidentifier: '909a6a81-aaaa-aaaa-aaaa-ed8f66444c2f',
     },
     {
-      designation: 'SUNDSVALL 1:17',
+      designation: 'TESTSTAD 1:17',
       districtname: 'Låtsasdistrikt',
       objectidentifier: '909a6a81-aaaa-aaaa-aaaa-ed8f66444c3f',
     },

@@ -7,7 +7,7 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { prettyTime } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { cx, useSnackbar } from '@sk-web-gui/react';
+import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
@@ -16,7 +16,19 @@ import NextLink from 'next/link';
 import { NotificationRenderIcon } from './notification-render-icon';
 import { NotificationType, getNotificationKey, labelBySubType, senderFallback } from './notification-utils';
 
-export const NotificationItem: React.FC<{ notification: NotificationType }> = ({ notification }) => {
+interface NotificationItemProps {
+  notification: NotificationType;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  showCheckbox?: boolean;
+}
+
+export const NotificationItem: React.FC<NotificationItemProps> = ({
+  notification,
+  isSelected = false,
+  onToggleSelect,
+  showCheckbox = false,
+}) => {
   const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
   const toastMessage = useSnackbar();
 
@@ -45,7 +57,12 @@ export const NotificationItem: React.FC<{ notification: NotificationType }> = ({
   const subTypeLabel = getNotificationKey(notification) && labelBySubType[getNotificationKey(notification)];
 
   return (
-    <div className="p-16 flex gap-12 items-start justify-between text-small">
+    <div className="p-16 pl-0 flex gap-12 items-start justify-between text-small">
+      {showCheckbox && (
+        <div className="flex items-center my-xs">
+          <Checkbox checked={isSelected} onChange={onToggleSelect} />
+        </div>
+      )}
       <div className="flex items-center my-xs">
         <NotificationRenderIcon notification={notification} />
       </div>
