@@ -40,6 +40,7 @@ const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
           amount: twoDecimals(service.quantity * service.costPerUnit),
         },
       ],
+      vatCode: '00',
     };
   });
 };
