@@ -178,8 +178,8 @@ export const ContractForm: React.FC<{
     if (existingContract) {
       if (isLeaseAgreement(existingContract.type)) {
         // Find index for lessee and lessor notices
-        const lesseeIndex = existingContract.notices?.findIndex((n) => n.party === 'LESSEE');
-        const lessorIndex = existingContract.notices?.findIndex((n) => n.party === 'LESSOR');
+        const lesseeIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSEE');
+        const lessorIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSOR');
         setLesseeNoticeIndex(lesseeIndex === -1 ? 0 : lesseeIndex);
         setLessorNoticeIndex(lessorIndex === -1 ? 1 : lessorIndex);
 
@@ -476,7 +476,7 @@ export const ContractForm: React.FC<{
                   <Input
                     type="date"
                     readOnly={!isEditable('general')}
-                    {...register('start')}
+                    {...register('startDate')}
                     data-cy="avtalstid-start"
                   />
                 </FormControl>
@@ -490,7 +490,7 @@ export const ContractForm: React.FC<{
           data-cy="avtalstid-disclosure"
           color="gronsta"
           variant="alt"
-          initalOpen={formState.errors.notices?.length > 0}
+          initalOpen={formState.errors.notice?.terms?.length > 0}
           onClick={() => {
             changeBadgeColor?.(`badge-avtalstid`);
           }}
@@ -498,7 +498,7 @@ export const ContractForm: React.FC<{
           <Disclosure.Header>
             <Disclosure.Icon icon={<LucideIcon name="calendar" />} />
             <Disclosure.Title>Avtalstid och uppsägning</Disclosure.Title>
-            {formState.errors.notices?.length > 0 ||
+            {formState.errors.notice?.terms?.length > 0 ||
               (formState.errors.extension?.leaseExtension && (
                 <Label className="w-[15rem]" rounded inverted color={'error'}>
                   Fel i formulär
@@ -514,13 +514,18 @@ export const ContractForm: React.FC<{
                   <Input
                     type="date"
                     readOnly={!isEditable('general')}
-                    {...register('start')}
+                    {...register('startDate')}
                     data-cy="avtalstid-start"
                   />
                 </FormControl>
                 <FormControl id="endDate" className="w-full">
                   <FormLabel>Området upplåts till</FormLabel>
-                  <Input type="date" readOnly={!isEditable('general')} {...register('end')} data-cy="avtalstid-end" />
+                  <Input
+                    type="date"
+                    readOnly={!isEditable('general')}
+                    {...register('endDate')}
+                    data-cy="avtalstid-end"
+                  />
                 </FormControl>
               </div>
               <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
@@ -530,7 +535,7 @@ export const ContractForm: React.FC<{
                   <Select
                     className="w-full"
                     disabled={!isEditable('general')}
-                    {...register(`notices.${lesseeNoticeIndex}.unit`)}
+                    {...register(`notice.terms.${lesseeNoticeIndex}.unit`)}
                     placeholder="Månad/år"
                     data-cy="lessee-notice-unit"
                   >
@@ -543,21 +548,21 @@ export const ContractForm: React.FC<{
                   <FormLabel>Antal</FormLabel>
                   <Input
                     readOnly={!isEditable('general')}
-                    {...register(`notices.${lesseeNoticeIndex}.periodOfNotice`)}
+                    {...register(`notice.terms.${lesseeNoticeIndex}.periodOfNotice`)}
                     placeholder="Ange tal"
                     data-cy="lessee-notice-period"
                   />
                   <Input
                     type="hidden"
                     readOnly
-                    {...register(`notices.${lesseeNoticeIndex}.party`)}
+                    {...register(`notice.terms.${lesseeNoticeIndex}.party`)}
                     value="LESSEE"
                     data-cy="lessee-notice-party"
                   />
-                  {formState.errors.notices?.[lesseeNoticeIndex]?.periodOfNotice && (
+                  {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice && (
                     <div className="my-sm text-error">
                       <FormErrorMessage>
-                        {formState.errors.notices?.[lesseeNoticeIndex]?.periodOfNotice?.message}
+                        {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice?.message}
                       </FormErrorMessage>
                     </div>
                   )}
@@ -571,7 +576,7 @@ export const ContractForm: React.FC<{
                   <Select
                     className="w-full"
                     disabled={!isEditable('general')}
-                    {...register(`notices.${lessorNoticeIndex}.unit`)}
+                    {...register(`notice.terms.${lessorNoticeIndex}.unit`)}
                     placeholder="Månad/år"
                     data-cy="lessor-notice-unit"
                   >
@@ -584,21 +589,21 @@ export const ContractForm: React.FC<{
                   <FormLabel>Antal</FormLabel>
                   <Input
                     readOnly={!isEditable('general')}
-                    {...register(`notices.${lessorNoticeIndex}.periodOfNotice`)}
+                    {...register(`notice.terms.${lessorNoticeIndex}.periodOfNotice`)}
                     placeholder="Ange tal"
                     data-cy="lessor-notice-period"
                   />
                   <Input
                     type="hidden"
                     readOnly
-                    {...register(`notices.${lessorNoticeIndex}.party`)}
+                    {...register(`notice.terms.${lessorNoticeIndex}.party`)}
                     value="LESSOR"
                     data-cy="lessor-notice-party"
                   />
-                  {formState.errors.notices?.[lessorNoticeIndex]?.periodOfNotice && (
+                  {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice && (
                     <div className="my-sm text-error">
                       <FormErrorMessage>
-                        {formState.errors.notices?.[lessorNoticeIndex]?.periodOfNotice?.message}
+                        {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice?.message}
                       </FormErrorMessage>
                     </div>
                   )}

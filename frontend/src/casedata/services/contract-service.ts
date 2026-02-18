@@ -94,18 +94,20 @@ export const defaultLagenhetsarrende: ContractData = {
   propertyDesignations: [],
   lessees: [],
   lessors: [],
-  notices: [
-    {
-      party: Party.LESSEE,
-      periodOfNotice: 3,
-      unit: TimeUnit.MONTHS,
-    },
-    {
-      party: Party.LESSOR,
-      periodOfNotice: 3,
-      unit: TimeUnit.MONTHS,
-    },
-  ],
+  notice: {
+    terms: [
+      {
+        party: Party.LESSEE,
+        periodOfNotice: 3,
+        unit: TimeUnit.MONTHS,
+      },
+      {
+        party: Party.LESSOR,
+        periodOfNotice: 3,
+        unit: TimeUnit.MONTHS,
+      },
+    ],
+  },
   extension: {
     autoExtend: false,
     unit: TimeUnit.DAYS,
@@ -415,7 +417,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
 
 export const kopeavtalToContract = (data: ContractData): Contract => {
   return {
-    start: data.start,
+    startDate: data.startDate,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: ContractType.PURCHASE_AGREEMENT,
@@ -471,9 +473,9 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       invoicedIn: InvoicedIn.ADVANCE,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    start: data.start,
-    end: data.end,
-    notices: data.notices,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    notice: data.notice,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: data.type,
@@ -611,7 +613,7 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
       note: attachment.metadata.note,
       mimeType: attachment.metadata.mimeType,
       version: '',
-      created: '',
+      created: attachment.metadata.created ?? '',
       updated: '',
       ...({} as TExtraMeta),
       isValidAttachment: attachment.attachmentData.content,

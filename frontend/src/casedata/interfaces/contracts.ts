@@ -12,26 +12,26 @@
 
 /** Time unit */
 export enum TimeUnit {
-  DAYS = "DAYS",
-  MONTHS = "MONTHS",
-  YEARS = "YEARS",
+  DAYS = 'DAYS',
+  MONTHS = 'MONTHS',
+  YEARS = 'YEARS',
 }
 
 /** Status */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  DRAFT = "DRAFT",
-  TERMINATED = "TERMINATED",
+  ACTIVE = 'ACTIVE',
+  DRAFT = 'DRAFT',
+  TERMINATED = 'TERMINATED',
 }
 
 /** Stakeholder type */
 export enum StakeholderType {
-  PERSON = "PERSON",
-  ORGANIZATION = "ORGANIZATION",
-  ASSOCIATION = "ASSOCIATION",
-  MUNICIPALITY = "MUNICIPALITY",
-  REGION = "REGION",
-  OTHER = "OTHER",
+  PERSON = 'PERSON',
+  ORGANIZATION = 'ORGANIZATION',
+  ASSOCIATION = 'ASSOCIATION',
+  MUNICIPALITY = 'MUNICIPALITY',
+  REGION = 'REGION',
+  OTHER = 'OTHER',
 }
 
 /** Stakeholder role */
@@ -177,6 +177,11 @@ export interface AttachmentMetadata {
   mimeType: string;
   /** Notes on the attachment */
   note?: string;
+  /**
+   * Date when the attachment was created
+   * @format date-time
+   */
+  created?: string;
 }
 
 /** Contract */
@@ -188,7 +193,7 @@ export interface Contract {
   version?: number;
   /** Contract id */
   contractId?: string;
-  /** A description  */
+  /** A description of the contract */
   description?: string;
   /** External referenceId */
   externalReferenceId?: string;
@@ -220,16 +225,19 @@ export interface Contract {
   /** Invoicing details */
   invoicing?: Invoicing;
   /**
-   * Lease period start date
+   * Start date of the contract
    * @format date
    */
-  start?: string;
+  startDate?: string;
   /**
-   * Lease period end date
+   * End date of the contract. Set when the contract is terminated
    * @format date
    */
-  end?: string;
-  notices?: Notice[];
+  endDate?: string;
+  /** Notice information */
+  notice?: Notice;
+  /** Current contract period */
+  currentPeriod?: Period;
   /**
    * Leased area (m2)
    * @format int32
@@ -318,7 +326,7 @@ export interface Fees {
   totalAsText?: string;
   /**
    * Index type
-   * @example "KPI 80"
+   * @example 'KPI 80'
    */
   indexType?: string;
   /**
@@ -373,7 +381,7 @@ export interface Invoicing {
 export interface Leasehold {
   /** Leasehold type */
   purpose?: LeaseholdType;
-  /** description  */
+  /** Description of the leasehold */
   description?: string;
   additionalInformation?: string[];
 }
@@ -404,8 +412,20 @@ export type MultiPolygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][][];
 };
 
-/** Notice */
+/** Notice information */
 export interface Notice {
+  terms?: NoticeTerm[];
+  /**
+   * Date when notice was given
+   * @format date
+   */
+  noticeDate?: string;
+  /** Party that initiated the notice */
+  noticeGivenBy?: Party;
+}
+
+/** Notice term */
+export interface NoticeTerm {
   /** The party type */
   party: Party;
   /**
@@ -415,11 +435,6 @@ export interface Notice {
   periodOfNotice: number;
   /** The unit of the periodOfNotice value */
   unit: TimeUnit;
-  /**
-   * The date of notice
-   * @format date
-   */
-  noticeDate?: string;
 }
 
 /** Parameter model */
@@ -435,6 +450,20 @@ export interface Parameter {
   values?: string[];
 }
 
+/** Contract period */
+export interface Period {
+  /**
+   * Period start date
+   * @format date
+   */
+  startDate?: string;
+  /**
+   * Period end date
+   * @format date
+   */
+  endDate?: string;
+}
+
 export type Point = GeoJsonObject & {
   coordinates?: LngLatAlt;
 };
@@ -447,14 +476,16 @@ export type Polygon = GeoJsonObject & {
 export interface PropertyDesignation {
   /**
    * Name of property designation
+   * @minLength 0
    * @maxLength 255
-   * @example "SUNDSVALL BALDER 5:1"
+   * @example 'SUNDSVALL BALDER 5:1'
    */
   name?: string;
   /**
    * District of property designation
+   * @minLength 0
    * @maxLength 255
-   * @example "Sundsvall"
+   * @example 'Sundsvall'
    */
   district?: string;
 }
@@ -601,6 +632,24 @@ export interface AttachmentData {
   content?: string;
 }
 
+export interface Change {
+  type?: ChangeTypeEnum;
+  path?: string;
+  oldValue?: JsonNode;
+  newValue?: JsonNode;
+}
+
+export interface Diff {
+  /** @format int32 */
+  oldVersion?: number;
+  /** @format int32 */
+  newVersion?: number;
+  changes?: Change[];
+  availableVersions?: number[];
+}
+
+export type JsonNode = any;
+
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
@@ -641,6 +690,12 @@ export interface SortObject {
 }
 
 export enum CrsTypeEnum {
-  Name = "name",
-  Link = "link",
+  Name = 'name',
+  Link = 'link',
+}
+
+export enum ChangeTypeEnum {
+  ADDITION = 'ADDITION',
+  REMOVAL = 'REMOVAL',
+  MODIFICATION = 'MODIFICATION',
 }
