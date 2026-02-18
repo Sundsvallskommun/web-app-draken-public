@@ -4,7 +4,7 @@ import { Contract, PageContract } from '@/data-contracts/contract/data-contracts
 import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
-import { apiURL } from '@/utils/util';
+import { apiURL, luhnCheck } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
@@ -32,6 +32,7 @@ export interface CasedataContractAttachment {
 export class CasedataContractsController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('contract');
+  CITIZEN_SERVICE = apiServiceName('citizen');
 
   @Get('/contracts/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
@@ -65,7 +66,28 @@ export class CasedataContractsController {
     const filterList: string[] = [];
 
     if (query) {
-      filterList.push(`contractId~'*${query}*'`);
+      let guidRes = null;
+      const isPersonNumber = luhnCheck(query);
+      if (isPersonNumber) {
+        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+      }
+
+      let queryFilter = `(`;
+      queryFilter += `contractId~'*${query}*'`;
+      queryFilter += ` or exists(propertyDesignations.name~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.organizationNumber~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.firstName~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.phoneNumber~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.emailAddress~'*${query}*')`;
+      queryFilter += ` or exists(stakeholders.address.streetAddress~'*${query}*')`;
+      if (guidRes !== null) {
+        queryFilter += ` or exists(stakeholders.partyId ~ '*${guidRes.data}*')`;
+      }
+      queryFilter += ')';
+      filterList.push(queryFilter);
     }
     if (status) {
       const ss = status.split(',').map(s => `status:'${s}'`);

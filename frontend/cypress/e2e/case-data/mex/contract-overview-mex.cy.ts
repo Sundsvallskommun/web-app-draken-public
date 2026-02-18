@@ -50,7 +50,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'Fastighetsbeteckning',
         'Distrikt',
         'Avtalstyp',
-        'Avtalssubtyp',
+        'Undertyp',
+        'Avtals-id',
         'Parter',
         'Avtalsperiod',
         'Uppsägningsdatum',
@@ -71,9 +72,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .within(() => {
           cy.contains('TESTKOMMUN TESTFASTIGHET 1:1').should('exist');
           cy.contains('Testdistrikt Norra').should('exist');
-          cy.contains('2049-00001').should('exist');
           cy.contains('Arrende').should('exist');
           cy.contains('Tomträtt').should('exist');
+          cy.contains('2049-00001').should('exist');
+          cy.contains('101').should('exist');
           cy.contains('Test Kommun AB').should('exist');
           cy.contains('Testföretag AB').should('exist');
           cy.contains('2024-01-01').should('exist');
@@ -173,9 +175,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contracts-table"] tbody tr')
         .first()
         .within(() => {
-          cy.get('td').eq(5).find('div > div').should('have.length', 2);
-          cy.get('td').eq(5).find('div > div').first().should('contain.text', 'Test Kommun AB');
-          cy.get('td').eq(5).find('div > div').last().should('contain.text', 'Testföretag AB');
+          cy.get('td').eq(6).find('div > div').should('have.length', 2);
+          cy.get('td').eq(6).find('div > div').first().should('contain.text', 'Test Kommun AB');
+          cy.get('td').eq(6).find('div > div').last().should('contain.text', 'Testföretag AB');
         });
     });
 
@@ -186,9 +188,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contracts-table"] tbody tr')
         .first()
         .within(() => {
-          cy.get('td').eq(6).find('div > div').should('have.length', 2);
-          cy.get('td').eq(6).find('div > div').first().should('contain.text', '2024-01-01');
-          cy.get('td').eq(6).find('div > div').last().should('contain.text', '2025-12-31');
+          cy.get('td').eq(7).find('div > div').should('have.length', 2);
+          cy.get('td').eq(7).find('div > div').first().should('contain.text', '2024-01-01');
+          cy.get('td').eq(7).find('div > div').last().should('contain.text', '2025-12-31');
         });
     });
 
