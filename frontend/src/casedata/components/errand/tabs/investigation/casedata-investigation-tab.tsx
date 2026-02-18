@@ -15,7 +15,6 @@ import {
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -33,7 +32,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
