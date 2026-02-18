@@ -38,6 +38,7 @@ export const contractTypes = [
   { label: 'Köpeavtal', key: ContractType.PURCHASE_AGREEMENT },
   { label: 'Upplåtelse av allmän plats', key: ContractType.LAND_LEASE_PUBLIC },
   { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
+  { label: 'Tomträtt', key: ContractType.LEASEHOLD },
 ];
 
 export const leaseTypes = [
@@ -49,13 +50,15 @@ export const leaseTypes = [
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
   { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
-  { label: 'Tomträtt', key: LeaseType.LEASEHOLD },
 ];
 
 export const isLeaseAgreement = (contractType: ContractType) =>
-  [ContractType.LEASE_AGREEMENT, ContractType.LAND_LEASE_PUBLIC, ContractType.SHORT_TERM_LEASE_AGREEMENT].includes(
-    contractType
-  );
+  [
+    ContractType.LEASE_AGREEMENT,
+    ContractType.LAND_LEASE_PUBLIC,
+    ContractType.SHORT_TERM_LEASE_AGREEMENT,
+    ContractType.LEASEHOLD,
+  ].includes(contractType);
 
 export const roleLabels: { [key in ContractStakeholderRole]: string } = {
   BUYER: 'Köpare',

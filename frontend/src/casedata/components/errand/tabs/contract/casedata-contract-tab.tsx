@@ -44,18 +44,21 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
-      notices: yup.array().when('type', {
+      notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
-          schema
-            .of(
-              yup.object({
-                party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
-                periodOfNotice: yup.string().required('Antal måste anges'),
-                unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
-              })
-            )
-            .min(2),
+          schema.shape({
+            terms: yup
+              .array()
+              .of(
+                yup.object({
+                  party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
+                  periodOfNotice: yup.string().required('Antal måste anges'),
+                  unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
+                })
+              )
+              .min(2),
+          }),
         otherwise: (schema) => schema,
       }),
       extension: yup.object({

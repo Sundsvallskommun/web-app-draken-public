@@ -73,7 +73,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.contains('TESTKOMMUN TESTFASTIGHET 1:1').should('exist');
           cy.contains('Testdistrikt Norra').should('exist');
           cy.contains('Arrende').should('exist');
-          cy.contains('Tomträtt').should('exist');
+          cy.contains('Båtplats').should('exist');
           cy.contains('2049-00001').should('exist');
           cy.contains('101').should('exist');
           cy.contains('Test Kommun AB').should('exist');
@@ -114,7 +114,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       navigateToContractOverview();
       cy.get('[data-cy="contract-lease-type-filter"]').click();
       cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-      cy.get('[data-cy="contract-lease-type-filter-LEASEHOLD"]').click({ force: true });
+      cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
       cy.wait('@getFilteredContracts');
     });
 
