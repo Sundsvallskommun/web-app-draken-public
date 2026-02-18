@@ -5,7 +5,6 @@ import {
   Attachment,
   AttachmentCategory,
   Contract,
-  ContractPaginatedResponse,
   Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
   StakeholderType as ContractStakeholderType,
@@ -13,6 +12,7 @@ import {
   Fees,
   InvoicedIn,
   LeaseType,
+  PageContract,
   Parameter,
   Party,
   Status,
@@ -97,18 +97,20 @@ export const defaultLagenhetsarrende: ContractData = {
   propertyDesignations: [],
   lessees: [],
   lessors: [],
-  notices: [
-    {
-      party: Party.LESSEE,
-      periodOfNotice: 3,
-      unit: TimeUnit.MONTHS,
-    },
-    {
-      party: Party.LESSOR,
-      periodOfNotice: 3,
-      unit: TimeUnit.MONTHS,
-    },
-  ],
+  notice: {
+    terms: [
+      {
+        party: Party.LESSEE,
+        periodOfNotice: 3,
+        unit: TimeUnit.MONTHS,
+      },
+      {
+        party: Party.LESSOR,
+        periodOfNotice: 3,
+        unit: TimeUnit.MONTHS,
+      },
+    ],
+  },
   extension: {
     autoExtend: false,
     unit: TimeUnit.DAYS,
@@ -188,9 +190,9 @@ export interface ContractFilterParams {
   endDate?: string;
 }
 
-export const fetchContracts: (params?: ContractFilterParams) => Promise<ContractPaginatedResponse> = (params = {}) => {
+export const fetchContracts: (params?: ContractFilterParams) => Promise<PageContract> = (params = {}) => {
   const {
-    page = 1,
+    page = 0,
     limit = 12,
     sortBy,
     sortOrder,
@@ -227,7 +229,7 @@ export const fetchContracts: (params?: ContractFilterParams) => Promise<Contract
   }
 
   return apiService
-    .get<ContractPaginatedResponse>(url)
+    .get<PageContract>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contracts');
@@ -418,7 +420,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
 
 export const kopeavtalToContract = (data: ContractData): Contract => {
   return {
-    start: data.start,
+    startDate: data.startDate,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: ContractType.PURCHASE_AGREEMENT,
@@ -474,9 +476,9 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       invoicedIn: InvoicedIn.ADVANCE,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    start: data.start,
-    end: data.end,
-    notices: data.notices,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    notice: data.notice,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: data.type,
@@ -614,7 +616,7 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
       note: attachment.metadata.note,
       mimeType: attachment.metadata.mimeType,
       version: '',
-      created: '',
+      created: attachment.metadata.created ?? '',
       updated: '',
       ...({} as TExtraMeta),
       isValidAttachment: attachment.attachmentData.content,

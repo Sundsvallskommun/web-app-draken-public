@@ -80,7 +80,8 @@ export const contractTableLabels = [
   { label: 'Fastighetsbeteckning', sortable: false, column: 'propertyDesignations' },
   { label: 'Distrikt', sortable: false, column: 'district' },
   { label: 'Avtalstyp', sortable: true, column: 'type' },
-  { label: 'Avtalssubtyp', sortable: true, column: 'leaseType' },
+  { label: 'Undertyp', sortable: true, column: 'leaseType' },
+  { label: 'Avtals-id', sortable: true, column: 'id' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
   { label: 'Avtalsperiod', sortable: true, column: 'end' },
   { label: 'Uppsägningsdatum', sortable: false, column: '' },
@@ -121,7 +122,7 @@ export const ContractsTable: React.FC<{
           sortOrder={sortOrders[sortOrder] as SortMode}
           onClick={() => handleSort(header.column)}
         >
-          {header.label}
+          <span className="whitespace-nowrap">{header.label}</span>
         </Table.SortButton>
       ) : (
         header.label
@@ -149,7 +150,7 @@ export const ContractsTable: React.FC<{
       ) : (
         '-'
       );
-    const period = formatPeriod(contract.start, contract.end);
+    const period = formatPeriod(contract.startDate, contract.endDate);
 
     const lessorNoticeDate = (contract) => {
       const notice = contract?.notices?.find((notice) => notice.party === 'LESSOR');
@@ -183,12 +184,14 @@ export const ContractsTable: React.FC<{
         <Table.Column>{<CasedataStatusLabelComponent status={status} />}</Table.Column>
         <Table.Column>{propertyNames}</Table.Column>
         <Table.Column>{uniqueDistricts}</Table.Column>
+        <Table.Column>{getContractTypeLabel(contract.type)}</Table.Column>
+        <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>
-          <div className="flex flex-col">
-            <div>{getContractTypeLabel(contract.type)}</div> <div>{contract?.contractId ?? '-'}</div>
+          <div className="flex flex-col gap-6">
+            <div>{contract?.contractId ?? '-'}</div>
+            <div>{contract?.externalReferenceId ?? '-'}</div>
           </div>
         </Table.Column>
-        <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>{parties}</Table.Column>
         <Table.Column>{period}</Table.Column>
         <Table.Column>{lessorNoticeDate(contract)}</Table.Column>
@@ -233,15 +236,13 @@ export const ContractsTable: React.FC<{
                 id="paginationSelect"
                 size="sm"
                 variant="tertiary"
-                value={(page || 1).toString()}
-                onSelectValue={(value) => {
-                  setValue('page', parseInt(value, 10));
-                }}
+                value={(page || 0).toString()}
+                onSelectValue={(value) => setValue('page', parseInt(value, 10))}
               >
                 {totalPages &&
-                  Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <Select.Option key={`pagipage-${p}`} value={p}>
-                      {p}
+                  Array.from(Array(totalPages).keys()).map((page) => (
+                    <Select.Option key={`pagipage-${page}`} value={page}>
+                      {page + 1}
                     </Select.Option>
                   ))}
               </Select>
@@ -269,9 +270,9 @@ export const ContractsTable: React.FC<{
                 showConstantPages={true}
                 fitContainer
                 pages={totalPages}
-                activePage={page}
-                changePage={(p) => {
-                  setValue('page', p);
+                activePage={page + 1}
+                changePage={(page) => {
+                  setValue('page', page - 1);
                 }}
               />
             </div>

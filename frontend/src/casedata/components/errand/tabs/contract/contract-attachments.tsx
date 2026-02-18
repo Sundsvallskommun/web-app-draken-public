@@ -160,6 +160,11 @@ export const ContractAttachments: React.FC<{
               key={file.file.name}
               file={file}
               index={i}
+              nameProps={{
+                description: file.meta.created
+                  ? `Uppladdad ${new Date(file.meta.created as string).toLocaleString()}`
+                  : '',
+              }}
               iconProps={{ icon: <LucideIcon name="file-pen" /> }}
               categoryProps={{
                 categories: { CONTRACT: 'Avtal' },
