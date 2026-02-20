@@ -1,12 +1,17 @@
 import sanitized from '@common/services/sanitizer-service';
+import { Button } from '@sk-web-gui/button';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Message } from '@supportmanagement/services/support-message-service';
 import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
+import { useState } from 'react';
 
-const getReciever = (msg: Message, supportErrand: SupportErrand) => {
+const MAX_VISIBLE_RECIPIENTS = 2;
+
+const getReciever = (msg: Message, supportErrand: SupportErrand): string | string[] => {
   if (!msg) {
     return '';
   }
+
   if (msg.communicationType === 'WEB_MESSAGE') {
     return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
   }
@@ -21,14 +26,51 @@ const getReciever = (msg: Message, supportErrand: SupportErrand) => {
   if (msg.communicationType === 'DRAKEN') {
     return 'Draken';
   }
+
+  if (msg.communicationType === 'EMAIL') {
+    return msg.recipients;
+  }
   return msg?.target || '(okänd mottagare)';
+};
+
+interface EmailRecipientsProps {
+  recipients: string[];
+}
+
+const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const totalCount = recipients.length;
+  const hasMore = totalCount > MAX_VISIBLE_RECIPIENTS;
+  const visibleRecipients = isExpanded ? recipients : recipients.slice(0, MAX_VISIBLE_RECIPIENTS);
+  const hiddenCount = totalCount - MAX_VISIBLE_RECIPIENTS;
+
+  return (
+    <span>
+      {sanitized(visibleRecipients.join(', '))}
+      {hasMore && !isExpanded && (
+        <Button variant="link" className="ml-4" onClick={() => setIsExpanded(true)}>
+          + {hiddenCount} {hiddenCount === 1 ? 'annan' : 'andra'}
+        </Button>
+      )}
+      {isExpanded && (
+        <Button variant="link" className="ml-4" onClick={() => setIsExpanded(false)}>
+          Visa färre
+        </Button>
+      )}
+    </span>
+  );
 };
 
 export const RenderSupportMessageReciever: React.FC<{ selectedMessage: Message; errand: SupportErrand }> = ({
   selectedMessage,
   errand,
 }) => {
-  const nameOfReciever = getReciever(selectedMessage, errand);
+  const reciever = getReciever(selectedMessage, errand);
 
-  return <>{sanitized(nameOfReciever)}</>;
+  if (Array.isArray(reciever)) {
+    return <EmailRecipients recipients={reciever} />;
+  }
+
+  return <>{sanitized(reciever)}</>;
 };

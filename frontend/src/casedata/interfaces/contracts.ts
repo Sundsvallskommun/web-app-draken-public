@@ -12,26 +12,26 @@
 
 /** Time unit */
 export enum TimeUnit {
-  DAYS = "DAYS",
-  MONTHS = "MONTHS",
-  YEARS = "YEARS",
+  DAYS = 'DAYS',
+  MONTHS = 'MONTHS',
+  YEARS = 'YEARS',
 }
 
 /** Status */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  DRAFT = "DRAFT",
-  TERMINATED = "TERMINATED",
+  ACTIVE = 'ACTIVE',
+  DRAFT = 'DRAFT',
+  TERMINATED = 'TERMINATED',
 }
 
 /** Stakeholder type */
 export enum StakeholderType {
-  PERSON = "PERSON",
-  ORGANIZATION = "ORGANIZATION",
-  ASSOCIATION = "ASSOCIATION",
-  MUNICIPALITY = "MUNICIPALITY",
-  REGION = "REGION",
-  OTHER = "OTHER",
+  PERSON = 'PERSON',
+  ORGANIZATION = 'ORGANIZATION',
+  ASSOCIATION = 'ASSOCIATION',
+  MUNICIPALITY = 'MUNICIPALITY',
+  REGION = 'REGION',
+  OTHER = 'OTHER',
 }
 
 /** Stakeholder role */
@@ -89,7 +89,6 @@ export enum LeaseType {
   USUFRUCT_MISC = 'USUFRUCT_MISC',
   OBJECT_LEASE = 'OBJECT_LEASE',
   LAND_LEASE_MISC = 'LAND_LEASE_MISC',
-  LEASEHOLD = 'LEASEHOLD',
   OTHER_FEE = 'OTHER_FEE',
 }
 
@@ -113,6 +112,7 @@ export enum ContractType {
   PURCHASE_AGREEMENT = 'PURCHASE_AGREEMENT',
   LAND_LEASE_PUBLIC = 'LAND_LEASE_PUBLIC',
   SHORT_TERM_LEASE_AGREEMENT = 'SHORT_TERM_LEASE_AGREEMENT',
+  LEASEHOLD = 'LEASEHOLD',
 }
 
 /** Attachment category */
@@ -177,6 +177,11 @@ export interface AttachmentMetadata {
   mimeType: string;
   /** Notes on the attachment */
   note?: string;
+  /**
+   * Date when the attachment was created
+   * @format date-time
+   */
+  created?: string;
 }
 
 /** Contract */
@@ -188,7 +193,7 @@ export interface Contract {
   version?: number;
   /** Contract id */
   contractId?: string;
-  /** A description  */
+  /** A description of the contract */
   description?: string;
   /** External referenceId */
   externalReferenceId?: string;
@@ -220,16 +225,19 @@ export interface Contract {
   /** Invoicing details */
   invoicing?: Invoicing;
   /**
-   * Lease period start date
+   * Start date of the contract
    * @format date
    */
-  start?: string;
+  startDate?: string;
   /**
-   * Lease period end date
+   * End date of the contract. Set when the contract is terminated
    * @format date
    */
-  end?: string;
-  notices?: Notice[];
+  endDate?: string;
+  /** Notice information */
+  notice?: Notice;
+  /** Current contract period */
+  currentPeriod?: Period;
   /**
    * Leased area (m2)
    * @format int32
@@ -318,7 +326,7 @@ export interface Fees {
   totalAsText?: string;
   /**
    * Index type
-   * @example "KPI 80"
+   * @example 'KPI 80'
    */
   indexType?: string;
   /**
@@ -373,7 +381,7 @@ export interface Invoicing {
 export interface Leasehold {
   /** Leasehold type */
   purpose?: LeaseholdType;
-  /** description  */
+  /** Description of the leasehold */
   description?: string;
   additionalInformation?: string[];
 }
@@ -404,10 +412,22 @@ export type MultiPolygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][][];
 };
 
-/** Notice */
+/** Notice information */
 export interface Notice {
+  terms?: NoticeTerm[];
+  /**
+   * Date when notice was given
+   * @format date
+   */
+  noticeDate?: string;
+  /** Party that initiated the notice */
+  noticeGivenBy?: Party;
+}
+
+/** Notice term */
+export interface NoticeTerm {
   /** The party type */
-  party?: Party;
+  party: Party;
   /**
    * The period of notice
    * @format int32
@@ -415,11 +435,6 @@ export interface Notice {
   periodOfNotice: number;
   /** The unit of the periodOfNotice value */
   unit: TimeUnit;
-  /**
-   * The date of notice
-   * @format date
-   */
-  noticeDate?: string;
 }
 
 /** Parameter model */
@@ -431,10 +446,22 @@ export interface Parameter {
   key: string;
   /** Parameter display name */
   displayName?: string;
-  /** Parameter group name */
-  group?: string;
   /** Parameter values */
   values?: string[];
+}
+
+/** Contract period */
+export interface Period {
+  /**
+   * Period start date
+   * @format date
+   */
+  startDate?: string;
+  /**
+   * Period end date
+   * @format date
+   */
+  endDate?: string;
 }
 
 export type Point = GeoJsonObject & {
@@ -449,14 +476,16 @@ export type Polygon = GeoJsonObject & {
 export interface PropertyDesignation {
   /**
    * Name of property designation
+   * @minLength 0
    * @maxLength 255
-   * @example "SUNDSVALL BALDER 5:1"
+   * @example 'SUNDSVALL BALDER 5:1'
    */
   name?: string;
   /**
    * District of property designation
+   * @minLength 0
    * @maxLength 255
-   * @example "Sundsvall"
+   * @example 'Sundsvall'
    */
   district?: string;
 }
@@ -603,48 +632,70 @@ export interface AttachmentData {
   content?: string;
 }
 
-/** Paginated response for contracts */
-export interface ContractPaginatedResponse {
-  contracts?: Contract[];
-  /** PagingMetaData model */
-  _meta?: PagingMetaData;
+export interface Change {
+  type?: ChangeTypeEnum;
+  path?: string;
+  oldValue?: JsonNode;
+  newValue?: JsonNode;
 }
 
-/** PagingMetaData model */
-export interface PagingMetaData {
-  /**
-   * Current page
-   * @format int32
-   * @example 5
-   */
-  page?: number;
-  /**
-   * Displayed objects per page
-   * @format int32
-   * @example 20
-   */
-  limit?: number;
-  /**
-   * Displayed objects on current page
-   * @format int32
-   * @example 13
-   */
-  count?: number;
-  /**
-   * Total amount of hits based on provided search parameters
-   * @format int64
-   * @example 98
-   */
-  totalRecords?: number;
-  /**
-   * Total amount of pages based on provided search parameters
-   * @format int32
-   * @example 23
-   */
+export interface Diff {
+  /** @format int32 */
+  oldVersion?: number;
+  /** @format int32 */
+  newVersion?: number;
+  changes?: Change[];
+  availableVersions?: number[];
+}
+
+export type JsonNode = any;
+
+export type SpecificationContractEntity = any;
+
+export interface PageContract {
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
   totalPages?: number;
+  /** @format int32 */
+  size?: number;
+  content?: Contract[];
+  /** @format int32 */
+  number?: number;
+  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  sort?: SortObject;
+  empty?: boolean;
+}
+
+export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  paged?: boolean;
+  /** @format int32 */
+  pageNumber?: number;
+  /** @format int32 */
+  pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
+}
+
+export interface SortObject {
+  empty?: boolean;
+  sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export enum CrsTypeEnum {
-  Name = "name",
-  Link = "link",
+  Name = 'name',
+  Link = 'link',
+}
+
+export enum ChangeTypeEnum {
+  ADDITION = 'ADDITION',
+  REMOVAL = 'REMOVAL',
+  MODIFICATION = 'MODIFICATION',
 }

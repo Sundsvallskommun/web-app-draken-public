@@ -145,17 +145,21 @@ export const CasedataDecisionTab: React.FC<{
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
 
-  const initialLawValues = useMemo(() => {
-    const sortedDec = [...errand.decisions].sort(
-      (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
-    );
-    const existingDecision = sortedDec[0];
+  const sortedDec = useMemo(() => {
+    return [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  }, [errand]);
 
+  const existingDecision = useMemo(() => {
+    return sortedDec.length !== 0 ? sortedDec[0] : undefined;
+  }, [sortedDec]);
+
+  const initialLawValues = useMemo(() => {
     if (existingDecision?.decisionType === 'FINAL' && existingDecision.law?.length > 0) {
       return existingDecision.law.map((law) => law.heading);
     }
 
     return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand.decisions]);
 
   const ownerPartyId = getOwnerStakeholder(errand)?.personId;
@@ -468,9 +472,6 @@ export const CasedataDecisionTab: React.FC<{
     trigger('description');
   };
 
-  const sortedDec = [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
-  const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
-
   useEffect(() => {
     setValue('errandId', errand.id);
 
@@ -491,7 +492,7 @@ export const CasedataDecisionTab: React.FC<{
 
     props.setUnsaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand.id]);
+  }, [errand]);
 
   const changeTemplate = (InTemplate) => {
     let content = 'Hej!<br><br>';

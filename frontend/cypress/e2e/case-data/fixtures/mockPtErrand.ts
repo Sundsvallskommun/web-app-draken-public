@@ -2,7 +2,7 @@ import { ApiErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
-import { mockProposedDecision, mockRecommendedDecision } from './mockDecisions';
+import { mockFinalDecision, mockProposedDecision, mockRecommendedDecision } from './mockDecisions';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
 // This person number is for test purposes, from the Swedish Tax Agency
@@ -126,44 +126,7 @@ export const mockPTErrand_base: { data: ApiErrand; message: string } = {
       },
     ],
     facilities: [],
-    decisions: [
-      mockRecommendedDecision.data,
-      mockProposedDecision.data,
-      {
-        id: 1,
-        created: '2023-10-23T09:30:11.009272+02:00',
-        updated: '2024-08-22T08:08:27.281423+02:00',
-        decisionType: 'FINAL',
-        decisionOutcome: 'APPROVAL',
-        description: '<p>test</p>',
-        law: [
-          {
-            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
-            sfs: 'Trafikförordningen (1998:1276)',
-            chapter: '13',
-            article: '8',
-          },
-        ],
-        decidedAt: '2024-08-22T08:08:27.918+02:00',
-        validFrom: '2023-10-23T00:00:00+02:00',
-        validTo: '2023-10-23T00:00:00+02:00',
-        attachments: [
-          {
-            id: '1',
-            created: '2024-08-22T08:08:27.274543+02:00',
-            updated: '2024-08-22T08:08:27.27456+02:00',
-            category: 'BESLUT',
-            name: 'beslut-arende-PRH-2022-000019',
-            note: '',
-            extension: 'pdf',
-            mimeType: 'application/pdf',
-            file: '',
-            extraParameters: {},
-          },
-        ],
-        extraParameters: {},
-      },
-    ],
+    decisions: [mockRecommendedDecision.data, mockProposedDecision.data, mockFinalDecision.data],
     notes: [
       {
         id: '437',

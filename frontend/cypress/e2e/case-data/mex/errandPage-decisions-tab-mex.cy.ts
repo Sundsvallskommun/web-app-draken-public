@@ -20,7 +20,7 @@ import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Decisions tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
+      cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/phrases', mockPhrases);
       cy.intercept('GET', '**/users/admins', mockAdmins);
@@ -54,7 +54,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
-      cy.intercept('GET', '**/metadata/jsonschemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
 

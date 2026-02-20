@@ -18,7 +18,8 @@ import { mockConversationMessages, mockConversations } from '../fixtures/mockCon
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Investigation tab', () => {
     beforeEach(() => {
-      cy.intercept('GET', '**/metadata/jsonschemas/*/latest', { data: { id: 'mock-schema-id', schema: {} } });
+      cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
+      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/phrases', mockPhrases);

@@ -84,6 +84,7 @@ export const CasedataInvestigationTab: React.FC<{
   const [firstDescriptionChange, setFirstDescriptionChange] = useState(true);
   const [firstOutcomeChange, setFirstOutcomeChange] = useState(true);
   const [phrasesAppended, setPhrasesAppended] = useState<boolean>(false);
+  const skipNextOnChange = useRef(false);
 
   const confirmContent = {
     title: 'Spara utredning',
@@ -93,13 +94,6 @@ export const CasedataInvestigationTab: React.FC<{
     title: 'Återställ mall',
     content: 'Vill du återställa den här mallen?',
   };
-
-  useEffect(() => {
-    if (isFTErrand(props.errand)) {
-      setValue('description', FT_INVESTIGATION_TEXT);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
@@ -251,6 +245,10 @@ export const CasedataInvestigationTab: React.FC<{
       outcome: decision?.decisionOutcome,
     });
     setValue('errandNumber', props.errand.errandNumber);
+    if (isFTErrand(props.errand) && !decision) {
+      skipNextOnChange.current = true;
+      setValue('description', FT_INVESTIGATION_TEXT, { shouldDirty: false });
+    }
     props.setUnsaved(false);
     trigger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -411,7 +409,13 @@ export const CasedataInvestigationTab: React.FC<{
                 className={cx(`mb-md h-[80%]`)}
                 readOnly={isErrandLocked(errand) || !allowed}
                 onChange={(e) => {
-                  setValue('description', e.target.value.markup);
+                  // Skip the first onChange after template load (TextEditor normalizes HTML)
+                  if (skipNextOnChange.current) {
+                    skipNextOnChange.current = false;
+                    setValue('description', e.target.value.markup, { shouldDirty: false });
+                  } else {
+                    setValue('description', e.target.value.markup, { shouldDirty: true });
+                  }
                   trigger('description');
                 }}
                 value={{ markup: description }}

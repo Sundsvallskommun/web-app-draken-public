@@ -1,4 +1,13 @@
-import { ContractPaginatedResponse, ContractType, LeaseType, Status, StakeholderRole, StakeholderType, TimeUnit, IntervalType } from '@casedata/interfaces/contracts';
+import {
+  PageContract,
+  ContractType,
+  LeaseType,
+  Status,
+  StakeholderRole,
+  StakeholderType,
+  TimeUnit,
+  IntervalType,
+} from '@casedata/interfaces/contracts';
 
 // Mock contract invoices response
 export const mockContractInvoices = {
@@ -70,28 +79,30 @@ export const mockContractInvoicesEmpty = {
   number: 0,
 };
 
-export const mockContractsList: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractsList: PageContract = {
+  content: [
     {
       contractId: '2049-00001',
       externalReferenceId: '101',
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
-      leaseType: LeaseType.LEASEHOLD,
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
-      start: '2024-01-01',
-      end: '2025-12-31',
+      leaseType: LeaseType.USUFRUCT_MOORING,
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
+      startDate: '2024-01-01',
+      endDate: '2025-12-31',
       propertyDesignations: [{ name: 'TESTKOMMUN TESTFASTIGHET 1:1', district: 'Testdistrikt Norra' }],
       stakeholders: [
         {
@@ -112,20 +123,22 @@ export const mockContractsList: ContractPaginatedResponse = {
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.USUFRUCT_MOORING,
-      start: '2023-06-01',
-      end: '2024-05-31',
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
+      startDate: '2023-06-01',
+      endDate: '2024-05-31',
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
       propertyDesignations: [{ name: 'TESTKOMMUN HAMNEN 2:3', district: 'Testdistrikt Södra' }],
       stakeholders: [
         {
@@ -146,19 +159,21 @@ export const mockContractsList: ContractPaginatedResponse = {
       externalReferenceId: '103',
       status: Status.DRAFT,
       type: ContractType.PURCHASE_AGREEMENT,
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
-      start: '2024-03-15',
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
+      startDate: '2024-03-15',
       propertyDesignations: [{ name: 'TESTKOMMUN ÅKERN 3:45', district: 'Testdistrikt Västra' }],
       stakeholders: [
         {
@@ -181,20 +196,22 @@ export const mockContractsList: ContractPaginatedResponse = {
       status: Status.TERMINATED,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.LAND_LEASE_RESIDENTIAL,
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
-      start: '2020-01-01',
-      end: '2023-12-31',
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
+      startDate: '2020-01-01',
+      endDate: '2023-12-31',
       propertyDesignations: [
         { name: 'TESTKOMMUN SKOGEN 4:100', district: 'Testdistrikt Östra' },
         { name: 'TESTKOMMUN SKOGEN 4:101', district: 'Testdistrikt Östra' },
@@ -218,20 +235,22 @@ export const mockContractsList: ContractPaginatedResponse = {
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.SITE_LEASE_COMMERCIAL,
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
-      start: '2024-01-01',
-      end: '2029-12-31',
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
+      startDate: '2024-01-01',
+      endDate: '2029-12-31',
       propertyDesignations: [{ name: 'TESTKOMMUN CENTRUM 5:55', district: 'Testdistrikt Norra' }],
       stakeholders: [
         {
@@ -247,37 +266,36 @@ export const mockContractsList: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 5,
-    totalRecords: 5,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 5,
+  totalPages: 1,
 };
 
-export const mockContractsListPage2: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractsListPage2: PageContract = {
+  content: [
     {
       contractId: '2049-00006',
       externalReferenceId: '106',
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.USUFRUCT_HUNTING,
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
-      start: '2024-02-01',
-      end: '2025-01-31',
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
+      startDate: '2024-02-01',
+      endDate: '2025-01-31',
       propertyDesignations: [{ name: 'TESTKOMMUN JAKTMARK 6:99', district: 'Testdistrikt Västra' }],
       stakeholders: [
         {
@@ -293,48 +311,44 @@ export const mockContractsListPage2: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 2,
-    limit: 12,
-    count: 1,
-    totalRecords: 6,
-    totalPages: 2,
-  },
+  number: 1,
+  size: 12,
+  totalElements: 6,
+  totalPages: 2,
 };
 
-export const mockContractsListEmpty: ContractPaginatedResponse = {
-  contracts: [],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 0,
-    totalRecords: 0,
-    totalPages: 0,
-  },
+export const mockContractsListEmpty: PageContract = {
+  content: [],
+  number: 0,
+  size: 12,
+  totalElements: 0,
+  totalPages: 0,
 };
 
-export const mockContractsListFiltered: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractsListFiltered: PageContract = {
+  content: [
     {
       contractId: '2049-00001',
       externalReferenceId: '101',
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.LEASEHOLD,
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
-      start: '2024-01-01',
-      end: '2025-12-31',
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
+      startDate: '2024-01-01',
+      endDate: '2025-12-31',
       propertyDesignations: [{ name: 'TESTKOMMUN TESTFASTIGHET 1:1', district: 'Testdistrikt Norra' }],
       stakeholders: [
         {
@@ -350,26 +364,23 @@ export const mockContractsListFiltered: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 1,
-    totalRecords: 1,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 1,
+  totalPages: 1,
 };
 
 // Detailed mock contract with all fields for detail view testing
-export const mockContractDetailLeaseAgreement: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractDetailLeaseAgreement: PageContract = {
+  content: [
     {
       contractId: '2049-00010',
       externalReferenceId: 'EXT-12345',
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
       leaseType: LeaseType.LEASEHOLD,
-      start: '2024-01-01',
-      end: '2026-12-31',
+      startDate: '2024-01-01',
+      endDate: '2026-12-31',
       propertyDesignations: [
         { name: 'SUNDSVALL TESTMARK 1:100', district: 'Sundsvall Norra' },
         { name: 'SUNDSVALL TESTMARK 1:101', district: 'Sundsvall Norra' },
@@ -411,18 +422,20 @@ export const mockContractDetailLeaseAgreement: ContractPaginatedResponse = {
           },
         },
       ],
-      notices: [
-        {
-          party: 'LESSEE',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '6',
-        },
-        {
-          party: 'LESSOR',
-          unit: TimeUnit.MONTHS,
-          periodOfNotice: '12',
-        },
-      ],
+      notice: {
+        terms: [
+          {
+            party: 'LESSEE',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '6',
+          },
+          {
+            party: 'LESSOR',
+            unit: TimeUnit.MONTHS,
+            periodOfNotice: '12',
+          },
+        ],
+      },
       extension: {
         autoExtend: true,
         unit: TimeUnit.YEARS,
@@ -447,26 +460,21 @@ export const mockContractDetailLeaseAgreement: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 1,
-    totalRecords: 1,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 1,
+  totalPages: 1,
 };
 
-export const mockContractDetailPurchaseAgreement: ContractPaginatedResponse = {
-  contracts: [
+export const mockContractDetailPurchaseAgreement: PageContract = {
+  content: [
     {
       contractId: '2049-00011',
       externalReferenceId: 'EXT-67890',
       status: Status.DRAFT,
       type: ContractType.PURCHASE_AGREEMENT,
-      start: '2024-06-15',
-      propertyDesignations: [
-        { name: 'SUNDSVALL KÖPMARK 2:200', district: 'Sundsvall Södra' },
-      ],
+      startDate: '2024-06-15',
+      propertyDesignations: [{ name: 'SUNDSVALL KÖPMARK 2:200', district: 'Sundsvall Södra' }],
       stakeholders: [
         {
           type: StakeholderType.ORGANIZATION,
@@ -494,11 +502,8 @@ export const mockContractDetailPurchaseAgreement: ContractPaginatedResponse = {
       ],
     },
   ],
-  _meta: {
-    page: 1,
-    limit: 12,
-    count: 1,
-    totalRecords: 1,
-    totalPages: 1,
-  },
+  number: 0,
+  size: 12,
+  totalElements: 1,
+  totalPages: 1,
 };

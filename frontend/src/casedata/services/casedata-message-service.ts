@@ -246,7 +246,11 @@ const buildTree = (_list: MessageResponse[]) => {
     const parent = msg.emailHeaders.find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];
     if (parent) {
       const parentMsg = nodesMap.get(parent);
-      parentMsg?.children?.push(nodesMap.get(id));
+      if (parentMsg) {
+        parentMsg.children?.push(nodesMap.get(id));
+      } else {
+        roots.push(nodesMap.get(id));
+      }
     } else {
       roots.push(nodesMap.get(id));
     }
