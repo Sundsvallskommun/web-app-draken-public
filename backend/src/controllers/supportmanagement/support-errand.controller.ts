@@ -113,6 +113,15 @@ export class CContactChannel implements ContactChannel {
   value?: string;
 }
 
+export class CJsonParameter {
+  @IsString()
+  key: string;
+  @IsOptional()
+  value: any;
+  @IsString()
+  schemaId: string;
+}
+
 export class CSupportStakeholder implements SupportStakeholder {
   @IsString()
   @IsOptional()
@@ -247,6 +256,11 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
   parameters: Parameter[];
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CJsonParameter)
+  jsonParameters?: CJsonParameter[];
   @TypeTransformer(() => Classification)
   @ValidateNested()
   @IsObject()

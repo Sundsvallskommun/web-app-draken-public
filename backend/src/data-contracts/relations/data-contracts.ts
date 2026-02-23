@@ -25,15 +25,15 @@ export interface Problem {
   /** @format uri */
   type?: string;
   parameters?: Record<string, any>;
-  status?: StatusType;
-  detail?: string;
   title?: string;
+  detail?: string;
+  status?: StatusType;
 }
 
 export interface StatusType {
+  reasonPhrase?: string;
   /** @format int32 */
   statusCode?: number;
-  reasonPhrase?: string;
 }
 
 /** Relation between objects */
@@ -142,9 +142,9 @@ export interface ThrowableProblem {
   /** @format uri */
   type?: string;
   parameters?: Record<string, any>;
-  status?: StatusType;
-  detail?: string;
   title?: string;
+  detail?: string;
+  status?: StatusType;
   suppressed?: {
     stackTrace?: {
       classLoaderName?: string;

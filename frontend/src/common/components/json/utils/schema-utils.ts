@@ -4,7 +4,7 @@ import {
   getUiSchema,
   JsonSchemaResponse,
   UiSchemaResponse,
-} from '@casedata/services/asset-service';
+} from '@common/services/jsonschema-service';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 
 function unwrap<T>(response: { data?: T } | T): T {
