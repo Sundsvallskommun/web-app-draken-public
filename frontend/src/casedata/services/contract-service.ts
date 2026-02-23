@@ -459,10 +459,10 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
         }. Fastigheter: ${data.propertyDesignations.map((p) => p.name).join(', ')}`,
         data.fees?.additionalInformation?.[1] ?? '',
       ],
-      ...(data.indexAdjusted && { indexYear: 2025 }),
-      ...(data.indexAdjusted && { indexNumber: 419.35 }),
-      ...(data.indexAdjusted && { indexationRate: 1 }),
-      ...(data.indexAdjusted && { indexType: 'KPI 80' }),
+      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
+      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber ?? 419.35 }),
+      ...(data.indexAdjusted === 'true' && { indexationRate: data.fees?.indexationRate ?? 1 }),
+      ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
     };
   }
   return {
@@ -492,6 +492,12 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
 };
 
 export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
+  const hasIndexation = !!(
+    contract.fees?.indexType ||
+    contract.fees?.indexYear ||
+    contract.fees?.indexNumber ||
+    contract.fees?.indexationRate
+  );
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
@@ -499,6 +505,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     lessors: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSOR)),
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
+    indexAdjusted: hasIndexation ? 'true' : 'false',
     fees: {
       ...contract.fees,
       additionalInformation: [
