@@ -213,7 +213,7 @@ export const PhaseChanger = () => {
       }}
       rightIcon={<LucideIcon name="arrow-right" size={18} />}
     >
-      Inled granskning
+      Starta handläggning
     </Button>
   ) : uiPhase === UiPhase.beslut ||
     errand.phase === ErrandPhase.verkstalla ||
