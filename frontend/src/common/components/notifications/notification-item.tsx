@@ -54,7 +54,8 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     }
   };
 
-  const subTypeLabel = getNotificationKey(notification) && labelBySubType[getNotificationKey(notification)];
+  const notificationKey = getNotificationKey(notification);
+  const subTypeLabel = notificationKey ? labelBySubType[notificationKey] : undefined;
 
   return (
     <div className="p-16 pl-0 flex gap-12 items-start justify-between text-small">
@@ -81,7 +82,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         <div>Från: {senderFallback(notification.createdByFullName || notification.createdBy)}</div>
         {subTypeLabel ? <div>Händelse: {subTypeLabel}</div> : null}
       </div>
-      <span className="whitespace-nowrap">{prettyTime(notification.created)}</span>
+      <span className="whitespace-nowrap">{prettyTime(notification.created ?? '')}</span>
       {!notification.acknowledged && (
         <div>
           <span

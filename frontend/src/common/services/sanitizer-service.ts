@@ -35,7 +35,7 @@ const config = {
   allowedSchemesByTag: {},
 };
 
-const inlineConfig = { ...config, allowedTags: [] };
+const inlineConfig = { ...config, allowedTags: [] as string[] };
 
 export const sanitized: (unsafe: string) => string = (unsafe) => {
   return SanitizeHTML(unsafe, config);

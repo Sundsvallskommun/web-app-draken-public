@@ -8,7 +8,7 @@ export interface CaseAdminsFilter {
   admins: string[];
 }
 
-export const CaseAdminsValues = {
+export const CaseAdminsValues: CaseAdminsFilter = {
   admins: [],
 };
 

@@ -5,13 +5,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    //TODO: ENABLE STRICT MODE
-    "strict": false,
-    "strictNullChecks": false,
-    // "noFallthroughCasesInSwitch": false,
-    // "noImplicitAny": false,
-    // "strictFunctionTypes": false,
-    // "strictPropertyInitialization": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": false,
     "esModuleInterop": true,
@@ -46,7 +40,6 @@
   },
   "include": [
     "src/**/*.{ts,tsx}",
-    "cypress/**/*.{ts,tsx}",
     ".next-IK/types/**/*.ts",
     ".next-KA/types/**/*.ts",
     ".next-KC/types/**/*.ts",

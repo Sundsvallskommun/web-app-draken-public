@@ -35,7 +35,7 @@ export const MessagePortal: React.FC = () => {
         prefillEmail={supportErrand?.customer?.[0]?.emails?.[0]?.value}
         prefillPhone={supportErrand?.customer?.[0]?.phoneNumbers?.[0]?.value}
         setUnsaved={() => {}}
-        message={undefined}
+        message={undefined as any}
         update={() => setSupportErrand({ ...supportErrand })}
       />
     </MessageWrapper>

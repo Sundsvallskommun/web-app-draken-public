@@ -46,32 +46,32 @@ export interface SingleSupportAttachment {
 class SupportMessageDto {
   @IsString()
   @IsNotEmpty()
-  contactMeans: string;
+  contactMeans!: string;
   @IsString()
   @IsNotEmpty()
   @ValidateIf(o => o.contactMeans === 'email')
-  recipientEmail: string;
+  recipientEmail!: string;
   @IsString()
   @IsNotEmpty()
   @ValidateIf(o => o.contactMeans === 'sms')
-  recipientPhone: string;
+  recipientPhone!: string;
   @IsString()
-  plaintextMessage: string;
+  plaintextMessage!: string;
   @IsString()
-  htmlMessage: string;
+  htmlMessage!: string;
   @IsString()
   @IsOptional()
-  senderName: string;
+  senderName!: string;
   @IsString()
-  subject: string;
+  subject!: string;
   @IsOptional()
-  files: Express.Multer.File[];
+  files!: Express.Multer.File[];
   @IsString()
-  reply_to: string;
+  reply_to!: string;
   @IsString()
-  references: string;
+  references!: string;
   @IsOptional()
-  attachmentIds: string[];
+  attachmentIds!: string[];
 }
 
 class CCommunicationAttachment implements CommunicationAttachment {
@@ -109,7 +109,7 @@ class CCommunication implements Communication {
   subject?: string;
   @IsEnum(CommunicationCommunicationTypeEnum)
   @IsOptional()
-  communicationType: CommunicationCommunicationTypeEnum;
+  communicationType!: CommunicationCommunicationTypeEnum;
   @IsString()
   @IsOptional()
   target?: string;

@@ -43,8 +43,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     setErrand,
     administrators,
     uiPhase,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
@@ -55,6 +54,7 @@ export const SidebarInfo: React.FC<{}> = () => {
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -96,8 +96,8 @@ export const SidebarInfo: React.FC<{}> = () => {
     if (errand?.phase === ErrandPhase.beslut) {
       s.push(ErrandStatus.UnderBeslut);
     }
-    if (!s.includes(errand.status?.statusType as ErrandStatus)) {
-      s.unshift(errand.status?.statusType as ErrandStatus);
+    if (!s.includes(errand?.status?.statusType as ErrandStatus)) {
+      s.unshift(errand?.status?.statusType as ErrandStatus);
     }
     setSelectableStatuses(s);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,7 +110,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       await errandSave();
       const admin = administrators.find((a) => a.adAccount === user.username);
       if (admin) {
-        await setAdministrator(municipalityId, errand, admin);
+        await setAdministrator(municipalityId, errand!, admin);
         toastMessage(
           getToastOptions({
             message: 'Handläggare sparades',
@@ -118,7 +118,7 @@ export const SidebarInfo: React.FC<{}> = () => {
           })
         );
       }
-      const updated = await getErrand(municipalityId, errand.id.toString());
+      const updated = await getErrand(municipalityId, errand!.id.toString());
       setErrand(updated.errand);
       reset();
       pollDisplayPhase();
@@ -144,7 +144,7 @@ export const SidebarInfo: React.FC<{}> = () => {
       setCauseIsEmpty(true);
     }
 
-    if (!isErrandAdmin(errand, user)) {
+    if (!isErrandAdmin(errand!, user)) {
       toastMessage({
         position: 'bottom',
         closeable: false,
@@ -169,7 +169,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         noteType: 'PUBLIC',
         extraParameters: {},
       };
-      return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
+      return saveErrandNote(municipalityId, errand!.id?.toString(), newNote)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -178,7 +178,7 @@ export const SidebarInfo: React.FC<{}> = () => {
             })
           );
 
-          cancelErrandPhaseChange(municipalityId, errand)
+          cancelErrandPhaseChange(municipalityId, errand!)
             .then(() => {
               toastMessage(
                 getToastOptions({
@@ -189,7 +189,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               setDialogIsOpen(false);
 
               //TODO add polling.
-              getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+              getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
               reset();
               pollDisplayPhase();
             })
@@ -215,6 +215,8 @@ export const SidebarInfo: React.FC<{}> = () => {
         });
     }
   };
+
+  if (!errand) return null;
 
   return (
     <>

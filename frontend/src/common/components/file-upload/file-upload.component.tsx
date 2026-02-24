@@ -2,7 +2,7 @@ import { MAX_FILE_SIZE_MB } from '@casedata/services/casedata-attachment-service
 import { isMEX } from '@common/services/application-service';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { UseFormRegister } from 'react-hook-form';
+import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 
 import { appConfig } from '@config/appconfig';
 import LucideIcon from '@sk-web-gui/lucide-icon';
@@ -27,7 +27,7 @@ const FileUpload: React.FC<{
   items: any[];
   uniqueFileUploaderKey: string;
   register: UseFormRegister<any>;
-  setValue: (key: string, item: any) => void;
+  setValue: UseFormSetValue<any>;
   watch: (key: string) => any;
   errors: any;
   append: (item: any) => void;
@@ -98,7 +98,7 @@ const FileUpload: React.FC<{
       } else if (newItem.length === 1) {
         if (newItem[0]?.size > 0) {
           const ext = newItem[0].name.split('.').pop();
-          if (accept.length === 0 || accept.includes(ext.toLowerCase())) {
+          if (accept.length === 0 || (ext && accept.includes(ext.toLowerCase()))) {
             append({ file: newItem });
             setValue('attachmentName', newItem[0].name.toString());
             setInputKey(newItem[0].name);
@@ -181,10 +181,10 @@ const FileUpload: React.FC<{
               size="md"
               className="w-full"
               variant="tertiary"
+              {...register(dragDrop ? `attachments.${index}.attachmentType` : 'attachmentType')}
               onChange={(e) =>
                 setValue(dragDrop ? `attachments.${index}.attachmentType` : 'attachmentType', e.target.value)
               }
-              {...register(dragDrop ? `attachments.${index}.attachmentType` : 'attachmentType')}
             >
               <Select.Option value="">Välj typ av bilaga</Select.Option>
               {Object.entries(isMEX() ? MEXAttachmentLabels : PTAttachmentLabels)
@@ -268,7 +268,7 @@ const FileUpload: React.FC<{
                   rounded
                   variant="secondary"
                   onClick={() => {
-                    document.getElementById(`${uniqueFileUploaderKey}-openFileupload`).click();
+                    document.getElementById(`${uniqueFileUploaderKey}-openFileupload`)?.click();
                   }}
                 >
                   Bläddra

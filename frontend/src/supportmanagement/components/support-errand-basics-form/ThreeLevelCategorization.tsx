@@ -42,22 +42,22 @@ export const ThreeLevelCategorization: React.FC<{
     return selected;
   };
 
-  const categoriesList = props.supportMetadata?.labels?.labelStructure.sort((a, b) =>
-    a.displayName.localeCompare(b.displayName)
+  const categoriesList = props.supportMetadata?.labels?.labelStructure?.sort((a, b) =>
+    (a.displayName ?? '').localeCompare(b.displayName ?? '')
   );
 
   useEffect(() => {
     if (supportErrand) {
-      const selected = getSelectedLabels(supportErrand.labels);
+      const selected = getSelectedLabels(supportErrand.labels ?? []);
       setSelectedLabels(selected);
     }
   }, [supportErrand]);
 
   useEffect(() => {
     const categoryItem = categoriesList?.find(
-      (c) => c.id === supportErrand.labels.find((l) => l.classification === 'CATEGORY')?.id
+      (c) => c.id === (supportErrand.labels ?? []).find((l) => l.classification === 'CATEGORY')?.id
     );
-    setTypesList(categoryItem?.labels?.sort((a, b) => a.displayName?.localeCompare(b.displayName)) || []);
+    setTypesList(categoryItem?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) || []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriesList, supportErrand]);
 
@@ -75,14 +75,14 @@ export const ThreeLevelCategorization: React.FC<{
   }, [selectedLabels]);
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCategory = categoriesList.find((c) => c.id === e.currentTarget.value);
-    setTypesList(selectedCategory?.labels?.sort((a, b) => a.displayName.localeCompare(b.displayName)) || []);
+    const selectedCategory = categoriesList?.find((c) => c.id === e.currentTarget.value);
+    setTypesList(selectedCategory?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) || []);
     setSelectedLabels({
-      [LABEL_LEVELS.CATEGORY]: selectedCategory,
+      [LABEL_LEVELS.CATEGORY]: selectedCategory!,
     });
-    setValue('category', selectedCategory.resourcePath, { shouldDirty: true });
-    setValue('type', undefined, { shouldDirty: true });
-    setValue('subType', undefined, { shouldDirty: true });
+    setValue('category', selectedCategory?.resourcePath ?? '', { shouldDirty: true });
+    setValue('type', '' as any, { shouldDirty: true });
+    setValue('subType', '' as any, { shouldDirty: true });
     trigger(['category', 'type', 'subType']);
   };
 
@@ -140,20 +140,20 @@ export const ThreeLevelCategorization: React.FC<{
             value={selectedLabels['SUBTYPE']?.id ?? selectedLabels['TYPE']?.id}
             onSelect={(e) => {
               let selectedType;
-              if (typesList.length > 0) {
+              if (typesList && typesList.length > 0) {
                 selectedType =
                   typesList?.find((type) => type.labels?.some((label) => label.id === e.target.value)) ||
                   typesList?.find((type) => type.id === e.target.value);
-              } else if (supportErrand.labels) {
+              } else if (supportErrand.labels?.length) {
                 selectedType = supportErrand.labels.find((l) => l.classification === 'TYPE' && l.id === e.target.value);
               } else {
                 return;
               }
 
-              let selectedSubType;
-              if (selectedType && selectedType.labels && selectedType.labels.length > 0) {
-                selectedSubType = selectedType.labels.find((label) => label.id === e.target.value);
-              } else if (supportErrand.labels) {
+              let selectedSubType: Label | undefined;
+              if (selectedType && selectedType.labels && (selectedType.labels.length ?? 0) > 0) {
+                selectedSubType = selectedType.labels.find((label: Label) => label.id === e.target.value);
+              } else if (supportErrand.labels?.length) {
                 selectedSubType = supportErrand.labels.find(
                   (l) => l.classification === 'SUBTYPE' && l.id === e.target.value
                 );
@@ -166,9 +166,9 @@ export const ThreeLevelCategorization: React.FC<{
                   [LABEL_LEVELS.SUBTYPE]: selectedSubType,
                 }));
                 const dirtied =
-                  supportErrand.labels.find((l) => l.classification === 'SUBTYPE')?.id !== selectedSubType?.id;
-                setValue('type', selectedType?.resourcePath, { shouldDirty: true });
-                setValue('subType', selectedSubType?.resourcePath, {
+                  (supportErrand.labels ?? []).find((l) => l.classification === 'SUBTYPE')?.id !== selectedSubType?.id;
+                setValue('type', selectedType?.resourcePath ?? '', { shouldDirty: true });
+                setValue('subType', selectedSubType?.resourcePath ?? '', {
                   shouldDirty: dirtied,
                 });
                 trigger('type');
@@ -179,7 +179,7 @@ export const ThreeLevelCategorization: React.FC<{
                   [LABEL_LEVELS.TYPE]: selectedType,
                   [LABEL_LEVELS.SUBTYPE]: undefined,
                 }));
-                setValue('type', selectedType?.resourcePath, { shouldDirty: true });
+                setValue('type', selectedType?.resourcePath ?? '', { shouldDirty: true });
                 trigger('type');
               } else {
                 return;
@@ -189,13 +189,13 @@ export const ThreeLevelCategorization: React.FC<{
             <Combobox.Input data-cy="labelType-input" className="w-full" />
             <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">
               {typesList?.map((typeLabel: Label, index) => {
-                if (typeLabel.labels?.length > 0) {
+                if ((typeLabel.labels?.length ?? 0) > 0) {
                   return (
                     <Combobox.Optgroup key={`group-${index}`} label={typeLabel.displayName || typeLabel.resourcePath}>
                       {typeLabel.labels
-                        ?.sort((a, b) => a.displayName.localeCompare(b.displayName))
+                        ?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
                         .map((subtypeLabel: Label) => (
-                          <Combobox.Option value={subtypeLabel.id} key={`label-${subtypeLabel.resourcePath}`}>
+                          <Combobox.Option value={subtypeLabel.id!} key={`label-${subtypeLabel.resourcePath}`}>
                             {`${subtypeLabel.displayName || subtypeLabel.resourcePath}`}
                           </Combobox.Option>
                         ))}
@@ -203,7 +203,7 @@ export const ThreeLevelCategorization: React.FC<{
                   );
                 } else {
                   return (
-                    <Combobox.Option value={typeLabel.id} key={`label-${typeLabel.resourcePath}`}>
+                    <Combobox.Option value={typeLabel.id!} key={`label-${typeLabel.resourcePath}`}>
                       {`${typeLabel.displayName || typeLabel.resourcePath}`}
                     </Combobox.Option>
                   );

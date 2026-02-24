@@ -21,8 +21,8 @@ export interface AttestationTableForm {
 }
 
 export const AttestationsTable: React.FC<{
-  setSelectedRecord;
-  setShowSelectedRecord;
+  setSelectedRecord: (record: CBillingRecord | undefined) => void;
+  setShowSelectedRecord: (show: boolean) => void;
 }> = ({ setSelectedRecord, setShowSelectedRecord }) => {
   const { watch, setValue, register } = useFormContext<AttestationTableForm>();
   const { municipalityId, billingRecords }: AppContextInterface = useAppContext();
@@ -76,11 +76,11 @@ export const AttestationsTable: React.FC<{
     </Table.HeaderColumn>
   ));
 
-  const StatusButtonComponent = (record) => {
-    let color,
+  const StatusButtonComponent = (record: CBillingRecord) => {
+    let color: string,
       inverted = false,
-      icon = null,
-      variant = null;
+      icon: string | null = null,
+      variant: 'link' | 'primary' | 'secondary' | 'tertiary' | 'ghost' | null = null;
     switch (record.status) {
       case CBillingRecordStatusEnum.APPROVED:
         color = 'gronsta';
@@ -111,9 +111,9 @@ export const AttestationsTable: React.FC<{
     }
     return (
       <Button
-        variant={variant}
+        variant={variant as 'link' | 'primary' | 'secondary' | 'tertiary' | 'ghost'}
         inverted={inverted}
-        color={color}
+        color={color as 'vattjom' | 'gronsta' | 'error' | 'primary' | 'info' | 'success' | 'warning' | 'bjornstigen' | 'juniskar'}
         size="sm"
         className="w-full"
         onClick={() => {
@@ -121,7 +121,7 @@ export const AttestationsTable: React.FC<{
           setShowSelectedRecord(true);
         }}
       >
-        {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
+        {icon ? <LucideIcon name={icon as 'check' | 'thumbs-down' | 'eye'} size={16} /> : null}{' '}
         {findAttestationStatusLabelForAttestationStatusKey(record.status)}
       </Button>
     );
@@ -137,7 +137,7 @@ export const AttestationsTable: React.FC<{
           {maybe(record?.invoice?.description)}
         </Table.HeaderColumn>
         <Table.Column>{maybe(record?.invoice.invoiceRows?.[0]?.quantity)}</Table.Column>
-        <Table.Column>{formatCurrency(maybe(record.invoice?.totalAmount))}</Table.Column>
+        <Table.Column>{formatCurrency(record.invoice?.totalAmount as number)}</Table.Column>
         <Table.Column>{maybe(record.extraParameters?.['referenceName'])}</Table.Column>
         <Table.Column>{prettyTime(record.created)}</Table.Column>
         <Table.Column>{prettyTime(record.modified)}</Table.Column>
@@ -182,14 +182,14 @@ export const AttestationsTable: React.FC<{
             </caption>
           )
         )}*/}
-        {billingRecords?.numberOfElements > 0 && (
+        {(billingRecords?.numberOfElements ?? 0) > 0 && (
           <>
             <Table.Header>{headers}</Table.Header>
             <Table.Body>{rows}</Table.Body>
           </>
         )}
 
-        {billingRecords?.numberOfElements > 0 && (
+        {(billingRecords?.numberOfElements ?? 0) > 0 && (
           <Table.Footer>
             <div className="sk-table-bottom-section sk-table-pagination-mobile">
               <label className="sk-table-bottom-section-label" htmlFor="paginationSelect">

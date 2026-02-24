@@ -48,7 +48,7 @@ export const CasedataMessagesTab: React.FC<{
   );
 
   useEffect(() => {
-    const _a = validateAction(errand, user) && !!errand.administrator;
+    const _a = errand ? validateAction(errand, user) && !!errand.administrator : false;
     setAllowed(_a);
   }, [user, errand]);
 
@@ -56,9 +56,9 @@ export const CasedataMessagesTab: React.FC<{
     if (msg.conversationId) {
       console.warn('Not implemented');
     } else {
-      setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId, true)
+      setMessageViewStatus(errand!.id.toString(), municipalityId, msg.messageId ?? '', true)
         .then(() =>
-          fetchMessagesTree(municipalityId, errand).catch(() => {
+          fetchMessagesTree(municipalityId, errand!).catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -67,9 +67,9 @@ export const CasedataMessagesTab: React.FC<{
             });
           })
         )
-        .then(setMessageTree)
+        .then((tree) => { if (tree) setMessageTree(tree); })
         .then(() =>
-          fetchMessages(municipalityId, errand).catch(() => {
+          fetchMessages(municipalityId, errand!).catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -78,7 +78,7 @@ export const CasedataMessagesTab: React.FC<{
             });
           })
         )
-        .then(setMessages)
+        .then((msgs) => { if (msgs) setMessages(msgs); })
         .catch(() => {
           toastMessage({
             position: 'bottom',
@@ -172,11 +172,11 @@ export const CasedataMessagesTab: React.FC<{
           </div>
           <Button
             type="button"
-            disabled={isErrandLocked(errand) || !allowed}
+            disabled={(errand ? isErrandLocked(errand) : false) || !allowed}
             size="sm"
             variant="primary"
             color="vattjom"
-            inverted={!(isErrandLocked(errand) || !allowed)}
+            inverted={!((errand ? isErrandLocked(errand) : false) || !allowed)}
             rightIcon={<LucideIcon name="mail" size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
@@ -230,7 +230,7 @@ export const CasedataMessagesTab: React.FC<{
         </div>
         {combinedMessages?.length ? (
           <MessageTreeComponent
-            nodes={sortedMessages}
+            nodes={sortedMessages ?? []}
             onSelect={(msg: MessageResponse) => {
               setMessageViewed(msg);
               setSelectedMessage(msg);

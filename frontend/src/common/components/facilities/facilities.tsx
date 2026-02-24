@@ -41,8 +41,8 @@ export const Facilities: React.FC<{
     supportErrand,
     errand,
   }: {
-    supportErrand;
-    errand;
+    supportErrand: any;
+    errand: any;
   } = useAppContext();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -61,7 +61,7 @@ export const Facilities: React.FC<{
     setRealEstates(props.facilities);
   }, [props.facilities]);
 
-  const onSearchHandler = (inQuery) => {
+  const onSearchHandler = (inQuery: string) => {
     if (inQuery.length > 2) {
       setShowSpinner(true);
       if (searchType === 'ADDRESS') {
@@ -213,7 +213,7 @@ export const Facilities: React.FC<{
             setSelectedEstate(undefined);
           }}
           show={selectedEstate !== undefined}
-          estate={selectedEstate}
+          estate={selectedEstate!}
         />
       </FormControl>
       <div>
@@ -250,7 +250,7 @@ export const Facilities: React.FC<{
                           id={`realEstate-link-${index}`}
                           variant="tertiary"
                           href="#"
-                          onClick={() => openEstateInfo(realEstate.address?.propertyDesignation, index)}
+                          onClick={() => openEstateInfo(realEstate.address?.propertyDesignation ?? '', index)}
                         >
                           Visa fastighetsinformation
                         </Link>

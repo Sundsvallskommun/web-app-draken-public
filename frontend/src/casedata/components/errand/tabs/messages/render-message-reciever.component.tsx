@@ -8,24 +8,24 @@ import { useState } from 'react';
 
 const MAX_VISIBLE_RECIPIENTS = 2;
 
-const getMessageSourceLabel = (message: MessageNode, errand: IErrand): string | string[] => {
+const getMessageSourceLabel = (message: MessageNode, errand: IErrand | undefined): string | string[] => {
   if (!message) return '';
 
   if (message.messageType === 'EMAIL') {
-    return message.recipients;
+    return message.recipients ?? [];
   }
 
   if (message.messageType === 'SMS') {
-    return message.mobileNumber;
+    return message.mobileNumber ?? '';
   }
 
   if (message.messageType === 'WEBMESSAGE' || message.externalCaseId) {
     return 'E-tjänst';
   }
 
-  if (message.messageType === 'MINASIDOR' && message.direction === 'OUTBOUND') {
+  if (message.messageType === 'MINASIDOR' && message.direction === 'OUTBOUND' && errand) {
     const owner = getOwnerStakeholder(errand);
-    return owner.firstName + ' ' + owner.lastName;
+    return (owner?.firstName ?? '') + ' ' + (owner?.lastName ?? '');
   }
 
   if (message.messageType === 'MINASIDOR' && message.direction === 'INBOUND') {
@@ -68,7 +68,7 @@ const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
   );
 };
 
-export const RenderMessageReciever: React.FC<{ selectedMessage: MessageNode; errand: IErrand }> = ({
+export const RenderMessageReciever: React.FC<{ selectedMessage: MessageNode; errand: IErrand | undefined }> = ({
   selectedMessage,
   errand,
 }) => {

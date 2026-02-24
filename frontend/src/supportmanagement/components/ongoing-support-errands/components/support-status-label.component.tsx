@@ -94,7 +94,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
 
     if (status === Status.SOLVED && resolution) {
       if (isRob) {
-        return ResolutionLabelROB[resolution as Resolution] ?? 'Löst';
+        return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
       }
 
       switch (resolution) {
@@ -110,12 +110,12 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
     }
 
     return isRob
-      ? StatusLabelROB[status as Status] ?? 'Status saknas'
-      : StatusLabel[status as Status] ?? 'Status saknas';
+      ? (StatusLabelROB as Record<string, string>)[status] ?? 'Status saknas'
+      : (StatusLabel as Record<string, string>)[status] ?? 'Status saknas';
   };
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-      {icon ? <LucideIcon name={icon} size={16} /> : null} {solvedErrandText()}
+      {icon ? <LucideIcon name={icon as 'check' | 'pen' | 'split' | 'redo' | 'clock-10' | 'circle-pause'} size={16} /> : null} {solvedErrandText()}
     </Label>
   );
 };

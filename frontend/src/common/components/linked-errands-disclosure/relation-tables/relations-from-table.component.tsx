@@ -38,7 +38,7 @@ export const RelationsFromTable: React.FC<RelationsFromTableProps> = ({ errands,
           <Table.HeaderColumn scope="row" className="w-[22rem] overflow-hidden text-ellipsis table-caption">
             <CaseStatusLabelComponent externalStatus={errand?.externalStatus} />
           </Table.HeaderColumn>
-          <Table.Column className="w-[16rem]">{CaseLabels.ALL[errand.caseType] ?? errand.caseType}</Table.Column>
+          <Table.Column className="w-[16rem]">{(CaseLabels.ALL as Record<string, string>)[errand.caseType] ?? errand.caseType}</Table.Column>
           <Table.Column className="w-[10rem]">{findOperationUsingNamespace(errand.namespace)}</Table.Column>
           <Table.Column className="w-[14.5rem]">{errand.errandNumber}</Table.Column>
           <Table.Column className="w-[16.4rem]" />

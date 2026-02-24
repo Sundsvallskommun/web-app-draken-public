@@ -9,10 +9,10 @@ import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers
 import { OpenAPI } from 'routing-controllers-openapi';
 
 const allowedNamespaces: string[] = ['SBK_MEX', 'SBK_PARKING_PERMIT', 'CONTACTSUNDSVALL'];
-const namespaceIsallowed = (c: CaseStatusResponse) => allowedNamespaces.includes(c.namespace);
+const namespaceIsallowed = (c: CaseStatusResponse) => !!c.namespace && allowedNamespaces.includes(c.namespace);
 
 const allowedSystems: string[] = ['OPEN_E_PLATFORM', 'BYGGR'];
-const systemIsAllowed = (c: CaseStatusResponse) => allowedSystems.includes(c.system);
+const systemIsAllowed = (c: CaseStatusResponse) => !!c.system && allowedSystems.includes(c.system);
 
 const caseIsallowed = (c: CaseStatusResponse) => namespaceIsallowed(c) || (typeof c.namespace === 'undefined' && systemIsAllowed(c));
 

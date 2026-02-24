@@ -92,7 +92,7 @@ export default function SchemaForm({
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
 
-  const handleChange = useCallback<FormProps<any>['onChange']>(
+  const handleChange = useCallback<NonNullable<FormProps<any>['onChange']>>(
     (e) => {
       const fd = { ...e.formData };
       if (formData !== undefined) {

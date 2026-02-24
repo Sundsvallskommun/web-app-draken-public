@@ -33,11 +33,6 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
     municipalityId,
     supportErrand,
     setSupportErrand,
-  }: {
-    administrators: Admin[];
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
   } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
@@ -50,12 +45,12 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
 
   const handleCloseErrand = (resolution: Resolution, msg: boolean) => {
     setIsLoading(true);
-    return closeSupportErrand(supportErrand.id, municipalityId, resolution)
+    return closeSupportErrand(supportErrand!.id!, municipalityId, resolution)
       .then(() => {
         if (msg) {
-          const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
-          const adminName = getAdminName(admin);
-          return sendClosingMessage(adminName, supportErrand, municipalityId);
+          const admin = administrators.find((a) => a.adAccount === supportErrand!.assignedUserId);
+          const adminName = getAdminName(admin!);
+          return sendClosingMessage(adminName, supportErrand!, municipalityId);
         }
       })
       .then(() => {
@@ -69,7 +64,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           window.close();
         }, 2000);
         setIsLoading(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e) => {
         toastMessage({
@@ -163,10 +158,10 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"
-                    disabled={!applicantHasContactChannel(supportErrand)}
+                    disabled={!applicantHasContactChannel(supportErrand!)}
                     data-cy="show-contactReasonDescription-input"
                     className="w-full"
-                    checked={applicantHasContactChannel(supportErrand) && closingMessage}
+                    checked={applicantHasContactChannel(supportErrand!) && closingMessage}
                     onChange={() => setClosingMessage(!closingMessage)}
                   >
                     Skicka meddelande till ärendeägare

@@ -131,12 +131,12 @@ export class CasedataContractsController {
   @OpenAPI({ summary: 'Save a new contract' })
   @UseBefore(authMiddleware)
   async create_contract(@Req() req: RequestWithUser, @Body() data: Contract): Promise<{ data: Contract; message: string }> {
-    const errandIdParameter = data.extraParameters.find(p => p.name === 'errandId')?.parameters['errandId'];
+    const errandIdParameter = data.extraParameters?.find(p => p.name === 'errandId')?.parameters?.['errandId'];
     if (!errandIdParameter) {
       throw new HttpException(400, 'Missing errand id');
     }
     const errandId = errandIdParameter.toString();
-    const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
+    const allowed = await validateContractAction(MUNICIPALITY_ID!, errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -157,12 +157,12 @@ export class CasedataContractsController {
     if (!id) {
       throw 'Id not found. Cannot edit contract without id.';
     }
-    const errandIdParameter = data.extraParameters.find(p => p.name === 'errandId')?.parameters['errandId'];
+    const errandIdParameter = data.extraParameters?.find(p => p.name === 'errandId')?.parameters?.['errandId'];
     if (!errandIdParameter) {
       throw new HttpException(400, 'Missing errand id');
     }
     const errandId = errandIdParameter.toString();
-    const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
+    const allowed = await validateContractAction(MUNICIPALITY_ID!, errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
@@ -192,8 +192,8 @@ export class CasedataContractsController {
         throw 'Existing contract not found.';
       })
     ).data;
-    const errandId = existingContract.externalReferenceId.toString();
-    const allowed = await validateContractAction(MUNICIPALITY_ID, errandId, req.user);
+    const errandId = existingContract.externalReferenceId!.toString();
+    const allowed = await validateContractAction(MUNICIPALITY_ID!, errandId, req.user);
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }

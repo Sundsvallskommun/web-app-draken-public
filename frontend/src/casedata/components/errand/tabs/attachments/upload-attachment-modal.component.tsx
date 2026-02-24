@@ -15,10 +15,10 @@ import { CasedataAttachmentFormModel } from './casedata-attachments.component';
 interface UploadAttachmentModalProps {
   isOpen: boolean;
   attachmentTypeExists: boolean;
-  errand: IErrand;
+  errand: IErrand | undefined;
   municipalityId: string;
   saveErrand: () => Promise<boolean>;
-  setErrand: (errand: IErrand) => void;
+  setErrand: (errand: IErrand | undefined) => void;
   closeHandler: () => void;
 }
 
@@ -45,8 +45,8 @@ export const UploadAttachmentModal: React.FC<UploadAttachmentModalProps> = ({
       const saved = await saveErrand();
       if (!saved) return;
 
-      await sendAttachments(municipalityId, errand.id, errand.errandNumber, newFiles);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await sendAttachments(municipalityId, errand!.id, errand!.errandNumber, newFiles);
+      const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
 
       toastMessage({

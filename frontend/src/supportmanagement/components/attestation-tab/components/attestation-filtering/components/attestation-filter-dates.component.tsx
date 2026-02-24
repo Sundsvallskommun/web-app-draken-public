@@ -49,7 +49,7 @@ export const AttestationFilterDatesComponent: React.FC = () => {
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           data-cy="validTo-input"
-          min={startDate ? dayjs(startDate).format('YYYY-MM-DD') : null}
+          min={startDate ? dayjs(startDate).format('YYYY-MM-DD') : undefined}
         />
         <Button data-cy="Tidsperiod-button" onClick={() => handleApply()}>
           Visa tidsperiod

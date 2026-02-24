@@ -9,7 +9,7 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
   const { errand, assets, user } = useAppContext();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
-    const _a = validateAction(errand, user) && !!errand.administrator;
+    const _a = errand ? validateAction(errand, user) && !!errand.administrator : false;
     setAllowed(_a);
   }, [user, errand]);
 
@@ -22,7 +22,7 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
         return (
           <span>
             <strong data-cy="table-column-type">
-              {Object.entries(assetTypeLabels).find((x) => x[0] === value)[1]}
+              {Object.entries(assetTypeLabels).find((x) => x[0] === value)?.[1]}
             </strong>
           </span>
         );
@@ -42,7 +42,7 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
       isColumnSortable: false,
       renderColumn: (value) => {
         return (
-          <span data-cy="table-column-status">{Object.entries(assetStatusLabels).find((x) => x[0] === value)[1]}</span>
+          <span data-cy="table-column-status">{Object.entries(assetStatusLabels).find((x) => x[0] === value)?.[1]}</span>
         );
       },
     },
@@ -53,7 +53,7 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
       renderColumn: (value) => {
         return (
           <>
-            {value.map((v) => {
+            {value.map((v: string) => {
               return (
                 <span data-cy="table-column-errandNumber" key={`caseref-${v}`}>
                   {v}

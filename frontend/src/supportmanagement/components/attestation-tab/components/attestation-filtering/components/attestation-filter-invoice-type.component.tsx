@@ -8,7 +8,7 @@ export interface AttestationInvoiceTypeFilter {
   invoiceType: string[];
 }
 
-export const AttestationInvoiceTypeValues = {
+export const AttestationInvoiceTypeValues: AttestationInvoiceTypeFilter = {
   invoiceType: [],
 };
 

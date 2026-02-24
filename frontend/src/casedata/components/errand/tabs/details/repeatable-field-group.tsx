@@ -28,7 +28,7 @@ export const RepeatableFieldGroup: React.FC<RepeatableFieldGroupProps> = ({
 }) => {
   const { unregister, setValue } = useFormContext();
   const { errand } = useAppContext();
-  const isReadOnly = isErrandLocked(errand) || isFTNotificationErrand(errand);
+  const isReadOnly = (errand ? isErrandLocked(errand) : false) || (errand ? isFTNotificationErrand(errand) : false);
   const [itemIndices, setItemIndices] = useState<number[]>(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       const indices = Object.keys(initialData)

@@ -152,9 +152,9 @@ export const ContractsTable: React.FC<{
       );
     const period = formatPeriod(contract.startDate, contract.endDate);
 
-    const lessorNoticeDate = (contract) => {
-      const notice = contract?.notice?.terms?.find((term) => term.party === 'LESSOR');
-      const period = notice?.periodOfNotice;
+    const lessorNoticeDate = (contract: Contract) => {
+      const notice = contract?.notice?.terms?.find((term: any) => term.party === 'LESSOR');
+      const period = notice?.periodOfNotice ?? 0;
       const endDate = dayjs(contract?.endDate);
       if (!endDate.isValid()) return '-';
       let noticeDate;

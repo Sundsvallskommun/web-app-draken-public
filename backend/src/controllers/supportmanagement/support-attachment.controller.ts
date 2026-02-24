@@ -27,9 +27,9 @@ interface SingleSupportAttachment {
 
 class SupportAttachmentDto {
   @IsString()
-  name: string;
+  name!: string;
   @IsOptional()
-  files: Express.Multer.File[];
+  files!: Express.Multer.File[];
 }
 
 @Controller()

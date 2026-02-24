@@ -114,6 +114,6 @@ export class CasedataStakeholderController {
         return res.data;
       })
       .catch(e => undefined);
-    return personalNumber ? { data: personalNumber, message: 'success' } : { data: undefined, message: '404' };
+    return personalNumber ? { data: personalNumber, message: 'success' } : { data: '', message: '404' };
   }
 }

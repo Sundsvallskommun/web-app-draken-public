@@ -40,9 +40,9 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const description = watch('description');
 
   const onSaveFacilities = (estates: FacilityDTO[]) => {
-    return saveFacilities(municipalityId, errand.id, estates).then(() => {
+    return saveFacilities(municipalityId, errand!.id, estates).then(() => {
       props.setUnsaved(false);
-      return getErrand(municipalityId, errand.id.toString())
+      return getErrand(municipalityId, errand!.id.toString())
         .then((res) => {
           setErrand(res.errand);
           toastMessage(
@@ -67,10 +67,10 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
-    const uppgifterFields: UppgiftField[] = extraParametersToUppgiftMapper(errand) || baseDetails;
+    const uppgifterFields: UppgiftField[] = (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
 
     setFields(uppgifterFields ?? []);
-    setRealEstates(errand.facilities);
+    setRealEstates(errand?.facilities ?? []);
 
     uppgifterFields?.forEach((f) => {
       const key = f.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
@@ -90,12 +90,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       }
     });
 
-    setValue('description', errand.description || '');
+    setValue('description', errand?.description || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
   const renderSection = (fields: UppgiftField[], label: string, icon: IconName) => {
-    const isAppeal = errand.caseType === 'APPEAL';
+    const isAppeal = errand?.caseType === 'APPEAL';
 
     return (
       <div className="my-lg">
@@ -112,7 +112,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                   <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
                   <Input
                     type="text"
-                    value={errand.relatesTo[0]?.errandNumber}
+                    value={errand?.relatesTo?.[0]?.errandNumber}
                     readOnly={true}
                     className={cx('w-3/5')}
                     data-cy="relatesTo-input"
