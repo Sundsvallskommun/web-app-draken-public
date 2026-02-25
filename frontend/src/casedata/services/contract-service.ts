@@ -426,7 +426,7 @@ export const kopeavtalToContract = (data: ContractData): Contract => {
     type: ContractType.PURCHASE_AGREEMENT,
     leaseType: undefined,
     status: data.status,
-    stakeholders: [...(data.buyers ?? []), ...(data.sellers ?? [])],
+    stakeholders: [...(data.buyers ?? []), ...(data.sellers ?? [])].map(({ personalNumber, ...rest }) => rest),
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
@@ -485,7 +485,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     leaseType: data.leaseType,
     status: data.status,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
-    stakeholders: [...(data.lessees ?? []), ...(data.lessors ?? [])],
+    stakeholders: [...(data.lessees ?? []), ...(data.lessors ?? [])].map(({ personalNumber, ...rest }) => rest),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
   };
