@@ -4,9 +4,11 @@ import { onlyOn } from '@cypress/skip-test';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
+import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
 import { mockLegalEntityResponse } from './fixtures/mockLegalEntityResponse';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockPortalPersonData_external, mockPortalPersonData_internal } from './fixtures/mockPortalPersonData';
+import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockSupportAttachments,
@@ -14,8 +16,6 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
-import { mockRelations } from './fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'LOP', () => {
   describe('Invoice tab', () => {
@@ -29,6 +29,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments);
@@ -53,7 +54,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     });
 
     const goToInvoiceTab = () => {
-      cy.visit('arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+      cy.visit(`arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getSupportErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('button').contains('Fakturering').should('exist').click();
@@ -73,9 +74,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
           },
         ];
       });
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand_billing).as(
-        'getSupportErrand'
-      );
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand_billing);
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+        mockSupportErrand_billing
+      ).as('getSupportErrand');
       cy.intercept(
         'PATCH',
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
@@ -221,9 +225,12 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
         ];
       });
 
-      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand_billing).as(
-        'getSupportErrand'
-      );
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand_billing);
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+        mockSupportErrand_billing
+      ).as('getSupportErrand');
       cy.intercept(
         'PATCH',
         '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',

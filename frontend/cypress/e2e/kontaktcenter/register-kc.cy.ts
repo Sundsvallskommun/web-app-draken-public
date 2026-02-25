@@ -22,13 +22,16 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/newerrand/2281', mockEmptySupportErrand).as('initiateErrand');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'
       );
-      cy.intercept('GET', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
-        'getErrand'
-      );
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockEmptySupportErrand.errandNumber}`,
+        mockEmptySupportErrand
+      ).as('getErrand');
 
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'

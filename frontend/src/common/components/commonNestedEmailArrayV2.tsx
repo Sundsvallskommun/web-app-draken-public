@@ -129,7 +129,9 @@ const CommonNestedEmailArrayV2 = ({
           Lägg till
         </Button>
       </div>
-      <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
+      {errors?.newEmail?.message && (
+        <FormErrorMessage className="text-error">{errors?.newEmail?.message}</FormErrorMessage>
+      )}
       {fields?.length > 0 ? (
         <>
           {!addingStakeholder && <strong>Ditt meddelande har {emails?.length} mottagare</strong>}

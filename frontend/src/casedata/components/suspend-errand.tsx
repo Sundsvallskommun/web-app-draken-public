@@ -1,7 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
-import { phaseChangeInProgress } from '@casedata/services/process-service';
+import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -9,7 +8,7 @@ import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 const yupSuspendForm = yup.object().shape({
@@ -47,7 +46,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     formState,
     formState: { errors },
   } = useForm<SuspendFormProps>({
-    resolver: yupResolver(yupSuspendForm),
+    resolver: yupResolver(yupSuspendForm) as unknown as Resolver<SuspendFormProps>,
     defaultValues: { date: dayjs().add(30, 'day').format('YYYY-MM-DD'), comment: '' },
     mode: 'onChange',
   });
@@ -99,8 +98,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             variant="secondary"
             disabled={
               disabled ||
-              phaseChangeInProgress(errand) ||
-              errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
+              isErrandLocked(errand) ||
               !errand?.administrator ||
               user.username.toLocaleLowerCase() !== errand?.administrator?.adAccount?.toLocaleLowerCase()
             }

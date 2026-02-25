@@ -19,6 +19,18 @@ export enum SchemaFilter {
   All = "all",
 }
 
+export interface AddUserToGroupRequest {
+  group: string | null;
+  user: string | null;
+  createdBy: string | null;
+}
+
+export interface CreateGroupRequest {
+  group: string | null;
+  description?: string | null;
+  createdBy: string | null;
+}
+
 export interface OUChildren {
   name?: string | null;
   displayName?: string | null;
@@ -33,6 +45,38 @@ export interface OUChildren {
   personId?: string | null;
 }
 
+/** Används för att returnera paginerat resultat */
+export interface OUChildrenPagedOffsetResponse {
+  /**
+   * Vilken Sida
+   * @format int32
+   */
+  pageNumber?: number;
+  /**
+   * Hur många items per sida
+   * @format int32
+   */
+  pageSize?: number;
+  /**
+   * Antalet
+   * @format int32
+   */
+  totalRecords?: number;
+  /**
+   * Antal sidor
+   * @format int32
+   */
+  totalPages?: number;
+  /** Lista med data */
+  data?: OUChildren[] | null;
+}
+
+export interface PhoneToGroupRequest {
+  group: string | null;
+  imei: string | null;
+  createdBy: string | null;
+}
+
 export interface ProblemDetails {
   type?: string | null;
   title?: string | null;
@@ -41,4 +85,10 @@ export interface ProblemDetails {
   detail?: string | null;
   instance?: string | null;
   [key: string]: any;
+}
+
+export interface RemoveUserFromGroupRequest {
+  group: string | null;
+  user: string | null;
+  createdBy: string | null;
 }

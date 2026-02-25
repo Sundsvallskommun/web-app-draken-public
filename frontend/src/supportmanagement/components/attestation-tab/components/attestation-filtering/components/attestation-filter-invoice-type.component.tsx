@@ -1,8 +1,7 @@
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
-import { use } from 'chai';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface AttestationInvoiceTypeFilter {

@@ -8,4 +8,4 @@ module.exports = {
     'postcss-nested', // or require('postcss-nesting')
     'autoprefixer',
   ],
-}
+};

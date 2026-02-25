@@ -22,6 +22,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/newerrand/2281', mockEmptySupportErrand).as('initiateErrand');
       cy.intercept('PATCH', `**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand).as(
         'updateErrand'

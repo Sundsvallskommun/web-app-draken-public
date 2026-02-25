@@ -21,7 +21,7 @@ import { AppContextInterface, useAppContext } from '@common/contexts/app.context
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -145,18 +145,22 @@ export const CasedataDecisionTab: React.FC<{
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
   const [decisionTemplates, setDecisionTemplates] = useState<DecisionTemplatesResult | null>(null);
 
-  const [initialLawValues] = useState<string[]>(() => {
-    const sortedDec = [...errand.decisions].sort(
-      (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
-    );
-    const existingDecision = sortedDec[0];
+  const sortedDec = useMemo(() => {
+    return [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+  }, [errand]);
 
+  const existingDecision = useMemo(() => {
+    return sortedDec.length !== 0 ? sortedDec[0] : undefined;
+  }, [sortedDec]);
+
+  const initialLawValues = useMemo(() => {
     if (existingDecision?.decisionType === 'FINAL' && existingDecision.law?.length > 0) {
       return existingDecision.law.map((law) => law.heading);
     }
 
-    return getLawMapping(errand).map((law) => law.heading);
-  });
+    return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errand.decisions]);
 
   const ownerPartyId = getOwnerStakeholder(errand)?.personId;
   const assetType = 'FTErrandAssets';
@@ -312,6 +316,7 @@ export const CasedataDecisionTab: React.FC<{
       setIsSaveAndSendLoading(true);
       const rendered = await renderBeslutPdf(errand, data, services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
       const recipientEmail = owner?.emails?.[0]?.value;
@@ -467,8 +472,6 @@ export const CasedataDecisionTab: React.FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-  const sortedDec = [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
-  const existingDecision = sortedDec.length !== 0 ? sortedDec[0] : undefined;
 
   useEffect(() => {
     setValue('errandId', errand.id);
@@ -485,11 +488,12 @@ export const CasedataDecisionTab: React.FC<{
       }
     } else {
       setValue('id', undefined, { shouldDirty: false });
+      setValue('law', [], { shouldDirty: false });
     }
 
     props.setUnsaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand.id]);
+  }, [errand]);
 
   const changeTemplate = (templateIdentifier: string) => {
     if (!templateIdentifier || !decisionTemplates) {
@@ -576,10 +580,12 @@ export const CasedataDecisionTab: React.FC<{
               <FormControl className="w-full ">
                 <FormLabel>Lagrum</FormLabel>
                 <Combobox
+                  data-cy="law-select"
                   multiple
                   placeholder="Välj lagrum"
                   value={initialLawValues}
                   size="sm"
+                  disabled={isErrandLocked(errand) || isSent()}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
                     const newLaws = getLawMapping(errand).filter((law) => selected.includes(law.heading));
@@ -609,7 +615,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validFrom')}
                   size="sm"
-                  disabled={isSent() || outcome !== 'APPROVAL'}
+                  disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validFrom-input"
                 />
@@ -624,7 +630,7 @@ export const CasedataDecisionTab: React.FC<{
                   type="date"
                   {...register('validTo')}
                   size="sm"
-                  disabled={isSent() || outcome !== 'APPROVAL'}
+                  disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
                   placeholder="Välj datum"
                   data-cy="validTo-input"
                 />
@@ -642,6 +648,7 @@ export const CasedataDecisionTab: React.FC<{
                 data-cy="decisionTemplate-select"
                 name="decisionTemplate"
                 size="sm"
+                disabled={isErrandLocked(errand) || isSent()}
                 onChange={(e) => {
                   setValue('decisionTemplate', e.currentTarget.value, { shouldDirty: true });
                   changeTemplate(e.currentTarget.value);
@@ -665,6 +672,7 @@ export const CasedataDecisionTab: React.FC<{
         <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
           <TextEditor
             className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
+            readOnly={isErrandLocked(errand) || isSent()}
             onChange={(e) => {
               setValue('description', e.target.value.markup, {
                 shouldDirty: true,

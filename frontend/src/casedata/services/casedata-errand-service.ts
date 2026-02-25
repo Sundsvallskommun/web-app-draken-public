@@ -1,7 +1,7 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, FTCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import { CaseTypes, FTCaseType, FTNationalCaseTypes, FTNotificationCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -122,6 +122,14 @@ export const isFTErrand = (errand: IErrand) => {
   return Object.values(FTCaseType).includes(errand.caseType as FTCaseType);
 };
 
+export const isFTNotificationErrand = (errand: IErrand) => {
+  return Object.values(FTNotificationCaseType).includes(errand.caseType as FTNotificationCaseType);
+};
+
+export const isFTNationalErrand = (errand: IErrand) => {
+  return Object.values(FTNationalCaseTypes).includes(errand.caseType as FTNationalCaseTypes);
+};
+
 export const findPriorityKeyForPriorityLabel = (key: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
 
@@ -185,14 +193,21 @@ export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = 
 };
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
+  const lockedStatuses = [
+    ErrandStatus.Beslutad,
+    ErrandStatus.BeslutVerkstallt,
+    ErrandStatus.BeslutOverklagat,
+    ErrandStatus.ArendeAvslutat,
+    ErrandStatus.Parkerad,
+  ];
+
   if (errand?.status && typeof errand?.status === 'object') {
     return (
-      errand?.status?.statusType === ErrandStatus.ArendeAvslutat ||
-      errand?.status?.statusType === ErrandStatus.Parkerad ||
+      lockedStatuses.includes(errand?.status?.statusType as ErrandStatus) ||
       phaseChangeInProgress(errand as IErrand)
     );
   } else {
-    return errand?.status === ErrandStatus.ArendeAvslutat;
+    return lockedStatuses.includes(errand?.status as ErrandStatus);
   }
 };
 
@@ -226,11 +241,11 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       phase: e.phase,
       channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
       municipalityId: e.municipalityId || municipalityId,
-      stakeholders: e.stakeholders.map(stakeholder2Contact),
+      stakeholders: (e.stakeholders ?? []).map(stakeholder2Contact),
       facilities: e.facilities,
       created: e.created ? dayjs(e.created).format('YYYY-MM-DD HH:mm') : '',
       updated: e.updated ? dayjs(e.updated).format('YYYY-MM-DD HH:mm') : '',
-      notes: e.notes.sort((a, b) =>
+      notes: e.notes?.sort((a, b) =>
         dayjs(a.updated).isAfter(dayjs(b.updated)) ? -1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? 1 : 0
       ),
       decisions: e.decisions,
@@ -247,7 +262,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
     };
     return ierrand;
   } catch (e) {
-    console.error('Error: could not map errands.');
+    console.error('Error: could not map errands.', e);
   }
 };
 

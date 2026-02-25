@@ -543,6 +543,8 @@ export interface Errand {
   externalTags?: ExternalTag[];
   /** Parameters for the errand */
   parameters?: Parameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
   /** Classification model */
   classification?: Classification;
   /**
@@ -776,6 +778,25 @@ export interface Parameter {
   group?: string;
   /** Parameter values. Each value can have a maximum length of 2000 characters */
   values?: string[];
+}
+
+/** JSON Parameter model */
+export interface JsonParameter {
+  /**
+   * Parameter key/name
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * JSON structure value
+   * @example {"firstName":"Joe","lastName":"Doe"}
+   */
+  value: any;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
 }
 
 /** Stakeholder model */

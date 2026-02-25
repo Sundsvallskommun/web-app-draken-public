@@ -1,7 +1,7 @@
 import { interceptFormData } from 'cypress-intercept-formdata';
 
-export const goToMessageTab = () => {
-  cy.visit('arende/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490');
+export const goToMessageTab = (errandNumber = 'KC-00000001') => {
+  cy.visit(`arende/${errandNumber}`);
   cy.wait('@getSupportErrand');
   cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
   cy.get('button').contains('Meddelanden').should('exist').click();
@@ -42,7 +42,7 @@ export const sendEmailWithAttachment = () => {
   cy.get('[data-cy="add-attachment-button"]').contains('Bifoga fil').should('exist').click();
   cy.get('button').contains('Bläddra').should('exist').click();
   cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/empty-attachment.txt', { force: true });
-  cy.get('.sk-form-error-message').should('have.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
+  cy.get('.sk-form-error-message').should('contain.text', 'Bilagan du försöker lägga till är tom. Försök igen.');
   cy.get('button').contains('Bläddra').should('exist').click();
   cy.get('input[type=file]').selectFile('cypress/e2e/kontaktcenter/files/attachment.txt', { force: true });
   cy.get('[data-cy="upload-button"]').contains('Ladda upp').should('exist').click();

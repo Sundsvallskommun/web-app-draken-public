@@ -99,40 +99,41 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
 
     return (
       <div className="my-lg">
-        <Disclosure
-          variant="alt"
-          header={label}
-          data-cy={`section-${label}-disclosure`}
-          icon={<LucideIcon name={icon as any} />}
-          open
-        >
-          {isAppeal && label === 'Övergripande' && (
-            <div className="px-0">
-              <FormControl className="w-full" key="relatesTo">
-                <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
-                <Input
-                  type="text"
-                  value={errand.relatesTo[0]?.errandNumber}
-                  readOnly={true}
-                  className={cx('w-3/5')}
-                  data-cy="relatesTo-input"
-                  placeholder="t.ex. PRH-2024-000275"
-                />
-              </FormControl>
-            </div>
-          )}
+        <Disclosure variant="alt" data-cy={`section-${label}-disclosure`} initalOpen>
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<LucideIcon name={icon as any} />} />
+            <Disclosure.Title>{label}</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            {isAppeal && label === 'Övergripande' && (
+              <div className="px-0">
+                <FormControl className="w-full" key="relatesTo">
+                  <FormLabel className="mt-lg">Ärende som överklagas</FormLabel>
+                  <Input
+                    type="text"
+                    value={errand.relatesTo[0]?.errandNumber}
+                    readOnly={true}
+                    className={cx('w-3/5')}
+                    data-cy="relatesTo-input"
+                    placeholder="t.ex. PRH-2024-000275"
+                  />
+                </FormControl>
+              </div>
+            )}
 
-          <div className="px-0">
-            {fields?.map((detail, idx) => (
-              <CasedataFormFieldRenderer
-                key={`${detail.field}-${idx}`}
-                detail={detail}
-                idx={idx}
-                form={form}
-                errand={errand}
-              />
-            ))}
-          </div>
+            <div className="px-0">
+              {fields?.map((detail, idx) => (
+                <CasedataFormFieldRenderer
+                  key={`${detail.field}-${idx}`}
+                  detail={detail}
+                  idx={idx}
+                  form={form}
+                  errand={errand}
+                />
+              ))}
+            </div>
+          </Disclosure.Content>
         </Disclosure>
       </div>
     );
@@ -170,18 +171,20 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               </>
             ) : null}
             {appConfig.features.useFacilities ? (
-              <Disclosure
-                variant="alt"
-                header="Fastigheter"
-                data-cy="facilities-disclosure"
-                icon={<LucideIcon name="map-pin" />}
-              >
-                <Facilities
-                  facilities={realEstates}
-                  setUnsaved={props.setUnsaved}
-                  setValue={setValue}
-                  onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
-                />
+              <Disclosure variant="alt" data-cy="facilities-disclosure">
+                <Disclosure.Header>
+                  <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
+                  <Disclosure.Title>Fastigheter</Disclosure.Title>
+                  <Disclosure.Button />
+                </Disclosure.Header>
+                <Disclosure.Content>
+                  <Facilities
+                    facilities={realEstates}
+                    setUnsaved={props.setUnsaved}
+                    setValue={setValue}
+                    onSave={(estates: FacilityDTO[]) => onSaveFacilities(estates)}
+                  />
+                </Disclosure.Content>
               </Disclosure>
             ) : null}
             {sections.map(({ label, icon }, idx) => {

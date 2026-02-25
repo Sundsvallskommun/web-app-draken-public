@@ -27,6 +27,7 @@ export interface FacilityAddressDTO {
    * @example "Testvägen"
    */
   street?: string;
+  districtname?: string;
   /**
    * @minLength 0
    * @maxLength 255

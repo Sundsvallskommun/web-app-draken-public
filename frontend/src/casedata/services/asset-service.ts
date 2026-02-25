@@ -1,6 +1,16 @@
 import { Asset } from '@casedata/interfaces/asset';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import {
+  getLatestSchema,
+  getSchema,
+  getUiSchema,
+  JsonSchemaResponse,
+  UiSchemaResponse,
+} from '@common/services/jsonschema-service';
 import type { RJSFSchema } from '@rjsf/utils';
+
+export { getLatestSchema, getSchema, getUiSchema };
+export type { JsonSchemaResponse, UiSchemaResponse };
 
 export type GetAssetsParams = {
   partyId: string;
@@ -75,7 +85,7 @@ export function buildCreateAssetPayload(
     jsonParameters: [
       {
         key: assetType,
-        value: JSON.stringify(formData),
+        value: formData,
         schemaId,
       },
     ],
@@ -118,31 +128,3 @@ export function buildUpdateAssetPayload(
     jsonParameters: mergedParams,
   };
 }
-export const getMetadataSchema: (municipalityId: string, schemaId: string) => Promise<ApiResponse<any>> = (
-  municipalityId,
-  schemaId
-) => {
-  const url = `${municipalityId}/metadata/jsonschemas/${schemaId}`;
-  return apiService
-    .get<ApiResponse<any>>(url)
-    .then((res) => res.data)
-    .catch((e) => {
-      console.error('Something went wrong when fetching metadata schema for id: ', schemaId);
-      throw e;
-    });
-};
-
-export const getLatestMetadataSchema: (municipalityId: string, schemaName: string) => Promise<ApiResponse<any>> = (
-  municipalityId,
-  schemaName
-) => {
-  const url = `${municipalityId}/metadata/jsonschemas/${schemaName}/latest`;
-
-  return apiService
-    .get<ApiResponse<any>>(url)
-    .then((res) => res.data)
-    .catch((e) => {
-      console.error('Something went wrong when fetching latest schema for schemaName:', schemaName);
-      throw e;
-    });
-};

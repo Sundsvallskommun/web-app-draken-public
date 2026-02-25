@@ -1,8 +1,8 @@
+import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
-import { AttestationInvoiceWrapperComponent } from '@supportmanagement/components/attestation-tab/attestation-invoice-wrapper.component';
 import AttestationsFilteringComponent, {
   AttestationFilter,
   AttestationValues,
@@ -155,8 +155,8 @@ export const AttestationTab = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24">
+    <div className="w-full h-screen relative flex flex-col overflow-hidden">
+      <div className="box-border px-40 w-full flex justify-center shadow-lg min-h-[8rem] max-small-device-max:px-24 flex-shrink-0">
         <div className="container px-0 flex flex-wrap gap-16 items-center">
           <FormProvider {...filterForm}>
             <AttestationsFilteringComponent
@@ -168,7 +168,7 @@ export const AttestationTab = () => {
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full">
+      <main className="px-24 md:px-40 pb-40 w-full flex-1 overflow-auto">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>
@@ -187,13 +187,16 @@ export const AttestationTab = () => {
       </main>
 
       {selectedRecord && (
-        <AttestationInvoiceWrapperComponent
+        <DetailPanelWrapper
           show={showSelectedRecord}
-          label={'Attestering av fakturapost'}
+          label="Attestering av fakturapost"
+          closeAriaLabel="Stäng fakturapost"
           closeHandler={() => {
             setSelectedRecord(undefined);
             setShowSelectedRecord(false);
           }}
+          icon="glasses"
+          dataCy="invoice"
         >
           <AttestationInvoiceForm
             selectedrecord={selectedRecord}
@@ -201,7 +204,7 @@ export const AttestationTab = () => {
               getBillingRecord(recordId, municipalityId).then(setSelectedRecord);
             }}
           />
-        </AttestationInvoiceWrapperComponent>
+        </DetailPanelWrapper>
       )}
     </div>
   );

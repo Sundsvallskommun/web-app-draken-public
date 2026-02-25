@@ -1,4 +1,4 @@
-import { isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   OptionBase,
@@ -165,6 +165,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
+  const isDisabled = isErrandLocked(errand) || isFTNotificationErrand(errand);
 
   const handleChange = (e) => {
     setValue(fieldKey, e, {
@@ -199,7 +200,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
   }
 
   return (
-    <FormControl className="w-full" key={`${detail.field}-${idx}`} disabled={isErrandLocked(errand)}>
+    <FormControl className="w-full" key={`${detail.field}-${idx}`}>
       {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
 
       {(detail.formField.type === 'text' ||
@@ -211,6 +212,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
             {...register(fieldKey, validationRules)}
             className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
             data-cy={`${detail.field}-input`}
+            readOnly={isDisabled}
             {...getInputProps(detail)}
           />
           {error && <span className="text-error text-md">{error}</span>}
@@ -219,7 +221,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'select' && (
         <>
-          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`}>
+          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`} readOnly={isDisabled}>
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, i) => (
               <Select.Option key={`${o}-${i}`} value={o.value}>
@@ -238,6 +240,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
             className={cx(errand.caseType === 'APPEAL' ? 'w-2/3' : 'w-full')}
             {...register(fieldKey, validationRules)}
             data-cy={`${detail.field}-textarea`}
+            readOnly={isDisabled}
           />
           {error && <span className="text-error text-md">{error}</span>}
         </>
@@ -256,6 +259,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
                 {...register(fieldKey, validationRules)}
                 key={`${option}-${i}`}
                 data-cy={`${detail.field}-radio-button-${i}`}
+                readOnly={isDisabled}
               >
                 {option.label}
               </RadioButton>
@@ -273,6 +277,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
                 key={`${option.value}-${index}`}
                 value={option.value}
                 data-cy={`${detail.field}-checkbox-${index}`}
+                readOnly={isDisabled}
                 {...register(fieldKey)}
               >
                 {option.label}
@@ -291,6 +296,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
             multiple={Array.isArray(detail.value)}
             value={initialComboBoxValue}
             onSelect={(e) => handleChange(e.target.value)}
+            readOnly={isDisabled}
           >
             <Combobox.Input className="w-full" placeholder="Sök eller välj" />
             <Combobox.List>

@@ -1,4 +1,5 @@
 import { useAppContext } from '@contexts/app.context';
+import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import {
   Status,
@@ -59,6 +60,7 @@ export const StartProcessComponent: React.FC<{
       onClick={handleSubmit(handleStartProcess, onError)}
       variant="primary"
       color="vattjom"
+      rightIcon={<LucideIcon name="arrow-right" size={18} />}
     >
       Starta handläggning
     </Button>

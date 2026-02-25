@@ -109,6 +109,7 @@ export const SidebarUtredning: React.FC = () => {
 
   const onSubmit = () => {
     const data = getValues();
+    data.law = [];
     save(data);
   };
 

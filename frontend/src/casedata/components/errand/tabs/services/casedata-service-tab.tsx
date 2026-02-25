@@ -7,16 +7,16 @@ import {
   getAssets,
   updateAsset,
 } from '@casedata/services/asset-service';
+import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
-import SchemaForm from '@common/components/json/schema/schema-form.compontant';
-import { serviceUiSchema } from '@common/components/json/schemas/service-ui-schema';
-import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import SchemaForm from '@common/components/json/schema/schema-form.component';
+import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import type { RJSFSchema } from '@rjsf/utils';
+import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { useSnackbar } from '@sk-web-gui/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
 import { Service } from './casedata-service-mapper';
 import { useErrandServices } from './useErrandService';
@@ -26,9 +26,35 @@ const fromCompositeId = (id: string) => {
   return { assetUuid, paramIndex: Number(idxStr) };
 };
 
+//Temporary transport mode filtering based on case type until final specicication is done.
+//Final solution should be export to json schema API with different schema per case type.
+const TRANSPORT_MODE_BY_CASE_TYPE: Record<string, string[]> = {
+  PARATRANSIT: ['vanligt_sate_personbil', 'fordon_hogt_insteg', 'rullstolsplats', 'rullstolsplats_stor'],
+  PARATRANSIT_RENEWAL: ['vanligt_sate_personbil', 'fordon_hogt_insteg', 'rullstolsplats', 'rullstolsplats_stor'],
+  PARATRANSIT_NOTIFICATION: ['vanligt_sate_personbil', 'fordon_hogt_insteg', 'rullstolsplats', 'rullstolsplats_stor'],
+
+  PARATRANSIT_NATIONAL: ['tag', 'buss', 'flyg', 'bat', 'personbilstaxi', 'rullstolstaxi'],
+  PARATRANSIT_NOTIFICATION_NATIONAL: ['tag', 'buss', 'flyg', 'bat', 'personbilstaxi', 'rullstolstaxi'],
+};
+
+function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSchema | null {
+  if (!schema) return null;
+  const allowedModes = TRANSPORT_MODE_BY_CASE_TYPE[caseType];
+  if (!allowedModes) return schema;
+
+  const filtered = JSON.parse(JSON.stringify(schema));
+  if (filtered.properties?.transportMode?.items?.oneOf) {
+    filtered.properties.transportMode.items.oneOf = filtered.properties.transportMode.items.oneOf.filter(
+      (opt: { const: string }) => allowedModes.includes(opt.const)
+    );
+  }
+  return filtered;
+}
+
 export const CasedataServicesTab: React.FC = () => {
   const { municipalityId, errand } = useAppContext();
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
+  const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [editing, setEditing] = useState<Service | null>(null);
   const [schemaId, setSchemaId] = useState<string>('');
@@ -39,11 +65,18 @@ export const CasedataServicesTab: React.FC = () => {
   const partyId = getOwnerStakeholder(errand).personId;
   const errandNr = errand.errandNumber!;
 
+  const filteredSchema = useMemo(() => {
+    return filterSchemaByCase(schema, errand?.caseType ?? '');
+  }, [schema, errand?.caseType]);
+
   useEffect(() => {
     (async () => {
       const { schema, schemaId } = await getLatestRjsfSchema(municipalityId, assetType);
       setSchema(schema);
       setSchemaId(schemaId);
+
+      const fetchedUiSchema = await getUiSchemaForSchema(municipalityId, schemaId);
+      setUiSchema(fetchedUiSchema);
     })();
   }, [municipalityId, assetType]);
   const { services, loading, error, refetch } = useErrandServices({
@@ -177,16 +210,20 @@ export const CasedataServicesTab: React.FC = () => {
         service kunden har rätt till vid sina resor.
       </p>
 
-      <div className="mt-24 max-w-full">
-        <SchemaForm
-          schema={schema}
-          uiSchema={serviceUiSchema}
-          formData={formData}
-          onChange={(fd) => setFormData(fd)}
-          onSubmit={handleSubmit}
-          objectFieldTemplate={ServicesObjectFieldTemplate}
-        />
-      </div>
+      {!isErrandLocked(errand) && (
+        <div className="mt-24 max-w-full">
+          {uiSchema && (
+            <SchemaForm
+              schema={filteredSchema}
+              uiSchema={uiSchema}
+              formData={formData}
+              onChange={(fd) => setFormData(fd)}
+              onSubmit={handleSubmit}
+              objectFieldTemplate={ServicesObjectFieldTemplate}
+            />
+          )}
+        </div>
+      )}
 
       <div className="mt-32 pt-24">
         <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
@@ -195,7 +232,7 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} />
+          <ServiceListComponent services={services} onRemove={removeService} readOnly={isErrandLocked(errand)} />
         )}
       </div>
     </div>

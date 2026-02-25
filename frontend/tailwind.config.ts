@@ -6,7 +6,6 @@ export default {
   content: [
     './node_modules/@sk-web-gui/*/dist/**/*.js',
     './src/app/**/*.tsx',
-    './src/pages/**/*.{ts,tsx}',
     './src/common/**/*.tsx',
     './src/casedata/components/**/*.tsx',
     './src/supportmanagement/components/**/*.tsx',

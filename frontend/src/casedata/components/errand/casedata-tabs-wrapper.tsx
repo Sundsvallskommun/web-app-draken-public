@@ -12,7 +12,7 @@ import {
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment, isPT } from '@common/services/application-service';
+import { isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -26,6 +26,7 @@ import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
+import { contractsEnabled } from '@common/services/feature-flag-service';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -248,7 +249,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           ]
         : [],
     },
-    ...(getApplicationEnvironment() === 'TEST'
+    ...(contractsEnabled()
       ? [
           {
             label: 'Avtal',

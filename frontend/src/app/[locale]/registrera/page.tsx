@@ -2,8 +2,9 @@
 
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
+import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
+import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { default as NextLink } from 'next/link';
@@ -20,6 +21,9 @@ const Registrera: React.FC = () => {
   };
 
   useEffect(() => {
+    getFeatureFlags().then((res) => {
+      applyRuntimeFeatureFlags(res.data);
+    });
     setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
     getAdminUsers().then((data) => {
       setAdministrators(data);

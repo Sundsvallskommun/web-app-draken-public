@@ -1,7 +1,7 @@
 'use client';
 
 import { User } from '@common/interfaces/user';
-import { isIK, isKC, isLOP } from '@common/services/application-service';
+import { isIK, isLOP, isSE } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -173,7 +173,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
         const emailBody = `${
           isLOP()
             ? `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br>Du är välkommen att höra av dig om du har några frågor.<br>Vänligen ändra inte ämnesraden om du besvarar mejlet.<br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br><strong>Servicecenter Lön och pension</strong><br><a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>060-19 26 00, telefontid 9.00-12.00<br><a href="www.sundsvall.se">www.sundsvall.se</a><br><br>Sundsvalls kommun behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR). Läs mer på <a href="www.sundsvall.se/personuppgifter">www.sundsvall.se/personuppgifter</a>`
-            : isIK()
+            : isIK() || isSE()
             ? `Hej,<br><br>Intern Kundtjänst har tagit emot ett ärende/meddelande enligt nedan:<br><br><br><br>Med vänliga hälsningar<br><strong>${user.firstName} ${user.lastName}</strong><br>Intern Kundtjänst`
             : `Hej,<br><br>Tack för att du kontaktar oss.<br><br><br><br>Begäran om intern återkoppling`
         }.`;
@@ -200,7 +200,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
       ) : null}
       <Modal show={showModal} label="Intern återkoppling" className="w-[52rem]" onClose={() => setShowModal(false)}>
         <Modal.Content>
-          {(isKC() || isIK()) && (
+          {appConfig.features.useMultipleContactChannels && (
             <>
               <p className="text-content font-semibold">Kontaktsätt</p>
               <FormControl id="resolution" className="w-full" required>

@@ -70,25 +70,20 @@ export const CasedataAttachments: React.FC = () => {
     setIsOpen(true);
   };
 
-  let formSchema = yup.object({
-    files: yup.array().of(
-      yup.object({
-        meta: yup.object({
-          name: yup.string().required('Namn måste anges'),
-        }),
-      })
-    ),
-    newFiles: yup.array().of(
-      yup.object({
-        meta: yup.object({
-          name: yup.string().required('Namn måste anges'),
-        }),
-      })
-    ),
-  });
+  const uploadFileSchema = yup
+    .mixed<UploadFile>()
+    .required()
+    .test('file-name-required', 'Namn måste anges', (value) => !!value?.meta?.name);
 
-  const methods = useForm<CasedataAttachmentFormModel>({
-    resolver: yupResolver(formSchema, { context: { allFiles: [] } }),
+  const formSchema: yup.ObjectSchema<CasedataAttachmentFormModel> = yup
+    .object({
+      files: yup.array().of(uploadFileSchema).defined().required(),
+      newFiles: yup.array().of(uploadFileSchema).defined().required(),
+    })
+    .required();
+
+  const methods = useForm<CasedataAttachmentFormModel, any, yup.InferType<typeof formSchema>>({
+    resolver: yupResolver(formSchema),
     defaultValues: defaultAttachmentInformation,
     mode: 'onChange',
   });

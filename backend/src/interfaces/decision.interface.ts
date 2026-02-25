@@ -34,9 +34,10 @@ export class DecisionDTO implements Decision {
   @IsString()
   @IsOptional()
   description?: string;
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => LawDTO)
-  law: Law[];
+  law?: Law[];
   @IsOptional()
   decidedBy?: StakeholderDTO;
   @IsString()

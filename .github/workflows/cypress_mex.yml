@@ -59,3 +59,4 @@ jobs:
           NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: true
           NEXT_PUBLIC_USE_MY_PAGES: true
           NEXT_PUBLIC_USE_ERRAND_EXPORT: true
+          NEXT_PUBLIC_USE_UI_PHASES: true

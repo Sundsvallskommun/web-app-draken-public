@@ -1,6 +1,5 @@
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';

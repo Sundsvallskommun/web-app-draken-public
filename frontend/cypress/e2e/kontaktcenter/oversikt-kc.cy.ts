@@ -23,6 +23,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/administrators', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockSupportErrands).as('getErrands');
       cy.intercept('GET', '**/supporterrands/2281?page=1*', mockSupportErrandsEmpty).as('getErrandsEmpty');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');

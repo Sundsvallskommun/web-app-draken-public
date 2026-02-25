@@ -1,0 +1,56 @@
+name: Cypress Tests PT
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "develop"
+      - "main"
+      - "*"
+    paths:
+      - frontend/src/**
+      - frontend/cypress/**
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    name: E2E in Chrome on ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cypress run PT
+        uses: cypress-io/github-action@e65cba2e7319696fc0fdc4d5a319b737aec4ba1c
+        with:
+          working-directory: frontend
+          install-command: yarn --frozen-lockfile --silent --network-timeout 1000000
+          browser: chrome
+          build: yarn build:pt
+          start: yarn start:pt
+          wait-on: "http://localhost:3000"
+          spec: cypress/e2e/case-data/pt**/*.cy.ts
+          config: viewportHeight=720,viewportWidth=1280
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_PUBLIC_APPLICATION: PT
+          NEXT_PUBLIC_APP_NAME: "Draken"
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          DOMAIN_NAME: localhost
+          BASE_PATH: ""
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
+          NEXT_PUBLIC_ENVIRONMENT: TEST
+          HEALTH_AUTH: false
+          HEALTH_USERNAME: ""
+          HEALTH_PASSWORD: ""
+          NEXT_PUBLIC_IS_CASEDATA: true
+          NEXT_PUBLIC_USE_MY_PAGES: true
+          NEXT_PUBLIC_USE_RELATIONS: true
+          NEXT_PUBLIC_USE_UI_PHASES: true

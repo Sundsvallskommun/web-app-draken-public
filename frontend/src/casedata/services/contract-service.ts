@@ -12,11 +12,13 @@ import {
   Fees,
   InvoicedIn,
   LeaseType,
+  PageContract,
   Parameter,
   Party,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
+import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
@@ -28,14 +30,18 @@ import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
+import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
+import { EstateInfoSearch } from '@common/interfaces/estate-details';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
   { label: 'Köpeavtal', key: ContractType.PURCHASE_AGREEMENT },
+  { label: 'Upplåtelse av allmän plats', key: ContractType.LAND_LEASE_PUBLIC },
+  { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
+  { label: 'Tomträtt', key: ContractType.LEASEHOLD },
 ];
 
 export const leaseTypes = [
-  { label: 'Allmän platsupplåtelse', key: LeaseType.LAND_LEASE_PUBLIC },
   { label: 'Anläggningsarrende', key: LeaseType.SITE_LEASE_COMMERCIAL },
   { label: 'Bostadsarrende', key: LeaseType.LAND_LEASE_RESIDENTIAL },
   { label: 'Båtplats', key: LeaseType.USUFRUCT_MOORING },
@@ -44,8 +50,15 @@ export const leaseTypes = [
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
   { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
-  { label: 'Tomträtt', key: LeaseType.LEASEHOLD },
 ];
+
+export const isLeaseAgreement = (contractType: ContractType) =>
+  [
+    ContractType.LEASE_AGREEMENT,
+    ContractType.LAND_LEASE_PUBLIC,
+    ContractType.SHORT_TERM_LEASE_AGREEMENT,
+    ContractType.LEASEHOLD,
+  ].includes(contractType);
 
 export const roleLabels: { [key in ContractStakeholderRole]: string } = {
   BUYER: 'Köpare',
@@ -84,18 +97,24 @@ export const defaultLagenhetsarrende: ContractData = {
   propertyDesignations: [],
   lessees: [],
   lessors: [],
-  notices: [
-    {
-      party: Party.LESSEE,
-      periodOfNotice: 3,
-      unit: TimeUnit.MONTHS,
-    },
-    {
-      party: Party.LESSOR,
-      periodOfNotice: 3,
-      unit: TimeUnit.MONTHS,
-    },
-  ],
+  notice: {
+    terms: [
+      {
+        party: Party.LESSEE,
+        periodOfNotice: 3,
+        unit: TimeUnit.MONTHS,
+      },
+      {
+        party: Party.LESSOR,
+        periodOfNotice: 3,
+        unit: TimeUnit.MONTHS,
+      },
+    ],
+  },
+  extension: {
+    autoExtend: false,
+    unit: TimeUnit.DAYS,
+  },
   extraParameters: [
     {
       name: 'InvoiceInfo',
@@ -154,21 +173,72 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
     .get<ApiResponse<ContractData>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching contract: ', contractId);
       throw e;
     });
 };
 
-export const fetchAllContracts: () => Promise<ApiResponse<Contract[]>> = () => {
-  const url = `contracts`;
+export interface ContractFilterParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  query?: string;
+  status?: string;
+  contractType?: string;
+  leaseType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export const fetchContracts: (params?: ContractFilterParams) => Promise<PageContract> = (params = {}) => {
+  const {
+    page = 0,
+    limit = 12,
+    sortBy,
+    sortOrder,
+    query,
+    status,
+    contractType,
+    leaseType,
+    startDate,
+    endDate,
+  } = params;
+
+  let url = `contracts?page=${page}&limit=${limit}`;
+
+  if (sortBy) {
+    url += `&sortBy=${sortBy}&sortOrder=${sortOrder || 'desc'}`;
+  }
+  if (query) {
+    url += `&query=${encodeURIComponent(query)}`;
+  }
+  if (status) {
+    url += `&status=${status}`;
+  }
+  if (contractType) {
+    url += `&contractType=${contractType}`;
+  }
+  if (leaseType) {
+    url += `&leaseType=${leaseType}`;
+  }
+  if (startDate) {
+    url += `&startDate=${startDate}`;
+  }
+  if (endDate) {
+    url += `&endDate=${endDate}`;
+  }
+
   return apiService
-    .get<ApiResponse<ContractData[]>>(url)
+    .get<PageContract>(url)
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching contracts');
       throw e;
     });
 };
+
+// Keep for backwards compatibility
+export const fetchAllContracts = fetchContracts;
 
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
   const data: ExtraParameter[] = [
@@ -192,7 +262,7 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
     .then((res) => {
       if (res.data.type === ContractType.PURCHASE_AGREEMENT) {
         return contractToKopeavtal(res.data as Contract);
-      } else if (res.data.type === ContractType.LEASE_AGREEMENT) {
+      } else if (isLeaseAgreement(res.data.type)) {
         return contractToLagenhetsArrende(res.data as Contract);
       } else {
         console.error('Unknown contract type: ', res.data.type);
@@ -200,7 +270,6 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
       }
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching contract: ', contractId);
       throw e;
     });
 };
@@ -217,7 +286,7 @@ export const renderContractPdf: (
   const templateIdentifier =
     contract.type === ContractType.PURCHASE_AGREEMENT
       ? `mex.contract.purchaseagreement`
-      : contract.type === ContractType.LEASE_AGREEMENT
+      : isLeaseAgreement(contract.type)
       ? `mex.contract.landlease`
       : 'mex.contract.purchaseagreement';
 
@@ -310,9 +379,6 @@ const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
 };
 
 const toContractStakeholderType = (type: StakeholderType): ContractStakeholderType => {
-  if (type === 'ORGANIZATION') {
-    return ContractStakeholderType.COMPANY;
-  }
   return type as ContractStakeholderType;
 };
 
@@ -354,7 +420,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
 
 export const kopeavtalToContract = (data: ContractData): Contract => {
   return {
-    start: data.start,
+    startDate: data.startDate,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: ContractType.PURCHASE_AGREEMENT,
@@ -388,14 +454,15 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
+        `Avgift, ${
+          leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
+        }. Fastigheter: ${data.propertyDesignations.map((p) => p.name).join(', ')}`,
         data.fees?.additionalInformation?.[1] ?? '',
       ],
-      ...(data.indexAdjusted && { indexYear: 2025 }),
-      ...(data.indexAdjusted && { indexNumber: 419.35 }),
-      ...(data.indexAdjusted && { indexationRate: 1 }),
-      // FIXME indexType saknas i APIet
-      // ...(data.indexAdjusted && {indexType: 'KPI 80'}),
+      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
+      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber ?? 419.35 }),
+      ...(data.indexAdjusted === 'true' && { indexationRate: data.fees?.indexationRate ?? 1 }),
+      ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
     };
   }
   return {
@@ -409,12 +476,12 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       invoicedIn: InvoicedIn.ADVANCE,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    start: data.start,
-    end: data.end,
-    notices: data.notices,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    notice: data.notice,
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
-    type: ContractType.LEASE_AGREEMENT,
+    type: data.type,
     leaseType: data.leaseType,
     status: data.status,
     externalReferenceId: data.externalReferenceId.toString(),
@@ -425,6 +492,12 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
 };
 
 export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
+  const hasIndexation = !!(
+    contract.fees?.indexType ||
+    contract.fees?.indexYear ||
+    contract.fees?.indexNumber ||
+    contract.fees?.indexationRate
+  );
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
@@ -432,10 +505,13 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     lessors: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSOR)),
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
+    indexAdjusted: hasIndexation ? 'true' : 'false',
     fees: {
       ...contract.fees,
-      additionalInformation: contract.fees?.additionalInformation ?? [
-        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}`,
+      additionalInformation: [
+        `Avgift, ${
+          leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
+        }. Fastigheter: ${contract.propertyDesignations.map((p) => p.name).join(', ')}`,
         '',
       ],
     },
@@ -444,7 +520,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
 };
 
 export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => string = (c) =>
-  c.type === 'COMPANY' || c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY'
+  c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY' || c.type === 'ORGANIZATION'
     ? c.organizationName
     : `${c.firstName} ${c.lastName}`;
 
@@ -547,7 +623,7 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
       note: attachment.metadata.note,
       mimeType: attachment.metadata.mimeType,
       version: '',
-      created: '',
+      created: attachment.metadata.created ?? '',
       updated: '',
       ...({} as TExtraMeta),
       isValidAttachment: attachment.attachmentData.content,
@@ -555,3 +631,104 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
   };
   return a;
 }
+
+export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
+  errand: IErrand
+) => {
+  const designations = errand.facilities
+    .filter((facility) => facility.address?.propertyDesignation)
+    .map((facility) => facility.address?.propertyDesignation);
+
+  const infos = await Promise.allSettled(designations.map((d) => getSingleFacilityByDesignation(d)));
+
+  return infos
+    .filter((info): info is PromiseFulfilledResult<ApiResponse<EstateInfoSearch[]>> => info.status === 'fulfilled')
+    .flatMap((info) => {
+      const estates = info.value?.data || [];
+      return estates.map((estate) => ({
+        name: estate.designation || '',
+        district: estate.districtname || '',
+      }));
+    });
+};
+
+// Contract Invoices
+
+export interface ContractInvoice {
+  id: string;
+  status: CBillingRecordStatusEnum;
+  invoiceDate?: string;
+  dueDate?: string;
+  amount?: number;
+  invoiceNumber?: string;
+}
+
+export interface ContractInvoicesResponse {
+  invoices: ContractInvoice[];
+  totalCount: number;
+  totalPages: number;
+}
+
+export const invoiceStatusLabels: Record<CBillingRecordStatusEnum, string> = {
+  [CBillingRecordStatusEnum.NEW]: 'Ny',
+  [CBillingRecordStatusEnum.APPROVED]: 'Godkänd',
+  [CBillingRecordStatusEnum.INVOICED]: 'Fakturerad',
+  [CBillingRecordStatusEnum.REJECTED]: 'Avslagen',
+};
+
+export const invoiceStatusColors: Record<CBillingRecordStatusEnum, 'tertiary' | 'vattjom' | 'gronsta' | 'error'> = {
+  [CBillingRecordStatusEnum.NEW]: 'tertiary',
+  [CBillingRecordStatusEnum.APPROVED]: 'vattjom',
+  [CBillingRecordStatusEnum.INVOICED]: 'gronsta',
+  [CBillingRecordStatusEnum.REJECTED]: 'error',
+};
+
+export const fetchContractInvoices: (
+  municipalityId: string,
+  contractId: string,
+  page?: number,
+  size?: number
+) => Promise<ContractInvoicesResponse> = async (municipalityId, contractId, page = 0, size = 10) => {
+  if (!municipalityId || !contractId) {
+    console.error('Missing municipalityId or contractId for fetching contract invoices');
+    return { invoices: [], totalCount: 0, totalPages: 0 };
+  }
+
+  const url = `billing/${municipalityId}/contracts/${contractId}/invoices?page=${page}&size=${size}`;
+
+  return apiService
+    .get<{
+      content?: Array<{
+        id?: string;
+        status: CBillingRecordStatusEnum;
+        invoice?: {
+          date?: string;
+          dueDate?: string;
+          totalAmount?: number;
+        };
+      }>;
+      totalElements?: number;
+      totalPages?: number;
+    }>(url)
+    .then((res) => {
+      const content = res.data?.content || [];
+      const invoices: ContractInvoice[] = content.map((record) => ({
+        id: record.id || '',
+        status: record.status,
+        invoiceDate: record.invoice?.date,
+        dueDate: record.invoice?.dueDate,
+        amount: record.invoice?.totalAmount,
+        invoiceNumber: '-', // Which field to use for invoice number is unknown at this time
+      }));
+
+      return {
+        invoices,
+        totalCount: res.data?.totalElements || 0,
+        totalPages: res.data?.totalPages || 0,
+      };
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching contract invoices:', e);
+      return { invoices: [], totalCount: 0, totalPages: 0 };
+    });
+};

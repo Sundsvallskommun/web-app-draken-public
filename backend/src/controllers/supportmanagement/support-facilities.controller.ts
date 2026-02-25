@@ -15,6 +15,12 @@ type Parameters = {
   values: string[];
 }[];
 
+interface FacilitiesPayload {
+  propertyDesignations: string[];
+  districtnames: string[];
+  streets: string[];
+}
+
 @Controller()
 export class SupportFacilitiesController {
   private apiService = new ApiService();
@@ -28,7 +34,7 @@ export class SupportFacilitiesController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Param('id') id: string,
-    @Body() facilities: string[],
+    @Body() facilities: FacilitiesPayload,
     @Res() response: any,
   ) {
     if (!municipalityId || !id) {
@@ -37,6 +43,10 @@ export class SupportFacilitiesController {
 
     const PROPERTY_DESIGNATION_KEY = 'propertyDesignation';
     const PROPERTY_DESIGNATION_DISPLAY_NAME = 'Fastighetsbeteckning';
+    const DISTRICT_NAME_KEY = 'districtname';
+    const DISTRICT_NAME_DISPLAY_NAME = 'Distriktnamn';
+    const STREET_KEY = 'street';
+    const STREET_DISPLAY_NAME = 'Adress';
 
     const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
     const supportBaseURL = apiURL(this.SERVICE);
@@ -47,24 +57,30 @@ export class SupportFacilitiesController {
       return response.status(404).send('No parameters found for errand with id');
     }
 
-    let url: string;
-    let body: Parameters | string[] = [];
-    if (existingParameters.find(p => p.key === PROPERTY_DESIGNATION_KEY)) {
-      url = `${municipalityId}/${this.namespace}/errands/${id}/parameters/propertyDesignation`;
-      body = facilities;
-    } else {
-      url = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
-      body = [
-        ...existingParameters,
-        {
-          key: PROPERTY_DESIGNATION_KEY,
-          displayName: PROPERTY_DESIGNATION_DISPLAY_NAME,
-          values: facilities,
-        },
-      ];
-    }
+    const filteredParameters = existingParameters.filter(p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY);
+
+    const newParameters: Parameters = [
+      ...filteredParameters,
+      {
+        key: PROPERTY_DESIGNATION_KEY,
+        displayName: PROPERTY_DESIGNATION_DISPLAY_NAME,
+        values: facilities.propertyDesignations || [],
+      },
+      {
+        key: DISTRICT_NAME_KEY,
+        displayName: DISTRICT_NAME_DISPLAY_NAME,
+        values: facilities.districtnames || [],
+      },
+      {
+        key: STREET_KEY,
+        displayName: STREET_DISPLAY_NAME,
+        values: facilities.streets || [],
+      },
+    ];
+
+    const url = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.patch<any, Parameters | string[]>({ url, baseURL, data: body }, req.user).catch(e => {
+    const res = await this.apiService.patch<any, Parameters>({ url, baseURL, data: newParameters }, req.user).catch(e => {
       logger.error('Error when patching support errand');
       logger.error(e);
       throw e;

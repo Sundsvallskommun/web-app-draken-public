@@ -143,11 +143,7 @@ export const AttestationsTable: React.FC<{
         <Table.Column>{prettyTime(record.modified)}</Table.Column>
         <Table.Column>
           {record.extraParameters?.['errandId'] ? (
-            <NextLink
-              href={`/arende/${municipalityId}/${record.extraParameters?.['errandId']}`}
-              target="_blank"
-              className="underline"
-            >
+            <NextLink href={`/arende/${record.extraParameters?.['errandId']}`} target="_blank" className="underline">
               {maybe(record.extraParameters?.['errandNumber'])}
             </NextLink>
           ) : (

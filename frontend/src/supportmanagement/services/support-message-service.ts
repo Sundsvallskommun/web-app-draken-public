@@ -43,6 +43,7 @@ export interface Message {
   emailHeaders: Record<string, string[]>;
   conversationId?: string;
   messageId?: string;
+  recipients: string[];
 }
 
 const getClosingMessageBody = async (userName: string): Promise<string> => {
@@ -322,6 +323,7 @@ export const buildTree = (_list: Message[]) => {
             MESSAGE_ID: [parent],
           },
           children: [],
+          recipients: [],
         };
         dummyParent?.children?.push(nodesMap.get(id));
         roots.push(dummyParent);

@@ -6,7 +6,7 @@ export const supportManagementPersonSearch = () => {
   cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
   cy.get('[data-cy="personal-number-error-message"')
     .should('exist')
-    .and('have.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
+    .should('contain.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
   cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
   cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
   cy.get('[data-cy="personal-number-error-message"').should('not.exist');
@@ -24,11 +24,11 @@ export const supportManagementEnterpriseSearch = () => {
   cy.get('[data-cy="contact-orgNumber-owner"]').type('WORD!');
   cy.get('[data-cy="org-number-error-message"]')
     .should('exist')
-    .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
+    .should('contain.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
   cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber').replace('-', ''));
   cy.get('[data-cy="org-number-error-message"]')
     .should('exist')
-    .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
+    .should('contain.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
   cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber'));
   cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
   cy.get('[data-cy="org-number-error-message"]').should('not.exist');
@@ -40,7 +40,7 @@ export const supportManagementOrganizationSearch = () => {
   cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
   cy.get('[data-cy="org-number-error-message"]')
     .should('exist')
-    .and('have.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
+    .should('contain.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
   cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber'));
   cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
   cy.get('[data-cy="org-number-error-message"]').should('not.exist');

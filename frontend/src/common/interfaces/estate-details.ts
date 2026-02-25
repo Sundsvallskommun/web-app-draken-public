@@ -2,6 +2,8 @@ export type EstateInfoSearch = {
   address: string;
   designation: string;
   objectidentifier: string;
+  districtname?: string;
+  districtcode?: string;
 };
 
 export type OwnerChanges = {
@@ -36,6 +38,9 @@ export type OwnerChanges = {
 };
 
 export type EstateInformation = {
+  district?: string;
+  districtname?: string;
+  address?: string;
   designation: string;
   objectidentifier: string;
   totalArea: number;

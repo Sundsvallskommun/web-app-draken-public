@@ -60,6 +60,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
     } else if (searchMode === 'employee') {
       if (!luhnCheck(val)) {
         search = searchADUser;
+        form.setValue('personNumber', undefined);
       } else {
         search = searchADUserByPersonNumber;
       }

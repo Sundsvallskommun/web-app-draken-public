@@ -13,15 +13,21 @@ import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
-import { isFTErrand } from './casedata-errand-service';
+import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
   {
-    heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+    heading: '13 kap. 8 § trafikförordningen',
     sfs: 'Trafikförordningen (1998:1276)',
     chapter: '13',
     article: '8',
+  },
+  {
+    heading: '20§ förvaltningslagen',
+    sfs: 'Förvaltningslagen (2017:900)',
+    chapter: '',
+    article: '20',
   },
 ];
 
@@ -40,7 +46,20 @@ const lawMappingFT: Law[] = [
 
 export const getLawMapping = (errand: IErrand): Law[] => {
   if (isPT()) {
-    return isFTErrand(errand) ? lawMappingFT : lawMapping;
+    const baseLawMapping = isFTErrand(errand) ? lawMappingFT : lawMapping;
+
+    const existingLaws =
+      errand.decisions
+        ?.flatMap((d) => d.law || [])
+        .filter(
+          (existingLaw) => existingLaw.heading && !baseLawMapping.some((l) => l.heading === existingLaw.heading)
+        ) || [];
+
+    const uniqueExistingLaws = existingLaws.filter(
+      (law, index, self) => index === self.findIndex((l) => l.heading === law.heading)
+    );
+
+    return [...baseLawMapping, ...uniqueExistingLaws];
   }
 
   return [
@@ -302,6 +321,8 @@ export const renderPdf: (
 
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && isFTNationalErrand(errand)) {
+    identifier = `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
     identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
@@ -377,16 +398,21 @@ export const renderPdf: (
           })
           .join(', ')
       : '';
+
     renderBody.parameters['lawReferences'] = lawReferences;
 
     if (services && services.length > 0) {
       renderBody.parameters['services'] = services.map((service) => {
         const serviceData: any = {
-          restyp: service.restyp,
+          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
           validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
           validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
           validityType: service.validityType,
         };
+
+        if (service.transportMode?.length > 0) {
+          serviceData.transportMode = service.transportMode.join(', ');
+        }
 
         if (service.aids?.length > 0) {
           serviceData.aids = service.aids.join(', ');

@@ -3,8 +3,9 @@
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import Layout from '@common/components/layout/layout.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
+import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
@@ -13,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const Arende: React.FC = () => {
   const pathName = usePathname();
-  const [errandId, setErrandId] = useState<string>();
+  const [errandNumber, setErrandNumber] = useState<string>();
   const { municipalityId, setMunicipalityId, setSupportMetadata, setAdministrators } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
@@ -24,6 +25,9 @@ const Arende: React.FC = () => {
   };
 
   useEffect(() => {
+    getFeatureFlags().then((res) => {
+      applyRuntimeFeatureFlags(res.data);
+    });
     setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
     getAdminUsers().then((data) => {
       setAdministrators(data);
@@ -32,10 +36,8 @@ const Arende: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const municipality = pathName?.split('/')[2];
-    const errandNumber = pathName?.split('/')[3];
-    municipality && setMunicipalityId(municipality);
-    errandNumber && setErrandId(errandNumber);
+    const errandNumber = pathName?.split('/')[2];
+    errandNumber && setErrandNumber(errandNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -60,9 +62,9 @@ const Arende: React.FC = () => {
         </NextLink>
 
         {appConfig.isCaseData
-          ? !!errandId && <CasedataErrandComponent id={errandId} />
+          ? !!errandNumber && <CasedataErrandComponent errandNumber={errandNumber} />
           : appConfig.isSupportManagement
-          ? !!errandId && !!municipalityId && <SupportErrandComponent id={errandId} />
+          ? !!errandNumber && !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />
           : null}
       </Layout>
     </div>
