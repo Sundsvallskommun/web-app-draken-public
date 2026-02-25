@@ -23,7 +23,7 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-COPY --from=builder --chown=1001:0 /app/ ./
+COPY --from=builder --chown=1001:0 --chmod=555 /app/ ./
 
 # Create directories that need to be writable and set group permissions
 RUN mkdir -p /app/data/sessions /app/data/logs/error && \
