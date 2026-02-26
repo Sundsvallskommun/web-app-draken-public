@@ -1467,7 +1467,7 @@ export const mockFilterChannelErrands = {
 export const mockSupportErrandCommunication = [
   {
     communicationID: '12',
-    errandNumber: 'PRH-2022-000001',
+    errandNumber: 'SGP-2022-000001',
     direction: 'OUTBOUND',
     messageBody: 'Hello world',
     sent: '2024-05-20T10:44:25.582Z',
@@ -1490,7 +1490,7 @@ export const mockSupportErrandCommunication = [
   },
   {
     communicationID: '13',
-    errandNumber: 'PRH-2022-000001',
+    errandNumber: 'SGP-2022-000001',
     direction: 'OUTBOUND',
     messageBody: 'Hello world 2',
     sent: '2024-05-20T10:44:25.582Z',

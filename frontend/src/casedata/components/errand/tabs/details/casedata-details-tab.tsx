@@ -116,7 +116,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                     readOnly={true}
                     className={cx('w-3/5')}
                     data-cy="relatesTo-input"
-                    placeholder="t.ex. PRH-2024-000275"
+                    placeholder="t.ex. SGP-2024-000275"
                   />
                 </FormControl>
               </div>
