@@ -107,7 +107,7 @@ function SectionDisclosure({ section, isReadonly, children }: SectionDisclosureP
       <Disclosure.Header>
         {section.icon && (
           <Disclosure.Icon
-            icon={(() => { const DynIcon = iconMap[section.icon as string]; return DynIcon ? <DynIcon /> : null; })()}
+            icon={(() => { const DynIcon = iconMap[section.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
           />
         )}
         <Disclosure.Title>{section.title}</Disclosure.Title>

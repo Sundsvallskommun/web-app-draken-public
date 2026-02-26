@@ -135,7 +135,7 @@ export const AttestationsTable: React.FC<{
         {icon
           ? (() => {
               const DynIcon = iconMap[icon];
-              return DynIcon ? <DynIcon size={16} /> : null;
+              return DynIcon ? <DynIcon size={16} /> : undefined;
             })()
           : null}{' '}
         {findAttestationStatusLabelForAttestationStatusKey(record.status)}

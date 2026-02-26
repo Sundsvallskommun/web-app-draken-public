@@ -308,7 +308,7 @@ export const SidebarInfo: React.FC<{
         <Label rounded>
           {(() => {
             const DynIcon = iconMap[icon];
-            return DynIcon ? <DynIcon size="1.5rem" /> : null;
+            return DynIcon ? <DynIcon size="1.5rem" /> : undefined;
           })()}{' '}
           {label}
         </Label>{' '}

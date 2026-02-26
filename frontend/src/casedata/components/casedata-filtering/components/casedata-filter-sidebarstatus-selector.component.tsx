@@ -108,7 +108,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showContractTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : null; })()}
+            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
             key={button.key}
             iconButton={iconButton}
           >

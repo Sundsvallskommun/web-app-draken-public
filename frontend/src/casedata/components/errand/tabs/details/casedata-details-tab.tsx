@@ -102,7 +102,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="my-lg">
         <Disclosure variant="alt" data-cy={`section-${label}-disclosure`} initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={(() => { const DynIcon = iconMap[icon as string]; return DynIcon ? <DynIcon /> : null; })()} />
+            <Disclosure.Icon icon={(() => { const DynIcon = iconMap[icon as string]; return DynIcon ? <DynIcon /> : undefined; })()} />
             <Disclosure.Title>{label}</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>

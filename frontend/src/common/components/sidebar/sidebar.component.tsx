@@ -116,7 +116,7 @@ export const Sidebar: React.FC<{
                   iconButton
                   leftIcon={
                     <>
-                      {(() => { const DynIcon = iconMap[b.icon as any]; return DynIcon ? <DynIcon /> : null; })()}
+                      {(() => { const DynIcon = iconMap[b.icon as any]; return DynIcon ? <DynIcon /> : undefined; })()}
                     </>
                   }
                 />

@@ -118,7 +118,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
       {icon
         ? (() => {
             const DynIcon = iconMap[icon];
-            return DynIcon ? <DynIcon size={16} /> : null;
+            return DynIcon ? <DynIcon size={16} /> : undefined;
           })()
         : null}{' '}
       {solvedErrandText()}

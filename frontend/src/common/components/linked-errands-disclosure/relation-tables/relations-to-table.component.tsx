@@ -25,7 +25,7 @@ const LinkButtonComponent: React.FC<{ isLinked: boolean; onClick: () => void }> 
         size="sm"
         className="w-full justify-start"
         onClick={onClick}
-        leftIcon={(() => { const DynIcon = iconMap[isLinked ? 'link-2-off' : 'link-2']; return DynIcon ? <DynIcon size={16} /> : null; })()}
+        leftIcon={(() => { const DynIcon = iconMap[isLinked ? 'link-2-off' : 'link-2']; return DynIcon ? <DynIcon size={16} /> : undefined; })()}
       >
         {isLinked ? 'Bryt koppling' : 'Koppla'}
       </Button>

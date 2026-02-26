@@ -44,7 +44,7 @@ export const DetailPanelWrapper: React.FC<DetailPanelWrapperProps> = ({
       >
         <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
           <div className="text-h4-sm flex items-center gap-12">
-            {(() => { const DynIcon = iconMap[icon]; return DynIcon ? <DynIcon /> : null; })()} {label}
+            {(() => { const DynIcon = iconMap[icon]; return DynIcon ? <DynIcon /> : undefined; })()} {label}
           </div>
           <Button
             tabIndex={show ? 0 : -1}

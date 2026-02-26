@@ -60,7 +60,7 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
       {icon
         ? (() => {
             const DynIcon = iconMap[icon];
-            return DynIcon ? <DynIcon size={16} /> : null;
+            return DynIcon ? <DynIcon size={16} /> : undefined;
           })()
         : null}{' '}
       {status}
