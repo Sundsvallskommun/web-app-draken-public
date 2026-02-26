@@ -25,7 +25,7 @@ import {
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { AgnosticMessageResponse, LetterResponse, MessageClassification, WebMessageResponse } from '@controllers/message.controller';
+import { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@controllers/message.controller';
 import { Role } from '@interfaces/role';
 import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
@@ -100,7 +100,7 @@ export const sendWebMessage = (municipalityId: string, message: WebMessageReques
   const apiService = new ApiService();
   return apiService
     .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, req.user)
-    .then(async (res: ApiResponse<WebMessageResponse>) => {
+    .then(async (res: ApiResponse<AgnosticMessageResponse>) => {
       return saveMessageOnErrand(
         municipalityId,
         errandData.data,
@@ -150,13 +150,13 @@ export const sendEmail = (
         municipalityId,
         errandData.data,
         {
-          message: message.message,
+          message: message.message ?? '',
           id: res.data.messageId,
           messageType: 'EMAIL',
           messageClassification: classification,
-          header_message_Id: message.headers['MESSAGE_ID']?.[0],
-          header_reply_to: message.headers['IN_REPLY_TO']?.[0],
-          header_references: message.headers['REFERENCES']?.join(','),
+          header_message_Id: message.headers?.['MESSAGE_ID']?.[0] ?? '',
+          header_reply_to: message.headers?.['IN_REPLY_TO']?.[0] ?? '',
+          header_references: message.headers?.['REFERENCES']?.join(',') ?? '',
           email: message.emailAddress,
         },
         req.user,
@@ -186,7 +186,7 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (municipalityId, message, req, errandData, classification) => {
+export const sendDigitalMail = (municipalityId: string, message: LetterRequest & { message?: string }, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>, classification: MessageClassification) => {
   const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
   const apiService = new ApiService();
   return apiService
@@ -200,7 +200,7 @@ export const sendDigitalMail = (municipalityId, message, req, errandData, classi
         municipalityId,
         errandData.data,
         {
-          message: message.message,
+          message: message.message ?? '',
           id: id,
           messageType: 'DIGITAL_MAIL',
           messageClassification: classification,
@@ -237,7 +237,7 @@ export const saveMessageOnErrand: (
     id: string;
     messageType: string;
     messageClassification: MessageClassification;
-    header_message_Id;
+    header_message_Id: string;
     header_reply_to: string;
     header_references: string;
     mobileNumber?: string;
@@ -248,7 +248,7 @@ export const saveMessageOnErrand: (
   const apiService = new ApiService();
   // Fetch message info from Messaging and construct SaveMessage object
   const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
-  const messagingResponse = await apiService.get<HistoryResponse>({ url: messagingUrl }, user);
+  const messagingResponse = await apiService.get<HistoryResponse[]>({ url: messagingUrl }, user);
   const messagingInfo = messagingResponse.data[0];
   const headers = (messagingInfo.content as EmailRequest)?.headers || {};
   const emailHeaders: EmailHeader[] = Object.entries(headers).map(h => ({ header: h[0] as Header, values: h[1] }));
@@ -305,7 +305,7 @@ export const saveMessageOnErrand: (
     });
 
   if (saveMessage.direction === MessageRequestDirectionEnum.OUTBOUND) {
-    await setMessageViewed(municipalityId, errand.id, message.id, user).catch(e => {
+    await setMessageViewed(municipalityId, errand.id!, message.id, user).catch(e => {
       logger.error('Error when saving viewed status:', e);
     });
   }
@@ -316,10 +316,10 @@ export const saveMessageOnErrand: (
 const buildSms = (applicant: StakeholderDTO, contact: StakeholderDTO, message: string) => {
   const sms: SmsMessage = {
     party: {
-      partyId: applicant.personId,
+      partyId: applicant.personId!,
       externalReferences: [],
     },
-    mobileNumber: contact.contactInformation.find(c => c.contactType === 'PHONE')?.value,
+    mobileNumber: contact.contactInformation?.find(c => c.contactType === 'PHONE')?.value ?? '',
     message: message,
   };
   return sms;
@@ -328,10 +328,10 @@ const buildSms = (applicant: StakeholderDTO, contact: StakeholderDTO, message: s
 const buildEmail = (applicant: StakeholderDTO, contact: StakeholderDTO, message: string) => {
   const email = {
     party: {
-      partyId: applicant.personId,
+      partyId: applicant.personId!,
       externalReferences: [],
     },
-    emailAddress: contact.contactInformation.find(c => c.contactType === 'EMAIL')?.value,
+    emailAddress: contact.contactInformation?.find(c => c.contactType === 'EMAIL')?.value ?? '',
     subject: 'Meddelande i ärende',
     message: message,
     attachments: [],
@@ -341,19 +341,19 @@ const buildEmail = (applicant: StakeholderDTO, contact: StakeholderDTO, message:
 
 export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
   const apiService = new ApiService();
-  const applicant = errand.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
+  const applicant = errand.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
   if (!applicant) {
     return Promise.resolve(false);
   }
   const standardMessage = `Ni står som ärendeintressent i ärende ${errand.errandNumber} om ansökan för parkeringstillstånd för ${applicant.firstName}. Vi vill uppmärksamma er på att ett nytt meddelande i ärendet har skickats till den sökande.`;
-  const notifiablePrimaryContacts = errand.stakeholders.filter(
-    s => s.extraParameters['primaryContact'] === 'true' && s.extraParameters['messageAllowed'] === 'true',
+  const notifiablePrimaryContacts = (errand.stakeholders ?? []).filter(
+    s => s.extraParameters?.['primaryContact'] === 'true' && s.extraParameters?.['messageAllowed'] === 'true',
   );
   const smss = notifiablePrimaryContacts
-    .filter(c => c.contactInformation.some(c => c.contactType === 'PHONE'))
+    .filter(c => c.contactInformation?.some(c => c.contactType === 'PHONE'))
     .map(c => buildSms(applicant, c, standardMessage));
   const emails = notifiablePrimaryContacts
-    .filter(c => c.contactInformation.some(c => c.contactType === 'EMAIL'))
+    .filter(c => c.contactInformation?.some(c => c.contactType === 'EMAIL'))
     .map(c => buildEmail(applicant, c, standardMessage));
   const smsPromises = smss.map(async sms => {
     return apiService.post<AgnosticMessageResponse, SmsMessage>({ url: `${MESSAGING_SERVICE}/${municipalityId}/sms`, data: sms }, user);
@@ -398,7 +398,7 @@ export const sendConversation = async (errandId: string, conversationId: string,
     content: 'Beslut fattat i ärende',
   };
   formData.append('message', JSON.stringify(messageObj));
-  const byteArray = base64ToByteArray(pdf.file);
+  const byteArray = base64ToByteArray(pdf.file!);
   formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
 
   return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
@@ -408,15 +408,15 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
   const apiService = new ApiService();
   const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
   const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
-  let externalConversation;
+  let externalConversation: Conversation | undefined;
   externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
 
   if (externalConversation === undefined) {
     externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor');
   }
-  return sendConversation(errandId, externalConversation.id, user, pdf)
+  return sendConversation(errandId, externalConversation!.id!, user, pdf)
     .then(async res => {
-      return { data: { ...res.data, messageId: externalConversation.id }, message: `Message sent to Mina sidor` };
+      return { data: { ...res.data, messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
     })
     .catch(e => {
       logger.error('Error when sending message to Mina sidor:', e);
@@ -432,16 +432,16 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
   const apiService = new ApiService();
   const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errand.id}/communication/conversations`;
   const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
-  let relationlessConversation;
+  let relationlessConversation: Conversation | undefined;
 
-  relationlessConversation = conversationRes.data.find(c => c.relationIds.length === 0 && c.type !== 'EXTERNAL');
+  relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
 
   if (relationlessConversation === undefined) {
-    relationlessConversation = await createConversation(errand.id.toString(), user, 'INTERNAL', errand.errandNumber);
+    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!);
   }
-  return sendConversation(errand.id.toString(), relationlessConversation.id, user, pdf)
+  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf)
     .then(async res => {
-      return { data: { ...res.data, messageId: relationlessConversation.id }, message: `Message sent to Katla` };
+      return { data: { ...res.data, messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
     })
     .catch(e => {
       logger.error('Error when sending message to Katla:', e);
@@ -476,9 +476,9 @@ export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachme
 
   return apiService
     .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, user)
-    .then(async (res: ApiResponse<WebMessageResponse>) => {
+    .then(async (res: ApiResponse<AgnosticMessageResponse>) => {
       return saveMessageOnErrand(
-        MUNICIPALITY_ID,
+        MUNICIPALITY_ID!,
         errand,
         {
           message: message.message,
@@ -519,7 +519,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
   ];
   const message: DigitalMailRequest = {
     party: {
-      partyIds: [getOwnerStakeholder(errand).personId],
+      partyIds: [getOwnerStakeholder(errand).personId!],
       externalReferences: [],
     },
     sender: {
@@ -546,10 +546,10 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
         throw new Error('Error: no id returned when sending message');
       }
       return saveMessageOnErrand(
-        MUNICIPALITY_ID,
+        MUNICIPALITY_ID!,
         errand,
         {
-          message: message.body,
+          message: message.body ?? '',
           id: id,
           messageType: 'DIGITAL_MAIL',
           messageClassification: MessageClassification.Informationsmeddelande,

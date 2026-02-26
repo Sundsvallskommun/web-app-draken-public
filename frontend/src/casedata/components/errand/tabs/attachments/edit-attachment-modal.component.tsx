@@ -12,7 +12,7 @@ interface EditAttachmentModalProps {
   isCropping: boolean;
   modalFetching: boolean;
   modalAttachment?: Attachment;
-  errand: IErrand;
+  errand: IErrand | undefined;
   onClose: () => void;
   onToggleCrop: () => void;
 }
@@ -35,7 +35,7 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
     >
       <div className="flex flex-col justify-center items-center my-lg">
         {isCropping ? (
-          <CommonImageCropper errand={errand} attachment={modalAttachment} onClose={onClose} />
+          <CommonImageCropper errand={errand!} attachment={modalAttachment!} onClose={onClose} />
         ) : (
           <>
             <div className="flex-grow-0 my-md">
@@ -44,7 +44,7 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
                   <Spinner size={24} />
                 ) : (
                   <Image
-                    alt={getAttachmentLabel(modalAttachment)}
+                    alt={getAttachmentLabel(modalAttachment!)}
                     key={modalAttachment?.id}
                     src={`data:${modalAttachment?.mimeType};base64,${modalAttachment?.file}`}
                   />
@@ -54,7 +54,7 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
             <div className="my-md">
               <Button
                 variant="primary"
-                disabled={isErrandLocked(errand)}
+                disabled={errand ? isErrandLocked(errand) : false}
                 color="primary"
                 onClick={onToggleCrop}
                 leftIcon={<Crop />}

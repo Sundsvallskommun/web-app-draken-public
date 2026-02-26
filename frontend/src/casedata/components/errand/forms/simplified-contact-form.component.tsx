@@ -234,7 +234,7 @@ export const SimplifiedContactForm: React.FC<{
   // Restricted editing means that personalNumber, firstName, lastName,
   // organizationNam and orgName cannot be changed.
 
-  const restrictedEditing = editing && errand.channel !== Channels.WEB_UI;
+  const restrictedEditing = editing && errand?.channel !== Channels.WEB_UI;
 
   const resetPersonNumber = () => {
     setValue(`personalNumber`, '', { shouldDirty: false });

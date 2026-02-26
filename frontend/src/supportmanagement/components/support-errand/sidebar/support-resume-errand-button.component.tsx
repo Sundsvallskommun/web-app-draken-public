@@ -18,7 +18,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
 
   const activateErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -26,7 +26,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
             status: 'success',
           })
         );
-        return getSupportErrandById(supportErrand.id, municipalityId).then((res) => {
+        return getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => {
           setSupportErrand(res.errand);
           setIsLoading(false);
         });
@@ -42,7 +42,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
       });
   };
 
-  if (!shouldShowResumeErrandButton(supportErrand?.status)) {
+  if (!shouldShowResumeErrandButton(supportErrand?.status as Status)) {
     return null;
   }
 
@@ -52,7 +52,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
       color="vattjom"
       data-cy="resume-button"
       leftIcon={<CirclePlay />}
-      variant={shouldShowResumeErrandButton(supportErrand?.status) ? 'primary' : 'secondary'}
+      variant={shouldShowResumeErrandButton(supportErrand?.status as Status) ? 'primary' : 'secondary'}
       disabled={disabled}
       loading={isLoading}
       loadingText="Återupptar"

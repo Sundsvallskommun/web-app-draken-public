@@ -13,7 +13,7 @@ export const ColorSchemeItems = () => {
     }
   }, [setColorScheme]);
 
-  const handleChangeColorScheme = (colorScheme) => {
+  const handleChangeColorScheme = (colorScheme: string) => {
     store.set('colorScheme', colorScheme);
     setColorScheme(colorScheme);
   };

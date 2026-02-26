@@ -95,13 +95,13 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
   const cfg = TENANTS[tenant];
 
   const department = cfg.departmentName(e);
-  const channel = maybe(e?.channel && Channels[e?.channel]);
+  const channel = maybe(e?.channel && (Channels as Record<string, string>)[e?.channel]);
   const description = maybe(e?.description);
   const customer = e?.customer?.[0];
   const contacts = e?.contacts || [];
   const subject = cfg.subjectResolver?.(e);
-  const propertyDesignations = Array.isArray(e?.parameters?.['propertyDesignation'])
-    ? (e.parameters['propertyDesignation'] as string[])
+  const propertyDesignations = Array.isArray((e?.parameters as unknown as Record<string, unknown>)?.['propertyDesignation'])
+    ? ((e.parameters as unknown as Record<string, unknown>)['propertyDesignation'] as string[])
     : [];
 
   const introLine = (
@@ -148,7 +148,7 @@ export const buildEscalationTextContent = (e: SupportErrand, user: string, tenan
   const cfg = TENANTS[tenant];
 
   const department = cfg.departmentName(e);
-  const channel = maybe(e?.channel && Channels[e?.channel]);
+  const channel = maybe(e?.channel && (Channels as Record<string, string>)[e?.channel]);
   const description = maybe(e?.description);
   const subject = cfg.subjectResolver?.(e);
   const introLine = (

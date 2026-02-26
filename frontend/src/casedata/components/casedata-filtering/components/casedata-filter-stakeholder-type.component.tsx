@@ -8,7 +8,7 @@ export interface CaseStakeholderTypeFilter {
   stakeholderType: string[];
 }
 
-export const CaseStakeholderTypeValues = {
+export const CaseStakeholderTypeValues: CaseStakeholderTypeFilter = {
   stakeholderType: [],
 };
 

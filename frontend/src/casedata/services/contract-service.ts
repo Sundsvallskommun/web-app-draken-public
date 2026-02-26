@@ -83,8 +83,8 @@ export const defaultKopeavtal: ContractData = {
   propertyDesignations: [],
   buyers: [],
   sellers: [],
-  generateInvoice: undefined,
-  indexAdjusted: undefined,
+  generateInvoice: 'false' as 'true' | 'false',
+  indexAdjusted: 'false' as 'true' | 'false',
 };
 
 export const defaultLagenhetsarrende: ContractData = {
@@ -124,7 +124,7 @@ export const defaultLagenhetsarrende: ContractData = {
     },
   ],
   generateInvoice: 'true',
-  indexAdjusted: undefined,
+  indexAdjusted: 'false' as 'true' | 'false',
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
@@ -254,7 +254,7 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
   if (!errand) {
     return Promise.reject('No errand found, cannot fetch contract. Returning.');
   }
-  const contractId = errand.extraParameters.find((p) => p.key === 'contractId')?.values[0];
+  const contractId = errand.extraParameters?.find((p) => p.key === 'contractId')?.values?.[0];
   if (!contractId) {
     return Promise.reject('No contract id found on errand, cannot fetch contract. Returning.');
   }
@@ -298,19 +298,19 @@ export const renderContractPdf: (
                     <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
       isDraft: isDraft,
 
-      stakeholders: contract.stakeholders.map((s) => ({
+      stakeholders: (contract.stakeholders ?? []).map((s) => ({
         name: s.type === 'PERSON' ? s.firstName + ' ' + s.lastName : s.organizationName + ' ' + s.organizationNumber,
-        street: s.address.streetAddress,
-        careof: s.address.careOf,
-        zip: s.address.postalCode + ' ' + s.address.town,
-        role: s.roles.map((r) => PrettyRole[r]).join(', '),
-        extraInformation: s.parameters?.find((p) => p.key === 'extraInformation')?.values[0],
+        street: s.address?.streetAddress ?? '',
+        careof: s.address?.careOf ?? '',
+        zip: (s.address?.postalCode ?? '') + ' ' + (s.address?.town ?? ''),
+        role: (s.roles ?? []).map((r) => (PrettyRole as Record<string, string>)[r]).join(', '),
+        extraInformation: s.parameters?.find((p) => p.key === 'extraInformation')?.values?.[0],
       })),
-      sections: contract.indexTerms
-        .filter((t) => t.terms.some((term) => term.term !== '' && typeof term.term !== 'undefined'))
+      sections: (contract.indexTerms ?? [])
+        .filter((t) => (t.terms ?? []).some((term) => term.term !== '' && typeof term.term !== 'undefined'))
         .map((t) => ({
           header: t.header,
-          content: t.terms.map((t) => `<p>${t.term}</p>`).join('<br />'),
+          content: (t.terms ?? []).map((t) => `<p>${t.term}</p>`).join('<br />'),
         })),
     },
   };
@@ -426,8 +426,8 @@ export const kopeavtalToContract = (data: ContractData): Contract => {
     type: ContractType.PURCHASE_AGREEMENT,
     leaseType: undefined,
     status: data.status,
-    stakeholders: [...data.buyers, ...data.sellers],
-    externalReferenceId: data.externalReferenceId.toString(),
+    stakeholders: [...(data.buyers ?? []), ...(data.sellers ?? [])].map(({ personalNumber, ...rest }) => rest),
+    externalReferenceId: (data.externalReferenceId ?? '').toString(),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
   };
@@ -437,17 +437,17 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
   return {
     ...defaultKopeavtal,
     ...contract,
-    buyers: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.BUYER)),
-    sellers: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.SELLER)),
+    buyers: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.BUYER)),
+    sellers: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.SELLER)),
     attachmentMetaData: contract.attachmentMetaData,
   };
 };
 
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
-  let fees: Fees = undefined;
+  let fees: Fees | undefined = undefined;
   if (data.generateInvoice) {
-    const yearlyNumber = Number.parseFloat(data.fees.yearly.toString());
+    const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
       yearly: yearlyNumber,
       monthly: 0,
@@ -456,7 +456,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       additionalInformation: [
         `Avgift, ${
           leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${data.propertyDesignations.map((p) => p.name).join(', ')}`,
+        }. Fastigheter: ${(data.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
         data.fees?.additionalInformation?.[1] ?? '',
       ],
       ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
@@ -484,8 +484,8 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     type: data.type,
     leaseType: data.leaseType,
     status: data.status,
-    externalReferenceId: data.externalReferenceId.toString(),
-    stakeholders: [...data.lessees, ...data.lessors],
+    externalReferenceId: (data.externalReferenceId ?? '').toString(),
+    stakeholders: [...(data.lessees ?? []), ...(data.lessors ?? [])].map(({ personalNumber, ...rest }) => rest),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
   };
@@ -501,8 +501,8 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
-    lessees: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSEE)),
-    lessors: contract.stakeholders.filter((s) => s.roles.includes(ContractStakeholderRole.LESSOR)),
+    lessees: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.LESSEE)),
+    lessors: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.LESSOR)),
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
     indexAdjusted: hasIndexation ? 'true' : 'false',
@@ -511,7 +511,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
       additionalInformation: [
         `Avgift, ${
           leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${contract.propertyDesignations.map((p) => p.name).join(', ')}`,
+        }. Fastigheter: ${(contract.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
         '',
       ],
     },
@@ -521,7 +521,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
 
 export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => string = (c) =>
   c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY' || c.type === 'ORGANIZATION'
-    ? c.organizationName
+    ? c.organizationName ?? ''
     : `${c.firstName} ${c.lastName}`;
 
 export const fetchSignedContractAttachment: (
@@ -635,9 +635,9 @@ export function mapContractAttachmentToUploadFile<TExtraMeta extends object = ob
 export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (
   errand: IErrand
 ) => {
-  const designations = errand.facilities
+  const designations = (errand.facilities ?? [])
     .filter((facility) => facility.address?.propertyDesignation)
-    .map((facility) => facility.address?.propertyDesignation);
+    .map((facility) => facility.address!.propertyDesignation!);
 
   const infos = await Promise.allSettled(designations.map((d) => getSingleFacilityByDesignation(d)));
 
@@ -729,6 +729,6 @@ export const fetchContractInvoices: (
     })
     .catch((e) => {
       console.error('Something went wrong when fetching contract invoices:', e);
-      return { invoices: [], totalCount: 0, totalPages: 0 };
+      return { invoices: [] as any[], totalCount: 0, totalPages: 0 };
     });
 };

@@ -4,6 +4,19 @@ import { useFieldArray } from 'react-hook-form';
 
 type size = 'sm' | 'md' | 'lg';
 
+interface CommonNestedPhoneArrayV2Props {
+  control: any;
+  register: any;
+  errors: any;
+  watch: any;
+  trigger: any;
+  disabled?: boolean;
+  required?: boolean;
+  error?: boolean;
+  size?: string;
+  [key: string]: any;
+}
+
 const CommonNestedPhoneArrayV2 = ({
   control,
   register,
@@ -14,10 +27,10 @@ const CommonNestedPhoneArrayV2 = ({
   required = false,
   error = false,
   size = 'sm',
-}) => {
-  const { fields, remove, append } = useFieldArray({
+}: CommonNestedPhoneArrayV2Props) => {
+  const { fields, remove, append } = useFieldArray<{ phoneNumbers: { value: string }[] }>({
     control,
-    name: `phoneNumbers`,
+    name: 'phoneNumbers',
   });
 
   const { newPhoneNumber } = watch();
@@ -57,7 +70,7 @@ const CommonNestedPhoneArrayV2 = ({
       )}
       {fields.length > 0 ? (
         <div className="flex items-center w-full flex-wrap justify-start gap-md py-sm">
-          {fields.map((field: { id: string; value: string }, k) => {
+          {fields.map((field, k) => {
             return (
               <div key={`-${field.id}`}>
                 <Chip

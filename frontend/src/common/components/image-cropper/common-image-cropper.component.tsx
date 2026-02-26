@@ -35,7 +35,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
     const rotationCanvas = document.createElement('canvas');
     rotationCanvas.width = image.naturalWidth;
     rotationCanvas.height = image.naturalHeight;
-    const rotationCtx = rotationCanvas.getContext('2d');
+    const rotationCtx = rotationCanvas.getContext('2d')!;
     rotationCtx.translate(rotationCanvas.width / 2, rotationCanvas.height / 2);
     rotationCtx.rotate((rotate * Math.PI) / 180);
     rotationCtx.translate(-rotationCanvas.width / 2, -rotationCanvas.height / 2);
@@ -57,7 +57,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
     const scale = Math.min(MAX_SIZE / crop.width, MAX_SIZE / crop.height, 1);
     croppedCanvas.width = scale * crop.width;
     croppedCanvas.height = scale * crop.height;
-    const croppedCtx = croppedCanvas.getContext('2d');
+    const croppedCtx = croppedCanvas.getContext('2d')!;
     croppedCtx.fillStyle = '#fff';
     croppedCtx.fillRect(0, 0, croppedCanvas.width, croppedCanvas.height);
     croppedCtx.drawImage(
@@ -109,7 +109,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
   }
 
   function onSave() {
-    saveCroppedImage(municipalityId, props.errand.id, props.attachment, blob);
+    saveCroppedImage(municipalityId, props.errand.id, props.attachment, blob!);
   }
 
   useDebounceEffect(

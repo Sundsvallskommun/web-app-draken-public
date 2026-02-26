@@ -11,7 +11,7 @@ export interface CategoryFilter {
   category: string[];
 }
 
-export const CategoryValues = {
+export const CategoryValues: CategoryFilter = {
   category: [],
 };
 
@@ -19,7 +19,7 @@ export const SupportManagementFilterCategory: React.FC = () => {
   const { register } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
   const [allCategories, setAllCategories] = useState<Category[]>();
-  const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
+  const { supportMetadata } = useAppContext();
   const { t } = useTranslation();
   useEffect(() => {
     setAllCategories(supportMetadata?.categories);
@@ -48,7 +48,7 @@ export const SupportManagementFilterCategory: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {allCategories
-            ?.filter((s: Category) => s.displayName.toLowerCase().includes(query.toLowerCase()))
+            ?.filter((s: Category) => s.displayName?.toLowerCase().includes(query.toLowerCase()))
             .map((s: Category, idx) => (
               <PopupMenu.Item key={`${s.name}-${idx}`}>
                 <Checkbox

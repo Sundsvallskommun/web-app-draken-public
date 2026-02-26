@@ -74,7 +74,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const toastMessage = useSnackbar();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
 
-  const modalFocus = useRef(null);
+  const modalFocus = useRef<HTMLButtonElement>(null);
   const setModalFocus = () => {
     setTimeout(() => {
       modalFocus.current && modalFocus.current.focus();
@@ -82,7 +82,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   };
 
   const closeModal = async () => {
-    await getSupportErrandById(supportErrand.id.toString(), municipalityId)
+    await getSupportErrandById(supportErrand!.id!.toString(), municipalityId)
       .then((data) => setSupportErrand(data.errand))
       .catch((e) => {
         toastMessage({
@@ -138,7 +138,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const attachments = watch('attachments');
 
   const downloadDocument = (a: SupportAttachment) => {
-    getSupportAttachment(supportErrand.id.toString(), municipalityId, a)
+    getSupportAttachment(supportErrand!.id!.toString(), municipalityId, a)
       .then((att) => {
         const uri = `data:${a.mimeType};base64,${att.base64EncodedString}`;
         const link = document.createElement('a');
@@ -176,10 +176,10 @@ export const SupportErrandAttachmentsTab: React.FC<{
     setAddAttachmentWindowIsOpen(false);
   };
 
-  const clickHandler = (attachment) => {
+  const clickHandler = (attachment: SupportAttachment) => {
     if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
-      getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
+      getSupportAttachment(supportErrand!.id!.toString(), municipalityId, attachment)
         .then((res) => setModalAttachment(res))
         .then(() => {
           setModalFetching(false);
@@ -193,13 +193,13 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const onDelete = () => {
     removeConfirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
       if (confirmed) {
-        return deleteSupportAttachment(supportErrand?.id.toString(), municipalityId, selectedAttachment.id)
-          .then(() => {
+        return deleteSupportAttachment(supportErrand!.id!.toString(), municipalityId, selectedAttachment!.id!)
+          ?.then(() => {
             props.update();
             reset();
           })
           .then(() => {
-            setSelectedAttachment(null);
+            setSelectedAttachment(undefined);
           })
           .then(() => {
             toastMessage(
@@ -257,7 +257,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
             className="w-[43rem]"
             onClose={() => {
               closeHandler();
-              setSelectedAttachment(null);
+              setSelectedAttachment(undefined);
               setAddNewAttachment(false);
               reset();
             }}
@@ -306,13 +306,13 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     e.preventDefault();
                     const vals: SupportAttachmentFormModel = getValues();
                     const attachmentsData: { file: File }[] = vals.attachments.map((a) => ({
-                      file: a.file,
+                      file: a.file!,
                     }));
                     setIsLoading(true);
-                    saveSupportAttachments(supportErrand.id.toString(), municipalityId, attachmentsData)
+                    saveSupportAttachments(supportErrand!.id!.toString(), municipalityId, attachmentsData)
                       .then(() => props.update())
                       .then(() => setAddNewAttachment(false))
-                      .then(() => setSelectedAttachment(null))
+                      .then(() => setSelectedAttachment(undefined))
                       .then(() => setIsLoading(false))
                       .then(() => setError(false))
                       .then(() => setSizeError(false))
@@ -357,7 +357,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
           </Modal>
           <Button
             data-cy="add-attachment-button"
-            disabled={isSupportErrandLocked(supportErrand) || supportErrandIsEmpty(supportErrand)}
+            disabled={isSupportErrandLocked(supportErrand!) || supportErrandIsEmpty(supportErrand!)}
             color="vattjom"
             rightIcon={<Upload size={16} />}
             inverted
@@ -407,7 +407,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     <p>
                       <strong>{attachment.fileName}</strong>{' '}
                     </p>
-                    <p>Uppladdad den {dayjs(attachment.created).format('YYYY-MM-DD HH:mm')}</p>
+                    <p>Uppladdad den {dayjs((attachment as SupportAttachment & { created?: string }).created).format('YYYY-MM-DD HH:mm')}</p>
                   </div>
                 </div>
 
@@ -439,7 +439,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                             </Button>
                           </PopupMenu.Item>
                         </PopupMenu.Group>
-                        {!isSupportErrandLocked(supportErrand) && (
+                        {!isSupportErrandLocked(supportErrand!) && (
                           <PopupMenu.Group>
                             <PopupMenu.Item>
                               <Button

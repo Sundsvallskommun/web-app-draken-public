@@ -20,13 +20,13 @@ export interface SupportManagementStatusFilter {
   status: Status[];
 }
 
-export const SupportManagementStatusValues = {
+export const SupportManagementStatusValues: SupportManagementStatusFilter = {
   status: [],
 };
 
 export const SupportManagementFilterSidebarStatusSelector: React.FC<{
-  showAttestationTable;
-  setShowAttestationTable;
+  showAttestationTable: boolean;
+  setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
   const {
@@ -54,38 +54,38 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
     }
   };
 
-  const supportSidebarButtons: SidebarButton[] = useMemo(
+  const supportSidebarButtons = useMemo<SidebarButton[]>(
     () => [
       {
-        label: getStatusLabel(newStatuses),
+        label: getStatusLabel(newStatuses) ?? '',
         key: newStatuses[0],
         statuses: newStatuses,
         icon: 'inbox',
         totalStatusErrands: newSupportErrands,
       },
       {
-        label: isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses),
+        label: (isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses)) ?? '',
         key: isROB() ? ongoingStatusesROB[0] : ongoingStatuses[0],
         statuses: isROB() ? ongoingStatusesROB : ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands,
       },
       {
-        label: getStatusLabel(suspendedStatuses),
+        label: getStatusLabel(suspendedStatuses) ?? '',
         key: suspendedStatuses[0],
         statuses: suspendedStatuses,
         icon: 'circle-pause',
         totalStatusErrands: suspendedSupportErrands,
       },
       {
-        label: getStatusLabel(assignedStatuses),
+        label: getStatusLabel(assignedStatuses) ?? '',
         key: assignedStatuses[0],
         statuses: assignedStatuses,
         icon: 'file-plus',
         totalStatusErrands: assignedSupportErrands,
       },
       {
-        label: getStatusLabel(closedStatuses),
+        label: getStatusLabel(closedStatuses) ?? '',
         key: closedStatuses[0],
         statuses: closedStatuses,
         icon: 'circle-check-big',

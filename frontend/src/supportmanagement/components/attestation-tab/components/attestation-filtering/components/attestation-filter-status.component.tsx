@@ -9,7 +9,7 @@ export interface AttestationStatusFilter {
   status: string[];
 }
 
-export const AttestationStatusValues = {
+export const AttestationStatusValues: AttestationStatusFilter = {
   status: [],
 };
 

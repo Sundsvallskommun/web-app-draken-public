@@ -89,7 +89,7 @@ export const getShortLabel = (caseType: string): string => {
   return (
     PTCaseShortLabel[caseType as keyof typeof PTCaseShortLabel] ??
     FTCaseShortLabel[caseType as keyof typeof FTCaseShortLabel] ??
-    CaseLabels.ALL[caseType] ??
+    (CaseLabels.ALL as Record<string, string>)[caseType] ??
     ''
   );
 };

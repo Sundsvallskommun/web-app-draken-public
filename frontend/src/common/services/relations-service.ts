@@ -43,9 +43,9 @@ export const createRelation = (
       namespace: '',
     },
     target: {
-      resourceId: targetErrand.caseId,
-      type: targetErrand.errandNumber,
-      service: formatServiceName(targetErrand.system),
+      resourceId: targetErrand.caseId ?? '',
+      type: targetErrand.errandNumber ?? '',
+      service: formatServiceName(targetErrand.system ?? ''),
       namespace: targetErrand.namespace,
     },
   };
@@ -79,7 +79,7 @@ export const getSourceRelations = (municipalityId: string, sourceId: string, sor
   return apiService
     .get<ApiResponse<RelationPagedResponse>>(url)
     .then((res) => {
-      return res.data.data.relations;
+      return res.data.data.relations ?? [];
     })
     .catch(() => {
       return [] as Relation[];
@@ -92,7 +92,7 @@ export const getTargetRelations = (municipalityId: string, targetId: string, sor
   return apiService
     .get<ApiResponse<RelationPagedResponse>>(url)
     .then((res) => {
-      return res.data.data.relations;
+      return res.data.data.relations ?? [];
     })
     .catch(() => {
       return [] as Relation[];

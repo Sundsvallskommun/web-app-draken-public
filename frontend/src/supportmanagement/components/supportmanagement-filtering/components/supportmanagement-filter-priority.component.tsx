@@ -8,7 +8,7 @@ export interface SupportManagementPriorityFilter {
   priority: string[];
 }
 
-export const SupportManagementPriorityValues = {
+export const SupportManagementPriorityValues: SupportManagementPriorityFilter = {
   priority: [],
 };
 

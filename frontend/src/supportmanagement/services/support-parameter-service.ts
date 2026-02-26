@@ -121,10 +121,10 @@ const template: ParametersObject = {
 };
 
 export const getRecruitmentParameters = (errand: SupportErrandDto) => {
-  const templateParameters = [...template['RECRUITMENT']];
-  const errandParameters = errand.parameters.filter((p) => p.key.startsWith('recruitment@'));
+  const templateParameters = [...(template['RECRUITMENT'] ?? [])];
+  const errandParameters = (errand.parameters ?? []).filter((p) => p.key?.startsWith('recruitment@'));
 
-  const reducer = function (r, a) {
+  const reducer = function (r: Record<string, Parameter[]>, a: Parameter) {
     const groupKey = a.key.split('_')[0];
     r[groupKey] = r[groupKey] ?? [];
     r[groupKey].push(a);
@@ -139,7 +139,7 @@ export const getRecruitmentParameters = (errand: SupportErrandDto) => {
   return combined;
 };
 
-export const saveParameters = (errandId, municipalityId, parameters: { [key: string]: Parameter[] }) => {
+export const saveParameters = (errandId: string, municipalityId: string, parameters: { [key: string]: Parameter[] }) => {
   const paramsList = Object.values(parameters).flat(1);
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {

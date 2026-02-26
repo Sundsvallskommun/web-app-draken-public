@@ -21,12 +21,12 @@ import { AngeSymbol } from '@styles/ange-symbol';
 import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 
 export const MainErrandsSidebar: React.FC<{
-  showAttestationTable;
-  setShowAttestationTable;
-  showContractTable;
-  setShowContractTable;
-  open;
-  setOpen;
+  showAttestationTable: boolean;
+  setShowAttestationTable: (show: boolean) => void;
+  showContractTable: boolean;
+  setShowContractTable: (show: boolean) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
@@ -130,9 +130,9 @@ export const MainErrandsSidebar: React.FC<{
                       counter={
                         isLoading
                           ? '-'
-                          : billingRecords.totalElements > 999
+                          : (billingRecords.totalElements ?? 0) > 999
                           ? '999+'
-                          : billingRecords.totalElements || '0'
+                          : billingRecords.totalElements ?? '0'
                       }
                     />
                   </span>

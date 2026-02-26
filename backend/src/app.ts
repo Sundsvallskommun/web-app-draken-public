@@ -56,7 +56,7 @@ const sessionStore = new SessionStoreCreate(SESSION_MEMORY ? { checkPeriod: sess
 passport.serializeUser(function (user, done) {
   done(null, user);
 });
-passport.deserializeUser(function (user, done) {
+passport.deserializeUser(function (user: Express.User, done) {
   done(null, user);
 });
 
@@ -68,25 +68,25 @@ const samlStrategy = new Strategy(
     //authnContext: ['urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified'],
     // identifierFormat: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
     identifierFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
-    callbackUrl: SAML_CALLBACK_URL,
-    entryPoint: SAML_ENTRY_SSO,
+    callbackUrl: SAML_CALLBACK_URL!,
+    entryPoint: SAML_ENTRY_SSO!,
     //decryptionPvk: SAML_PRIVATE_KEY,
-    privateKey: SAML_PRIVATE_KEY,
+    privateKey: SAML_PRIVATE_KEY!,
     // Identity Provider's public key
-    idpCert: SAML_IDP_PUBLIC_CERT,
-    issuer: SAML_ISSUER,
+    idpCert: SAML_IDP_PUBLIC_CERT!,
+    issuer: SAML_ISSUER!,
     wantAssertionsSigned: false,
     signatureAlgorithm: 'sha256',
     digestAlgorithm: 'sha256',
     // maxAssertionAgeMs: 2592000000,
     // authnRequestBinding: 'HTTP-POST',
     //logoutUrl: 'http://194.71.24.30/sso',
-    logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL,
+    logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL!,
     acceptedClockSkewMs: -1,
     wantAuthnResponseSigned: false,
     audience: false,
   },
-  async function (profile: Profile, done: VerifiedCallback) {
+  async function (profile: Profile | null, done: VerifiedCallback) {
     if (!profile) {
       return done({
         name: 'SAML_MISSING_PROFILE',
@@ -108,7 +108,7 @@ const samlStrategy = new Strategy(
       logger.error(
         'Could not extract necessary profile data fields from the IDP profile. Does the Profile interface match the IDP profile response? The profile response may differ, for example Onegate vs ADFS.',
       );
-      return done(null, null, {
+      return done(null, undefined, {
         name: 'SAML_MISSING_ATTRIBUTES',
         message: 'Missing profile attributes',
       });
@@ -116,7 +116,7 @@ const samlStrategy = new Strategy(
 
     if (!authorizeGroups(groups)) {
       logger.error('Group authorization failed. Is the user a member of the authorized groups?');
-      return done(null, null, {
+      return done(null, undefined, {
         name: 'SAML_MISSING_GROUP',
         message: 'SAML_MISSING_GROUP',
       });
@@ -147,10 +147,10 @@ const samlStrategy = new Strategy(
         logger.error('Error when calling Citizen:');
         logger.error(err);
       }
-      done(err);
+      done(err instanceof Error ? err : null);
     }
   },
-  async function (profile: Profile, done: VerifiedCallback) {
+  async function (profile: Profile | null, done: VerifiedCallback) {
     return done(null, {});
   },
 );
@@ -191,7 +191,7 @@ class App {
   }
 
   private initializeMiddlewares() {
-    this.app.use(morgan(LOG_FORMAT, { stream }));
+    this.app.use(morgan(LOG_FORMAT!, { stream }));
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());
@@ -207,7 +207,7 @@ class App {
 
     this.app.use(
       session({
-        secret: SECRET_KEY,
+        secret: SECRET_KEY!,
         resave: false,
         saveUninitialized: false,
         store: sessionStore,
@@ -244,7 +244,7 @@ class App {
 
     this.app.get(`${BASE_URL_PREFIX}/saml/metadata`, (req, res) => {
       res.type('application/xml');
-      const metadata = samlStrategy.generateServiceProviderMetadata(SAML_PUBLIC_KEY, SAML_PUBLIC_KEY);
+      const metadata = samlStrategy.generateServiceProviderMetadata(SAML_PUBLIC_KEY!, SAML_PUBLIC_KEY!);
       res.status(200).send(metadata);
     });
 
@@ -287,7 +287,7 @@ class App {
         if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
           successRedirect = new URL(urls[0]);
         } else {
-          successRedirect = new URL(SAML_SUCCESS_REDIRECT);
+          successRedirect = new URL(SAML_SUCCESS_REDIRECT!);
         }
         if (isValidUrl(urls[1]) && isValidOrigin(urls[1])) {
           failureRedirect = new URL(urls[1]);
@@ -319,7 +319,7 @@ class App {
       if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
         successRedirect = new URL(urls[0]);
       } else {
-        successRedirect = new URL(SAML_SUCCESS_REDIRECT);
+        successRedirect = new URL(SAML_SUCCESS_REDIRECT!);
       }
       if (isValidUrl(urls[1]) && isValidOrigin(urls[1])) {
         failureRedirect = new URL(urls[1]);
@@ -327,7 +327,7 @@ class App {
         failureRedirect = successRedirect;
       }
 
-      passport.authenticate('saml', (err, user) => {
+      passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {

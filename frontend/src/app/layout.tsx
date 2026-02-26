@@ -7,7 +7,7 @@ import AppLayout from '@common/components/layout/_app';
 
 interface RootLayoutProps {
   children: ReactNode;
-  params: Promise<{ locale: string }>;
+  params: Promise<{}>;
 }
 
 export const generateStaticParams = () => i18nConfig.locales.map((locale) => ({ locale }));

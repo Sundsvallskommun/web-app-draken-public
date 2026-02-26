@@ -14,19 +14,14 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
 }> = () => {
   const {
     supportErrand,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    supportAttachments: SupportAttachment[];
-    user: User;
   } = useAppContext();
 
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
   const { setValue } = formControls;
 
   useEffect(() => {
-    setValue('id', supportErrand.id, { shouldDirty: false });
-    setValue('caseId', supportErrand.externalTags?.find((t) => t.key === 'caseId')?.value, { shouldDirty: false });
+    setValue('id', supportErrand?.id, { shouldDirty: false });
+    setValue('caseId', supportErrand?.externalTags?.find((t) => t.key === 'caseId')?.value, { shouldDirty: false });
   }, [setValue, supportErrand]);
   return (
     <Disclosure variant="alt" initalOpen>
@@ -36,7 +31,7 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <SupportErrandBasicsAboutForm supportErrand={supportErrand} />
+        <SupportErrandBasicsAboutForm supportErrand={supportErrand!} />
       </Disclosure.Content>
     </Disclosure>
   );

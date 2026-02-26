@@ -19,7 +19,7 @@ interface SupportSearchFieldProps {
   setUnsaved: (unsaved: boolean) => void;
   id: string;
   setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult>>;
+  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
   setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
   setQuery: React.Dispatch<React.SetStateAction<string>>;
   query: string;
@@ -52,7 +52,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
 }) => {
   const doSearch = (val: string) => {
     setSearchResult(false);
-    let search: (val: string) => Promise<AddressResult | AddressResult[]>;
+    let search: ((val: string) => Promise<AddressResult | AddressResult[] | undefined>) | undefined;
 
     if (searchMode === 'person') {
       form.setValue('personNumber', val);
@@ -72,6 +72,12 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
     search &&
       search(val)
         .then((res) => {
+          if (!res) {
+            setSearching(false);
+            setNotFound(true);
+            setSearchResult(false);
+            return;
+          }
           if (!isArray(res)) {
             form.setValue(`externalId`, res.personId, { shouldDirty: true });
             form.setValue(`firstName`, res.firstName, { shouldDirty: true });
@@ -124,7 +130,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
         });
   };
 
-  const onSelectUserHandler = (e) => {
+  const onSelectUserHandler = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = searchResultArray?.find((data) => `${data.firstName} ${data.lastName}` === e.target.value);
     setSelectedUser(user);
     setSearchResultArray([]);

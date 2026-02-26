@@ -39,8 +39,6 @@ export const Sidebar: React.FC<{
 
   const {
     supportErrand,
-  }: {
-    supportErrand: SupportErrand;
   } = useAppContext();
 
   const updateScroll = () => {
@@ -53,12 +51,12 @@ export const Sidebar: React.FC<{
     switch (event.key) {
       case 'ArrowUp':
         const prevIndex = index === 0 ? buttons.length : index - 1;
-        document.getElementById(`sidebar-button-${prevIndex}`).focus();
+        document.getElementById(`sidebar-button-${prevIndex}`)?.focus();
         setActive(prevIndex);
         break;
       case 'ArrowDown':
         const nextIndex = index === buttons.length ? 0 : index + 1;
-        document.getElementById(`sidebar-button-${nextIndex}`).focus();
+        document.getElementById(`sidebar-button-${nextIndex}`)?.focus();
         setActive(nextIndex);
         break;
       default:
@@ -108,7 +106,7 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
+                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand!) : false}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}

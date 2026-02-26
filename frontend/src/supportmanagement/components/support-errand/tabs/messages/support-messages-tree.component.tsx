@@ -22,6 +22,7 @@ const getId = (node: MessageNode): string => {
   if (node?.emailHeaders && node.emailHeaders['MESSAGE_ID'] && node.emailHeaders['MESSAGE_ID'][0]) {
     return node.emailHeaders['MESSAGE_ID'][0];
   }
+  return '';
 };
 
 const MessageNodeComponent: React.FC<{

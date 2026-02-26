@@ -30,11 +30,11 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
   const updateConfirm = useConfirm();
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
   const isStakeholderModificationLocked = (stakeholder: CasedataOwnerOrContact) =>
-    isErrandLocked(errand) ||
+    (errand ? (errand ? isErrandLocked(errand) : false) : false) ||
     (errand?.channel === Channels.ESERVICE_KATLA && stakeholder.roles.includes(Role.APPLICANT));
 
   useEffect(() => {
-    setAddContact(errand.status?.statusType !== 'Ärende avslutat');
+    setAddContact(errand?.status?.statusType !== 'Ärende avslutat');
     setSelectedContact(undefined);
   }, [errand]);
 
@@ -106,7 +106,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
         {selectedContact && isMatchingSelectedContact(selectedContact, contact) && (
           <SimplifiedContactForm
             key={`form-${contact.clientId ?? contact.id ?? index}`}
-            disabled={isErrandLocked(errand)}
+            disabled={(errand ? isErrandLocked(errand) : false)}
             setUnsaved={props.setUnsaved}
             contact={contact}
             label={`${label.toLowerCase()}`}
@@ -147,12 +147,12 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
           <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
             <div className="font-bold text-small">
               {getStakeholderRelation(contact)
-                ? MEXRelation[getStakeholderRelation(contact)] || PTRelation[getStakeholderRelation(contact)]
+                ? (MEXRelation as Record<string, string>)[getStakeholderRelation(contact) ?? ''] || (PTRelation as Record<string, string>)[getStakeholderRelation(contact) ?? '']
                 : label}
             </div>
             <div className="flex flex-wrap gap-16 text-small">
               <Button
-                disabled={isErrandLocked(errand)}
+                disabled={(errand ? isErrandLocked(errand) : false)}
                 data-cy="edit-stakeholder-button"
                 variant="link"
                 className="text-body"
@@ -223,7 +223,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 rounded
                 color={(avatarColorArray[index % 4] as 'vattjom') || 'juniskar' || 'gronsta' || 'bjornstigen'}
                 size={'sm'}
-                initials={contact.stakeholderType === 'PERSON' ? contact.firstName[0] : contact.organizationName[0]}
+                initials={contact.stakeholderType === 'PERSON' ? contact.firstName?.[0] : (contact.organizationName ?? '')[0]}
               />
               <div>
                 {contact.stakeholderType === 'PERSON' && (contact.firstName || contact.lastName) ? (
@@ -264,7 +264,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               <p data-cy={`stakeholder-phone`}>
                 {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
                   <Button
-                    disabled={isErrandLocked(errand)}
+                    disabled={(errand ? isErrandLocked(errand) : false)}
                     color="vattjom"
                     variant="link"
                     onClick={() => {
@@ -278,7 +278,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
               <p data-cy={`stakeholder-phone`}>
                 {contact.emails?.map((n) => n.value).join(', ') || (
                   <Button
-                    disabled={isErrandLocked(errand)}
+                    disabled={(errand ? isErrandLocked(errand) : false)}
                     color="vattjom"
                     variant="link"
                     onClick={() => {
@@ -323,7 +323,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                   )}
                   <SimplifiedContactForm
                     allowOrganization={appConfig.features.useOrganizationStakeholders}
-                    disabled={isErrandLocked(errand)}
+                    disabled={(errand ? isErrandLocked(errand) : false)}
                     setUnsaved={props.setUnsaved}
                     contact={createEmptyContact(Role.APPLICANT)}
                     onSave={(e) => {
@@ -368,7 +368,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 <SimplifiedContactForm
                   key={Math.random()}
                   allowOrganization={appConfig.features.useOrganizationStakeholders}
-                  disabled={isErrandLocked(errand)}
+                  disabled={(errand ? isErrandLocked(errand) : false)}
                   setUnsaved={props.setUnsaved}
                   contact={createEmptyContact(Role.CONTACT_PERSON)}
                   onSave={(savedContact) => {

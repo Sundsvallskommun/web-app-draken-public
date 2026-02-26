@@ -31,11 +31,11 @@ function WarnIfUnsavedChanges({ children, showWarning }: { children: React.React
     const originalPush = router.push;
     const originalReplace = router.replace;
 
-    router.push = async (...args: any[]) => {
+    router.push = async (...args: Parameters<typeof originalPush>) => {
       handleRouteChange(args[0]);
       return originalPush.apply(router, args);
     };
-    router.replace = async (...args: any[]) => {
+    router.replace = async (...args: Parameters<typeof originalReplace>) => {
       handleRouteChange(args[0]);
       return originalReplace.apply(router, args);
     };

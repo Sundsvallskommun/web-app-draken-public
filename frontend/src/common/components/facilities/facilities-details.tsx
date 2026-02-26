@@ -9,11 +9,13 @@ export const FacilityDetails: React.FC<{
   closeHandler: () => void;
   estate: EstateInformation;
 }> = ({ show, label = '', closeHandler, estate }) => {
-  const getEstateChanges = (inObjectId) => {
+  const getEstateChanges = (inObjectId: string) => {
     const ownerChanges = estate?.ownerChanges.find((owner) =>
       owner.acquisition.find((acquisition) => acquisition.registeredOwnership === inObjectId)
     );
+    if (!ownerChanges) return null;
     const owner = ownerChanges.acquisition.find((owner) => owner.registeredOwnership === inObjectId);
+    if (!owner) return null;
     const price = ownerChanges.purchasePrice.purchasePriceImmovableProperty?.sum;
     const purchasePriceType = ownerChanges.purchasePrice.purchasePriceType;
     return (

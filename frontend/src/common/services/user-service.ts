@@ -117,12 +117,12 @@ export const getAvatar: (width: string) => Promise<string> = (width) => {
     });
 };
 
-export const getNameFromADUsername: (username: string, admins: Admin[]) => string = (username, admins) => {
+export const getNameFromADUsername: (username: string, admins: Admin[]) => string | undefined = (username, admins) => {
   const admin = admins.find((a) => a.adAccount === username);
   return admin ? `${admin.firstName} ${admin.lastName}` : undefined;
 };
 
-export const getInitialsFromADUsername: (username: string, admins: Admin[]) => string = (username, admins) => {
+export const getInitialsFromADUsername: (username: string, admins: Admin[]) => string | undefined = (username, admins) => {
   const admin = admins.find((a) => a.adAccount === username);
   return admin ? `${admin.firstName[0]}${admin.lastName[0]}` : undefined;
 };

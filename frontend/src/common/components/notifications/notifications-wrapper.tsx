@@ -37,7 +37,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
         })
         .catch((e) => {
           console.error('Something went wrong when fetching notifications');
-          return [];
+          return [] as (SupportNotification | CaseDataNotification)[];
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId, show]);

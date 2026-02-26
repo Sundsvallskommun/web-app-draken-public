@@ -18,7 +18,7 @@ export const SupportErrandSummary: React.FC<{}> = () => {
               Ärendestatus
             </div>
             <div data-cy="errandStatus">
-              <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
+              <SupportStatusLabelComponent status={supportErrand?.status ?? ''} resolution={supportErrand?.resolution ?? ''} />
             </div>
           </div>
           <div className="pr-sm">
@@ -27,16 +27,16 @@ export const SupportErrandSummary: React.FC<{}> = () => {
             </div>
             <div>
               <span className="flex gap-sm items-center">
-                <PriorityComponent priority={Priority[supportErrand?.priority]} />
+                <PriorityComponent priority={(Priority as Record<string, string>)[supportErrand?.priority!]} />
               </span>
             </div>
           </div>
 
           <div className="pr-sm">
             <div data-cy="errandRegisteredLabel" className="font-bold">
-              Inkom via {Channels[supportErrand.channel]?.toLowerCase()}
+              Inkom via {(Channels as Record<string, string>)[supportErrand?.channel!]?.toLowerCase()}
             </div>
-            <div data-cy="errandRegistered">{prettyTime(supportErrand?.created)}</div>
+            <div data-cy="errandRegistered">{prettyTime(supportErrand?.created!)}</div>
           </div>
           <div className="pr-sm">
             <div className="font-bold" data-cy="errandStakeholderLabel">
@@ -44,7 +44,7 @@ export const SupportErrandSummary: React.FC<{}> = () => {
             </div>
             <div className="underline" data-cy="errandStakeholder">
               {(() => {
-                const reporter = getSupportReporterStakeholder(supportErrand);
+                const reporter = getSupportReporterStakeholder(supportErrand!);
                 if (reporter?.firstName && reporter?.lastName) {
                   return `${reporter.firstName} ${reporter.lastName}`;
                 } else {

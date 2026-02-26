@@ -8,7 +8,7 @@ export interface CaseTypeFilter {
   caseType: string[];
 }
 
-export const CaseTypeValues = {
+export const CaseTypeValues: CaseTypeFilter = {
   caseType: [],
 };
 

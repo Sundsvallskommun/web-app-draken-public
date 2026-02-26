@@ -8,7 +8,7 @@ export interface CasePriorityFilter {
   priority: string[];
 }
 
-export const CasePriorityValues = {
+export const CasePriorityValues: CasePriorityFilter = {
   priority: [],
 };
 

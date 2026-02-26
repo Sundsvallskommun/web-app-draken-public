@@ -29,6 +29,7 @@ import {
   CBillingRecord,
   CBillingRecordStatusEnum,
   CBillingRecordTypeEnum,
+  CSupportStakeholder,
 } from 'src/data-contracts/backend/data-contracts';
 
 export const SupportErrandInvoiceTab: React.FC<{
@@ -41,30 +42,26 @@ export const SupportErrandInvoiceTab: React.FC<{
     user,
     municipalityId,
     setSupportErrand,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: (e: SupportErrand) => void;
-    user: User;
   } = useAppContext();
 
   const [record, setRecord] = useState<CBillingRecord | undefined>(emptyBillingRecord);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const resetManager = (manager) => {
-    const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
-    getEmployeeCustomerIdentity(managerUserName, 'personal')
+  const resetManager = (manager: CSupportStakeholder | undefined) => {
+    const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values?.[0] || null;
+    getEmployeeCustomerIdentity(managerUserName!, 'personal')
       .then((res) => {
         if (res.type === 'INTERNAL') {
           setValue('type', CBillingRecordTypeEnum.INTERNAL);
           setTimeout(() => {
-            setValue('invoice.customerId', res.identity.customerId.toString());
+            setValue('invoice.customerId', res.identity!.customerId.toString());
           }, 20);
         } else if (res.type === 'EXTERNAL') {
           setValue('type', CBillingRecordTypeEnum.EXTERNAL);
-          setValue('recipient.organizationName', res.identity.name);
-          setValue('invoice.customerId', res.identity.companyId.toString());
-          getOrganization(res.identity.orgNr, res.identity.legalEntityAddressSource).then(({ partyId, address }) => {
+          setValue('recipient.organizationName', res.identity!.name);
+          setValue('invoice.customerId', res.identity!.companyId.toString());
+          getOrganization(res.identity!.orgNr!, res.identity!.legalEntityAddressSource!).then((result) => {
+            const { partyId, address } = result!;
             setValue('recipient.partyId', partyId);
             setValue('recipient.addressDetails', address);
           });
@@ -72,22 +69,22 @@ export const SupportErrandInvoiceTab: React.FC<{
         setValue('invoice.customerReference', res.referenceNumber);
         handleChange(
           invoiceSettings.invoiceTypes[0].invoiceType,
-          res.type === 'INTERNAL' ? res.identity.customerId.toString() : res.identity.companyId.toString(),
+          res.type === 'INTERNAL' ? res.identity!.customerId!.toString() : res.identity!.companyId!.toString(),
           1,
           res.type === 'INTERNAL'
-            ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter
-            : invoiceSettings.invoiceTypes[0].external.accountInformation.costCenter,
+            ? invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter!
+            : invoiceSettings.invoiceTypes[0].external.accountInformation.costCenter!,
           res.type === 'INTERNAL'
-            ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity
-            : invoiceSettings.invoiceTypes[0].external.accountInformation.activity
+            ? invoiceSettings.invoiceTypes[0].internal.accountInformation.activity!
+            : invoiceSettings.invoiceTypes[0].external.accountInformation.activity!
         );
       })
       .catch(() => {
         console.error('Failed to get employee customer identity');
       });
     setValue(`extraParameters`, {
-      errandNumber: supportErrand.errandNumber,
-      errandId: supportErrand.id,
+      errandNumber: supportErrand!.errandNumber!,
+      errandId: supportErrand!.id!,
       referenceName: manager ? `${manager?.firstName} ${manager?.lastName}` : '',
     });
   };
@@ -102,18 +99,18 @@ export const SupportErrandInvoiceTab: React.FC<{
         setTimeout(() => {
           handleChange(
             rec.invoice.description,
-            rec.invoice.customerId,
-            rec.invoice.invoiceRows[0].quantity,
-            rec.invoice.invoiceRows[0].accountInformation[0].costCenter,
-            rec.invoice.invoiceRows[0].accountInformation[0].activity
+            rec.invoice.customerId!,
+            rec.invoice.invoiceRows[0].quantity!,
+            rec.invoice.invoiceRows[0].accountInformation![0].costCenter!,
+            rec.invoice.invoiceRows[0].accountInformation![0].activity!
           );
         }, 0);
       });
     } else {
       setRecord(emptyBillingRecord);
       setValue(`invoice.ourReference`, `${user.firstName} ${user.lastName}`);
-      const manager = supportErrand.stakeholders?.find((s) => s.role === 'MANAGER');
-      const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values[0] || null;
+      const manager = supportErrand?.stakeholders?.find((s) => s.role === 'MANAGER');
+      const managerUserName = manager?.parameters?.find((param) => param.key === 'username')?.values?.[0] || null;
       if (managerUserName) {
         resetManager(manager);
       }
@@ -146,7 +143,7 @@ export const SupportErrandInvoiceTab: React.FC<{
   ) => {
     setValue('invoice.description', description);
     const formRows = getInvoiceRows(
-      supportErrand.errandNumber,
+      supportErrand!.errandNumber!,
       description,
       getValues('type'),
       identity,
@@ -159,18 +156,18 @@ export const SupportErrandInvoiceTab: React.FC<{
 
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
-    const _a = validateAction(supportErrand, user) && record?.status === CBillingRecordStatusEnum.NEW;
+    const _a = validateAction(supportErrand!, user) && record?.status === CBillingRecordStatusEnum.NEW;
     setAllowed(_a);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
-  const onError = (error) => {
+  const onError = (error: Record<string, unknown>) => {
     console.error('error', error);
   };
 
   const onSubmit = () => {
     setIsLoading(true);
-    return saveBillingRecord(supportErrand, municipalityId, getValues())
+    return saveBillingRecord(supportErrand!, municipalityId, getValues())
       .then(() => {
         setIsLoading(false);
         toastMessage(
@@ -179,7 +176,7 @@ export const SupportErrandInvoiceTab: React.FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch(() => {
         toastMessage({
@@ -199,7 +196,7 @@ export const SupportErrandInvoiceTab: React.FC<{
         <FormProvider {...formControls}>
           <BillingForm
             resetManager={() => {
-              const manager = supportErrand.stakeholders?.find((s) => s.role === 'MANAGER');
+              const manager = supportErrand?.stakeholders?.find((s) => s.role === 'MANAGER');
               resetManager(manager);
             }}
             handleChange={handleChange}
@@ -207,10 +204,10 @@ export const SupportErrandInvoiceTab: React.FC<{
           />
         </FormProvider>
         <div className="flex flex-row justify-end gap-md">
-          {record.status === CBillingRecordStatusEnum.NEW ? (
+          {record?.status === CBillingRecordStatusEnum.NEW ? (
             <div>
               <Button
-                disabled={isSupportErrandLocked(supportErrand) || !allowed || isLoading}
+                disabled={isSupportErrandLocked(supportErrand!) || !allowed || isLoading}
                 onClick={handleSubmit(onSubmit, onError)}
                 data-cy="save-invoice-button"
                 loading={isLoading}
@@ -219,24 +216,24 @@ export const SupportErrandInvoiceTab: React.FC<{
                 Spara
               </Button>
             </div>
-          ) : record.status === CBillingRecordStatusEnum.REJECTED ? (
+          ) : record?.status === CBillingRecordStatusEnum.REJECTED ? (
             <Button inverted variant="primary" color="error">
               <ThumbsDown /> Avslag
             </Button>
-          ) : record.status === CBillingRecordStatusEnum.APPROVED ? (
+          ) : record?.status === CBillingRecordStatusEnum.APPROVED ? (
             <Button inverted variant="primary" color="gronsta">
               <Check /> Godkänd
             </Button>
-          ) : record.status === CBillingRecordStatusEnum.INVOICED ? (
+          ) : record?.status === CBillingRecordStatusEnum.INVOICED ? (
             <Button disabled inverted variant="primary" color="vattjom">
               <Check /> Fakturerad
             </Button>
           ) : null}
         </div>
-        {record.status === CBillingRecordStatusEnum.APPROVED ? (
+        {record?.status === CBillingRecordStatusEnum.APPROVED ? (
           <span className="flex justify-end">
             <span className="text-small">
-              <b>Attesterad av:</b> {record.approvedBy}, {prettyTime(record.approved)}
+              <b>Attesterad av:</b> {record?.approvedBy}, {prettyTime(record?.approved)}
             </span>
           </span>
         ) : null}

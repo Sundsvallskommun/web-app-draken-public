@@ -29,7 +29,7 @@ export const RenderedMessage: React.FC<{
   const [expanded, setExpanded] = useState<boolean>(false);
 
   useEffect(() => {
-    const _a = validateAction(errand, user);
+    const _a = errand ? validateAction(errand, user) : false;
     setAllowed(_a);
   }, [user, errand]);
 
@@ -38,15 +38,16 @@ export const RenderedMessage: React.FC<{
   // We truncate reply messages at the first occurence of "Från: " and
   // the first "-----Ursprungligt meddelande-----" line, so that only the
   // last message body is shown.
-  let answerMessage = message.message;
+  let answerMessage = message.message ?? '';
   const hasInReplyToWithValue = message.emailHeaders?.some((headerObj) => headerObj.header === 'IN_REPLY_TO');
   if (hasInReplyToWithValue) {
     const marker = '<p>-----Ursprungligt meddelande-----</p>';
-    const firstIndex = message.message.indexOf(marker);
-    const secondIndex = message.message.indexOf(marker, firstIndex + marker.length);
+    const msgText = message.message ?? '';
+    const firstIndex = msgText.indexOf(marker);
+    const secondIndex = msgText.indexOf(marker, firstIndex + marker.length);
 
     if (secondIndex !== -1) {
-      answerMessage = message.message.slice(0, secondIndex);
+      answerMessage = msgText.slice(0, secondIndex);
     }
   }
   const getSender = (msg: MessageNode) =>
@@ -54,7 +55,7 @@ export const RenderedMessage: React.FC<{
 
   const getMessageOwner = (msg: MessageNode) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
-      const ownerInfomration = errand.stakeholders.filter((stakeholder) => stakeholder.roles.includes(Role.APPLICANT));
+      const ownerInfomration = (errand?.stakeholders ?? []).filter((stakeholder) => stakeholder.roles.includes(Role.APPLICANT));
       const isWebMessageOpenE = msg.messageType === 'WEBMESSAGE' && msg.externalCaseId !== null;
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.emails.some((email) => email.value === msg.email)
@@ -100,7 +101,7 @@ export const RenderedMessage: React.FC<{
                 {message.sent ? dayjs(message.sent).format('YYYY-MM-DD HH:mm') : 'Datum saknas'}
               </span>
               <span className="text-xs mx-sm">|</span>
-              {message.attachments?.length > 0 ? (
+              {(message.attachments?.length ?? 0) > 0 ? (
                 <>
                   <div className="mx-sm inline-flex items-center gap-xs">
                     <Paperclip size="1.5rem" />
@@ -196,7 +197,7 @@ export const RenderedMessage: React.FC<{
               className="self-start"
               color="vattjom"
               data-cy="respond-button"
-              disabled={isErrandLocked(errand) || !allowed}
+              disabled={(errand ? isErrandLocked(errand) : false) || !allowed}
               size="sm"
               variant="primary"
               onClick={() => {
@@ -213,7 +214,7 @@ export const RenderedMessage: React.FC<{
             expanded ? '' : 'max-h-0 overflow-hidden'
           } transition-[max-height] ease-in-out`}
         >
-          {message?.attachments?.length > 0 ? (
+          {(message?.attachments?.length ?? 0) > 0 ? (
             <ul className="flex flex-wrap gap-sm items-center my-12">
               <Icon icon={<Paperclip />} size="1.6rem" />
               {message?.attachments?.map((a, idx) => (
@@ -224,10 +225,10 @@ export const RenderedMessage: React.FC<{
                     if (message.conversationId) {
                       getConversationAttachment(
                         municipalityId,
-                        errand.id,
+                        errand!.id,
                         message.conversationId,
-                        message.messageId,
-                        a.attachmentId
+                        message.messageId ?? '',
+                        a.attachmentId ?? ''
                       )
                         .then((res) => {
                           if (res.data.length !== 0) {
@@ -256,7 +257,7 @@ export const RenderedMessage: React.FC<{
                           });
                         });
                     } else {
-                      messageAttachment(municipalityId, errand.id, message.messageId, a.attachmentId)
+                      messageAttachment(municipalityId, errand!.id, message.messageId ?? '', a.attachmentId ?? '')
                         .then((res) => {
                           if (res.data.length !== 0) {
                             const uri = `data:${a.contentType};base64,${res.data}`;
@@ -302,7 +303,7 @@ export const RenderedMessage: React.FC<{
               dangerouslySetInnerHTML={{
                 __html: message.htmlMessage
                   ? sanitized(message.htmlMessage)
-                  : formatMessage(sanitized(message.message)),
+                  : formatMessage(sanitized(message.message ?? '')),
               }}
             />
           </div>

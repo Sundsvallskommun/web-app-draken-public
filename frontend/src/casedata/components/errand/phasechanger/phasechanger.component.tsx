@@ -33,14 +33,14 @@ export const PhaseChanger = () => {
     setErrand,
     administrators,
     uiPhase,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -67,6 +67,7 @@ export const PhaseChanger = () => {
     message: <p>Vill du byta fas?</p>,
   });
   useEffect(() => {
+    if (!errand) return;
     if (uiPhase === UiPhase.registrerad) {
       setPhaseChangeText({
         icon: 'lightbulb',
@@ -147,7 +148,7 @@ export const PhaseChanger = () => {
       showSaveError();
       return;
     }
-    return setAdministrator(municipalityId, errand, admin)
+    return setAdministrator(municipalityId, errand!, admin)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -156,7 +157,7 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
         pollDisplayPhase();
       })
@@ -176,8 +177,8 @@ export const PhaseChanger = () => {
     try {
       setPhaseDialogOpen(false);
       await errandSave();
-      await triggerErrandPhaseChange(municipalityId, errand);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await triggerErrandPhaseChange(municipalityId, errand!);
+      const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
 
       toastMessage(
@@ -197,6 +198,8 @@ export const PhaseChanger = () => {
       setIsLoading(false);
     }
   };
+
+  if (!errand) return null;
 
   return phaseChangeInProgress(errand) ? (
     <Button disabled variant="secondary" rightIcon={<Spinner size={2} />}>

@@ -8,11 +8,11 @@ import ApiService from './api.service';
 
 const SERVICE = apiServiceName('case-data');
 
-export const getOwnerStakeholder: (e: ErrandDTO) => StakeholderDTO = e => e.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
+export const getOwnerStakeholder: (e: ErrandDTO) => StakeholderDTO = e => e.stakeholders?.find(s => s.roles.includes(Role.APPLICANT))!;
 
-export const getOwnerStakeholderEmail: (e: ErrandDTO) => string = e => {
+export const getOwnerStakeholderEmail: (e: ErrandDTO) => string | undefined = e => {
   const owner = getOwnerStakeholder(e);
-  return owner.contactInformation.find(c => c.contactType === 'EMAIL')?.value;
+  return owner?.contactInformation?.find(c => c.contactType === 'EMAIL')?.value;
 };
 
 export const getStakeholderById: (municipalityId: string, errandId: number, stakeholderId: string, user: User) => Promise<StakeholderDTO> = async (

@@ -42,10 +42,12 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   const { municipalityId, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
-    setValue('channel', errand.channel);
-    setValue('priority', errand.priority);
-    setValue('status', errand.status);
-    setValue('phase', errand.phase);
+    if (errand) {
+      setValue('channel', errand.channel);
+      setValue('priority', errand.priority);
+      setValue('status', errand.status);
+      setValue('phase', errand.phase);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
@@ -161,7 +163,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   <FormLabel>Ärendetyp</FormLabel>
                   <Select
                     {...register('caseType')}
-                    disabled={isErrandLocked(errand)}
+                    disabled={(errand ? isErrandLocked(errand) : false)}
                     readOnly={errand?.channel === Channels.ESERVICE_KATLA}
                     data-cy="casetype-input"
                     value={caseType}
@@ -203,7 +205,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   <FormLabel>Prioritet</FormLabel>
                   <Select
                     {...register('priority')}
-                    disabled={isErrandLocked(errand)}
+                    disabled={(errand ? isErrandLocked(errand) : false)}
                     data-cy="priority-input"
                     value={priority}
                     className="w-full text-dark-primary"
@@ -244,7 +246,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             update={() => {}}
           />
         ) : null}
-        {!registeringNewErrand && appConfig.features.useRelations && <LinkedErrandsDisclosure errand={errand} />}
+        {!registeringNewErrand && appConfig.features.useRelations && errand && <LinkedErrandsDisclosure errand={errand} />}
       </div>
     </div>
   );

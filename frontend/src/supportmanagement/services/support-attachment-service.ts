@@ -112,7 +112,7 @@ export const getAttachmentKey: (label: string) => AttachmentCategory = (label) =
     case 'Övriga bilagor':
       return 'OTHER_ATTACHMENT';
     default:
-      return undefined;
+      return 'OTHER_ATTACHMENT';
   }
 };
 
@@ -185,7 +185,7 @@ export const saveSupportAttachments: (
   const attachmentPromises = attachments.map(async (attachment, idx) => {
     // await delay(idx * 500);
 
-    const fileItem = attachment.file[0];
+    const fileItem = (attachment.file as unknown as FileList)[0];
     if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
       throw new Error('MAX_SIZE');
     }
@@ -220,7 +220,7 @@ export const saveSupportAttachments: (
   );
 };
 
-export const countAttachment = (attachment): number => {
+export const countAttachment = (attachment: SupportAttachment[]): number => {
   let numberOfAttachment = 0;
   if (attachment) {
     numberOfAttachment = attachment.length;

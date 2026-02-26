@@ -9,7 +9,7 @@ export interface CaseStatusFilter {
   status: string[];
 }
 
-export const CaseStatusValues = {
+export const CaseStatusValues: CaseStatusFilter = {
   status: [],
 };
 

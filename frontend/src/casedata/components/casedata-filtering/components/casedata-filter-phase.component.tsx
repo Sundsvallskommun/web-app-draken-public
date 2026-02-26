@@ -7,7 +7,7 @@ export interface CasePhaseFilter {
   phase: string[];
 }
 
-export const CasePhaseValues = {
+export const CasePhaseValues: CasePhaseFilter = {
   phase: [],
 };
 

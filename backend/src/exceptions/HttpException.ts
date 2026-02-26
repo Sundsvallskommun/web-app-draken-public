@@ -4,7 +4,7 @@ import { HttpError } from 'routing-controllers';
 export class HttpException extends HttpError {
   public status: number;
   public message: string;
-  public errors: ValidationError[];
+  public errors!: ValidationError[];
 
   constructor(status: number, message: string) {
     super(status, message);

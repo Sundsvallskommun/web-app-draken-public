@@ -1,6 +1,7 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/casedata-errand-service';
+import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -29,11 +30,6 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     errand,
     setErrand,
     user,
-  }: {
-    municipalityId: string;
-    errand: IErrand;
-    setErrand: any;
-    user;
   } = useAppContext();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
@@ -54,7 +50,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
     setError(false);
-    return setErrandStatus(errand.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
+    return setErrandStatus(errand!.id, municipalityId, ErrandStatus.Parkerad, data.date, data.comment)
       .then((res) => {
         toastMessage(
           getToastOptions({
@@ -64,7 +60,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         );
         setIsLoading(false);
         setShowModal(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
       })
       .catch((e) => {
         toastMessage({
@@ -98,7 +94,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             variant="secondary"
             disabled={
               disabled ||
-              isErrandLocked(errand) ||
+              (errand ? isErrandLocked(errand) : false) ||
               !errand?.administrator ||
               user.username.toLocaleLowerCase() !== errand?.administrator?.adAccount?.toLocaleLowerCase()
             }

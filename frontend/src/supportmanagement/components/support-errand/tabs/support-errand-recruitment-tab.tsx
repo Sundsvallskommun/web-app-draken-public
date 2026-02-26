@@ -21,14 +21,14 @@ export const SupportErrandRecruitmentTab: React.FC<{
   const errandForm = useFormContext<{ [key: string]: Parameter[] }>();
 
   useEffect(() => {
-    const ps = getRecruitmentParameters(supportErrand);
+    const ps = getRecruitmentParameters(supportErrand as any);
     setParameters(ps);
     recruitmentForm.reset(structuredClone(ps));
   }, [supportErrand, recruitmentForm]);
 
   const handleSubmit = async () => {
     setLoading(true);
-    await saveParameters(supportErrand.id, '2281', recruitmentForm.getValues()).then((res) => {
+    await saveParameters(supportErrand!.id!, '2281', recruitmentForm.getValues()).then((res) => {
       setLoading(false);
       return res;
     });
@@ -105,7 +105,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                             }}
                             className="mb-16"
                           >
-                            {val.values[0]}
+                            {val.values?.[0]}
                           </Checkbox>
                         ) : null}
 

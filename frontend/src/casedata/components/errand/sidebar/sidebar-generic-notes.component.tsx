@@ -47,7 +47,7 @@ export const SidebarGenericNotes: React.FC<{
     let createNote = true;
 
     if (noteIsTjansteanteckning(noteType)) {
-      if (!isErrandAdmin(errand, user)) {
+      if (!isErrandAdmin(errand!, user)) {
         toastMessage({
           position: 'bottom',
           closeable: false,
@@ -70,7 +70,7 @@ export const SidebarGenericNotes: React.FC<{
       }
     }
     if (createNote) {
-      return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
+      return saveErrandNote(municipalityId, errand!.id?.toString(), newNote)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -79,7 +79,7 @@ export const SidebarGenericNotes: React.FC<{
             })
           );
           setIsLoading(false);
-          getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+          getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
           setValue('text', '');
         })
         .catch(() => {
@@ -102,14 +102,14 @@ export const SidebarGenericNotes: React.FC<{
 
   useEffect(() => {
     setNotes(
-      errand?.notes
+      (errand?.notes ?? [])
         .sort((a, b) =>
           dayjs(a.updated).isAfter(dayjs(b.updated)) ? 1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? -1 : 0
         )
         .reverse()
     );
     if (selectedNote) {
-      setSelectedNote(errand?.notes.find((n) => n.id === selectedNote.id));
+      setSelectedNote(errand?.notes?.find((n) => n.id === selectedNote.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
@@ -131,7 +131,7 @@ export const SidebarGenericNotes: React.FC<{
       extraParameters: {},
     };
 
-    return saveErrandNote(municipalityId, errand.id?.toString(), editNote)
+    return saveErrandNote(municipalityId, errand!.id?.toString(), editNote)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -139,7 +139,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
         setEditNote(false);
       })
@@ -157,7 +157,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   const removeNote = (inNote: ErrandNote) => {
-    return deleteErrandNote(municipalityId, errand.id?.toString(), inNote.id?.toString())
+    return deleteErrandNote(municipalityId, errand!.id?.toString(), inNote.id?.toString())
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -165,7 +165,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
       })
       .catch(() => {
@@ -242,7 +242,7 @@ export const SidebarGenericNotes: React.FC<{
                                   <Button
                                     leftIcon={<Pencil />}
                                     disabled={
-                                      noteIsComment(note.noteType) && errand.status.statusType === 'Ärende avslutat'
+                                      noteIsComment(note.noteType) && errand?.status?.statusType === 'Ärende avslutat'
                                     }
                                     onClick={() => {
                                       updateNote(note);

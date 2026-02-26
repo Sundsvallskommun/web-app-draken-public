@@ -52,7 +52,7 @@ export const CasedataAttachments: React.FC = () => {
   const toastMessage = useSnackbar();
 
   const closeModal = () => {
-    getErrand(municipalityId, errand.id.toString())
+    getErrand(municipalityId, errand!.id.toString())
       .then((data) => setErrand(data.errand))
       .catch((e) => {
         toastMessage({
@@ -112,7 +112,8 @@ export const CasedataAttachments: React.FC = () => {
     const duplicates: Record<string, number> = {};
     allFiles.forEach((file) => {
       if (onlyOneAllowed(file.meta.category as MEXAttachmentCategory | PTAttachmentCategory)) {
-        duplicates[file.meta.category] = (duplicates[file.meta.category] || 0) + 1;
+        const cat = file.meta.category ?? '';
+        duplicates[cat] = (duplicates[cat] || 0) + 1;
       }
     });
 
@@ -150,7 +151,7 @@ export const CasedataAttachments: React.FC = () => {
   const clickHandler = (attachment: UploadFile) => {
     if (imageMimeTypes.includes(attachment.file.type)) {
       setModalFetching(true);
-      fetchAttachment(municipalityId, errand.id, attachment.id)
+      fetchAttachment(municipalityId, errand!.id, attachment.id)
         .then((res) => setModalAttachment(res.data))
         .then(() => {
           setModalFetching(false);
@@ -175,8 +176,8 @@ export const CasedataAttachments: React.FC = () => {
       const saved = await saveErrand();
       if (!saved) return;
 
-      await deleteAttachment(municipalityId, errand?.id, attachment);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await deleteAttachment(municipalityId, errand!.id, attachment);
+      const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
       toastMessage(
         getToastOptions({
@@ -201,7 +202,7 @@ export const CasedataAttachments: React.FC = () => {
           <h2 className="text-h4-sm md:text-h4-md">Bilagor</h2>
           <Button
             data-cy="add-attachment-button"
-            disabled={isErrandLocked(errand)}
+            disabled={errand ? isErrandLocked(errand) : false}
             color="vattjom"
             rightIcon={<Upload size={16} />}
             inverted
@@ -246,10 +247,10 @@ export const CasedataAttachments: React.FC = () => {
                     }
                     editAttachment(
                       municipalityId,
-                      errand.id.toString(),
+                      errand!.id.toString(),
                       file.id,
                       `${file.meta.name}.${file.meta.ending}`,
-                      file.meta.category
+                      file.meta.category ?? ''
                     );
                     setEditIndex(null);
                   },
@@ -284,7 +285,7 @@ export const CasedataAttachments: React.FC = () => {
                       )}
                     </Fragment>,
                   ],
-                  showMore: !isErrandLocked(errand),
+                  showMore: errand ? !isErrandLocked(errand) : true,
                   morePopupMenuPanel: (
                     <PopupMenu.Panel>
                       <PopupMenu.Items>

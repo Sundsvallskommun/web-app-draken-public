@@ -14,12 +14,12 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 class SsnPayload {
   @IsString()
-  ssn: string;
+  ssn!: string;
 }
 
 class OrgNrPayload {
   @IsString()
-  orgNr: string;
+  orgNr!: string;
 }
 
 interface Citizenaddress {
@@ -130,7 +130,7 @@ interface LegalEntity2WithId {
 }
 class CLegalEntity2WithId extends CLegalEntity2 implements LegalEntity2WithId {
   @IsString()
-  partyId: string;
+  partyId!: string;
 }
 
 interface ResponseData {
@@ -189,7 +189,7 @@ export class AddressController {
     @Req() req: RequestWithUser,
     @Param('loginName') loginName: string,
     @Res() response: any,
-  ): Promise<{ data: EmployeeAddress; message: string }> {
+  ): Promise<{ data: EmployeeAddress; message: string } | undefined> {
     const baseUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
     const res = await this.apiService.get<EmployeeAddress>({ url: baseUrl }, req.user).catch(e => {
       logger.error('Error when fetching user information');

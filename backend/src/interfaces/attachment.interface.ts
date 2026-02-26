@@ -5,18 +5,18 @@ import { Attachment as AttachmentDTO } from '@/data-contracts/case-data/data-con
 export class Attachment implements AttachmentDTO {
   @IsNumber()
   @IsOptional()
-  id: number;
+  id!: number;
   @IsString()
-  category: string;
+  category!: string;
   @IsString()
-  name: string;
+  name!: string;
   @IsString()
   @IsOptional()
-  note: string;
+  note!: string;
   @IsString()
-  extension: string;
+  extension!: string;
   @IsString()
-  mimeType: string;
+  mimeType!: string;
   @IsString()
   @IsOptional()
   file?: string;
@@ -38,15 +38,15 @@ export class CreateAttachmentDto implements AttachmentDTO {
   @IsOptional()
   file?: string;
   @IsString()
-  category: string;
+  category!: string;
   @IsString()
-  extension: string;
+  extension!: string;
   @IsString()
-  mimeType: string;
+  mimeType!: string;
   @IsString()
-  name: string;
+  name!: string;
   @IsString()
-  note: string;
+  note!: string;
   @IsString()
-  errandNumber: string;
+  errandNumber!: string;
 }

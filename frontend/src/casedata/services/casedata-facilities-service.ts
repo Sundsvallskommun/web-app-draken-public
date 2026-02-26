@@ -54,7 +54,7 @@ export const getErrandPropertyDesignations: (errand: IErrand) => string[] = (err
     console.error('No errand found, cannot. Returning empty list.');
     return [];
   }
-  return errand.facilities
+  return (errand.facilities ?? [])
     .filter((facility) => facility.address)
-    .map((facility) => removeMunicipalityName(facility.address?.propertyDesignation));
+    .map((facility) => removeMunicipalityName(facility.address?.propertyDesignation ?? ''));
 };

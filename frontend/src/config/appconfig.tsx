@@ -111,12 +111,12 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
     }
 
     if (flag.name === 'reopenSupportErrandLimit' && flag.enabled) {
-      appConfig.reopenSupportErrandLimit = flag.value;
+      appConfig.reopenSupportErrandLimit = flag.value ?? '30';
       return;
     }
 
     if (flag.name in appConfig.features) {
-      appConfig.features[flag.name] = flag.enabled;
+      appConfig.features[flag.name as keyof AppConfigFeatures] = flag.enabled;
     }
   });
 }

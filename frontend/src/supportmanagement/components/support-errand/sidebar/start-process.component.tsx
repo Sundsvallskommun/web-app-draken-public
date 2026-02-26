@@ -22,11 +22,11 @@ export const StartProcessComponent: React.FC<{
     try {
       await onSubmit();
 
-      if (!supportErrand.assignedUserId) {
+      if (!supportErrand!.assignedUserId) {
         const currentAdmin = administrators.find((a) => a.adAccount === user.username);
         if (currentAdmin) {
           await setSupportErrandAdmin(
-            supportErrand.id,
+            supportErrand!.id!,
             municipalityId,
             currentAdmin.adAccount,
             Status.ONGOING,
@@ -35,9 +35,9 @@ export const StartProcessComponent: React.FC<{
         }
       }
 
-      await setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING);
+      await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING);
 
-      const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+      const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);
       setSupportErrand(updated.errand);
       reset(updated.errand);
 
