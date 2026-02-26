@@ -48,7 +48,7 @@ const parseStakeholderField: (d: SupportRevisionDifference) => string = (d) => {
   if (d.path.includes('contactChannels')) {
     return 'Kontaktväg';
   } else if (Object.keys(stakeholderFields).some((f) => d.path.includes(f))) {
-    const path = d.path.split('/').at(-1);
+    const path = d.path.split('/').at(-1) as keyof typeof stakeholderFields;
     return stakeholderFields[path];
   } else {
     return 'Kontaktperson';
@@ -112,7 +112,7 @@ const parseGenericStringDiff: (
     d.op === 'add'
       ? `<p>${keyMapper ? keyMapper[strVal] : strVal}</p>`
       : d.op === 'replace'
-      ? `<div><p>Före: ${keyMapper ? keyMapper[fromValue] || '(tomt)' : fromValue}</p><p>Efter: ${
+      ? `<div><p>Före: ${keyMapper && fromValue ? keyMapper[fromValue] || '(tomt)' : fromValue ?? '(tomt)'}</p><p>Efter: ${
           keyMapper ? keyMapper[strVal] : value
         }</p></div>`
       : `<p>${value}</p>`;
@@ -129,7 +129,7 @@ const parseAdministratorDiff: (
   const fromAdmin = admins.find((a) => a.adAccount === fromValue);
   const fromName = fromAdmin ? `${fromAdmin?.firstName} ${fromAdmin?.lastName} (${fromAdmin?.adAccount})` : '(tomt)';
   const toAdmin = admins.find((a) => a.adAccount === value);
-  const toName = `${toAdmin.firstName} ${toAdmin.lastName} (${toAdmin.adAccount})`;
+  const toName = toAdmin ? `${toAdmin.firstName} ${toAdmin.lastName} (${toAdmin.adAccount})` : '(okänd)';
   const strVal = toName as string;
   const details =
     d.op === 'add'
@@ -141,7 +141,7 @@ const parseAdministratorDiff: (
 };
 
 const parseExternalTagDiff: (d: SupportRevisionDifference) => { title: string; description: string } = (d) => {
-  const externalTagValues = {
+  const externalTagValues: Record<string, Channels> = {
     CHAT: Channels.CHAT,
     SOCIAL_MEDIA: Channels.SOCIAL_MEDIA,
     EMAIL: Channels.EMAIL,
@@ -234,7 +234,7 @@ export const fetchRevisionDiff: (
   const currentVersion = event.metadata.find((item) => item.key === 'CurrentVersion')?.value;
   const previousVersion = event.metadata.find((item) => item.key === 'PreviousVersion')?.value;
   if (!currentVersion || !previousVersion) {
-    return Promise.resolve(undefined);
+    return Promise.resolve([]);
   }
   const noteId = event.sourceType === 'Note' ? event.metadata.find((item) => item.key === 'NoteId')?.value : '';
   const url =

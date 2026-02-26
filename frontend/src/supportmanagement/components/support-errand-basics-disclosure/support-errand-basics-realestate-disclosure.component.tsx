@@ -17,8 +17,6 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
 
   const {
     supportErrand,
-  }: {
-    supportErrand: SupportErrand;
   } = useAppContext();
 
   const fac = watch('facilities');
@@ -50,7 +48,7 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
 
   return (
     <div className="mt-md">
-      <Disclosure disabled={supportErrandIsEmpty(supportErrand)} variant="alt" data-cy={`facility-disclosure`}>
+      <Disclosure disabled={supportErrandIsEmpty(supportErrand!)} variant="alt" data-cy={`facility-disclosure`}>
         <Disclosure.Header>
           <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
           <Disclosure.Title>Fastigheter</Disclosure.Title>

@@ -43,11 +43,6 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
     supportErrand,
     setSupportErrand,
     supportMetadata,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: (e: any) => void;
-    supportMetadata: SupportMetadata;
   } = useAppContext();
   const toastMessage = useSnackbar();
 
@@ -57,7 +52,7 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLButtonElement>(null);
   const setInitialFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
@@ -104,7 +99,7 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
           });
         });
     } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand) && !isLoading) {
+      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)
@@ -150,11 +145,11 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
                   <section className="bg-transparent pt-24 pb-4">
                     <div className="container m-auto pl-0 pr-24 md:pr-40">
                       <div className="w-full flex flex-wrap flex-col justify-between gap-24">
-                        {!supportErrandIsEmpty(supportErrand) ? (
+                        {!supportErrandIsEmpty(supportErrand!) ? (
                           <>
                             <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
                               {appConfig.features.useThreeLevelCategorization
-                                ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ??
+                                ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
                                   '(Ärendetyp saknas)'
                                 : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                     ?.displayName}

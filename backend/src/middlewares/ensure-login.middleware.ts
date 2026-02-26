@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-export const ensureLoggedIn = options => {
+export const ensureLoggedIn = (options: string | { redirectTo?: string; setReturnTo?: boolean }) => {
   if (typeof options == 'string') {
     options = { redirectTo: options };
   }

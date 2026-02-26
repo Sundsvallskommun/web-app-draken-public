@@ -51,7 +51,7 @@ export class UserController {
   @Header('Content-Type', 'image/jpeg')
   @Header('Cross-Origin-Embedder-Policy', 'require-corp')
   @Header('Cross-Origin-Resource-Policy', 'cross-origin')
-  async getMyEmployeeImage(@Req() req: RequestWithUser, @QueryParam('width') width): Promise<any> {
+  async getMyEmployeeImage(@Req() req: RequestWithUser, @QueryParam('width') width: number): Promise<any> {
     const { personId } = req.user;
 
     if (!personId) {
@@ -78,7 +78,7 @@ export class UserController {
   @Header('Content-Type', 'image/jpeg')
   @Header('Cross-Origin-Embedder-Policy', 'require-corp')
   @Header('Cross-Origin-Resource-Policy', 'cross-origin')
-  async getEmployeeImage(@Req() req: RequestWithUser, @Param('personId') personId: string, @QueryParam('width') width): Promise<any> {
+  async getEmployeeImage(@Req() req: RequestWithUser, @Param('personId') personId: string, @QueryParam('width') width: number): Promise<any> {
     if (!personId) {
       throw new HttpException(400, 'Bad Request');
     }

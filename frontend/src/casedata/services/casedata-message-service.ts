@@ -44,13 +44,13 @@ export const sendMessage: (
     const messageFormData = new FormData();
     const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] = data.messageAttachments?.map(
       async (f) => {
-        const fileItem = f.file[0];
+        const fileItem = f.file![0];
         const fileData = await toBase64(fileItem);
         const attachment: Attachment = {
           category: 'MESSAGE_ATTACHMENT',
           name: fileItem.name,
           note: '',
-          extension: fileItem.name.split('.').pop(),
+          extension: fileItem.name.split('.').pop() ?? '',
           // msg files not handled properly by the browser, so we need to set the mime type manually
           mimeType: fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
           file: fileData,
@@ -59,7 +59,7 @@ export const sendMessage: (
         const blob = new Blob([buf], { type: attachment.mimeType });
         return Promise.resolve({ attachment, blob });
       }
-    ) || [new Promise((resolve) => resolve({ attachment: null, blob: null }))];
+    ) || [new Promise((resolve) => resolve({ attachment: null as unknown as Attachment, blob: null as unknown as Blob }))];
     return Promise.allSettled(newAttachmentPromises)
       .then((r) => {
         r.forEach((r) => {
@@ -97,22 +97,23 @@ export const sendMessage: (
           .post<boolean, FormData>(url, messageFormData, { headers: { 'Content-Type': 'multipart/form-data' } })
           .then(() => {
             if (data.newAttachments.length) {
-              const uploadFiles: UploadFile[] = data.newAttachments.map((fObj) => {
-                if (!fObj.file || fObj.file.length === 0) return null;
+              const uploadFiles: UploadFile[] = data.newAttachments.reduce<UploadFile[]>((acc, fObj) => {
+                if (!fObj.file || fObj.file.length === 0) return acc;
                 const file = fObj.file[0];
                 const parts = file.name.split('.');
                 const ending = parts.length > 1 ? parts.pop() : '';
                 const name = parts.join('.');
-                return {
+                acc.push({
                   id: '',
                   file,
                   meta: {
                     name: name,
-                    ending: ending,
+                    ending: ending ?? '',
                     category: isMEX() ? 'OTHER' : 'OTHER_ATTACHMENT',
                   },
-                };
-              });
+                });
+                return acc;
+              }, []);
 
               sendAttachments(municipalityId, errand.id, errand.errandNumber, uploadFiles);
             }
@@ -156,7 +157,7 @@ export const sendSms: (
   return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
-const sortBySentDate = (a, b) =>
+const sortBySentDate = (a: { sent: string }, b: { sent: string }) =>
   dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? -1 : 0;
 
 export const countAllMessages = (tree: MessageNode[]): number => {
@@ -166,7 +167,7 @@ export const countAllMessages = (tree: MessageNode[]): number => {
   let c = 0;
   c += tree.length;
   tree.forEach((root) => {
-    c += countAllMessages(root.children);
+    c += countAllMessages(root.children ?? []);
   });
   return c;
 };
@@ -178,7 +179,7 @@ export const countUnreadMessages = (tree: MessageNode[]): number => {
   let c = 0;
   c += tree.filter((node) => !node.viewed).length;
   tree.forEach((root) => {
-    c += countUnreadMessages(root.children);
+    c += countUnreadMessages(root.children ?? []);
   });
   return c;
 };
@@ -233,26 +234,32 @@ const buildTree = (_list: MessageResponse[]) => {
     msg.message = msg.message?.replace(/\r\n/g, '<br>');
     const id =
       msg.messageType === 'EMAIL'
-        ? msg.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
+        ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
-    nodesMap.set(id, { ...msg, children: [] });
+    if (id) {
+      nodesMap.set(id, { ...msg, children: [] });
+    }
   });
 
   list.forEach((msg) => {
     const id =
       msg.messageType === 'EMAIL'
-        ? msg.emailHeaders.find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
+        ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
-    const parent = msg.emailHeaders.find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];
+    const parent = (msg.emailHeaders ?? []).find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];
     if (parent) {
       const parentMsg = nodesMap.get(parent);
-      if (parentMsg) {
-        parentMsg.children?.push(nodesMap.get(id));
-      } else {
-        roots.push(nodesMap.get(id));
+      const node = id ? nodesMap.get(id) : undefined;
+      if (parentMsg && node) {
+        parentMsg.children?.push(node);
+      } else if (node) {
+        roots.push(node);
       }
     } else {
-      roots.push(nodesMap.get(id));
+      const node = id ? nodesMap.get(id) : undefined;
+      if (node) {
+        roots.push(node);
+      }
     }
   });
 

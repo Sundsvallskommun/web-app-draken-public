@@ -85,7 +85,7 @@ const mapContractStakeholderToErrandStakeholder = (
       : contractStakeholder.type === ContractStakeholderType.PERSON ||
         contractStakeholder.type === ContractStakeholderType.OTHER
       ? ContractStakeholderType.PERSON
-      : contractStakeholder.type;
+      : ((contractStakeholder.type as unknown as StakeholderType) ?? 'PERSON');
 
   // Map phone numbers
   const phoneNumbers: { value: string }[] = [];
@@ -215,7 +215,7 @@ export const ContractDetailForm: React.FC<{
 
       const contractIdParam: ExtraParameter = {
         key: 'contractId',
-        values: [selectedContract.contractId],
+        values: [selectedContract.contractId ?? ''],
       };
 
       await saveExtraParameters(municipalityId, [contractIdParam], createdErrand.errand);

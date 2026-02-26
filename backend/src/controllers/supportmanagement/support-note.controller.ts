@@ -22,18 +22,18 @@ interface SupportNote {
 class SupportNoteDto {
   @IsString()
   @IsOptional()
-  context: string;
+  context!: string;
   @IsString()
   @IsOptional()
-  role: string;
+  role!: string;
   @IsString()
   @IsOptional()
   partyId?: string;
   @IsString()
   @IsOptional()
-  subject: string;
+  subject!: string;
   @IsString()
-  body: string;
+  body!: string;
 }
 
 class SupportNoteUpdateDto {
@@ -44,7 +44,7 @@ class SupportNoteUpdateDto {
   @IsString()
   subject?: string;
   @IsString()
-  body: string;
+  body!: string;
 }
 
 export interface SupportNoteResponse {

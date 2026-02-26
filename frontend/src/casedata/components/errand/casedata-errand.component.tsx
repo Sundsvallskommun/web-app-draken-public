@@ -43,11 +43,6 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
     errand,
     setErrand,
     setUiPhase,
-  }: {
-    municipalityId: string;
-    errand: IErrand;
-    setErrand: any;
-    setUiPhase: (phase: UiPhase) => void;
   } = useAppContext();
   const toastMessage = useSnackbar();
 
@@ -55,7 +50,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
     resolver: yupResolver(formSchema) as unknown as Resolver<IErrand>, //Temporary bypass for resolver
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-    disabled: isErrandLocked(errand),
+    disabled: errand ? isErrandLocked(errand) : false,
   });
 
   const initialFocus = useRef<HTMLBodyElement>(null);
@@ -100,7 +95,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
         });
     } else {
       // Registering new errand, show default values
-      setErrand(emptyErrand);
+      setErrand(emptyErrand as IErrand);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);

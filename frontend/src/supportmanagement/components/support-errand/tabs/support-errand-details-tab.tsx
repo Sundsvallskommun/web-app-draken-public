@@ -6,12 +6,10 @@ import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const {
-    supportErrand,
+    supportErrand: _supportErrand,
     municipalityId,
-  }: {
-    supportErrand: SupportErrand;
-    municipalityId: string;
   } = useAppContext();
+  const supportErrand = _supportErrand!;
 
   const simpleParams = useMemo(
     () =>
@@ -36,8 +34,8 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const tables: { label: string; header: string[]; rows: { key: string; value: string }[][] }[] = useMemo(
     () =>
       tableParams?.map((param) => {
-        const header = param.displayName.split('|');
-        const rows = param.values.map((row: string) => {
+        const header = param.displayName!.split('|');
+        const rows = param.values!.map((row: string) => {
           const columns = row?.split('|') || [];
           return columns.map((column, idx) => {
             return {
@@ -65,15 +63,15 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             {isOpenEErrand(supportErrand) ? (
               <div className="flex flex-row gap-md">
                 <strong>Ärendenummer i e-tjänst</strong>
-                <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>
+                <span>{supportErrand.externalTags?.find((tag) => tag.key === 'caseId')?.value}</span>
               </div>
             ) : null}
             {simpleParams
-              .filter((param) => param.values?.length > 0)
+              .filter((param) => (param.values?.length ?? 0) > 0)
               .map((param, idx) => (
                 <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
                   <div className="font-bold">{param.displayName}</div>
-                  <div>{param.values.join(', ')}</div>
+                  <div>{param.values?.join(', ')}</div>
                 </div>
               ))}
           </div>
@@ -104,9 +102,9 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {supportErrand.jsonParameters?.length > 0 && municipalityId ? (
+        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
           <div className="p-16">
-            <JsonParametersDisplay jsonParameters={supportErrand.jsonParameters} municipalityId={municipalityId} />
+            <JsonParametersDisplay jsonParameters={supportErrand.jsonParameters as any} municipalityId={municipalityId} />
           </div>
         ) : null}
       </div>

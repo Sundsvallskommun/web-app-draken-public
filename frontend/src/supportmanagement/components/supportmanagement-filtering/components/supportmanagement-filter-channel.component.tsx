@@ -8,7 +8,7 @@ export interface ChannelFilter {
   channel: string[];
 }
 
-export const ChannelValues = {
+export const ChannelValues: ChannelFilter = {
   channel: [],
 };
 

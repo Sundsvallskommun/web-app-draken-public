@@ -71,14 +71,14 @@ export class CInvoiceRow implements InvoiceRow {
 
 export class CInvoice implements Invoice {
   @IsString()
-  customerId: string;
+  customerId!: string;
   @IsString()
-  description: string;
+  description!: string;
   @IsOptional()
   @IsString()
   ourReference?: string;
   @IsString()
-  customerReference: string;
+  customerReference!: string;
   @IsOptional()
   @IsString()
   date?: string;
@@ -91,7 +91,7 @@ export class CInvoice implements Invoice {
   @IsArray()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CInvoiceRow)
-  invoiceRows: InvoiceRow[];
+  invoiceRows!: InvoiceRow[];
 }
 
 export class CAddressDetails implements AddressDetails {
@@ -130,16 +130,16 @@ export class CRecipient implements Recipient {
   userId?: string;
   @ValidateNested()
   @TypeTransformer(() => CAddressDetails)
-  addressDetails: AddressDetails;
+  addressDetails!: AddressDetails;
 }
 
 class CExtraParameters {
   @IsString()
-  errandId: string;
+  errandId!: string;
   @IsString()
-  errandNumber: string;
+  errandNumber!: string;
   @IsString()
-  referenceName: string;
+  referenceName!: string;
 }
 export class CBillingRecord implements BillingRecord {
   @IsOptional()
@@ -158,14 +158,14 @@ export class CBillingRecord implements BillingRecord {
   @IsOptional()
   modified?: string;
   @IsString()
-  category: string;
+  category!: string;
   @IsEnum(Type)
-  type: Type;
+  type!: Type;
   @IsEnum(Status)
-  status: Status;
+  status!: Status;
   @ValidateNested()
   @TypeTransformer(() => CInvoice)
-  invoice: CInvoice;
+  invoice!: CInvoice;
   @IsOptional()
   @IsObject()
   @ValidateNested()

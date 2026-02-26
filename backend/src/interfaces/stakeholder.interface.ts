@@ -12,21 +12,21 @@ import {
 } from '@/data-contracts/case-data/data-contracts';
 
 export class Link {
-  href: string;
-  hreflang: string;
-  title: string;
-  type: string;
-  deprecation: string;
-  profile: string;
-  name: string;
-  templated: boolean;
+  href!: string;
+  hreflang!: string;
+  title!: string;
+  type!: string;
+  deprecation!: string;
+  profile!: string;
+  name!: string;
+  templated!: boolean;
 }
 
 export class ContactInfo {
   @IsString()
-  contactType: 'CELLPHONE' | 'PHONE' | 'EMAIL';
+  contactType!: 'CELLPHONE' | 'PHONE' | 'EMAIL';
   @IsString()
-  value: string;
+  value!: string;
 }
 
 export class CAddressDTO {
@@ -70,15 +70,15 @@ export class CreateStakeholderDto implements StakeholderDTO {
   @IsOptional()
   id?: number;
   @IsString()
-  type: StakeholderTypeEnum;
+  type!: StakeholderTypeEnum;
   @IsArray()
-  roles: Role[];
+  roles!: Role[];
   @IsString()
   @IsOptional()
-  firstName: string;
+  firstName!: string;
   @IsString()
   @IsOptional()
-  lastName: string;
+  lastName!: string;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

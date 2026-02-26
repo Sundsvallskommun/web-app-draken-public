@@ -15,8 +15,6 @@ export const SupportErrandBasicsTab: React.FC<{
 }> = (props) => {
   const {
     supportErrand,
-  }: {
-    supportErrand: SupportErrand;
   } = useAppContext();
 
   return (
@@ -39,13 +37,13 @@ export const SupportErrandBasicsTab: React.FC<{
       {appConfig.features.useFacilities ? (
         <SupportErrandBasicsRealEstateDisclosure
           setUnsavedFacility={props.setUnsavedFacility}
-          supportErrand={supportErrand}
+          supportErrand={supportErrand!}
         />
       ) : null}
 
       {appConfig.features.useRelations ? (
         <div className="mt-md">
-          <LinkedErrandsDisclosure errand={supportErrand} />
+          <LinkedErrandsDisclosure errand={supportErrand!} />
         </div>
       ) : null}
     </div>

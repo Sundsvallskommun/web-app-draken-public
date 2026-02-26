@@ -25,6 +25,7 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
 
   const activateErrand = () => {
     setIsLoading(true);
+    if (!errand) return;
     const previousAcceptedStatus = sortBy(errand.statuses, 'created')
       .reverse()
       .map((s) => s.statusType)

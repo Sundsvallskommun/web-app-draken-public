@@ -50,7 +50,7 @@ export class SupportConversationController {
 
     const conversation = resConversation.data.find((c: any) => c.id === conversationId);
     const topic = conversation ? conversation.topic : undefined;
-    const communicationType = conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
+    const communicationType = conversation?.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
 
     url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);

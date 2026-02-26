@@ -25,8 +25,8 @@ export const isEmpty = (value: string | number | object): boolean => {
 };
 
 export const apiURL = (...parts: string[]): string => {
-  const urlParts = [API_BASE_URL, ...parts];
-  return urlParts.map(pathPart => pathPart.replace(/(^\/|\/$)/g, '')).join('/');
+  const urlParts = [API_BASE_URL!, ...parts];
+  return urlParts.map(pathPart => pathPart!.replace(/(^\/|\/$)/g, '')).join('/');
 };
 
 export const luhnCheck = (str = ''): boolean => {
@@ -50,11 +50,11 @@ export enum OrgNumberFormat {
 
 export const formatOrgNr = (orgNr: string, format: OrgNumberFormat = OrgNumberFormat.NODASH): string | undefined => {
   if (!orgNr) {
-    return null;
+    return undefined;
   }
   const orgNumber = orgNr?.replace(/\D/g, '');
   if (!orgNumber || orgNumber.length !== 10 || !luhnCheck(orgNumber)) {
-    return null;
+    return undefined;
   }
   return format === OrgNumberFormat.DASH ? orgNumber.substring(0, 6) + '-' + orgNumber.substring(6, 10) : orgNumber;
 };
@@ -143,7 +143,7 @@ function hasAnyAncestor(path: string, ancestorLists: string[][]): boolean {
 }
 
 export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): string[] {
-  const normalized = pathLists.filter(list => list && list.length);
+  const normalized = pathLists.filter((list): list is string[] => !!list && list.length > 0);
 
   if (normalized.length === 0) return [];
   if (normalized.length === 1) return [...normalized[0]];
@@ -151,7 +151,7 @@ export function removeUnreachablePaths(pathLists: (string[] | undefined)[]): str
   const parents = normalized[0];
   const rest = normalized.slice(1);
 
-  const ancestorLists = [parents];
+  const ancestorLists: string[][] = [parents];
 
   const cleaned: string[][] = [parents];
 

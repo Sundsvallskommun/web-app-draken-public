@@ -6,5 +6,5 @@ export interface SidebarButton {
   key: Status | ErrandStatus;
   statuses: Status[] | ErrandStatus[];
   icon: string;
-  totalStatusErrands: number;
+  totalStatusErrands: number | null;
 }
