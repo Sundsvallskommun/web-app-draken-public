@@ -20,6 +20,9 @@ RUN npm install -g yarn \
 FROM registry.access.redhat.com/ubi9/nodejs-20 AS builder
 
 RUN echo "Build step"
+USER root
+RUN mkdir -p /app && chown -R 1001:0 /app
+USER 1001
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
