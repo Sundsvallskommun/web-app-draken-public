@@ -26,6 +26,7 @@
     "build:rob": "node ../scripts/generate-deploy-info.js && dotenv -e .env.rob -- next build",
     "build:iaf": "node ../scripts/generate-deploy-info.js && dotenv -e .env.iaf -- next build",
     "build:se": "node ../scripts/generate-deploy-info.js && dotenv -e .env.se -- next build",
+    "build": "dotenv -e .env.local -- next build",
     "start:ik": "dotenv -e .env.ik -- dotenv next start",
     "start:kc": "dotenv -e .env.kc -- dotenv next start",
     "start:ka": "dotenv -e .env.ka -- dotenv next start",
