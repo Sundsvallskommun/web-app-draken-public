@@ -56,7 +56,9 @@ COPY --from=builder --chown=0:0 --chmod=555 /app/.next/standalone ./
 COPY --from=builder --chown=0:0 --chmod=555 /app/.next/static ./.next/static
 
 # Grant write only where OpenShift needs it
+USER root
 RUN chown -R 1001:0 /app/.next && chmod -R g+w /app/.next
+USER 1001
 
 # Entrypoint — fix line endings before locking permissions
 COPY --chown=0:0 entrypoint.sh ./
