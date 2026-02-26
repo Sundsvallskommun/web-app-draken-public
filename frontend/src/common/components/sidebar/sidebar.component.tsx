@@ -1,12 +1,13 @@
 import { isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, useGui } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -117,7 +118,7 @@ export const Sidebar: React.FC<{
                   iconButton
                   leftIcon={
                     <>
-                      <LucideIcon name={b.icon as any} />
+                      {(() => { const DynIcon = iconMap[b.icon as any]; return DynIcon ? <DynIcon /> : null; })()}
                     </>
                   }
                 />
@@ -134,7 +135,7 @@ export const Sidebar: React.FC<{
             aria-label={open ? 'Stäng sidomeny' : 'Öppna sidomeny'}
             iconButton
             tabIndex={active === buttons.length ? 0 : -1}
-            leftIcon={open ? <LucideIcon name="chevrons-right" /> : <LucideIcon name="chevrons-left" />}
+            leftIcon={open ? <ChevronsRight /> : <ChevronsLeft />}
             onClick={() => setOpen(!open)}
             onKeyDown={(e) => handleKeyboard(e, buttons.length)}
           />

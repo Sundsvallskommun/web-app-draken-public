@@ -31,7 +31,6 @@ import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/servi
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
@@ -51,6 +50,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { File, Paperclip, X } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
@@ -765,7 +765,7 @@ export const MessageComposer: React.FC<{
                   <Button
                     variant="tertiary"
                     color="primary"
-                    leftIcon={<LucideIcon name="paperclip" />}
+                    leftIcon={<Paperclip />}
                     onClick={() => setIsAttachmentModalOpen(true)}
                     data-cy="add-attachment-button-email"
                   >
@@ -786,7 +786,7 @@ export const MessageComposer: React.FC<{
                         >
                           <div className="flex w-5/6 gap-10">
                             <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                              <LucideIcon name="file" size={25} />
+                              <File size={25} />
                             </div>
                             <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
                           </div>
@@ -798,7 +798,7 @@ export const MessageComposer: React.FC<{
                               className="self-end"
                               onClick={() => removeMessageAttachment(index)}
                             >
-                              <LucideIcon name="x" />
+                              <X />
                             </Button>
                           </div>
                         </div>

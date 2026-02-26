@@ -1,7 +1,7 @@
 import { EstateInformation } from '@common/interfaces/estate-details';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Header, Table, Tabs, cx } from '@sk-web-gui/react';
 import { capitalize } from 'underscore.string';
+import { Mail, X } from 'lucide-react';
 
 export const FacilityDetails: React.FC<{
   show: boolean;
@@ -84,7 +84,7 @@ export const FacilityDetails: React.FC<{
       >
         <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
           <div className="text-h4-sm flex items-center gap-12">
-            <LucideIcon name="mail" /> {label}
+            <Mail /> {label}
           </div>
           <Button
             tabIndex={show ? 0 : -1}
@@ -96,7 +96,7 @@ export const FacilityDetails: React.FC<{
             }}
             data-cy="close-estate-info-button"
           >
-            <LucideIcon name="x" />
+            <X />
           </Button>
         </Header>
 

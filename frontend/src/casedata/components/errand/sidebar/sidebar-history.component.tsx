@@ -4,10 +4,10 @@ import { fetchChangeData, getErrandHistory } from '@casedata/services/casedata-h
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Modal, Spinner, cx } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import { History } from 'lucide-react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const {
@@ -105,7 +105,7 @@ export const SidebarHistory: React.FC<{}> = () => {
             show={isOpen}
             label={
               <div className="flex items-center gap-md">
-                <LucideIcon name="history" />
+                <History />
                 <h3 className="text-h3-sm md:text-h3-md xl:text-h3-lg">Detaljer</h3>
               </div>
             }

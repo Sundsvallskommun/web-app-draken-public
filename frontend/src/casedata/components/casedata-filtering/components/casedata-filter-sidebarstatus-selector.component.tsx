@@ -9,10 +9,10 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useMemo } from 'react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export const CasedataFilterSidebarStatusSelector: React.FC<{
   showContractTable: boolean;
@@ -108,7 +108,7 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showContractTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={<LucideIcon name={button.icon as any} />}
+            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : null; })()}
             key={button.key}
             iconButton={iconButton}
           >

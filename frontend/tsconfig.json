@@ -19,7 +19,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "baseUrl": ".",
     "paths": {
@@ -47,6 +47,9 @@
   "include": [
     "src/**/*.{ts,tsx}",
     "cypress/**/*.{ts,tsx}",
+    "next-env.d.ts",
+    "node_modules/dayjs/plugin/utc.d.ts",
+    "src/common/components/localization-provider",
     ".next-IK/types/**/*.ts",
     ".next-KA/types/**/*.ts",
     ".next-KC/types/**/*.ts",
@@ -57,10 +60,18 @@
     ".next-ROB/types/**/*.ts",
     ".next-IAF/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts",
-    "node_modules/dayjs/plugin/utc.d.ts",
-    "src/common/components/localization-provider",
-    ".next-SE/types/**/*.ts"
+    ".next-SE/types/**/*.ts",
+    ".next-IK/dev/types/**/*.ts",
+    ".next-KA/dev/types/**/*.ts",
+    ".next-KC/dev/types/**/*.ts",
+    ".next-LOP/dev/types/**/*.ts",
+    ".next-MEX/dev/types/**/*.ts",
+    ".next-MSVA/dev/types/**/*.ts",
+    ".next-PT/dev/types/**/*.ts",
+    ".next-ROB/dev/types/**/*.ts",
+    ".next-IAF/dev/types/**/*.ts",
+    ".next-SE/dev/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

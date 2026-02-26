@@ -1,7 +1,7 @@
 import { AppChannels, Channels } from '@casedata/interfaces/channels';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface CaseChannelFilter {
   channel: string[];
@@ -17,7 +17,7 @@ export const CasedataFilterChannel: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Channel-filter"
         variant="tertiary"
         showBackground={false}

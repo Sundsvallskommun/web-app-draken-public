@@ -1,8 +1,8 @@
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface CaseAdminsFilter {
   admins: string[];
@@ -24,7 +24,7 @@ export const SupportManagementFilterAdmins: React.FC<SupportManagementFilterAdmi
     administrators && (
       <PopupMenu>
         <PopupMenu.Button
-          rightIcon={<LucideIcon name="chevron-down" />}
+          rightIcon={<ChevronDown />}
           data-cy="Handläggare-filter"
           variant="tertiary"
           showBackground={false}

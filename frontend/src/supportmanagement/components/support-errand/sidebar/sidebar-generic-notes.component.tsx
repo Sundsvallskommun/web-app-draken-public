@@ -5,7 +5,6 @@ import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Avatar,
   Button,
@@ -32,6 +31,7 @@ import dayjs from 'dayjs';
 import { Fragment, useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { Ellipsis, Pencil, Trash } from 'lucide-react';
 
 let formSchema = yup
   .object({
@@ -255,7 +255,7 @@ export const SidebarGenericNotes: React.FC<{
                           className="bg-transparent"
                           variant="ghost"
                         >
-                          <LucideIcon name="ellipsis" />
+                          <Ellipsis />
                         </PopupMenu.Button>
                         <PopupMenu.Panel>
                           <PopupMenu.Items>
@@ -264,7 +264,7 @@ export const SidebarGenericNotes: React.FC<{
                                 <Button
                                   data-cy="edit-note-button"
                                   disabled={noteIsComment(noteType) && supportErrand.status === 'SOLVED'}
-                                  leftIcon={<LucideIcon name="pencil" />}
+                                  leftIcon={<Pencil />}
                                   onClick={() => {
                                     updateNote(note);
                                   }}
@@ -277,7 +277,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="delete-note-button"
-                                  leftIcon={<LucideIcon name="trash" />}
+                                  leftIcon={<Trash />}
                                   onClick={() => {
                                     confirm
                                       .showConfirmation(

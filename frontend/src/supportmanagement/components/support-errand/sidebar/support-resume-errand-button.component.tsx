@@ -1,6 +1,5 @@
 import { useAppContext } from '@contexts/app.context';
 import { useConfirm, useSnackbar, Button } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   getSupportErrandById,
   setSupportErrandStatus,
@@ -9,6 +8,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { CirclePlay } from 'lucide-react';
 
 export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
@@ -51,7 +51,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
       className="w-full"
       color="vattjom"
       data-cy="resume-button"
-      leftIcon={<LucideIcon name="circle-play" />}
+      leftIcon={<CirclePlay />}
       variant={shouldShowResumeErrandButton(supportErrand?.status) ? 'primary' : 'secondary'}
       disabled={disabled}
       loading={isLoading}

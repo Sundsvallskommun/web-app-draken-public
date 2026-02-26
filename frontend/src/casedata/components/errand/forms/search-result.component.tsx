@@ -5,8 +5,7 @@ import { useAppContext } from '@contexts/app.context';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { UseFormReturn } from 'react-hook-form';
 import { ContactRelationSelect } from './contact-relation-select.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import { Plus } from 'lucide-react';
 interface SearchResultProps {
   contact: CasedataOwnerOrContact;
   searchMode: string;
@@ -117,7 +116,7 @@ export const SearchResult: React.FC<SearchResultProps> = ({
         className="mt-20"
         disabled={!formState.isValid}
         onClick={onSubmit}
-        leftIcon={<LucideIcon name="plus" />}
+        leftIcon={<Plus />}
       >
         Lägg till {label.toLowerCase()}
       </Button>

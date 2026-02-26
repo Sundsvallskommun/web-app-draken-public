@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const envalid = require('envalid');
-const nodeSass = require('sass');
+const fs = require('fs');
+const path = require('path');
+
+// Generate raleway.scss from template with correct basePath (Turbopack doesn't support sassOptions.functions)
+const stylesDir = path.join(__dirname, 'src', 'styles');
+const template = fs.readFileSync(path.join(stylesDir, 'raleway.scss.template'), 'utf8');
+fs.writeFileSync(
+  path.join(stylesDir, 'raleway.scss'),
+  template.replace(/^\$basePath:.*;\n/, `$basePath: '${process.env.NEXT_PUBLIC_BASEPATH || ''}';\n`)
+);
 
 const authDependent = envalid.makeValidator((x) => {
   const authEnabled = process.env.HEALTH_AUTH === 'true';
@@ -27,21 +36,14 @@ module.exports = withBundleAnalyzer({
   distDir: `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
   output: 'standalone',
   images: {
-    domains: [process.env.DOMAIN_NAME],
+    remotePatterns: process.env.DOMAIN_NAME ? [{ protocol: 'https', hostname: process.env.DOMAIN_NAME }] : [],
     formats: ['image/avif', 'image/webp'],
   },
   basePath: process.env.NEXT_PUBLIC_BASEPATH || '',
-  sassOptions: {
-    functions: {
-      'env($variable)': (variable) => {
-        const value = variable.getValue();
-        const envValue = process.env[value];
-        const sassValue = new nodeSass.SassString(envValue);
-        return sassValue;
-      },
-    },
+  sassOptions: {},
+  experimental: {
+    optimizePackageImports: ['@sk-web-gui/core', '@sk-web-gui/react', 'dayjs'],
   },
-  transpilePackages: [],
   async rewrites() {
     return [{ source: '/napi/:path*', destination: '/api/:path*' }];
   },

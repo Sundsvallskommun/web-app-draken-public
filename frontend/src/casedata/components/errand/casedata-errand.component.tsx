@@ -9,7 +9,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
@@ -18,6 +17,7 @@ import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { getUiPhase } from '@casedata/services/process-service';
+import { ArrowRight } from 'lucide-react';
 
 export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
   let formSchema = yup
@@ -263,7 +263,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
                                 update={() => {}}
                                 label="Registrera"
                                 color="vattjom"
-                                icon={<LucideIcon name="arrow-right" size={18} />}
+                                icon={<ArrowRight size={18} />}
                               />
                             </div>
                           </div>

@@ -11,7 +11,6 @@ import {
 } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
@@ -30,6 +29,7 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractAttachments } from './contract-attachments';
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
+import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
 
 export const ContractForm: React.FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -299,7 +299,7 @@ export const ContractForm: React.FC<{
           data-cy="non-draft-warning-banner"
           className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary"
         >
-          <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+          <Info className="text-primary w-20 h-20 shrink-0" />
           <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
             <p className="mt-0">
               Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.
@@ -317,7 +317,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="users" />} />
+          <Disclosure.Icon icon={<Users />} />
           <Disclosure.Title>Parter</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -339,7 +339,7 @@ export const ContractForm: React.FC<{
                 <Button
                   size="sm"
                   data-cy="update-contract-parties"
-                  rightIcon={<LucideIcon name="refresh-ccw" />}
+                  rightIcon={<RefreshCcw />}
                   variant="secondary"
                   loading={updatingParties}
                   loadingText="Uppdaterar"
@@ -396,7 +396,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
+          <Disclosure.Icon icon={<MapPin />} />
           <Disclosure.Title>Område</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -466,7 +466,7 @@ export const ContractForm: React.FC<{
           }}
         >
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
+            <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Avtalsstartdatum</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -498,7 +498,7 @@ export const ContractForm: React.FC<{
           }}
         >
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="calendar" />} />
+            <Disclosure.Icon icon={<Calendar />} />
             <Disclosure.Title>Avtalstid och uppsägning</Disclosure.Title>
             {formState.errors.notice?.terms?.length > 0 ||
               (formState.errors.extension?.leaseExtension && (
@@ -680,7 +680,7 @@ export const ContractForm: React.FC<{
           }}
         >
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
+            <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Löpande avgift</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -855,7 +855,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="receipt" />} />
+          <Disclosure.Icon icon={<Receipt />} />
           <Disclosure.Title>Fakturor</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -872,7 +872,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="file-pen" />} />
+          <Disclosure.Icon icon={<FilePen />} />
           <Disclosure.Title>Avtalsbilagor</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>

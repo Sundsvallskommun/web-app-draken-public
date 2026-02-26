@@ -13,7 +13,6 @@ import {
   contractTypes,
   leaseTypes,
 } from '@casedata/services/contract-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
 import React, { useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -34,6 +33,7 @@ import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/st
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
 import { Admin } from '@common/services/user-service';
+import { ExternalLink } from 'lucide-react';
 
 const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
@@ -251,7 +251,7 @@ export const ContractDetailForm: React.FC<{
               data-cy="contract-detail-edit-button"
               color="vattjom"
               variant="primary"
-              leftIcon={<LucideIcon name="external-link" />}
+              leftIcon={<ExternalLink />}
               disabled={isLoading || !selectedContract.contractId}
               loading={isLoading}
               loadingText="Skapar ärende..."

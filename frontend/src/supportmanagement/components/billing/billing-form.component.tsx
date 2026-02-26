@@ -1,9 +1,9 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
+import { RefreshCcw } from 'lucide-react';
 
 const BillingForm: React.FC<{
   resetManager?: () => void;
@@ -146,7 +146,7 @@ const BillingForm: React.FC<{
               {resetManager && getValues().status === 'NEW' ? (
                 <Input.RightAddin>
                   <Button iconButton variant="ghost" onClick={resetManager}>
-                    <LucideIcon name="refresh-ccw" />
+                    <RefreshCcw />
                   </Button>
                 </Input.RightAddin>
               ) : null}

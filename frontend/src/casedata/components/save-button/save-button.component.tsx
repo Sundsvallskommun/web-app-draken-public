@@ -4,11 +4,11 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { ArrowRight } from 'lucide-react';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;
@@ -73,7 +73,7 @@ export const SaveButtonComponent: React.FC<{
             | 'bjornstigen'
             | 'juniskar') || 'primary'
         }
-        rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
+        rightIcon={props.icon ? <ArrowRight size={18} /> : null}
         loading={props.loading || internalLoading}
         loadingText="Sparar"
       >

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Modal, Button, Image, Spinner } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
 import { getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { IErrand } from '@casedata/interfaces/errand';
+import { Crop } from 'lucide-react';
 
 interface EditAttachmentModalProps {
   isOpen: boolean;
@@ -57,7 +57,7 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
                 disabled={isErrandLocked(errand)}
                 color="primary"
                 onClick={onToggleCrop}
-                leftIcon={<LucideIcon name="crop" />}
+                leftIcon={<Crop />}
               >
                 {isCropping ? 'Spara' : 'Beskär bild'}
               </Button>

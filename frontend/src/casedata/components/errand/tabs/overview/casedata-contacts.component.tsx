@@ -10,11 +10,11 @@ import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
+import { Info, User, Users } from 'lucide-react';
 
 interface CasedataContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -302,7 +302,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
     <>
       <Disclosure variant="alt" initalOpen>
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="user" />} />
+          <Disclosure.Icon icon={<User />} />
           <Disclosure.Title>Ärendeägare</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -313,7 +313,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                 <>
                   {appConfig.features.useMyPages && (
                     <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
-                      <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+                      <Info className="text-primary w-20 h-20 shrink-0" />
                       <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
                         <p className="mt-0">
                           Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
@@ -349,7 +349,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
 
       <Disclosure variant="alt" initalOpen>
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="users" />} />
+          <Disclosure.Icon icon={<Users />} />
           <Disclosure.Title>Övriga parter</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>

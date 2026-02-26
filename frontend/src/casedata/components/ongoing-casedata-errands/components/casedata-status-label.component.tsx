@@ -1,6 +1,6 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
   let color,
@@ -56,7 +56,7 @@ export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ sta
 
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-      {icon ? <LucideIcon name={icon} size={16} /> : null} {status}
+      {icon ? (() => { const DynIcon = iconMap[icon]; return DynIcon ? <DynIcon size={16} /> : null; })() : null} {status}
     </Label>
   );
 };

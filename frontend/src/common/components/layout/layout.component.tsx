@@ -5,7 +5,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -17,6 +16,7 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { ExternalLink, Menu } from 'lucide-react';
 
 export default function Layout({ title, children }) {
   const {
@@ -123,7 +123,7 @@ export default function Layout({ title, children }) {
                 <Button
                   color={'primary'}
                   variant={'tertiary'}
-                  rightIcon={<LucideIcon name="external-link" color="primary" variant="tertiary" />}
+                  rightIcon={<ExternalLink />}
                 >
                   Nytt ärende
                 </Button>
@@ -133,7 +133,7 @@ export default function Layout({ title, children }) {
           mobileMenu={
             <PopupMenu align="end">
               <PopupMenu.Button iconButton>
-                <LucideIcon name="menu" />
+                <Menu />
               </PopupMenu.Button>
               <PopupMenu.Panel>
                 <PopupMenu.Group>
@@ -143,7 +143,7 @@ export default function Layout({ title, children }) {
                   <PopupMenu.Group>
                     <PopupMenu.Item>
                       <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                        <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
+                        <ExternalLink className="h-md" /> Nytt
                         ärende
                       </Link>
                     </PopupMenu.Item>

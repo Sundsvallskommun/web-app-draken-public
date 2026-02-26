@@ -3,7 +3,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
@@ -33,6 +32,8 @@ import { StartProcessComponent } from './start-process.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 import { appConfig } from '@config/appconfig';
+import { CirclePause, Mail, Undo2 } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
@@ -312,7 +313,7 @@ export const SidebarInfo: React.FC<{
     <>
       <div className="flex">
         <Label rounded>
-          <LucideIcon size="1.5rem" name={icon} /> {label}
+          {(() => { const DynIcon = iconMap[icon]; return DynIcon ? <DynIcon size="1.5rem" /> : null; })()} {label}
         </Label>{' '}
         <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
       </div>
@@ -517,7 +518,7 @@ export const SidebarInfo: React.FC<{
                 <Button
                   className="w-full mt-20"
                   color="vattjom"
-                  leftIcon={<LucideIcon name="undo-2" />}
+                  leftIcon={<Undo2 />}
                   variant="secondary"
                   onClick={() => {
                     confirm
@@ -537,7 +538,7 @@ export const SidebarInfo: React.FC<{
               <>
                 <div className="flex">
                   <Label>
-                    <LucideIcon size="1.5rem" name="circle-pause" />{' '}
+                    <CirclePause size="1.5rem" />{' '}
                     {supportErrand?.status === Status.SUSPENDED ? 'Parkerat ' : 'Tilldelat '}
                   </Label>
                   <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
@@ -572,7 +573,7 @@ export const SidebarInfo: React.FC<{
                     />
                     {!messageSidebarIsDisabled && (
                       <Button
-                        leftIcon={<LucideIcon name="mail" />}
+                        leftIcon={<Mail />}
                         className="w-full"
                         color="vattjom"
                         data-cy="sidebar-new-message-button"

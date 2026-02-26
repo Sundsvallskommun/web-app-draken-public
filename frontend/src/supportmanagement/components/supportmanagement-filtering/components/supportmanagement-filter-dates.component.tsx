@@ -1,8 +1,8 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface SupportManagementDatesFilter {
   startdate: string;
@@ -29,7 +29,7 @@ export const SupportManagementFilterDates: React.FC = () => {
   return (
     <PopupMenu type="dialog" open={open} onToggleOpen={setOpen}>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Tidsperiod-filter"
         variant="tertiary"
         showBackground={false}

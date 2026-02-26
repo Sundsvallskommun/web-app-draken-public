@@ -9,9 +9,9 @@ import {
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
+import { Eye, FilePen, Trash } from 'lucide-react';
 
 export const ContractAttachments: React.FC<{
   existingContract: ContractData;
@@ -92,7 +92,7 @@ export const ContractAttachments: React.FC<{
           <PopupMenu.Item>
             <Button
               data-cy={`open-attachment-${file.id}`}
-              leftIcon={<LucideIcon name="eye" />}
+              leftIcon={<Eye />}
               onClick={() => {
                 viewFileHandler(file);
               }}
@@ -104,7 +104,7 @@ export const ContractAttachments: React.FC<{
             <PopupMenu.Item>
               <Button
                 data-cy={`delete-attachment-${file.id}`}
-                leftIcon={<LucideIcon name="trash" />}
+                leftIcon={<Trash />}
                 onClick={async () => {
                   handleRemoveFile(file);
                 }}
@@ -165,7 +165,7 @@ export const ContractAttachments: React.FC<{
                   ? `Uppladdad ${new Date(file.meta.created as string).toLocaleString()}`
                   : '',
               }}
-              iconProps={{ icon: <LucideIcon name="file-pen" /> }}
+              iconProps={{ icon: <FilePen /> }}
               categoryProps={{
                 categories: { CONTRACT: 'Avtal' },
               }}

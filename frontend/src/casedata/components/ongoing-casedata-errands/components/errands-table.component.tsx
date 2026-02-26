@@ -8,7 +8,6 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Spinner, Table, cx, useThemeQueries } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
@@ -17,6 +16,7 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
+import { ExternalLink, Pencil, View } from 'lucide-react';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -211,7 +211,7 @@ export const ErrandsTable: React.FC = () => {
                 isErrandClosed(errand) && !isPT() ? 'sk-btn-secondary' : 'sk-btn-tertiary'
               )}
             >
-              <Button.Content rightIcon={!isMaxMediumDevice && !isPT() && <LucideIcon name="external-link" />}>
+              <Button.Content rightIcon={!isMaxMediumDevice && !isPT() && <ExternalLink />}>
                 {isPT() ? (
                   errand.administrator ? (
                     <>
@@ -227,12 +227,12 @@ export const ErrandsTable: React.FC = () => {
                     {isErrandClosed(errand) ? (
                       <>
                         <span className="hidden md:inline">Visa</span>
-                        <LucideIcon className="inline md:hidden" name="view" />
+                        <View className="inline md:hidden" />
                       </>
                     ) : (
                       <>
                         <span className="hidden md:inline">Hantera</span>
-                        <LucideIcon className="inline md:hidden" name="pencil" />
+                        <Pencil className="inline md:hidden" />
                       </>
                     )}
                   </>

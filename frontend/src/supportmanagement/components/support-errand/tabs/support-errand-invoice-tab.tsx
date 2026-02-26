@@ -3,7 +3,6 @@ import { prettyTime } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import BillingForm from '@supportmanagement/components/billing/billing-form.component';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
@@ -25,6 +24,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
+import { Check, ThumbsDown } from 'lucide-react';
 import {
   CBillingRecord,
   CBillingRecordStatusEnum,
@@ -221,15 +221,15 @@ export const SupportErrandInvoiceTab: React.FC<{
             </div>
           ) : record.status === CBillingRecordStatusEnum.REJECTED ? (
             <Button inverted variant="primary" color="error">
-              <LucideIcon name="thumbs-down" /> Avslag
+              <ThumbsDown /> Avslag
             </Button>
           ) : record.status === CBillingRecordStatusEnum.APPROVED ? (
             <Button inverted variant="primary" color="gronsta">
-              <LucideIcon name="check" /> Godkänd
+              <Check /> Godkänd
             </Button>
           ) : record.status === CBillingRecordStatusEnum.INVOICED ? (
             <Button disabled inverted variant="primary" color="vattjom">
-              <LucideIcon name="check" /> Fakturerad
+              <Check /> Fakturerad
             </Button>
           ) : null}
         </div>

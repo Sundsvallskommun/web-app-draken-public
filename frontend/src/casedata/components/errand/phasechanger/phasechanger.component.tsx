@@ -17,13 +17,13 @@ import { setAdministrator } from '@casedata/services/casedata-stakeholder-servic
 import { useAppContext } from '@common/contexts/app.context';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
+import { ArrowRight } from 'lucide-react';
 
 export const PhaseChanger = () => {
   const {
@@ -211,7 +211,7 @@ export const PhaseChanger = () => {
         await errandSave();
         handleSubmit(onSave, onError)();
       }}
-      rightIcon={<LucideIcon name="arrow-right" size={18} />}
+      rightIcon={<ArrowRight size={18} />}
     >
       Starta handläggning
     </Button>
@@ -228,7 +228,7 @@ export const PhaseChanger = () => {
         onClick={() => {
           setPhaseDialogOpen(true);
         }}
-        rightIcon={<LucideIcon name="arrow-right" size={18} />}
+        rightIcon={<ArrowRight size={18} />}
       >
         {phaseChangeText?.button}
       </Button>

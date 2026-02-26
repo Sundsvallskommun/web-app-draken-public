@@ -1,9 +1,9 @@
 'use client';
 
 import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
 import React, { useState } from 'react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 interface ConditionalRule {
   if: {
@@ -107,7 +107,7 @@ function SectionDisclosure({ section, isReadonly, children }: SectionDisclosureP
       <Disclosure.Header>
         {section.icon && (
           <Disclosure.Icon
-            icon={<LucideIcon name={section.icon as React.ComponentProps<typeof LucideIcon>['name']} />}
+            icon={(() => { const DynIcon = iconMap[section.icon as string]; return DynIcon ? <DynIcon /> : null; })()}
           />
         )}
         <Disclosure.Title>{section.title}</Disclosure.Title>
