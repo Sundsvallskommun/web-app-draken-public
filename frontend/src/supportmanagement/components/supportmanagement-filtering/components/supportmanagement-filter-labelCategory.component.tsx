@@ -11,7 +11,7 @@ export interface LabelCategoryFilter {
   labelCategory: string[];
 }
 
-export const LabelCategoryValues = {
+export const LabelCategoryValues: LabelCategoryFilter = {
   labelCategory: [],
 };
 
@@ -19,7 +19,7 @@ export const SupportManagementFilterLabelCategory: React.FC = () => {
   const { register, watch } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
   const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
-  const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
+  const { supportMetadata } = useAppContext();
 
   useEffect(() => {
     setAllLabelCategories(supportMetadata?.labels?.labelStructure);
@@ -48,7 +48,7 @@ export const SupportManagementFilterLabelCategory: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {allLabelCategories
-            ?.filter((s: Label) => s.displayName.toLowerCase().includes(query.toLowerCase()))
+            ?.filter((s: Label) => s.displayName?.toLowerCase().includes(query.toLowerCase()))
             .map((s: Label, idx) => (
               <PopupMenu.Item key={`${s.resourcePath}-${idx}`}>
                 <Checkbox

@@ -2,6 +2,7 @@ import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/
 import {
   Contract,
   ContractType,
+  ExtraParameterGroup,
   IntervalType,
   InvoicedIn,
   Party,
@@ -99,10 +100,9 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     errand,
     setErrand,
     user,
-  }: { municipalityId: string; errand: IErrand; setErrand: Dispatch<SetStateAction<IErrand>>; user: User } =
-    useAppContext();
+  } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
-  const [existingContract, setExistingContract] = useState<ContractData>(undefined);
+  const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);
   const [buyers, setBuyers] = useState<StakeholderWithPersonnumber[]>([]);
   const [lessees, setLessees] = useState<StakeholderWithPersonnumber[]>([]);
@@ -111,11 +111,12 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
   const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
-    const _a = validateAction(errand, user);
+    const _a = errand ? validateAction(errand, user) : false;
     setAllowed(_a);
   }, [user, errand]);
 
   const updateStakeholdersFromErrand = () => {
+    if (!errand) return;
     const _sellers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.SELLER).map(
       casedataStakeholderToContractStakeholder
     );
@@ -128,6 +129,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
         // Is this the rule we should use? To be discussed
         const l = casedataStakeholderToContractStakeholder(s);
         if (idx === 0) {
+          if (!l.roles) l.roles = [];
           l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
         }
         return l;
@@ -144,10 +146,12 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
   // Update only lessees (invoice recipients) from errand - used for non-DRAFT contracts
   const updateLesseesOnlyFromErrand = () => {
+    if (!errand) return;
     const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
       (s, idx) => {
         const l = casedataStakeholderToContractStakeholder(s);
         if (idx === 0) {
+          if (!l.roles) l.roles = [];
           l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
         }
         return l;
@@ -163,11 +167,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     let _lessees: StakeholderWithPersonnumber[] = [];
     let _lessors: StakeholderWithPersonnumber[] = [];
     if (contract.type === ContractType.PURCHASE_AGREEMENT) {
-      _sellers = contract.sellers;
-      _buyers = contract.buyers;
+      _sellers = contract.sellers ?? [];
+      _buyers = contract.buyers ?? [];
     } else if (isLeaseAgreement(contract.type)) {
-      _lessees = contract.lessees || [];
-      _lessors = contract.lessors || [];
+      _lessees = contract.lessees ?? [];
+      _lessors = contract.lessors ?? [];
     }
     setSellers(_sellers);
     setBuyers(_buyers);
@@ -191,7 +195,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     mode: 'onChange',
   });
 
-  const changeBadgeColor = (inId) => {
+  const changeBadgeColor = (inId: string) => {
     let element = document.getElementById(inId);
     if (element !== null) {
       if (element.style.backgroundColor.includes('gray')) {
@@ -206,13 +210,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     setIsLoading('Sparar avtal..');
     return saveContract(data)
       .then(async (res: Contract) => {
-        await saveContractToErrand(municipalityId, res.contractId, errand);
+        await saveContractToErrand(municipalityId, res.contractId ?? '', errand!);
         return res;
       })
       .then((res) => {
         setIsLoading(undefined);
         props.setUnsaved(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => {
+        getErrand(municipalityId, errand!.id.toString()).then((res) => {
           setErrand(res.errand);
           toastMessage(
             getToastOptions({
@@ -242,7 +246,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           errandId: errand.id.toString(),
         },
       };
-      let newParams = [];
+      let newParams: ExtraParameterGroup[] = [];
       getErrandContract(errand)
         .then((res) => {
           if (res) {
@@ -251,7 +255,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
             contractForm.setValue('leaseType', res.leaseType);
             contractForm.reset(res);
           }
-          const oldParams = res.extraParameters.filter((p) => p.name !== 'errandId');
+          const oldParams = (res.extraParameters ?? []).filter((p) => p.name !== 'errandId');
           newParams = [...oldParams, errandIdExtraParameter];
         })
         .catch(() => {
@@ -326,7 +330,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                     Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
                   </FormLabel>
                   <Checkbox
-                    disabled={loading !== undefined || isErrandLocked(errand) || !allowed}
+                    disabled={loading !== undefined || (errand ? isErrandLocked(errand) : false) || !allowed}
                     checked={true}
                     value={contractForm.getValues().status}
                     onChange={() => {
@@ -354,7 +358,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                   <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
                 </FormControl>
               )}
-              <Input type="hidden" readOnly name="id" {...contractForm.register('contractId')} />
+              <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}

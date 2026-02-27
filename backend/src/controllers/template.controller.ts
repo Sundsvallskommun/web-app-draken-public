@@ -17,13 +17,13 @@ interface ResponseData {
 class TemplateSelector {
   @IsString()
   @IsOptional()
-  identifier: string;
+  identifier!: string;
   @IsString()
   @IsOptional()
-  content: string;
+  content!: string;
   @IsObject()
   @IsOptional()
-  parameters: { [key: string]: string } | { [key: string]: Object };
+  parameters!: { [key: string]: string } | { [key: string]: Object };
 }
 
 interface PdfRender {

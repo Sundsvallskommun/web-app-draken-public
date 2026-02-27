@@ -102,7 +102,8 @@ let formSchema = yup
         return outcome !== '' && outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup.string().when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+      ? yup.string().when('outcome', (values, schema) => {
+          const [outcome] = values as [string];
           return outcome === 'APPROVAL' ? schema.required('Giltig från måste anges') : schema.notRequired();
         })
       : yup.string(),
@@ -110,7 +111,8 @@ let formSchema = yup
     validTo: isPT()
       ? yup
           .string()
-          .when('outcome', ([outcome]: [string], schema: yup.StringSchema) => {
+          .when('outcome', (values, schema) => {
+            const [outcome] = values as [string];
             return outcome === 'APPROVAL' ? schema.required('Giltig till måste anges') : schema.notRequired();
           })
           .test({
@@ -131,23 +133,24 @@ export const CasedataDecisionTab: React.FC<{
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
 }> = (props) => {
-  const { municipalityId, user, errand, setErrand }: AppContextInterface = useAppContext();
+  const { municipalityId, user, errand, setErrand } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const [error, setError] = useState<string>();
-  const quillRef = useRef(null);
+  const quillRef = useRef<any>(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
-  const [existingContract, setExistingContract] = useState<ContractData>(undefined);
+  const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
   const [decisionTemplates, setDecisionTemplates] = useState<DecisionTemplatesResult | null>(null);
 
   const sortedDec = useMemo(() => {
-    return [...errand.decisions].sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+    if (!errand) return [];
+    return [...errand.decisions].sort((a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime());
   }, [errand]);
 
   const existingDecision = useMemo(() => {
@@ -156,14 +159,14 @@ export const CasedataDecisionTab: React.FC<{
 
   const initialLawValues = useMemo(() => {
     if (existingDecision?.decisionType === 'FINAL' && existingDecision.law?.length > 0) {
-      return existingDecision.law.map((law) => law.heading);
+      return existingDecision.law.map((law) => law.heading).filter((h): h is string => !!h);
     }
 
     return [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand.decisions]);
+  }, [errand?.decisions]);
 
-  const ownerPartyId = getOwnerStakeholder(errand)?.personId;
+  const ownerPartyId = errand ? getOwnerStakeholder(errand)?.personId : undefined;
   const assetType = 'FTErrandAssets';
 
   useEffect(() => {
@@ -183,8 +186,8 @@ export const CasedataDecisionTab: React.FC<{
 
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
-    partyId: ownerPartyId,
-    errandNumber: errand.errandNumber,
+    partyId: ownerPartyId ?? '',
+    errandNumber: errand?.errandNumber ?? '',
     assetType: assetType,
     schema: serviceSchema,
   });
@@ -196,6 +199,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [props, refetchServices]);
 
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -214,10 +218,10 @@ export const CasedataDecisionTab: React.FC<{
     defaultValues: {
       id: undefined,
       description: '',
-      errandId: errand.id,
-      errandNumber: errand.errandNumber,
-      personalNumber: getOwnerStakeholder(errand)?.personalNumber,
-      errandCaseType: errand.caseType,
+      errandId: errand?.id,
+      errandNumber: errand?.errandNumber,
+      personalNumber: errand ? getOwnerStakeholder(errand)?.personalNumber : undefined,
+      errandCaseType: errand?.caseType,
       law: [],
       decisionTemplate: '',
       outcome: '',
@@ -249,6 +253,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [description, outcome, validFrom, validTo]);
 
   const triggerPhaseChange = () => {
+    if (!errand) return Promise.resolve();
     return triggerErrandPhaseChange(municipalityId, errand)
       .then(() => getErrand(municipalityId, errand.id.toString()))
       .then((res) => setErrand(res.errand))
@@ -273,6 +278,7 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   const save = async (data: DecisionFormModel) => {
+    if (!errand) return;
     try {
       const rendered = await renderBeslutPdf(errand, data, services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
@@ -290,7 +296,7 @@ export const CasedataDecisionTab: React.FC<{
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
       });
     } finally {
@@ -300,6 +306,7 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   const saveAndSend = async (data: DecisionFormModel) => {
+    if (!errand) return;
     try {
       data.decidedBy = {
         type: 'PERSON',
@@ -379,7 +386,7 @@ export const CasedataDecisionTab: React.FC<{
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
       });
     } finally {
@@ -388,6 +395,7 @@ export const CasedataDecisionTab: React.FC<{
   };
 
   const getPdfPreview = async () => {
+    if (!errand) return;
     const createAndClickLink = (d: { pdfBase64: string; error?: string }) => {
       if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
         const uri = `data:application/pdf;base64,${d.pdfBase64}`;
@@ -440,7 +448,7 @@ export const CasedataDecisionTab: React.FC<{
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
       });
     } finally {
@@ -469,16 +477,17 @@ export const CasedataDecisionTab: React.FC<{
         }
       });
   };
-  const onError = (e) => {
+  const onError = (e: any) => {
     console.error('Something went wrong when saving decision', e);
   };
 
 
   useEffect(() => {
+    if (!errand) return;
     setValue('errandId', errand.id);
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
-      setValue('id', existingDecision.id.toString(), { shouldDirty: false });
+      setValue('id', existingDecision.id!.toString(), { shouldDirty: false });
       setValue('description', existingDecision.description, { shouldDirty: false });
       setValue('outcome', existingDecision.decisionOutcome, { shouldDirty: false });
       setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'), { shouldDirty: false });
@@ -517,11 +526,15 @@ export const CasedataDecisionTab: React.FC<{
 
   const isSent = () => {
     return (
-      errand.status?.statusType === ErrandStatus.Beslutad ||
-      errand.status?.statusType === ErrandStatus.BeslutVerkstallt ||
-      errand.status?.statusType === ErrandStatus.ArendeAvslutat
+      errand?.status?.statusType === ErrandStatus.Beslutad ||
+      errand?.status?.statusType === ErrandStatus.BeslutVerkstallt ||
+      errand?.status?.statusType === ErrandStatus.ArendeAvslutat
     );
   };
+
+  if (!errand) {
+    return null;
+  }
 
   return (
     <div className="w-full py-24 px-32">
@@ -589,7 +602,7 @@ export const CasedataDecisionTab: React.FC<{
                   disabled={isErrandLocked(errand) || isSent()}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
-                    const newLaws = getLawMapping(errand).filter((law) => selected.includes(law.heading));
+                    const newLaws = getLawMapping(errand).filter((law) => law.heading && selected.includes(law.heading));
                     setValue('law', newLaws, {
                       shouldDirty: true,
                       shouldTouch: true,
@@ -601,8 +614,8 @@ export const CasedataDecisionTab: React.FC<{
                   <Combobox.Input />
                   <Combobox.List>
                     {getLawMapping(errand).map((law, index) => (
-                      <Combobox.Option key={index} value={law.heading}>
-                        {law.heading}
+                      <Combobox.Option key={index} value={law.heading ?? ''}>
+                        {law.heading ?? ''}
                       </Combobox.Option>
                     ))}
                   </Combobox.List>
@@ -675,10 +688,10 @@ export const CasedataDecisionTab: React.FC<{
             className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
             readOnly={isErrandLocked(errand) || isSent()}
             onChange={(e) => {
-              setValue('description', e.target.value.markup, {
+              setValue('description', e.target.value.markup ?? '', {
                 shouldDirty: true,
               });
-              setValue('descriptionPlaintext', e.target.value.plainText);
+              setValue('descriptionPlaintext', e.target.value.plainText ?? '');
               trigger('description');
             }}
             value={{ markup: description, plainText: descriptionPlaintext }}
@@ -732,7 +745,7 @@ export const CasedataDecisionTab: React.FC<{
               isSaveAndSendLoading ||
               !formState.isValid ||
               [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
-                errand.status.statusType as ErrandStatus
+                errand?.status?.statusType as ErrandStatus
               ) ||
               !validateErrandForDecision(errand) ||
               !validateOwnerForSendingDecision(errand) ||

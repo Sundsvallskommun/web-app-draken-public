@@ -12,6 +12,7 @@ import {
   AttestationTableForm,
 } from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
 import store from '@supportmanagement/services/storage-service';
+import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 import {
   getBillingRecord,
   getBillingRecords,
@@ -34,7 +35,7 @@ export const AttestationTab = () => {
   const page = watchTable('page');
 
   const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
-  const [selectedRecord, setSelectedRecord] = useState(undefined);
+  const [selectedRecord, setSelectedRecord] = useState<CBillingRecord | undefined>(undefined);
 
   const { setSupportErrand, setBillingRecords, administrators, municipalityId } = useAppContext();
 
@@ -46,7 +47,7 @@ export const AttestationTab = () => {
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
   const [attestationFilterObject, setAttestationFilterObject] = useState<{ [key: string]: string | boolean }>();
   const billingRecords = useBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject);
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     getBillingRecords(municipalityId, page, pageSize, attestationFilterObject, sortObject).then(setBillingRecords);
@@ -108,24 +109,24 @@ export const AttestationTab = () => {
         setUser(user);
       })
       .catch(() => {});
-    setSupportErrand(undefined);
+    setSupportErrand(undefined as unknown as any);
     getBillingRecords(municipalityId);
     //eslint-disable-next-line
   }, [router]);
 
   useEffect(() => {
     if (billingRecords) {
-      setSupportErrand(undefined);
-      setTableValue('size', billingRecords.size);
-      setTableValue('totalPages', billingRecords.totalPages);
-      setTableValue('totalElements', billingRecords.totalElements);
+      setSupportErrand(undefined as unknown as any);
+      setTableValue('size', billingRecords.size!);
+      setTableValue('totalPages', billingRecords.totalPages!);
+      setTableValue('totalElements', billingRecords.totalElements!);
     }
     //eslint-disable-next-line
   }, [billingRecords]);
 
   useDebounceEffect(
     () => {
-      const fObj = {};
+      const fObj: Record<string, string | boolean> = {};
       if (statusFilter && statusFilter.length > 0) {
         fObj['status'] = statusFilter.join(',');
       }
@@ -150,7 +151,7 @@ export const AttestationTab = () => {
     [ownerFilter, statusFilter, invoiceTypeFilter, startdate, enddate]
   );
 
-  const ownerFilteringHandler = async (e) => {
+  const ownerFilteringHandler = async (e: boolean) => {
     setOwnerFilter(e);
   };
 

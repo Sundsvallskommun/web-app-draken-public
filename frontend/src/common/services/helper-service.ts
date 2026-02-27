@@ -18,11 +18,11 @@ export const invalidUsernameMessage = 'Ej giltigt användarnamn, mellanslag ej t
 export const orgNumberPattern = /^$|^([0-9]{6}-[0-9]{4})$/gi;
 export const invalidOrgNumberMessage = 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)';
 
-export function promiseTimeout<T>(time): (result: any) => Promise<T> {
+export function promiseTimeout<T>(time: number): (result: any) => Promise<T> {
   return (result) => new Promise((resolve) => setTimeout(resolve, time, result));
 }
 
-export function promiseRejectTimeout<T>(time): (result: any) => Promise<T> {
+export function promiseRejectTimeout<T>(time: number): (result: any) => Promise<T> {
   return (result) => new Promise((resolve, reject) => setTimeout(reject, time, result));
 }
 
@@ -56,7 +56,7 @@ export enum OrgNumberFormat {
 
 export const formatOrgNr = (orgNr: string, format: OrgNumberFormat = OrgNumberFormat.NODASH): string | undefined => {
   if (!orgNr) {
-    return null;
+    return undefined;
   }
   let orgNumber = orgNr?.replace(/\D/g, '');
   if (!orgNumber || orgNumber.length !== 10 || !luhnCheck(orgNumber)) {
@@ -77,7 +77,7 @@ export const base64Decode = (base64: string) => {
   }
 };
 
-export function b64toBlob(data, mimeType) {
+export function b64toBlob(data: string, mimeType: string) {
   var byteString = base64Decode(data);
   var ab = new ArrayBuffer(byteString.length);
   var ia = new Uint8Array(ab);
@@ -104,15 +104,15 @@ export const latestBy = (list: any[], timeField: string) =>
 export const sortBy = (list: any[], field: string) =>
   list && list.length > 0 ? list.sort((a, b) => (a[field] > b[field] ? 1 : -1)) : [];
 
-export function toTitleCase(str) {
+export function toTitleCase(str: string) {
   return str ? str.charAt(0).toUpperCase() + str.substr(1).toLowerCase() : '';
 }
 
-export function deepFlattenToObject(obj, prefix = '') {
-  return Object.keys(obj).reduce((acc, k) => {
+export function deepFlattenToObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  return Object.keys(obj).reduce((acc: Record<string, unknown>, k) => {
     const pre = prefix.length ? prefix + '_' : '';
     if (typeof obj[k] === 'object' && obj[k] !== null) {
-      Object.assign(acc, deepFlattenToObject(obj[k], pre + k));
+      Object.assign(acc, deepFlattenToObject(obj[k] as Record<string, unknown>, pre + k));
     } else {
       acc[pre + k] = obj[k];
     }
@@ -120,22 +120,21 @@ export function deepFlattenToObject(obj, prefix = '') {
   }, {});
 }
 
-export function debounce(func, wait, immediate) {
-  var timeout;
-  return (...args) => {
-    var context = this;
+export function debounce(func: (...args: unknown[]) => void, wait: number, immediate?: boolean) {
+  var timeout: ReturnType<typeof setTimeout> | undefined;
+  return (...args: unknown[]) => {
     var later = () => {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
+      timeout = undefined;
+      if (!immediate) func(...args);
     };
     var callNow = immediate && !timeout;
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
-    if (callNow) func.apply(context, args);
+    if (callNow) func(...args);
   };
 }
 
-export function prettyTime(time) {
+export function prettyTime(time: string | Date) {
   if (!time) {
     return '';
   }
@@ -150,11 +149,11 @@ export function prettyTime(time) {
   }
 }
 
-export function formatCurrency(value) {
+export function formatCurrency(value: number) {
   return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(value);
 }
 
-export function twoDecimals(value) {
+export function twoDecimals(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 

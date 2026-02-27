@@ -100,7 +100,7 @@ const mapExtraParametersValue = (val: string) => {
     P0Y: 'Bestående',
     COMPLETE: 'Begärt',
   };
-  return val in extraParametersValueMap ? extraParametersValueMap[val] : val;
+  return val in extraParametersValueMap ? (extraParametersValueMap as Record<string, string>)[val] : val;
 };
 
 const mapAuthor = (author: string) => {
@@ -136,9 +136,9 @@ export const mapProperty = (c: ParsedErrandChange) => {
 
 const mapRightLeftvalues = (c: ParsedErrandChange) => {
   if (c.property === 'caseType') {
-    return { left: CaseLabels.ALL[c.left], right: CaseLabels.ALL[c.right] };
+    return { left: (CaseLabels.ALL as Record<string, string>)[c.left], right: (CaseLabels.ALL as Record<string, string>)[c.right] };
   } else if (c.property === 'priority') {
-    return { left: Priority[c.left], right: Priority[c.right] };
+    return { left: (Priority as Record<string, string>)[c.left], right: (Priority as Record<string, string>)[c.right] };
   }
   return { left: c.left, right: c.right };
 };
@@ -194,7 +194,7 @@ const parseChangeType: (c: ErrandChange) => { label: string; details: string } =
       case 'diaryNumber':
         return { label: `Diarienummer ändrades`, details: '' };
       case 'priority':
-        return { label: `Prioritet ändrades`, details: `${Priority[c.left]} till ${Priority[c.right]}` };
+        return { label: `Prioritet ändrades`, details: `${(Priority as Record<string, string>)[c.left]} till ${(Priority as Record<string, string>)[c.right]}` };
       default:
         return {
           label: `Okänt fält ${c.property} ändrades från "${c.left !== '' ? c.left : '(tomt)'}" till "${c.right}"`,
@@ -204,7 +204,7 @@ const parseChangeType: (c: ErrandChange) => { label: string; details: string } =
   } else if (c.changeType === 'MapChange') {
     switch (c.property) {
       case 'extraParameters':
-        return { label: `Extraparametrar ändrades`, details: `${extraParametersMap[c.entryChanges?.[0].key]}` };
+        return { label: `Extraparametrar ändrades`, details: `${(extraParametersMap as Record<string, string>)[c.entryChanges?.[0].key]}` };
       case 'messageIds':
         return {
           label: `${c.entryChanges?.[0]?.entryChangeType === 'EntryAdded' ? 'Nytt meddelande' : 'Meddelandeändring'}`,
@@ -240,9 +240,9 @@ export const parseChange: (c: ErrandChange) => ParsedErrandChange = (c) => {
 const genericFailedFetch = () => {
   const data: GenericChangeData = {
     type: 'Borttaget objekt',
-    title: undefined,
+    title: '',
     content: `<p>Information om det borttagna objektet kan inte visas</p>`,
-    date: null,
+    date: '',
   };
   return data;
 };
@@ -251,7 +251,7 @@ export const fetchChangeData: (
   municipalityId: string,
   errandId: number,
   c: ParsedErrandChange
-) => Promise<GenericChangeData> = (municipalityId, errandId, c) => {
+) => Promise<GenericChangeData> | undefined = (municipalityId, errandId, c) => {
   if (c?.changeType === 'ListChange') {
     if (c.elementChanges?.[0].elementChangeType === 'ValueAdded') {
       switch (c.property) {
@@ -259,7 +259,7 @@ export const fetchChangeData: (
           return fetchNote(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
               const data: GenericChangeData = {
-                type: res.data.extraParameters['type'] === 'comment' ? 'Ny kommentar' : 'Ny tjänsteanteckning',
+                type: res.data.extraParameters?.['type'] === 'comment' ? 'Ny kommentar' : 'Ny tjänsteanteckning',
                 title: res.data.title,
                 content: res.data.text,
                 date: res.data.updated,
@@ -272,8 +272,8 @@ export const fetchChangeData: (
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny handläggare/intressent',
-                title: undefined,
-                content: `<p>Roll: ${PrettyRole[res.data.roles?.[0]]}</p><p>Namn: ${res.data.firstName} ${
+                title: '',
+                content: `<p>Roll: ${(PrettyRole as Record<string, string>)[res.data.roles?.[0]]}</p><p>Namn: ${res.data.firstName} ${
                   res.data.lastName
                 }</p>`,
                 date: res.data.updated,
@@ -286,9 +286,9 @@ export const fetchChangeData: (
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny bilaga',
-                title: getAttachmentLabel(res.data),
+                title: getAttachmentLabel(res.data) ?? '',
                 content: `<p>Filnamn: ${res.data.name}</p>`,
-                date: res.data.updated,
+                date: res.data.updated ?? '',
               };
               return data;
             })
@@ -298,7 +298,7 @@ export const fetchChangeData: (
             .then((res) => {
               const data: GenericChangeData = {
                 type: 'Ny utredning/beslut',
-                title: getDecisionLabel(res.data.decisionOutcome),
+                title: getDecisionLabel(res.data.decisionOutcome) ?? '',
                 content: `<p>${res.data.description}</p>${
                   res.data.validFrom && res.data.validTo
                     ? `<p>Giltighetstid: ${dayjs(res.data.validFrom).format('YYYY-MM-DD')} - ${dayjs(
@@ -306,7 +306,7 @@ export const fetchChangeData: (
                       ).format('YYYY-MM-DD')}</p>`
                     : ''
                 }`,
-                date: res.data.updated,
+                date: res.data.updated ?? '',
               };
               return data;
             })
@@ -317,9 +317,9 @@ export const fetchChangeData: (
     } else if (c.elementChanges?.filter((e) => e.elementChangeType === 'ValueRemoved').length === 1) {
       const data: GenericChangeData = {
         type: '',
-        title: undefined,
+        title: '',
         content: `<p>Information om det borttagna objektet kan inte visas</p>`,
-        date: null,
+        date: '',
       };
       switch (c.property) {
         case 'stakeholders':
@@ -338,7 +338,7 @@ export const fetchChangeData: (
   } else if (c?.changeType === 'ValueChange' || c?.changeType === 'InitialValueChange') {
     const details: GenericChangeData = {
       type: mapProperty(c),
-      title: undefined,
+      title: '',
       content: `<p><strong>Tidigare värde:</strong> <em>${
         c.left ? mapRightLeftvalues(c).left : '(tomt)'
       }</em></p><p><strong>Nytt värde:</strong> <em>${c.right ? mapRightLeftvalues(c).right : '(tomt)'}</em></p>`,
@@ -365,10 +365,10 @@ export const fetchChangeData: (
         .map((e, idx) => {
           const s =
             e.leftValue || e.rightValue
-              ? `<li key='${idx}'><i>${extraParametersMap[e.key]}</i> ändrades från ${e.leftValue || '(tomt)'} till ${
+              ? `<li key='${idx}'><i>${(extraParametersMap as Record<string, string>)[e.key]}</i> ändrades från ${e.leftValue || '(tomt)'} till ${
                   e.rightValue || '(tomt)'
                 }</li>`
-              : `<li key='${idx}'><i>${extraParametersMap[e.key]}</i>: ${
+              : `<li key='${idx}'><i>${(extraParametersMap as Record<string, string>)[e.key]}</i>: ${
                   !e.value ? '(tomt)' : mapExtraParametersValue(e.value)
                 }</li>`;
           return s;
@@ -380,8 +380,8 @@ export const fetchChangeData: (
   } else if (c?.changeType === 'NewObject') {
     const details: GenericChangeData = {
       type: 'Ärendet skapades',
-      title: undefined,
-      content: undefined,
+      title: '',
+      content: '',
       date: dayjs(c.commitMetadata.commitDate).format('YYYY-MM-DD HH:mm:ss'),
     };
     return Promise.resolve(details);

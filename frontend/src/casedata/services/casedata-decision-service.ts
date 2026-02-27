@@ -166,8 +166,8 @@ export const saveDecision: (
     description: formData.description,
     law: formData.law,
     validFrom:
-      isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : undefined,
-    validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : undefined,
+      isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : '',
+    validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : '',
     decidedAt: dayjs().toISOString(),
     decidedBy: decidedBy,
     attachments: atts,
@@ -185,29 +185,29 @@ export const saveDecision: (
     });
 };
 
-export const getProposedDecisonWithHighestId: (ds: Decision[]) => Decision = (ds) =>
-  ds.filter((d) => d.decisionType === 'PROPOSED').sort((a, b) => b.id - a.id)?.[0];
+export const getProposedDecisonWithHighestId: (ds: Decision[]) => Decision | undefined = (ds) =>
+  ds.filter((d) => d.decisionType === 'PROPOSED').sort((a, b) => (b.id ?? 0) - (a.id ?? 0))?.[0];
 
-export const getFinalDecisonWithHighestId: (ds: Decision[]) => Decision = (ds) =>
-  ds.filter((d) => d.decisionType === 'FINAL').sort((a, b) => b.id - a.id)?.[0];
+export const getFinalDecisonWithHighestId: (ds: Decision[]) => Decision | undefined = (ds) =>
+  ds.filter((d) => d.decisionType === 'FINAL').sort((a, b) => (b.id ?? 0) - (a.id ?? 0))?.[0];
 
-export const getTopmostDecision: (ds: Decision[]) => Decision = (ds) =>
+export const getTopmostDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.find((d) => d.decisionType === 'FINAL') ||
   ds.find((d) => d.decisionType === 'PROPOSED') ||
   ds.find((d) => d.decisionType === 'RECOMMENDED');
 
-export const getFinalOrProposedDecision: (ds: Decision[]) => Decision = (ds) =>
+export const getFinalOrProposedDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.find((d) => d.decisionType === 'FINAL') || ds.find((d) => d.decisionType === 'PROPOSED');
 
-export const getProposedOrRecommendedDecision: (ds: Decision[]) => Decision = (ds) =>
+export const getProposedOrRecommendedDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.find((d) => d.decisionType === 'PROPOSED') || ds.find((d) => d.decisionType === 'RECOMMENDED');
 
-export const getRecommendedDecision: (ds: Decision[]) => Decision = (ds) =>
+export const getRecommendedDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.find((d) => d.decisionType === 'RECOMMENDED');
 
 export const getDecisionLabel: (outcome: DecisionOutcome) => string = (outcome) => {
   if (!outcome) {
-    return undefined;
+    return '';
   }
   switch (outcome) {
     case 'APPROVAL':
@@ -238,9 +238,9 @@ export const getPhrases: (
   outcome: DecisionOutcome,
   templateType: 'investigation' | 'decision'
 ) => Promise<{ phrases: string }> = (errand, outcome, templateType) => {
-  const extraParametersCapacity = errand.extraParameters.find(
+  const extraParametersCapacity = errand.extraParameters?.find(
     (parameter) => parameter.key === 'application.applicant.capacity'
-  )?.values[0];
+  )?.values?.[0];
   const capacity =
     outcome === 'CANCELLATION'
       ? 'all'
@@ -270,7 +270,7 @@ export const getPhrases: (
       return { phrases };
     })
     .catch((e) => {
-      return { phrases: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
+      return { phrases: '', error: e.response?.status ?? 'UNKNOWN ERROR' } as {
         phrases: string;
         error?: string;
       };
@@ -326,9 +326,9 @@ export const renderPdf: (
   } else if (isPT() && isFTErrand(errand)) {
     identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
-    const extraParametersCapacity = errand.extraParameters.find(
+    const extraParametersCapacity = errand.extraParameters?.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
-    )?.values[0];
+    )?.values?.[0];
     capacity =
       outcome === 'cancellation'
         ? 'all'
@@ -346,9 +346,9 @@ export const renderPdf: (
   const renderBody: TemplateSelector = {
     identifier: identifier,
     parameters: {
-      caseNumber: formData.errandNumber,
+      caseNumber: formData.errandNumber ?? '',
       caseType: getLabelFromCaseType(formData.errandCaseType),
-      personalNumber: formData.personalNumber,
+      personalNumber: formData.personalNumber ?? '',
       addressLastname: owner?.lastName,
       addressFirstname: owner?.firstName,
       addressCo: owner?.careof,
@@ -360,25 +360,25 @@ export const renderPdf: (
     },
   };
   if (templateType === 'investigation') {
-    renderBody.parameters['investigationText'] = formData.description;
-    renderBody.parameters['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
-    renderBody.parameters['permitFirstname'] = owner?.firstName;
-    renderBody.parameters['permitLastname'] = owner?.lastName;
-    renderBody.parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
-    renderBody.parameters['disabilityReason'] = errand.extraParameters['application.reason'];
+    renderBody.parameters!['investigationText'] = formData.description;
+    renderBody.parameters!['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
+    renderBody.parameters!['permitFirstname'] = owner?.firstName;
+    renderBody.parameters!['permitLastname'] = owner?.lastName;
+    renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    renderBody.parameters!['disabilityReason'] = (errand.extraParameters as any)['application.reason'];
   } else if (templateType === 'decision') {
-    renderBody.parameters['decisionText'] = formData.description;
-    renderBody.parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
+    renderBody.parameters!['decisionText'] = formData.description;
+    renderBody.parameters!['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
     if (outcome === 'approval') {
-      renderBody.parameters['permitFirstname'] = owner?.firstName;
-      renderBody.parameters['permitLastname'] = owner?.lastName;
-      renderBody.parameters['permitEndDate'] = dayjs(formData.validTo).format('YYYY-MM-DD');
+      renderBody.parameters!['permitFirstname'] = owner?.firstName;
+      renderBody.parameters!['permitLastname'] = owner?.lastName;
+      renderBody.parameters!['permitEndDate'] = dayjs(formData.validTo).format('YYYY-MM-DD');
     }
   }
   if (outcome === 'cancellation') {
-    renderBody.parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
   }
-  renderBody.parameters['description'] = formData.description;
+  renderBody.parameters!['description'] = formData.description;
 
   if (isPT() && isFTErrand(errand)) {
     const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
@@ -399,10 +399,10 @@ export const renderPdf: (
           .join(', ')
       : '';
 
-    renderBody.parameters['lawReferences'] = lawReferences;
+    renderBody.parameters!['lawReferences'] = lawReferences;
 
     if (services && services.length > 0) {
-      renderBody.parameters['services'] = services.map((service) => {
+      renderBody.parameters!['services'] = services.map((service) => {
         const serviceData: any = {
           restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
           validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
@@ -425,7 +425,7 @@ export const renderPdf: (
         return serviceData;
       });
     } else {
-      renderBody.parameters['services'] = [];
+      renderBody.parameters!['services'] = [];
     }
   }
 
@@ -457,7 +457,7 @@ export const renderHtml: (
   const renderBody: TemplateSelector = {
     identifier: identifier,
     parameters: {
-      caseNumber: formData.errandNumber,
+      caseNumber: formData.errandNumber ?? '',
       administratorName: errand.administrator
         ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
         : '',

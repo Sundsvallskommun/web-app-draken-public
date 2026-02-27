@@ -12,6 +12,13 @@ export default function SidebarLayout({
   setShowAttestationTable,
   showContractTable,
   setShowContractTable,
+}: {
+  title: string;
+  children: React.ReactNode;
+  showAttestationTable: boolean;
+  setShowAttestationTable: (show: boolean) => void;
+  showContractTable: boolean;
+  setShowContractTable: (show: boolean) => void;
 }) {
   const hostName = window.location.hostname;
 

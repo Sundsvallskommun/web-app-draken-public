@@ -14,8 +14,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
     municipalityId,
     errand,
     setErrand,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  } = useAppContext();
 
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -27,6 +26,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
   }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   const onSubmit = () => {
+    if (!errand) return;
     return appealErrand(errand)
       .then(async (res) => {
         setIsLoading(false);
@@ -38,14 +38,13 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
         if (!appealedErrand || !appealedErrand.errand) {
           throw new Error('Failed to fetch the appealed errand');
         }
-        setErrand(appealedErrand.errand, () => {
-          toastMessage(
-            getToastOptions({
-              message: 'Överklagan registrerad',
-              status: 'success',
-            })
-          );
-        });
+        setErrand(appealedErrand.errand);
+        toastMessage(
+          getToastOptions({
+            message: 'Överklagan registrerad',
+            status: 'success',
+          })
+        );
         router.replace(`/arende/${appealedErrand.errand.errandNumber}`);
         setIsLoading(false);
         return true;
@@ -67,8 +66,8 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.relatesTo?.[0].errandNumber}`, '_blank');
   };
 
-  return errand.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (
-    <Button className="mt-16" variant="secondary" onClick={() => handleClick(errand)}>
+  return errand?.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (
+    <Button className="mt-16" variant="secondary" onClick={() => handleClick(errand!)}>
       Visa relaterat ärende
     </Button>
   ) : (

@@ -1,0 +1,59 @@
+name: Type Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+
+jobs:
+  typecheck-backend:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    name: Type Check Backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: backend/yarn.lock
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile --silent
+
+      - name: Run type check
+        run: yarn type-check
+
+  typecheck-frontend:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    name: Type Check Frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile --silent
+
+      - name: Run type check
+        run: yarn type-check

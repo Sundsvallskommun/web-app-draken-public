@@ -247,36 +247,34 @@ export const findAttestationStatusLabelForAttestationStatusKey = (attestationSta
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
 export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
-  errand.labels.length !== 0
-    ? errand.labels.find((label) => label.classification === 'CATEGORY')
-    : metadata?.labels.labelStructure.find((c) => errand.classification.category === c.resourceName);
+  errand.labels?.length !== 0
+    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
+    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
 
 export const getLabelType = (errand: SupportErrand) => {
-  return errand.labels.find((label) => label.classification === 'TYPE');
+  return errand.labels?.find((label) => label.classification === 'TYPE');
 };
 
 export const getLabelSubType = (errand: SupportErrand) => {
-  return errand.labels.find((label) => label.classification === 'SUBTYPE');
+  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
 };
 
 export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] => {
-  const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  return allTypesFlattened?.filter((t) => t.displayName === displayName);
+  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
+  return allTypesFlattened.filter((t) => t?.displayName === displayName);
 };
 
-export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label => {
-  const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  return allTypesFlattened?.find((t) => t.resourcePath === name);
+export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
+  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
+  return allTypesFlattened.find((t) => t?.resourcePath === name);
 };
 
-export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label => {
-  const allTypesFlattened = metadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-  const allSubTypesFlattened =
-    allTypesFlattened
-      ?.filter((l) => l.labels?.length > 0)
-      ?.map((l) => l.labels)
-      ?.flat() || [];
-  return allSubTypesFlattened?.find((t) => t.resourcePath === name);
+export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
+  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
+  const allSubTypesFlattened = (allTypesFlattened
+    .filter((l) => l?.labels && l.labels.length > 0)
+    .flatMap((l) => l.labels ?? [])) as Label[];
+  return allSubTypesFlattened.find((t) => t?.resourcePath === name);
 };
 
 // This might be instance specific in the future, meaning
@@ -601,7 +599,7 @@ export const getSupportErrandById: (
     })
     .catch(
       (e) =>
-        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
+        ({ errand: undefined as unknown as SupportErrand, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
           errand: SupportErrand;
           error?: string;
         })
@@ -620,7 +618,7 @@ export const getSupportErrandByErrandNumber: (
     })
     .catch(
       (e) =>
-        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
+        ({ errand: undefined as unknown as SupportErrand, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
           errand: SupportErrand;
           error?: string;
         })
@@ -647,66 +645,67 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
   try {
     const ierrand: SupportErrand = {
       ...e,
-      category: e.classification?.category === 'NONE' ? undefined : e.classification?.category,
-      type: e.classification?.type === 'NONE' ? undefined : e.classification?.type,
-      subType: appConfig.features.useThreeLevelCategorization
+      category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
+      type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
+      subType: (appConfig.features.useThreeLevelCategorization
         ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
-        : undefined,
+        : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
-      description: sanitized(e?.description),
+      description: sanitized(e?.description ?? ''),
       customer:
-        e.stakeholders
+        (e.stakeholders
           ?.filter((s) => s.role === 'PRIMARY')
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
-            organizationName: s.organizationName || s.firstName,
+            organizationName: s.organizationName || s.firstName || '',
             stakeholderType: mapExternalIdTypeToStakeholderType(s),
-            username: s.parameters?.find((p) => p.key === 'username')?.values[0],
-            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
-            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
-            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
-            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
+            username: s.parameters?.find((p) => p.key === 'username')?.values?.[0],
+            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values?.[0],
+            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values?.[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
             newRole: 'PRIMARY',
             internalId: uuidv4(),
-            emails: s.contactChannels
+            emails: (s.contactChannels ?? [])
               .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
               .map((c) => ({ value: c.value })),
-            phoneNumbers: s.contactChannels
+            phoneNumbers: (s.contactChannels ?? [])
               .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
               .map((c) => ({ value: c.value })),
-          })) || [],
+          })) ?? []) as SupportStakeholderFormModel[],
       contacts:
-        e.stakeholders
+        (e.stakeholders
           ?.filter((s) => s.role !== 'PRIMARY')
           ?.map((s) => ({
             ...s,
             // TODO Remove s.firstName when the API is updated with dedicated field for organization name
-            organizationName: s.organizationName || s.firstName,
+            organizationName: s.organizationName || s.firstName || '',
             stakeholderType: mapExternalIdTypeToStakeholderType(s),
-            username: s.parameters?.find((p) => p.key === 'username')?.values[0],
-            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values[0],
-            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values[0],
-            title: s.parameters?.find((p) => p.key === 'title')?.values[0],
-            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values[0],
-            department: s.parameters?.find((p) => p.key === 'department')?.values[0],
+            username: s.parameters?.find((p) => p.key === 'username')?.values?.[0],
+            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values?.[0],
+            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values?.[0],
+            title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
+            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
+            department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
             newRole: s.role as string,
             internalId: uuidv4(),
-            emails: s.contactChannels
+            emails: (s.contactChannels ?? [])
               .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
               .map((c) => ({ value: c.value })),
-            phoneNumbers: s.contactChannels
+            phoneNumbers: (s.contactChannels ?? [])
               .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
               .map((c) => ({ value: c.value })),
-          })) || [],
+          })) ?? []) as SupportStakeholderFormModel[],
     };
     return ierrand;
   } catch (e) {
     console.error('Error: could not map errands.', e);
+    throw e;
   }
 };
 
@@ -769,7 +768,7 @@ export const getSupportErrandsCount: (
     .then((res) => {
       return res.data.count;
     })
-    .catch((e) => {
+    .catch((e): null => {
       return null;
     });
 };
@@ -820,9 +819,9 @@ export const updateSupportErrand: (
   if (formdata.attachments && formdata.attachments.length > 0) {
     try {
       const attachmentRes: AllSettledResponse = await saveSupportAttachments(
-        formdata.id,
+        formdata.id!,
         municipalityId,
-        formdata.attachments
+        formdata.attachments as { file: File }[]
       );
       responseObj.attachments = attachmentRes.every((r) => r.status === 'fulfilled');
     } catch (e) {
@@ -839,11 +838,13 @@ export const updateSupportErrand: (
     ...(formdata.priority && {
       priority: formdata.priority,
     }),
-    classification: {
-      ...(formdata.category && { category: formdata.category }),
-      ...(formdata.type && { type: formdata.type }),
-    },
-    labels: formdata.labels.map((label) => ({ ...label, labels: undefined })),
+    ...(formdata.category && formdata.type && {
+      classification: {
+        category: formdata.category,
+        type: formdata.type,
+      },
+    }),
+    labels: (formdata.labels ?? []).map((label): Label => ({ ...label, labels: undefined })),
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
     ...(typeof formdata.contactReasonDescription !== 'undefined' && {
       contactReasonDescription: formdata.contactReasonDescription,
@@ -866,7 +867,7 @@ export const updateSupportErrand: (
     parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {
-    data.externalTags.push({
+    data.externalTags!.push({
       key: 'caseId',
       value: formdata.caseId,
     });
@@ -1089,7 +1090,7 @@ export const forwardSupportErrand: (
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
-    errand.stakeholders.forEach((s) => {
+    errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
       }
@@ -1097,12 +1098,12 @@ export const forwardSupportErrand: (
     delete data.existingEmail;
     delete data.newEmail;
     return apiService
-      .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id}/forward`, data)
+      .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
       .then(() => {
-        return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {
-        throw new Error(e.response.data as string);
+        throw new Error(e.response?.data as string);
       });
   } else {
     throw new Error('Not implemented yet');

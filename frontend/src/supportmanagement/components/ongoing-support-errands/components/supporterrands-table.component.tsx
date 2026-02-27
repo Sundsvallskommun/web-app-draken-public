@@ -20,7 +20,7 @@ export const SupportErrandsTable: React.FC = () => {
 
   const currentStatusHaserrands =
     data.errands.filter((e) => {
-      return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;
+      return selectedSupportErrandStatuses.includes(e.status as Status) || e.status === Status.PENDING;
     }).length !== 0
       ? true
       : false;

@@ -11,7 +11,7 @@ export interface LabelTypeFilter {
   labelType: string[];
 }
 
-export const LabelTypeValues = {
+export const LabelTypeValues: LabelTypeFilter = {
   labelType: [],
 };
 
@@ -23,27 +23,27 @@ export const SupportManagementFilterLabelType: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   // const [allTypes, setAllTypes] = useState<Label[]>();
   const [allStringTypes, setAllStringTypes] = useState<string[]>();
-  const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
+  const { supportMetadata } = useAppContext();
 
   useEffect(() => {
     const _types: Label[] = [];
     if (labelCategories.length > 0) {
       labelCategories?.forEach((category) => {
-        const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.resourcePath === category)?.labels;
+        const categoryTypes = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
         if (categoryTypes) {
           _types.push(...categoryTypes);
         }
       });
     } else {
       supportMetadata?.labels?.labelStructure?.forEach((category) => {
-        _types.push(...category.labels);
+        _types.push(...(category.labels ?? []));
       });
     }
     // We need a list of displayNames, not objects and not names since the
     // labelType filter works with the displayName and not the names of the types
     //
     // See comment in ongoing-support-errands.component.tsx for more information
-    setAllStringTypes(Array.from(new Set(_types.map((l) => l.displayName))));
+    setAllStringTypes(Array.from(new Set(_types.map((l) => l.displayName).filter((d): d is string => d !== undefined))));
   }, [supportMetadata, labelCategories]);
 
   return (

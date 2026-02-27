@@ -14,7 +14,7 @@ export const SidebarHistory: React.FC<{}> = () => {
     municipalityId,
     errand,
     administrators,
-  }: { municipalityId: string; errand: IErrand; administrators: Admin[] } = useAppContext();
+  } = useAppContext();
   const [history, setHistory] = useState<ParsedErrandHistory>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,8 +35,8 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     if (selectedChange) {
-      fetchChangeData(municipalityId, errand?.id, selectedChange)
-        .then((res) => {
+      fetchChangeData(municipalityId, errand?.id ?? 0, selectedChange)
+        ?.then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);
         })

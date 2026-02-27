@@ -19,6 +19,7 @@ import {
   countUnreadMessages,
   fetchSupportMessages,
   groupByConversationIdSortedTree,
+  MessageNode,
 } from '@supportmanagement/services/support-message-service';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -32,20 +33,14 @@ export const SupportTabsWrapper: React.FC<{
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
   const [supportConversations, setSupportConversations] = useState<any>([]);
-  const [messageTree, setMessageTree] = useState([]);
-  const [conversationMessageTree, setConversationMessageTree] = useState([]);
+  const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
+  const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const {
     municipalityId,
     supportErrand,
     setSupportErrand,
     supportAttachments,
     setSupportAttachments,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: (e: SupportErrand) => void;
-    supportAttachments: SupportAttachment[];
-    setSupportAttachments: (e: SupportAttachment[]) => void;
   } = useAppContext();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -53,7 +48,7 @@ export const SupportTabsWrapper: React.FC<{
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
   useEffect(() => {
-    if (methods?.getValues) {
+    if (methods?.getValues as unknown) {
       // Need to define these variables for validation/dirty check to work??
       const _ = Object.keys(methods.formState.dirtyFields).length;
       const __ = methods.formState.isDirty;
@@ -62,16 +57,16 @@ export const SupportTabsWrapper: React.FC<{
   }, [methods]);
 
   const getMessagesAndConversations = () => {
-    getSupportAttachments(supportErrand.id, municipalityId).then(setSupportAttachments);
-    fetchSupportMessages(supportErrand.id, municipalityId).then((res) => {
+    getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
+    fetchSupportMessages(supportErrand!.id!, municipalityId).then((res) => {
       const tree = buildTree(res);
       setMessageTree(tree);
       setMessages(res);
     });
-    getSupportConversations(municipalityId, supportErrand.id).then((res) => {
+    getSupportConversations(municipalityId, supportErrand!.id!).then((res) => {
       Promise.all(
         res.data.map((conversation: any) =>
-          getSupportConversationMessages(municipalityId, supportErrand.id, conversation.id).then((messages) => {
+          getSupportConversationMessages(municipalityId, supportErrand!.id!, conversation.id).then((messages) => {
             return messages.data.map((msgRes) => (Array.isArray(msgRes) ? msgRes : msgRes ? [msgRes] : [])).flat();
           })
         )
@@ -86,14 +81,14 @@ export const SupportTabsWrapper: React.FC<{
   };
 
   const update = () => {
-    if (supportErrand.id) {
+    if (supportErrand?.id) {
       getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
       getMessagesAndConversations();
     }
   };
 
   useEffect(() => {
-    if (supportErrand.id) {
+    if (supportErrand?.id) {
       getMessagesAndConversations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,7 +136,7 @@ export const SupportTabsWrapper: React.FC<{
       visibleFor: true,
     },
     {
-      label: `Bilagor (${countAttachment(supportAttachments)})`,
+      label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
       content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
       disabled: false,
       visibleFor: true,

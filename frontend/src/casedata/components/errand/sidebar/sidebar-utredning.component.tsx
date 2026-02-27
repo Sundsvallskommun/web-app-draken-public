@@ -55,12 +55,13 @@ export const SidebarUtredning: React.FC = () => {
     errand,
     setErrand,
     user,
-  }: { municipalityId: string; errand: IErrand; setErrand: (e: IErrand) => void; user: User } = useAppContext();
+  } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -83,9 +84,9 @@ export const SidebarUtredning: React.FC = () => {
   const save = async (data: UtredningFormModel) => {
     try {
       setIsLoading(true);
-      const rendered = await renderUtredningPdf(errand, data);
-      await saveDecision(municipalityId, errand, data, 'PROPOSED', rendered.pdfBase64);
-      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      const rendered = await renderUtredningPdf(errand!, data);
+      await saveDecision(municipalityId, errand!, data, 'PROPOSED', rendered.pdfBase64);
+      await getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);
       setError(false);
       toastMessage(
@@ -114,13 +115,14 @@ export const SidebarUtredning: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!errand) return;
     const existingUtredning = errand.decisions?.find((d) => d.decisionType === 'PROPOSED');
     setValue('errandNumber', errand.errandNumber);
     setValue('personalNumber', getOwnerStakeholder(errand)?.personalNumber);
     setValue('errandCaseType', errand.caseType);
     setValue('outcome', DecisionOutcomeKey.Bifall);
     if (existingUtredning) {
-      setValue('id', existingUtredning.id.toString());
+      setValue('id', existingUtredning.id!.toString());
       setValue('description', existingUtredning.description);
       setValue('outcome', existingUtredning.decisionOutcome);
     }
@@ -145,7 +147,7 @@ export const SidebarUtredning: React.FC = () => {
             <TextEditor
               className={cx(`mb-md h-[80%]`)}
               onChange={(e) => {
-                setValue('description', e.target.value.markup);
+                setValue('description', e.target.value.markup ?? '');
                 trigger('description');
               }}
               value={{ markup: description }}
@@ -166,9 +168,9 @@ export const SidebarUtredning: React.FC = () => {
               !errand?.id ||
               description === '' ||
               outcome === '' ||
-              isErrandLocked(errand) ||
+              isErrandLocked(errand!) ||
               !allowed ||
-              !isErrandAdmin(errand, user)
+              !isErrandAdmin(errand!, user)
             }
             loadingText="Sparar"
             loading={isLoading}

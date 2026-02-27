@@ -14,7 +14,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 export class SupportNotificationDto {
   @IsString()
-  id: string;
+  id!: string;
   @IsString()
   ownerFullName?: string;
   @IsString()

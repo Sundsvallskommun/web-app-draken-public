@@ -80,8 +80,8 @@ export const sendClosingMessage = async (adminName: string, supportErrand: Suppo
     municipalityId: municipalityId,
     errandId: supportErrand.id,
     contactMeans:
-      Channels[supportErrand.channel] === Channels.ESERVICE ||
-      Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+      Channels[supportErrand.channel as keyof typeof Channels] === Channels.ESERVICE ||
+      Channels[supportErrand.channel as keyof typeof Channels] === Channels.ESERVICE_INTERNAL
         ? 'webmessage'
         : contactChannels.contactMeans === ContactChannelType.EMAIL ||
           contactChannels.contactMeans === ContactChannelType.Email
@@ -119,7 +119,7 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
       : [...data.phoneNumbers];
   const msgPromises = targets.map(async (target) => {
     const attachmentPromises: Promise<{ name: string; blob: Blob }>[] = (data.attachments || []).map(async (f) => {
-      const fileItem = f.file[0];
+      const fileItem = (f.file as unknown as FileList)[0];
       try {
         const fileData = await toBase64(fileItem);
         const buf = Buffer.from(fileData, 'base64');
@@ -149,7 +149,7 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
         'htmlMessage',
         `${data.htmlMessage.replaceAll('<p>', '<p style="margin-top:0;margin-bottom:0">')}</div>`
       );
-      messageFormData.append('senderName', data.senderName);
+      messageFormData.append('senderName', data.senderName ?? '');
       messageFormData.append('subject', data.subject);
       messageFormData.append('reply_to', data.headerReplyTo || '');
       messageFormData.append('references', data.headerReferences || '');
@@ -245,7 +245,7 @@ export const getMessageAttachment: (
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachment');
-      return { data: undefined, message: 'error' };
+      return { data: undefined as unknown as string, message: 'error' } as ApiResponse<string>;
     });
 };
 
@@ -325,13 +325,13 @@ export const buildTree = (_list: Message[]) => {
           children: [],
           recipients: [],
         };
-        dummyParent?.children?.push(nodesMap.get(id));
+        dummyParent?.children?.push(nodesMap.get(id)!);
         roots.push(dummyParent);
         return;
       }
-      parentMsg?.children?.push(nodesMap.get(id));
+      parentMsg?.children?.push(nodesMap.get(id)!);
     } else {
-      roots.push(nodesMap.get(id));
+      roots.push(nodesMap.get(id)!);
     }
   });
 
@@ -345,7 +345,7 @@ export const countAllMessages = (tree: MessageNode[]): number => {
   let c = 0;
   c += tree.length;
   tree.forEach((root) => {
-    c += countAllMessages(root.children);
+    c += countAllMessages(root.children ?? []);
   });
   return c;
 };
@@ -357,7 +357,7 @@ export const countUnreadMessages = (tree: MessageNode[]): number => {
   let c = 0;
   c += tree.filter((node) => !node.viewed).length;
   tree.forEach((root) => {
-    c += countUnreadMessages(root.children);
+    c += countUnreadMessages(root.children ?? []);
   });
   return c;
 };

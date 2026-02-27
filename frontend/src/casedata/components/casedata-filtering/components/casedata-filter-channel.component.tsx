@@ -7,7 +7,7 @@ export interface CaseChannelFilter {
   channel: string[];
 }
 
-export const CaseChannelValues = {
+export const CaseChannelValues: CaseChannelFilter = {
   channel: [],
 };
 
@@ -29,7 +29,7 @@ export const CasedataFilterChannel: React.FC = () => {
       <PopupMenu.Panel className="max-md:w-full">
         <PopupMenu.Items autoFocus={false}>
           {Object.entries(Channels)
-            .filter((c) => AppChannels[process.env.NEXT_PUBLIC_APPLICATION]?.includes(c[1]))
+            .filter((c) => (AppChannels as Record<string, Channels[]>)[process.env.NEXT_PUBLIC_APPLICATION ?? '']?.includes(c[1] as Channels))
             .map((c: [string, string], idx) => (
               <PopupMenu.Item key={`${c[1]}-${idx}`}>
                 <Checkbox labelPosition="left" value={c[0]} {...register('channel')} data-cy={`channel-filter-${c[0]}`}>

@@ -46,19 +46,19 @@ export class EmployeeController {
         return response.send({ data: [], message: 'success' });
       }
 
-      const employments: UserEmploymentDTO[] = employees[0].employments
+      const employments = employees[0].employments
         .filter((emp: Employment) => emp.orgId && emp.orgName)
-        .map((emp: Employment) => ({
+        .map((emp: Employment): UserEmploymentDTO => ({
           orgId: emp.orgId,
-          orgName: emp.orgName,
+          orgName: emp.orgName ?? undefined,
           topOrgId: emp.topOrgId,
           isMainEmployment: emp.isMainEmployment,
           manager: emp.manager
             ? {
                 personId: emp.manager.personId,
-                givenname: emp.manager.givenname,
-                lastname: emp.manager.lastname,
-                emailAddress: emp.manager.emailAddress,
+                givenname: emp.manager.givenname ?? undefined,
+                lastname: emp.manager.lastname ?? undefined,
+                emailAddress: emp.manager.emailAddress ?? undefined,
               }
             : undefined,
         }))

@@ -39,7 +39,7 @@ export const SupportMessagesTab: React.FC<{
   );
 
   useEffect(() => {
-    const _a = validateAction(supportErrand, user);
+    const _a = validateAction(supportErrand!, user);
     setAllowed(_a);
   }, [user, supportErrand]);
 
@@ -47,8 +47,8 @@ export const SupportMessagesTab: React.FC<{
     if (message.conversationId && message.conversationId !== '') {
       console.warn('Not implemented');
       props.update();
-    } else if (!message.viewed && supportErrand.assignedUserId === user.username) {
-      setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
+    } else if (!message.viewed && supportErrand?.assignedUserId === user.username) {
+      setMessageViewStatus(supportErrand!.id!, municipalityId, message.communicationID, true).then(() => {
         props.update();
       });
     }
@@ -175,11 +175,11 @@ export const SupportMessagesTab: React.FC<{
           <Button
             data-cy="new-message-button"
             type="button"
-            disabled={isSupportErrandLocked(supportErrand) || !allowed || supportErrand.status === Status.NEW}
+            disabled={isSupportErrandLocked(supportErrand!) || !allowed || supportErrand?.status === Status.NEW}
             size="sm"
             variant="primary"
             color="vattjom"
-            inverted={!(isSupportErrandLocked(supportErrand) || !allowed)}
+            inverted={!(isSupportErrandLocked(supportErrand!) || !allowed)}
             rightIcon={<Icon icon={<Mail />} size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
@@ -228,7 +228,7 @@ export const SupportMessagesTab: React.FC<{
               update={props.update}
               setShowMessageForm={setShowMessageForm}
               nodes={sortedMessages}
-              selected={selectedMessage?.communicationID}
+              selected={selectedMessage?.communicationID ?? ''}
               onSelect={(msg: Message) => {
                 onSelect(msg);
               }}
@@ -250,15 +250,15 @@ export const SupportMessagesTab: React.FC<{
           }}
         >
           <SupportMessageForm
-            locked={isSupportErrandLocked(supportErrand)}
+            locked={isSupportErrandLocked(supportErrand!)}
             showMessageForm={showMessageForm}
             setShowMessageForm={setShowMessageForm}
-            prefillEmail={supportErrand.customer?.[0]?.emails?.[0]?.value}
-            prefillPhone={supportErrand.customer?.[0]?.phoneNumbers?.[0]?.value}
+            prefillEmail={supportErrand?.customer?.[0]?.emails?.[0]?.value}
+            prefillPhone={supportErrand?.customer?.[0]?.phoneNumbers?.[0]?.value}
             setUnsaved={(val) => {
               props.setUnsaved(val);
             }}
-            message={selectedMessage}
+            message={selectedMessage!}
             update={props.update}
           />
         </MessageWrapper>

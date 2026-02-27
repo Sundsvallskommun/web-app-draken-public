@@ -60,7 +60,7 @@ export const SupportSimplifiedContactForm: React.FC<{
               schema
                 .trim()
                 .matches(ssnPattern, invalidSsnMessage)
-                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn!) || !ssn),
           })
         : yup.string().when('stakeholderType', {
             is: (type: string) => {
@@ -92,7 +92,7 @@ export const SupportSimplifiedContactForm: React.FC<{
           schema
             .trim()
             .matches(orgNumberPattern, invalidOrgNumberMessage)
-            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr!) || !orgNr),
       }),
       firstName: yup.string().when('organizationName', {
         is: (_: string) => searchMode === 'person' || searchMode === 'employee',
@@ -316,7 +316,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         <>
           <SupportContactSearchModeSelector
             inName={'form'}
-            disabled={props.disabled}
+            disabled={props.disabled!}
             form={form}
             contact={contact}
             id={id}
@@ -325,7 +325,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             {...searchProps}
           />
           <SupportContactSearchField
-            disabled={props.disabled}
+            disabled={props.disabled!}
             form={form}
             id={id}
             appendPhonenumber={appendPhonenumber}
@@ -338,9 +338,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       {searchResult ? (
         <SupportSearchResult
           searchMode={searchMode}
-          disabled={props.disabled}
+          disabled={props.disabled!}
           form={form}
-          selectedUser={selectedUser}
+          selectedUser={selectedUser!}
           loading={loading}
           onSubmit={handleSubmit(onSubmit)}
           label={label}
@@ -377,7 +377,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         closeHandler={closeHandler}
         onSubmit={handleSubmit(onSubmit)}
         label={label}
-        disabled={props.disabled}
+        disabled={props.disabled!}
         loading={loading}
         contact={contact}
         form={form}

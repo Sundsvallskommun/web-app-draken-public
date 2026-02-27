@@ -29,13 +29,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     supportErrand,
     user,
     supportMetadata,
-  }: {
-    user: User;
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
   } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
@@ -51,8 +44,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   }, [user, supportErrand]);
 
   useEffect(() => {
-    setStakeholderContacts(supportErrand.contacts);
-    setStakeholderCustomers(supportErrand.customer);
+    setStakeholderContacts(supportErrand?.contacts ?? []);
+    setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -93,21 +86,21 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setStakeholderCustomers(customer);
   };
 
-  const renderContact = (contact: SupportStakeholderFormModel, index, header) => {
+  const renderContact = (contact: SupportStakeholderFormModel, index: number, header: string) => {
     const administrationName =
       contact.administrationName ||
-      contact.parameters?.find((param) => param.key === 'administrationName')?.values[0] ||
+      contact.parameters?.find((param) => param.key === 'administrationName')?.values?.[0] ||
       null;
-    const title = contact.title || contact.parameters?.find((param) => param.key === 'title')?.values[0] || null;
+    const title = contact.title || contact.parameters?.find((param) => param.key === 'title')?.values?.[0] || null;
     const referenceNumber =
       contact.referenceNumber ||
-      contact.parameters?.find((param) => param.key === 'referenceNumber')?.values[0] ||
+      contact.parameters?.find((param) => param.key === 'referenceNumber')?.values?.[0] ||
       null;
     const department =
-      contact.department || contact.parameters?.find((param) => param.key === 'department')?.values[0] || null;
+      contact.department || contact.parameters?.find((param) => param.key === 'department')?.values?.[0] || null;
     const username =
       contact.username ||
-      contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values[0] ||
+      contact.parameters?.find((param) => param.key === 'username' || param.key === 'userId')?.values?.[0] ||
       null;
     const migratedContact = contact.parameters?.find((param) => param.key === 'corrected')?.displayName;
     return (
@@ -118,7 +111,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       >
         {selectedContact && selectedContact.internalId === contact.internalId ? (
           <SupportSimplifiedContactForm
-            disabled={isSupportErrandLocked(supportErrand)}
+            disabled={isSupportErrandLocked(supportErrand!)}
             setUnsaved={props.setUnsaved}
             contact={contact}
             editing={true}
@@ -149,10 +142,10 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             {header} {!!migratedContact && `(${migratedContact})`}
           </div>
 
-          {!isSupportErrandLocked(supportErrand) && (
+          {!isSupportErrandLocked(supportErrand!) && (
             <div className="flex flex-wrap gap-16 text-small">
               <Button
-                disabled={isSupportErrandLocked(supportErrand)}
+                disabled={isSupportErrandLocked(supportErrand!)}
                 data-cy={`edit-stakeholder-button-${contact.role}-${index}`}
                 variant="link"
                 className="text-body"
@@ -164,7 +157,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               </Button>
 
               <Button
-                disabled={isSupportErrandLocked(supportErrand)}
+                disabled={isSupportErrandLocked(supportErrand!)}
                 data-cy="delete-stakeholder-button"
                 variant="link"
                 className="text-body"
@@ -190,7 +183,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
 
               {contact.role === 'CONTACT' && stakeholderCustomers.length === 0 ? (
                 <Button
-                  disabled={isSupportErrandLocked(supportErrand)}
+                  disabled={isSupportErrandLocked(supportErrand!)}
                   data-cy="make-stakeholder-owner-button"
                   variant="link"
                   className="text-body"
@@ -292,7 +285,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             <div data-cy={`stakeholder-phone`} className="text-small">
               {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
                 <Button
-                  disabled={isSupportErrandLocked(supportErrand)}
+                  disabled={isSupportErrandLocked(supportErrand!)}
                   color="vattjom"
                   variant="link"
                   onClick={() => {
@@ -308,7 +301,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <div data-cy={`stakeholder-email`} className="text-small">
                 {contact.emails?.map((n) => n.value).join(', ') || (
                   <Button
-                    disabled={isSupportErrandLocked(supportErrand)}
+                    disabled={isSupportErrandLocked(supportErrand!)}
                     color="vattjom"
                     variant="link"
                     onClick={() => {
@@ -332,7 +325,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     );
   };
 
-  const addStakeholder = (stakeholder) => {
+  const addStakeholder = (stakeholder: SupportStakeholderFormModel) => {
     if (stakeholder.role === 'PRIMARY') {
       stakeholderCustomers.push(stakeholder);
       setValue('customer', stakeholderCustomers, { shouldDirty: true });
@@ -370,7 +363,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
               <div className="w-full">
                 {stakeholderCustomers.length === 0 ? (
                   <SupportSimplifiedContactForm
-                    disabled={isSupportErrandLocked(supportErrand)}
+                    disabled={isSupportErrandLocked(supportErrand!)}
                     setUnsaved={props.setUnsaved}
                     onSave={(contact) => addStakeholder(contact)}
                     contact={{ ...emptyContact, role: 'PRIMARY' }}
@@ -403,7 +396,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
                   </div>
                 )}
                 <SupportSimplifiedContactForm
-                  disabled={isSupportErrandLocked(supportErrand)}
+                  disabled={isSupportErrandLocked(supportErrand!)}
                   setUnsaved={props.setUnsaved}
                   contact={{ ...emptyContact, role: 'CONTACT' }}
                   editing={false}

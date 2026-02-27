@@ -86,7 +86,7 @@ export class CasedataNotesController {
     const baseURL = apiURL(this.SERVICE);
     const noteUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
     const note = await this.apiService.get<NoteDTO>({ url: noteUrl, baseURL }, req.user);
-    if (noteIsTjansteanteckning(note.data.noteType)) {
+    if (noteIsTjansteanteckning(note.data.noteType!)) {
       throw new HttpException(403, 'Forbidden');
     }
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${noteId}`;
