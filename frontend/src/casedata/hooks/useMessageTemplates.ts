@@ -100,7 +100,7 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
     };
 
     loadTemplates();
-  }, [shouldLoad, templates, user]);
+  }, [shouldLoad, templates, user.firstName, user.lastName]);
 
   const reload = () => {
     setTemplates(null);

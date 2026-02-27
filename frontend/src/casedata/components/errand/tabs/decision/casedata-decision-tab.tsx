@@ -45,6 +45,7 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
+import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
@@ -173,12 +174,12 @@ export const CasedataDecisionTab: React.FC<{
   }, [municipalityId, assetType]);
 
   useEffect(() => {
-    if (isMEX() && !decisionTemplates) {
+    if (!decisionTemplates) {
       const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'mex';
       const userName = errand.administratorName || `${user.firstName} ${user.lastName}`;
       fetchDecisionTemplates(app, userName).then(setDecisionTemplates);
     }
-  }, [decisionTemplates, errand.administratorName, user]);
+  }, [decisionTemplates, errand.administratorName, user.firstName, user.lastName]);
 
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
@@ -511,7 +512,7 @@ export const CasedataDecisionTab: React.FC<{
 
     const content = template.content + decisionTemplates.signature;
     setValue('description', content, { shouldDirty: true });
-    setValue('descriptionPlaintext', content.replace(/<[^>]+>/g, ''));
+    setValue('descriptionPlaintext', sanitizedInline(content));
   };
 
   const isSent = () => {
@@ -639,7 +640,7 @@ export const CasedataDecisionTab: React.FC<{
             </>
           )}
 
-          {isMEX() ? (
+          {decisionTemplates?.templates.length > 0 ? (
             <FormControl className="w-full">
               <FormLabel>Välj beslutsmall</FormLabel>
               <Input type="hidden" {...register('decisionTemplate')} />

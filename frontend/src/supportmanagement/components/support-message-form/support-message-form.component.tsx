@@ -29,7 +29,6 @@ import {
   cx,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { getInternalSignature } from '@supportmanagement/services/message-template-service';
 import {
   SingleSupportAttachment,
   SupportAttachment,
@@ -179,11 +178,9 @@ export const SupportMessageForm: React.FC<{
 
   useEffect(() => {
     if (props.showMessageForm && templates && !internalSignature) {
-      getInternalSignature({ user: `${user.firstName} ${user.lastName}` }).then((sig) => {
-        setInternalSignature(sig || '');
-      });
+      setInternalSignature(templates.internalSignature || '');
     }
-  }, [props.showMessageForm, templates, internalSignature, user]);
+  }, [props.showMessageForm, templates, internalSignature]);
 
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {

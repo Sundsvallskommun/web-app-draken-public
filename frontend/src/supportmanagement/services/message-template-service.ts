@@ -16,6 +16,7 @@
  */
 
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { base64Decode } from '@common/services/helper-service';
 
 export const EMAIL_INFORMATION_TEXT =
   '<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>';
@@ -26,14 +27,6 @@ export interface TemplateApiResponse {
   description?: string;
   content?: string;
   defaultValues?: Array<{ fieldName: string; value: string }>;
-}
-
-function base64Decode(base64: string): string {
-  try {
-    return Buffer.from(base64, 'base64').toString('utf-8');
-  } catch {
-    return atob(base64);
-  }
 }
 
 export function replaceTemplateParameters(template: string, parameters: Record<string, string>): string {
