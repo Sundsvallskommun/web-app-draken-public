@@ -1,6 +1,5 @@
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
@@ -9,6 +8,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface AttestationTableForm {
   sortOrder: 'asc' | 'desc';
@@ -113,7 +113,18 @@ export const AttestationsTable: React.FC<{
       <Button
         variant={variant as 'link' | 'primary' | 'secondary' | 'tertiary' | 'ghost'}
         inverted={inverted}
-        color={color as 'vattjom' | 'gronsta' | 'error' | 'primary' | 'info' | 'success' | 'warning' | 'bjornstigen' | 'juniskar'}
+        color={
+          color as
+            | 'vattjom'
+            | 'gronsta'
+            | 'error'
+            | 'primary'
+            | 'info'
+            | 'success'
+            | 'warning'
+            | 'bjornstigen'
+            | 'juniskar'
+        }
         size="sm"
         className="w-full"
         onClick={() => {
@@ -121,7 +132,12 @@ export const AttestationsTable: React.FC<{
           setShowSelectedRecord(true);
         }}
       >
-        {icon ? <LucideIcon name={icon as 'check' | 'thumbs-down' | 'eye'} size={16} /> : null}{' '}
+        {icon
+          ? (() => {
+              const DynIcon = iconMap[icon];
+              return DynIcon ? <DynIcon size={16} /> : undefined;
+            })()
+          : null}{' '}
         {findAttestationStatusLabelForAttestationStatusKey(record.status)}
       </Button>
     );

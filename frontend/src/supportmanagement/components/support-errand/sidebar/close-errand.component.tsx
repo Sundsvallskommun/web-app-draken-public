@@ -4,7 +4,7 @@ import { appConfig } from '@config/appconfig';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Check } from 'lucide-react';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import {
   Resolution,
@@ -84,7 +84,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         className="w-full"
         color="vattjom"
         data-cy="solved-button"
-        leftIcon={<LucideIcon name="check" />}
+        leftIcon={<Check />}
         variant={
           !!(supportErrand?.status as Status) &&
           [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(

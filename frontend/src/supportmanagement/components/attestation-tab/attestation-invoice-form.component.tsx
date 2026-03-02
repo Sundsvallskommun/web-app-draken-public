@@ -2,7 +2,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { maybe, prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
 import {
   approveBillingRecord,
@@ -19,6 +18,7 @@ import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import BillingForm from '../billing/billing-form.component';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { Check, ThumbsDown } from 'lucide-react';
 
 export const AttestationInvoiceForm: React.FC<{
   setUnsaved?: (unsaved: boolean) => void;
@@ -235,7 +235,7 @@ export const AttestationInvoiceForm: React.FC<{
           <div>
             <div className="pt-16 gap-md flex justify-end">
               <Button inverted variant="primary" color="gronsta">
-                <LucideIcon name="check" /> Godkänd
+                <Check /> Godkänd
               </Button>
               <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
                 Ändra beslut
@@ -255,7 +255,7 @@ export const AttestationInvoiceForm: React.FC<{
           <div>
             <div className="pt-16 gap-md flex justify-end">
               <Button inverted variant="primary" color="error">
-                <LucideIcon name="thumbs-down" /> Avslag
+                <ThumbsDown /> Avslag
               </Button>
               <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
                 Ändra beslut
@@ -274,7 +274,7 @@ export const AttestationInvoiceForm: React.FC<{
         <div>
           <div className="pt-16 gap-md flex justify-end">
             <Button inverted variant="primary" color="vattjom">
-              <LucideIcon name="check" /> Fakturerad
+              <Check /> Fakturerad
             </Button>
             <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
               Ändra beslut

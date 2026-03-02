@@ -9,7 +9,6 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   cx,
@@ -35,6 +34,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import { Forward } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
@@ -184,7 +184,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         className="w-full"
         data-cy="forward-button"
         color="vattjom"
-        leftIcon={<LucideIcon name="forward" />}
+        leftIcon={<Forward />}
         variant="secondary"
         disabled={disabled}
         onClick={() => handleModal()}

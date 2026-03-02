@@ -7,7 +7,6 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
@@ -34,6 +33,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import { FileInput, Plus } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupRequestFeedbackForm = yup.object().shape(
@@ -190,7 +190,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
           className="w-full"
           data-cy="forward-button"
           color="vattjom"
-          leftIcon={<LucideIcon name="file-input" />}
+          leftIcon={<FileInput />}
           variant="secondary"
           disabled={disabled}
           onClick={() => setShowModal(true)}
@@ -311,7 +311,7 @@ export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disa
                     type="button"
                     variant="primary"
                     size="sm"
-                    leftIcon={<LucideIcon name="plus" size="lg" className="mr-sm" />}
+                    leftIcon={<Plus size="lg" className="mr-sm" />}
                     disabled={!isAttachmentSelected}
                     color="primary"
                     onClick={(e) => {

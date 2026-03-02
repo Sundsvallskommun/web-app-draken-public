@@ -19,7 +19,6 @@ import { isMEX } from '@common/services/application-service';
 import { mapAttachmentToUploadFile, validAttachment } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Fragment, useEffect, useState } from 'react';
@@ -27,6 +26,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { EditAttachmentModal } from './edit-attachment-modal.component';
 import { UploadAttachmentModal } from './upload-attachment-modal.component';
+import { Eye, Pencil, Trash, Upload } from 'lucide-react';
 export interface CasedataAttachmentFormModel {
   files: UploadFile[];
   newFiles: UploadFile[];
@@ -204,7 +204,7 @@ export const CasedataAttachments: React.FC = () => {
             data-cy="add-attachment-button"
             disabled={errand ? isErrandLocked(errand) : false}
             color="vattjom"
-            rightIcon={<LucideIcon name="upload" size={16} />}
+            rightIcon={<Upload size={16} />}
             inverted
             size="sm"
             onClick={() => {
@@ -273,7 +273,7 @@ export const CasedataAttachments: React.FC = () => {
                         <Button
                           key="view"
                           variant="tertiary"
-                          leftIcon={<LucideIcon name="eye" />}
+                          leftIcon={<Eye />}
                           data-cy={`open-attachment-${file.id}`}
                           onClick={() => {
                             clickHandler(file);
@@ -293,7 +293,7 @@ export const CasedataAttachments: React.FC = () => {
                           <PopupMenu.Item>
                             <Button
                               data-cy={`edit-attachment-${file.id}`}
-                              leftIcon={<LucideIcon name="pencil" />}
+                              leftIcon={<Pencil />}
                               onClick={() => {
                                 setOriginalFile({ ...file, meta: { ...file.meta } });
                                 setEditIndex(i);
@@ -305,7 +305,7 @@ export const CasedataAttachments: React.FC = () => {
                           <PopupMenu.Item>
                             <Button
                               data-cy={`delete-attachment-${file.id}`}
-                              leftIcon={<LucideIcon name="trash" />}
+                              leftIcon={<Trash />}
                               onClick={async () => {
                                 handleRemove(file);
                               }}

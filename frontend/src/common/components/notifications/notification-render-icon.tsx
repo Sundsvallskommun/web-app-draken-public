@@ -1,8 +1,7 @@
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Avatar, cx } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 type Notification = SupportNotification | CaseDataNotification;
 
 interface NotificationRenderIconProps {
@@ -44,25 +43,28 @@ export const NotificationRenderIcon: React.FC<NotificationRenderIconProps> = ({ 
 
   return (
     <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center`, bgColor)}>
-      {'icon' in config && (
-        <LucideIcon
-          name={config.icon as 'message-circle' | 'bell-ring' | 'file' | 'bell'}
-          color={
-            color as
-              | 'gronsta'
-              | 'juniskar'
-              | 'vattjom'
-              | 'primary'
-              | 'error'
-              | 'info'
-              | 'success'
-              | 'warning'
-              | 'bjornstigen'
-              | 'tertiary'
-          }
-          size="2.4rem"
-        />
-      )}
+      {'icon' in config &&
+        (() => {
+          const DynIcon = iconMap[config.icon as string];
+          return DynIcon ? (
+            <DynIcon
+              color={
+                color as
+                  | 'gronsta'
+                  | 'juniskar'
+                  | 'vattjom'
+                  | 'primary'
+                  | 'error'
+                  | 'info'
+                  | 'success'
+                  | 'warning'
+                  | 'bjornstigen'
+                  | 'tertiary'
+              }
+              size="2.4rem"
+            />
+          ) : null;
+        })()}
     </div>
   );
 };

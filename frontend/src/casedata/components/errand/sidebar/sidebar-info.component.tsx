@@ -13,7 +13,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Dialog,
@@ -34,6 +33,7 @@ import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
+import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const {
@@ -306,7 +306,7 @@ export const SidebarInfo: React.FC<{}> = () => {
           <>
             <div className="flex">
               <Label>
-                <LucideIcon size="1.5rem" name="circle-pause" />{' '}
+                <CirclePause size="1.5rem" />{' '}
                 {errand?.status?.statusType === ErrandStatus.Parkerad ? 'Parkerat ' : 'Tilldelat '}
               </Label>
               <p className="text-small ml-8">{dayjs(errand.suspension?.suspendedFrom).format('DD MMM, HH:mm')}</p>
@@ -338,7 +338,7 @@ export const SidebarInfo: React.FC<{}> = () => {
             )}
             {uiPhase !== UiPhase.registrerad && (
               <Button
-                leftIcon={<LucideIcon name="mail" />}
+                leftIcon={<Mail />}
                 className="w-full mt-16"
                 color="vattjom"
                 data-cy="sidebar-new-message-button"
@@ -395,7 +395,7 @@ export const SidebarInfo: React.FC<{}> = () => {
           )}
         <Dialog show={dialogIsOpen} className="w-[36rem]">
           <Dialog.Content className="flex flex-col items-center text-center">
-            <LucideIcon name="archive-x" color="vattjom" size={32} />
+            <ArchiveX className="text-vattjom-surface-primary" size={32} />
 
             <h1 className="text-h3-md">Avsluta ärendet?</h1>
             <FormLabel>

@@ -1,6 +1,6 @@
 import { SubmitButtonProps } from '@rjsf/utils';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
+import { Plus } from 'lucide-react';
 
 interface SubmitButtonOptions {
   label?: string;
@@ -21,7 +21,7 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any
 
   return (
     <div className={className}>
-      <Button type="submit" variant={variant as any} leftIcon={leadingIcon ? <LucideIcon name="plus" /> : undefined}>
+      <Button type="submit" variant={variant as any} leftIcon={leadingIcon ? <Plus /> : undefined}>
         {label}
       </Button>
     </div>

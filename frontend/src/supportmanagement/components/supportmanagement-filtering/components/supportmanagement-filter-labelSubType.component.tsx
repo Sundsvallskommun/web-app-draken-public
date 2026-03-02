@@ -1,12 +1,12 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
+import { ChevronDown } from 'lucide-react';
 
 export interface LabelSubTypeFilter {
   labelSubType: string[];
@@ -68,7 +68,7 @@ export const SupportManagementFilterLabelSubType: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Ärendetyp-filter"
         variant="tertiary"
         showBackground={false}

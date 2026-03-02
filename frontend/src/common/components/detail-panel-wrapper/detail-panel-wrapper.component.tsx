@@ -1,6 +1,7 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Header, cx } from '@sk-web-gui/react';
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 interface DetailPanelWrapperProps {
   show: boolean;
@@ -43,7 +44,7 @@ export const DetailPanelWrapper: React.FC<DetailPanelWrapperProps> = ({
       >
         <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
           <div className="text-h4-sm flex items-center gap-12">
-            <LucideIcon name={icon} /> {label}
+            {(() => { const DynIcon = iconMap[icon]; return DynIcon ? <DynIcon /> : undefined; })()} {label}
           </div>
           <Button
             tabIndex={show ? 0 : -1}
@@ -55,7 +56,7 @@ export const DetailPanelWrapper: React.FC<DetailPanelWrapperProps> = ({
             }}
             data-cy={dataCy ? `close-${dataCy}-wrapper` : undefined}
           >
-            <LucideIcon name="x" data-cy={dataCy ? `close-${dataCy}-wrapper-icon` : undefined} />
+            <X data-cy={dataCy ? `close-${dataCy}-wrapper-icon` : undefined} />
           </Button>
         </Header>
         {children}

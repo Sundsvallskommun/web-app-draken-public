@@ -6,8 +6,7 @@ import React, { useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
 import { User } from '@common/interfaces/user';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import { Info } from 'lucide-react';
 export const SupportErrandBasicsAboutDisclosure: React.FC<{
   errand: ApiSupportErrand;
   setUnsaved: (unsaved: boolean) => void;
@@ -27,7 +26,7 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
   return (
     <Disclosure variant="alt" initalOpen>
       <Disclosure.Header>
-        <Disclosure.Icon icon={<LucideIcon name="info" />} />
+        <Disclosure.Icon icon={<Info />} />
         <Disclosure.Title>Om ärendet</Disclosure.Title>
         <Disclosure.Button />
       </Disclosure.Header>

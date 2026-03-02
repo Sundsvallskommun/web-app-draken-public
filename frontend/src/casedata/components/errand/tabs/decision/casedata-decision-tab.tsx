@@ -45,7 +45,6 @@ import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Combobox,
@@ -65,6 +64,7 @@ import { ServiceListComponent } from '../services/casedata-service-list.componen
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 import { ContractData } from '@casedata/interfaces/contract-data';
+import { Download, SendHorizontal } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -552,7 +552,7 @@ export const CasedataDecisionTab: React.FC<{
           onClick={getPdfPreview}
           loading={isPreviewLoading}
           loadingText="Hämtar PDF"
-          rightIcon={<LucideIcon name="download" />}
+          rightIcon={<Download />}
         >
           {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
         </Button>
@@ -739,7 +739,7 @@ export const CasedataDecisionTab: React.FC<{
             onClick={getPdfPreview}
             loading={isPreviewLoading}
             loadingText="Hämtar PDF"
-            rightIcon={<LucideIcon name="download" />}
+            rightIcon={<Download />}
           >
             {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
           </Button>
@@ -766,7 +766,7 @@ export const CasedataDecisionTab: React.FC<{
                 setDialogIsOpen(true);
               }
             }}
-            rightIcon={<LucideIcon name="send-horizontal" />}
+            rightIcon={<SendHorizontal />}
             loading={isSaveAndSendLoading}
             loadingText="Skickar beslut"
           >

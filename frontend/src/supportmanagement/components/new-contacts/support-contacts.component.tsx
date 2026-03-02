@@ -1,6 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
@@ -16,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 import { appConfig } from '@config/appconfig';
+import { Info, Users } from 'lucide-react';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -340,7 +340,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       <div className="mt-md">
         <Disclosure variant="alt" initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="users" />} />
+            <Disclosure.Icon icon={<Users />} />
             <Disclosure.Title>Ärendeägare</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -348,7 +348,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
             <div data-cy="registered-applicants">
               {stakeholderCustomers.length === 0 && appConfig.features.useMyPages && (
                 <div className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary">
-                  <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+                  <Info className="text-primary w-20 h-20 shrink-0" />
                   <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
                     <p className="mt-0">
                       Om du lägger till ett personnummer här, visas ärendet på den personens Mina sidor.
@@ -380,7 +380,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
       <div className="mt-md">
         <Disclosure variant="alt" initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="users" />} />
+            <Disclosure.Icon icon={<Users />} />
             <Disclosure.Title>Övriga parter</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>

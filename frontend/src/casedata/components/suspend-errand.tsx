@@ -5,12 +5,12 @@ import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { CirclePause } from 'lucide-react';
 
 const yupSuspendForm = yup.object().shape({
   date: yup.string().required('Datum är obligatoriskt'),
@@ -90,7 +90,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             className="mt-16"
             color="vattjom"
             data-cy="suspend-button"
-            leftIcon={<LucideIcon name="circle-pause" />}
+            leftIcon={<CirclePause />}
             variant="secondary"
             disabled={
               disabled ||

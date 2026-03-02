@@ -1,4 +1,4 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
+import { Mail, X } from 'lucide-react';
 import { Button, Header, cx } from '@sk-web-gui/react';
 
 export const MessageWrapper: React.FC<{
@@ -17,7 +17,7 @@ export const MessageWrapper: React.FC<{
     >
       <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
         <div className="text-h4-sm flex items-center gap-12">
-          <LucideIcon name="mail" /> {label}
+          <Mail /> {label}
         </div>
         <Button
           tabIndex={show ? 0 : -1}
@@ -29,7 +29,7 @@ export const MessageWrapper: React.FC<{
           }}
           data-cy="close-message-wrapper"
         >
-          <LucideIcon name="x" data-cy="close-message-wrapper-icon" />
+          <X data-cy="close-message-wrapper-icon" />
         </Button>
       </Header>
       {children}

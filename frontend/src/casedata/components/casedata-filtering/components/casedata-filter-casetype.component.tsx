@@ -1,8 +1,8 @@
 import { getCaseLabels } from '@casedata/services/casedata-errand-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface CaseTypeFilter {
   caseType: string[];
@@ -19,7 +19,7 @@ export const CasedataFilterCaseType: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Ärendetyp-filter"
         variant="tertiary"
         showBackground={false}
