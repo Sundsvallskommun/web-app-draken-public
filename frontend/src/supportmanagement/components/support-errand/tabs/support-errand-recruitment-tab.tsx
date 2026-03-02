@@ -94,7 +94,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                           {val.group}
                         </FormLabel>
                         <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
-                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`)) ? (
+                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`) ?? '') ? (
                           <Checkbox
                             defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
                             onChange={(e) => {

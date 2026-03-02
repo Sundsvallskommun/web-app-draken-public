@@ -6,10 +6,9 @@ import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import Head from 'next/head';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
 import { ExternalLink, Menu } from 'lucide-react';
@@ -29,7 +28,11 @@ export default function Layout({ title, children }: { title: string; children: R
     : appConfig.isSupportManagement
     ? supportErrand?.errandNumber
     : undefined;
-  const hostName = window.location.hostname;
+  const [hostName, setHostName] = useState('');
+
+  useEffect(() => {
+    setHostName(window.location.hostname);
+  }, []);
 
   const MainTitle = () => (
     <NextLink
@@ -90,10 +93,6 @@ export default function Layout({ title, children }: { title: string; children: R
 
   return (
     <>
-      <Head>
-        <title>{title}</title>
-        <meta name="description" content={appConfig.applicationName} />
-      </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
           logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}

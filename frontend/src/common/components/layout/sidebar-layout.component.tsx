@@ -1,8 +1,7 @@
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent } from '@sk-web-gui/react';
-import Head from 'next/head';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
 export default function SidebarLayout({
@@ -20,16 +19,15 @@ export default function SidebarLayout({
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
 }) {
-  const hostName = window.location.hostname;
-
+  const [hostName, setHostName] = useState('');
   const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    setHostName(window.location.hostname);
+  }, []);
 
   return (
     <>
-      <Head>
-        <title>{title}</title>
-        <meta name="description" content={appConfig.applicationName} />
-      </Head>
       <div className="min-h-screen w-full">
         <div className="flex grow w-full">
           <MainErrandsSidebar

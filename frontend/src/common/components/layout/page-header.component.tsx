@@ -1,5 +1,5 @@
 import { cx } from '@sk-web-gui/react';
-import { ElementType, ReactNode } from 'react';
+import { ElementType, JSX, ReactNode } from 'react';
 
 interface PageHeaderProps {
   logo?: JSX.Element;

@@ -28,11 +28,7 @@ envalid.cleanEnv(process.env, {
   HEALTH_PASSWORD: authDependent(),
 });
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
-
-module.exports = withBundleAnalyzer({
+module.exports = {
   distDir: `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
   output: 'standalone',
   images: {
@@ -40,11 +36,24 @@ module.exports = withBundleAnalyzer({
     formats: ['image/avif', 'image/webp'],
   },
   basePath: process.env.NEXT_PUBLIC_BASEPATH || '',
-  sassOptions: {},
   experimental: {
     optimizePackageImports: ['@sk-web-gui/core', '@sk-web-gui/react', 'dayjs'],
   },
   async rewrites() {
     return [{ source: '/napi/:path*', destination: '/api/:path*' }];
   },
-});
+  //Note: This is a workaround for JS not working correctly when reloading a page.
+  async headers() {
+    return [
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
+};
