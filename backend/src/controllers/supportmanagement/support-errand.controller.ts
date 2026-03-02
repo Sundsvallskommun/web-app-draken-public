@@ -85,14 +85,14 @@ export interface SupportErrandParameters {
 
 export class CExternalTag implements ExternalTag {
   @IsString()
-  key: string;
+  key!: string;
   @IsString()
-  value: string;
+  value!: string;
 }
 
 export class CParameter implements Parameter {
   @IsString()
-  key: string;
+  key!: string;
   @IsString()
   @IsOptional()
   displayName?: string;
@@ -101,7 +101,7 @@ export class CParameter implements Parameter {
   group?: string;
   @IsArray()
   @IsOptional()
-  values: string[];
+  values!: string[];
 }
 
 export class CContactChannel implements ContactChannel {
@@ -115,11 +115,11 @@ export class CContactChannel implements ContactChannel {
 
 export class CJsonParameter {
   @IsString()
-  key: string;
+  key!: string;
   @IsOptional()
   value: any;
   @IsString()
-  schemaId: string;
+  schemaId!: string;
 }
 
 export class CSupportStakeholder implements SupportStakeholder {
@@ -160,28 +160,28 @@ export class CSupportStakeholder implements SupportStakeholder {
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CContactChannel)
-  contactChannels: CContactChannel[];
+  contactChannels!: CContactChannel[];
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
-  parameters: Parameter[];
+  parameters!: Parameter[];
 }
 
 export class Classification {
   @IsString()
-  category: string;
+  category!: string;
   @IsString()
-  type: string;
+  type!: string;
 }
 
 export class CSuspension implements Suspension {
   @IsString()
   @IsOptional()
-  suspendedFrom: string;
+  suspendedFrom!: string;
   @IsString()
   @IsOptional()
-  suspendedTo: string;
+  suspendedTo!: string;
 }
 
 export class CNotification implements Notification {
@@ -198,7 +198,7 @@ export class CNotification implements Notification {
   @IsOptional()
   ownerFullName?: string;
   @IsString()
-  ownerId: string;
+  ownerId!: string;
   @IsString()
   @IsOptional()
   createdBy?: string;
@@ -206,9 +206,9 @@ export class CNotification implements Notification {
   @IsOptional()
   createdByFullName?: string;
   @IsString()
-  type: string;
+  type!: string;
   @IsString()
-  description: string;
+  description!: string;
   @IsString()
   @IsOptional()
   content?: string;
@@ -242,7 +242,7 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CSupportStakeholder)
-  stakeholders: CSupportStakeholder[];
+  stakeholders!: CSupportStakeholder[];
   @IsString()
   @IsOptional()
   priority?: SupportPriority;
@@ -250,12 +250,12 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CExternalTag)
-  externalTags: ExternalTag[];
+  externalTags!: ExternalTag[];
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
-  parameters: Parameter[];
+  parameters!: Parameter[];
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -325,15 +325,15 @@ export class SupportErrandDto implements Partial<SupportErrand> {
 
 class ForwardFormDto {
   @IsString()
-  recipient: string;
+  recipient!: string;
   @IsArray()
-  emails: { value: string }[];
+  emails!: { value: string }[];
   @IsString()
-  department: 'MEX';
+  department!: 'MEX';
   @IsString()
-  message: string;
+  message!: string;
   @IsString()
-  messageBodyPlaintext: string;
+  messageBodyPlaintext!: string;
 }
 
 export enum SupportStakeholderRole {
@@ -456,7 +456,7 @@ export class SupportErrandController {
   }
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
-    const customer: SupportStakeholder & { personNumber?: string } = errandData.stakeholders.find(s => s.role === SupportStakeholderRole.PRIMARY);
+    const customer: (SupportStakeholder & { personNumber?: string }) | undefined = errandData.stakeholders?.find(s => s.role === SupportStakeholderRole.PRIMARY);
     if (
       customer &&
       customer.externalId &&
@@ -470,7 +470,7 @@ export class SupportErrandController {
       customer.personNumber = personNumberRes.data;
     }
     const contacts: (SupportStakeholder & { personNumber?: string })[] =
-      errandData.stakeholders.filter(s => s.role !== SupportStakeholderRole.PRIMARY) || [];
+      errandData.stakeholders?.filter(s => s.role !== SupportStakeholderRole.PRIMARY) || [];
     const contactsPromises = contacts.map(contact => {
       if (
         contact &&
@@ -835,7 +835,7 @@ export class SupportErrandController {
     }
 
     const stakeholders: CasedataStakeholderDTO[] = [];
-    existingSupportErrand.data.stakeholders.forEach((s: SupportStakeholder) => {
+    (existingSupportErrand.data.stakeholders ?? []).forEach((s: SupportStakeholder) => {
       if (!s.firstName && !s.organizationName) {
         console.error('Missing required fields for stakeholder');
         logger.error('Missing required fields for stakeholder');
@@ -867,8 +867,8 @@ export class SupportErrandController {
               ]
             : [],
           contactInformation:
-            s.contactChannels?.length > 0
-              ? s.contactChannels.map(c =>
+            (s.contactChannels?.length ?? 0) > 0
+              ? (s.contactChannels ?? []).map(c =>
                   c.type === ContactChannelType.PHONE
                     ? {
                         contactType: ContactInformationContactTypeEnum.PHONE,
@@ -880,7 +880,7 @@ export class SupportErrandController {
                         value: c.value,
                       }
                     : null,
-                )
+                ).filter((x): x is NonNullable<typeof x> => x !== null)
               : [],
           firstName: '',
           lastName: '',
@@ -903,8 +903,8 @@ export class SupportErrandController {
               ]
             : [],
           contactInformation:
-            s.contactChannels?.length > 0
-              ? s.contactChannels.map(c =>
+            (s.contactChannels?.length ?? 0) > 0
+              ? (s.contactChannels ?? []).map(c =>
                   c.type === ContactChannelType.PHONE
                     ? {
                         contactType: ContactInformationContactTypeEnum.PHONE,
@@ -916,7 +916,7 @@ export class SupportErrandController {
                         value: c.value,
                       }
                     : null,
-                )
+                ).filter((x): x is NonNullable<typeof x> => x !== null)
               : [],
           firstName: s.firstName,
           lastName: s.lastName ? s.lastName : '',
@@ -957,7 +957,7 @@ export class SupportErrandController {
         casedataChannel = CasedataErrandDtoChannelEnum.EMAIL;
     }
     const facilities = [] as FacilityDTO[];
-    const estates = existingSupportErrand.data.parameters.filter(obj => obj.key === 'propertyDesignation')[0]?.values;
+    const estates = (existingSupportErrand.data.parameters ?? []).filter(obj => obj.key === 'propertyDesignation')[0]?.values;
 
     estates?.forEach(facility => {
       facilities.push({
@@ -981,7 +981,7 @@ export class SupportErrandController {
           description: ErrandStatus.ArendeInkommit,
         },
       ],
-      extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber] }],
+      extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber!] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
@@ -1022,11 +1022,11 @@ export class SupportErrandController {
         const dto: CreateAttachmentDto = {
           file: b64,
           category: 'OTHER',
-          extension: attachmentData.fileName.split('.').pop(),
-          mimeType: attachmentData.mimeType,
-          name: attachmentData.fileName,
+          extension: attachmentData.fileName!.split('.').pop()!,
+          mimeType: attachmentData.mimeType!,
+          name: attachmentData.fileName!,
           note: '',
-          errandNumber: errand.errandNumber,
+          errandNumber: errand.errandNumber!,
         };
         return dto;
       });

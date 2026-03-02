@@ -1,15 +1,15 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isMEX } from '@common/services/application-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface CaseStatusFilter {
   status: string[];
 }
 
-export const CaseStatusValues = {
+export const CaseStatusValues: CaseStatusFilter = {
   status: [],
 };
 
@@ -20,7 +20,7 @@ export const CasedataFilterStatus: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Status-filter"
         variant="tertiary"
         showBackground={false}

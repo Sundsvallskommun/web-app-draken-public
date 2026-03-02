@@ -8,6 +8,22 @@ import { useFieldArray } from 'react-hook-form';
 
 type size = 'sm' | 'md' | 'lg';
 
+interface CommonNestedEmailArrayV2Props {
+  errand: any;
+  register: any;
+  errors: any;
+  watch: any;
+  setValue: any;
+  disabled?: boolean;
+  trigger: any;
+  control: any;
+  required?: boolean;
+  error?: boolean;
+  addingStakeholder?: boolean;
+  size?: string;
+  [key: string]: any;
+}
+
 const CommonNestedEmailArrayV2 = ({
   errand,
   register,
@@ -21,10 +37,10 @@ const CommonNestedEmailArrayV2 = ({
   error = false,
   addingStakeholder = false,
   size = 'sm',
-}) => {
+}: CommonNestedEmailArrayV2Props) => {
   const { emails, existingEmail, newEmail } = watch();
   const { supportMetadata }: AppContextInterface = useAppContext();
-  const { fields, remove, append } = useFieldArray({
+  const { fields, remove, append } = useFieldArray<{ emails: { value: string }[] }>({
     control,
     name: 'emails',
   });
@@ -35,25 +51,25 @@ const CommonNestedEmailArrayV2 = ({
     const stakeholders: { email: string; role: string[] }[] = [];
 
     if (appConfig.isCaseData) {
-      errand?.stakeholders?.map((stakeholder) => {
+      errand?.stakeholders?.map((stakeholder: any) => {
         if (stakeholder?.emails?.length) {
-          stakeholder?.emails?.map((email) => {
+          stakeholder?.emails?.map((email: any) => {
             stakeholders.push({
-              email: email.value ?? [],
-              role: PrettyRole[stakeholder?.roles[0]] ?? [],
+              email: email.value ?? '',
+              role: [(PrettyRole as Record<string, string>)[stakeholder?.roles[0]] ?? ''],
             });
           });
         }
       });
     } else {
-      errand?.stakeholders?.map((stakeholder) => {
+      errand?.stakeholders?.map((stakeholder: any) => {
         if (stakeholder?.contactChannels?.length) {
-          stakeholder?.contactChannels?.map((channel) => {
+          stakeholder?.contactChannels?.map((channel: any) => {
             if (channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email) {
               const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
               stakeholders.push({
                 email: channel?.value ?? [],
-                role: [role],
+                role: [role ?? ''],
               });
             }
           });
@@ -136,7 +152,7 @@ const CommonNestedEmailArrayV2 = ({
         <>
           {!addingStakeholder && <strong>Ditt meddelande har {emails?.length} mottagare</strong>}
           <div className="flex items-center w-full flex-wrap justify-start gap-md">
-            {fields?.map((field: { id: string; value: string }, index: number) => {
+            {fields?.map((field, index) => {
               return (
                 <div key={`chip-${index}`}>
                   <span className="sr-only">Tillagd epostadress</span>

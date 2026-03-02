@@ -11,7 +11,6 @@ import {
 } from '@casedata/services/contract-service';
 import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Checkbox,
@@ -26,10 +25,11 @@ import {
   Table,
   Textarea,
 } from '@sk-web-gui/react';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractAttachments } from './contract-attachments';
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
+import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
 
 export const ContractForm: React.FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -60,8 +60,7 @@ export const ContractForm: React.FC<{
     municipalityId,
     errand,
     user,
-  }: { municipalityId: string; errand: IErrand; user: User; setErrand: Dispatch<SetStateAction<IErrand>> } =
-    useAppContext();
+  } = useAppContext();
   const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
     useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
@@ -92,7 +91,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     lessees.forEach(async (s: StakeholderWithPersonnumber) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(municipalityId, s.partyId ?? '');
       s.personalNumber = ssn;
       setValue('lessees', lessees);
     });
@@ -107,7 +106,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     lessors.forEach(async (s: StakeholderWithPersonnumber) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(municipalityId, s.partyId ?? '');
       s.personalNumber = ssn;
       setValue('lessors', lessors);
     });
@@ -122,7 +121,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     buyers.forEach(async (b: StakeholderWithPersonnumber, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, b.partyId);
+      const ssn = await getSSNFromPersonId(municipalityId, b.partyId ?? '');
       b.personalNumber = ssn;
       setValue('buyers', buyers);
     });
@@ -137,7 +136,7 @@ export const ContractForm: React.FC<{
 
   useEffect(() => {
     sellers.forEach(async (s: StakeholderWithPersonnumber, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId);
+      const ssn = await getSSNFromPersonId(municipalityId, s.partyId ?? '');
       s.personalNumber = ssn;
       setValue('sellers', sellers);
     });
@@ -180,20 +179,20 @@ export const ContractForm: React.FC<{
     if (existingContract) {
       if (isLeaseAgreement(existingContract.type)) {
         // Find index for lessee and lessor notices
-        const lesseeIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSEE');
-        const lessorIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSOR');
+        const lesseeIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSEE') ?? -1;
+        const lessorIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSOR') ?? -1;
         setLesseeNoticeIndex(lesseeIndex === -1 ? 0 : lesseeIndex);
         setLessorNoticeIndex(lessorIndex === -1 ? 1 : lessorIndex);
 
         // Find index for InvoiceInfo extraparameter
-        const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo');
-        setInvoiceInfoIndex(_invoiceInfoIndex === -1 ? existingContract.extraParameters.length : _invoiceInfoIndex);
+        const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo') ?? -1;
+        setInvoiceInfoIndex(_invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
-  const toPropertyDesignation = (pd) => (pd.name ? pd.name : pd);
+  const toPropertyDesignation = (pd: { name?: string } | string): string => (typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '');
 
   const saveButton = () => {
     if (readOnly) return null;
@@ -209,8 +208,8 @@ export const ContractForm: React.FC<{
               onClick={handleSubmit(
                 () => {
                   setLoading(true);
-                  onSave({ ...getValues() }).then(() => {
-                    setLoading(undefined);
+                  onSave?.({ ...getValues() }).then(() => {
+                    setLoading(false);
                   });
                 },
                 (e) => {
@@ -269,8 +268,8 @@ export const ContractForm: React.FC<{
                 )}
               </Table.Column>
               <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-role`}>
-                {b.roles?.length > 0 ? (
-                  b.roles
+                {(b.roles?.length ?? 0) > 0 ? (
+                  (b.roles ?? [])
                     .filter((r) => r !== StakeholderRole.CONTACT_PERSON)
                     .map((role, idx) => <div key={`role-${idx}`}>{prettyContractRoles[role]}</div>)
                 ) : (
@@ -299,7 +298,7 @@ export const ContractForm: React.FC<{
           data-cy="non-draft-warning-banner"
           className="flex h-auto w-full gap-12 rounded-[1.6rem] bg-warning-background-100 p-12 mb-[2.5rem] border-1 border-warning-surface-primary"
         >
-          <LucideIcon color="primary" name="info" className="w-20 h-20 shrink-0" />
+          <Info className="text-primary w-20 h-20 shrink-0" />
           <span className="text-primary text-md leading-[1.8rem] font-normal font-sans break-words flex-1 min-w-0">
             <p className="mt-0">
               Avtalet är inte längre ett utkast. Endast fakturareferens och fakturamottagare kan ändras.
@@ -317,7 +316,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="users" />} />
+          <Disclosure.Icon icon={<Users />} />
           <Disclosure.Title>Parter</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -339,7 +338,7 @@ export const ContractForm: React.FC<{
                 <Button
                   size="sm"
                   data-cy="update-contract-parties"
-                  rightIcon={<LucideIcon name="refresh-ccw" />}
+                  rightIcon={<RefreshCcw />}
                   variant="secondary"
                   loading={updatingParties}
                   loadingText="Uppdaterar"
@@ -396,7 +395,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
+          <Disclosure.Icon icon={<MapPin />} />
           <Disclosure.Title>Område</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -408,18 +407,18 @@ export const ContractForm: React.FC<{
                   Ange vilka fastighet/er som området ligger på{' '}
                   <span className="font-normal">(hämtad från uppgifter)</span>
                 </FormLabel>
-                {errand?.facilities?.length > 0 || existingContract?.propertyDesignations.length > 0 ? (
+                {(errand?.facilities?.length ?? 0) > 0 || (existingContract?.propertyDesignations?.length ?? 0) > 0 ? (
                   <Checkbox.Group
                     data-cy="property-designation-checkboxgroup"
                     name="propertyDesignations"
-                    value={watch().propertyDesignations.map((pd) => pd.name)}
+                    value={(watch().propertyDesignations ?? []).map((pd) => pd.name)}
                     onChange={(e) => {
                       if (!isEditable('general')) return;
                       const totalPropertyDesignations = [
                         ...(errandPropertyDesignations ?? []),
                         ...(existingContract?.propertyDesignations || []),
                       ];
-                      const selected = e.map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName));
+                      const selected = e.map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName)).filter((pd): pd is { name: string; district?: string } => !!pd);
                       setValue('propertyDesignations', selected);
                     }}
                   >
@@ -466,7 +465,7 @@ export const ContractForm: React.FC<{
           }}
         >
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
+            <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Avtalsstartdatum</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -492,15 +491,15 @@ export const ContractForm: React.FC<{
           data-cy="avtalstid-disclosure"
           color="gronsta"
           variant="alt"
-          initalOpen={formState.errors.notice?.terms?.length > 0}
+          initalOpen={(formState.errors.notice?.terms?.length ?? 0) > 0}
           onClick={() => {
             changeBadgeColor?.(`badge-avtalstid`);
           }}
         >
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="calendar" />} />
+            <Disclosure.Icon icon={<Calendar />} />
             <Disclosure.Title>Avtalstid och uppsägning</Disclosure.Title>
-            {formState.errors.notice?.terms?.length > 0 ||
+            {(formState.errors.notice?.terms?.length ?? 0) > 0 ||
               (formState.errors.extension?.leaseExtension && (
                 <Label className="w-[15rem]" rounded inverted color={'error'}>
                   Fel i formulär
@@ -615,7 +614,7 @@ export const ContractForm: React.FC<{
               <div className="flex justify-between gap-32 items-end mb-md">
                 <FormControl
                   className="flex-grow"
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     if (!isEditable('general')) return;
                     setValue('extension.autoExtend', e.target.value === 'true');
                     trigger();
@@ -680,7 +679,7 @@ export const ContractForm: React.FC<{
           }}
         >
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="wallet" />} />
+            <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Löpande avgift</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -723,9 +722,9 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
-                        setValue('indexAdjusted', e.target.value);
+                        setValue('indexAdjusted', e.target.value as 'true' | 'false');
                       }}
                     >
                       <FormLabel>Ska detta avtal indexregleras?</FormLabel>
@@ -752,9 +751,9 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
-                        setValue('invoicing.invoiceInterval', e.target.value);
+                        setValue('invoicing.invoiceInterval', e.target.value as IntervalType);
                       }}
                     >
                       <FormLabel>Avgift ska betalas</FormLabel>
@@ -855,7 +854,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="receipt" />} />
+          <Disclosure.Icon icon={<Receipt />} />
           <Disclosure.Title>Fakturor</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>
@@ -872,7 +871,7 @@ export const ContractForm: React.FC<{
         }}
       >
         <Disclosure.Header>
-          <Disclosure.Icon icon={<LucideIcon name="file-pen" />} />
+          <Disclosure.Icon icon={<FilePen />} />
           <Disclosure.Title>Avtalsbilagor</Disclosure.Title>
           <Disclosure.Button />
         </Disclosure.Header>

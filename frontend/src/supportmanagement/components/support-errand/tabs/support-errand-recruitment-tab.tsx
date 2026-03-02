@@ -1,10 +1,10 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import React, { useEffect } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
+import { Type } from 'lucide-react';
 
 export const SupportErrandRecruitmentTab: React.FC<{
   update: () => void;
@@ -21,14 +21,14 @@ export const SupportErrandRecruitmentTab: React.FC<{
   const errandForm = useFormContext<{ [key: string]: Parameter[] }>();
 
   useEffect(() => {
-    const ps = getRecruitmentParameters(supportErrand);
+    const ps = getRecruitmentParameters(supportErrand as any);
     setParameters(ps);
     recruitmentForm.reset(structuredClone(ps));
   }, [supportErrand, recruitmentForm]);
 
   const handleSubmit = async () => {
     setLoading(true);
-    await saveParameters(supportErrand.id, '2281', recruitmentForm.getValues()).then((res) => {
+    await saveParameters(supportErrand!.id!, '2281', recruitmentForm.getValues()).then((res) => {
       setLoading(false);
       return res;
     });
@@ -70,7 +70,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
             return (
               <Disclosure key={`disclosure-${key}`} variant="alt">
                 <Disclosure.Header>
-                  <Disclosure.Icon icon={<LucideIcon name="text" />} />
+                  <Disclosure.Icon icon={<Type />} />
                   <Disclosure.Title>{param[0].displayName}</Disclosure.Title>
                   {param.every((p, p_idx) => recruitmentForm.getValues(`${key}.${p_idx}.values.1`) === 'true') && (
                     <Label rounded inverted color="gronsta">
@@ -94,7 +94,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                           {val.group}
                         </FormLabel>
                         <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
-                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`)) ? (
+                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`) ?? '') ? (
                           <Checkbox
                             defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
                             onChange={(e) => {
@@ -105,7 +105,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                             }}
                             className="mb-16"
                           >
-                            {val.values[0]}
+                            {val.values?.[0]}
                           </Checkbox>
                         ) : null}
 

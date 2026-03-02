@@ -5,10 +5,10 @@ import {
   invoiceStatusLabels,
 } from '@casedata/services/contract-service';
 import { formatCurrency, prettyTime } from '@common/services/helper-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
 
 interface ContractInvoicesTableProps {
   contractId?: string;
@@ -121,7 +121,7 @@ export const ContractInvoicesTable: React.FC<ContractInvoicesTableProps> = ({ co
                   disabled
                   title="Hämta pdf (kommande funktion)"
                 >
-                  <LucideIcon name="download" size={16} />
+                  <Download size={16} />
                   <span className="ml-sm">Hämta pdf</span>
                 </Button>
               </Table.Column>

@@ -4,11 +4,11 @@ import { getImageAspect } from '@casedata/services/casedata-attachment-service';
 import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, Image } from '@sk-web-gui/react';
 import { useRef, useState } from 'react';
 import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { ArrowLeft, Check, CircleX } from 'lucide-react';
 
 export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
   props
@@ -35,7 +35,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
     const rotationCanvas = document.createElement('canvas');
     rotationCanvas.width = image.naturalWidth;
     rotationCanvas.height = image.naturalHeight;
-    const rotationCtx = rotationCanvas.getContext('2d');
+    const rotationCtx = rotationCanvas.getContext('2d')!;
     rotationCtx.translate(rotationCanvas.width / 2, rotationCanvas.height / 2);
     rotationCtx.rotate((rotate * Math.PI) / 180);
     rotationCtx.translate(-rotationCanvas.width / 2, -rotationCanvas.height / 2);
@@ -57,7 +57,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
     const scale = Math.min(MAX_SIZE / crop.width, MAX_SIZE / crop.height, 1);
     croppedCanvas.width = scale * crop.width;
     croppedCanvas.height = scale * crop.height;
-    const croppedCtx = croppedCanvas.getContext('2d');
+    const croppedCtx = croppedCanvas.getContext('2d')!;
     croppedCtx.fillStyle = '#fff';
     croppedCtx.fillRect(0, 0, croppedCanvas.width, croppedCanvas.height);
     croppedCtx.drawImage(
@@ -109,7 +109,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
   }
 
   function onSave() {
-    saveCroppedImage(municipalityId, props.errand.id, props.attachment, blob);
+    saveCroppedImage(municipalityId, props.errand.id, props.attachment, blob!);
   }
 
   useDebounceEffect(
@@ -138,8 +138,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
                 className="w-80"
                 onChange={(e) => setRotate(Math.min(180, Math.max(-180, Number(e.target.value))))}
               />
-              <LucideIcon
-                name="circle-x"
+              <CircleX
                 className={cx(
                   `absolute -right-1 ${rotate === 0 ? 'cursor-disabled text-gray-400' : 'cursor-pointer text-black'}`
                 )}
@@ -176,7 +175,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
                 onClick={() => {
                   setSave(false);
                 }}
-                leftIcon={<LucideIcon name="arrow-left" />}
+                leftIcon={<ArrowLeft />}
               >
                 Ångra
               </Button>
@@ -195,7 +194,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
                     }, 250);
                   }, 1000);
                 }}
-                leftIcon={<LucideIcon name="check" />}
+                leftIcon={<Check />}
               >
                 Ja, spara
               </Button>
@@ -212,7 +211,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
               onClick={() => {
                 setSave(true);
               }}
-              leftIcon={<LucideIcon name="check" />}
+              leftIcon={<Check />}
             >
               Spara
             </Button>

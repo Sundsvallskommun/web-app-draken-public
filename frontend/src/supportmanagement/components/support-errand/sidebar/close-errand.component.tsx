@@ -4,9 +4,8 @@ import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Checkbox, FormControl, Icon, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { ArrowRight, Check } from 'lucide-react';
+import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import {
   Resolution,
   ResolutionLabelIK,
@@ -24,23 +23,14 @@ import { sendClosingMessage } from '@supportmanagement/services/support-message-
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 
 const getDefaultResolution = (): Resolution => {
   return appConfig.features.useClosedAsDefaultResolution ? Resolution.CLOSED : Resolution.SOLVED;
 };
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    administrators,
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-  }: {
-    administrators: Admin[];
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-  } = useAppContext();
+  const { administrators, municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -53,12 +43,12 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
 
   const handleCloseErrand = (resolution: Resolution, msg: boolean) => {
     setIsLoading(true);
-    return closeSupportErrand(supportErrand.id, municipalityId, resolution)
+    return closeSupportErrand(supportErrand!.id!, municipalityId, resolution)
       .then(() => {
         if (msg) {
-          const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
-          const adminName = getAdminName(admin);
-          return sendClosingMessage(adminName, supportErrand, municipalityId);
+          const admin = administrators.find((a) => a.adAccount === supportErrand!.assignedUserId);
+          const adminName = getAdminName(admin!);
+          return sendClosingMessage(adminName, supportErrand!, municipalityId);
         }
       })
       .then(() => {
@@ -72,7 +62,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           window.close();
         }, 2000);
         setIsLoading(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e) => {
         toastMessage({
@@ -92,7 +82,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         className="w-full"
         color="vattjom"
         data-cy="solved-button"
-        leftIcon={<LucideIcon name="check" />}
+        leftIcon={<Check />}
         variant={
           !!(supportErrand?.status as Status) &&
           [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(
@@ -142,20 +132,16 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               <SupportStatusLabelComponent status={'SOLVED'} resolution={supportErrand?.resolution} />
             </div>
             <div className="flex flex-row gap-10 mt-40">
-              <Button
-                variant="secondary"
-                rightIcon={<LucideIcon name="arrow-right" />}
-                onClick={() => setChangeResolution(true)}
-              >
+              <Button variant="secondary" rightIcon={<ArrowRight />} onClick={() => setChangeResolution(true)}>
                 Ändra lösningskod
               </Button>
               <Button
                 variant="primary"
                 color="vattjom"
-                leftIcon={<LucideIcon name="check" />}
+                leftIcon={<Check />}
                 onClick={async () => {
                   try {
-                    await setSupportErrandStatus(supportErrand.id, municipalityId, Status.SOLVED);
+                    await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
                     window.close();
                   } catch (e) {
                     toastMessage({
@@ -208,10 +194,10 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                 <FormControl id="closingmessage" className="w-full mb-sm px-2">
                   <Checkbox
                     id="closingmessagecheckbox"
-                    disabled={!applicantHasContactChannel(supportErrand)}
+                    disabled={!applicantHasContactChannel(supportErrand!)}
                     data-cy="show-contactReasonDescription-input"
                     className="w-full"
-                    checked={applicantHasContactChannel(supportErrand) && closingMessage}
+                    checked={applicantHasContactChannel(supportErrand!) && closingMessage}
                     onChange={() => setClosingMessage(!closingMessage)}
                   >
                     Skicka meddelande till ärendeägare

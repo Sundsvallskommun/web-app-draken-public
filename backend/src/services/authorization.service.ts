@@ -3,10 +3,10 @@ import { AUTHORIZED_GROUPS } from '@config';
 import { InternalRole, Permissions } from '@interfaces/users.interface';
 import { roleADMapping } from './ad-role.service';
 
-export function authorizeGroups(groups) {
+export function authorizeGroups(groups: string) {
   logger.info(`authorizing groups ${groups}`);
   logger.info(`against ${AUTHORIZED_GROUPS}`);
-  const authorizedGroupsList = AUTHORIZED_GROUPS.split(',');
+  const authorizedGroupsList = AUTHORIZED_GROUPS!.split(',');
   const groupsList = groups.split(',').map((g: string) => g.toLowerCase());
   return authorizedGroupsList.some(authorizedGroup => groupsList.includes(authorizedGroup.toLowerCase()));
 }
@@ -74,10 +74,10 @@ export const getPermissions = (groups: InternalRole[] | string[], internalGroups
     const groupLower = group.toLowerCase();
     const role = internalGroups ? (groupLower as InternalRole) : (roleADMapping[groupLower] as InternalRole);
     if (roles.has(role)) {
-      const groupPermissions = roles.get(role);
-      Object.keys(groupPermissions).forEach(permission => {
+      const groupPermissions = roles.get(role)!;
+      (Object.keys(groupPermissions) as Array<keyof Permissions>).forEach(permission => {
         if (groupPermissions[permission] === true) {
-          permissions[permission] = true;
+          permissions[permission] = true as Permissions[typeof permission];
         }
       });
     }

@@ -1,7 +1,7 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, PopupMenu } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface CasePropertyDesignationFilter {
   propertyDesignation: string;
@@ -24,7 +24,7 @@ export const CasedataFilterPropertyDesignation: React.FC = () => {
   return (
     <PopupMenu type="dialog" open={open} onToggleOpen={setOpen}>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Fastighetsbeteckning-filter"
         variant="tertiary"
         showBackground={false}

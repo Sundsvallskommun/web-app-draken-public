@@ -50,7 +50,7 @@ export const TwoLevelCategorization: React.FC = () => {
           </FormLabel>
           <Select
             {...register('category')}
-            disabled={isSupportErrandLocked(supportErrand)}
+            disabled={isSupportErrandLocked(supportErrand!)}
             data-cy="category-input"
             className="w-full text-dark-primary"
             variant="primary"
@@ -58,14 +58,14 @@ export const TwoLevelCategorization: React.FC = () => {
             value={getValues().category}
             onChange={(e) => {
               setValue('category', e.currentTarget.value, { shouldDirty: true });
-              setValue('type', undefined, { shouldDirty: true });
+              setValue('type', undefined as any, { shouldDirty: true });
               trigger('category');
               trigger('type');
             }}
           >
             <Select.Option value="">Välj ärendekategori</Select.Option>
             {categoriesList
-              ?.sort((a, b) => a.displayName.localeCompare(b.displayName))
+              ?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
               .map((categori) => (
                 <Select.Option value={categori.name} key={`categori-${categori.name}`}>
                   {categori.displayName}
@@ -89,7 +89,7 @@ export const TwoLevelCategorization: React.FC = () => {
           </FormLabel>
           <Select
             {...register('type')}
-            disabled={isSupportErrandLocked(supportErrand)}
+            disabled={isSupportErrandLocked(supportErrand!)}
             data-cy="type-input"
             className="w-full text-dark-primary"
             variant="primary"

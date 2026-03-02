@@ -7,6 +7,7 @@ import {
   getSupportErrandById,
 } from '@supportmanagement/services/support-errand-service';
 import { useFormContext } from 'react-hook-form';
+import { ArrowRight } from 'lucide-react';
 
 export const StartProcessComponent: React.FC<{
   disabled: boolean;
@@ -21,11 +22,11 @@ export const StartProcessComponent: React.FC<{
     try {
       await onSubmit();
 
-      if (!supportErrand.assignedUserId) {
+      if (!supportErrand!.assignedUserId) {
         const currentAdmin = administrators.find((a) => a.adAccount === user.username);
         if (currentAdmin) {
           await setSupportErrandAdmin(
-            supportErrand.id,
+            supportErrand!.id!,
             municipalityId,
             currentAdmin.adAccount,
             Status.ONGOING,
@@ -34,9 +35,9 @@ export const StartProcessComponent: React.FC<{
         }
       }
 
-      await setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING);
+      await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING);
 
-      const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+      const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);
       setSupportErrand(updated.errand);
       reset(updated.errand);
 
@@ -59,6 +60,7 @@ export const StartProcessComponent: React.FC<{
       onClick={handleSubmit(handleStartProcess, onError)}
       variant="primary"
       color="vattjom"
+      rightIcon={<ArrowRight size={18} />}
     >
       Starta handläggning
     </Button>

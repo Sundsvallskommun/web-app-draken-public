@@ -1,6 +1,6 @@
 import { isROB } from '@common/services/application-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import {
   Resolution,
   ResolutionLabelROB,
@@ -94,7 +94,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
 
     if (status === Status.SOLVED && resolution) {
       if (isRob) {
-        return ResolutionLabelROB[resolution as Resolution] ?? 'Löst';
+        return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
       }
 
       switch (resolution) {
@@ -110,12 +110,18 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
     }
 
     return isRob
-      ? StatusLabelROB[status as Status] ?? 'Status saknas'
-      : StatusLabel[status as Status] ?? 'Status saknas';
+      ? (StatusLabelROB as Record<string, string>)[status] ?? 'Status saknas'
+      : (StatusLabel as Record<string, string>)[status] ?? 'Status saknas';
   };
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-      {icon ? <LucideIcon name={icon} size={16} /> : null} {solvedErrandText()}
+      {icon
+        ? (() => {
+            const DynIcon = iconMap[icon];
+            return DynIcon ? <DynIcon size={16} /> : undefined;
+          })()
+        : null}{' '}
+      {solvedErrandText()}
     </Label>
   );
 };

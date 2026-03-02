@@ -17,7 +17,7 @@ interface SupportContactSearchModeSelectorProps {
   id: string;
   label: string;
   setSearchMode: React.Dispatch<React.SetStateAction<string>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult>>;
+  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
   setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
   setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
   replacePhonenumbers: UseFieldArrayReplace<SupportStakeholderFormModel, 'phoneNumbers'>;
@@ -43,7 +43,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
     form.setValue('zipCode', '');
     form.setValue('careOf', '');
     form.setValue('address', '');
-    setSearchResult(undefined);
+    setSearchResult(false);
     setSearchResultArray([]);
     setSelectedUser(undefined);
   };

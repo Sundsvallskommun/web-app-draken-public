@@ -4,11 +4,11 @@ import { Note as NoteDTO, NoteType } from '@/data-contracts/case-data/data-contr
 
 export class CreateErrandNoteDto implements NoteDTO {
   @IsObject()
-  extraParameters: GenericExtraParameters;
+  extraParameters!: GenericExtraParameters;
   @IsString()
-  title: string;
+  title!: string;
   @IsString()
-  text: string;
+  text!: string;
   @IsString()
-  noteType: NoteType;
+  noteType!: NoteType;
 }

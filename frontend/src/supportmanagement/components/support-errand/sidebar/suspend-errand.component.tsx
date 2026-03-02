@@ -1,7 +1,6 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import {
   Status,
@@ -13,6 +12,7 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { CirclePause } from 'lucide-react';
 
 const yupSuspendForm = yup.object().shape({
   date: yup.string().required('Datum är obligatoriskt'),
@@ -31,10 +31,6 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     municipalityId,
     supportErrand,
     setSupportErrand,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
   } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
@@ -53,7 +49,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
 
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
-    return setSuspension(supportErrand.id, municipalityId, Status.SUSPENDED, data.date, data.comment)
+    return setSuspension(supportErrand!.id!, municipalityId, Status.SUSPENDED, data.date, data.comment)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -63,7 +59,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         );
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e) => {
         toastMessage({
@@ -85,7 +81,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             className="w-full"
             color="vattjom"
             data-cy="suspend-button"
-            leftIcon={<LucideIcon name="circle-pause" />}
+            leftIcon={<CirclePause />}
             variant="secondary"
             disabled={disabled}
             onClick={() => setShowModal(true)}

@@ -217,13 +217,13 @@ export const emptyErrand: Partial<IErrand> = {
   caseType: '',
   channel: Channels.WEB_UI,
   description: '',
-  municipalityId: defaultMunicipality.id,
+  municipalityId: defaultMunicipality!.id,
   phase: ErrandPhase.aktualisering,
   priority: Priority.MEDIUM,
   status: { statusType: ErrandStatus.ArendeInkommit },
 };
 
-export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId) => {
+export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId): IErrand => {
   const administrator = getLastUpdatedAdministrator(e.stakeholders);
   try {
     const ierrand: IErrand = {
@@ -231,15 +231,15 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       externalCaseId: e.externalCaseId,
       errandNumber: e.errandNumber,
       caseType: e.caseType,
-      label: findCaseLabelForCaseType(CaseTypes.ALL[e.caseType]),
+      label: findCaseLabelForCaseType((CaseTypes.ALL as Record<string, string>)[e.caseType]),
       description: sanitized(e?.description) || '',
       administrator: administrator,
       administratorName: administrator ? `${administrator.firstName} ${administrator.lastName}` : '',
-      priority: Priority[e.priority as Priority],
+      priority: (Priority as Record<string, string>)[e.priority as string],
       status: e.status,
       statuses: e.statuses,
       phase: e.phase,
-      channel: e.channel ? Channels[e.channel] : Channels.WEB_UI,
+      channel: e.channel ? ((Channels as Record<string, string>)[e.channel] as Channels) : Channels.WEB_UI,
       municipalityId: e.municipalityId || municipalityId,
       stakeholders: (e.stakeholders ?? []).map(stakeholder2Contact),
       facilities: e.facilities,
@@ -261,8 +261,9 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
       relatesTo: e.relatesTo,
     };
     return ierrand;
-  } catch (e) {
-    console.error('Error: could not map errands.', e);
+  } catch (err) {
+    console.error('Error: could not map errands.', err);
+    throw err;
   }
 };
 
@@ -290,7 +291,7 @@ export const getErrand: (municipalityId: string, id: string) => Promise<{ errand
     })
     .catch(
       (e) =>
-        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as { errand: IErrand; error?: string })
+        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as unknown as { errand: IErrand; error?: string })
     );
 };
 
@@ -303,7 +304,7 @@ export const getErrandByErrandNumber: (
     .get<ApiResponse<ApiErrand>>(url)
     .then(async (res: any) => {
       const errand = mapErrandToIErrand(res.data.data, municipalityId);
-      let error: string;
+      let error: string | undefined;
       const errandAttachments = await fetchErrandAttachments(municipalityId, errand.id);
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
@@ -311,7 +312,7 @@ export const getErrandByErrandNumber: (
       errand.attachments = errandAttachments.data;
       return { errand, ...(error && { error }) };
     })
-    .catch((e) => ({ errand: undefined, error: 'Ärende kunde inte hämtas' } as { errand: IErrand; error?: string }));
+    .catch((e) => ({ errand: undefined, error: 'Ärende kunde inte hämtas' } as unknown as { errand: IErrand; error?: string }));
 };
 
 export const getErrands: (
@@ -322,7 +323,7 @@ export const getErrands: (
   sort?: { [key: string]: 'asc' | 'desc' },
   extraParameters?: { [key: string]: string }
 ) => Promise<ErrandsData> = (
-  municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
+  municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID ?? '',
   page = 0,
   size = 8,
   filter = {},
@@ -437,7 +438,7 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setNewErrands(res.totalElements);
+            setNewErrands(res.totalElements ?? 0);
           })
           .catch((err) => {
             setNewErrands(0);
@@ -460,7 +461,7 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setOngoingErrands(res.totalElements);
+            setOngoingErrands(res.totalElements ?? 0);
           })
           .catch((err) => {
             setOngoingErrands(0);
@@ -483,7 +484,7 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setSuspendedErrands(res.totalElements);
+            setSuspendedErrands(res.totalElements ?? 0);
           })
           .catch((err) => {
             setSuspendedErrands(0);
@@ -506,7 +507,7 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setAssignedErrands(res.totalElements);
+            setAssignedErrands(res.totalElements ?? 0);
           })
           .catch((err) => {
             setAssignedErrands(0);
@@ -529,7 +530,7 @@ export const useErrands = (
           sort
         )
           .then((res) => {
-            setClosedErrands(res.totalElements);
+            setClosedErrands(res.totalElements ?? 0);
           })
           .catch((err) => {
             setClosedErrands(0);
@@ -590,11 +591,11 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
   const e: Partial<RegisterErrandData> = {
     ...(data.id && { id: data.id?.toString() }),
     ...(data.errandNumber && { errandNumber: data.errandNumber }),
-    ...(data.priority && { priority: ApiPriority[data.priority] }),
+    ...(data.priority && { priority: (ApiPriority as Record<string, string>)[data.priority] }),
     ...(data.caseType && { caseType: data.caseType }),
-    ...(data.channel && { channel: ApiChannels[data.channel] }),
+    ...(data.channel && { channel: (ApiChannels as Record<string, string>)[data.channel] }),
     ...(data.description && { description: data.description }),
-    ...(data.caseType && { caseTitleAddition: CaseLabels.ALL[data.caseType] }),
+    ...(data.caseType && { caseTitleAddition: (CaseLabels.ALL as Record<string, string>)[data.caseType] }),
     ...(data.status && { status: data.status }),
     ...(data.statuses && { statuses: data.statuses }),
     ...(data.phase && { phase: data.phase }),
@@ -673,7 +674,7 @@ export const saveCroppedImage = async (
     category: attachment.category,
     name: attachment.name,
     note: '',
-    extension: attachment.name.split('.').pop(),
+    extension: attachment.name.split('.').pop() ?? '',
     mimeType: attachment.mimeType,
     file: blob64.split(',')[1],
   };
@@ -719,7 +720,7 @@ export const updateErrandStatus = async (municipalityId: string, id: string, sta
 };
 
 export const validateStatusForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
-  return { valid: true, reason: e.status?.statusType };
+  return { valid: true, reason: e.status?.statusType ?? '' };
 };
 
 export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
@@ -730,15 +731,15 @@ export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; 
 };
 
 export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
-  const extraParameterLabels = extraParametersToUppgiftMapper(e).reduce((acc, curr) => {
+  const extraParameterLabels = (extraParametersToUppgiftMapper(e) ?? []).reduce((acc, curr) => {
     {
-      if (curr.field && curr.label) {
+      if (curr?.field && curr?.label) {
         acc[curr.field] = curr.label;
       }
       return acc;
     }
   }, {} as Record<string, string>);
-  let requiredExtraParameters = [];
+  let requiredExtraParameters: string[] = [];
   if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
     requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
   } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
@@ -754,7 +755,7 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
       requiredExtraParameters = ['application.lostPermit.policeReportNumber'];
     }
   }
-  const missingExtraParameters = [];
+  const missingExtraParameters: string[] = [];
   requiredExtraParameters.forEach((param) => {
     if (e.extraParameters?.find((p) => p.key === param)?.values?.length === 0) {
       missingExtraParameters.push(
@@ -779,7 +780,7 @@ export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
 
 export const validateAction: (errand: IErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;
-  if (errand?.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {
+  if (errand?.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values?.[0] === UiPhase.registrerad) {
     allowed = true;
   }
   if (user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase()) {
@@ -849,8 +850,8 @@ export const appealErrand: (data: Partial<IErrand> & { municipalityId: string })
   };
 
   const errandData: Partial<RegisterErrandData> = {
-    ...(data.priority && { priority: ApiPriority[data.priority] }),
-    ...(data.channel && { channel: ApiChannels['WEB_UI'] }),
+    ...(data.priority && { priority: (ApiPriority as Record<string, string>)[data.priority] }),
+    ...(data.channel && { channel: (ApiChannels as Record<string, string>)['WEB_UI'] }),
     caseTitleAddition: CaseLabels.PT.APPEAL,
     caseType: 'APPEAL',
     relatesTo: [relatedErrand],

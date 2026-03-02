@@ -45,45 +45,45 @@ export enum MessageClassification {
 class MessageDto {
   @IsString()
   @IsOptional()
-  email: string;
+  email!: string;
   @IsString()
   @IsOptional()
-  contactMeans: string;
+  contactMeans!: string;
   @IsString()
   @IsOptional()
-  subject: string;
+  subject!: string;
   @IsString()
-  text: string;
+  text!: string;
   @IsString()
-  attachUtredning: string;
+  attachUtredning!: string;
   @IsString()
-  errandId: string;
+  errandId!: string;
   @IsString()
-  municipalityId: string;
+  municipalityId!: string;
   @IsString()
-  messageClassification: MessageClassification;
+  messageClassification!: MessageClassification;
   @IsString()
-  reply_to: string;
+  reply_to!: string;
   @IsString()
-  references: string;
+  references!: string;
   @IsOptional()
-  files: Express.Multer.File[];
+  files!: Express.Multer.File[];
 }
 
 class SmsDto {
   @IsString()
-  phonenumber: string;
+  phonenumber!: string;
   @IsString()
-  text: string;
+  text!: string;
   @IsString()
-  errandId: string;
+  errandId!: string;
   @IsString()
-  municipalityId: string;
+  municipalityId!: string;
 }
 
 class DecisionMessageDto {
   @IsString()
-  errandId: string;
+  errandId!: string;
 }
 
 class MessageResponse implements IMessageResponse {
@@ -206,18 +206,18 @@ export class MessageController {
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
-    const decision = errandData.data?.decisions.find(d => d.decisionType === 'FINAL');
-    const pdf = decision?.attachments[0];
+    const decision = errandData.data?.decisions?.find(d => d.decisionType === 'FINAL');
+    const pdf = decision?.attachments?.[0];
     if (!pdf) {
       return [
         {
-          data: { messageId: undefined },
+          data: { messageId: '' },
           message: 'No decision attachment found',
         },
       ];
     }
 
-    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id.toString(), req.user, pdf);
+    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
     if (errandData.data.externalCaseId) {
       const openE_success = await sendDecisionToOpenE(errandData.data, req.user, pdf);
       return [minasidor_success, openE_success];
@@ -303,7 +303,7 @@ export class MessageController {
       },
     } as EmailRequest;
 
-    return sendEmail(municipalityId, message, req, errandData, MessageClassification[messageDto.messageClassification]);
+    return sendEmail(municipalityId, message, req, errandData, MessageClassification[messageDto.messageClassification as unknown as keyof typeof MessageClassification]);
   }
 
   @Post('/casedata/:municipalityId/webmessage')
@@ -320,7 +320,7 @@ export class MessageController {
     const errandsUrl = `${messageDto.municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const baseURL = apiURL(this.SERVICE);
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
-    let message: WebMessageRequest;
+    let message!: WebMessageRequest;
     if (errandData.data.externalCaseId) {
       const attachments = files.map(file => {
         return {

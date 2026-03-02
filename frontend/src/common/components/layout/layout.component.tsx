@@ -1,39 +1,38 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
-import { IErrand } from '@casedata/interfaces/errand';
 import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import Head from 'next/head';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { ExternalLink, Menu } from 'lucide-react';
 
-export default function Layout({ title, children }) {
+export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const {
     user,
     errand,
     supportErrand,
     supportMetadata,
-  }: { user: User; errand: IErrand; supportErrand: SupportErrand; supportMetadata: SupportMetadata } = useAppContext();
+  } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
-  const pathName = usePathname();
+  const pathName = usePathname() ?? '';
   const errandNumber = appConfig.isCaseData
     ? errand?.errandNumber
     : appConfig.isSupportManagement
     ? supportErrand?.errandNumber
     : undefined;
-  const hostName = window.location.hostname;
+  const [hostName, setHostName] = useState('');
+
+  useEffect(() => {
+    setHostName(window.location.hostname);
+  }, []);
 
   const MainTitle = () => (
     <NextLink
@@ -69,21 +68,21 @@ export default function Layout({ title, children }) {
       <span className="text-large">
         {appConfig.isSupportManagement ? (
           <>
-            <SupportStatusLabelComponent status={supportErrand.status} resolution={supportErrand.resolution} />
+            <SupportStatusLabelComponent status={supportErrand?.status ?? ''} resolution={supportErrand?.resolution ?? ''} />
             <span className="font-bold ml-8">
               {appConfig.features.useThreeLevelCategorization
-                ? supportErrand.labels.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
+                ? supportErrand?.labels?.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
                 : supportMetadata?.categories
-                    ?.find((t) => t.name === supportErrand.category)
-                    ?.types.find((t) => t.name === supportErrand.classification.type)?.displayName ||
-                  supportErrand.type}{' '}
+                    ?.find((t) => t.name === supportErrand?.category)
+                    ?.types?.find((t) => t.name === supportErrand?.classification?.type)?.displayName ||
+                  supportErrand?.type}{' '}
             </span>
             <span className="text-small">({errandNumber})</span>
           </>
         ) : null}
         {appConfig.isCaseData ? (
           <>
-            <CasedataStatusLabelComponent status={errand?.status?.statusType} />
+            <CasedataStatusLabelComponent status={errand?.status?.statusType ?? ''} />
             <span className="font-bold ml-8">Ärende: </span>
             {errandNumber}
           </>
@@ -94,10 +93,6 @@ export default function Layout({ title, children }) {
 
   return (
     <>
-      <Head>
-        <title>{title}</title>
-        <meta name="description" content={appConfig.applicationName} />
-      </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
           logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}
@@ -123,7 +118,7 @@ export default function Layout({ title, children }) {
                 <Button
                   color={'primary'}
                   variant={'tertiary'}
-                  rightIcon={<LucideIcon name="external-link" color="primary" variant="tertiary" />}
+                  rightIcon={<ExternalLink />}
                 >
                   Nytt ärende
                 </Button>
@@ -133,7 +128,7 @@ export default function Layout({ title, children }) {
           mobileMenu={
             <PopupMenu align="end">
               <PopupMenu.Button iconButton>
-                <LucideIcon name="menu" />
+                <Menu />
               </PopupMenu.Button>
               <PopupMenu.Panel>
                 <PopupMenu.Group>
@@ -143,7 +138,7 @@ export default function Layout({ title, children }) {
                   <PopupMenu.Group>
                     <PopupMenu.Item>
                       <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                        <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
+                        <ExternalLink className="h-md" /> Nytt
                         ärende
                       </Link>
                     </PopupMenu.Item>

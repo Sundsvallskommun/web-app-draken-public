@@ -6,8 +6,7 @@ import React, { useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
 import { User } from '@common/interfaces/user';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import { Info } from 'lucide-react';
 export const SupportErrandBasicsAboutDisclosure: React.FC<{
   errand: ApiSupportErrand;
   setUnsaved: (unsaved: boolean) => void;
@@ -15,29 +14,24 @@ export const SupportErrandBasicsAboutDisclosure: React.FC<{
 }> = () => {
   const {
     supportErrand,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    supportAttachments: SupportAttachment[];
-    user: User;
   } = useAppContext();
 
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
   const { setValue } = formControls;
 
   useEffect(() => {
-    setValue('id', supportErrand.id, { shouldDirty: false });
-    setValue('caseId', supportErrand.externalTags?.find((t) => t.key === 'caseId')?.value, { shouldDirty: false });
+    setValue('id', supportErrand?.id, { shouldDirty: false });
+    setValue('caseId', supportErrand?.externalTags?.find((t) => t.key === 'caseId')?.value, { shouldDirty: false });
   }, [setValue, supportErrand]);
   return (
     <Disclosure variant="alt" initalOpen>
       <Disclosure.Header>
-        <Disclosure.Icon icon={<LucideIcon name="info" />} />
+        <Disclosure.Icon icon={<Info />} />
         <Disclosure.Title>Om ärendet</Disclosure.Title>
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <SupportErrandBasicsAboutForm supportErrand={supportErrand} />
+        <SupportErrandBasicsAboutForm supportErrand={supportErrand!} />
       </Disclosure.Content>
     </Disclosure>
   );

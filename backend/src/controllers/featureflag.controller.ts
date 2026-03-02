@@ -45,7 +45,8 @@ export class FeatureFlagController {
     } catch (error) {
       logger.error('Error getting featureflags', error);
 
-      throw new HttpException(error?.status ?? 500, error?.message ?? 'Internal Server Error');
+      const httpError = error instanceof HttpException ? error : null;
+      throw new HttpException(httpError?.status ?? 500, httpError?.message ?? 'Internal Server Error');
     }
   }
 }

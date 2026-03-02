@@ -3,9 +3,9 @@ import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ArrowRight } from 'lucide-react';
 
 export interface ContractTableForm {
   sortOrder: 'asc' | 'desc';
@@ -152,9 +152,9 @@ export const ContractsTable: React.FC<{
       );
     const period = formatPeriod(contract.startDate, contract.endDate);
 
-    const lessorNoticeDate = (contract) => {
-      const notice = contract?.notice?.terms?.find((term) => term.party === 'LESSOR');
-      const period = notice?.periodOfNotice;
+    const lessorNoticeDate = (contract: Contract) => {
+      const notice = contract?.notice?.terms?.find((term: any) => term.party === 'LESSOR');
+      const period = notice?.periodOfNotice ?? 0;
       const endDate = dayjs(contract?.endDate);
       if (!endDate.isValid()) return '-';
       let noticeDate;
@@ -200,7 +200,7 @@ export const ContractsTable: React.FC<{
             variant="tertiary"
             size="sm"
             iconButton
-            leftIcon={<LucideIcon name={'arrow-right'} />}
+            leftIcon={<ArrowRight />}
             onClick={() => onRowClick?.(contract)}
           ></Button>
         </Table.Column>

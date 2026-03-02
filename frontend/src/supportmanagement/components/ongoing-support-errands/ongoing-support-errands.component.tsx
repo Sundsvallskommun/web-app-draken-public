@@ -36,7 +36,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
 
   const sortData = store.get('sort');
-  let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number };
+  let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number } | undefined;
 
   if (sortData) {
     sort = JSON.parse(sortData);
@@ -84,7 +84,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   const errands = useSupportErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
 
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setValue('status', selectedSupportErrandStatuses);
@@ -113,23 +113,23 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
           labelCategory: filter?.labelCategory?.split(',') || SupportManagementValues.labelCategory,
           type: filter?.type?.split(',') || SupportManagementValues.type,
           labelType:
-            Array.from(
+            (Array.from(
               new Set(
                 filter?.labelType
                   ?.split(',')
-                  .map((n) => getLabelTypeFromName(n, supportMetadata))
-                  .map((t) => t?.displayName)
+                  .map((n: string) => getLabelTypeFromName(n, supportMetadata!))
+                  .map((t: { displayName?: string } | undefined) => t?.displayName)
               )
-            ) || SupportManagementValues.labelType,
+            ) as string[]) || SupportManagementValues.labelType,
           labelSubType:
-            Array.from(
+            (Array.from(
               new Set(
                 filter?.labelSubType
                   ?.split(',')
-                  .map((n) => getLabelSubTypeFromName(n, supportMetadata))
-                  .map((t) => t?.displayName)
+                  .map((n: string) => getLabelSubTypeFromName(n, supportMetadata!))
+                  .map((t: { displayName?: string } | undefined) => t?.displayName)
               )
-            ) || SupportManagementValues.labelSubType,
+            ) as string[]) || SupportManagementValues.labelSubType,
           priority: filter?.priority?.split(',') || SupportManagementValues.priority,
           channel: filter?.channel?.split(',') || SupportManagementValues.channel,
           status: filter?.status !== '' ? filter?.status?.split(',') || SupportManagementValues.status : [],
@@ -142,8 +142,8 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         };
         const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
         setSelectedSupportErrandStatuses(filterStatuses);
-        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => Status[s]));
-        setSidebarLabel(selectedStatusLabel);
+        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s: string) => (Status as Record<string, string>)[s]));
+        setSidebarLabel(selectedStatusLabel ?? '');
       } catch (error) {
         store.set('filter', JSON.stringify({}));
         storedFilters = {
@@ -207,25 +207,25 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         setUser(user);
       })
       .catch((e) => {});
-    setSupportErrand(undefined);
+    setSupportErrand(undefined as unknown as any);
     //eslint-disable-next-line
   }, [router]);
 
   useEffect(() => {
     if (errands) {
-      setSupportErrand(undefined);
-      setTableValue('page', errands.page);
-      setTableValue('size', errands.size);
-      setTableValue('totalPages', errands.totalPages);
-      setTableValue('totalElements', errands.totalElements);
+      setSupportErrand(undefined as unknown as any);
+      setTableValue('page', errands.page!);
+      setTableValue('size', errands.size!);
+      setTableValue('totalPages', errands.totalPages!);
+      setTableValue('totalElements', errands.totalElements!);
     }
     //eslint-disable-next-line
   }, [errands]);
 
   useDebounceEffect(
     () => {
-      const fObj = {};
-      const extraFilterObj = {};
+      const fObj: Record<string, string | boolean> = {};
+      const extraFilterObj: Record<string, string> = {};
       if (priorityFilter && priorityFilter.length > 0) {
         fObj['priority'] = priorityFilter.join(',');
       }
@@ -247,9 +247,9 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         //
         // This is because the names are unique, but the displayNames are not
         // and we want to be able to filter on multiple types with the same displayName
-        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat();
-        const matchedTypes = allTypesFlattened.filter((l) => labelTypeFilter.includes(l.displayName));
-        const matchedTypeNames = matchedTypes.map((t) => t.resourcePath);
+        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
+        const matchedTypes = allTypesFlattened.filter((l) => l && labelTypeFilter.includes(l.displayName!));
+        const matchedTypeNames = matchedTypes.map((t) => t!.resourcePath);
         fObj['labelType'] = matchedTypeNames.join(',');
       }
       if (labelSubTypeFilter && labelSubTypeFilter.length > 0) {
@@ -258,13 +258,13 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         //
         // This is because the names are unique, but the displayNames are not
         // and we want to be able to filter on multiple types with the same displayName
-        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat();
+        const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
         const allSubTypesFlattened = allTypesFlattened
-          ?.filter((l) => l.labels?.length > 0)
-          .map((l) => l.labels)
-          .flat();
-        const matchedSubTypes = allSubTypesFlattened.filter((l) => labelSubTypeFilter.includes(l.displayName));
-        const matchedSubTypeNames = matchedSubTypes.map((t) => t.resourcePath);
+          .filter((l) => l && (l.labels?.length ?? 0) > 0)
+          .map((l) => l!.labels)
+          .flat() ?? [];
+        const matchedSubTypes = (allSubTypesFlattened ?? []).filter((l) => l && labelSubTypeFilter.includes(l.displayName!));
+        const matchedSubTypeNames = matchedSubTypes.map((t) => t!.resourcePath);
         fObj['labelSubType'] = matchedSubTypeNames.join(',');
       }
       if (channelFilter && channelFilter.length > 0) {
@@ -317,7 +317,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     [watchTable, sortObject, pageSize]
   );
 
-  const ownerFilteringHandler = async (e) => {
+  const ownerFilteringHandler = async (e: boolean) => {
     setOwnerFilter(e);
   };
 

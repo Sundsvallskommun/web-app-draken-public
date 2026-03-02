@@ -10,7 +10,6 @@ import {
 } from '@casedata/components/casedata-filtering/components/casedata-filter-phase.component';
 import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
 import { useState } from 'react';
 import {
@@ -48,6 +47,7 @@ import {
   CaseStakeholderTypeFilter,
   CaseStakeholderTypeValues,
 } from './components/casedata-filter-stakeholder-type.component';
+import { ListFilter } from 'lucide-react';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -93,7 +93,7 @@ const CaseDataFiltering: React.FC<{
               color="vattjom"
               variant={show ? 'tertiary' : 'primary'}
               inverted={show ? false : true}
-              leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
+              leftIcon={<ListFilter size="1.8rem" />}
             >
               {show ? 'Dölj filter' : `Visa filter ${numberOfFilters !== 0 ? `(${numberOfFilters})` : ''}`}
             </Button>

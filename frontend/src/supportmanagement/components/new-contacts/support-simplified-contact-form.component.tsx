@@ -30,8 +30,7 @@ import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import { Pen } from 'lucide-react';
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
   editing: boolean;
@@ -60,7 +59,7 @@ export const SupportSimplifiedContactForm: React.FC<{
               schema
                 .trim()
                 .matches(ssnPattern, invalidSsnMessage)
-                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn!) || !ssn),
           })
         : yup.string().when('stakeholderType', {
             is: (type: string) => {
@@ -92,7 +91,7 @@ export const SupportSimplifiedContactForm: React.FC<{
           schema
             .trim()
             .matches(orgNumberPattern, invalidOrgNumberMessage)
-            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr!) || !orgNr),
       }),
       firstName: yup.string().when('organizationName', {
         is: (_: string) => searchMode === 'person' || searchMode === 'employee',
@@ -316,7 +315,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         <>
           <SupportContactSearchModeSelector
             inName={'form'}
-            disabled={props.disabled}
+            disabled={props.disabled!}
             form={form}
             contact={contact}
             id={id}
@@ -325,7 +324,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             {...searchProps}
           />
           <SupportContactSearchField
-            disabled={props.disabled}
+            disabled={props.disabled!}
             form={form}
             id={id}
             appendPhonenumber={appendPhonenumber}
@@ -338,9 +337,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       {searchResult ? (
         <SupportSearchResult
           searchMode={searchMode}
-          disabled={props.disabled}
+          disabled={props.disabled!}
           form={form}
-          selectedUser={selectedUser}
+          selectedUser={selectedUser!}
           loading={loading}
           onSubmit={handleSubmit(onSubmit)}
           label={label}
@@ -356,7 +355,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             color="vattjom"
             inverted
             size="sm"
-            leftIcon={<LucideIcon name="pen" />}
+            leftIcon={<Pen />}
             onClick={() => {
               reset({}, { keepErrors: false });
               setValue(
@@ -377,7 +376,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         closeHandler={closeHandler}
         onSubmit={handleSubmit(onSubmit)}
         label={label}
-        disabled={props.disabled}
+        disabled={props.disabled!}
         loading={loading}
         contact={contact}
         form={form}

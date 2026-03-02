@@ -44,7 +44,7 @@ export const getSupportNotes: (errandId: string, municipalityId: string) => Prom
     })
     .catch((e) => {
       console.error('Something went wrong when fetching notes');
-      return { notes: [] } as SupportNoteData;
+      return { notes: [] } as unknown as SupportNoteData;
     });
 };
 

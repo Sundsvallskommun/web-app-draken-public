@@ -18,7 +18,7 @@ export const SidebarWrapper: React.FC<{
       label: 'Handläggning',
       key: 'info',
       icon: 'user-cog',
-      component: <SidebarInfo unsavedFacility={props.unsavedFacility} setUnsavedFacility={props.setUnsavedFacility} />,
+      component: <SidebarInfo unsavedFacility={props.unsavedFacility} setUnsavedFacility={props.setUnsavedFacility!} />,
     },
     {
       label: 'Kommentarer',
