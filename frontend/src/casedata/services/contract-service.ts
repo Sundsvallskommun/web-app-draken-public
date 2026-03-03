@@ -45,7 +45,6 @@ export const contractTypes = [
 export const leaseTypes = [
   { label: 'Anläggningsarrende', key: LeaseType.SITE_LEASE_COMMERCIAL },
   { label: 'Bostadsarrende', key: LeaseType.LAND_LEASE_RESIDENTIAL },
-  { label: 'Båtplats', key: LeaseType.LAND_LEASE_MISC },
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
