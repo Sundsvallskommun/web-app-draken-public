@@ -140,6 +140,9 @@ class CExtraParameters {
   errandNumber!: string;
   @IsString()
   referenceName!: string;
+  @IsString()
+  @IsOptional()
+  facilites?: string;
 }
 export class CBillingRecord implements BillingRecord {
   @IsOptional()
