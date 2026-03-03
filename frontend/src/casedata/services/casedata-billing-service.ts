@@ -95,7 +95,7 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
       errandId: errand.id.toString(),
       errandNumber: errand.errandNumber,
       referenceName: formData.specifications.ourReference,
-      ...(selectedFacilities.length > 0 && { facilities: selectedFacilities.join(', ') }),
+      ...(selectedFacilities.length > 0 && { facilities: selectedFacilities.join('|') }),
     },
   };
 };
