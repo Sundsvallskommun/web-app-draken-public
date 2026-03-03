@@ -34,7 +34,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '12.3',
+    version: '12.4',
   },
   {
     name: 'billingpreprocessor',
@@ -50,7 +50,7 @@ export const APIS = [
   },
   {
     name: 'casestatus',
-    version: '4.2',
+    version: '4.3',
   },
   {
     name: 'party',
@@ -62,6 +62,10 @@ export const APIS = [
   },
   {
     name: 'jsonschema',
+    version: '1.0',
+  },
+  {
+    name: 'company',
     version: '1.0',
   },
 ];

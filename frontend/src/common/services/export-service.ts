@@ -7,7 +7,7 @@ import {
 import { Render } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 
-const renderPdf = (url, data, includeParameters) =>
+const renderPdf = (url: string, data: any, includeParameters?: string[]) =>
   apiService
     .post<ApiResponse<Render>, (IErrand & { caseLabel: string })[]>(url, data, includeParameters)
     .then((res) => {
@@ -36,7 +36,7 @@ export const exportErrands: (
       mimeType: attachment.mimeType,
       file: '',
     })),
-    caseLabel: MEXCaseLabel[errand.caseType],
+    caseLabel: (MEXCaseLabel as Record<string, string>)[errand.caseType],
   }));
 
   return renderPdf(url, preparedErrands, includeParameters);
@@ -61,8 +61,8 @@ export const exportSingleErrand: (
       mimeType: attachment.mimeType,
       file: '',
     })),
-    caseLabel: MEXCaseLabel[errand.caseType],
-    extraParameters: mappedParams.map((ep) => ({
+    caseLabel: (MEXCaseLabel as Record<string, string>)[errand.caseType],
+    extraParameters: mappedParams.filter((ep): ep is NonNullable<typeof ep> => ep != null).map((ep) => ({
       id: ep.field,
       key: ep.field,
       displayName: ep.label,
@@ -84,7 +84,7 @@ const downloadFile = (name: string, url: string) => {
   document.body.removeChild(link);
 };
 
-export const downloadPdf = (d: { pdfBase64: string; error?: string }, name, successHandler, errorHandler) => {
+export const downloadPdf = (d: { pdfBase64: string; error?: string }, name: string, successHandler: () => void, errorHandler: () => void) => {
   if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
     const byteCharacters = atob(d.pdfBase64);
     const byteNumbers = new Array(byteCharacters.length);
@@ -103,7 +103,7 @@ export const downloadPdf = (d: { pdfBase64: string; error?: string }, name, succ
   }
 };
 
-export const downloadAttachment = (attachment, errand) => {
+export const downloadAttachment = (attachment: { mimeType: string; file: string; name: string }, errand: IErrand) => {
   const uri = `data:${attachment.mimeType};base64,${attachment.file}`;
   const filename = attachment.name;
   downloadFile(filename, uri);

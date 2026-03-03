@@ -3,9 +3,9 @@ import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-s
 import { sortBy } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useState } from 'react';
+import { CirclePlay } from 'lucide-react';
 
 export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, errand, setErrand } = useAppContext();
@@ -25,6 +25,7 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
 
   const activateErrand = () => {
     setIsLoading(true);
+    if (!errand) return;
     const previousAcceptedStatus = sortBy(errand.statuses, 'created')
       .reverse()
       .map((s) => s.statusType)
@@ -57,7 +58,7 @@ export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }
       className="w-full"
       color="vattjom"
       data-cy="resume-button"
-      leftIcon={<LucideIcon name="circle-play" />}
+      leftIcon={<CirclePlay />}
       variant={'primary'}
       disabled={disabled}
       loading={isLoading}

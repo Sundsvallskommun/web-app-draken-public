@@ -4,9 +4,9 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@contexts/app.context';
 
 function useDisplayPhasePoller() {
-  const { municipalityId, errand, setErrand }: { municipalityId: string; errand: IErrand; setErrand: any } =
-    useAppContext();
+  const { municipalityId, errand, setErrand } = useAppContext();
   const pollDisplayPhase = () => {
+    if (!errand) return;
     let displayPhase = errand.extraParameters.find((p) => p.key === 'process.displayPhase')?.values?.[0] as UiPhase;
     const displayPhasePoll = setInterval(() => {
       if (displayPhase !== UiPhase.registrerad) {

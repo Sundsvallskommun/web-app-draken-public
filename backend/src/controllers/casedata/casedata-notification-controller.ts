@@ -31,7 +31,7 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsString()
   ownerFullName?: string;
   @IsString()
-  ownerId: string;
+  ownerId!: string;
   @IsOptional()
   @IsString()
   createdBy?: string;
@@ -39,9 +39,9 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsString()
   createdByFullName?: string;
   @IsString()
-  type: string;
+  type!: string;
   @IsString()
-  description: string;
+  description!: string;
   @IsOptional()
   @IsString()
   content?: string;
@@ -55,7 +55,7 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsString()
   globalAcknowledged?: boolean;
   @IsString()
-  errandId: number;
+  errandId!: number;
   @IsOptional()
   @IsString()
   errandNumber?: string;
@@ -67,7 +67,7 @@ export class PatchNotificationDto implements PatchNotification {
   id?: string;
   @IsOptional()
   @IsNumber()
-  errandId: number;
+  errandId!: number;
   @IsOptional()
   @IsString()
   ownerId?: string;

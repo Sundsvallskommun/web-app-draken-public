@@ -14,9 +14,9 @@ export const getEscalationMessage: (
 ) => Promise<string> = async (e, version, user) => {
   const tenant: TenantKey = isKA() ? TenantKey.Ange : TenantKey.Sundsvall;
   return version === 'EMAIL'
-    ? buildEscalationEmailContent(e as SupportErrand, user, tenant)
+    ? buildEscalationEmailContent(e as SupportErrand, user ?? '', tenant)
     : version === 'DEPARTMENT'
-    ? buildEscalationTextContent(e as SupportErrand, user, tenant)
+    ? buildEscalationTextContent(e as SupportErrand, user ?? '', tenant)
     : ' ';
 };
 
@@ -28,6 +28,6 @@ export const getEscalationEmails: (
   const type = types?.find((t) => t.name === e.type);
   const escalationEmail = type?.escalationEmail;
   return Promise.resolve([
-    ...(type && escalationEmail ? [{ label: type.displayName, value: type.escalationEmail }] : []),
+    ...(type && escalationEmail ? [{ label: type.displayName ?? '', value: type.escalationEmail ?? '' }] : []),
   ]);
 };

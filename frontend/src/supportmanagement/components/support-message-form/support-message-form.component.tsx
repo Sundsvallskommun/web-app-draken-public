@@ -137,22 +137,18 @@ export const SupportMessageForm: React.FC<{
   showMessageForm: boolean;
   message: Message;
   setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
-  setUnsaved?: (boolean) => void;
+  setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {
   const {
     municipalityId,
     user,
-    supportErrand,
-    supportAttachments,
+    supportErrand: _supportErrand,
+    supportAttachments: _supportAttachments,
     setSupportErrand,
-  }: {
-    municipalityId: string;
-    user: User;
-    supportErrand: SupportErrand;
-    supportAttachments: SupportAttachment[];
-    setSupportErrand: (errand: SupportErrand) => void;
   } = useAppContext();
+  const supportErrand = _supportErrand!;
+  const supportAttachments = _supportAttachments ?? [];
 
   const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
@@ -179,8 +175,8 @@ export const SupportMessageForm: React.FC<{
       id: supportErrand.id,
       messageContact: true,
       contactMeans:
-        Channels[supportErrand.channel] === Channels.ESERVICE ||
-        Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL
+        (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE ||
+        (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL
           ? 'webmessage'
           : 'email',
       newEmail: '',
@@ -252,7 +248,7 @@ export const SupportMessageForm: React.FC<{
   });
 
   const getSingleSupportAttachment = (attachment: SupportAttachment) => {
-    getSupportAttachment(supportErrand?.id, municipalityId, attachment).then((res) => {
+    getSupportAttachment(supportErrand?.id!, municipalityId, attachment).then((res) => {
       appendExistingAttachment(res);
     });
   };
@@ -271,20 +267,20 @@ export const SupportMessageForm: React.FC<{
         contactMeans,
         selectedRelationId,
         relationErrands,
-        props?.message?.conversationId
+        props?.message?.conversationId ?? ''
       );
 
       sendPromise = sendSupportConversationMessage(
         municipalityId,
-        supportErrand.id,
+        supportErrand.id!,
         conversationId,
         data.messageBody,
-        data.messageAttachments
+        data.messageAttachments as { file: File }[]
       );
     } else {
       const messageData: MessageRequest = {
         municipalityId: municipalityId,
-        errandId: supportErrand.id,
+        errandId: supportErrand.id!,
         contactMeans: data.contactMeans,
         emails: data.emails,
         recipientEmail: '',
@@ -301,7 +297,7 @@ export const SupportMessageForm: React.FC<{
         }),
       };
       if (isKC() || isKA()) {
-        messageData.senderName = appConfig.applicationName;
+        messageData.senderName = appConfig.applicationName as string;
       }
       sendPromise = sendMessage(messageData).then(async (success) => {
         if (!success) {
@@ -317,12 +313,12 @@ export const SupportMessageForm: React.FC<{
         setValue('messageBody', emailBody);
 
         if (typeOfMessage === 'infoCompletion') {
-          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.PENDING);
+          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.PENDING);
         } else if (typeOfMessage === 'internalCompletion') {
-          await setSupportErrandStatus(supportErrand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
         }
 
-        const updated = await getSupportErrandById(supportErrand.id, municipalityId);
+        const updated = await getSupportErrandById(supportErrand.id!, municipalityId);
         setSupportErrand(updated.errand);
 
         toastMessage(
@@ -347,7 +343,7 @@ export const SupportMessageForm: React.FC<{
         });
       })
       .finally(() => {
-        props.setUnsaved(false);
+        props.setUnsaved?.(false);
         setIsSending(false);
         reset();
         clearErrors();
@@ -424,7 +420,7 @@ export const SupportMessageForm: React.FC<{
   }, [contactMeans, props.message]);
 
   useEffect(() => {
-    getSourceRelations(municipalityId, supportErrand.id, 'ASC').then((res) => {
+    getSourceRelations(municipalityId, supportErrand.id!, 'ASC').then((res) => {
       const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
       setRelationErrands(sortedRelations);
     });
@@ -450,7 +446,6 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useEmail-radiobutton-true"
                 className="mr-sm mt-4"
-                name="useEmail"
                 id="useEmail"
                 value="email"
                 {...register('contactMeans')}
@@ -463,7 +458,6 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useSms-radiobutton-true"
                 className="mr-sm mt-4"
-                name="useSms"
                 id="useSms"
                 value="sms"
                 {...register('contactMeans')}
@@ -471,12 +465,11 @@ export const SupportMessageForm: React.FC<{
                 SMS
               </RadioButton>
             )}
-            {Channels[supportErrand.channel] === Channels.ESERVICE_INTERNAL ? (
+            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
                 className="mr-sm mt-4"
-                name="useWebmessage"
                 id="useWebmessage"
                 value="webmessage"
                 {...register('contactMeans')}
@@ -485,12 +478,11 @@ export const SupportMessageForm: React.FC<{
               </RadioButton>
             ) : null}
             {/* Only show webmessage option if errand is from e-service and LOP */}
-            {Channels[supportErrand.channel] === Channels.ESERVICE && isLOP() ? (
+            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE && isLOP() ? (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useWebmessage-radiobutton-true"
                 className="mr-sm mt-4"
-                name="useWebmessage"
                 id="useWebmessage"
                 value="webmessage"
                 {...register('contactMeans')}
@@ -503,7 +495,6 @@ export const SupportMessageForm: React.FC<{
                 disabled={props.locked}
                 data-cy="useDraken-radiobutton-true"
                 className="mr-sm mt-4"
-                name="useDraken"
                 id="useDraken"
                 value="draken"
                 {...register('contactMeans')}
@@ -513,12 +504,11 @@ export const SupportMessageForm: React.FC<{
             )}
             {appConfig.features.useMyPages &&
               getSupportOwnerStakeholder(supportErrand)?.personNumber &&
-              Channels[supportErrand.channel] !== Channels.ESERVICE_INTERNAL && (
+              (Channels as Record<string, string>)[supportErrand.channel!] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
                   disabled={props.locked}
                   data-cy="useMinasidor-radiobutton-true"
                   className="mr-sm mt-4"
-                  name="useMinasidor"
                   id="useMinasidor"
                   value="minasidor"
                   {...register('contactMeans')}
@@ -643,10 +633,10 @@ export const SupportMessageForm: React.FC<{
             <TextEditor
               className={cx(`mb-md h-[80%]`)}
               readOnly={props.locked}
-              value={{ plainText: messageBodyPlaintext, markup: messageBody }}
+              value={{ plainText: messageBodyPlaintext ?? '', markup: messageBody ?? '' }}
               onChange={(e) => {
-                setValue('messageBody', e.target.value.markup);
-                setValue('messageBodyPlaintext', e.target.value.plainText);
+                setValue('messageBody', e.target.value.markup ?? '');
+                setValue('messageBodyPlaintext', e.target.value.plainText ?? '');
                 trigger('messageBody');
               }}
             />
@@ -677,8 +667,8 @@ export const SupportMessageForm: React.FC<{
             </div>
           ) : null}
           {contactMeans === 'webmessage'
-            ? supportErrand.stakeholders
-                .filter((o) => o.role.indexOf('PRIMARY') !== -1)
+            ? (supportErrand.stakeholders ?? [])
+                .filter((o) => o.role?.indexOf('PRIMARY') !== -1)
                 .map((filteredOwner, idx) => (
                   <div key={`owner-${idx}`}>
                     <FormLabel>Mottagare:</FormLabel> {filteredOwner.firstName} {filteredOwner.lastName}
@@ -720,8 +710,8 @@ export const SupportMessageForm: React.FC<{
                     e.preventDefault();
                     if (addExisting) {
                       const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
-                      getSingleSupportAttachment(attachment);
-                      setValue(`addExisting`, undefined);
+                      getSingleSupportAttachment(attachment!);
+                      setValue(`addExisting`, '');
                     }
                   }}
                   className="rounded-button ml-16"
@@ -808,11 +798,11 @@ export const SupportMessageForm: React.FC<{
                     <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
                       <Icon icon={<File />} size={25} />
                     </div>
-                    <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
+                    <div className="self-center justify-start px-8">{(attachment.file as unknown as FileList)?.[0]?.name}</div>
                   </div>
                   <div>
                     <Button
-                      aria-label={`Ta bort ${attachment.file[0]?.name}`}
+                      aria-label={`Ta bort ${(attachment.file as unknown as FileList)?.[0]?.name}`}
                       iconButton
                       inverted
                       className="self-end"
@@ -834,7 +824,7 @@ export const SupportMessageForm: React.FC<{
           onClick={() => {
             props.setShowMessageForm(false);
             setValue('messageBody', emailBody);
-            props.setUnsaved(false);
+            props.setUnsaved?.(false);
             setIsSending(false);
             reset();
             clearErrors();

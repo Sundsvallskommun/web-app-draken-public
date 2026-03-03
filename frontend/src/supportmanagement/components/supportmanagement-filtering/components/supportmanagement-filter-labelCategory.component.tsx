@@ -1,17 +1,17 @@
 import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
+import { ChevronDown } from 'lucide-react';
 
 export interface LabelCategoryFilter {
   labelCategory: string[];
 }
 
-export const LabelCategoryValues = {
+export const LabelCategoryValues: LabelCategoryFilter = {
   labelCategory: [],
 };
 
@@ -19,7 +19,7 @@ export const SupportManagementFilterLabelCategory: React.FC = () => {
   const { register, watch } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
   const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
-  const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
+  const { supportMetadata } = useAppContext();
 
   useEffect(() => {
     setAllLabelCategories(supportMetadata?.labels?.labelStructure);
@@ -28,7 +28,7 @@ export const SupportManagementFilterLabelCategory: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Verksamhet-filter"
         variant="tertiary"
         showBackground={false}
@@ -48,7 +48,7 @@ export const SupportManagementFilterLabelCategory: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {allLabelCategories
-            ?.filter((s: Label) => s.displayName.toLowerCase().includes(query.toLowerCase()))
+            ?.filter((s: Label) => s.displayName?.toLowerCase().includes(query.toLowerCase()))
             .map((s: Label, idx) => (
               <PopupMenu.Item key={`${s.resourcePath}-${idx}`}>
                 <Checkbox

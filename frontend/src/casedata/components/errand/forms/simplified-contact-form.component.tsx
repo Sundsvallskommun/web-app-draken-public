@@ -16,7 +16,6 @@ import {
 } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -25,6 +24,7 @@ import * as yup from 'yup';
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
+import { Pen } from 'lucide-react';
 
 const emptyContact: CasedataOwnerOrContact = {
   id: '',
@@ -234,7 +234,7 @@ export const SimplifiedContactForm: React.FC<{
   // Restricted editing means that personalNumber, firstName, lastName,
   // organizationNam and orgName cannot be changed.
 
-  const restrictedEditing = editing && errand.channel !== Channels.WEB_UI;
+  const restrictedEditing = editing && errand?.channel !== Channels.WEB_UI;
 
   const resetPersonNumber = () => {
     setValue(`personalNumber`, '', { shouldDirty: false });
@@ -356,7 +356,7 @@ export const SimplifiedContactForm: React.FC<{
             size="sm"
             onClick={() => setManual(true)}
             disabled={props.disabled}
-            leftIcon={<LucideIcon name="pen" />}
+            leftIcon={<Pen />}
           >
             Lägg till manuellt
           </Button>

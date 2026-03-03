@@ -1,16 +1,16 @@
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
+import { ChevronDown } from 'lucide-react';
 
 export interface TypeFilter {
   type: string[];
 }
 
-export const TypeValues = {
+export const TypeValues: TypeFilter = {
   type: [],
 };
 
@@ -21,14 +21,14 @@ export const SupportManagementFilterType: React.FC = () => {
   const { register } = useFormContext<TypeFilter>();
   const [query, setQuery] = useState<string>('');
   const [allTypes, setAllTypes] = useState<SupportType[]>();
-  const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
+  const { supportMetadata } = useAppContext();
   useEffect(() => {
     const _types: SupportType[] = [];
     if (categories.length > 0) {
       categories?.forEach((category) => {
-        const categoryTypes = supportMetadata?.categories.find((c) => c.name === category)?.types;
+        const categoryTypes = supportMetadata?.categories?.find((c) => c.name === category)?.types;
         types.filter((type) => {
-          if (!categoryTypes.find((ct) => ct.name === type)) {
+          if (!categoryTypes?.find((ct) => ct.name === type)) {
             const newTypes = types.filter((_t) => _t !== type);
             setValue('type', newTypes);
           }
@@ -39,7 +39,7 @@ export const SupportManagementFilterType: React.FC = () => {
       });
     } else {
       supportMetadata?.categories?.forEach((category) => {
-        _types.push(...category.types);
+        _types.push(...(category.types ?? []));
       });
     }
     setAllTypes(_types);
@@ -49,7 +49,7 @@ export const SupportManagementFilterType: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Ärendekategori-filter"
         variant="tertiary"
         showBackground={false}
@@ -69,7 +69,7 @@ export const SupportManagementFilterType: React.FC = () => {
         />
         <PopupMenu.Items autoFocus={false}>
           {allTypes
-            ?.filter((s: SupportType) => s.displayName.toLowerCase().includes(query.toLowerCase()))
+            ?.filter((s: SupportType) => s.displayName?.toLowerCase().includes(query.toLowerCase()))
             .map((s: SupportType, idx) => (
               <PopupMenu.Item key={`${s.name}-${idx}`}>
                 <Checkbox

@@ -10,7 +10,7 @@ import {
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
-import SchemaForm from '@common/components/json/schema/schema-form.compontant';
+import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
@@ -62,8 +62,8 @@ export const CasedataServicesTab: React.FC = () => {
 
   const assetType = 'FTErrandAssets';
 
-  const partyId = getOwnerStakeholder(errand).personId;
-  const errandNr = errand.errandNumber!;
+  const partyId = errand ? getOwnerStakeholder(errand)?.personId ?? '' : '';
+  const errandNr = errand?.errandNumber ?? '';
 
   const filteredSchema = useMemo(() => {
     return filterSchemaByCase(schema, errand?.caseType ?? '');
@@ -210,11 +210,11 @@ export const CasedataServicesTab: React.FC = () => {
         service kunden har rätt till vid sina resor.
       </p>
 
-      {!isErrandLocked(errand) && (
+      {!(errand ? isErrandLocked(errand) : false) && (
         <div className="mt-24 max-w-full">
           {uiSchema && (
             <SchemaForm
-              schema={filteredSchema}
+              schema={filteredSchema!}
               uiSchema={uiSchema}
               formData={formData}
               onChange={(fd) => setFormData(fd)}
@@ -232,7 +232,7 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} readOnly={isErrandLocked(errand)} />
+          <ServiceListComponent services={services} onRemove={removeService} readOnly={(errand ? isErrandLocked(errand) : false)} />
         )}
       </div>
     </div>

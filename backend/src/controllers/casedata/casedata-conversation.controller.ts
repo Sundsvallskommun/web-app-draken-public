@@ -51,7 +51,7 @@ export class CaseDataConversationController {
     const conversation = resConversation.data.find((c: any) => c.id === conversationId);
     const topic = conversation ? conversation.topic : undefined;
 
-    const messageType = conversation.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
+    const messageType = conversation?.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
 
     url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);

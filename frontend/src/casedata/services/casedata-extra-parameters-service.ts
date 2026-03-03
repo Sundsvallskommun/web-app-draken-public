@@ -181,13 +181,13 @@ const template: ExtraParametersObject = {
 };
 
 export const getExtraParametersLabels = (caseType: string): { [key: string]: string } => {
-  return template[caseType]?.reduce((acc, field) => {
+  return (template as Record<string, any>)[caseType]?.reduce((acc: Record<string, string>, field: { field: string; label: string }) => {
     acc[field.field] = field.label;
     return acc;
-  }, {});
+  }, {} as Record<string, string>);
 };
 
-export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<UppgiftField[]> = (errand) => {
+export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[] = (errand) => {
   // Create base template encompassing all case types
   const obj: Partial<ExtraParametersObject> = { ...template };
 
@@ -210,11 +210,11 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
       const groupedData = groupRepeatableParameters(errand.extraParameters, basePath);
 
       if (Object.keys(groupedData).length > 0) {
-        const a: UppgiftField[] = obj[caseType];
+        const a: UppgiftField[] = obj[caseType] ?? [];
         const i = a.findIndex((f) => f.field === templateField.field);
 
         if (i > -1) {
-          (obj[caseType][i] as any).initialData = groupedData;
+          (obj[caseType]![i] as any).initialData = groupedData;
         }
       }
     }
@@ -258,12 +258,12 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
           required,
         };
 
-        const a: UppgiftField[] = obj[caseType];
+        const a: UppgiftField[] = obj[caseType] ?? [];
         const i = a.findIndex((f) => f.field === field);
         if (i > -1) {
-          obj[caseType][i] = data;
+          obj[caseType]![i] = data;
         } else {
-          obj[caseType].push(data);
+          obj[caseType]!.push(data);
         }
       }
     } catch (error) {
@@ -271,7 +271,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => Partial<Uppgif
     }
   });
 
-  return obj[errand.caseType];
+  return obj[errand.caseType] ?? [];
 };
 
 export const saveExtraParameters = (municipalityId: string, data: ExtraParameter[], errand: IErrand) => {

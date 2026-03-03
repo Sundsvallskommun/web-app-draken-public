@@ -1,7 +1,7 @@
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button } from '@sk-web-gui/react';
 import { getFilteredNotifications } from './notification-utils';
+import { Bell } from 'lucide-react';
 
 export const NotificationsBell = (props: { toggleShow: () => void }) => {
   const { notifications, user } = useAppContext();
@@ -21,7 +21,7 @@ export const NotificationsBell = (props: { toggleShow: () => void }) => {
       iconButton
       leftIcon={
         <>
-          <LucideIcon name={'bell'} />
+          <Bell />
         </>
       }
     >

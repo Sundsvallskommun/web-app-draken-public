@@ -22,6 +22,7 @@ export const mockSupportErrand = {
   errandNumber: 'KC-00000001',
   title: 'Empty errand',
   priority: 'MEDIUM',
+  channel: 'PHONE',
   stakeholders: [
     {
       externalId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',

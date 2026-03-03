@@ -4,17 +4,17 @@ import { fetchChangeData, getErrandHistory } from '@casedata/services/casedata-h
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Modal, Spinner, cx } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import { History } from 'lucide-react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const {
     municipalityId,
     errand,
     administrators,
-  }: { municipalityId: string; errand: IErrand; administrators: Admin[] } = useAppContext();
+  } = useAppContext();
   const [history, setHistory] = useState<ParsedErrandHistory>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,8 +35,8 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     if (selectedChange) {
-      fetchChangeData(municipalityId, errand?.id, selectedChange)
-        .then((res) => {
+      fetchChangeData(municipalityId, errand?.id ?? 0, selectedChange)
+        ?.then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);
         })
@@ -105,7 +105,7 @@ export const SidebarHistory: React.FC<{}> = () => {
             show={isOpen}
             label={
               <div className="flex items-center gap-md">
-                <LucideIcon name="history" />
+                <History />
                 <h3 className="text-h3-sm md:text-h3-md xl:text-h3-lg">Detaljer</h3>
               </div>
             }

@@ -1,7 +1,7 @@
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isROB } from '@common/services/application-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { LucideIcon } from '@sk-web-gui/lucide-icon';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import {
@@ -20,13 +20,13 @@ export interface SupportManagementStatusFilter {
   status: Status[];
 }
 
-export const SupportManagementStatusValues = {
+export const SupportManagementStatusValues: SupportManagementStatusFilter = {
   status: [],
 };
 
 export const SupportManagementFilterSidebarStatusSelector: React.FC<{
-  showAttestationTable;
-  setShowAttestationTable;
+  showAttestationTable: boolean;
+  setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
   const {
@@ -54,38 +54,38 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
     }
   };
 
-  const supportSidebarButtons: SidebarButton[] = useMemo(
+  const supportSidebarButtons = useMemo<SidebarButton[]>(
     () => [
       {
-        label: getStatusLabel(newStatuses),
+        label: getStatusLabel(newStatuses) ?? '',
         key: newStatuses[0],
         statuses: newStatuses,
         icon: 'inbox',
         totalStatusErrands: newSupportErrands,
       },
       {
-        label: isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses),
+        label: (isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses)) ?? '',
         key: isROB() ? ongoingStatusesROB[0] : ongoingStatuses[0],
         statuses: isROB() ? ongoingStatusesROB : ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands,
       },
       {
-        label: getStatusLabel(suspendedStatuses),
+        label: getStatusLabel(suspendedStatuses) ?? '',
         key: suspendedStatuses[0],
         statuses: suspendedStatuses,
         icon: 'circle-pause',
         totalStatusErrands: suspendedSupportErrands,
       },
       {
-        label: getStatusLabel(assignedStatuses),
+        label: getStatusLabel(assignedStatuses) ?? '',
         key: assignedStatuses[0],
         statuses: assignedStatuses,
         icon: 'file-plus',
         totalStatusErrands: assignedSupportErrands,
       },
       {
-        label: getStatusLabel(closedStatuses),
+        label: getStatusLabel(closedStatuses) ?? '',
         key: closedStatuses[0],
         statuses: closedStatuses,
         icon: 'circle-check-big',
@@ -109,7 +109,7 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={<LucideIcon name={button.icon as any} />}
+            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
             key={button.key}
             iconButton={iconButton}
           >

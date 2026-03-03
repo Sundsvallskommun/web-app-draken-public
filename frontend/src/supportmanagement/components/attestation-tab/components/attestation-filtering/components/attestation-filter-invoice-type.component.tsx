@@ -1,14 +1,14 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface AttestationInvoiceTypeFilter {
   invoiceType: string[];
 }
 
-export const AttestationInvoiceTypeValues = {
+export const AttestationInvoiceTypeValues: AttestationInvoiceTypeFilter = {
   invoiceType: [],
 };
 
@@ -18,7 +18,7 @@ export const AttestationFilterInvoiceTypeComponent: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="attestationInvoiceType-filter"
         variant="tertiary"
         showBackground={false}

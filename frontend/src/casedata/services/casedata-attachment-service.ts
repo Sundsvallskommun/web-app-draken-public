@@ -83,7 +83,7 @@ export const getMEXAttachmentKey = (
   return labelToKeyMap[label];
 };
 
-export const getPTAttachmentKey: (label: string) => PTAttachmentCategory = (label) => {
+export const getPTAttachmentKey: (label: string) => PTAttachmentCategory | undefined = (label) => {
   switch (label) {
     case 'Passfoto':
       return 'PASSPORT_PHOTO';
@@ -105,9 +105,9 @@ export const getPTAttachmentKey: (label: string) => PTAttachmentCategory = (labe
 };
 
 export const getAttachmentLabel = (attachment: Attachment) =>
-  isMEX() ? MEXAttachmentLabels[attachment?.category] || 'Okänt' : PTAttachmentLabels[attachment?.category] || 'Okänt';
+  isMEX() ? (MEXAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt' : (PTAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt';
 
-export const getImageAspect: (attachment: Attachment) => number = (attachment) =>
+export const getImageAspect: (attachment: Attachment) => number | undefined = (attachment) =>
   attachment?.category === 'PASSPORT_PHOTO'
     ? 3 / 4
     : attachment?.category === 'MEDICAL_CONFIRMATION'
@@ -124,8 +124,8 @@ const uniqueAttachments: MEXAttachmentCategory[] = [];
 const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
 export const onlyOneAllowed: (cat: MEXAttachmentCategory | PTAttachmentCategory) => boolean = (
-  cat: MEXAttachmentCategory & PTAttachmentCategory
-) => (isMEX() ? uniqueAttachments.includes(cat) : uniquePTAttachments.includes(cat));
+  cat: MEXAttachmentCategory | PTAttachmentCategory
+) => (isMEX() ? uniqueAttachments.includes(cat as MEXAttachmentCategory) : uniquePTAttachments.includes(cat as PTAttachmentCategory));
 
 export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (errand) => {
   // Errand may only have max one passport photo and max one signature before moving to Utredning phase
@@ -147,13 +147,13 @@ export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boole
     const tooManypassportPhotos =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'PASSPORT_PHOTO').length > 1;
     const medicalConfirmationValid =
-      errand.extraParameters.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values[0] ===
+      errand.extraParameters?.find((p) => p.key === 'application.renewal.medicalConfirmationRequired')?.values?.[0] ===
         'no' ||
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'MEDICAL_CONFIRMATION').length > 0 ||
       errand.caseType !== PTCaseType.PARKING_PERMIT;
     const signatureValid =
       errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === 'SIGNATURE').length ==
-      (errand.extraParameters.find((p) => p.key === 'application.applicant.signingAbility')?.values[0] === 'true'
+      (errand.extraParameters?.find((p) => p.key === 'application.applicant.signingAbility')?.values?.[0] === 'true'
         ? 1
         : 0);
     const rsn = [];
@@ -251,7 +251,7 @@ export const sendAttachments = (
       throw new Error('TYPE_MISSING');
     }
 
-    const extension = fileItem.name.split('.').pop();
+    const extension = fileItem.name.split('.').pop() ?? '';
 
     const obj: Attachment = {
       category: attachment.meta.category,
@@ -338,7 +338,7 @@ export const fetchErrandAttachments: (
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachments for errand: ', errandId);
-      return { data: [], message: 'error' };
+      return { data: [] as Attachment[], message: 'error' };
     });
 };
 
@@ -361,6 +361,6 @@ export const messageAttachment: (
     .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachment');
-      return { data: [], message: 'error' };
+      return { data: [] as Attachment[], message: 'error' };
     });
 };

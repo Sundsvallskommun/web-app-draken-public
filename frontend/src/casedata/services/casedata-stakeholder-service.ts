@@ -45,7 +45,7 @@ const determineStakeholderType: (data: CasedataOwnerOrContact | Stakeholder) => 
   }
 };
 
-export const makeAdministratorStakeholder: (data: Partial<IErrand>) => CreateStakeholderDto = (data) => {
+export const makeAdministratorStakeholder: (data: Partial<IErrand>) => CreateStakeholderDto | undefined = (data) => {
   // TODO This async handling of administrators - fetching from api and using string matching
   // when registering errand needs to be improved. Hopefully this will be possible when
   // administrator stakeholders are real AD users with all data
@@ -83,7 +83,7 @@ export const makeStakeholder: (data: CasedataOwnerOrContact, role: Role) => Crea
     lastName: data.lastName || '',
     organizationName: data.organizationName || '',
     ...(data.stakeholderType === 'ORGANIZATION' && {
-      organizationNumber: formatOrgNr(data.organizationNumber, OrgNumberFormat.DASH),
+      organizationNumber: formatOrgNr(data.organizationNumber ?? '', OrgNumberFormat.DASH),
     }),
     addresses: [
       {
@@ -125,15 +125,17 @@ export const makeStakeholdersList: (data: Partial<IErrand>) => Partial<CreateSta
   //   });
   //   stakeholders = stakeholders.concat(contacts);
   // }
-  if (data.stakeholders?.length > 0) {
-    const items = data.stakeholders.filter(isValidStakeholder).map((s) => {
+  if ((data.stakeholders?.length ?? 0) > 0) {
+    const items = data.stakeholders!.filter(isValidStakeholder).map((s) => {
       return makeStakeholder(s, s.newRole);
     });
     stakeholders = stakeholders.concat(items);
   }
   if (data.administrator) {
     const admin = makeAdministratorStakeholder(data);
-    stakeholders.push(admin);
+    if (admin) {
+      stakeholders.push(admin);
+    }
   }
   return stakeholders;
 };
@@ -225,7 +227,7 @@ export const removeStakeholder = (municipalityId: string, errandId: string, stak
 export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (s) => {
   return {
     id: s.id,
-    clientId: s.clientId,
+    clientId: s.clientId ?? '',
     stakeholderType: s.type,
     roles: s.roles,
     newRole: s.roles?.[0] || Role.CONTACT_PERSON,
@@ -238,23 +240,23 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
     lastName: s.lastName || '',
     street: s.addresses?.[0]?.street || '',
     careof: s.addresses?.[0]?.careOf || '',
-    zip: s.addresses?.[0]?.postalCode,
-    city: s.addresses?.[0]?.city,
+    zip: s.addresses?.[0]?.postalCode ?? '',
+    city: s.addresses?.[0]?.city ?? '',
     newPhoneNumber: '',
-    phoneNumbers: s.contactInformation
+    phoneNumbers: (s.contactInformation ?? [])
       .filter((c) => c.contactType === 'PHONE')
       .map((c) => ({
         value: c.value,
       })),
     newEmail: '',
-    emails: s.contactInformation
+    emails: (s.contactInformation ?? [])
       .filter((c) => c.contactType === 'EMAIL')
       .map((c) => ({
         value: c.value,
       })),
-    primaryContact: s.extraParameters.primaryContact === 'true',
-    messageAllowed: s.extraParameters.messageAllowed === 'true',
-    extraInformation: s.extraParameters.extraInformation,
+    primaryContact: s.extraParameters?.primaryContact === 'true',
+    messageAllowed: s.extraParameters?.messageAllowed === 'true',
+    extraInformation: s.extraParameters?.extraInformation ?? '',
   };
 };
 
@@ -289,10 +291,10 @@ export const validateOwnerForSendingDecisionByLetter: (e: IErrand) => boolean = 
 };
 
 export const getStakeholderName: (c: CasedataOwnerOrContact) => string = (c) =>
-  c.stakeholderType === 'ORGANIZATION' ? c.organizationName : `${c.firstName} ${c.lastName}`;
+  c.stakeholderType === 'ORGANIZATION' ? (c.organizationName ?? '') : `${c.firstName} ${c.lastName}`;
 
 export const getStakeholderSSN: (c: CasedataOwnerOrContact) => string = (c) => {
-  return c.stakeholderType === 'ORGANIZATION' ? c.organizationNumber : c.personalNumber || '(personnummer saknas)';
+  return c.stakeholderType === 'ORGANIZATION' ? (c.organizationNumber ?? '') : (c.personalNumber || '(personnummer saknas)');
 };
 
 export const getSSNFromPersonId: (municipalityId: string, personId: string) => Promise<string> = (
@@ -310,6 +312,6 @@ export const getSSNFromPersonId: (municipalityId: string, personId: string) => P
         throw e;
       });
   } else {
-    return;
+    return Promise.resolve('');
   }
 };

@@ -28,9 +28,9 @@ export interface Problem {
 }
 
 export interface StatusType {
+  reasonPhrase?: string;
   /** @format int32 */
   statusCode?: number;
-  reasonPhrase?: string;
 }
 
 export interface ConstraintViolationProblem {

@@ -25,7 +25,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
 
   async function saveCaseDetails(data: IErrand): Promise<ExtraParameter[] | null> {
-    if (!errand.extraParameters) {
+    if (!errand?.extraParameters) {
       return [];
     }
     const uppgifterFields: UppgiftField[] = extraParametersToUppgiftMapper(data) || baseDetails;
@@ -56,7 +56,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
 
     if (appConfig.features.useFacilities) {
       const facilities = getValues('facilities');
-      const validFacilities: FacilityDTO[] = facilities.map((f) => ({
+      const validFacilities: FacilityDTO[] = (facilities ?? []).map((f) => ({
         ...f,
         address: {
           ...f.address,
@@ -64,7 +64,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
         },
       }));
 
-      if (errand.id) {
+      if (errand?.id) {
         try {
           await saveFacilities(municipalityId, errand.id, validFacilities);
         } catch (e) {
@@ -114,7 +114,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
 
     const extraParams = [...regularFields, ...repeatableGroupFields];
 
-    await saveExtraParameters(municipalityId, extraParams, errand);
+    await saveExtraParameters(municipalityId, extraParams, errand!);
     return extraParams;
   }
 
@@ -130,24 +130,24 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       const { administrator, ...rest } = data;
       dataToSave = rest;
     } else {
-      const dirtyData = {
+      const dirtyData: Record<string, unknown> = {
         id: data.id,
         municipalityId: data.municipalityId,
         ...Object.entries(formState.dirtyFields).reduce((acc, [field, dirty]) => {
-          if (dirty) acc[field] = data[field];
+          if (dirty) acc[field] = (data as unknown as Record<string, unknown>)[field];
           return acc;
-        }, {} as any),
+        }, {} as Record<string, unknown>),
       };
       delete dirtyData.administrator;
-      dataToSave = dirtyData;
+      dataToSave = dirtyData as Partial<IErrand> & { municipalityId: string };
     }
 
     if (formState.dirtyFields['administratorName']) {
-      const admin = administrators.find((a) => a.displayName === getValues().administratorName);
+      const admin = administrators.find((a: any) => a.displayName === getValues().administratorName);
       if (!!admin) {
-        setAdministrator(municipalityId, errand, admin);
+        setAdministrator(municipalityId, errand!, admin);
         if (admin.adAccount !== user.username) {
-          updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Tilldelat);
+          updateErrandStatus(municipalityId, errand!.id.toString(), ErrandStatus.Tilldelat);
         }
       }
     }
@@ -156,19 +156,19 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
       if (dataToSave.stakeholders) {
         for (const stakeholder of dataToSave.stakeholders) {
           if (stakeholder.id && !stakeholder.removed && stakeholder.newRole !== 'ADMINISTRATOR') {
-            await editStakeholder(municipalityId, dataToSave.id.toString(), stakeholder);
+            await editStakeholder(municipalityId, dataToSave.id!.toString(), stakeholder);
           }
         }
       }
 
       const res = await saveErrand(dataToSave);
-      await getErrand(municipalityId, res.errandId.toString());
+      await getErrand(municipalityId, res.errandId!.toString());
 
       const removedStakeholders = (dataToSave.stakeholders ?? []).filter((s) => s.removed);
       for (const removed of removedStakeholders) {
-        await removeStakeholder(municipalityId, res.errandId.toString(), removed.id);
+        await removeStakeholder(municipalityId, res.errandId!.toString(), removed.id);
       }
-      const saved2 = await getErrand(municipalityId, res.errandId.toString());
+      const saved2 = await getErrand(municipalityId, res.errandId!.toString());
       setErrand(saved2.errand);
 
       if (registeringNewErrand) {

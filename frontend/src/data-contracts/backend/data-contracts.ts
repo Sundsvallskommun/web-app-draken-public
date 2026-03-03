@@ -474,6 +474,12 @@ export interface CNotification {
   errandNumber?: string;
 }
 
+export interface CJsonParameter {
+  key: string;
+  value: any;
+  schemaId: string;
+}
+
 export interface SupportErrandDto {
   id?: string;
   errandNumber?: string;
@@ -482,6 +488,7 @@ export interface SupportErrandDto {
   priority?: string;
   externalTags?: CExternalTag[];
   parameters?: CParameter[];
+  jsonParameters?: CJsonParameter[];
   classification?: Classification;
   status?: string;
   resolution?: string;

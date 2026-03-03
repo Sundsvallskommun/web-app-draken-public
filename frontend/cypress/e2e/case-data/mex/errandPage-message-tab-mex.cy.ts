@@ -47,7 +47,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/assets?**', mockAsset);
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
@@ -176,7 +179,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       // Add new attachment
       cy.get('input[type=file]').last().selectFile('cypress/e2e/case-data/files/attachment.txt', { force: true });
-      cy.get('[data-cy="attachment-wrapper"] .sk-icon').should('exist');
+      cy.get('[data-cy="attachment-wrapper"]').should('exist');
 
       cy.get('[data-cy="send-message-button"]').first().should('be.enabled').click({ force: true });
 

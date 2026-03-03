@@ -19,7 +19,6 @@ import { isMEX } from '@common/services/application-service';
 import { mapAttachmentToUploadFile, validAttachment } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Fragment, useEffect, useState } from 'react';
@@ -27,6 +26,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { EditAttachmentModal } from './edit-attachment-modal.component';
 import { UploadAttachmentModal } from './upload-attachment-modal.component';
+import { Eye, Pencil, Trash, Upload } from 'lucide-react';
 export interface CasedataAttachmentFormModel {
   files: UploadFile[];
   newFiles: UploadFile[];
@@ -52,7 +52,7 @@ export const CasedataAttachments: React.FC = () => {
   const toastMessage = useSnackbar();
 
   const closeModal = () => {
-    getErrand(municipalityId, errand.id.toString())
+    getErrand(municipalityId, errand!.id.toString())
       .then((data) => setErrand(data.errand))
       .catch((e) => {
         toastMessage({
@@ -70,25 +70,20 @@ export const CasedataAttachments: React.FC = () => {
     setIsOpen(true);
   };
 
-  let formSchema = yup.object({
-    files: yup.array().of(
-      yup.object({
-        meta: yup.object({
-          name: yup.string().required('Namn måste anges'),
-        }),
-      })
-    ),
-    newFiles: yup.array().of(
-      yup.object({
-        meta: yup.object({
-          name: yup.string().required('Namn måste anges'),
-        }),
-      })
-    ),
-  });
+  const uploadFileSchema = yup
+    .mixed<UploadFile>()
+    .required()
+    .test('file-name-required', 'Namn måste anges', (value) => !!value?.meta?.name);
 
-  const methods = useForm<CasedataAttachmentFormModel>({
-    resolver: yupResolver(formSchema, { context: { allFiles: [] } }),
+  const formSchema: yup.ObjectSchema<CasedataAttachmentFormModel> = yup
+    .object({
+      files: yup.array().of(uploadFileSchema).defined().required(),
+      newFiles: yup.array().of(uploadFileSchema).defined().required(),
+    })
+    .required();
+
+  const methods = useForm<CasedataAttachmentFormModel, any, yup.InferType<typeof formSchema>>({
+    resolver: yupResolver(formSchema),
     defaultValues: defaultAttachmentInformation,
     mode: 'onChange',
   });
@@ -117,7 +112,8 @@ export const CasedataAttachments: React.FC = () => {
     const duplicates: Record<string, number> = {};
     allFiles.forEach((file) => {
       if (onlyOneAllowed(file.meta.category as MEXAttachmentCategory | PTAttachmentCategory)) {
-        duplicates[file.meta.category] = (duplicates[file.meta.category] || 0) + 1;
+        const cat = file.meta.category ?? '';
+        duplicates[cat] = (duplicates[cat] || 0) + 1;
       }
     });
 
@@ -155,7 +151,7 @@ export const CasedataAttachments: React.FC = () => {
   const clickHandler = (attachment: UploadFile) => {
     if (imageMimeTypes.includes(attachment.file.type)) {
       setModalFetching(true);
-      fetchAttachment(municipalityId, errand.id, attachment.id)
+      fetchAttachment(municipalityId, errand!.id, attachment.id)
         .then((res) => setModalAttachment(res.data))
         .then(() => {
           setModalFetching(false);
@@ -180,8 +176,8 @@ export const CasedataAttachments: React.FC = () => {
       const saved = await saveErrand();
       if (!saved) return;
 
-      await deleteAttachment(municipalityId, errand?.id, attachment);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await deleteAttachment(municipalityId, errand!.id, attachment);
+      const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
       toastMessage(
         getToastOptions({
@@ -206,9 +202,9 @@ export const CasedataAttachments: React.FC = () => {
           <h2 className="text-h4-sm md:text-h4-md">Bilagor</h2>
           <Button
             data-cy="add-attachment-button"
-            disabled={isErrandLocked(errand)}
+            disabled={errand ? isErrandLocked(errand) : false}
             color="vattjom"
-            rightIcon={<LucideIcon name="upload" size={16} />}
+            rightIcon={<Upload size={16} />}
             inverted
             size="sm"
             onClick={() => {
@@ -251,10 +247,10 @@ export const CasedataAttachments: React.FC = () => {
                     }
                     editAttachment(
                       municipalityId,
-                      errand.id.toString(),
+                      errand!.id.toString(),
                       file.id,
                       `${file.meta.name}.${file.meta.ending}`,
-                      file.meta.category
+                      file.meta.category ?? ''
                     );
                     setEditIndex(null);
                   },
@@ -277,7 +273,7 @@ export const CasedataAttachments: React.FC = () => {
                         <Button
                           key="view"
                           variant="tertiary"
-                          leftIcon={<LucideIcon name="eye" />}
+                          leftIcon={<Eye />}
                           data-cy={`open-attachment-${file.id}`}
                           onClick={() => {
                             clickHandler(file);
@@ -289,7 +285,7 @@ export const CasedataAttachments: React.FC = () => {
                       )}
                     </Fragment>,
                   ],
-                  showMore: !isErrandLocked(errand),
+                  showMore: errand ? !isErrandLocked(errand) : true,
                   morePopupMenuPanel: (
                     <PopupMenu.Panel>
                       <PopupMenu.Items>
@@ -297,7 +293,7 @@ export const CasedataAttachments: React.FC = () => {
                           <PopupMenu.Item>
                             <Button
                               data-cy={`edit-attachment-${file.id}`}
-                              leftIcon={<LucideIcon name="pencil" />}
+                              leftIcon={<Pencil />}
                               onClick={() => {
                                 setOriginalFile({ ...file, meta: { ...file.meta } });
                                 setEditIndex(i);
@@ -309,7 +305,7 @@ export const CasedataAttachments: React.FC = () => {
                           <PopupMenu.Item>
                             <Button
                               data-cy={`delete-attachment-${file.id}`}
-                              leftIcon={<LucideIcon name="trash" />}
+                              leftIcon={<Trash />}
                               onClick={async () => {
                                 handleRemove(file);
                               }}

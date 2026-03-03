@@ -9,7 +9,6 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   cx,
@@ -35,6 +34,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+import { Forward } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
@@ -84,13 +84,6 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     setSupportErrand,
     supportMetadata,
     supportAttachments,
-  }: {
-    user: User;
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
   } = useAppContext();
   const confirm = useConfirm();
   const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
@@ -108,7 +101,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
     formState,
     trigger,
     formState: { errors },
-  }: UseFormReturn<ForwardFormProps, any, undefined> = useForm({
+  } = useForm<ForwardFormProps>({
     resolver: yupResolver(yupForwardForm) as any,
     defaultValues: {
       recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
@@ -125,7 +118,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   const handleForwardErrand = (data: ForwardFormProps) => {
     setIsLoading(true);
 
-    return forwardSupportErrand(user, supportErrand, municipalityId, data, supportAttachments)
+    return forwardSupportErrand(user, supportErrand!, municipalityId, data, supportAttachments ?? [])
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -138,7 +131,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         }, 2000);
         setIsLoading(false);
         setShowModal(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e: Error) => {
         toastMessage({
@@ -163,7 +156,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
 
   useEffect(() => {
     if (supportErrand) {
-      getEscalationEmails(supportErrand, supportMetadata).then((emails) => {
+      getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
         if (emails.length > 0) {
           setValue('emails', [{ value: emails[0].value }]);
         }
@@ -191,7 +184,7 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
         className="w-full"
         data-cy="forward-button"
         color="vattjom"
-        leftIcon={<LucideIcon name="forward" />}
+        leftIcon={<Forward />}
         variant="secondary"
         disabled={disabled}
         onClick={() => handleModal()}
@@ -280,8 +273,8 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
                     className={cx(`mb-md h-[80%]`)}
                     value={{ plainText: messageBodyPlaintext, markup: message }}
                     onChange={(e) => {
-                      setValue('message', e.target.value.markup);
-                      setValue('messageBodyPlaintext', e.target.value.plainText);
+                      setValue('message', e.target.value.markup ?? '');
+                      setValue('messageBodyPlaintext', e.target.value.plainText ?? '');
                     }}
                   />
                 </div>

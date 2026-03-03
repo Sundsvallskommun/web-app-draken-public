@@ -1,14 +1,14 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { PriorityComponent } from '@common/components/priority/priority.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface CasePriorityFilter {
   priority: string[];
 }
 
-export const CasePriorityValues = {
+export const CasePriorityValues: CasePriorityFilter = {
   priority: [],
 };
 
@@ -18,7 +18,7 @@ export const CasedataFilterPriority: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Prioritet-filter"
         variant="tertiary"
         showBackground={false}

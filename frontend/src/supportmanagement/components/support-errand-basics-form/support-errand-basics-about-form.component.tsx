@@ -25,8 +25,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 }> = (props) => {
   const {
     supportMetadata,
-  }: {
-    supportMetadata: SupportMetadata;
   } = useAppContext();
   const { supportErrand } = props;
   const { t } = useTranslation();
@@ -85,7 +83,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
 
       {appConfig.features.useThreeLevelCategorization ? (
         <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata} />
+          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
         </div>
       ) : null}
 

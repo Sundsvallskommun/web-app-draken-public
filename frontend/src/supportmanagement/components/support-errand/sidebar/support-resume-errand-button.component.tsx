@@ -1,6 +1,5 @@
 import { useAppContext } from '@contexts/app.context';
 import { useConfirm, useSnackbar, Button } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   getSupportErrandById,
   setSupportErrandStatus,
@@ -9,6 +8,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { CirclePlay } from 'lucide-react';
 
 export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
@@ -18,7 +18,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
 
   const activateErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand.id, municipalityId, Status.ONGOING)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -26,7 +26,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
             status: 'success',
           })
         );
-        return getSupportErrandById(supportErrand.id, municipalityId).then((res) => {
+        return getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => {
           setSupportErrand(res.errand);
           setIsLoading(false);
         });
@@ -42,7 +42,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
       });
   };
 
-  if (!shouldShowResumeErrandButton(supportErrand?.status)) {
+  if (!shouldShowResumeErrandButton(supportErrand?.status as Status)) {
     return null;
   }
 
@@ -51,8 +51,8 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
       className="w-full"
       color="vattjom"
       data-cy="resume-button"
-      leftIcon={<LucideIcon name="circle-play" />}
-      variant={shouldShowResumeErrandButton(supportErrand?.status) ? 'primary' : 'secondary'}
+      leftIcon={<CirclePlay />}
+      variant={shouldShowResumeErrandButton(supportErrand?.status as Status) ? 'primary' : 'secondary'}
       disabled={disabled}
       loading={isLoading}
       loadingText="Återupptar"
