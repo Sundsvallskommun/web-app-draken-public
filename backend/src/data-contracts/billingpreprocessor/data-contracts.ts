@@ -29,97 +29,35 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
   title?: string;
   detail?: string;
-  status?: StatusType;
-}
-
-export interface StatusType {
-  reasonPhrase?: string;
   /** @format int32 */
-  statusCode?: number;
+  status?: number;
 }
 
 export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
   /** @format uri */
   type?: string;
-  status?: StatusType;
+  /** @format int32 */
+  status?: number;
   violations?: Violation[];
   title?: string;
-  message?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, any>;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
-  cause?: any;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
   title?: string;
+  /** @format int32 */
+  status?: number;
   detail?: string;
-  status?: StatusType;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  /** @format uri */
+  instance?: string;
+  causeAsProblem?: any;
 }
 
 export interface Violation {
@@ -206,22 +144,13 @@ export interface BillingRecord {
 
 /** Invoice model */
 export interface Invoice {
-  /**
-   * Customer number in Raindance
-   * @minLength 1
-   */
+  /** Customer number in Raindance */
   customerId: string;
-  /**
-   * Description of the invoice
-   * @minLength 1
-   */
+  /** Description of the invoice */
   description: string;
   /** Our reference */
   ourReference?: string;
-  /**
-   * Customer reference
-   * @minLength 1
-   */
+  /** Customer reference */
   customerReference: string;
   /**
    * Date for the invoice
@@ -290,40 +219,40 @@ export interface InvoiceFileStatus {
 }
 
 export interface PageBillingRecord {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {

@@ -75,9 +75,9 @@ export interface Problem {
   /** @format uri */
   type?: string;
   parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
+  status?: StatusType;
 }
 
 export interface StatusType {
