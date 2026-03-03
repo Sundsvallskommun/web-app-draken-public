@@ -65,7 +65,7 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
     type: CBillingRecordTypeEnum.EXTERNAL,
     status: CBillingRecordStatusEnum.NEW,
     recipient:
-      hasValidRecipient && hasValidAddress
+      hasValidRecipient && hasValidAddress && formData.recipient
         ? {
             ...(formData.recipient.organizationName
               ? { organizationName: formData.recipient.organizationName }

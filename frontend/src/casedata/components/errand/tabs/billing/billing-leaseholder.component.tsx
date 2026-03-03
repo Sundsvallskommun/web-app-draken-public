@@ -5,7 +5,7 @@ import { useAppContext } from '@contexts/app.context';
 export const BillingLeaseholder: React.FC = () => {
   const { errand } = useAppContext();
 
-  const leaseholders = getStakeholdersByRelation(errand, Role.LEASEHOLDER);
+  const leaseholders = getStakeholdersByRelation(errand!, Role.LEASEHOLDER);
 
   if (leaseholders.length > 0)
     return (

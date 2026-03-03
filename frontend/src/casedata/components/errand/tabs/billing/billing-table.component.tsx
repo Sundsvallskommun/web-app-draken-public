@@ -1,7 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { deleteCasedataBillingRecord, updateCasedataBillingRecord } from '@casedata/services/casedata-billing-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   DatePicker,
@@ -13,6 +12,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { CBillingRecord, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 import { BillingStatusLabel } from './billing-status-label.component';
@@ -62,7 +62,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   const [editingRowState, setEditingRowState] = useState<EditRowState | null>(null);
 
   const startEditing = (record: CBillingRecord) => {
-    setEditingRecordId(record.id);
+    setEditingRecordId(record.id ?? null);
     setEditFormState({
       ourReference: record.invoice?.ourReference || '',
       customerReference: record.invoice?.customerReference || '',
@@ -89,7 +89,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   const handleSave = async (record: CBillingRecord) => {
     if (!editFormState) return;
 
-    setSavingId(record.id);
+    setSavingId(record.id ?? null);
 
     try {
       const updatedRecord: CBillingRecord = {
@@ -103,6 +103,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
           invoiceRows: editFormState.invoiceRows,
         },
         extraParameters: {
+          errandId: record.extraParameters?.errandId ?? '',
+          errandNumber: record.extraParameters?.errandNumber ?? '',
           ...record.extraParameters,
           referenceName: editFormState.ourReference,
         },
@@ -142,11 +144,11 @@ export const BillingTable: React.FC<BillingTableProps> = ({
 
     if (!confirmed) return;
 
-    setDeletingId(record.id);
+    setDeletingId(record.id ?? null);
 
     try {
-      await deleteCasedataBillingRecord(errand, record.id, municipalityId);
-      onDeleteRecord(record.id);
+      await deleteCasedataBillingRecord(errand, record.id!, municipalityId);
+      onDeleteRecord(record.id!);
       cancelEditing();
       toastMessage({
         position: 'bottom',
@@ -513,7 +515,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                               onClick={() => handleEditRow(rowIndex)}
                               disabled={editingRowState !== null}
                             >
-                              <LucideIcon name="pen" size={16} />
+                              <Pen size={16} />
                             </Button>
                           </Table.Column>
                           <Table.Column>
@@ -525,7 +527,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                               onClick={() => handleDeleteRow(rowIndex)}
                               disabled={editingRowState !== null}
                             >
-                              <LucideIcon name="trash-2" size={16} />
+                              <Trash2 size={16} />
                             </Button>
                           </Table.Column>
                         </>

@@ -12,7 +12,6 @@ import {
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId, getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -22,6 +21,7 @@ import { BillingLeaseholder } from './billing-leaseholder.component';
 import { BillingServiceTable } from './billing-service-table.component';
 import { BillingSpecifications } from './billing-specifications.component';
 import { BillingTable } from './billing-table.component';
+import { Plus } from 'lucide-react';
 
 export const CaseDataBillingForm: React.FC = () => {
   const { errand, municipalityId, user, setErrand } = useAppContext();
@@ -200,7 +200,7 @@ export const CaseDataBillingForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await saveCasedataBillingRecord(data, errand, municipalityId);
+      await saveCasedataBillingRecord(data, errand!, municipalityId);
 
       toastMessage({
         position: 'bottom',
@@ -276,7 +276,7 @@ export const CaseDataBillingForm: React.FC = () => {
                 <Button
                   className="mt-16"
                   variant="secondary"
-                  leftIcon={<LucideIcon name="plus" />}
+                  leftIcon={<Plus />}
                   onClick={handleStartAddNew}
                   disabled={isEditingOrAdding}
                 >
@@ -297,7 +297,7 @@ export const CaseDataBillingForm: React.FC = () => {
             <div className="flex flex-col pt-24">
               <h3 className="text-h3-md pb-16">Skapade fakturaunderlag</h3>
               <BillingTable
-                errand={errand}
+                errand={errand!}
                 billingRecords={billingRecords}
                 onDeleteRecord={handleDeleteBillingRecord}
                 onUpdateRecord={handleUpdateBillingRecord}
