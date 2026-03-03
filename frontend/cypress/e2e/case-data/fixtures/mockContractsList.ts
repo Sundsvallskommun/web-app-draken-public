@@ -86,7 +86,7 @@ export const mockContractsList: PageContract = {
       externalReferenceId: '101',
       status: Status.ACTIVE,
       type: ContractType.LEASE_AGREEMENT,
-      leaseType: LeaseType.USUFRUCT_MOORING,
+      leaseType: LeaseType.LAND_LEASE_MISC,
       notice: {
         terms: [
           {
