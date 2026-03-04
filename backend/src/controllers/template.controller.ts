@@ -122,6 +122,8 @@ export class TemplateController {
     @QueryParam('prefix') prefix: string = '',
     @QueryParam('type') type: string = '',
     @QueryParam('excludeVariants') excludeVariants: string = '',
+    @QueryParam('templateType') templateType: string = '',
+    @QueryParam('excludeRoles') excludeRoles: string = '',
   ): Promise<ResponseData> {
     const namespace = prefix === 'internal.' ? 'CONTACTSUNDSVALL' : CASEDATA_NAMESPACE || SUPPORTMANAGEMENT_NAMESPACE;
     const baseUrl = `${this.SERVICE}/${MUNICIPALITY_ID}/templates`;
@@ -133,16 +135,22 @@ export class TemplateController {
 
     let filteredTemplates = prefix ? allTemplates.filter((t: DetailedTemplateResponse) => t.identifier?.startsWith(prefix)) : allTemplates;
 
-    if (type) {
+    const effectiveType = templateType || type;
+    if (effectiveType) {
       filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
+        const metadataType = getMetadataValue(t, 'templateType');
+        if (metadataType) return metadataType === effectiveType;
         const parts = t.identifier?.split('.') || [];
-        return parts.length >= 2 && parts[1] === type;
+        return parts.length >= 2 && parts[1] === effectiveType;
       });
     }
 
-    if (excludeVariants) {
-      const excludeList = excludeVariants.split(',').map(v => v.trim());
+    const effectiveExcludeRoles = excludeRoles || excludeVariants;
+    if (effectiveExcludeRoles) {
+      const excludeList = effectiveExcludeRoles.split(',').map(v => v.trim());
       filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
+        const metadataRole = getMetadataValue(t, 'templateRole');
+        if (metadataRole) return !excludeList.includes(metadataRole);
         const parts = t.identifier?.split('.') || [];
         return parts.length < 3 || !excludeList.includes(parts[2]);
       });
@@ -180,4 +188,8 @@ export class TemplateController {
     const res = await this.apiService.get<DetailedTemplateResponse>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }
+}
+
+function getMetadataValue(template: DetailedTemplateResponse, key: string): string | undefined {
+  return template.metadata?.find((m) => m.key === key)?.value;
 }

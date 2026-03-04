@@ -12,6 +12,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
+import { getTemplateRole } from '@common/utils/template-metadata';
 import dayjs from 'dayjs';
 import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
@@ -79,6 +80,7 @@ export interface DecisionTemplate {
   identifier: string;
   name: string;
   content: string;
+  metadata?: Array<{ key: string; value: string }>;
 }
 
 export interface DecisionTemplatesResult {
@@ -99,14 +101,13 @@ export async function fetchDecisionTemplates(app: string, userName: string): Pro
     const templates: DecisionTemplate[] = allTemplates
       .filter((t) => {
         if (!t.identifier || !t.content) return false;
-        const parts = t.identifier.split('.');
-        // Exclude signature templates by name convention
-        return parts.length === 3 && parts[2] !== 'signature';
+        return getTemplateRole(t) !== 'signature';
       })
       .map((t) => ({
         identifier: t.identifier!,
         name: t.name || t.identifier!,
         content: base64Decode(t.content!),
+        metadata: t.metadata,
       }));
 
     const signatureTemplate = allTemplates.find((t) => t.identifier === `${app}.decision.signature`);

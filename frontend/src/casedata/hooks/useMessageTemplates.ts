@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+import { getTemplateRole, getTemplateType } from '@common/utils/template-metadata';
 import {
   EMAIL_INFORMATION_TEXT,
   fetchTemplatesWithMetadata,
@@ -64,13 +65,11 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
         });
 
         const emailTemplates = appResult.templates.filter((t) => {
-          const parts = t.identifier.split('.');
-          return parts.length >= 3 && parts[1] === 'email' && !['signature', 'publicdocuments'].includes(parts[2]);
+          return getTemplateType(t) === 'email' && !['signature', 'publicdocuments'].includes(getTemplateRole(t) || '');
         });
 
         const smsTemplates = appResult.templates.filter((t) => {
-          const parts = t.identifier.split('.');
-          return parts.length >= 3 && parts[1] === 'sms' && !['signature'].includes(parts[2]);
+          return getTemplateType(t) === 'sms' && getTemplateRole(t) !== 'signature';
         });
 
         const byId: Record<string, string> = {};

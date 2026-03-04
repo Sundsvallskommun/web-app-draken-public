@@ -26,6 +26,7 @@ export interface TemplateApiResponse {
   name?: string;
   description?: string;
   content?: string;
+  metadata?: Array<{ key: string; value: string }>;
   defaultValues?: Array<{ fieldName: string; value: string }>;
 }
 
@@ -55,6 +56,7 @@ export interface TemplateInfo {
   identifier: string;
   name: string;
   content: string;
+  metadata?: Array<{ key: string; value: string }>;
   defaultValues?: Array<{ fieldName: string; value: string }>;
 }
 
@@ -95,6 +97,7 @@ export async function fetchTemplatesWithMetadata(
         identifier: t.identifier!,
         name: t.name || t.identifier!,
         content: base64Decode(t.content!),
+        metadata: t.metadata,
         defaultValues: t.defaultValues,
       }));
 
