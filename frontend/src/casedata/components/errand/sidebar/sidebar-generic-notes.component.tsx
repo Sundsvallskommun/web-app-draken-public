@@ -219,7 +219,7 @@ export const SidebarGenericNotes: React.FC<{
                         ></p>
 
                         <p className="my-0 flex justify-between">
-                          <span className="text-xs">{dayjs(note.updated).format('D MMM, HH:mm')}</span>
+                          <span className="text-xs">{dayjs(note.updated).format('D MMM YYYY, HH:mm')}</span>
                         </p>
                       </div>
                     </div>
