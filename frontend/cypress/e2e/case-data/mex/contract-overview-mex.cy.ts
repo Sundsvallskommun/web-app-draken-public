@@ -73,7 +73,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.contains('TESTKOMMUN TESTFASTIGHET 1:1').should('exist');
           cy.contains('Testdistrikt Norra').should('exist');
           cy.contains('Arrende').should('exist');
-          cy.contains('Båtplats').should('exist');
+          cy.contains('Lägenhetsarrende').should('exist');
           cy.contains('2049-00001').should('exist');
           cy.contains('101').should('exist');
           cy.contains('Test Kommun AB').should('exist');
