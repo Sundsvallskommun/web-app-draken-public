@@ -78,7 +78,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
       cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
@@ -207,7 +210,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
-        expect(leaseAgreement.leaseType).to.equal(LeaseType.USUFRUCT_MOORING);
+        expect(leaseAgreement.leaseType).to.equal(LeaseType.LAND_LEASE_MISC);
         const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
         const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
         expect(lessor.firstName).to.equal(
@@ -346,7 +349,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           yearly: 120,
           total: 120,
           additionalInformation: [
-            'Avgift, båtplats. Fastigheter: AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
+            'Avgift, lägenhetsarrende. Fastigheter: AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
             'Foobar',
           ],
         });
@@ -356,7 +359,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('manages creating a new lease agreement with correct default values', () => {
       visitErrandWithoutContract();
       cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
-      cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.USUFRUCT_MOORING);
+      cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.LAND_LEASE_MISC);
 
       cy.get('[data-cy="Upplåtare-table"]').should('exist');
 
@@ -388,7 +391,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@postContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
-        expect(leaseAgreement.leaseType).to.equal(LeaseType.USUFRUCT_MOORING);
+        expect(leaseAgreement.leaseType).to.equal(LeaseType.LAND_LEASE_MISC);
         const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
         const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
         expect(lessor.firstName).to.equal(
@@ -412,7 +415,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             monthly: 0,
             total: null,
             currency: 'SEK',
-            additionalInformation: ['Avgift, båtplats. Fastigheter: ', ''],
+            additionalInformation: ['Avgift, lägenhetsarrende. Fastigheter: ', ''],
           },
           invoicing: { invoicedIn: 'ADVANCE' },
           startDate: '',
@@ -426,7 +429,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           propertyDesignations: [],
           contractId: '',
           type: 'LEASE_AGREEMENT',
-          leaseType: 'USUFRUCT_MOORING',
+          leaseType: 'LAND_LEASE_MISC',
           status: 'DRAFT',
           externalReferenceId: '',
           stakeholders: [
@@ -689,7 +692,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
               monthly: 0,
               yearly: 1000,
               total: 1000,
-              additionalInformation: ['Avgift, båtplats. Fastigheter: AVTALSFASTIGHET 1:123', ''],
+              additionalInformation: ['Avgift, lägenhetsarrende. Fastigheter: AVTALSFASTIGHET 1:123', ''],
             },
             invoicing: {
               invoiceInterval: 'YEARLY',

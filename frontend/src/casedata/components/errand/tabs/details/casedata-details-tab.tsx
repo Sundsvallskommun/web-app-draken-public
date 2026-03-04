@@ -11,7 +11,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
 import dynamic from 'next/dynamic';
@@ -19,6 +18,8 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
+import { MapPin } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
@@ -101,7 +102,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="my-lg">
         <Disclosure variant="alt" data-cy={`section-${label}-disclosure`} initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name={icon as any} />} />
+            <Disclosure.Icon icon={(() => { const DynIcon = iconMap[icon as string]; return DynIcon ? <DynIcon /> : undefined; })()} />
             <Disclosure.Title>{label}</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -173,7 +174,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
             {appConfig.features.useFacilities ? (
               <Disclosure variant="alt" data-cy="facilities-disclosure">
                 <Disclosure.Header>
-                  <Disclosure.Icon icon={<LucideIcon name="map-pin" />} />
+                  <Disclosure.Icon icon={<MapPin />} />
                   <Disclosure.Title>Fastigheter</Disclosure.Title>
                   <Disclosure.Button />
                 </Disclosure.Header>

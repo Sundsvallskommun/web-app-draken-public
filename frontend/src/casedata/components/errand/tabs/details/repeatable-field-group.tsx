@@ -1,11 +1,11 @@
 import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/casedata-errand-service';
 import { EXTRAPARAMETER_SEPARATOR, UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface RepeatableFieldGroupProps {
   groupName: string;
@@ -141,7 +141,7 @@ export const RepeatableFieldGroup: React.FC<RepeatableFieldGroupProps> = ({
                 variant="tertiary"
                 color="error"
                 onClick={() => handleRemove(itemIndex)}
-                leftIcon={<LucideIcon name="trash-2" size={16} />}
+                leftIcon={<Trash2 size={16} />}
               >
                 {removeButtonText}
               </Button>
@@ -212,7 +212,7 @@ export const RepeatableFieldGroup: React.FC<RepeatableFieldGroupProps> = ({
             variant="secondary"
             size="sm"
             onClick={handleAdd}
-            leftIcon={<LucideIcon name="plus" size={16} />}
+            leftIcon={<Plus size={16} />}
           >
             {addButtonText}
           </Button>

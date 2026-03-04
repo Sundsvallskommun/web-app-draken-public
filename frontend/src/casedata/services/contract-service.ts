@@ -39,13 +39,12 @@ export const contractTypes = [
   { label: 'Upplåtelse av allmän plats', key: ContractType.LAND_LEASE_PUBLIC },
   { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
   { label: 'Tomträtt', key: ContractType.LEASEHOLD },
+  { label: 'Hyresobjekt', key: ContractType.OBJECT_LEASE },
 ];
 
 export const leaseTypes = [
   { label: 'Anläggningsarrende', key: LeaseType.SITE_LEASE_COMMERCIAL },
   { label: 'Bostadsarrende', key: LeaseType.LAND_LEASE_RESIDENTIAL },
-  { label: 'Båtplats', key: LeaseType.USUFRUCT_MOORING },
-  { label: 'Hyresobjekt', key: LeaseType.OBJECT_LEASE },
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },

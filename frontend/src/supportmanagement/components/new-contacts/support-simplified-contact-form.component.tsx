@@ -30,8 +30,7 @@ import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import { Pen } from 'lucide-react';
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
   editing: boolean;
@@ -356,7 +355,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             color="vattjom"
             inverted
             size="sm"
-            leftIcon={<LucideIcon name="pen" />}
+            leftIcon={<Pen />}
             onClick={() => {
               reset({}, { keepErrors: false });
               setValue(

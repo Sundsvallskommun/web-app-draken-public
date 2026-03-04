@@ -1,8 +1,8 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface SupportManagementPriorityFilter {
   priority: string[];
@@ -18,7 +18,7 @@ export const SupportManagementFilterPriority: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Prioritet-filter"
         variant="tertiary"
         showBackground={false}

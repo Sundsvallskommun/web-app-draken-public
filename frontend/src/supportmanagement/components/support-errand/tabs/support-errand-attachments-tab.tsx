@@ -4,7 +4,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
@@ -36,6 +35,8 @@ import dayjs from 'dayjs';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface SingleAttachment {
   file: File | undefined;
@@ -358,7 +359,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
             data-cy="add-attachment-button"
             disabled={isSupportErrandLocked(supportErrand!) || supportErrandIsEmpty(supportErrand!)}
             color="vattjom"
-            rightIcon={<LucideIcon name="upload" size={16} />}
+            rightIcon={<Upload size={16} />}
             inverted
             size="sm"
             onClick={() => {
@@ -397,11 +398,10 @@ export const SupportErrandAttachmentsTab: React.FC<{
                   }}
                 >
                   <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
-                    <LucideIcon
-                      name={documentMimeTypes.find((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'}
+                    {(() => { const DynIcon = iconMap[documentMimeTypes.find((d) => d.includes(attachment.mimeType)) ? 'file' : 'image']; return DynIcon ? <DynIcon
                       className="block"
                       size={24}
-                    />
+                    /> : null; })()}
                   </div>
                   <div>
                     <p>
@@ -422,7 +422,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       inverted
                       onClick={() => setSelectedAttachment(attachment)}
                     >
-                      <LucideIcon name="ellipsis" />
+                      <Ellipsis />
                     </PopupMenu.Button>
                     <PopupMenu.Panel>
                       <PopupMenu.Items>
@@ -430,7 +430,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                           <PopupMenu.Item>
                             <Button
                               data-cy={`open-attachment-${attachment.id}`}
-                              leftIcon={<LucideIcon name="eye" />}
+                              leftIcon={<Eye />}
                               onClick={() => {
                                 clickHandler(attachment);
                               }}
@@ -444,7 +444,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                             <PopupMenu.Item>
                               <Button
                                 data-cy={`delete-attachment-${attachment.id}`}
-                                leftIcon={<LucideIcon name="trash" />}
+                                leftIcon={<Trash />}
                                 onClick={onDelete}
                               >
                                 Ta bort

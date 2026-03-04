@@ -18,7 +18,6 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   cx,
@@ -35,6 +34,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
@@ -293,7 +293,7 @@ export const CasedataInvestigationTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<LucideIcon name="download" size={18} />}
+            rightIcon={<Download size={18} />}
             onClick={getPdfPreview}
             data-cy="preview-investigation-button"
           >
@@ -305,7 +305,7 @@ export const CasedataInvestigationTab: React.FC<{
         {errand?.decisions && errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED') && (
           <div className="bg-background-200 rounded-groups gap-12 flex py-10 px-16 mb-lg">
             <div>
-              <LucideIcon name="info" color="vattjom" />
+              <Info className="text-vattjom-surface-primary" />
             </div>
             <div>
               <p className="m-0 pr-24" data-cy="recommended-decision">
@@ -319,7 +319,7 @@ export const CasedataInvestigationTab: React.FC<{
           <div className="pb-[1.5rem]">
             <Divider.Section orientation="horizontal">
               <div className="flex gap-sm items-center">
-                <LucideIcon name="clipboard-pen-line" />
+                <ClipboardPenLine />
                 <h3 className="text-h4-sm md:text-h4-md">Utredningsmall</h3>
               </div>
             </Divider.Section>
@@ -447,7 +447,7 @@ export const CasedataInvestigationTab: React.FC<{
                   });
               })}
               disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
-              leftIcon={<LucideIcon name="check" className="mr-sm" />}
+              leftIcon={<Check className="mr-sm" />}
               loading={isLoading}
               loadingText="Sparar"
             >

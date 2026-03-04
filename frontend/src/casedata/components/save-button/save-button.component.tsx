@@ -4,11 +4,11 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { ArrowRight } from 'lucide-react';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;
@@ -19,10 +19,7 @@ export const SaveButtonComponent: React.FC<{
   icon?: JSX.Element;
   loading?: boolean;
 }> = (props) => {
-  const {
-    errand,
-    municipalityId,
-  } = useAppContext();
+  const { errand, municipalityId } = useAppContext();
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const router = useRouter();
   const [internalLoading, setInternalLoading] = useState(false);
@@ -70,7 +67,7 @@ export const SaveButtonComponent: React.FC<{
             | 'bjornstigen'
             | 'juniskar') || 'primary'
         }
-        rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : undefined}
+        rightIcon={props.icon ? <ArrowRight size={18} /> : undefined}
         loading={props.loading || internalLoading}
         loadingText="Sparar"
       >

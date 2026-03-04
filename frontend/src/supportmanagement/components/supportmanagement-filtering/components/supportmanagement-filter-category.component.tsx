@@ -1,12 +1,12 @@
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 import { useTranslation } from 'next-i18next';
+import { ChevronDown } from 'lucide-react';
 export interface CategoryFilter {
   category: string[];
 }
@@ -28,7 +28,7 @@ export const SupportManagementFilterCategory: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Verksamhet-filter"
         variant="tertiary"
         showBackground={false}

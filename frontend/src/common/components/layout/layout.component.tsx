@@ -3,16 +3,15 @@ import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-cased
 import { useAppContext } from '@common/contexts/app.context';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import Head from 'next/head';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
+import { ExternalLink, Menu } from 'lucide-react';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const {
@@ -29,7 +28,11 @@ export default function Layout({ title, children }: { title: string; children: R
     : appConfig.isSupportManagement
     ? supportErrand?.errandNumber
     : undefined;
-  const hostName = window.location.hostname;
+  const [hostName, setHostName] = useState('');
+
+  useEffect(() => {
+    setHostName(window.location.hostname);
+  }, []);
 
   const MainTitle = () => (
     <NextLink
@@ -90,10 +93,6 @@ export default function Layout({ title, children }: { title: string; children: R
 
   return (
     <>
-      <Head>
-        <title>{title}</title>
-        <meta name="description" content={appConfig.applicationName} />
-      </Head>
       <div className="relative z-[15] bg-background-content">
         <PageHeader
           logo={pathName.includes('arende') && errandNumber !== undefined ? <SingleErrandTitle /> : <MainTitle />}
@@ -119,7 +118,7 @@ export default function Layout({ title, children }: { title: string; children: R
                 <Button
                   color={'primary'}
                   variant={'tertiary'}
-                  rightIcon={<LucideIcon name="external-link" color="primary" variant="tertiary" />}
+                  rightIcon={<ExternalLink />}
                 >
                   Nytt ärende
                 </Button>
@@ -129,7 +128,7 @@ export default function Layout({ title, children }: { title: string; children: R
           mobileMenu={
             <PopupMenu align="end">
               <PopupMenu.Button iconButton>
-                <LucideIcon name="menu" />
+                <Menu />
               </PopupMenu.Button>
               <PopupMenu.Panel>
                 <PopupMenu.Group>
@@ -139,7 +138,7 @@ export default function Layout({ title, children }: { title: string; children: R
                   <PopupMenu.Group>
                     <PopupMenu.Item>
                       <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                        <LucideIcon name="external-link" className="h-md" color="primary" variant="tertiary" /> Nytt
+                        <ExternalLink className="h-md" /> Nytt
                         ärende
                       </Link>
                     </PopupMenu.Item>

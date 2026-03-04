@@ -1,6 +1,5 @@
 import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, cx, Link } from '@sk-web-gui/react';
 import {
   AttestationDatesFilter,
@@ -19,6 +18,7 @@ import {
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
 import { useState } from 'react';
+import { ListFilter } from 'lucide-react';
 
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
 export const AttestationValues = {
@@ -55,7 +55,7 @@ export const AttestationsFilteringComponent: React.FC<{
               color="vattjom"
               variant={show ? 'tertiary' : 'primary'}
               inverted={show ? false : true}
-              leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
+              leftIcon={<ListFilter size="1.8rem" />}
             >
               {show ? 'Dölj filter' : `Visa filter `}
             </Button>

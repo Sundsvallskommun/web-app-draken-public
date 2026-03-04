@@ -11,11 +11,11 @@ import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Divider, FormControl, Modal, PopupMenu, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
+import { Ellipsis, Pencil, Trash } from 'lucide-react';
 
 export const SidebarGenericNotes: React.FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
@@ -219,7 +219,7 @@ export const SidebarGenericNotes: React.FC<{
                         ></p>
 
                         <p className="my-0 flex justify-between">
-                          <span className="text-xs">{dayjs(note.updated).format('D MMM, HH:mm')}</span>
+                          <span className="text-xs">{dayjs(note.updated).format('D MMM YYYY, HH:mm')}</span>
                         </p>
                       </div>
                     </div>
@@ -233,14 +233,14 @@ export const SidebarGenericNotes: React.FC<{
                             className="bg-transparent"
                             variant="ghost"
                           >
-                            <LucideIcon name="ellipsis" />
+                            <Ellipsis />
                           </PopupMenu.Button>
                           <PopupMenu.Panel>
                             <PopupMenu.Items>
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<LucideIcon name="pencil" />}
+                                    leftIcon={<Pencil />}
                                     disabled={
                                       noteIsComment(note.noteType) && errand?.status?.statusType === 'Ärende avslutat'
                                     }
@@ -255,7 +255,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<LucideIcon name="trash" />}
+                                    leftIcon={<Trash />}
                                     onClick={() => {
                                       removeNote(note);
                                     }}

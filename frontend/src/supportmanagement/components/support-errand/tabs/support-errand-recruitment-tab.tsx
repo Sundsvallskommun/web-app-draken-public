@@ -1,8 +1,8 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
+import { Text } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 
@@ -70,7 +70,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
             return (
               <Disclosure key={`disclosure-${key}`} variant="alt">
                 <Disclosure.Header>
-                  <Disclosure.Icon icon={<LucideIcon name="text" />} />
+                  <Disclosure.Icon className="shrink-0" icon={<Text />} />
                   <Disclosure.Title>{param[0].displayName}</Disclosure.Title>
                   {param.every((p, p_idx) => recruitmentForm.getValues(`${key}.${p_idx}.values.1`) === 'true') && (
                     <Label rounded inverted color="gronsta">
@@ -94,7 +94,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
                           {val.group}
                         </FormLabel>
                         <Input type="hidden" {...recruitmentForm.register(`${key}.${index}.values.1`)} />
-                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`)) ? (
+                        {['true', 'false'].includes(recruitmentForm.getValues(`${key}.${index}.values.1`) ?? '') ? (
                           <Checkbox
                             defaultChecked={recruitmentForm.getValues(`${key}.${index}.values.1`) === 'true'}
                             onChange={(e) => {

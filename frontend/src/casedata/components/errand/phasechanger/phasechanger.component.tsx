@@ -1,6 +1,5 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -14,26 +13,18 @@ import {
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
+import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
-import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 
 export const PhaseChanger = () => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-    administrators,
-    uiPhase,
-  } = useAppContext();
+  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
@@ -214,7 +205,7 @@ export const PhaseChanger = () => {
         await errandSave();
         handleSubmit(onSave, onError)();
       }}
-      rightIcon={<LucideIcon name="arrow-right" size={18} />}
+      rightIcon={<ArrowRight size={18} />}
     >
       Starta handläggning
     </Button>
@@ -231,7 +222,7 @@ export const PhaseChanger = () => {
         onClick={() => {
           setPhaseDialogOpen(true);
         }}
-        rightIcon={<LucideIcon name="arrow-right" size={18} />}
+        rightIcon={<ArrowRight size={18} />}
       >
         {phaseChangeText?.button}
       </Button>

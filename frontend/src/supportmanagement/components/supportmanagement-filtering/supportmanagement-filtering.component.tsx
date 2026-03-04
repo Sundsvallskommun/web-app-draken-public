@@ -27,7 +27,6 @@ import {
   SupportManagementQueryValues,
 } from './components/supportmanagement-filter-query.component';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   ChannelFilter,
   ChannelValues,
@@ -58,6 +57,7 @@ import {
   TypeFilter,
   TypeValues,
 } from './components/supportmanagement-filter-type.component';
+import { ListFilter } from 'lucide-react';
 
 export type SupportManagementFilter = CategoryFilter &
   LabelCategoryFilter &
@@ -104,7 +104,7 @@ const SupportManagementFiltering: React.FC<{
               color="vattjom"
               variant={show ? 'tertiary' : 'primary'}
               inverted={show ? false : true}
-              leftIcon={<LucideIcon name="list-filter" size="1.8rem" />}
+              leftIcon={<ListFilter size="1.8rem" />}
             >
               {show ? 'Dölj filter' : `Visa filter ${numberOfFilters !== 0 ? `(${numberOfFilters})` : ''}`}
             </Button>

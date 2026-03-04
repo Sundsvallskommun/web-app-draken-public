@@ -7,12 +7,12 @@ import {
   setMessageViewStatus,
 } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import React, { useEffect, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import { MessageComposer } from './message-composer.component';
 import MessageTreeComponent from './tree.component';
+import { Mail } from 'lucide-react';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
@@ -67,7 +67,9 @@ export const CasedataMessagesTab: React.FC<{
             });
           })
         )
-        .then((tree) => { if (tree) setMessageTree(tree); })
+        .then((tree) => {
+          if (tree) setMessageTree(tree);
+        })
         .then(() =>
           fetchMessages(municipalityId, errand!).catch(() => {
             toastMessage({
@@ -78,7 +80,9 @@ export const CasedataMessagesTab: React.FC<{
             });
           })
         )
-        .then((msgs) => { if (msgs) setMessages(msgs); })
+        .then((msgs) => {
+          if (msgs) setMessages(msgs);
+        })
         .catch(() => {
           toastMessage({
             position: 'bottom',
@@ -177,7 +181,7 @@ export const CasedataMessagesTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!((errand ? isErrandLocked(errand) : false) || !allowed)}
-            rightIcon={<LucideIcon name="mail" size={18} />}
+            rightIcon={<Mail size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
               setShowMessageComposer(true);
@@ -219,7 +223,9 @@ export const CasedataMessagesTab: React.FC<{
               onChange={(e) => setFilterSource(Number(e.target.value))}
             >
               <Select.Option value={0}>Alla</Select.Option>
-              <Select.Option value={1}>{errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}</Select.Option>
+              <Select.Option value={1}>
+                {errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}
+              </Select.Option>
               <Select.Option value={2}>Digital brevlåda</Select.Option>
               <Select.Option value={3}>E-post</Select.Option>
               <Select.Option value={4}>Mina sidor</Select.Option>
