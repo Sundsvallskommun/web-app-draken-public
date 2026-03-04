@@ -887,10 +887,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -908,8 +908,8 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
@@ -1050,10 +1050,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1155,10 +1155,10 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];

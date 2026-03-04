@@ -2,9 +2,9 @@ import { Parameter } from '@common/data-contracts/supportmanagement/data-contrac
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
+import { Text } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
-import { Type } from 'lucide-react';
 
 export const SupportErrandRecruitmentTab: React.FC<{
   update: () => void;
@@ -70,7 +70,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
             return (
               <Disclosure key={`disclosure-${key}`} variant="alt">
                 <Disclosure.Header>
-                  <Disclosure.Icon icon={<Type />} />
+                  <Disclosure.Icon className="shrink-0" icon={<Text />} />
                   <Disclosure.Title>{param[0].displayName}</Disclosure.Title>
                   {param.every((p, p_idx) => recruitmentForm.getValues(`${key}.${p_idx}.values.1`) === 'true') && (
                     <Label rounded inverted color="gronsta">
