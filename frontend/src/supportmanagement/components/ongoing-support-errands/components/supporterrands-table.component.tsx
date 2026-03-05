@@ -93,7 +93,7 @@ export const SupportErrandsTable: React.FC = () => {
   const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses);
 
   const headers = errandTableObject.map((column, index) => (
-    <Table.HeaderColumn key={`header-${index}`} sticky={true}>
+    <Table.HeaderColumn key={`header-${index}`}>
       {column.screenReaderOnly ? (
         <span className="sr-only">{column.label}</span>
       ) : column.sortable ? (
