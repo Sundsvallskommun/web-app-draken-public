@@ -57,7 +57,6 @@ type TenantConfig = {
   showMetaRows: boolean;
   showPropertyDesignations: boolean;
   subjectResolver?: (e: SupportErrand) => string | undefined;
-  introRecipientLine?: string;
   closingLine?: string;
 };
 
@@ -76,7 +75,6 @@ const TENANTS: Record<TenantKey, TenantConfig> = {
     showMetaRows: true,
     showPropertyDesignations: true,
     subjectResolver: (e) => (e.channel === 'EMAIL' ? (e as any)?.emailHeaders?.subject || e.title : undefined),
-    introRecipientLine: 'Vi på ${department} har tagit emot en fråga som vi behöver förmedla till er.',
     closingLine: 'Vi önskar en fortsatt fin dag.',
   },
   ange: {
@@ -86,7 +84,6 @@ const TENANTS: Record<TenantKey, TenantConfig> = {
     showMetaRows: true,
     showPropertyDesignations: false,
     subjectResolver: (e) => (e.channel === 'EMAIL' ? (e as any)?.emailHeaders?.subject || e.title : undefined),
-    introRecipientLine: 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.',
     closingLine: 'Vi önskar en fin dag.',
   },
 };
@@ -100,13 +97,15 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
   const customer = e?.customer?.[0];
   const contacts = e?.contacts || [];
   const subject = cfg.subjectResolver?.(e);
-  const propertyDesignations = Array.isArray((e?.parameters as unknown as Record<string, unknown>)?.['propertyDesignation'])
-    ? ((e.parameters as unknown as Record<string, unknown>)['propertyDesignation'] as string[])
-    : [];
+  const propertyDesignations =
+    e?.parameters?.find((p) => p.key === 'propertyDesignation')?.values ?? [];
+  const streets =
+    e?.parameters?.find((p) => p.key === 'street')?.values ?? [];
 
-  const introLine = (
-    cfg.introRecipientLine || 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'
-  ).replace('${department}', department);
+  const introLine = 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'.replace(
+    '${department}',
+    department
+  );
 
   const metaRows = cfg.showMetaRows
     ? `<p><b>Inkom via:</b> ${channel}</p>${
@@ -118,7 +117,15 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
 
   const propertyBlock =
     cfg.showPropertyDesignations && propertyDesignations.length
-      ? `<br><p><b>Fastighetsbeteckningar:</b> ${propertyDesignations.join(', ')}</p><br>`
+      ? `<br><p><b>Fastighetsuppgifter</b></p>` +
+        propertyDesignations
+          .map(
+            (designation, i) =>
+              `<p><b>Fastighetsbeteckning:</b> ${designation}</p>` +
+              `<p><b>Adress:</b> ${streets[i] || '(saknas)'}</p>`
+          )
+          .join('<br>')
+        + '<br>'
       : '';
 
   return (
@@ -132,7 +139,7 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
     propertyBlock +
     (customer ? renderContactBlock('Kontaktuppgifter', customer) : '') +
     renderOtherContacts(contacts) +
-    '<br><p>Har detta meddelande inte hamnat rätt?</p><br><p>Hjälp oss gärna att så snabbt som möjligt guida meddelandet till rätt verksamhet eller person. Om du inte vet vem som äger frågan så svarar du på detta mail.</p><br><p>' +
+    '<br><p>Har detta meddelande inte hamnat rätt? Låt oss veta, för vidare hantering.</p><br><p>' +
     cfg.closingLine +
     '</p><br><p>Med vänliga hälsningar,</p><p><b>' +
     department +
@@ -151,9 +158,10 @@ export const buildEscalationTextContent = (e: SupportErrand, user: string, tenan
   const channel = maybe(e?.channel && (Channels as Record<string, string>)[e?.channel]);
   const description = maybe(e?.description);
   const subject = cfg.subjectResolver?.(e);
-  const introLine = (
-    cfg.introRecipientLine || 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'
-  ).replace('${department}', department);
+  const introLine = 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'.replace(
+    '${department}',
+    department
+  );
 
   const metaRows = cfg.showMetaRows
     ? `<p><b>Inkom via:</b> ${channel}</p>${
