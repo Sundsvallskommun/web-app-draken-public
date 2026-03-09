@@ -40,7 +40,9 @@ export class CaseDataErrandController {
   CITIZEN_SERVICE = apiServiceName('citizen');
 
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
-    const applicant: (StakeholderDTO & { personalNumber?: string }) | undefined = errandData.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
+    const applicant: (StakeholderDTO & { personalNumber?: string }) | undefined = errandData.stakeholders?.find(s =>
+      s.roles.includes(Role.APPLICANT),
+    );
     if (applicant && applicant.personId) {
       const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${applicant.personId}/personnumber`;
       const personNumberRes = await this.apiService
@@ -272,7 +274,6 @@ export class CaseDataErrandController {
     @Param('municipalityId') municipalityId: string,
     @Body() errandData: PatchErrandDTO,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const { user } = req;
     if (!errandId) {
       throw 'Id not found. Cannot patch errand without id.';
     }

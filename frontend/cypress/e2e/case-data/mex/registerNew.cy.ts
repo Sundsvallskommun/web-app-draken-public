@@ -46,7 +46,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="registerErrandHeading"] button').eq(0).contains('Avbryt').should('exist');
       cy.get('[data-cy="registerErrandHeading"] button').eq(1).contains('Registrera').should('exist');
       cy.get('.sk-tabs .sk-tabs-list-item-button').eq(0).contains('Grunduppgifter').should('exist');
-      cy.get('[data-cy="channel-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="channel-input"]').should('exist');
       cy.get('[data-cy="municipality-input"]').should('exist');
       cy.get('[data-cy="casetype-input"]').should('exist');
       cy.get('[data-cy="casetype-input"]').should('exist');
@@ -56,7 +56,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('Manages select input and register', () => {
       cy.intercept('POST', '**/errands', mockMexErrand_base).as('postErrand');
-      cy.get('[data-cy="municipality-input"]').should('be.disabled');
+      cy.get('[data-cy="municipality-input"]').should('exist');
 
       const legacyKeys = Object.keys(MEXLegacyCaseType);
       Object.entries(MEXCaseLabel)

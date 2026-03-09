@@ -325,7 +325,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       // Save button disabled when no changes
       cy.get('[data-cy="save-and-continue-button"]').should('be.disabled');
 
-      cy.get('[data-cy="channel-input"]').should('be.disabled');
+      cy.get('[data-cy="channel-input"]').should('have.attr', 'readOnly');
       cy.get('[data-cy="casetype-input"]').should('exist').select(CaseTypes.MEX.MEX_INVOICE);
       cy.get('[data-cy="priority-input"]').should('exist').select('Hög');
 
