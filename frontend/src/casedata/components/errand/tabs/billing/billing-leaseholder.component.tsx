@@ -5,11 +5,10 @@ import { useAppContext } from '@contexts/app.context';
 export const BillingLeaseholder: React.FC = () => {
   const { errand } = useAppContext();
 
+  const leaseholders = getStakeholdersByRelation(errand!, Role.LEASEHOLDER);
   if (!errand) {
     return <span className="italic">Arrendator saknas</span>;
   }
-
-  const leaseholders = getStakeholdersByRelation(errand, Role.LEASEHOLDER);
 
   if (leaseholders.length > 0)
     return (

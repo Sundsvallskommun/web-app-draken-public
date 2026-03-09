@@ -67,7 +67,7 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
         activity: service.accountInformation.activity || '',
         project: service.accountInformation.project || '',
         counterpart: service.accountInformation.counterpart || casedataInvoiceSettings.counterpart || '',
-        object: '',
+        object: service.accountInformation.object || '',
       });
     }
   };
@@ -157,6 +157,7 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
             step={0.01}
             value={formState.costPerUnit}
             onChange={(e) => handleInputChange('costPerUnit', parseFloat(e.target.value) || 0)}
+            disabled={selectedService?.fixedPrice}
           />
         </FormControl>
       </div>

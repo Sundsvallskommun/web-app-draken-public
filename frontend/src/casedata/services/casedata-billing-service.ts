@@ -9,7 +9,7 @@ import {
 } from 'src/data-contracts/backend/data-contracts';
 import { BillingFormData, BillingServiceItem } from '../interfaces/billing';
 import { IErrand } from '../interfaces/errand';
-import { casedataInvoiceSettings } from './billing/casedata-invoice-settings';
+import { casedataInvoiceSettings, CasedataService } from './billing/casedata-invoice-settings';
 
 const BILLING_RECORD_IDS_KEY = 'billingRecordIds';
 
@@ -21,6 +21,10 @@ const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
     if (service.avitext) {
       detailedDescriptions.push(service.avitext);
     }
+
+    const serviceConfig: CasedataService | undefined = casedataInvoiceSettings.services.find(
+      (s) => s.id === service.serviceId
+    );
 
     return {
       descriptions: [service.name],
@@ -40,7 +44,7 @@ const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
           amount: twoDecimals(service.quantity * service.costPerUnit),
         },
       ],
-      vatCode: '00',
+      vatCode: serviceConfig?.vatCode || '00',
     };
   });
 };
@@ -95,7 +99,7 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
       errandId: errand.id.toString(),
       errandNumber: errand.errandNumber,
       referenceName: formData.specifications.ourReference,
-      ...(selectedFacilities.length > 0 && { facilities: selectedFacilities.join(', ') }),
+      ...(selectedFacilities.length > 0 && { facilities: selectedFacilities.join('|') }),
     },
   };
 };

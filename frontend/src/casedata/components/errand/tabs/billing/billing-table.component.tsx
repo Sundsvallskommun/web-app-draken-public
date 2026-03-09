@@ -1,7 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { deleteCasedataBillingRecord, updateCasedataBillingRecord } from '@casedata/services/casedata-billing-service';
 import { useAppContext } from '@contexts/app.context';
-import { Pen, Trash2 } from 'lucide-react';
 import {
   Button,
   DatePicker,
@@ -13,6 +12,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { CBillingRecord, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 import { BillingStatusLabel } from './billing-status-label.component';
@@ -105,6 +105,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         extraParameters: {
           errandId: record.extraParameters?.errandId ?? '',
           errandNumber: record.extraParameters?.errandNumber ?? '',
+          facilities: record.extraParameters?.facilities ?? '',
           referenceName: editFormState.ourReference,
         },
       };
@@ -148,8 +149,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
     if (!record.id) return;
 
     try {
-      await deleteCasedataBillingRecord(errand, record.id, municipalityId);
-      onDeleteRecord(record.id);
+      await deleteCasedataBillingRecord(errand, record.id!, municipalityId);
+      onDeleteRecord(record.id!);
       cancelEditing();
       toastMessage({
         position: 'bottom',
