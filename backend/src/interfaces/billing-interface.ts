@@ -142,7 +142,7 @@ class CExtraParameters {
   referenceName!: string;
   @IsString()
   @IsOptional()
-  facilites?: string;
+  facilities?: string;
 }
 export class CBillingRecord implements BillingRecord {
   @IsOptional()
