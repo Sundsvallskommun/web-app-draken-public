@@ -54,12 +54,12 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
   const invoiceRows = buildInvoiceRows(formData.services);
   const totalAmount = invoiceRows.reduce((sum, row) => sum + (row.totalAmount || 0), 0);
 
-  const hasValidRecipient =
-    formData.recipient && (formData.recipient.personId || formData.recipient.organizationNumber);
-  const hasValidAddress = formData.recipient?.address && formData.recipient?.postalCode && formData.recipient?.city;
+  const recipient = formData.recipient;
+  const hasValidRecipient = recipient && (recipient.personId || recipient.organizationNumber);
+  const hasValidAddress = recipient?.address && recipient?.postalCode && recipient?.city;
 
-  const orgNumber = formData.recipient?.organizationNumber;
-  const persNumber = formData.recipient?.personalNumber;
+  const orgNumber = recipient?.organizationNumber;
+  const persNumber = recipient?.personalNumber;
   const orgNumberStr = orgNumber ? String(orgNumber).trim() : '';
   const persNumberStr = persNumber ? String(persNumber).trim() : '';
   const customerId = orgNumberStr !== '' ? orgNumberStr : persNumberStr !== '' ? persNumberStr : '';
@@ -69,20 +69,20 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
     type: CBillingRecordTypeEnum.EXTERNAL,
     status: CBillingRecordStatusEnum.NEW,
     recipient:
-      hasValidRecipient && hasValidAddress && formData.recipient
+      hasValidRecipient && hasValidAddress && recipient
         ? {
-            ...(formData.recipient.organizationName
-              ? { organizationName: formData.recipient.organizationName }
+            ...(recipient.organizationName
+              ? { organizationName: recipient.organizationName }
               : {
-                  firstName: formData.recipient.name.split(' ')[0] || '',
-                  lastName: formData.recipient.name.split(' ').slice(1).join(' ') || '',
+                  firstName: recipient.name.split(' ')[0] || '',
+                  lastName: recipient.name.split(' ').slice(1).join(' ') || '',
                 }),
-            ...(formData.recipient.personId && { partyId: formData.recipient.personId }),
-            ...(formData.recipient.organizationNumber && { legalId: formData.recipient.organizationNumber }),
+            ...(recipient.personId && { partyId: recipient.personId }),
+            ...(recipient.organizationNumber && { legalId: recipient.organizationNumber }),
             addressDetails: {
-              street: formData.recipient.address,
-              postalCode: formData.recipient.postalCode,
-              city: formData.recipient.city,
+              street: recipient.address,
+              postalCode: recipient.postalCode,
+              city: recipient.city,
             },
           }
         : undefined,

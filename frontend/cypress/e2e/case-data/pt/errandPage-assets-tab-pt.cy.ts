@@ -25,7 +25,10 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page assets tab', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/users/admins', mockAdmins);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
@@ -38,7 +41,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
       cy.intercept(
         'GET',
-        '**/assets?municipalityId=2281&partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&assetId=PRH-2022-000019&type=FTErrandAssets',
+        '**/assets?municipalityId=2281&partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&assetId=SGP-2022-000019&type=FTErrandAssets',
         {}
       );
 
@@ -81,7 +84,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="table-column-type"]').should('exist').contains('strong', 'P-tillstånd');
       cy.get('[data-cy="table-column-assetId"]').should('exist').contains('span', '133773');
       cy.get('[data-cy="table-column-status"]').should('exist').contains('span', 'Aktivt');
-      cy.get('[data-cy="table-column-errandNumber"]').should('exist').contains('span', 'PRH-2023-000283');
+      cy.get('[data-cy="table-column-errandNumber"]').should('exist').contains('span', 'SGP-2023-000283');
       cy.get('[data-cy="table-column-issued"]').should('exist').contains('span', '2023-01-01');
       cy.get('[data-cy="table-column-validTo"]').should('exist').and('contain', '2023-01-01').and('contain', '2023');
     });

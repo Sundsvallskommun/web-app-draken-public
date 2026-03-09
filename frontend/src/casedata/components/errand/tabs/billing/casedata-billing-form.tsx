@@ -13,6 +13,7 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId, getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
+import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
@@ -147,6 +148,8 @@ export const CaseDataBillingForm: React.FC = () => {
   };
 
   const onSubmit = async (data: BillingFormData) => {
+    if (!errand) return;
+
     if (data.services.length === 0) {
       toastMessage({
         position: 'bottom',
@@ -243,6 +246,8 @@ export const CaseDataBillingForm: React.FC = () => {
   };
 
   const isEditingOrAdding = isAddingNew || editingServiceId !== null;
+
+  if (!errand) return null;
 
   return (
     <FormProvider {...form}>

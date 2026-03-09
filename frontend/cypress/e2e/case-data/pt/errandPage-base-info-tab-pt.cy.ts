@@ -23,7 +23,7 @@ import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   const visit = () => {
-    cy.visit('/arende/PRH-2022-000019');
+    cy.visit('/arende/SGP-2022-000019');
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -32,7 +32,10 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page', () => {
     beforeEach(() => {
       cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/messages/*', mockMessages);
       cy.intercept('POST', '**/messages', mockMessages);
       cy.intercept('POST', '**/personid', mockPersonId);
@@ -196,7 +199,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         `**/errands/${mockPTErrand_base.data.id}/stakeholders/${contact[0].id}`,
         mockPTErrand_base
       ).as('patchErrand');
-      cy.visit('/arende/PRH-2022-000019');
+      cy.visit('/arende/SGP-2022-000019');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

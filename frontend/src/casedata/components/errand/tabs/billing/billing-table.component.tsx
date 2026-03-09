@@ -105,7 +105,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         extraParameters: {
           errandId: record.extraParameters?.errandId ?? '',
           errandNumber: record.extraParameters?.errandNumber ?? '',
-          ...record.extraParameters,
+          facilities: record.extraParameters?.facilities ?? [],
           referenceName: editFormState.ourReference,
         },
       };
@@ -145,6 +145,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
     if (!confirmed) return;
 
     setDeletingId(record.id ?? null);
+
+    if (!record.id) return;
 
     try {
       await deleteCasedataBillingRecord(errand, record.id!, municipalityId);

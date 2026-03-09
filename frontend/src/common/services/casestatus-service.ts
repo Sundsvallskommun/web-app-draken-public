@@ -19,7 +19,7 @@ export const findOperationUsingNamespace = (namespace: string) => {
     case 'SBK_MEX':
       return 'MEX';
     case 'SBK_PARKING_PERMIT':
-      return 'PRH';
+      return 'SGP';
     case 'SALARYANDPENSION':
       return 'LOP';
     case 'CONTACTSUNDSVALL':

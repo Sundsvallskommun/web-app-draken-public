@@ -156,27 +156,27 @@ export interface CPageBillingRecord {
 }
 
 export interface ExtraParametersDto {
-  "application.reason"?: string;
-  "application.role"?: ExtraParametersDtoApplicationRoleEnum;
-  "application.applicant.capacity"?: string;
-  "application.applicant.testimonial"?: ExtraParametersDtoApplicationApplicantTestimonialEnum;
-  "application.applicant.signingAbility"?: ExtraParametersDtoApplicationApplicantSigningAbilityEnum;
-  "disability.aid"?: string;
-  "disability.walkingAbility"?: ExtraParametersDtoDisabilityWalkingAbilityEnum;
-  "disability.walkingDistance.beforeRest"?: string;
-  "disability.walkingDistance.max"?: string;
-  "disability.duration"?: string;
-  "disability.canBeAloneWhileParking"?: ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum;
-  "disability.canBeAloneWhileParking.note"?: string;
-  "consent.contact.doctor"?: ExtraParametersDtoConsentContactDoctorEnum;
-  "consent.view.transportationServiceDetails"?: ExtraParametersDtoConsentViewTransportationServiceDetailsEnum;
-  "application.lostPermit.policeReportNumber"?: string;
-  "application.renewal.changedCircumstances"?: ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum;
-  "application.renewal.expirationDate"?: string;
-  "application.renewal.medicalConfirmationRequired"?: string;
-  "artefact.permit.number"?: string;
-  "artefact.permit.status"?: string;
-  "application.supplement.dueDate"?: string;
+  'application.reason'?: string;
+  'application.role'?: ExtraParametersDtoApplicationRoleEnum;
+  'application.applicant.capacity'?: string;
+  'application.applicant.testimonial'?: ExtraParametersDtoApplicationApplicantTestimonialEnum;
+  'application.applicant.signingAbility'?: ExtraParametersDtoApplicationApplicantSigningAbilityEnum;
+  'disability.aid'?: string;
+  'disability.walkingAbility'?: ExtraParametersDtoDisabilityWalkingAbilityEnum;
+  'disability.walkingDistance.beforeRest'?: string;
+  'disability.walkingDistance.max'?: string;
+  'disability.duration'?: string;
+  'disability.canBeAloneWhileParking'?: ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum;
+  'disability.canBeAloneWhileParking.note'?: string;
+  'consent.contact.doctor'?: ExtraParametersDtoConsentContactDoctorEnum;
+  'consent.view.transportationServiceDetails'?: ExtraParametersDtoConsentViewTransportationServiceDetailsEnum;
+  'application.lostPermit.policeReportNumber'?: string;
+  'application.renewal.changedCircumstances'?: ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum;
+  'application.renewal.expirationDate'?: string;
+  'application.renewal.medicalConfirmationRequired'?: string;
+  'artefact.permit.number'?: string;
+  'artefact.permit.status'?: string;
+  'application.supplement.dueDate'?: string;
 }
 
 export interface Attachment {
@@ -215,7 +215,7 @@ export interface DecisionDTO {
   decisionType: string;
   decisionOutcome: string;
   description?: string;
-  law: LawDTO[];
+  law?: LawDTO[];
   decidedBy?: any;
   decidedAt?: string;
   validFrom?: string;
@@ -431,6 +431,12 @@ export interface CContactChannel {
   value?: string;
 }
 
+export interface CJsonParameter {
+  key: string;
+  value?: any;
+  schemaId: string;
+}
+
 export interface CSupportStakeholder {
   externalId?: string;
   externalIdType?: string;
@@ -473,12 +479,6 @@ export interface CNotification {
   acknowledged?: boolean;
   errandId?: string;
   errandNumber?: string;
-}
-
-export interface CJsonParameter {
-  key: string;
-  value: any;
-  schemaId: string;
 }
 
 export interface SupportErrandDto {
@@ -603,65 +603,65 @@ export interface FeatureFlagDto {
 }
 
 export enum CBillingRecordTypeEnum {
-  EXTERNAL = "EXTERNAL",
-  INTERNAL = "INTERNAL",
+  EXTERNAL = 'EXTERNAL',
+  INTERNAL = 'INTERNAL',
 }
 
 export enum CBillingRecordStatusEnum {
-  NEW = "NEW",
-  APPROVED = "APPROVED",
-  INVOICED = "INVOICED",
-  REJECTED = "REJECTED",
+  NEW = 'NEW',
+  APPROVED = 'APPROVED',
+  INVOICED = 'INVOICED',
+  REJECTED = 'REJECTED',
 }
 
 export enum ExtraParametersDtoApplicationRoleEnum {
-  SELF = "SELF",
-  GUARDIAN = "GUARDIAN",
-  CUSTODIAN = "CUSTODIAN",
+  SELF = 'SELF',
+  GUARDIAN = 'GUARDIAN',
+  CUSTODIAN = 'CUSTODIAN',
 }
 
 export enum ExtraParametersDtoApplicationApplicantTestimonialEnum {
-  True = "true",
-  False = "false",
+  True = 'true',
+  False = 'false',
 }
 
 export enum ExtraParametersDtoApplicationApplicantSigningAbilityEnum {
-  True = "true",
-  False = "false",
+  True = 'true',
+  False = 'false',
 }
 
 export enum ExtraParametersDtoDisabilityWalkingAbilityEnum {
-  True = "true",
-  False = "false",
+  True = 'true',
+  False = 'false',
 }
 
 export enum ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum {
-  True = "true",
-  False = "false",
+  True = 'true',
+  False = 'false',
 }
 
 export enum ExtraParametersDtoConsentContactDoctorEnum {
-  True = "true",
-  False = "false",
+  True = 'true',
+  False = 'false',
 }
 
 export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
-  True = "true",
-  False = "false",
+  True = 'true',
+  False = 'false',
 }
 
 export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
-  Y = "Y",
-  N = "N",
+  Y = 'Y',
+  N = 'N',
 }
 
 export enum CCommunicationDirectionEnum {
-  INBOUND = "INBOUND",
-  OUTBOUND = "OUTBOUND",
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
 }
 
 export enum CCommunicationCommunicationTypeEnum {
-  SMS = "SMS",
-  EMAIL = "EMAIL",
-  WEB_MESSAGE = "WEB_MESSAGE",
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }
