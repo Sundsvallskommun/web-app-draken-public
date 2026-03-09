@@ -90,6 +90,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   <FormLabel>Inkom via*</FormLabel>
                   <Select
                     {...register('channel')}
+                    disabled={errand ? isErrandLocked(errand) : false}
                     readOnly={!!errand?.id}
                     className="w-full text-dark-primary"
                     variant="primary"
@@ -127,6 +128,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 <FormControl id="municipality" className="w-full">
                   <FormLabel>Kommun</FormLabel>
                   <Select
+                    disabled={errand ? isErrandLocked(errand) : false}
                     readOnly={!!errand?.id}
                     data-cy="municipality-input"
                     className="w-full text-dark-primary"
