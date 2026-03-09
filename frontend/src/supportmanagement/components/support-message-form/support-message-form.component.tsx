@@ -159,24 +159,17 @@ export const SupportMessageForm: React.FC<{
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
 
-  const [internalSignature, setInternalSignature] = useState<string>('');
-
   const { templates } = useMessageTemplates(user, props.showMessageForm);
 
   const emailBody = templates?.byId[`${templates.app}.email.default`]
     ? templates.byId[`${templates.app}.email.default`] + templates.emailSignature
     : '';
   const smsBody = templates?.smsTemplate || '';
+  const internalSignature = templates?.internalSignature || '';
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
   };
-
-  useEffect(() => {
-    if (props.showMessageForm && templates && !internalSignature) {
-      setInternalSignature(templates.internalSignature || '');
-    }
-  }, [props.showMessageForm, templates, internalSignature]);
 
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {

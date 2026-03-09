@@ -179,10 +179,10 @@ export const CasedataDecisionTab: React.FC<{
   useEffect(() => {
     if (!decisionTemplates) {
       const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'mex';
-      const userName = errand.administratorName || `${user.firstName} ${user.lastName}`;
+      const userName = errand?.administratorName || `${user.firstName} ${user.lastName}`;
       fetchDecisionTemplates(app, userName).then(setDecisionTemplates);
     }
-  }, [decisionTemplates, errand.administratorName, user.firstName, user.lastName]);
+  }, [decisionTemplates, errand?.administratorName, user.firstName, user.lastName]);
 
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
@@ -653,7 +653,7 @@ export const CasedataDecisionTab: React.FC<{
             </>
           )}
 
-          {decisionTemplates?.templates.length > 0 ? (
+          {(decisionTemplates?.templates?.length ?? 0) > 0 ? (
             <FormControl className="w-full">
               <FormLabel>Välj beslutsmall</FormLabel>
               <Input type="hidden" {...register('decisionTemplate')} />

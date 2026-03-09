@@ -1,7 +1,7 @@
 import { User } from '@common/interfaces/user';
 import { getEmailTemplate, getSmsTemplate } from '@supportmanagement/services/message-template-service';
 
-const APP = process.env.NEXT_PUBLIC_APPLICATION;
+const APP = process.env.NEXT_PUBLIC_APPLICATION || '';
 
 export async function getDefaultEmailBody(user: User, variant: string = 'default'): Promise<string> {
   const content = await getEmailTemplate(APP, variant, {

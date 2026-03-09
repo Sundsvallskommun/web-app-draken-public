@@ -158,6 +158,7 @@ export class TemplateController {
 
     const latestByIdentifier = new Map<string, DetailedTemplateResponse>();
     for (const t of filteredTemplates) {
+      if (!t.identifier) continue;
       const existing = latestByIdentifier.get(t.identifier);
       if (!existing || (t.version && existing.version && t.version > existing.version)) {
         latestByIdentifier.set(t.identifier, t);
