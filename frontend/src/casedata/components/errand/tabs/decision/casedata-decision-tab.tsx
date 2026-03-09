@@ -177,7 +177,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [municipalityId, assetType]);
 
   useEffect(() => {
-    if (!decisionTemplates) {
+    if (!decisionTemplates && !isPT()) {
       const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'mex';
       const userName = errand?.administratorName || `${user.firstName} ${user.lastName}`;
       fetchDecisionTemplates(app, userName).then(setDecisionTemplates);
@@ -653,7 +653,7 @@ export const CasedataDecisionTab: React.FC<{
             </>
           )}
 
-          {(decisionTemplates?.templates?.length ?? 0) > 0 ? (
+          {!isPT() && (decisionTemplates?.templates?.length ?? 0) > 0 ? (
             <FormControl className="w-full">
               <FormLabel>Välj beslutsmall</FormLabel>
               <Input type="hidden" {...register('decisionTemplate')} />
