@@ -105,7 +105,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         extraParameters: {
           errandId: record.extraParameters?.errandId ?? '',
           errandNumber: record.extraParameters?.errandNumber ?? '',
-          facilities: record.extraParameters?.facilities ?? [],
+          facilities: record.extraParameters?.facilities ?? '',
           referenceName: editFormState.ourReference,
         },
       };
