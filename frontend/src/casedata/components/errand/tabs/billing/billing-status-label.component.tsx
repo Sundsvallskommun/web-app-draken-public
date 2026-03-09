@@ -1,4 +1,3 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 
@@ -6,8 +5,7 @@ import { billingrecordStatusToLabel } from '@supportmanagement/services/support-
 
 export const BillingStatusLabel: React.FC<{ status: string }> = ({ status }) => {
   let color,
-    inverted = false,
-    icon = null;
+    inverted = false;
   switch (status) {
     case 'NEW':
       color = 'vattjom';
@@ -34,7 +32,7 @@ export const BillingStatusLabel: React.FC<{ status: string }> = ({ status }) => 
       color={color}
       className={`max-h-full h-auto text-center whitespace-nowrap w-fit`}
     >
-      {icon ? <LucideIcon name={icon} size={16} /> : null} {billingrecordStatusToLabel(status)}
+      {billingrecordStatusToLabel(status)}
     </Label>
   );
 };

@@ -1,6 +1,6 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Table } from '@sk-web-gui/react';
+import { Pen, Trash2 } from 'lucide-react';
 import { AddBillingService } from './add-billing-service.component';
 
 interface BillingServiceTableProps {
@@ -70,7 +70,7 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
                     onClick={() => onEditService(service.id)}
                     disabled={editingServiceId !== null}
                   >
-                    <LucideIcon name="pen" size={16} />
+                    <Pen size={16} />
                   </Button>
                 </Table.Column>
                 <Table.Column>
@@ -82,7 +82,7 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
                     onClick={() => onRemoveService(service.id)}
                     disabled={editingServiceId !== null}
                   >
-                    <LucideIcon name="trash-2" size={16} />
+                    <Trash2 size={16} />
                   </Button>
                 </Table.Column>
               </Table.Row>

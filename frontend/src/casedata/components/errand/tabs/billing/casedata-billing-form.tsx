@@ -12,8 +12,8 @@ import {
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId, getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
+import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
@@ -147,6 +147,8 @@ export const CaseDataBillingForm: React.FC = () => {
   };
 
   const onSubmit = async (data: BillingFormData) => {
+    if (!errand) return;
+
     if (data.services.length === 0) {
       toastMessage({
         position: 'bottom',
@@ -244,6 +246,8 @@ export const CaseDataBillingForm: React.FC = () => {
 
   const isEditingOrAdding = isAddingNew || editingServiceId !== null;
 
+  if (!errand) return null;
+
   return (
     <FormProvider {...form}>
       <div className="w-full py-24 px-32">
@@ -276,7 +280,7 @@ export const CaseDataBillingForm: React.FC = () => {
                 <Button
                   className="mt-16"
                   variant="secondary"
-                  leftIcon={<LucideIcon name="plus" />}
+                  leftIcon={<Plus />}
                   onClick={handleStartAddNew}
                   disabled={isEditingOrAdding}
                 >

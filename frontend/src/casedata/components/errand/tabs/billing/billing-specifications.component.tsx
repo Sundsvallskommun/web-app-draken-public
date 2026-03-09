@@ -45,10 +45,10 @@ export const BillingSpecifications: React.FC = () => {
             Ange vilka fastighet/er som fakturan gäller{' '}
             <span className="font-normal">(hämtad från uppgifter)</span>
           </FormLabel>
-          {errand?.facilities?.length > 0 ? (
+          {(errand?.facilities?.length ?? 0) > 0 ? (
             <Checkbox.Group data-cy="property-designation-checkboxgroup" name="propertyDesignations">
               {errand?.facilities?.map((facility, index) => {
-                const propertyDesignation = facility?.address?.propertyDesignation;
+                const propertyDesignation = facility?.address?.propertyDesignation ?? '';
                 const isChecked = selectedFacilities.includes(propertyDesignation);
                 return (
                   <Checkbox
