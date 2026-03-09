@@ -155,6 +155,12 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
   };
 
   useEffect(() => {
+    if (!appConfig.features.useDepartmentEscalation) {
+      setValue('recipient', 'EMAIL');
+    }
+  }, [appConfig.features.useDepartmentEscalation]);
+
+  useEffect(() => {
     if (supportErrand) {
       getEscalationEmails(supportErrand, supportMetadata!).then((emails) => {
         if (emails.length > 0) {
@@ -171,7 +177,13 @@ export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
 
   const handleModal = () => {
     setShowModal(!showModal);
-    reset();
+    reset({
+      recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
+      emails: [],
+      department: 'MEX',
+      message: '',
+      messageBodyPlaintext: '',
+    });
   };
 
   if (!appConfig.features.useEscalation) {
