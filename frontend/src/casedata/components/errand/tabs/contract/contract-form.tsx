@@ -372,7 +372,7 @@ export const ContractForm: React.FC<{
             )}
             <div className="flex gap-18 justify-start">
               <FormControl id="oldContractId" className="w-full">
-                <FormLabel>Tidigare avtals-ID</FormLabel>
+                <FormLabel>Avtals-ID</FormLabel>
                 <Input
                   type="text"
                   data-cy="old-contract-id-input"
@@ -418,7 +418,9 @@ export const ContractForm: React.FC<{
                         ...(errandPropertyDesignations ?? []),
                         ...(existingContract?.propertyDesignations || []),
                       ];
-                      const selected = e.map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName)).filter((pd): pd is { name: string; district?: string } => !!pd);
+                      const selected = e
+                        .map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName))
+                        .filter((pd): pd is { name: string; district?: string } => !!pd);
                       setValue('propertyDesignations', selected);
                     }}
                   >
