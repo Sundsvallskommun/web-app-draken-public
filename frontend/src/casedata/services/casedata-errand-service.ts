@@ -1,7 +1,14 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
-import { CaseTypes, FTCaseType, FTNationalCaseTypes, FTNotificationCaseType, MEXCaseType, PTCaseType } from '@casedata/interfaces/case-type';
+import {
+  CaseTypes,
+  FTCaseType,
+  FTNationalCaseTypes,
+  FTNotificationCaseType,
+  MEXCaseType,
+  PTCaseType,
+} from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
 import {
   ApiErrand,
@@ -44,6 +51,8 @@ export const municipalityIds = [
   { label: 'Timrå', id: '2262' },
   { label: 'Ånge', id: '2260' },
 ];
+
+export const defaultMunicipality = municipalityIds.find((m) => m.id === process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
 
 export const emptyMeaErrandList: ErrandsData = {
   errands: [],
@@ -203,15 +212,12 @@ export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = 
 
   if (errand?.status && typeof errand?.status === 'object') {
     return (
-      lockedStatuses.includes(errand?.status?.statusType as ErrandStatus) ||
-      phaseChangeInProgress(errand as IErrand)
+      lockedStatuses.includes(errand?.status?.statusType as ErrandStatus) || phaseChangeInProgress(errand as IErrand)
     );
   } else {
     return lockedStatuses.includes(errand?.status as ErrandStatus);
   }
 };
-
-const defaultMunicipality = municipalityIds.find((m) => m.label === 'Sundsvall');
 
 export const emptyErrand: Partial<IErrand> = {
   caseType: '',
@@ -291,7 +297,10 @@ export const getErrand: (municipalityId: string, id: string) => Promise<{ errand
     })
     .catch(
       (e) =>
-        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as unknown as { errand: IErrand; error?: string })
+        ({ errand: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as unknown as {
+          errand: IErrand;
+          error?: string;
+        })
     );
 };
 
@@ -312,7 +321,10 @@ export const getErrandByErrandNumber: (
       errand.attachments = errandAttachments.data;
       return { errand, ...(error && { error }) };
     })
-    .catch((e) => ({ errand: undefined, error: 'Ärende kunde inte hämtas' } as unknown as { errand: IErrand; error?: string }));
+    .catch(
+      (e) =>
+        ({ errand: undefined, error: 'Ärende kunde inte hämtas' } as unknown as { errand: IErrand; error?: string })
+    );
 };
 
 export const getErrands: (

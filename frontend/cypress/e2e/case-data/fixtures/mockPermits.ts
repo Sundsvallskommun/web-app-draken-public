@@ -1,12 +1,12 @@
 export const mockPermits = {
   data: [
     {
-      artefactPermitNumber: 'PRH-987',
+      artefactPermitNumber: 'SGP-987',
       artefactPermitStatus: 'Aktivt',
       errandId: 20,
     },
     {
-      artefactPermitNumber: 'PRH-123',
+      artefactPermitNumber: 'SGP-123',
       artefactPermitStatus: 'Aktivt',
       errandId: 77,
     },

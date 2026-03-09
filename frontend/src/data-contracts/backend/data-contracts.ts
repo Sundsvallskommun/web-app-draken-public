@@ -109,6 +109,7 @@ export interface CExtraParameters {
   errandId: string;
   errandNumber: string;
   referenceName: string;
+  facilities?: string;
 }
 
 export interface CBillingRecord {

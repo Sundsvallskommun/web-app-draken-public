@@ -15,6 +15,7 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
+import { isPT } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { ArrowRight } from 'lucide-react';
@@ -100,6 +101,18 @@ export const PhaseChanger = () => {
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ icon: 'lightbulb', button: 'N/A', title: 'N/A?', message: <></> });
+    } else if (isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt) {
+      setPhaseChangeText({
+        icon: 'folder-closed',
+        button: 'Avsluta ärende',
+        title: 'Avsluta ärendet?',
+        message: (
+          <p>
+            Kontrollera att du dokumenterat samtliga handlingar och uppgifter innan ärendet stängs. Vill du stänga
+            ärendet?
+          </p>
+        ),
+      });
     } else if (errand.phase === ErrandPhase.uppfoljning) {
       setPhaseChangeText({
         icon: 'folder-closed',
@@ -210,12 +223,12 @@ export const PhaseChanger = () => {
       Starta handläggning
     </Button>
   ) : uiPhase === UiPhase.beslut ||
-    errand.phase === ErrandPhase.verkstalla ||
+    (errand.phase === ErrandPhase.verkstalla && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
     errand.status?.statusType === ErrandStatus.ArendeAvslutat ? null : (
     <>
       <Button
         variant="primary"
-        disabled={isErrandLocked(errand) || !allowed || phaseChangeText.disabled}
+        disabled={(isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) || !allowed || phaseChangeText.disabled}
         color="vattjom"
         loadingText="Sparar"
         loading={isLoading}

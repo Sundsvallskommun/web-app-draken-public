@@ -28,7 +28,7 @@ import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
-    cy.visit('/arende/PRH-2022-000019');
+    cy.visit('/arende/SGP-2022-000019');
     cy.wait('@getErrand');
 
     cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -74,7 +74,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/errand/*', mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
     });
@@ -313,7 +316,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('PATCH', `**/errands/${mockMexErrand_base.data.id}`, mockMexErrand_base).as('patchErrand');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/organization', mockOrganization).as('postOrganization');
-      cy.visit('/arende/PRH-2022-000019');
+      cy.visit('/arende/SGP-2022-000019');
       cy.wait('@getErrand');
 
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
@@ -322,7 +325,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       // Save button disabled when no changes
       cy.get('[data-cy="save-and-continue-button"]').should('be.disabled');
 
-      cy.get('[data-cy="channel-input"]').should('be.disabled');
+      cy.get('[data-cy="channel-input"]').should('have.attr', 'readOnly');
       cy.get('[data-cy="casetype-input"]').should('exist').select(CaseTypes.MEX.MEX_INVOICE);
       cy.get('[data-cy="priority-input"]').should('exist').select('Hög');
 

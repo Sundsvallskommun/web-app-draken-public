@@ -25,8 +25,10 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { CaseDataBillingForm } from './tabs/billing/casedata-billing-form';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { contractsEnabled } from '@common/services/feature-flag-service';
+import { appConfig } from '@config/appconfig';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -248,6 +250,23 @@ export const CasedataTabsWrapper: React.FC = () => {
             ErrandPhase.overklagad,
           ]
         : [],
+    },
+    {
+      label: 'Engångsfakturering',
+      content: <CaseDataBillingForm />,
+      disabled: false,
+      visibleFor:
+        appConfig?.features?.useBilling && errand?.id
+          ? [
+              ErrandPhase.utredning,
+              ErrandPhase.beslut,
+              ErrandPhase.hantera,
+              ErrandPhase.verkstalla,
+              ErrandPhase.uppfoljning,
+              ErrandPhase.canceled,
+              ErrandPhase.overklagad,
+            ]
+          : [],
     },
     ...(contractsEnabled()
       ? [

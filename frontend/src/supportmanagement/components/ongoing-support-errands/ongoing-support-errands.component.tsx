@@ -142,7 +142,9 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         };
         const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
         setSelectedSupportErrandStatuses(filterStatuses);
-        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s: string) => (Status as Record<string, string>)[s]));
+        const selectedStatusLabel = getStatusLabel(
+          filterStatuses.map((s: string) => (Status as Record<string, string>)[s])
+        );
         setSidebarLabel(selectedStatusLabel ?? '');
       } catch (error) {
         store.set('filter', JSON.stringify({}));
@@ -259,11 +261,14 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         // This is because the names are unique, but the displayNames are not
         // and we want to be able to filter on multiple types with the same displayName
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
-        const allSubTypesFlattened = allTypesFlattened
-          .filter((l) => l && (l.labels?.length ?? 0) > 0)
-          .map((l) => l!.labels)
-          .flat() ?? [];
-        const matchedSubTypes = (allSubTypesFlattened ?? []).filter((l) => l && labelSubTypeFilter.includes(l.displayName!));
+        const allSubTypesFlattened =
+          allTypesFlattened
+            .filter((l) => l && (l.labels?.length ?? 0) > 0)
+            .map((l) => l!.labels)
+            .flat() ?? [];
+        const matchedSubTypes = (allSubTypesFlattened ?? []).filter(
+          (l) => l && labelSubTypeFilter.includes(l.displayName!)
+        );
         const matchedSubTypeNames = matchedSubTypes.map((t) => t!.resourcePath);
         fObj['labelSubType'] = matchedSubTypeNames.join(',');
       }
@@ -348,7 +353,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full">
+      <main className="px-5 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>

@@ -91,7 +91,9 @@ export const OngoingCaseDataErrands: React.FC = () => {
         };
         const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
         setSelectedErrandStatuses(filterStatuses);
-        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s: string) => (ErrandStatus as Record<string, string>)[s]));
+        const selectedStatusLabel = getStatusLabel(
+          filterStatuses.map((s: string) => (ErrandStatus as Record<string, string>)[s])
+        );
         setSidebarLabel(selectedStatusLabel);
       } catch (error) {
         store.set('filter', JSON.stringify({}));
@@ -260,7 +262,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full h-full">
+      <main className="px-5 pb-40 w-full h-full">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div className="flex justify-between">

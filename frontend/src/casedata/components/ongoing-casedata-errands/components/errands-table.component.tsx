@@ -1,23 +1,21 @@
 import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/casedata-errand-service';
+import { findStatusLabelForStatusKey } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
-import type { Errand } from '@common/data-contracts/case-data/data-contracts';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import type { Errand } from '@common/data-contracts/case-data/data-contracts';
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import { Button, Input, Pagination, Select, Spinner, Table, cx, useThemeQueries } from '@sk-web-gui/react';
+import { Input, Pagination, Select, Spinner, Table, cx } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
-import { ExternalLink, Pencil, View } from 'lucide-react';
 
 export const ErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
@@ -27,8 +25,6 @@ export const ErrandsTable: React.FC = () => {
   const sortColumn = watch('sortColumn');
   const totalPages = watch('totalPages');
   const page = watch('page');
-
-  const { isMaxMediumDevice } = useThemeQueries();
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',
@@ -135,7 +131,9 @@ export const ErrandsTable: React.FC = () => {
       >
         <Table.HeaderColumn
           scope="row"
-          className={cx('w-[200px] whitespace-nowrap text-ellipsis table-caption', !isPT() && ' overflow-hidden')}
+          className={cx(
+            isPT() ? 'w-[200px] whitespace-nowrap text-ellipsis table-caption' : 'max-w-[200px] break-words'
+          )}
         >
           {isPT() ? (
             <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType ?? '')} />
@@ -199,51 +197,6 @@ export const ErrandsTable: React.FC = () => {
             <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType ?? '')} />
           </Table.Column>
         )}
-        <Table.Column sticky>
-          <div className="w-full flex justify-end">
-            <NextLink
-              href={`/arende/${errand.errandNumber}`}
-              onClick={(e) => e.stopPropagation()}
-              target="_blank"
-              data-icon={isMaxMediumDevice}
-              title={isMaxMediumDevice ? `${isErrandClosed(errand) ? 'Visa' : 'Hantera'} ärende` : undefined}
-              className={cx(
-                'no-underline sk-btn max-lg:sk-btn-icon',
-                rowHeight === 'normal' && !isMaxMediumDevice && !isPT() ? 'sk-btn-md' : 'sk-btn-sm',
-                isPT() && 'sk-btn-sm bg-primary text-light-primary w-full hover:text-dark-secondary',
-                isErrandClosed(errand) && !isPT() ? 'sk-btn-secondary' : 'sk-btn-tertiary'
-              )}
-            >
-              <Button.Content rightIcon={!isMaxMediumDevice && !isPT() ? <ExternalLink /> : undefined}>
-                {isPT() ? (
-                  errand.administrator ? (
-                    <>
-                      <span className="hidden md:inline">Öppna</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="hidden md:inline">Visa</span>
-                    </>
-                  )
-                ) : (
-                  <>
-                    {isErrandClosed(errand) ? (
-                      <>
-                        <span className="hidden md:inline">Visa</span>
-                        <View className="inline md:hidden" />
-                      </>
-                    ) : (
-                      <>
-                        <span className="hidden md:inline">Hantera</span>
-                        <Pencil className="inline md:hidden" />
-                      </>
-                    )}
-                  </>
-                )}
-              </Button.Content>
-            </NextLink>
-          </div>
-        </Table.Column>
       </Table.Row>
     );
   });
@@ -275,12 +228,7 @@ export const ErrandsTable: React.FC = () => {
           )}
           {data.errands.length > 0 && (
             <>
-              <Table.Header>
-                {headers}
-                <Table.HeaderColumn sticky>
-                  <span className="sr-only">Hantera</span>
-                </Table.HeaderColumn>
-              </Table.Header>
+              <Table.Header>{headers}</Table.Header>
               <Table.Body>{rows}</Table.Body>
             </>
           )}
