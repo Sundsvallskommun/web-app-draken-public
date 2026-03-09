@@ -147,6 +147,8 @@ export const CaseDataBillingForm: React.FC = () => {
   };
 
   const onSubmit = async (data: BillingFormData) => {
+    if (!errand) return;
+
     if (data.services.length === 0) {
       toastMessage({
         position: 'bottom',
@@ -243,6 +245,8 @@ export const CaseDataBillingForm: React.FC = () => {
   };
 
   const isEditingOrAdding = isAddingNew || editingServiceId !== null;
+
+  if (!errand) return null;
 
   return (
     <FormProvider {...form}>

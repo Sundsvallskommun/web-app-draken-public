@@ -62,7 +62,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   const [editingRowState, setEditingRowState] = useState<EditRowState | null>(null);
 
   const startEditing = (record: CBillingRecord) => {
-    setEditingRecordId(record.id);
+    setEditingRecordId(record.id ?? null);
     setEditFormState({
       ourReference: record.invoice?.ourReference || '',
       customerReference: record.invoice?.customerReference || '',
@@ -89,7 +89,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   const handleSave = async (record: CBillingRecord) => {
     if (!editFormState) return;
 
-    setSavingId(record.id);
+    setSavingId(record.id ?? null);
 
     try {
       const updatedRecord: CBillingRecord = {
@@ -103,7 +103,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
           invoiceRows: editFormState.invoiceRows,
         },
         extraParameters: {
-          ...record.extraParameters,
+          errandId: record.extraParameters?.errandId ?? '',
+          errandNumber: record.extraParameters?.errandNumber ?? '',
           referenceName: editFormState.ourReference,
         },
       };
@@ -142,7 +143,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
 
     if (!confirmed) return;
 
-    setDeletingId(record.id);
+    setDeletingId(record.id ?? null);
+
+    if (!record.id) return;
 
     try {
       await deleteCasedataBillingRecord(errand, record.id, municipalityId);
