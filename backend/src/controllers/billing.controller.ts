@@ -9,7 +9,7 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL, toOffsetDateTime } from '@/utils/util';
 import dayjs from 'dayjs';
-import { Body, Controller, Get, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { Body, Controller, Delete, Get, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 @Controller()
@@ -130,6 +130,20 @@ export class BillingController {
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);
     return response.status(200).send(res.data);
+  }
+
+  @Delete('/billing/:municipalityId/billingrecords/:id')
+  @OpenAPI({ summary: 'Delete billing record by id' })
+  @UseBefore(authMiddleware)
+  async deleteBillingRecord(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+    @Res() response: any,
+  ): Promise<void> {
+    const url = `${this.SERVICE}/${municipalityId}/billingrecords/${id}`;
+    await this.apiService.delete({ url }, req.user);
+    return response.status(204).send();
   }
 
   @Put('/billing/:municipalityId/billingrecords/:id/status')
