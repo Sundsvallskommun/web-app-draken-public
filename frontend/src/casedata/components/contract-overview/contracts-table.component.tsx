@@ -188,8 +188,8 @@ export const ContractsTable: React.FC<{
         <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>
           <div className="flex flex-col gap-6">
-            <div>{contract?.contractId ?? '-'}</div>
             <div>{contract?.externalReferenceId ?? '-'}</div>
+            <div>{contract?.contractId ?? '-'}</div>
           </div>
         </Table.Column>
         <Table.Column>{parties}</Table.Column>
