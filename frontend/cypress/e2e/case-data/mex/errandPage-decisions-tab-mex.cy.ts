@@ -21,6 +21,7 @@ import {
   mockSingleEstateByPropertyDesignation11,
   mockSingleEstateByPropertyDesignation12,
 } from '../fixtures/mockEstateInfo';
+import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
 
 const DECISION_TAB_INDEX = 6;
 
@@ -74,6 +75,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
         'getEstateInfo'
       );
+      cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
 
       cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');

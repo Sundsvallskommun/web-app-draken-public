@@ -33,13 +33,12 @@ import {
 } from '../fixtures/mockEstateInfo';
 import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
 import { mockContractInvoices } from '../fixtures/mockContractsList';
+import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
 
 const takeElementSnapshot = (dataCySelector: string) => {
   cy.waitForFonts();
   cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
 };
-
-const AVTAL_TAB_INDEX = 5;
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -95,6 +94,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getEstateInfo'
       );
       cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+      cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
     });
 
     const contractText: { data: Contract } = {
@@ -114,7 +114,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getContract');
-      cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
       cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
@@ -128,7 +128,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrandNoContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
       cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
@@ -738,7 +738,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.wait('@getErrand');
           cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
           cy.wait('@getActiveContract');
-          cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
+          cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
           cy.get('[data-cy="contract-type-select"]').should('exist');
         });
 
@@ -814,7 +814,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.visit(`/arende/${mockMexErrand_base.data.id}`);
         cy.wait('@getErrand');
         cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-        cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
+        cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
         cy.get('[data-cy="contract-type-select"]').should('exist');
         cy.get('[data-cy="non-draft-warning-banner"]').should('not.exist');
         cy.get('[data-cy="update-contract-parties"]').should('contain.text', 'Uppdatera parter');
