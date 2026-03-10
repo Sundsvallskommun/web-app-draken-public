@@ -16,7 +16,12 @@ import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockSidebarButtons } from '../fixtures/mockSidebarButtons';
-import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import {
+  mockEstateInfo11,
+  mockEstateInfo12,
+  mockSingleEstateByPropertyDesignation11,
+  mockSingleEstateByPropertyDesignation12,
+} from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page', () => {
@@ -56,9 +61,18 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('PATCH', '**/errands/101', { data: 'ok', message: 'ok' }).as('patchErrand');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
+        'getEstateInfo'
+      );
 
       cy.visit('/arende/MEX-2024-000280');
       cy.wait('@getErrand');

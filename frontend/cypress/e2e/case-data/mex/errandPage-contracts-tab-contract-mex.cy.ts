@@ -6,6 +6,7 @@ import {
   IntervalType,
   InvoicedIn,
   LeaseType,
+  Stakeholder,
   StakeholderRole,
   Status,
   TimeUnit,
@@ -31,11 +32,14 @@ import {
   mockSingleEstateByPropertyDesignation12,
 } from '../fixtures/mockEstateInfo';
 import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
+import { mockContractInvoices } from '../fixtures/mockContractsList';
 
 const takeElementSnapshot = (dataCySelector: string) => {
   cy.waitForFonts();
   cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
 };
+
+const AVTAL_TAB_INDEX = 5;
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -90,6 +94,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
         'getEstateInfo'
       );
+      cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
     });
 
     const contractText: { data: Contract } = {
@@ -109,7 +114,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getContract');
-      cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
       cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
@@ -123,7 +128,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrandNoContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
       cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
@@ -135,7 +140,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         {}
       );
       visitErrandContractTab();
-      cy.get('[data-cy="bilagor-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="bilagor-disclosure"] .sk-disclosure-header button.sk-btn-tertiary').should('exist').click();
 
       cy.get('[data-cy="contract-upload-field"]').should('exist');
       cy.get('[data-cy="contract-attachment-item-1"]').should('exist');
@@ -211,8 +216,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
         expect(leaseAgreement.leaseType).to.equal(LeaseType.LAND_LEASE_MISC);
-        const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
-        const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
+        const lessor = leaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSOR));
+        const lessee = leaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSEE));
         expect(lessor.firstName).to.equal(
           mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''
         );
@@ -227,7 +232,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       visitErrandContractTab();
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
+      cy.get('[data-cy="contract-property-designation-checkboxgroup"]').should('exist');
 
       const buildSelector = (p: { name: string; district?: string }) =>
         `[data-cy="property-designation-checkbox-${p.name.replace(/\s+/g, '-')}"]`;
@@ -392,8 +397,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.type).to.equal(ContractType.LEASE_AGREEMENT);
         expect(leaseAgreement.leaseType).to.equal(LeaseType.LAND_LEASE_MISC);
-        const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
-        const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
+        const lessor = leaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSOR));
+        const lessee = leaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSEE));
         expect(lessor.firstName).to.equal(
           mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.PROPERTY_OWNER))?.firstName ?? ''
         );
@@ -513,8 +518,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         expect(purchaseAgreement.type).to.equal(ContractType.PURCHASE_AGREEMENT);
         expect(purchaseAgreement.startDate).to.equal('');
         expect(purchaseAgreement.leaseType).to.be.undefined;
-        const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
-        const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
+        const seller = purchaseAgreement.stakeholders.find((s: Stakeholder) =>
+          s.roles.includes(StakeholderRole.SELLER)
+        );
+        const buyer = purchaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.BUYER));
         expect(seller.firstName).to.equal(
           mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.SELLER))?.firstName ?? ''
         );
@@ -619,8 +626,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Verify no leaseType is set
         expect(contract.leaseType).to.be.undefined;
         // Verify it has lease agreement structure (lessors/lessees)
-        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
-        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).to.be.true;
+        expect(contract.stakeholders.some((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
+        expect(contract.stakeholders.some((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSEE))).to.be.true;
       });
     });
 
@@ -665,8 +672,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Verify no leaseType is set
         expect(contract.leaseType).to.be.undefined;
         // Verify it has lease agreement structure (lessors/lessees)
-        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
-        expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).to.be.true;
+        expect(contract.stakeholders.some((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
+        expect(contract.stakeholders.some((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSEE))).to.be.true;
       });
     });
 
@@ -731,7 +738,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.wait('@getErrand');
           cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
           cy.wait('@getActiveContract');
-          cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+          cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
           cy.get('[data-cy="contract-type-select"]').should('exist');
         });
 
@@ -751,7 +758,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
           // Open area disclosure and check property designations are disabled
           cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
-          cy.get('[data-cy="property-designation-checkboxgroup"] input[type="checkbox"]').each(($checkbox) => {
+          cy.get('[data-cy="contract-property-designation-checkboxgroup"] input[type="checkbox"]').each(($checkbox) => {
             cy.wrap($checkbox).should('be.disabled');
           });
 
@@ -807,7 +814,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.visit(`/arende/${mockMexErrand_base.data.id}`);
         cy.wait('@getErrand');
         cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-        cy.get('.sk-tabs-list button').eq(4).should('have.text', `Avtal`).click({ force: true });
+        cy.get('.sk-tabs-list button').eq(AVTAL_TAB_INDEX).should('have.text', `Avtal`).click({ force: true });
         cy.get('[data-cy="contract-type-select"]').should('exist');
         cy.get('[data-cy="non-draft-warning-banner"]').should('not.exist');
         cy.get('[data-cy="update-contract-parties"]').should('contain.text', 'Uppdatera parter');

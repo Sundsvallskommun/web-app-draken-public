@@ -24,7 +24,12 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockAsset } from '../fixtures/mockAsset';
 import { preventProcessExtraParameters } from '../utils/utils';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
-import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import {
+  mockEstateInfo11,
+  mockEstateInfo12,
+  mockSingleEstateByPropertyDesignation11,
+  mockSingleEstateByPropertyDesignation12,
+} from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
@@ -80,6 +85,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
+        'getEstateInfo'
+      );
     });
 
     it('shows the correct base errand information', () => {

@@ -409,7 +409,7 @@ export const ContractForm: React.FC<{
                 </FormLabel>
                 {(errand?.facilities?.length ?? 0) > 0 || (existingContract?.propertyDesignations?.length ?? 0) > 0 ? (
                   <Checkbox.Group
-                    data-cy="property-designation-checkboxgroup"
+                    data-cy="contract-property-designation-checkboxgroup"
                     name="propertyDesignations"
                     value={(watch().propertyDesignations ?? []).map((pd) => pd.name)}
                     onChange={(e) => {
@@ -418,7 +418,9 @@ export const ContractForm: React.FC<{
                         ...(errandPropertyDesignations ?? []),
                         ...(existingContract?.propertyDesignations || []),
                       ];
-                      const selected = e.map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName)).filter((pd): pd is { name: string; district?: string } => !!pd);
+                      const selected = e
+                        .map((pdName) => totalPropertyDesignations.find((epd) => epd.name === pdName))
+                        .filter((pd): pd is { name: string; district?: string } => !!pd);
                       setValue('propertyDesignations', selected);
                     }}
                   >
