@@ -70,6 +70,7 @@ export const exportSingleErrand: (
       label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
     })),
   };
+  console.log('Exporting errand:', preparedErrand);
 
   return renderPdf(url, preparedErrand, includeParameters);
 };

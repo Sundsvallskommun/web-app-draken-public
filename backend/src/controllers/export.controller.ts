@@ -58,7 +58,7 @@ export class ExportController {
     const templateStakeholder = (s: Stakeholder) => {
       const extra = s as Stakeholder & { street: string; zip: string; city: string; phoneNumbers: { value: string }[]; emails: { value: string }[] };
       return {
-        name: s.firstName + ' ' + s.lastName,
+        name: s.organizationName ?? s.firstName + ' ' + s.lastName,
         street: extra.street,
         zip: extra.zip,
         city: extra.city,
