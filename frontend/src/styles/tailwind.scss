@@ -42,12 +42,20 @@ main.container {
   flex: 1 0 auto;
 }
 
-// Custom styles for the rich text editor used in errand description field
+// Custom styles for the rich text editor used in errand description field (without toolbar)
+
 .case-description-editor {
   min-height: 15rem;
   max-height: 60rem;
   resize: vertical;
   overflow: hidden;
+}
+//Same as above but with toolbar active
+.text-editor-with-toolbar .ql-editor {
+  min-height: 15rem;
+  max-height: 80rem;
+  resize: vertical;
+  overflow: hidden scroll;
 }
 
 .case-description-editor .ql-container {
