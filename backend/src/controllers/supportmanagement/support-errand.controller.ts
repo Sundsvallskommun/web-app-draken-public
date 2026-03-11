@@ -456,7 +456,9 @@ export class SupportErrandController {
   }
 
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
-    const customer: (SupportStakeholder & { personNumber?: string }) | undefined = errandData.stakeholders?.find(s => s.role === SupportStakeholderRole.PRIMARY);
+    const customer: (SupportStakeholder & { personNumber?: string }) | undefined = errandData.stakeholders?.find(
+      s => s.role === SupportStakeholderRole.PRIMARY,
+    );
     if (
       customer &&
       customer.externalId &&
@@ -727,7 +729,6 @@ export class SupportErrandController {
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
       channel: 'PHONE',
-      resolution: Resolution.INFORMED,
       title: 'Empty errand',
     };
     console.log('Creating new empty errand with body', body);
@@ -868,19 +869,21 @@ export class SupportErrandController {
             : [],
           contactInformation:
             (s.contactChannels?.length ?? 0) > 0
-              ? (s.contactChannels ?? []).map(c =>
-                  c.type === ContactChannelType.PHONE
-                    ? {
-                        contactType: ContactInformationContactTypeEnum.PHONE,
-                        value: c.value,
-                      }
-                    : c.type === ContactChannelType.EMAIL
-                    ? {
-                        contactType: ContactInformationContactTypeEnum.EMAIL,
-                        value: c.value,
-                      }
-                    : null,
-                ).filter((x): x is NonNullable<typeof x> => x !== null)
+              ? (s.contactChannels ?? [])
+                  .map(c =>
+                    c.type === ContactChannelType.PHONE
+                      ? {
+                          contactType: ContactInformationContactTypeEnum.PHONE,
+                          value: c.value,
+                        }
+                      : c.type === ContactChannelType.EMAIL
+                      ? {
+                          contactType: ContactInformationContactTypeEnum.EMAIL,
+                          value: c.value,
+                        }
+                      : null,
+                  )
+                  .filter((x): x is NonNullable<typeof x> => x !== null)
               : [],
           firstName: '',
           lastName: '',
@@ -904,19 +907,21 @@ export class SupportErrandController {
             : [],
           contactInformation:
             (s.contactChannels?.length ?? 0) > 0
-              ? (s.contactChannels ?? []).map(c =>
-                  c.type === ContactChannelType.PHONE
-                    ? {
-                        contactType: ContactInformationContactTypeEnum.PHONE,
-                        value: c.value,
-                      }
-                    : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.EMAIL
-                    ? {
-                        contactType: ContactInformationContactTypeEnum.EMAIL,
-                        value: c.value,
-                      }
-                    : null,
-                ).filter((x): x is NonNullable<typeof x> => x !== null)
+              ? (s.contactChannels ?? [])
+                  .map(c =>
+                    c.type === ContactChannelType.PHONE
+                      ? {
+                          contactType: ContactInformationContactTypeEnum.PHONE,
+                          value: c.value,
+                        }
+                      : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.EMAIL
+                      ? {
+                          contactType: ContactInformationContactTypeEnum.EMAIL,
+                          value: c.value,
+                        }
+                      : null,
+                  )
+                  .filter((x): x is NonNullable<typeof x> => x !== null)
               : [],
           firstName: s.firstName,
           lastName: s.lastName ? s.lastName : '',
