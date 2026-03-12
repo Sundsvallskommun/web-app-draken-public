@@ -12,7 +12,8 @@ interface SubmitButtonOptions {
 
 export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any>) {
   const uiSchema = (props as any).uiSchema || {};
-  const buttonOptions: SubmitButtonOptions = uiSchema['ui:options'] || {};
+  const formContext = (props as any).registry?.formContext || {};
+  const buttonOptions: SubmitButtonOptions = { ...(uiSchema['ui:options'] || {}), ...formContext.submitButtonOptions };
 
   const label = buttonOptions.label || 'Lägg till';
   const variant = buttonOptions.variant || 'primary';
