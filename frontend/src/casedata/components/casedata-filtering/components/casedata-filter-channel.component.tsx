@@ -24,12 +24,16 @@ export const CasedataFilterChannel: React.FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        Kanal
+        Inkom via
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full">
         <PopupMenu.Items autoFocus={false}>
           {Object.entries(Channels)
-            .filter((c) => (AppChannels as Record<string, Channels[]>)[process.env.NEXT_PUBLIC_APPLICATION ?? '']?.includes(c[1] as Channels))
+            .filter((c) =>
+              (AppChannels as Record<string, Channels[]>)[process.env.NEXT_PUBLIC_APPLICATION ?? '']?.includes(
+                c[1] as Channels
+              )
+            )
             .map((c: [string, string], idx) => (
               <PopupMenu.Item key={`${c[1]}-${idx}`}>
                 <Checkbox labelPosition="left" value={c[0]} {...register('channel')} data-cy={`channel-filter-${c[0]}`}>
