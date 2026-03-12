@@ -63,8 +63,7 @@
     "cypress:headless:pt": "dotenv -e .env.pt -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
     "cypress:headless:msva": "dotenv -e .env.msva -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
     "cypress:headless:rob": "dotenv -e .env.rob -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
-    "cypress:headless:se": "dotenv -e .env.se -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
-    "test": "jest --watch"
+    "cypress:headless:se": "dotenv -e .env.se -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -104,10 +103,7 @@
   "devDependencies": {
     "@cypress/code-coverage": "^4.0.1",
     "@cypress/skip-test": "^2.6.1",
-    "@cypress/webpack-preprocessor": "7.0.2",
     "@simonsmith/cypress-image-snapshot": "^10.0.3",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "14.0.0",
     "@types/node": "^20.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -121,7 +117,6 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "^10.1.8",
-    "jest": "^29.5.0",
     "postcss": "^8.5.6",
     "postcss-import": "^15.1.0",
     "postcss-nested": "^6.0.1",
