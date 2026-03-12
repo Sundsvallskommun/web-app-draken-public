@@ -372,7 +372,7 @@ export const ContractForm: React.FC<{
             )}
             <div className="flex gap-18 justify-start">
               <FormControl id="oldContractId" className="w-full">
-                <FormLabel>Tidigare avtals-ID</FormLabel>
+                <FormLabel>Avtals-ID</FormLabel>
                 <Input
                   type="text"
                   data-cy="old-contract-id-input"
