@@ -33,7 +33,7 @@ export const extractContactInfo = (c: SupportStakeholderFormModel | undefined) =
 
 const renderContactBlock = (label: string, c?: SupportStakeholderFormModel) => {
   const info = extractContactInfo(c);
-  return `<p><b>${label}</b></p><br><p><b>Namn:</b> ${info.name}<br><b>Adress:</b> ${info.adress}<br><b>Telefonnummer:</b> ${info.phone}<br><b>E-postadress:</b> ${info.email}</p>`;
+  return `<p><b>${label}</b></p><p><b>Namn:</b> ${info.name}<br><b>Adress:</b> ${info.adress}<br><b>Telefonnummer:</b> ${info.phone}<br><b>E-postadress:</b> ${info.email}</p>`;
 };
 
 const renderOtherContacts = (contacts: SupportStakeholderFormModel[] = []) => {
@@ -47,7 +47,7 @@ const renderOtherContacts = (contacts: SupportStakeholderFormModel[] = []) => {
 <b>E-postadress:</b> ${info.email}</p>`;
     })
     .join('<br>');
-  return `<br><p><b>Övriga kontaktuppgifter</b></p><br>${items}`;
+  return `<br><p><b>Övriga kontaktuppgifter</b></p>${items}`;
 };
 
 type TenantConfig = {
@@ -97,10 +97,8 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
   const customer = e?.customer?.[0];
   const contacts = e?.contacts || [];
   const subject = cfg.subjectResolver?.(e);
-  const propertyDesignations =
-    e?.parameters?.find((p) => p.key === 'propertyDesignation')?.values ?? [];
-  const streets =
-    e?.parameters?.find((p) => p.key === 'street')?.values ?? [];
+  const propertyDesignations = e?.parameters?.find((p) => p.key === 'propertyDesignation')?.values ?? [];
+  const streets = e?.parameters?.find((p) => p.key === 'street')?.values ?? [];
 
   const introLine = 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'.replace(
     '${department}',
@@ -121,11 +119,10 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
         propertyDesignations
           .map(
             (designation, i) =>
-              `<p><b>Fastighetsbeteckning:</b> ${designation}</p>` +
-              `<p><b>Adress:</b> ${streets[i] || '(saknas)'}</p>`
+              `<p><b>Fastighetsbeteckning:</b> ${designation}</p>` + `<p><b>Adress:</b> ${streets[i] || '(saknas)'}</p>`
           )
-          .join('<br>')
-        + '<br>'
+          .join('<br>') +
+        '<br>'
       : '';
 
   return (
