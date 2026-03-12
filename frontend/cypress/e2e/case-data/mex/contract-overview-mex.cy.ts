@@ -287,7 +287,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get('[data-cy="area-disclosure"]').click();
 
         // Property designations should be displayed
-        cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
+        cy.get('[data-cy="contract-property-designation-checkboxgroup"]').should('exist');
       });
 
       it('displays avtalstid disclosure for lease agreement', () => {
