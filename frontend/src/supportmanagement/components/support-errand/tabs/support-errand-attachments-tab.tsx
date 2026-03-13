@@ -169,6 +169,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   useEffect(() => {
     if (!supportErrand?.id || !supportAttachments?.length) return;
 
+    const errandId = supportErrand.id.toString();
     const imageAttachments = supportAttachments.filter(
       (att) => imageMimeTypes.includes(att.mimeType) && !thumbnails[att.id]
     );
@@ -177,29 +178,30 @@ export const SupportErrandAttachmentsTab: React.FC<{
 
     let isCancelled = false;
 
+    const fetchAttachmentThumbnail = async (att: SupportAttachment) => {
+      const res = await getSupportAttachment(errandId, municipalityId, att);
+      return {
+        id: att.id,
+        dataUrl: `data:${att.mimeType};base64,${res.base64EncodedString}`,
+      };
+    };
+
     const fetchThumbnails = async () => {
       const batchSize = 3;
       for (let i = 0; i < imageAttachments.length; i += batchSize) {
         if (isCancelled) break;
 
         const batch = imageAttachments.slice(i, i + batchSize);
-        const results = await Promise.allSettled(
-          batch.map((att) =>
-            getSupportAttachment(supportErrand.id!.toString(), municipalityId, att).then((res) => ({
-              id: att.id,
-              dataUrl: `data:${att.mimeType};base64,${res.base64EncodedString}`,
-            }))
-          )
-        );
+        const results = await Promise.allSettled(batch.map(fetchAttachmentThumbnail));
 
         if (isCancelled) break;
 
         const newThumbnails: Record<string, string> = {};
-        results.forEach((result) => {
+        for (const result of results) {
           if (result.status === 'fulfilled') {
             newThumbnails[result.value.id] = result.value.dataUrl;
           }
-        });
+        }
 
         if (Object.keys(newThumbnails).length > 0) {
           setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
@@ -456,7 +458,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
                       {(() => {
                         const DynIcon =
-                          iconMap[documentMimeTypes.find((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'];
+                          iconMap[documentMimeTypes.some((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'];
                         return DynIcon ? <DynIcon className="block" size={24} /> : null;
                       })()}
                     </div>
