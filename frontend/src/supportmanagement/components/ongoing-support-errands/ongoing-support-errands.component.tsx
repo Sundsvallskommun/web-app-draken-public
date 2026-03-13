@@ -353,7 +353,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         </div>
       </div>
 
-      <main className="px-5 pb-40 w-full">
+      <main className="pl-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>
