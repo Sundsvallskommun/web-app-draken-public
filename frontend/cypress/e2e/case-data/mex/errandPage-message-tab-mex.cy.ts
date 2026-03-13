@@ -13,7 +13,12 @@ import { mockConversations, mockConversationMessages } from '../fixtures/mockCon
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
-import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import {
+  mockEstateInfo11,
+  mockEstateInfo12,
+  mockSingleEstateByPropertyDesignation11,
+  mockSingleEstateByPropertyDesignation12,
+} from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Message tab', () => {
@@ -53,6 +58,12 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
+        'getEstateInfo'
+      );
 
       cy.intercept('GET', '**/templates?prefix=mex*', {
         data: [

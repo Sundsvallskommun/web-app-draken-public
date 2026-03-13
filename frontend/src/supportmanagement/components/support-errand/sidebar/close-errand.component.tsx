@@ -25,8 +25,14 @@ import { useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 
-const getDefaultResolution = (): Resolution => {
-  return appConfig.features.useClosedAsDefaultResolution ? Resolution.CLOSED : Resolution.SOLVED;
+const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => {
+  if (!!errand?.resolution) return errand?.resolution as Resolution;
+
+  return isROB()
+    ? Resolution.NEED_MET
+    : appConfig.features.useClosedAsDefaultResolution
+    ? Resolution.CLOSED
+    : Resolution.SOLVED;
 };
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
@@ -34,7 +40,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedResolution, setSelectedResolution] = useState<Resolution>(getDefaultResolution());
+  const [selectedResolution, setSelectedResolution] = useState<Resolution>(getDefaultResolution(supportErrand));
 
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
   const [changeResolution, setChangeResolution] = useState<boolean>(false);

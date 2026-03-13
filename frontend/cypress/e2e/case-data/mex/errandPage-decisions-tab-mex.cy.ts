@@ -15,7 +15,15 @@ import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } fro
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
-import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import {
+  mockEstateInfo11,
+  mockEstateInfo12,
+  mockSingleEstateByPropertyDesignation11,
+  mockSingleEstateByPropertyDesignation12,
+} from '../fixtures/mockEstateInfo';
+import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
+
+const DECISION_TAB_INDEX = 6;
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Decisions tab', () => {
@@ -55,14 +63,24 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
 
       cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').eq(5).should('have.text', 'Beslut').click({ force: true });
+      cy.get('.sk-tabs-list button').eq(DECISION_TAB_INDEX).should('have.text', 'Beslut').click({ force: true });
     });
 
     it('displays the correct fields', () => {

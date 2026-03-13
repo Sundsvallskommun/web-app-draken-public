@@ -53,6 +53,12 @@ const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) 
           Avslutad
         </Label>
       );
+    default:
+      return (
+        <Label rounded inverted={false} color="tertiary" className={`max-h-full h-auto text-center whitespace-nowrap`}>
+          Okänd status
+        </Label>
+      );
   }
 };
 
@@ -150,29 +156,6 @@ export const ContractsTable: React.FC<{
       ) : (
         '-'
       );
-    const period = formatPeriod(contract.startDate, contract.endDate);
-
-    const lessorNoticeDate = (contract: Contract) => {
-      const notice = contract?.notice?.terms?.find((term: any) => term.party === 'LESSOR');
-      const period = notice?.periodOfNotice ?? 0;
-      const endDate = dayjs(contract?.endDate);
-      if (!endDate.isValid()) return '-';
-      let noticeDate;
-      switch (notice?.unit) {
-        case 'YEARS':
-          noticeDate = endDate.subtract(period, 'year');
-          break;
-        case 'MONTHS':
-          noticeDate = endDate.subtract(period, 'month');
-          break;
-        case 'DAYS':
-          noticeDate = endDate.subtract(period, 'day');
-          break;
-        default:
-          return '-';
-      }
-      return noticeDate?.format('YYYY-MM-DD') ?? '-';
-    };
 
     return (
       <Table.Row
@@ -188,21 +171,15 @@ export const ContractsTable: React.FC<{
         <Table.Column>{getLeaseTypeLabel(contract.leaseType)}</Table.Column>
         <Table.Column>
           <div className="flex flex-col gap-6">
-            <div>{contract?.contractId ?? '-'}</div>
             <div>{contract?.externalReferenceId ?? '-'}</div>
+            <div>{contract?.contractId ?? '-'}</div>
           </div>
         </Table.Column>
         <Table.Column>{parties}</Table.Column>
-        <Table.Column>{period}</Table.Column>
-        <Table.Column>{lessorNoticeDate(contract)}</Table.Column>
+        <Table.Column>{formatPeriod(contract.startDate, contract.endDate)}</Table.Column>
+        <Table.Column>{contract?.notice?.noticeDate ? formatDate(contract?.notice?.noticeDate) : ''}</Table.Column>
         <Table.Column>
-          <Button
-            variant="tertiary"
-            size="sm"
-            iconButton
-            leftIcon={<ArrowRight />}
-            onClick={() => onRowClick?.(contract)}
-          ></Button>
+          <Button variant="tertiary" size="sm" iconButton leftIcon={<ArrowRight />}></Button>
         </Table.Column>
       </Table.Row>
     );

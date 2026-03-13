@@ -268,7 +268,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             ]
           : [],
     },
-    ...(contractsEnabled()
+    ...(appConfig.features.useContracts
       ? [
           {
             label: 'Avtal',
@@ -329,7 +329,11 @@ export const CasedataTabsWrapper: React.FC = () => {
       content: errand?.id && <CasedataServicesTab />,
       disabled: !errand?.id,
       visibleFor:
-        errand && isFTErrand(errand) && errand.id && getUiPhase(errand) != UiPhase.registrerad && !!getOwnerStakeholder(errand)
+        errand &&
+        isFTErrand(errand) &&
+        errand.id &&
+        getUiPhase(errand) != UiPhase.registrerad &&
+        !!getOwnerStakeholder(errand)
           ? [
               ErrandPhase.aktualisering,
               ErrandPhase.utredning,
