@@ -418,7 +418,7 @@ export const casedataInvoiceSettings: CasedataInvoiceSettings = {
     {
       id: 'faktura-allman-moms',
       name: 'Faktura allmän (moms)',
-      description: 'Faktura allmän(moms)',
+      description: 'Faktura allmän (moms)',
       costPerUnit: 0,
       unit: 'st',
       vatCode: '25',
