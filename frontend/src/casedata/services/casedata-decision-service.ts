@@ -278,6 +278,21 @@ export const getPhrases: (
     });
 };
 
+export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = async (errand) => {
+  const identifier = isFTNationalErrand(errand) ? 'sbk.rft.investigation.skeleton' : 'sbk.ft.investigation.skeleton';
+  try {
+    const response = await apiService.get<ApiResponse<TemplateApiResponse>>(`templates/${identifier}`);
+    const template = response.data?.data;
+    if (template?.content) {
+      return base64Decode(template.content);
+    }
+    return '';
+  } catch (error) {
+    console.error(`Failed to fetch investigation skeleton: ${identifier}`, error);
+    return '';
+  }
+};
+
 export const renderUtredningPdf: (
   errand: IErrand,
   d: UtredningFormModel | DecisionFormModel,
@@ -323,9 +338,9 @@ export const renderPdf: (
   if (isMEX()) {
     identifier = `mex.decision`;
   } else if (isPT() && isFTNationalErrand(errand)) {
-    identifier = `sbk.rft.decision.${outcome}`;
+    identifier = templateType === 'investigation' ? 'sbk.rft.investigation' : `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
-    identifier = `sbk.ft.decision.${outcome}`;
+    identifier = templateType === 'investigation' ? 'sbk.ft.investigation' : `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters?.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
