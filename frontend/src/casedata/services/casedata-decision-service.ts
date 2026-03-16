@@ -7,12 +7,11 @@ import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/de
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { Render, TemplateSelector } from '@common/interfaces/template';
+import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
-import { getTemplateRole } from '@common/utils/template-metadata';
 import dayjs from 'dayjs';
 import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
@@ -76,57 +75,31 @@ export const getLawMapping = (errand: IErrand): Law[] => {
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
 
-export interface DecisionTemplate {
-  identifier: string;
-  name: string;
-  content: string;
-  metadata?: Array<{ key: string; value: string }>;
-}
-
-export interface DecisionTemplatesResult {
-  templates: DecisionTemplate[];
-  signature: string;
-  byId: Record<string, DecisionTemplate>;
-}
-
-export async function fetchDecisionTemplates(app: string, userName: string): Promise<DecisionTemplatesResult> {
-  try {
-    const prefix = `${app}.decision.`;
-    const response = await apiService.get<ApiResponse<TemplateApiResponse[]>>(
-      `templates?prefix=${prefix}`
-    );
-
-    const allTemplates = response.data?.data || [];
-
-    const templates: DecisionTemplate[] = allTemplates
-      .filter((t) => {
-        if (!t.identifier || !t.content) return false;
-        return getTemplateRole(t) !== 'signature';
-      })
-      .map((t) => ({
-        identifier: t.identifier!,
-        name: t.name || t.identifier!,
-        content: base64Decode(t.content!),
-        metadata: t.metadata,
-      }));
-
-    const signatureTemplate = allTemplates.find((t) => t.identifier === `${app}.decision.signature`);
-    let signature = '';
-    if (signatureTemplate?.content) {
-      signature = base64Decode(signatureTemplate.content).replace(/\{\{user\}\}/g, userName);
-    }
-
-    const byId: Record<string, DecisionTemplate> = {};
-    for (const t of templates) {
-      byId[t.identifier] = t;
-    }
-
-    return { templates, signature, byId };
-  } catch (error) {
-    console.error('Failed to fetch decision templates', error);
-    return { templates: [], signature: '', byId: {} };
+export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (prefix, decision) => {
+  const params = new URLSearchParams({ templateType: 'Decision', prefix });
+  if (decision) {
+    params.append('decision', decision);
   }
-}
+  return apiService
+    .get<ApiResponse<Template[]>>(`templates?${params.toString()}`)
+    .then((res) => res.data.data)
+    .catch(() => {
+      throw new Error('Kunde inte hämta beslutsmallar');
+    });
+};
+
+export const renderTemplatePdf: (
+  identifier: string,
+  parameters: { [key: string]: string | Object }
+) => Promise<string> = (identifier, parameters) => {
+  const body: TemplateSelector = { identifier, parameters };
+  return apiService
+    .post<ApiResponse<Render>, TemplateSelector>('render/pdf', body)
+    .then((res) => res.data.data.output)
+    .catch(() => {
+      throw new Error('Något gick fel när förhandsgranskningen skulle skapas');
+    });
+};
 
 export const saveDecision: (
   municipalityId: string,
@@ -293,6 +266,27 @@ export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = 
   }
 };
 
+export const mapServicesToTemplateParams = (services: Service[]): Record<string, string>[] => {
+  return services.map((service) => {
+    const item: Record<string, string> = {
+      restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
+      validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
+      validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
+      validityType: service.validityType || '',
+    };
+    if (service.transportMode?.length > 0) {
+      item.transportMode = service.transportMode.join(', ');
+    }
+    if (service.aids?.length > 0) {
+      item.aids = service.aids.join(', ');
+    }
+    if (service.addon?.length > 0) {
+      item.addon = service.addon.join(', ');
+    }
+    return item;
+  });
+};
+
 export const renderUtredningPdf: (
   errand: IErrand,
   d: UtredningFormModel | DecisionFormModel,
@@ -375,16 +369,19 @@ export const renderPdf: (
         : '',
     },
   };
+  const wrapWithWordBreak = (html: string) =>
+    `<div style="overflow-wrap: break-word; word-break: break-word;">${html}</div>`;
+
   if (templateType === 'investigation') {
-    renderBody.parameters!['investigationText'] = formData.description;
-    renderBody.parameters!['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
-    renderBody.parameters!['permitFirstname'] = owner?.firstName;
-    renderBody.parameters!['permitLastname'] = owner?.lastName;
-    renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
-    renderBody.parameters!['disabilityReason'] = (errand.extraParameters as any)['application.reason'];
+    renderBody.parameters['investigationText'] = wrapWithWordBreak(formData.description);
+    renderBody.parameters['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
+    renderBody.parameters['permitFirstname'] = owner?.firstName;
+    renderBody.parameters['permitLastname'] = owner?.lastName;
+    renderBody.parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    renderBody.parameters['disabilityReason'] = errand.extraParameters['application.reason'];
   } else if (templateType === 'decision') {
-    renderBody.parameters!['decisionText'] = formData.description;
-    renderBody.parameters!['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
+    renderBody.parameters['decisionText'] = wrapWithWordBreak(formData.description);
+    renderBody.parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
     if (outcome === 'approval') {
       renderBody.parameters!['permitFirstname'] = owner?.firstName;
       renderBody.parameters!['permitLastname'] = owner?.lastName;
@@ -394,7 +391,7 @@ export const renderPdf: (
   if (outcome === 'cancellation') {
     renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
   }
-  renderBody.parameters!['description'] = formData.description;
+  renderBody.parameters['description'] = wrapWithWordBreak(formData.description);
 
   if (isPT() && isFTErrand(errand)) {
     const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
@@ -417,32 +414,9 @@ export const renderPdf: (
 
     renderBody.parameters!['lawReferences'] = lawReferences;
 
-    if (services && services.length > 0) {
-      renderBody.parameters!['services'] = services.map((service) => {
-        const serviceData: any = {
-          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
-          validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
-          validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
-          validityType: service.validityType,
-        };
-
-        if (service.transportMode?.length > 0) {
-          serviceData.transportMode = service.transportMode.join(', ');
-        }
-
-        if (service.aids?.length > 0) {
-          serviceData.aids = service.aids.join(', ');
-        }
-
-        if (service.addon?.length > 0) {
-          serviceData.addon = service.addon.join(', ');
-        }
-
-        return serviceData;
-      });
-    } else {
-      renderBody.parameters!['services'] = [];
-    }
+    renderBody.parameters!['services'] = services && services.length > 0
+      ? mapServicesToTemplateParams(services)
+      : [];
   }
 
   return apiService
@@ -477,7 +451,7 @@ export const renderHtml: (
       administratorName: errand.administrator
         ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
         : '',
-      description: formData.description.replace(/<p>/g, '<p style="margin: 0;">'),
+      description: `<div style="overflow-wrap: break-word; word-break: break-word;">${formData.description.replace(/<p>/g, '<p style="margin: 0;">')}</div>`,
       decisionDate: dayjs(decision?.updated).format('YYYY-MM-DD'),
     },
   };

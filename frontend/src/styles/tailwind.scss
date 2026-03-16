@@ -59,6 +59,11 @@ main.container {
   font-size: 16px;
 }
 
+[data-cy="decision-richtext-wrapper"] .ql-editor {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .wrapping-list-item .sk-form-file-upload-list-item-innerwrapper {
  @apply flex-wrap
 }

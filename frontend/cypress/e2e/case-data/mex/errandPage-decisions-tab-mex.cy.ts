@@ -76,6 +76,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getEstateInfo'
       );
       cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
+      cy.intercept('POST', '**/render', {
+        data: { output: btoa('<p>Rendered template</p>') },
+        message: 'Decision HTML rendered',
+      }).as('renderTemplate');
 
       cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
@@ -108,6 +113,35 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('FINAL');
       });
+    });
+
+    it('shows template dropdown after outcome selection when templates exist and renders preview', () => {
+      const mockTemplates = [
+        {
+          identifier: 'mex.test.template',
+          name: 'Testmall',
+          description: 'En testmall',
+          version: '1',
+          metadata: [
+            { key: 'templateType', value: 'Decision' },
+            { key: 'decision', value: 'APPROVAL' },
+          ],
+          defaultValues: [],
+        },
+      ];
+      cy.intercept('GET', '**/templates?*', { data: mockTemplates, message: 'success' }).as('getDecisionTemplates');
+      cy.intercept('POST', '**/render/pdf', {
+        data: { output: btoa('%PDF-mock') },
+        message: 'Decision PDF rendered',
+      }).as('renderTemplatePdf');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      cy.wait('@getDecisionTemplates');
+      cy.get('[data-cy="decisionTemplate-select"]').should('exist');
+      cy.get('[data-cy="decisionTemplate-select"]').select('Testmall');
+      cy.wait('@renderTemplatePdf');
+      cy.get('[data-cy="decision-template-preview"]').should('exist');
+      cy.get('[data-cy="decision-template-preview-content"]').should('exist').and('have.prop', 'tagName', 'IFRAME');
     });
 
     it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {

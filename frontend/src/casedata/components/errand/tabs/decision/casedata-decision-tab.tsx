@@ -3,21 +3,23 @@
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
-  DecisionTemplatesResult,
   fetchDecisionTemplates,
   getFinalDecisonWithHighestId,
   getLawMapping,
+  mapServicesToTemplateParams,
   renderBeslutPdf,
   renderHtml,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import {
   getErrand,
+  isFTErrand,
+  isFTNationalErrand,
   isErrandLocked,
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
-import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
+import { useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import dayjs from 'dayjs';
@@ -41,11 +43,13 @@ import {
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
+import { Template } from '@common/interfaces/template';
+import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
-import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
@@ -139,14 +143,16 @@ export const CasedataDecisionTab: React.FC<{
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const [error, setError] = useState<string>();
-  const quillRef = useRef<any>(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
-  const [decisionTemplates, setDecisionTemplates] = useState<DecisionTemplatesResult | null>(null);
+  const [decisionTemplates, setDecisionTemplates] = useState<Template[]>([]);
+  const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const templatesRequestId = useRef(0);
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
@@ -176,13 +182,7 @@ export const CasedataDecisionTab: React.FC<{
     })();
   }, [municipalityId, assetType]);
 
-  useEffect(() => {
-    if (!decisionTemplates && !isPT()) {
-      const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'mex';
-      const userName = errand?.administratorName || `${user.firstName} ${user.lastName}`;
-      fetchDecisionTemplates(app, userName).then(setDecisionTemplates);
-    }
-  }, [decisionTemplates, errand?.administratorName, user.firstName, user.lastName]);
+  // Template fetching is driven by outcome selection — see useEffect below after watch()
 
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
@@ -231,7 +231,7 @@ export const CasedataDecisionTab: React.FC<{
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
-  const { description, descriptionPlaintext, outcome, validFrom, validTo } = watch();
+  const { description, descriptionPlaintext, outcome, validFrom, validTo, law } = watch();
 
   useEffect(() => {
     if (errand) {
@@ -394,56 +394,46 @@ export const CasedataDecisionTab: React.FC<{
     }
   };
 
+  const downloadPdf = (pdfBase64: string) => {
+    const uri = `data:application/pdf;base64,${pdfBase64}`;
+    const link = document.createElement('a');
+    link.href = uri;
+    link.setAttribute('download', `Beslut-${errand?.errandNumber}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+  };
+
+  const downloadExistingPdf = async () => {
+    if (!errand) return;
+    const refreshed = await getErrand(municipalityId, errand.id.toString());
+    setErrand(refreshed.errand);
+    const decision = getFinalDecisonWithHighestId(refreshed.errand.decisions);
+    if (!decision) {
+      throw new Error('Inget beslut hittades');
+    }
+    const pdfBase64 = decision.attachments?.[0]?.file;
+    if (!pdfBase64) {
+      throw new Error('Ingen PDF hittades');
+    }
+    downloadPdf(pdfBase64);
+  };
+
+  const renderAndDownloadPdf = async () => {
+    if (!errand) return;
+    const data = getValues();
+    const pdfData = await renderBeslutPdf(errand, data, services);
+    downloadPdf(pdfData.pdfBase64);
+  };
+
   const getPdfPreview = async () => {
     if (!errand) return;
-    const createAndClickLink = (d: { pdfBase64: string; error?: string }) => {
-      if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
-        const uri = `data:application/pdf;base64,${d.pdfBase64}`;
-        const link = document.createElement('a');
-        link.href = uri;
-        link.setAttribute('download', `Beslut-${errand.errandNumber}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        setIsPreviewLoading(false);
-      } else {
-        setIsPreviewLoading(false);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel förhandsgranskningen skapades',
-          status: 'error',
-        });
-        console.error('Error when fetching preview');
-      }
-    };
     try {
       setIsPreviewLoading(true);
-      const data = getValues();
-      let pdfData: {
-        pdfBase64: string;
-        error?: string;
-      };
       if (isErrandLocked(errand) || isSent()) {
-        const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
-        const decision = getFinalDecisonWithHighestId(errand.decisions);
-        if (!decision) {
-          setIsPreviewLoading(false);
-          throw new Error('Inget beslut hittades');
-        }
-        const pdfBase64 = decision?.attachments?.[0]?.file;
-        if (!pdfBase64) {
-          throw new Error('Ingen PDF hittades');
-        }
-        pdfData = {
-          pdfBase64,
-          error: !pdfBase64 ? 'Error when fetching existing pdf data' : undefined,
-        };
+        await downloadExistingPdf();
       } else {
-        pdfData = await renderBeslutPdf(errand, data, services);
-        const saved = await saveDecision(municipalityId, errand, data, 'FINAL', pdfData.pdfBase64);
-        const refresh = await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        await renderAndDownloadPdf();
       }
-      createAndClickLink(pdfData);
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -505,23 +495,114 @@ export const CasedataDecisionTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
-  const changeTemplate = (templateIdentifier: string) => {
-    if (!templateIdentifier || !decisionTemplates) {
-      setValue('description', '', { shouldDirty: true });
-      setValue('descriptionPlaintext', '');
+  useEffect(() => {
+    if (!outcome) {
+      templatesRequestId.current += 1;
+      setDecisionTemplates([]);
+      setSelectedTemplate(null);
+      setIsTemplatesLoading(false);
       return;
     }
+    const requestId = ++templatesRequestId.current;
+    setIsTemplatesLoading(true);
+    setSelectedTemplate(null);
+    setValue('decisionTemplate', '', { shouldDirty: false });
+    // PT-apparna (rph, ft, rft) delar namespace SBK_PARKING_PERMIT så vi
+    // särskiljer med identifier-prefix. Kan lösas med bättre metadata senare.
+    let appPrefix = `${(process.env.NEXT_PUBLIC_APPLICATION || 'mex').toLowerCase()}.`;
+    if (isPT() && errand) {
+      if (isFTNationalErrand(errand)) {
+        appPrefix = 'sbk.rft.';
+      } else if (isFTErrand(errand)) {
+        appPrefix = 'sbk.ft.';
+      } else {
+        appPrefix = 'sbk.rph.';
+      }
+    }
+    fetchDecisionTemplates(appPrefix, outcome)
+      .then((templates) => {
+        if (templatesRequestId.current !== requestId) return;
+        setDecisionTemplates(templates);
+      })
+      .catch((e) => {
+        if (templatesRequestId.current !== requestId) return;
+        setDecisionTemplates([]);
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: e?.message || 'Kunde inte hämta beslutsmallar',
+          status: 'error',
+        });
+      })
+      .finally(() => {
+        if (templatesRequestId.current === requestId) {
+          setIsTemplatesLoading(false);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outcome]);
 
-    const template = decisionTemplates.byId[templateIdentifier];
-    if (!template) {
-      setValue('description', '', { shouldDirty: true });
-      setValue('descriptionPlaintext', '');
-      return;
+  const buildTemplateParameters = (): { [key: string]: string | Object } => {
+    const owner = errand ? getOwnerStakeholder(errand) : undefined;
+    const formData = getValues();
+    const parameters: { [key: string]: string | Object } = {
+      caseNumber: errand?.errandNumber || '',
+      caseType: getLabelFromCaseType(errand?.caseType) || '',
+      personalNumber: owner?.personalNumber || '',
+      administratorName: errand?.administrator
+        ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
+        : '',
+      addressFirstname: owner?.firstName || '',
+      addressLastname: owner?.lastName || '',
+      addressCo: owner?.careof || '',
+      addressLine1: owner?.street || '',
+      addressLine2: [owner?.zip, owner?.city].filter(Boolean).join(' '),
+      description: formData.description || '',
+      decisionText: formData.description || '',
+      decisionDate: dayjs().format('YYYY-MM-DD'),
+    };
+
+    if (outcome === 'APPROVAL') {
+      parameters.permitFirstname = owner?.firstName || '';
+      parameters.permitLastname = owner?.lastName || '';
+      parameters.permitEndDate = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
     }
 
-    const content = template.content + decisionTemplates.signature;
-    setValue('description', content, { shouldDirty: true });
-    setValue('descriptionPlaintext', sanitizedInline(content));
+    if (isPT() && (law as Law[])?.length > 0) {
+      const lawsBySfs = (law as Law[]).reduce(
+        (acc, l) => {
+          if (l.article && l.sfs) {
+            if (!acc[l.sfs]) {
+              acc[l.sfs] = [];
+            }
+            acc[l.sfs].push(l.article);
+          }
+          return acc;
+        },
+        {} as Record<string, string[]>
+      );
+
+      parameters.lawReferences = Object.entries(lawsBySfs)
+        .map(([sfs, articles]) => `${articles.join('§, ')}§ (${sfs})`)
+        .join(', ');
+    }
+
+    if (services && services.length > 0) {
+      parameters.services = mapServicesToTemplateParams(services);
+    }
+
+    return parameters;
+  };
+
+  const handleTemplateSelect = (identifier: string) => {
+    if (!identifier) {
+      setSelectedTemplate(null);
+      setValue('decisionTemplate', '', { shouldDirty: true });
+      return;
+    }
+    const template = decisionTemplates.find((t) => t.identifier === identifier);
+    setSelectedTemplate(template || null);
+    setValue('decisionTemplate', template?.name || identifier, { shouldDirty: true });
   };
 
   const isSent = () => {
@@ -537,7 +618,7 @@ export const CasedataDecisionTab: React.FC<{
   }
 
   return (
-    <div className="w-full py-24 px-32">
+    <div className="w-full py-24 px-32 overflow-hidden">
       <div className="w-full flex justify-between items-center flex-wrap">
         <h2 className="text-h4-sm md:text-h4-md">Beslutstext</h2>
         <Button
@@ -557,7 +638,7 @@ export const CasedataDecisionTab: React.FC<{
       <div className="mt-24">
         <Input type="hidden" {...register('id')} />
         <Input type="hidden" {...register('decidedBy')} value={user.username} />
-        <div className="w-full mt-md flex justify-start gap-md mb-24">
+        <div className="w-full mt-md flex flex-col md:flex-row gap-md mb-24">
           <FormControl data-cy="decision-outcome-dropdown" className="w-full">
             <FormLabel>Beslut</FormLabel>
             <Input data-cy="decision-outcome-input" type="hidden" {...register('outcome')} />
@@ -585,107 +666,114 @@ export const CasedataDecisionTab: React.FC<{
               <Select.Option data-cy="outcome-input-item" value={'CANCELLATION'}>
                 Ärendet avskrivs
               </Select.Option>
+              <Select.Option data-cy="outcome-input-item" value={'DISMISSAL'}>
+                Ärendet avvisas
+              </Select.Option>
             </Select>
             {errors.outcome && <FormErrorMessage className="text-error">{errors.outcome.message}</FormErrorMessage>}
           </FormControl>
 
-          {isPT() && (
-            <>
-              <FormControl className="w-full ">
-                <FormLabel>Lagrum</FormLabel>
-                <Combobox
-                  data-cy="law-select"
-                  multiple
-                  placeholder="Välj lagrum"
-                  value={initialLawValues}
-                  size="sm"
-                  disabled={isErrandLocked(errand) || isSent()}
-                  onSelect={(e) => {
-                    const selected = e.target.value as string[];
-                    const newLaws = getLawMapping(errand).filter((law) => law.heading && selected.includes(law.heading));
-                    setValue('law', newLaws, {
-                      shouldDirty: true,
-                      shouldTouch: true,
-                      shouldValidate: true,
-                    });
-                    props.setUnsaved(true);
-                  }}
-                >
-                  <Combobox.Input />
-                  <Combobox.List>
-                    {getLawMapping(errand).map((law, index) => (
-                      <Combobox.Option key={index} value={law.heading ?? ''}>
-                        {law.heading ?? ''}
-                      </Combobox.Option>
-                    ))}
-                  </Combobox.List>
-                </Combobox>
-                {errors.law && <FormErrorMessage className="text-error">{errors.law.message}</FormErrorMessage>}
-              </FormControl>
+          <FormControl className="w-full">
+            <FormLabel>Välj beslutsmall</FormLabel>
+            <Input type="hidden" {...register('decisionTemplate')} />
+            <Select
+              className="w-full"
+              data-cy="decisionTemplate-select"
+              name="decisionTemplate"
+              size="sm"
+              disabled={isErrandLocked(errand) || isSent() || isTemplatesLoading || decisionTemplates.length === 0}
+              onChange={(e) => {
+                handleTemplateSelect(e.currentTarget.value);
+              }}
+              placeholder="Välj beslutsmall"
+              value={selectedTemplate?.identifier || ''}
+            >
+              <Select.Option value="">Välj beslutsmall</Select.Option>
+              {decisionTemplates.map((t) => (
+                <Select.Option key={t.identifier} value={t.identifier}>
+                  {t.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </FormControl>
+        </div>
 
-              <FormControl className="w-full">
-                <FormLabel>Beslut giltigt från</FormLabel>
-                <Input
-                  type="date"
-                  {...register('validFrom')}
-                  size="sm"
-                  disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
-                  placeholder="Välj datum"
-                  data-cy="validFrom-input"
-                />
-                {errors.validFrom && (
-                  <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
-                )}
-              </FormControl>
-
-              <FormControl className="w-full">
-                <FormLabel>Beslut giltigt till</FormLabel>
-                <Input
-                  type="date"
-                  {...register('validTo')}
-                  size="sm"
-                  disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
-                  placeholder="Välj datum"
-                  data-cy="validTo-input"
-                />
-                {errors.validTo && <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>}
-              </FormControl>
-            </>
-          )}
-
-          {!isPT() && (decisionTemplates?.templates?.length ?? 0) > 0 ? (
+        {isPT() && (
+          <div className="w-full flex flex-col md:flex-row gap-md mb-24">
             <FormControl className="w-full">
-              <FormLabel>Välj beslutsmall</FormLabel>
-              <Input type="hidden" {...register('decisionTemplate')} />
-              <Select
+              <FormLabel>Lagrum</FormLabel>
+              <Combobox
                 className="w-full"
-                data-cy="decisionTemplate-select"
-                name="decisionTemplate"
+                data-cy="law-select"
+                multiple
+                placeholder="Välj lagrum"
+                value={initialLawValues}
                 size="sm"
                 disabled={isErrandLocked(errand) || isSent()}
-                onChange={(e) => {
-                  setValue('decisionTemplate', e.currentTarget.value, { shouldDirty: true });
-                  changeTemplate(e.currentTarget.value);
+                onSelect={(e) => {
+                  const selected = e.target.value as string[];
+                  const newLaws = getLawMapping(errand).filter((law) => law.heading && selected.includes(law.heading));
+                  setValue('law', newLaws, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
+                  props.setUnsaved(true);
                 }}
-                placeholder="Välj beslutsmall"
-                value={getValues('decisionTemplate')}
               >
-                <Select.Option value="">Välj beslutsmall</Select.Option>
-                {decisionTemplates?.templates.map((template) => (
-                  <Select.Option key={template.identifier} value={template.identifier}>
-                    {template.name}
-                  </Select.Option>
-                ))}
-              </Select>
+                <Combobox.Input className="w-full" />
+                <Combobox.List>
+                  {getLawMapping(errand).map((law, index) => (
+                    <Combobox.Option key={index} value={law.heading ?? ''}>
+                      {law.heading ?? ''}
+                    </Combobox.Option>
+                  ))}
+                </Combobox.List>
+              </Combobox>
+              {errors.law && <FormErrorMessage className="text-error">{errors.law.message}</FormErrorMessage>}
             </FormControl>
-          ) : null}
-        </div>
+
+            <FormControl className="w-full">
+              <FormLabel>Beslut giltigt från</FormLabel>
+              <Input
+                type="date"
+                {...register('validFrom')}
+                size="sm"
+                disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
+                placeholder="Välj datum"
+                data-cy="validFrom-input"
+              />
+              {errors.validFrom && (
+                <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
+              )}
+            </FormControl>
+
+            <FormControl className="w-full">
+              <FormLabel>Beslut giltigt till</FormLabel>
+              <Input
+                type="date"
+                {...register('validTo')}
+                size="sm"
+                disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
+                placeholder="Välj datum"
+                data-cy="validTo-input"
+              />
+              {errors.validTo && <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>}
+            </FormControl>
+          </div>
+        )}
 
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
-        <div className={cx(`h-[48rem]`)} data-cy="decision-richtext-wrapper">
+
+        <TemplatePdfPreview
+          identifier={selectedTemplate?.identifier}
+          parameters={buildTemplateParameters()}
+        />
+
+        <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
           <TextEditor
-            className={cx(`mb-md h-[80%] max-w-[95.9rem]`)}
+            className={cx('mb-md h-[80%] max-w-[95.9rem]')}
             readOnly={isErrandLocked(errand) || isSent()}
             onChange={(e) => {
               setValue('description', e.target.value.markup ?? '', {

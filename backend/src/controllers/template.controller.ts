@@ -14,6 +14,25 @@ interface ResponseData {
   message: string;
 }
 
+const compareTemplateVersion = (a?: string, b?: string): number => {
+  if (a && b) {
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  if (a && !b) return 1;
+  if (!a && b) return -1;
+  return 0;
+};
+
+const isCandidateNewer = (candidate: DetailedTemplateResponse, current: DetailedTemplateResponse): boolean => {
+  const versionCompare = compareTemplateVersion(candidate.version, current.version);
+  if (versionCompare !== 0) {
+    return versionCompare > 0;
+  }
+  const candidateModified = candidate.lastModifiedAt ? new Date(candidate.lastModifiedAt).getTime() : 0;
+  const currentModified = current.lastModifiedAt ? new Date(current.lastModifiedAt).getTime() : 0;
+  return candidateModified > currentModified;
+};
+
 class TemplateSelector {
   @IsString()
   @IsOptional()
@@ -124,6 +143,7 @@ export class TemplateController {
     @QueryParam('excludeVariants') excludeVariants: string = '',
     @QueryParam('templateType') templateType: string = '',
     @QueryParam('excludeRoles') excludeRoles: string = '',
+    @QueryParam('decision') decision: string = '',
   ): Promise<ResponseData> {
     const namespace = prefix === 'internal.' ? 'CONTACTSUNDSVALL' : CASEDATA_NAMESPACE || SUPPORTMANAGEMENT_NAMESPACE;
     const baseUrl = `${this.SERVICE}/${MUNICIPALITY_ID}/templates`;
@@ -145,6 +165,12 @@ export class TemplateController {
       });
     }
 
+    if (decision) {
+      filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
+        return t.metadata?.some((m) => m.key === 'decision' && m.value === decision);
+      });
+    }
+
     const effectiveExcludeRoles = excludeRoles || excludeVariants;
     if (effectiveExcludeRoles) {
       const excludeList = effectiveExcludeRoles.split(',').map(v => v.trim());
@@ -160,7 +186,7 @@ export class TemplateController {
     for (const t of filteredTemplates) {
       if (!t.identifier) continue;
       const existing = latestByIdentifier.get(t.identifier);
-      if (!existing || (t.version && existing.version && t.version > existing.version)) {
+      if (!existing || isCandidateNewer(t, existing)) {
         latestByIdentifier.set(t.identifier, t);
       }
     }
