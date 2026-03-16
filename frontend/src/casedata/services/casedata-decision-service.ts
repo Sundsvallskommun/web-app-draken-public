@@ -353,45 +353,43 @@ export const renderPdf: (
   }
 
   const owner = getOwnerStakeholder(errand);
-  const renderBody: TemplateSelector = {
-    identifier: identifier,
-    parameters: {
-      caseNumber: formData.errandNumber ?? '',
-      caseType: getLabelFromCaseType(formData.errandCaseType),
-      personalNumber: formData.personalNumber ?? '',
-      addressLastname: owner?.lastName,
-      addressFirstname: owner?.firstName,
-      addressCo: owner?.careof,
-      addressLine1: owner?.street,
-      addressLine2: [owner?.zip, owner?.city].join(' '),
-      administratorName: errand.administrator
-        ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
-        : '',
-    },
-  };
   const wrapWithWordBreak = (html: string) =>
     `<div style="overflow-wrap: break-word; word-break: break-word;">${html}</div>`;
 
+  const parameters: { [key: string]: any } = {
+    caseNumber: formData.errandNumber ?? '',
+    caseType: getLabelFromCaseType(formData.errandCaseType),
+    personalNumber: formData.personalNumber ?? '',
+    addressLastname: owner?.lastName,
+    addressFirstname: owner?.firstName,
+    addressCo: owner?.careof,
+    addressLine1: owner?.street,
+    addressLine2: [owner?.zip, owner?.city].join(' '),
+    administratorName: errand.administrator
+      ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
+      : '',
+    description: wrapWithWordBreak(formData.description),
+  };
+
   if (templateType === 'investigation') {
-    renderBody.parameters['investigationText'] = wrapWithWordBreak(formData.description);
-    renderBody.parameters['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
-    renderBody.parameters['permitFirstname'] = owner?.firstName;
-    renderBody.parameters['permitLastname'] = owner?.lastName;
-    renderBody.parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
-    renderBody.parameters['disabilityReason'] = errand.extraParameters['application.reason'];
+    parameters['investigationText'] = wrapWithWordBreak(formData.description);
+    parameters['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
+    parameters['permitFirstname'] = owner?.firstName;
+    parameters['permitLastname'] = owner?.lastName;
+    parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    parameters['disabilityReason'] = errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
   } else if (templateType === 'decision') {
-    renderBody.parameters['decisionText'] = wrapWithWordBreak(formData.description);
-    renderBody.parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
+    parameters['decisionText'] = wrapWithWordBreak(formData.description);
+    parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
     if (outcome === 'approval') {
-      renderBody.parameters!['permitFirstname'] = owner?.firstName;
-      renderBody.parameters!['permitLastname'] = owner?.lastName;
-      renderBody.parameters!['permitEndDate'] = dayjs(formData.validTo).format('YYYY-MM-DD');
+      parameters['permitFirstname'] = owner?.firstName;
+      parameters['permitLastname'] = owner?.lastName;
+      parameters['permitEndDate'] = dayjs(formData.validTo).format('YYYY-MM-DD');
     }
   }
   if (outcome === 'cancellation') {
-    renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
   }
-  renderBody.parameters['description'] = wrapWithWordBreak(formData.description);
 
   if (isPT() && isFTErrand(errand)) {
     const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
@@ -412,12 +410,13 @@ export const renderPdf: (
           .join(', ')
       : '';
 
-    renderBody.parameters!['lawReferences'] = lawReferences;
-
-    renderBody.parameters!['services'] = services && services.length > 0
+    parameters['lawReferences'] = lawReferences;
+    parameters['services'] = services && services.length > 0
       ? mapServicesToTemplateParams(services)
       : [];
   }
+
+  const renderBody: TemplateSelector = { identifier, parameters };
 
   return apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
