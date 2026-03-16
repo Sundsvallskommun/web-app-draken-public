@@ -124,7 +124,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           version: '1',
           metadata: [
             { key: 'templateType', value: 'Decision' },
-            { key: 'decision', value: 'APPROVAL' },
+            { key: 'decision', value: 'REJECTION' },
           ],
           defaultValues: [],
         },
@@ -135,7 +135,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         message: 'Decision PDF rendered',
       }).as('renderTemplatePdf');
 
-      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.wait('@getDecisionTemplates');
       cy.get('[data-cy="decisionTemplate-select"]').should('exist');
       cy.get('[data-cy="decisionTemplate-select"]').select('Testmall');

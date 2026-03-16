@@ -237,6 +237,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('shows template dropdown after outcome selection when templates exist and renders preview', () => {
+      visitErrand();
       const mockTemplates = [
         {
           identifier: 'pt.test.template',
@@ -256,6 +257,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         message: 'Decision PDF rendered',
       }).as('renderTemplatePdf');
 
+      // Existing decision has APPROVAL — select a different outcome to trigger template fetch
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.wait('@getDecisionTemplates');
       cy.get('[data-cy="decisionTemplate-select"]').should('exist');
