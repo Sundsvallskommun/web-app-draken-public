@@ -4,13 +4,12 @@ import {
   BillingServiceItem,
   emptyBillingFormData,
 } from '@casedata/interfaces/billing';
-import { Role } from '@casedata/interfaces/role';
 import {
   getCasedataBillingRecordsForErrand,
   saveCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
-import { getSSNFromPersonId, getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
+import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect, useState } from 'react';
@@ -28,6 +27,7 @@ export const CaseDataBillingForm: React.FC = () => {
   const toastMessage = useSnackbar();
 
   const [billingRecords, setBillingRecords] = useState<CBillingRecord[]>([]);
+  const [recipient, setRecipient] = useState<BillingRecipient | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export const CaseDataBillingForm: React.FC = () => {
     },
   });
 
-  const { handleSubmit, reset, watch, setValue } = form;
+  const { reset, watch, setValue } = form;
   const services = watch('services');
 
   const refreshErrand = useCallback(async () => {
@@ -69,46 +69,9 @@ export const CaseDataBillingForm: React.FC = () => {
     }
   }, [municipalityId, errand]);
 
-  const fetchRecipient = useCallback(async () => {
-    if (!errand || !municipalityId) return;
-
-    try {
-      const leaseholders = getStakeholdersByRelation(errand, Role.LEASEHOLDER);
-      if (leaseholders.length > 0) {
-        const leaseholder = leaseholders[0];
-        const isOrganization = !!leaseholder.organizationNumber || !!leaseholder.organizationName;
-
-        let personalNumber = '';
-        if (!isOrganization && leaseholder.personId) {
-          try {
-            personalNumber = await getSSNFromPersonId(municipalityId, leaseholder.personId);
-          } catch (e) {
-            console.error('Failed to fetch personalNumber:', e);
-          }
-        }
-
-        const recipient: BillingRecipient = {
-          name: isOrganization ? '' : `${leaseholder.firstName || ''} ${leaseholder.lastName || ''}`.trim(),
-          organizationName: leaseholder.organizationName || '',
-          personId: leaseholder.personId || '',
-          personalNumber: isOrganization ? '' : personalNumber,
-          organizationNumber: leaseholder.organizationNumber || '',
-          address: leaseholder.street || '',
-          postalCode: leaseholder.zip || '',
-          city: leaseholder.city || '',
-          role: 'Arrendator',
-        };
-        setValue('recipient', recipient);
-      }
-    } catch (error) {
-      console.error('Failed to fetch recipient:', error);
-    }
-  }, [errand, municipalityId, setValue]);
-
   useEffect(() => {
     fetchBillingRecords();
-    fetchRecipient();
-  }, [fetchBillingRecords, fetchRecipient]);
+  }, [fetchBillingRecords]);
 
   const handleStartAddNew = () => {
     setIsAddingNew(true);
@@ -146,7 +109,8 @@ export const CaseDataBillingForm: React.FC = () => {
     );
   };
 
-  const onSubmit = async (data: BillingFormData) => {
+  const onSubmit = async () => {
+    const data = form.getValues();
     if (!errand) return;
 
     if (data.services.length === 0) {
@@ -169,17 +133,17 @@ export const CaseDataBillingForm: React.FC = () => {
       return;
     }
 
-    if (!data.recipient) {
+    if (!recipient) {
       toastMessage({
         position: 'bottom',
         closeable: true,
-        message: 'Fakturamottagare saknas. Lägg till en arrendator på ärendet.',
+        message: 'Välj en fakturamottagare.',
         status: 'error',
       });
       return;
     }
 
-    if (!data.recipient.organizationNumber && !data.recipient.personalNumber) {
+    if (!recipient.organizationNumber && !recipient.personId) {
       toastMessage({
         position: 'bottom',
         closeable: true,
@@ -189,7 +153,7 @@ export const CaseDataBillingForm: React.FC = () => {
       return;
     }
 
-    if (!data.recipient.address || !data.recipient.postalCode || !data.recipient.city) {
+    if (!recipient.address || !recipient.postalCode || !recipient.city) {
       toastMessage({
         position: 'bottom',
         closeable: true,
@@ -202,7 +166,16 @@ export const CaseDataBillingForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await saveCasedataBillingRecord(data, errand!, municipalityId);
+      const resolvedRecipient = { ...recipient };
+      if (!resolvedRecipient.organizationNumber && resolvedRecipient.personId) {
+        try {
+          resolvedRecipient.personalNumber = await getSSNFromPersonId(municipalityId, resolvedRecipient.personId);
+        } catch (e) {
+          console.error('Failed to fetch personalNumber:', e);
+        }
+      }
+
+      await saveCasedataBillingRecord({ ...data, recipient: resolvedRecipient }, errand!, municipalityId);
 
       toastMessage({
         position: 'bottom',
@@ -213,7 +186,6 @@ export const CaseDataBillingForm: React.FC = () => {
 
       reset({
         ...emptyBillingFormData,
-        recipient: data.recipient,
         specifications: {
           ...emptyBillingFormData.specifications,
           ourReference: `${user?.firstName} ${user?.lastName}`,
@@ -255,10 +227,7 @@ export const CaseDataBillingForm: React.FC = () => {
           <div className="w-full flex flex-col gap-32">
             <h2 className="text-h4-sm md:text-h4-md">Engångsfakturering</h2>
             <Divider.Section>Fakturaspecifikationer</Divider.Section>
-            <div className="max-w-[59.3rem] flex flex-col gap-8">
-              <span className="text-label-medium">Fakturamottagare</span>
-              <BillingLeaseholder />
-            </div>
+            <BillingLeaseholder onSelectRecipient={setRecipient} />
             <div>
               <BillingSpecifications />
             </div>
@@ -290,7 +259,7 @@ export const CaseDataBillingForm: React.FC = () => {
             </div>
             <div>
               <Button
-                onClick={handleSubmit(onSubmit)}
+                onClick={onSubmit}
                 loading={isLoading}
                 disabled={services.length === 0 || isEditingOrAdding}
                 color={'vattjom'}
