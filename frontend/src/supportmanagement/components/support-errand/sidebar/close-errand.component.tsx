@@ -140,7 +140,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
             <span>
               Ärendet har redan en avslutningskod. Du kan ändra koden eller avsluta ärendet med nuvarande kod.
             </span>
-            <div className="w-fit my-16">
+            <div className="w-fit my-16 font-bold">
               {getResolutionLabels()[supportErrand?.resolution] || supportErrand?.resolution}
             </div>
             <div className="flex flex-row gap-10 mt-40">
