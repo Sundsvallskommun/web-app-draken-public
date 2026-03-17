@@ -62,6 +62,7 @@ export const isLeaseAgreement = (contractType: ContractType) =>
     ContractType.LAND_LEASE_PUBLIC,
     ContractType.SHORT_TERM_LEASE_AGREEMENT,
     ContractType.LEASEHOLD,
+    ContractType.OBJECT_LEASE,
   ].includes(contractType);
 
 export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseType) =>
@@ -433,6 +434,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
     ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
     ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
     ...(stakeholder.personId && { partyId: stakeholder.personId }),
+    ...(stakeholder.id && { stakeholderId: String(stakeholder.id) }),
     ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
     ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
     parameters: parameters,
@@ -450,7 +452,9 @@ export const kopeavtalToContract = (data: ContractData): Contract => {
     type: ContractType.PURCHASE_AGREEMENT,
     leaseType: undefined,
     status: data.status,
-    stakeholders: [...(data.buyers ?? []), ...(data.sellers ?? [])].map(({ personalNumber, ...rest }) => rest),
+    stakeholders: [...(data.buyers ?? []), ...(data.sellers ?? [])].map(
+      ({ personalNumber, stakeholderId, ...rest }) => rest
+    ),
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
@@ -509,7 +513,9 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     leaseType: data.leaseType,
     status: data.status,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
-    stakeholders: [...(data.lessees ?? []), ...(data.lessors ?? [])].map(({ personalNumber, ...rest }) => rest),
+    stakeholders: [...(data.lessees ?? []), ...(data.lessors ?? [])].map(
+      ({ personalNumber, stakeholderId, ...rest }) => rest
+    ),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
   };

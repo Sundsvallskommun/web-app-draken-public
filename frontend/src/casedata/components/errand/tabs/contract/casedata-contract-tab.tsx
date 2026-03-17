@@ -11,9 +11,7 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { Role } from '@casedata/interfaces/role';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
 import {
   casedataStakeholderToContractStakeholder,
   contractTypes,
@@ -110,50 +108,61 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     setAllowed(_a);
   }, [user, errand]);
 
-  const updateStakeholdersFromErrand = () => {
-    if (!errand) return;
-    const _sellers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.SELLER).map(
-      casedataStakeholderToContractStakeholder
-    );
-    const _buyers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.BUYER).map(
-      casedataStakeholderToContractStakeholder
-    );
-    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
-      (s, idx) => {
-        // FIXME Assign PRIMARY_BILLING_PARTY to the first LEASEHOLDER-stakeholder
-        // Is this the rule we should use? To be discussed
-        const l = casedataStakeholderToContractStakeholder(s);
-        if (idx === 0) {
-          if (!l.roles) l.roles = [];
-          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
-        }
-        return l;
-      }
-    );
-    const _lessors: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER).map(
-      casedataStakeholderToContractStakeholder
-    );
-    setSellers(_sellers || []);
-    setBuyers(_buyers || []);
-    setLessees(_lessees || []);
-    setLessors(_lessors || []);
+  // Manual party selection handlers
+  const handleSetLessors = (selectedIds: string[]) => {
+    const selected: StakeholderWithPersonnumber[] = (errand?.stakeholders ?? [])
+      .filter((s) => selectedIds.includes(String(s.id)))
+      .map(casedataStakeholderToContractStakeholder);
+    selected.forEach((s) => {
+      s.roles = [StakeholderRole.LESSOR];
+    });
+    setLessors(selected);
   };
 
-  // Update only lessees (invoice recipients) from errand - used for non-DRAFT contracts
-  const updateLesseesOnlyFromErrand = () => {
-    if (!errand) return;
-    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
-      (s, idx) => {
-        const l = casedataStakeholderToContractStakeholder(s);
-        if (idx === 0) {
-          if (!l.roles) l.roles = [];
-          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
-        }
-        return l;
-      }
-    );
-    setLessees(_lessees || []);
-    // NOTE: Does NOT update sellers, buyers, or lessors
+  const handleSetLessees = (selectedIds: string[]) => {
+    const selected: StakeholderWithPersonnumber[] = (errand?.stakeholders ?? [])
+      .filter((s) => selectedIds.includes(String(s.id)))
+      .map(casedataStakeholderToContractStakeholder);
+    selected.forEach((s) => {
+      s.roles = [StakeholderRole.LESSEE];
+    });
+    setLessees(selected);
+  };
+
+  const handleSetBillingParties = (selectedStakeholderIds: string[]) => {
+    // Update lessees to add/remove PRIMARY_BILLING_PARTY role
+    // Uses stakeholderId for matching since all saved stakeholders have an id
+    const updatedLessees = lessees.map((l, index) => {
+      // Match by stakeholderId, falling back to index for edge cases
+      const identifier = l.stakeholderId || String(index);
+      const shouldBeBilling = selectedStakeholderIds.includes(identifier);
+      const rolesWithoutBilling = (l.roles ?? []).filter((r) => r !== StakeholderRole.PRIMARY_BILLING_PARTY);
+      return {
+        ...l,
+        roles: shouldBeBilling ? [...rolesWithoutBilling, StakeholderRole.PRIMARY_BILLING_PARTY] : rolesWithoutBilling,
+      };
+    });
+    setLessees(updatedLessees);
+  };
+
+  const handleSetBuyers = (selectedIds: string[]) => {
+    const selected: StakeholderWithPersonnumber[] = (errand?.stakeholders ?? [])
+      .filter((s) => selectedIds.includes(String(s.id)))
+      .map(casedataStakeholderToContractStakeholder);
+    selected.forEach((s) => {
+      s.roles = [StakeholderRole.BUYER];
+    });
+    setBuyers(selected);
+  };
+
+  const handleSetSellers = (selectedIds: string[]) => {
+    const selected: StakeholderWithPersonnumber[] = (errand?.stakeholders ?? [])
+      .filter((s) => selectedIds.includes(String(s.id)))
+      .map(casedataStakeholderToContractStakeholder);
+    selected.forEach((s) => {
+      s.roles = [StakeholderRole.SELLER];
+    });
+    setSellers(selected);
   };
 
   const getStakeholdersFromContract = (contract: ContractData) => {
@@ -177,8 +186,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   useEffect(() => {
     if (existingContract?.contractId) {
       getStakeholdersFromContract(existingContract);
-    } else {
-      updateStakeholdersFromErrand();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, existingContract]);
@@ -376,9 +383,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 buyers={buyers}
                 lessees={lessees}
                 lessors={lessors}
-                updateStakeholders={updateStakeholdersFromErrand}
-                onUpdateLesseesOnly={updateLesseesOnlyFromErrand}
                 contractStatus={existingContract?.status}
+                errandStakeholders={errand?.stakeholders}
+                onSetLessors={handleSetLessors}
+                onSetLessees={handleSetLessees}
+                onSetBillingParties={handleSetBillingParties}
+                onSetBuyers={handleSetBuyers}
+                onSetSellers={handleSetSellers}
               />
             </div>
 
