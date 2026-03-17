@@ -1,6 +1,5 @@
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import { ContractType, IntervalType, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
-import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
@@ -9,11 +8,11 @@ import {
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
-import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import {
   Button,
   Checkbox,
+  Combobox,
   Disclosure,
   FormControl,
   FormErrorMessage,
@@ -29,7 +28,9 @@ import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractAttachments } from './contract-attachments';
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
-import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
+import { Calendar, FilePen, Info, MapPin, Receipt, Users, Wallet } from 'lucide-react';
+import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { Role } from '@casedata/interfaces/role';
 
 export const ContractForm: React.FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -40,9 +41,13 @@ export const ContractForm: React.FC<{
   sellers: StakeholderWithPersonnumber[];
   lessees: StakeholderWithPersonnumber[];
   lessors: StakeholderWithPersonnumber[];
-  updateStakeholders?: () => void;
   contractStatus?: Status;
-  onUpdateLesseesOnly?: () => void;
+  errandStakeholders?: CasedataOwnerOrContact[];
+  onSetLessors?: (selectedIds: string[]) => void;
+  onSetLessees?: (selectedIds: string[]) => void;
+  onSetBillingParties?: (selectedIds: string[]) => void;
+  onSetBuyers?: (selectedIds: string[]) => void;
+  onSetSellers?: (selectedIds: string[]) => void;
 }> = ({
   changeBadgeColor,
   onSave,
@@ -52,15 +57,15 @@ export const ContractForm: React.FC<{
   sellers,
   lessees,
   lessors,
-  updateStakeholders,
   contractStatus,
-  onUpdateLesseesOnly,
+  errandStakeholders,
+  onSetLessors,
+  onSetLessees,
+  onSetBillingParties,
+  onSetBuyers,
+  onSetSellers,
 }) => {
-  const {
-    municipalityId,
-    errand,
-    user,
-  } = useAppContext();
+  const { municipalityId, errand, user } = useAppContext();
   const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
     useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
@@ -69,7 +74,18 @@ export const ContractForm: React.FC<{
 
   const [loading, setLoading] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
-  const [updatingParties, setUpdatingParties] = useState<boolean>(false);
+
+  // State for party selectors
+  const [showLessorSelector, setShowLessorSelector] = useState(false);
+  const [showLesseeSelector, setShowLesseeSelector] = useState(false);
+  const [showBillingSelector, setShowBillingSelector] = useState(false);
+  const [showBuyerSelector, setShowBuyerSelector] = useState(false);
+  const [showSellerSelector, setShowSellerSelector] = useState(false);
+  const [selectedLessors, setSelectedLessors] = useState<string[]>([]);
+  const [selectedLessees, setSelectedLessees] = useState<string[]>([]);
+  const [selectedBillingParties, setSelectedBillingParties] = useState<string[]>([]);
+  const [selectedBuyers, setSelectedBuyers] = useState<string[]>([]);
+  const [selectedSellers, setSelectedSellers] = useState<string[]>([]);
 
   const contractType = watch().type;
 
@@ -186,13 +202,16 @@ export const ContractForm: React.FC<{
 
         // Find index for InvoiceInfo extraparameter
         const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo') ?? -1;
-        setInvoiceInfoIndex(_invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex);
+        setInvoiceInfoIndex(
+          _invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
-  const toPropertyDesignation = (pd: { name?: string } | string): string => (typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '');
+  const toPropertyDesignation = (pd: { name?: string } | string): string =>
+    typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '';
 
   const saveButton = () => {
     if (readOnly) return null;
@@ -225,8 +244,97 @@ export const ContractForm: React.FC<{
     );
   };
 
+  // Helper to get stakeholder display name
+  const getStakeholderLabel = (s: CasedataOwnerOrContact): string => {
+    if (s.stakeholderType === 'ORGANIZATION') {
+      return s.organizationName ?? '';
+    }
+    return `${s.firstName} ${s.lastName}`.trim();
+  };
+
+  // Stakeholder options for the Combobox selectors
+  // Filter out administrators (app users) and stakeholders without valid id
+  // Convert id to string since Combobox expects string values
+  const stakeholderOptions = (errandStakeholders ?? [])
+    .filter((s) => s.id && !s.roles.includes(Role.ADMINISTRATOR))
+    .map((s, index) => ({
+      id: String(s.id),
+      key: `stakeholder-${index}-${s.id}`,
+      label: getStakeholderLabel(s) || '(namn saknas)',
+    }));
+
+  // Lessee options for billing party selection (only current lessees)
+  // Use stakeholderId as identifier since all saved stakeholders have an id
+  // Fall back to index for edge cases where stakeholderId is not available
+  const lesseeOptions = lessees.map((l, index) => ({
+    id: l.stakeholderId || String(index),
+    key: `lessee-${l.stakeholderId || index}`,
+    label: getContractStakeholderName(l) || '(namn saknas)',
+  }));
+
+  // Party selector component
+  const partySelector = (
+    show: boolean,
+    setShow: (v: boolean) => void,
+    selected: string[],
+    setSelected: (v: string[]) => void,
+    onSave: () => void,
+    options: { id: string; key: string; label: string }[],
+    placeholder: string,
+    buttonLabel: string
+  ) => (
+    <>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => {
+          if (!show) {
+            // Reset selection when opening
+            setSelected([]);
+          }
+          setShow(!show);
+        }}
+      >
+        {show ? 'Avbryt' : buttonLabel}
+      </Button>
+      {show && (
+        <div className="mt-12 flex gap-12 items-end">
+          <Combobox
+            multiple
+            value={selected}
+            placeholder={placeholder}
+            size="sm"
+            onSelect={(e) => {
+              const value = e.target.value as string[];
+              setSelected(value);
+            }}
+          >
+            <Combobox.Input />
+            <Combobox.List>
+              {options.map((opt) => (
+                <Combobox.Option key={opt.key} value={opt.id}>
+                  {opt.label}
+                </Combobox.Option>
+              ))}
+            </Combobox.List>
+          </Combobox>
+          <Button
+            size="sm"
+            disabled={selected.length === 0}
+            onClick={() => {
+              onSave();
+              setShow(false);
+            }}
+          >
+            Spara
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
   const partyTable = (
-    label: 'Säljare' | 'Köpare' | 'Upplåtare' | 'Arrendatorer',
+    label: 'Säljare' | 'Köpare' | 'Upplåtare' | 'Arrendatorer' | 'Fakturamottagare',
     stakeholders: StakeholderWithPersonnumber[]
   ) => (
     <Table dense background data-cy={`${label}-table`}>
@@ -325,51 +433,88 @@ export const ContractForm: React.FC<{
             {getValues().type === ContractType.PURCHASE_AGREEMENT ? (
               <>
                 {partyTable('Säljare', sellers)}
+                {!readOnly && isDraft && onSetSellers && (
+                  <div data-cy="seller-selector">
+                    {partySelector(
+                      showSellerSelector,
+                      setShowSellerSelector,
+                      selectedSellers,
+                      setSelectedSellers,
+                      () => onSetSellers(selectedSellers),
+                      stakeholderOptions,
+                      'Sök/välj intressent...',
+                      'Välj säljare'
+                    )}
+                  </div>
+                )}
                 {partyTable('Köpare', buyers)}
+                {!readOnly && isDraft && onSetBuyers && (
+                  <div data-cy="buyer-selector">
+                    {partySelector(
+                      showBuyerSelector,
+                      setShowBuyerSelector,
+                      selectedBuyers,
+                      setSelectedBuyers,
+                      () => onSetBuyers(selectedBuyers),
+                      stakeholderOptions,
+                      'Sök/välj intressent...',
+                      'Välj köpare'
+                    )}
+                  </div>
+                )}
               </>
             ) : isLeaseAgreement(getValues().type) ? (
               <>
                 {partyTable('Upplåtare', lessors)}
+                {!readOnly && isDraft && onSetLessors && (
+                  <div data-cy="lessor-selector">
+                    {partySelector(
+                      showLessorSelector,
+                      setShowLessorSelector,
+                      selectedLessors,
+                      setSelectedLessors,
+                      () => onSetLessors(selectedLessors),
+                      stakeholderOptions,
+                      'Sök/välj intressent...',
+                      'Välj upplåtare'
+                    )}
+                  </div>
+                )}
                 {partyTable('Arrendatorer', lessees)}
+                {!readOnly && isDraft && onSetLessees && (
+                  <div data-cy="lessee-selector">
+                    {partySelector(
+                      showLesseeSelector,
+                      setShowLesseeSelector,
+                      selectedLessees,
+                      setSelectedLessees,
+                      () => onSetLessees(selectedLessees),
+                      stakeholderOptions,
+                      'Sök/välj intressent...',
+                      'Välj arrendatorer'
+                    )}
+                  </div>
+                )}
+                {partyTable(
+                  'Fakturamottagare',
+                  lessees.filter((l) => (l.roles ?? []).includes(StakeholderRole.PRIMARY_BILLING_PARTY))
+                )}
+                {!readOnly && onSetBillingParties && lessees.length > 0 && (
+                  <div data-cy="billing-selector">
+                    {partySelector(
+                      showBillingSelector,
+                      setShowBillingSelector,
+                      selectedBillingParties,
+                      setSelectedBillingParties,
+                      () => onSetBillingParties(selectedBillingParties),
+                      lesseeOptions,
+                      'Välj fakturamottagare från arrendatorer...',
+                      'Välj fakturamottagare'
+                    )}
+                  </div>
+                )}
               </>
             ) : null}
-            {!readOnly && updateStakeholders && onSave && (
-              <div>
-                <Button
-                  size="sm"
-                  data-cy="update-contract-parties"
-                  rightIcon={<RefreshCcw />}
-                  variant="secondary"
-                  loading={updatingParties}
-                  loadingText="Uppdaterar"
-                  onClick={() => {
-                    setUpdatingParties(true);
-                    if (isDraft) {
-                      updateStakeholders();
-                    } else {
-                      onUpdateLesseesOnly?.();
-                    }
-                    setTimeout(
-                      handleSubmit(
-                        async () => {
-                          await onSave(getValues()).catch(() => {
-                            setUpdatingParties(false);
-                          });
-                          setUpdatingParties(false);
-                        },
-                        (e) => {
-                          console.error('Error validating form after updating parties:', e);
-                          setUpdatingParties(false);
-                        }
-                      ),
-                      0
-                    );
-                  }}
-                >
-                  {isDraft ? 'Uppdatera parter' : 'Uppdatera fakturamottagare'}
-                </Button>
-              </div>
-            )}
             <div className="flex gap-18 justify-start">
               <FormControl id="oldContractId" className="w-full">
                 <FormLabel>Avtals-ID</FormLabel>
