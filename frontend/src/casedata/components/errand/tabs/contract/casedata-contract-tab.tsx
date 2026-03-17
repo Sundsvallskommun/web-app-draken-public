@@ -11,7 +11,7 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   casedataStakeholderToContractStakeholder,
   contractTypes,
@@ -93,7 +93,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       }),
     })
     .required();
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const { municipalityId, errand, user } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);
@@ -222,24 +222,27 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       }
     }
     setIsLoading('Sparar avtal..');
+    const isNewContract = !data.contractId;
+
     return saveContract(data)
       .then(async (res: Contract) => {
-        await saveContractToErrand(municipalityId, res.contractId ?? '', errand!);
+        // Only save to errand if this is a new contract
+        if (isNewContract && res.contractId) {
+          await saveContractToErrand(municipalityId, res.contractId, errand!);
+          // Update the form with the new contractId
+          contractForm.setValue('contractId', res.contractId);
+        }
         return res;
       })
-      .then((res) => {
+      .then(() => {
         setIsLoading(undefined);
         props.setUnsaved(false);
-        getErrand(municipalityId, errand!.id.toString()).then((res) => {
-          setErrand(res.errand);
-          toastMessage(
-            getToastOptions({
-              message: 'Avtalet sparades',
-              status: 'success',
-            })
-          );
-          setIsLoading(undefined);
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Avtalet sparades',
+            status: 'success',
+          })
+        );
       })
       .catch(() => {
         setIsLoading(undefined);
