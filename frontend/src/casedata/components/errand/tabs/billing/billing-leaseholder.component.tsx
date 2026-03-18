@@ -1,40 +1,71 @@
-import { Role } from '@casedata/interfaces/role';
-import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
+import { BillingRecipient } from '@casedata/interfaces/billing';
+import { PrettyRole, Role } from '@casedata/interfaces/role';
+import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { useAppContext } from '@contexts/app.context';
+import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
+import { useState } from 'react';
 
-export const BillingLeaseholder: React.FC = () => {
+interface BillingLeaseholderProps {
+  onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
+}
+
+export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
   const { errand } = useAppContext();
+  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
 
-  const leaseholders = getStakeholdersByRelation(errand!, Role.LEASEHOLDER);
   if (!errand) {
-    return <span className="italic">Arrendator saknas</span>;
+    return <span className="italic">Inga intressenter på ärendet</span>;
   }
 
-  if (leaseholders.length > 0)
-    return (
-      <>
-        {leaseholders.map((leaseholder, index) => {
-          const isOrganization = !!leaseholder.organizationNumber || !!leaseholder.organizationName;
-          const displayName = isOrganization
-            ? leaseholder.organizationName
-            : `${leaseholder.firstName || ''} ${leaseholder.lastName || ''}`.trim();
-          const displayId = isOrganization ? leaseholder.organizationNumber : leaseholder.personalNumber;
+  const stakeholders = (errand.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR));
 
-          return (
-            <div key={index}>
-              <span>
-                {displayName}
-                {displayId && `, ${displayId}`}
-              </span>
-              <br />
-              <span>
-                {leaseholder.street}, {leaseholder.zip} {leaseholder.city}
-              </span>
-            </div>
-          );
-        })}
-      </>
-    );
+  if (stakeholders.length === 0) {
+    return <span className="italic">Inga intressenter på ärendet</span>;
+  }
 
-  return <span className="italic">Arrendator saknas</span>;
+  const getDisplayName = (s: CasedataOwnerOrContact) => {
+    const isOrganization = !!s.organizationNumber || !!s.organizationName;
+    const name = isOrganization ? s.organizationName : `${s.firstName || ''} ${s.lastName || ''}`.trim();
+    const roleKey = s.roles?.[1] || s.roles?.[0];
+    const role = roleKey ? (PrettyRole as Record<string, string>)[roleKey] || roleKey : '';
+    return role ? `${name} (${role})` : name;
+  };
+
+  const handleSelect = (stakeholderId: string) => {
+    setSelectedStakeholderId(stakeholderId);
+    if (!stakeholderId) {
+      onSelectRecipient(undefined);
+      return;
+    }
+
+    const stakeholder = stakeholders.find((s) => String(s.id) === String(stakeholderId));
+    if (!stakeholder) return;
+
+    const isOrganization = !!stakeholder.organizationNumber || !!stakeholder.organizationName;
+
+    onSelectRecipient({
+      name: isOrganization ? '' : `${stakeholder.firstName || ''} ${stakeholder.lastName || ''}`.trim(),
+      organizationName: stakeholder.organizationName || '',
+      personId: stakeholder.personId || '',
+      organizationNumber: stakeholder.organizationNumber || '',
+      address: stakeholder.street || '',
+      postalCode: stakeholder.zip || '',
+      city: stakeholder.city || '',
+      role: stakeholder.roles?.[0] || '',
+    });
+  };
+
+  return (
+    <FormControl className="w-full max-w-[46rem]">
+      <FormLabel>Fakturamottagare</FormLabel>
+      <Select className="w-full" value={selectedStakeholderId} onChange={(e) => handleSelect(e.target.value)}>
+        <Select.Option value="">Välj fakturamottagare</Select.Option>
+        {stakeholders.map((s) => (
+          <Select.Option key={s.id} value={String(s.id)}>
+            {getDisplayName(s)}
+          </Select.Option>
+        ))}
+      </Select>
+    </FormControl>
+  );
 };
