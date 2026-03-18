@@ -403,6 +403,7 @@ export const CasedataInvestigationTab: React.FC<{
             <Input type="hidden" {...register('id')} />
             <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
             <Input type="hidden" {...register('errandNumber')} />
+            <div data-cy="utredning-richtext-wrapper">
               <TextEditor
                 className={cx(`mb-md h-[80%] text-editor-with-toolbar`)}
                 readOnly={isErrandLocked(errand) || !allowed}
@@ -418,6 +419,7 @@ export const CasedataInvestigationTab: React.FC<{
                 }}
                 value={{ markup: description }}
               />
+            </div>
             <div className="my-sm">
               {errors.description && formState.isDirty && (
                 <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
