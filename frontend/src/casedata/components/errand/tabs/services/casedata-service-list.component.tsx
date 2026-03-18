@@ -4,10 +4,11 @@ import { Service } from './casedata-service-mapper';
 type ServiceListComponentProps = {
   services?: Service[];
   onRemove?: (id: string) => void;
+  onEdit?: (id: string) => void;
   readOnly?: boolean;
 };
 
-export const ServiceListComponent = ({ services, onRemove, readOnly }: ServiceListComponentProps) => {
+export const ServiceListComponent = ({ services, onRemove, onEdit, readOnly }: ServiceListComponentProps) => {
   const list = services ?? [];
   return (
     <div className="mt-32">
@@ -17,6 +18,7 @@ export const ServiceListComponent = ({ services, onRemove, readOnly }: ServiceLi
           service={service}
           readOnly={readOnly}
           onRemove={readOnly ? undefined : onRemove}
+          onEdit={readOnly ? undefined : onEdit}
         />
       ))}
     </div>
