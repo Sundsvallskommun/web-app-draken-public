@@ -16,7 +16,7 @@ import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -86,10 +86,6 @@ export const CasedataInvestigationTab: React.FC<{
   const [phrasesAppended, setPhrasesAppended] = useState<boolean>(false);
   const skipNextOnChange = useRef(false);
 
-  const confirmContent = {
-    title: 'Spara utredning',
-    content: 'Vill du spara den här utredningen?',
-  };
   const confirmTemplateReset = {
     title: 'Återställ mall',
     content: 'Vill du återställa den här mallen?',
@@ -407,9 +403,9 @@ export const CasedataInvestigationTab: React.FC<{
             <Input type="hidden" {...register('id')} />
             <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
             <Input type="hidden" {...register('errandNumber')} />
-            <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
+            <div data-cy="utredning-richtext-wrapper">
               <TextEditor
-                className={cx(`mb-md h-[80%]`)}
+                className={cx(`mb-md h-[80%] text-editor-with-toolbar`)}
                 readOnly={isErrandLocked(errand) || !allowed}
                 onChange={(e) => {
                   // Skip the first onChange after template load (TextEditor normalizes HTML)
@@ -437,14 +433,7 @@ export const CasedataInvestigationTab: React.FC<{
               color="primary"
               type="button"
               onClick={handleSubmit(() => {
-                return saveConfirm
-                  .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
-                  .then((confirmed) => {
-                    if (confirmed) {
-                      save(getValues());
-                    }
-                    return confirmed ? () => true : () => {};
-                  });
+                save(getValues());
               })}
               disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
               leftIcon={<Check className="mr-sm" />}
