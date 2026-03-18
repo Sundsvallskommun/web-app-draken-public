@@ -52,10 +52,13 @@ main.container {
 }
 //Same as above but with toolbar active
 .text-editor-with-toolbar .ql-editor {
+  height: 40rem;
   min-height: 15rem;
-  max-height: 80rem;
+  max-height: 150rem;
   resize: vertical;
-  overflow: hidden scroll;
+  overflow: hidden auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .case-description-editor .ql-container {
