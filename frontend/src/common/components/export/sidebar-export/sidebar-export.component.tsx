@@ -1,4 +1,3 @@
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { downloadPdf, downloadAttachment, exportSingleErrand } from '@common/services/export-service';
 import { useAppContext } from '@contexts/app.context';
@@ -16,7 +15,8 @@ interface ExportParameters {
 }
 
 export const SidebarExport: React.FC = () => {
-  const { municipalityId, errand }: { municipalityId: string; errand: IErrand } = useAppContext();
+  const { municipalityId, errand: contextErrand } = useAppContext();
+  const errand = contextErrand!;
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const exportConfirm = useConfirm();
   const toastMessage = useSnackbar();

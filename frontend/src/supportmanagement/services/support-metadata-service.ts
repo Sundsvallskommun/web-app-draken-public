@@ -19,7 +19,7 @@ export const getSupportMetadata: (municipalityId: string) => Promise<{ metadata:
     })
     .catch(
       (e) =>
-        ({ metadata: undefined, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
+        ({ metadata: undefined as unknown as SupportMetadata, error: e.response?.status ?? 'UNKNOWN ERROR' } as {
           metadata: SupportMetadata;
           error?: string;
         })

@@ -29,40 +29,40 @@ export interface AppContextInterface {
   avatar: string;
   setAvatar: (avatar: string) => void;
 
-  errand: IErrand;
-  setErrand: (errand: IErrand) => void;
+  errand: IErrand | undefined;
+  setErrand: (errand: IErrand | undefined) => void;
 
-  messages;
+  messages: MessageNode[] | undefined;
   setMessages: (messages: MessageNode[]) => void;
 
-  messageTree;
+  messageTree: MessageNode[] | undefined;
   setMessageTree: (messages: MessageNode[]) => void;
 
-  conversation;
+  conversation: MessageNode[] | undefined;
   setConversation: (conversation: MessageNode[]) => void;
 
-  conversationTree;
+  conversationTree: MessageNode[] | undefined;
   setConversationTree: (conversationTree: MessageNode[]) => void;
 
-  assets;
+  assets: Asset[] | undefined;
   setAssets: (assets: Asset[]) => void;
 
-  municipalityId;
+  municipalityId: string;
   setMunicipalityId: (municipalityId: string) => void;
 
-  supportMetadata: SupportMetadata;
+  supportMetadata: SupportMetadata | undefined;
   setSupportMetadata: (supportMetadata: SupportMetadata) => void;
 
-  supportErrand;
+  supportErrand: SupportErrand | undefined;
   setSupportErrand: (supportErrand: SupportErrand) => void;
 
-  supportAttachments;
+  supportAttachments: SupportAttachment[] | undefined;
   setSupportAttachments: (supportAttachments: SupportAttachment[]) => void;
 
   selectedErrandStatuses: string[];
   setSelectedErrandStatuses: (selectedErrandStatuses: string[]) => void;
 
-  selectedSupportErrandStatuses;
+  selectedSupportErrandStatuses: Status[];
   setSelectedSupportErrandStatuses: (selectedSupportErrandStatuses: Status[]) => void;
 
   stakeholderContacts: SupportStakeholderFormModel[];
@@ -74,76 +74,76 @@ export interface AppContextInterface {
   notifications: (SupportNotification | CaseDataNotification)[];
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
 
-  errands;
+  errands: ErrandsData;
   setErrands: (errands: ErrandsData) => void;
 
-  newErrands;
-  setNewErrands: (count: number) => void;
+  newErrands: number | null;
+  setNewErrands: (count: number | null) => void;
 
-  ongoingErrands;
-  setOngoingErrands: (count: number) => void;
+  ongoingErrands: number | null;
+  setOngoingErrands: (count: number | null) => void;
 
-  suspendedErrands;
-  setSuspendedErrands: (count: number) => void;
+  suspendedErrands: number | null;
+  setSuspendedErrands: (count: number | null) => void;
 
-  assignedErrands;
-  setAssignedErrands: (count: number) => void;
+  assignedErrands: number | null;
+  setAssignedErrands: (count: number | null) => void;
 
-  closedErrands;
-  setClosedErrands: (count: number) => void;
+  closedErrands: number | null;
+  setClosedErrands: (count: number | null) => void;
 
-  supportErrands;
+  supportErrands: SupportErrandsData;
   setSupportErrands: (supportErrands: SupportErrandsData) => void;
 
-  newSupportErrands;
-  setNewSupportErrands: (count: number) => void;
+  newSupportErrands: number | null;
+  setNewSupportErrands: (count: number | null) => void;
 
-  ongoingSupportErrands;
-  setOngoingSupportErrands: (count: number) => void;
+  ongoingSupportErrands: number | null;
+  setOngoingSupportErrands: (count: number | null) => void;
 
-  suspendedSupportErrands;
-  setSuspendedSupportErrands: (count: number) => void;
+  suspendedSupportErrands: number | null;
+  setSuspendedSupportErrands: (count: number | null) => void;
 
-  assignedSupportErrands;
-  setAssignedSupportErrands: (count: number) => void;
+  assignedSupportErrands: number | null;
+  setAssignedSupportErrands: (count: number | null) => void;
 
-  solvedSupportErrands;
-  setSolvedSupportErrands: (count: number) => void;
+  solvedSupportErrands: number | null;
+  setSolvedSupportErrands: (count: number | null) => void;
 
-  sidebarLabel;
+  sidebarLabel: string;
   setSidebarLabel: (sidebarLabel: string) => void;
 
-  administrators;
+  administrators: Admin[];
   setAdministrators: (admins: Admin[]) => void;
 
   isCookieConsentOpen: boolean;
   setIsCookieConsentOpen: (isOpen: boolean) => void;
 
-  uiPhase: UiPhase;
+  uiPhase: UiPhase | undefined;
   setUiPhase: (phase: UiPhase) => void;
 
   billingRecords: CPageBillingRecord;
   setBillingRecords: (billingRecords: CPageBillingRecord) => void;
 }
 
-const AppContext = createContext<AppContextInterface>(null);
+const AppContext = createContext<AppContextInterface | null>(null);
 
-export function AppWrapper({ children }) {
+export function AppWrapper({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
   const [errands, setErrands] = useState<ErrandsData>(emptyErrandList);
-  const [newErrands, setNewErrands] = useState<number>(0);
-  const [ongoingErrands, setOngoingErrands] = useState<number>(0);
-  const [suspendedErrands, setSuspendedErrands] = useState<number>(0);
-  const [assignedErrands, setAssignedErrands] = useState<number>(0);
-  const [closedErrands, setClosedErrands] = useState<number>(0);
+  const [newErrands, setNewErrands] = useState<number | null>(0);
+  const [ongoingErrands, setOngoingErrands] = useState<number | null>(0);
+  const [suspendedErrands, setSuspendedErrands] = useState<number | null>(0);
+  const [assignedErrands, setAssignedErrands] = useState<number | null>(0);
+  const [closedErrands, setClosedErrands] = useState<number | null>(0);
   const [supportErrands, setSupportErrands] = useState<SupportErrandsData>(emptySupportErrandList);
-  const [newSupportErrands, setNewSupportErrands] = useState<number>(0);
-  const [ongoingSupportErrands, setOngoingSupportErrands] = useState<number>(0);
-  const [suspendedSupportErrands, setSuspendedSupportErrands] = useState<number>(0);
-  const [assignedSupportErrands, setAssignedSupportErrands] = useState<number>(0);
-  const [solvedSupportErrands, setSolvedSupportErrands] = useState<number>(0);
+  const [newSupportErrands, setNewSupportErrands] = useState<number | null>(0);
+  const [ongoingSupportErrands, setOngoingSupportErrands] = useState<number | null>(0);
+  const [suspendedSupportErrands, setSuspendedSupportErrands] = useState<number | null>(0);
+  const [assignedSupportErrands, setAssignedSupportErrands] = useState<number | null>(0);
+  const [solvedSupportErrands, setSolvedSupportErrands] = useState<number | null>(0);
   const [errand, setErrand] = useState<IErrand>();
   const [messages, setMessages] = useState<MessageNode[]>();
   const [messageTree, setMessageTree] = useState<MessageNode[]>();
@@ -157,8 +157,8 @@ export function AppWrapper({ children }) {
   const [selectedErrandStatuses, setSelectedErrandStatuses] = useState<string[]>(['ArendeInkommit']);
   const [stakeholderContacts, setStakeholderContacts] = useState<SupportStakeholderFormModel[]>([]);
   const [stakeholderCustomers, setStakeholderCustomers] = useState<SupportStakeholderFormModel[]>([]);
-  const [municipalityId, setMunicipalityId] = useState<string>();
-  const [sidebarLabel, setSidebarLabel] = useState<string>();
+  const [municipalityId, setMunicipalityId] = useState<string>('');
+  const [sidebarLabel, setSidebarLabel] = useState<string>('');
   const [administrators, setAdministrators] = useState<Admin[]>([]);
   const [isCookieConsentOpen, setIsCookieConsentOpen] = useState(true);
   const [notifications, setNotifications] = useState<(SupportNotification | CaseDataNotification)[]>([]);
@@ -178,7 +178,7 @@ export function AppWrapper({ children }) {
         setAvatar: (avatar: string) => setAvatar(avatar),
 
         errand,
-        setErrand: (errand: IErrand) => setErrand(errand),
+        setErrand: (errand: IErrand | undefined) => setErrand(errand),
 
         messages,
         setMessages: (messages: MessageNode[]) => setMessages(messages),
@@ -227,43 +227,43 @@ export function AppWrapper({ children }) {
         setErrands: (errands: ErrandsData) => setErrands(errands),
 
         newErrands,
-        setNewErrands: (count: number) => setNewErrands(count),
+        setNewErrands: (count: number | null) => setNewErrands(count),
 
         ongoingErrands,
-        setOngoingErrands: (count: number) => setOngoingErrands(count),
+        setOngoingErrands: (count: number | null) => setOngoingErrands(count),
 
         suspendedErrands,
-        setSuspendedErrands: (count: number) => setSuspendedErrands(count),
+        setSuspendedErrands: (count: number | null) => setSuspendedErrands(count),
 
         assignedErrands,
-        setAssignedErrands: (count: number) => setAssignedErrands(count),
+        setAssignedErrands: (count: number | null) => setAssignedErrands(count),
 
         closedErrands,
-        setClosedErrands: (count: number) => setClosedErrands(count),
+        setClosedErrands: (count: number | null) => setClosedErrands(count),
 
         supportErrands,
         setSupportErrands: (errands: SupportErrandsData) => setSupportErrands(errands),
 
         newSupportErrands,
-        setNewSupportErrands: (count: number) => setNewSupportErrands(count),
+        setNewSupportErrands: (count: number | null) => setNewSupportErrands(count),
 
         ongoingSupportErrands,
-        setOngoingSupportErrands: (count: number) => setOngoingSupportErrands(count),
+        setOngoingSupportErrands: (count: number | null) => setOngoingSupportErrands(count),
 
         suspendedSupportErrands,
-        setSuspendedSupportErrands: (count: number) => setSuspendedSupportErrands(count),
+        setSuspendedSupportErrands: (count: number | null) => setSuspendedSupportErrands(count),
 
         assignedSupportErrands,
-        setAssignedSupportErrands: (count: number) => setAssignedSupportErrands(count),
+        setAssignedSupportErrands: (count: number | null) => setAssignedSupportErrands(count),
 
         solvedSupportErrands,
-        setSolvedSupportErrands: (count: number) => setSolvedSupportErrands(count),
+        setSolvedSupportErrands: (count: number | null) => setSolvedSupportErrands(count),
 
         sidebarLabel,
         setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),
 
         notifications,
-        setNotifications: (notifications: []) => setNotifications(notifications),
+        setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => setNotifications(notifications),
 
         administrators,
         setAdministrators: (admins: Admin[]) => {
@@ -285,6 +285,6 @@ export function AppWrapper({ children }) {
   );
 }
 
-export function useAppContext() {
-  return useContext(AppContext);
+export function useAppContext(): AppContextInterface {
+  return useContext(AppContext)!;
 }

@@ -285,7 +285,7 @@ export const mockMexErrand_base = {
             created: '2024-08-22T08:08:27.274543+02:00',
             updated: '2024-08-22T08:08:27.27456+02:00',
             category: 'BESLUT',
-            name: 'beslut-arende-PRH-2022-000019',
+            name: 'beslut-arende-SGP-2022-000019',
             note: '',
             extension: 'pdf',
             mimeType: 'application/pdf',

@@ -83,13 +83,10 @@ export enum LeaseholdType {
 export enum LeaseType {
   LAND_LEASE_RESIDENTIAL = "LAND_LEASE_RESIDENTIAL",
   SITE_LEASE_COMMERCIAL = "SITE_LEASE_COMMERCIAL",
-  USUFRUCT_MOORING = "USUFRUCT_MOORING",
   USUFRUCT_HUNTING = "USUFRUCT_HUNTING",
   USUFRUCT_FARMING = "USUFRUCT_FARMING",
   USUFRUCT_MISC = "USUFRUCT_MISC",
-  OBJECT_LEASE = "OBJECT_LEASE",
   LAND_LEASE_MISC = "LAND_LEASE_MISC",
-  LEASEHOLD = "LEASEHOLD",
   OTHER_FEE = "OTHER_FEE",
 }
 
@@ -113,6 +110,8 @@ export enum ContractType {
   PURCHASE_AGREEMENT = "PURCHASE_AGREEMENT",
   LAND_LEASE_PUBLIC = "LAND_LEASE_PUBLIC",
   SHORT_TERM_LEASE_AGREEMENT = "SHORT_TERM_LEASE_AGREEMENT",
+  OBJECT_LEASE = "OBJECT_LEASE",
+  LEASEHOLD = "LEASEHOLD",
 }
 
 /** Attachment category */
@@ -133,16 +132,10 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
-}
-
-export interface StatusType {
   /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
+  status?: number;
 }
 
 export interface Address {
@@ -165,15 +158,9 @@ export interface AttachmentMetadata {
   id?: number;
   /** Attachment category */
   category?: AttachmentCategory;
-  /**
-   * The attachment filename
-   * @minLength 1
-   */
+  /** The attachment filename */
   filename: string;
-  /**
-   * The attachment mime-type
-   * @minLength 1
-   */
+  /** The attachment mime-type */
   mimeType: string;
   /** Notes on the attachment */
   note?: string;
@@ -259,6 +246,7 @@ export interface Duration {
   /**
    * The lease duration value
    * @format int32
+   * @min 0
    */
   leaseDuration: number;
   /** The unit of the duration value */
@@ -275,6 +263,7 @@ export interface Extension {
   /**
    * The lease extension value
    * @format int32
+   * @min 0
    */
   leaseExtension?: number;
   /** The unit of the extension value */
@@ -431,6 +420,7 @@ export interface NoticeTerm {
   /**
    * The period of notice
    * @format int32
+   * @min 0
    */
   periodOfNotice: number;
   /** The unit of the periodOfNotice value */
@@ -530,84 +520,28 @@ export interface TermGroup {
 }
 
 export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
   /** @format uri */
   type?: string;
-  status?: StatusType;
+  /** @format int32 */
+  status?: number;
   violations?: Violation[];
   title?: string;
-  message?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, any>;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
-  cause?: any;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
+  /** @format int32 */
+  status?: number;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  /** @format uri */
+  instance?: string;
+  causeAsProblem?: any;
 }
 
 export interface Violation {
@@ -648,7 +582,33 @@ export interface Diff {
   availableVersions?: number[];
 }
 
-export type JsonNode = any;
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  embeddedValue?: boolean;
+}
 
 export type SpecificationContractEntity = any;
 
@@ -662,9 +622,9 @@ export interface PageContract {
   content?: Contract[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -698,4 +658,16 @@ export enum ChangeTypeEnum {
   ADDITION = "ADDITION",
   REMOVAL = "REMOVAL",
   MODIFICATION = "MODIFICATION",
+}
+
+export enum JsonNodeNodeTypeEnum {
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }

@@ -20,7 +20,7 @@ export const SupportErrandsTable: React.FC = () => {
 
   const currentStatusHaserrands =
     data.errands.filter((e) => {
-      return selectedSupportErrandStatuses.includes(e.status) || e.status === Status.PENDING;
+      return selectedSupportErrandStatuses.includes(e.status as Status) || e.status === Status.PENDING;
     }).length !== 0
       ? true
       : false;
@@ -93,7 +93,7 @@ export const SupportErrandsTable: React.FC = () => {
   const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses);
 
   const headers = errandTableObject.map((column, index) => (
-    <Table.HeaderColumn key={`header-${index}`} sticky={true}>
+    <Table.HeaderColumn key={`header-${index}`}>
       {column.screenReaderOnly ? (
         <span className="sr-only">{column.label}</span>
       ) : column.sortable ? (

@@ -15,8 +15,8 @@ export interface ErrandNote {
 
 export class CreateErrandNoteDto {
   id?: string;
-  title: string;
-  text: string;
-  noteType: NoteType;
+  title!: string;
+  text!: string;
+  noteType!: NoteType;
   extraParameters?: GenericExtraParameters;
 }

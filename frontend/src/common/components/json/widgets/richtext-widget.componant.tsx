@@ -5,15 +5,16 @@ import dynamic from 'next/dynamic';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export function TexteditorWidget(props: WidgetProps) {
-  const { value, onChange, options = {} } = props;
+  const { value, onChange, options = {}, disabled, readonly } = props;
 
   const disableToolbar = (options as any)?.disableToolbar !== false;
-  const className = (options as any)?.className || 'w-full max-w-[96rem] min-h-[22.2rem]';
-  // className="w-full h-full max-w-[96rem] min-h-[22.2rem]"
+  const className = (options as any)?.className || 'w-full h-[22rem]';
+
   return (
     <TextEditor
-      className="w-full max-w-[96rem] h-[22rem] mb-40 "
+      className={className}
       disableToolbar={disableToolbar}
+      readOnly={disabled || readonly}
       value={{ markup: value }}
       onChange={(event) => {
         onChange(event.target.value.markup ?? '');

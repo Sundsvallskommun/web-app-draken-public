@@ -86,3 +86,9 @@ export interface ProblemDetails {
   instance?: string | null;
   [key: string]: any;
 }
+
+export interface RemoveUserFromGroupRequest {
+  group: string | null;
+  user: string | null;
+  createdBy: string | null;
+}

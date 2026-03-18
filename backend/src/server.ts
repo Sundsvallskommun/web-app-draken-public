@@ -35,6 +35,8 @@ import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
 import { FeatureFlagController } from './controllers/featureflag.controller';
+import { EmployeeController } from './controllers/employee.controller';
+import { OrganizationController } from './controllers/organization.controller';
 
 validateEnv();
 
@@ -74,6 +76,8 @@ const app = new App([
   JsonSchemaController,
   ExtraParameterController,
   FeatureFlagController,
+  EmployeeController,
+  OrganizationController,
 ]);
 
 app.listen();

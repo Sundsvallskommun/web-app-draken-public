@@ -44,6 +44,9 @@ export const signErrandNote: (
   if (!note || !note.id) {
     console.error('No note id found, cannot sign. Returning.');
   }
+  if (!note.extraParameters) {
+    note.extraParameters = {};
+  }
   note.extraParameters['signed'] = 'true';
   const url = `casedata/${municipalityId}/errands/${errandId}/notes/${note.id}`;
   return apiService.patch<boolean, CreateErrandNoteDto>(url, note).catch((e) => {

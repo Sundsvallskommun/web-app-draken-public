@@ -9,7 +9,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
@@ -18,6 +17,7 @@ import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { getUiPhase } from '@casedata/services/process-service';
+import { ArrowRight } from 'lucide-react';
 
 export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
   let formSchema = yup
@@ -43,11 +43,6 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
     errand,
     setErrand,
     setUiPhase,
-  }: {
-    municipalityId: string;
-    errand: IErrand;
-    setErrand: any;
-    setUiPhase: (phase: UiPhase) => void;
   } = useAppContext();
   const toastMessage = useSnackbar();
 
@@ -55,7 +50,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
     resolver: yupResolver(formSchema) as unknown as Resolver<IErrand>, //Temporary bypass for resolver
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-    disabled: isErrandLocked(errand),
+    disabled: errand ? isErrandLocked(errand) : false,
   });
 
   const initialFocus = useRef<HTMLBodyElement>(null);
@@ -100,7 +95,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
         });
     } else {
       // Registering new errand, show default values
-      setErrand(emptyErrand);
+      setErrand(emptyErrand as IErrand);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
@@ -263,7 +258,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
                                 update={() => {}}
                                 label="Registrera"
                                 color="vattjom"
-                                icon={<LucideIcon name="arrow-right" size={18} />}
+                                icon={<ArrowRight size={18} />}
                               />
                             </div>
                           </div>

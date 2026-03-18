@@ -16,6 +16,9 @@ cypress/snapshots/**/*.actual.png
 /cypress/downloads
 .nyc_output
 
+# generated from raleway.scss.template
+/src/styles/raleway.scss
+
 # next.js
 /.next/
 /.next*

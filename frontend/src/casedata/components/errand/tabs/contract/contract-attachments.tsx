@@ -9,9 +9,9 @@ import {
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
+import { Eye, FilePen, Trash } from 'lucide-react';
 
 export const ContractAttachments: React.FC<{
   existingContract: ContractData;
@@ -39,8 +39,8 @@ export const ContractAttachments: React.FC<{
       existingContract?.attachmentMetaData?.map(async (aM) => {
         const ra: Attachment = await fetchSignedContractAttachment(
           municipalityId,
-          existingContract?.contractId,
-          aM.id
+          existingContract?.contractId ?? '',
+          aM.id!
         ).then((res) => res.data);
 
         return mapContractAttachmentToUploadFile(ra);
@@ -59,9 +59,9 @@ export const ContractAttachments: React.FC<{
       .showConfirmation('Ta bort signerat avtal?', 'Vill du ta bort denna bilaga?', 'Ja', 'Nej', 'info', 'info')
       .then((confirmed) => {
         if (confirmed) {
-          deleteSignedContractAttachment(municipalityId, existingContract?.contractId, Number.parseInt(file.id))
-            .then(() => {
-              getErrand(municipalityId, errand.id.toString()).then((res) => {
+          deleteSignedContractAttachment(municipalityId, existingContract?.contractId ?? '', Number.parseInt(file.id))
+            ?.then(() => {
+              getErrand(municipalityId, errand!.id.toString()).then((res) => {
                 setErrand(res.errand);
               });
             })
@@ -85,14 +85,14 @@ export const ContractAttachments: React.FC<{
       });
   };
 
-  const morePanel = (file) => (
+  const morePanel = (file: any) => (
     <PopupMenu.Panel data-cy="attachment-context-menu">
       <PopupMenu.Items>
         <PopupMenu.Group>
           <PopupMenu.Item>
             <Button
               data-cy={`open-attachment-${file.id}`}
-              leftIcon={<LucideIcon name="eye" />}
+              leftIcon={<Eye />}
               onClick={() => {
                 viewFileHandler(file);
               }}
@@ -104,7 +104,7 @@ export const ContractAttachments: React.FC<{
             <PopupMenu.Item>
               <Button
                 data-cy={`delete-attachment-${file.id}`}
-                leftIcon={<LucideIcon name="trash" />}
+                leftIcon={<Trash />}
                 onClick={async () => {
                   handleRemoveFile(file);
                 }}
@@ -125,12 +125,12 @@ export const ContractAttachments: React.FC<{
           data-cy={`contract-upload-field`}
           onChange={(e) => {
             const files = e.target.value;
-            saveSignedContractAttachment(municipalityId, existingContract?.contractId, files, '')
+            saveSignedContractAttachment(municipalityId, existingContract?.contractId ?? '', files, '')
               .then((res) => {
                 if (!res) {
                   throw new Error('Error saving attachment');
                 }
-                getErrand(municipalityId, errand.id.toString()).then((res) => {
+                getErrand(municipalityId, errand!.id.toString()).then((res) => {
                   setErrand(res.errand);
                   loadFiles();
                   toastMessage(
@@ -165,7 +165,7 @@ export const ContractAttachments: React.FC<{
                   ? `Uppladdad ${new Date(file.meta.created as string).toLocaleString()}`
                   : '',
               }}
-              iconProps={{ icon: <LucideIcon name="file-pen" /> }}
+              iconProps={{ icon: <FilePen /> }}
               categoryProps={{
                 categories: { CONTRACT: 'Avtal' },
               }}

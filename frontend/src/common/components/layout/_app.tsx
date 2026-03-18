@@ -9,7 +9,6 @@ import {
   defaultTheme,
   extendTheme,
 } from '@sk-web-gui/react';
-import '@styles/tailwind.scss';
 import store from '@supportmanagement/services/storage-service';
 import dayjs from 'dayjs';
 import 'dayjs/locale/se';

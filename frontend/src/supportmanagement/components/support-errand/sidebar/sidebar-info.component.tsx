@@ -3,7 +3,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
@@ -33,25 +32,14 @@ import { StartProcessComponent } from './start-process.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 import { appConfig } from '@config/appconfig';
+import { CirclePause, Mail, Undo2 } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
-  const {
-    user,
-    supportErrand,
-    setSupportErrand,
-    administrators,
-    municipalityId,
-  }: {
-    user: any;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-    administrators: Admin[];
-    uiPhase: UiPhase;
-    municipalityId: string;
-  } = useAppContext();
+  const { user, supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<{ key: string; label: string }[]>([]);
   const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
@@ -60,13 +48,13 @@ export const SidebarInfo: React.FC<{
   const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
-    if (!supportErrandIsEmpty(supportErrand)) {
-      let _a = validateAction(supportErrand, user);
-      if (supportErrand.assignedUserId?.toLocaleLowerCase() === undefined) {
+    if (!supportErrandIsEmpty(supportErrand!)) {
+      let _a = validateAction(supportErrand!, user);
+      if (supportErrand!.assignedUserId?.toLocaleLowerCase() === undefined) {
         if (
-          supportErrand.channel === 'EMAIL' ||
-          supportErrand.channel === 'ESERVICE' ||
-          supportErrand.channel === 'ESERVICE_INTERNAL'
+          supportErrand!.channel === 'EMAIL' ||
+          supportErrand!.channel === 'ESERVICE' ||
+          supportErrand!.channel === 'ESERVICE_INTERNAL'
         ) {
           _a = true;
         }
@@ -78,7 +66,7 @@ export const SidebarInfo: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, supportErrand]);
 
-  const toast = (kind, label) =>
+  const toast = (kind: 'success' | 'error', label: string) =>
     toastMessage({
       position: 'bottom',
       closeable: false,
@@ -106,8 +94,8 @@ export const SidebarInfo: React.FC<{
   const { admin, status, priority } = watch();
 
   const update = () => {
-    if (supportErrand.id) {
-      getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+    if (supportErrand?.id) {
+      getSupportErrandById(supportErrand.id!, municipalityId).then((res) => setSupportErrand(res.errand));
     }
   };
 
@@ -124,12 +112,12 @@ export const SidebarInfo: React.FC<{
           supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin)?.adAccount
         ) {
           saveAdmin();
-        } else if (supportErrand.status !== getValues().status) {
+        } else if (supportErrand?.status !== getValues().status) {
           updateSupportErrandStatus(getValues().status);
         }
 
         if (props.unsavedFacility) {
-          saveFacilityInfo(supportErrand.id, getValues().facilities)
+          saveFacilityInfo(supportErrand!.id!, getValues().facilities)
             .then(() => {
               props.setUnsavedFacility(false);
               setIsLoading(false);
@@ -153,7 +141,7 @@ export const SidebarInfo: React.FC<{
           status: 'success',
         });
         setTimeout(async () => {
-          const e = await getSupportErrandById(getValues().id, municipalityId);
+          const e = await getSupportErrandById(getValues().id!, municipalityId);
           setSupportErrand(e.errand);
           reset(e.errand);
         }, 0);
@@ -181,21 +169,21 @@ export const SidebarInfo: React.FC<{
     setError(false);
     return handleAction(
       async () => {
-        if (admin.adAccount === assigner.adAccount) {
+        if (admin!.adAccount === assigner!.adAccount) {
           await setSupportErrandAdmin(
-            supportErrand.id,
+            supportErrand!.id!,
             municipalityId,
-            admin?.adAccount,
+            admin?.adAccount!,
             Status.ONGOING,
-            assigner.adAccount
+            assigner!.adAccount!
           );
         } else {
           await setSupportErrandAdmin(
-            supportErrand.id,
+            supportErrand!.id!,
             municipalityId,
-            admin?.adAccount,
+            admin?.adAccount!,
             Status.ASSIGNED,
-            assigner.adAccount
+            assigner!.adAccount!
           );
         }
 
@@ -237,7 +225,7 @@ export const SidebarInfo: React.FC<{
       const statuses = Object.keys(statusLabel).map((key) => {
         return {
           key: key,
-          label: statusLabel[key],
+          label: (statusLabel as Record<string, string>)[key],
         };
       });
 
@@ -257,7 +245,7 @@ export const SidebarInfo: React.FC<{
       .then(() => {
         success();
         setIsLoading(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
         reset();
       })
       .catch(() => {
@@ -272,7 +260,7 @@ export const SidebarInfo: React.FC<{
     setIsLoading('status');
     setError(false);
     return handleAction(
-      () => setSupportErrandStatus(supportErrand.id, municipalityId, status),
+      () => setSupportErrandStatus(supportErrand!.id!, municipalityId, status),
       () => toast('success', 'Status ändrades'),
       () => toast('error', 'Något gick fel när status ändrades')
     );
@@ -282,7 +270,7 @@ export const SidebarInfo: React.FC<{
     setIsLoading('suspend');
     setError(false);
     return handleAction(
-      () => setSuspension(supportErrand.id, municipalityId, Status.ONGOING, null, null),
+      () => setSuspension(supportErrand!.id!, municipalityId, Status.ONGOING, null as any, null as any),
       () => toast('success', 'Ärende återupptogs'),
       () => toast('error', 'Något gick fel när ärendet återupptogs')
     );
@@ -295,7 +283,13 @@ export const SidebarInfo: React.FC<{
       setError(false);
       return handleAction(
         () =>
-          setSupportErrandAdmin(supportErrand.id, municipalityId, admin?.adAccount, Status.ONGOING, admin?.adAccount),
+          setSupportErrandAdmin(
+            supportErrand!.id!,
+            municipalityId,
+            admin?.adAccount!,
+            Status.ONGOING,
+            admin?.adAccount!
+          ),
         () => toast('success', 'Handläggare tilldelades'),
         () => toast('error', 'Något gick fel när handläggare tilldelades')
       );
@@ -308,13 +302,17 @@ export const SidebarInfo: React.FC<{
     return administrators.some((a) => a.adAccount === user.username);
   };
 
-  const solutionComponent = (label, info, icon) => (
+  const solutionComponent = (label: string, info: string, icon: string) => (
     <>
       <div className="flex">
         <Label rounded>
-          <LucideIcon size="1.5rem" name={icon} /> {label}
+          {(() => {
+            const DynIcon = iconMap[icon];
+            return DynIcon ? <DynIcon size="1.5rem" /> : undefined;
+          })()}{' '}
+          {label}
         </Label>{' '}
-        <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
+        <p className="text-small ml-8">{dayjs(supportErrand?.modified).format('DD MMM, HH:mm')}</p>
       </div>
       <p className="text-small">
         <strong>{getValues('admin')}</strong> {info}
@@ -380,7 +378,7 @@ export const SidebarInfo: React.FC<{
 
   const messageSidebarIsDisabled =
     !supportErrand ||
-    isSupportErrandLocked(supportErrand) ||
+    isSupportErrandLocked(supportErrand!) ||
     !allowed ||
     [Status.NEW, Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
 
@@ -390,7 +388,7 @@ export const SidebarInfo: React.FC<{
 
   const hasClosedErrandPassedLimit = () => {
     const limit = appConfig.reopenSupportErrandLimit;
-    const lastModified = dayjs(supportErrand.modified);
+    const lastModified = dayjs(supportErrand?.modified);
     return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
   };
 
@@ -410,7 +408,7 @@ export const SidebarInfo: React.FC<{
                 className="font-normal"
                 size="sm"
                 disabled={
-                  supportErrandIsEmpty(supportErrand) || !isAdmin() || supportErrand?.assignedUserId === user.username
+                  supportErrandIsEmpty(supportErrand!) || !isAdmin() || supportErrand?.assignedUserId === user.username
                 }
                 onClick={() => {
                   selfAssignSupportErrand();
@@ -421,7 +419,7 @@ export const SidebarInfo: React.FC<{
               </Button>
             </FormLabel>
             <Select
-              // disabled={supportErrandIsEmpty(supportErrand)}
+              // disabled={supportErrandIsEmpty(supportErrand!)}
               className="w-full"
               size="sm"
               data-cy="admin-input"
@@ -453,7 +451,7 @@ export const SidebarInfo: React.FC<{
               value={status}
               disabled={
                 supportErrand?.status === Status.SOLVED ||
-                (!supportErrandIsEmpty(supportErrand) && !supportErrand?.assignedUserId)
+                (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)
               }
             >
               {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
@@ -494,7 +492,7 @@ export const SidebarInfo: React.FC<{
             data-cy="save-button"
             type="button"
             disabled={
-              isSupportErrandLocked(supportErrand) ||
+              isSupportErrandLocked(supportErrand!) ||
               !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
               formIsNotValid
             }
@@ -513,11 +511,11 @@ export const SidebarInfo: React.FC<{
 
             {supportErrand?.status === Status.SOLVED ? (
               <>
-                {renderLabelSwitch(supportErrand.resolution)}
+                {renderLabelSwitch(supportErrand.resolution!)}
                 <Button
                   className="w-full mt-20"
                   color="vattjom"
-                  leftIcon={<LucideIcon name="undo-2" />}
+                  leftIcon={<Undo2 />}
                   variant="secondary"
                   onClick={() => {
                     confirm
@@ -537,10 +535,10 @@ export const SidebarInfo: React.FC<{
               <>
                 <div className="flex">
                   <Label>
-                    <LucideIcon size="1.5rem" name="circle-pause" />{' '}
+                    <CirclePause size="1.5rem" />{' '}
                     {supportErrand?.status === Status.SUSPENDED ? 'Parkerat ' : 'Tilldelat '}
                   </Label>
-                  <p className="text-small ml-8">{dayjs(supportErrand.modified).format('DD MMM, HH:mm')}</p>
+                  <p className="text-small ml-8">{dayjs(supportErrand?.modified).format('DD MMM, HH:mm')}</p>
                 </div>
                 <p className="text-small">
                   {getValues('admin') === 'Välj handläggare' ? (
@@ -562,17 +560,17 @@ export const SidebarInfo: React.FC<{
               </>
             ) : (
               <div className="flex flex-col gap-8">
-                {allowed && !supportErrandIsEmpty(supportErrand) && (
+                {allowed && !supportErrandIsEmpty(supportErrand!) && (
                   <>
-                    <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                    <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
                     <StartProcessComponent
-                      disabled={!allowed || supportErrandIsEmpty(supportErrand)}
+                      disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
                       onSubmit={onSubmit}
                       onError={onError}
                     />
                     {!messageSidebarIsDisabled && (
                       <Button
-                        leftIcon={<LucideIcon name="mail" />}
+                        leftIcon={<Mail />}
                         className="w-full"
                         color="vattjom"
                         data-cy="sidebar-new-message-button"
@@ -582,12 +580,12 @@ export const SidebarInfo: React.FC<{
                         Nytt meddelande
                       </Button>
                     )}
-                    <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                    <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
                     <Divider className="mt-8 mb-16" />
                   </>
                 )}
-                <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
-                <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand)} />
+                <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
               </div>
             )}
           </>

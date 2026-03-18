@@ -1,15 +1,15 @@
 import { CaseTypesHiddenFromRegistration } from '@casedata/interfaces/case-type';
-import { Channels } from '@casedata/interfaces/channels';
+import { AppChannels, Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
-import { getCaseLabels, isErrandLocked, municipalityIds } from '@casedata/services/casedata-errand-service';
+import { defaultMunicipality, getCaseLabels, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { CircleAlert } from 'lucide-react';
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { CasedataContactsComponent } from './casedata-contacts.component';
@@ -42,10 +42,12 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   const { municipalityId, setMunicipalityId } = useAppContext();
 
   useEffect(() => {
-    setValue('channel', errand.channel);
-    setValue('priority', errand.priority);
-    setValue('status', errand.status);
-    setValue('phase', errand.phase);
+    if (errand) {
+      setValue('channel', errand.channel);
+      setValue('priority', errand.priority);
+      setValue('status', errand.status);
+      setValue('phase', errand.phase);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
@@ -77,7 +79,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
       <div className="mt-md gap-md flex flex-col">
         <Disclosure variant="alt" initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={<LucideIcon name="circle-alert" />} />
+            <Disclosure.Icon icon={<CircleAlert />} />
             <Disclosure.Title>Om ärendet</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -85,31 +87,36 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             <div className="px-0 pt-0">
               <div className="flex flex-col md:flex-row gap-lg mb-lg">
                 <FormControl id="channel" className="w-full">
-                  <FormLabel>Kanal</FormLabel>
+                  <FormLabel>Inkom via*</FormLabel>
                   <Select
                     {...register('channel')}
-                    readOnly
-                    disabled
+                    disabled={errand ? isErrandLocked(errand) : false}
+                    readOnly={!!errand?.id}
                     className="w-full text-dark-primary"
                     variant="primary"
                     size="sm"
                     value={getValues('channel')}
                     data-cy="channel-input"
-                    onChange={(e) => {}}
                   >
-                    {Object.entries(Channels).map((c: [string, string]) => {
-                      const id = c[0];
-                      const label = c[1];
-                      return (
-                        <Select.Option
-                          key={`channel-${id}`}
-                          value={label}
-                          className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                        >
-                          {label}
-                        </Select.Option>
-                      );
-                    })}
+                    {Object.entries(Channels)
+                      .filter((c) =>
+                        (AppChannels as Record<string, Channels[]>)[
+                          process.env.NEXT_PUBLIC_APPLICATION ?? ''
+                        ]?.includes(c[1] as Channels)
+                      )
+                      .map((c: [string, string]) => {
+                        const id = c[0];
+                        const label = c[1];
+                        return (
+                          <Select.Option
+                            key={`channel-${id}`}
+                            value={label}
+                            className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                          >
+                            {label}
+                          </Select.Option>
+                        );
+                      })}
                   </Select>
 
                   {errors.channel && (
@@ -121,8 +128,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                 <FormControl id="municipality" className="w-full">
                   <FormLabel>Kommun</FormLabel>
                   <Select
-                    {...register('municipalityId')}
-                    disabled
+                    disabled={errand ? isErrandLocked(errand) : false}
+                    readOnly={!!errand?.id}
                     data-cy="municipality-input"
                     className="w-full text-dark-primary"
                     variant="primary"
@@ -133,18 +140,13 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                       setMunicipalityId(e.currentTarget.value);
                     }}
                   >
-                    {municipalityIds.map((m) => {
-                      const { id, label } = m;
-                      return (
-                        <Select.Option
-                          key={`municipality-${id}`}
-                          value={id}
-                          className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                        >
-                          {label}
-                        </Select.Option>
-                      );
-                    })}
+                    <Select.Option
+                      key={`municipality-${defaultMunicipality?.id}`}
+                      value={defaultMunicipality?.id}
+                      className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                    >
+                      {defaultMunicipality?.label}
+                    </Select.Option>
                   </Select>
                   {errors.municipalityId && (
                     <div className="my-sm text-error">
@@ -161,7 +163,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   <FormLabel>Ärendetyp</FormLabel>
                   <Select
                     {...register('caseType')}
-                    disabled={isErrandLocked(errand)}
+                    disabled={errand ? isErrandLocked(errand) : false}
                     readOnly={errand?.channel === Channels.ESERVICE_KATLA}
                     data-cy="casetype-input"
                     value={caseType}
@@ -203,7 +205,7 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
                   <FormLabel>Prioritet</FormLabel>
                   <Select
                     {...register('priority')}
-                    disabled={isErrandLocked(errand)}
+                    disabled={errand ? isErrandLocked(errand) : false}
                     data-cy="priority-input"
                     value={priority}
                     className="w-full text-dark-primary"
@@ -244,7 +246,9 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
             update={() => {}}
           />
         ) : null}
-        {!registeringNewErrand && appConfig.features.useRelations && <LinkedErrandsDisclosure errand={errand} />}
+        {!registeringNewErrand && appConfig.features.useRelations && errand && (
+          <LinkedErrandsDisclosure errand={errand} />
+        )}
       </div>
     </div>
   );

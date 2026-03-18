@@ -1,11 +1,13 @@
 import type { FieldTemplateProps } from '@rjsf/utils';
-import { FormControl, FormLabel } from '@sk-web-gui/react';
+import { FormControl, FormErrorMessage, FormLabel } from '@sk-web-gui/react';
+import sanitized from '@common/services/sanitizer-service';
 
 export function FieldTemplate(props: FieldTemplateProps) {
-  const { id, label, required, displayLabel, description, errors, help, children, uiSchema } = props;
+  const { id, label, required, displayLabel, help, children, uiSchema, rawErrors, schema } = props;
 
   const hideLabel = uiSchema?.['ui:options']?.hideLabel;
   const hideDescription = uiSchema?.['ui:options']?.hideDescription;
+  const descriptionBelow = uiSchema?.['ui:options']?.descriptionBelow;
   const className = uiSchema?.['ui:options']?.className;
   const isHiddenWidget = uiSchema?.['ui:widget'] === 'hidden';
 
@@ -13,10 +15,28 @@ export function FieldTemplate(props: FieldTemplateProps) {
     return <>{children}</>;
   }
 
+  const hasError = rawErrors && rawErrors.length > 0;
   const formControlClassName = className ? `form-row ${className}` : 'form-row w-full';
 
+  // Get description from ui:description or schema.description
+  const descriptionText =
+    (uiSchema?.['ui:description'] as string) || (schema?.description as string) || '';
+  const sanitizedDescription = sanitized(descriptionText);
+
+  const renderDescription = (position: 'above' | 'below') => {
+    if (!sanitizedDescription || hideDescription) return null;
+    const marginClass = position === 'above' ? 'mb-2' : 'mt-2';
+    return (
+      <div
+        id={`${id}-desc`}
+        className={`text-xs text-muted-foreground ${marginClass} [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4`}
+        dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+      />
+    );
+  };
+
   return (
-    <FormControl className={formControlClassName}>
+    <FormControl className={formControlClassName} invalid={hasError}>
       {displayLabel && !hideLabel && (
         <FormLabel htmlFor={id}>
           {label}
@@ -24,13 +44,15 @@ export function FieldTemplate(props: FieldTemplateProps) {
         </FormLabel>
       )}
 
-      {description && !hideDescription ? (
-        <div id={`${id}-desc`} className="text-xs text-muted-foreground mb-1">
-          {description}
-        </div>
-      ) : null}
+      {!descriptionBelow && renderDescription('above')}
 
       {children}
+
+      {descriptionBelow && renderDescription('below')}
+
+      {hasError && (
+        <FormErrorMessage className="text-error">{rawErrors[0]}</FormErrorMessage>
+      )}
 
       {help}
     </FormControl>

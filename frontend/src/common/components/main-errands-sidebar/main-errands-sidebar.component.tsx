@@ -7,7 +7,6 @@ import { getApplicationEnvironment, isMEX } from '@common/services/application-s
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
@@ -19,14 +18,15 @@ import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { userMenuGroups } from '../layout/userMenuGroups';
 import { AngeSymbol } from '@styles/ange-symbol';
+import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 
 export const MainErrandsSidebar: React.FC<{
-  showAttestationTable;
-  setShowAttestationTable;
-  showContractTable;
-  setShowContractTable;
-  open;
-  setOpen;
+  showAttestationTable: boolean;
+  setShowAttestationTable: (show: boolean) => void;
+  showContractTable: boolean;
+  setShowContractTable: (show: boolean) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
@@ -115,7 +115,7 @@ export const MainErrandsSidebar: React.FC<{
             <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
               <Button
                 onClick={() => setShowAttestationTable(true)}
-                leftIcon={<LucideIcon name="square-pen" />}
+                leftIcon={<SquarePen />}
                 className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
                 iconButton={!open}
@@ -130,9 +130,9 @@ export const MainErrandsSidebar: React.FC<{
                       counter={
                         isLoading
                           ? '-'
-                          : billingRecords.totalElements > 999
+                          : (billingRecords.totalElements ?? 0) > 999
                           ? '999+'
-                          : billingRecords.totalElements || '0'
+                          : billingRecords.totalElements ?? '0'
                       }
                     />
                   </span>
@@ -147,7 +147,7 @@ export const MainErrandsSidebar: React.FC<{
             <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
               <Button
                 onClick={() => setShowContractTable(true)}
-                leftIcon={<LucideIcon name="file-text" />}
+                leftIcon={<FileText />}
                 className={`${open && 'justify-start'} ${!showContractTable && 'hover:bg-dark-ghost'}`}
                 variant={showContractTable ? 'primary' : 'ghost'}
                 iconButton={!open}
@@ -166,7 +166,7 @@ export const MainErrandsSidebar: React.FC<{
             variant="tertiary"
             aria-label={open ? 'Stäng sidomeny' : 'Öppna sidomeny'}
             iconButton
-            leftIcon={open ? <LucideIcon name="chevrons-left" /> : <LucideIcon name="chevrons-right" />}
+            leftIcon={open ? <ChevronsLeft /> : <ChevronsRight />}
             onClick={() => setOpen(!open)}
           />
         </div>

@@ -1,14 +1,14 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface ChannelFilter {
   channel: string[];
 }
 
-export const ChannelValues = {
+export const ChannelValues: ChannelFilter = {
   channel: [],
 };
 
@@ -19,7 +19,7 @@ export const SupportManagementFilterChannel: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Channel-filter"
         variant="tertiary"
         showBackground={false}

@@ -599,6 +599,8 @@ export interface Errand {
   suspension?: Suspension;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
   /**
    * Date and time when the errand was created
    * @format date-time
@@ -623,6 +625,23 @@ export interface ExtraParameter {
   displayName?: string;
   /** Parameter values */
   values?: string[];
+}
+
+export type JsonNode = any;
+
+export interface JsonParameter {
+  /**
+   * Parameter key
+   * @minLength 1
+   */
+  key: string;
+  /** JSON structure value */
+  value: JsonNode;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
 }
 
 export interface Note {
@@ -1023,6 +1042,8 @@ export interface PatchErrand {
   applicationReceived?: string;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
   /** Other errands related to the errand */
   relatesTo?: RelatedErrand[];
   /** List of labels for the errand */
@@ -1071,31 +1092,31 @@ export interface PageErrand {
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1220,12 +1241,12 @@ export interface PageMessage {
   content?: Message[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

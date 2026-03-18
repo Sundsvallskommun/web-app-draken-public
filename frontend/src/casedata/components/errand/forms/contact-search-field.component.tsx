@@ -1,6 +1,5 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { AddressResult, searchOrganization, searchPerson } from '@common/services/adress-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
@@ -37,7 +36,7 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
   const organizationNumber = form.watch(`organizationNumber`);
 
   const doSearch = () => {
-    let search: () => Promise<AddressResult | AddressResult[]>;
+    let search: () => Promise<AddressResult | AddressResult[] | undefined>;
     search =
       searchMode === 'person' && personalNumber
         ? () => searchPerson(personalNumber)
@@ -49,7 +48,7 @@ export const ContactSearchField: React.FC<SearchFieldProps> = ({
     setNotFound(false);
     search?.()
       .then((res) => {
-        if (!isArray(res)) {
+        if (res && !isArray(res)) {
           setValue(`personId`, res.personId, { shouldDirty: true });
           setValue(`firstName`, res.firstName, { shouldDirty: true });
           setValue(`lastName`, res.lastName, { shouldDirty: true });

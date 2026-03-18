@@ -1,18 +1,17 @@
 import { CaseLabels, getShortLabel } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { findStatusLabelForStatusKey, isErrandClosed } from '@casedata/services/casedata-errand-service';
+import { findStatusLabelForStatusKey } from '@casedata/services/casedata-errand-service';
 import { getErrandPropertyDesignations } from '@casedata/services/casedata-facilities-service';
 import { globalAcknowledgeCasedataNotification } from '@casedata/services/casedata-notification-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import type { Errand } from '@common/data-contracts/case-data/data-contracts';
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Input, Pagination, Select, Spinner, Table, cx, useThemeQueries } from '@sk-web-gui/react';
+import { Input, Pagination, Select, Spinner, Table, cx } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { TableForm } from '../ongoing-casedata-errands.component';
@@ -26,8 +25,6 @@ export const ErrandsTable: React.FC = () => {
   const sortColumn = watch('sortColumn');
   const totalPages = watch('totalPages');
   const page = watch('page');
-
-  const { isMaxMediumDevice } = useThemeQueries();
 
   const sortOrders: { [key: string]: 'ascending' | 'descending' } = {
     asc: 'ascending',
@@ -72,9 +69,9 @@ export const ErrandsTable: React.FC = () => {
     }
   };
 
-  const handleClick = async (errand) => {
+  const handleClick = async (errand: IErrand) => {
     if (errand.notifications && errand.notifications.length > 0) {
-      await globalAcknowledgeCasedataNotification(errand, municipalityId).catch(() => {
+      await globalAcknowledgeCasedataNotification(errand as unknown as Errand, municipalityId).catch(() => {
         throw new Error('Failed to acknowledge notification');
       });
     }
@@ -97,30 +94,32 @@ export const ErrandsTable: React.FC = () => {
   };
 
   const findLatestNotification = (errand: IErrand) => {
-    return sortBy(errand?.notifications, 'created').reverse()[0];
+    return sortBy(errand?.notifications ?? [], 'created').reverse()[0];
   };
 
-  const headers = data.labels.map((header, index) => (
-    <Table.HeaderColumn key={`header-${index}`} sticky={header.sticky}>
-      {header.screenReaderOnly ? (
-        <span className="sr-only">{header.label}</span>
-      ) : header.sortable ? (
-        <Table.SortButton
-          isActive={
-            isPT() ? sortColumn === serverSideSortableColsPT[index] : sortColumn === serverSideSortableColsMEX[index]
-          }
-          sortOrder={sortOrders[sortOrder] as SortMode}
-          onClick={() => handleSort(index)}
-        >
-          {header.label}
-        </Table.SortButton>
-      ) : (
-        header.label
-      )}
-    </Table.HeaderColumn>
-  ));
+  const headers = data.labels.map(
+    (header: { label: string; screenReaderOnly?: boolean; sortable?: boolean; sticky?: boolean }, index: number) => (
+      <Table.HeaderColumn key={`header-${index}`} sticky={header.sticky}>
+        {header.screenReaderOnly ? (
+          <span className="sr-only">{header.label}</span>
+        ) : header.sortable ? (
+          <Table.SortButton
+            isActive={
+              isPT() ? sortColumn === serverSideSortableColsPT[index] : sortColumn === serverSideSortableColsMEX[index]
+            }
+            sortOrder={sortOrders[sortOrder] as SortMode}
+            onClick={() => handleSort(index)}
+          >
+            {header.label}
+          </Table.SortButton>
+        ) : (
+          header.label
+        )}
+      </Table.HeaderColumn>
+    )
+  );
 
-  const rows = (data.errands || []).map((errand: IErrand, index) => {
+  const rows = (data.errands || []).map((errand: IErrand, index: number) => {
     const notification = findLatestNotification(errand);
     const caseMeaning = errand.extraParameters?.find((param) => param.key === 'caseMeaning');
     return (
@@ -132,10 +131,12 @@ export const ErrandsTable: React.FC = () => {
       >
         <Table.HeaderColumn
           scope="row"
-          className={cx('w-[200px] whitespace-nowrap text-ellipsis table-caption', !isPT() && ' overflow-hidden')}
+          className={cx(
+            isPT() ? 'w-[200px] whitespace-nowrap text-ellipsis table-caption' : 'max-w-[200px] break-words'
+          )}
         >
           {isPT() ? (
-            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType)} />
+            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType ?? '')} />
           ) : (
             getErrandPropertyDesignations(errand).join(', ')
           )}
@@ -154,7 +155,7 @@ export const ErrandsTable: React.FC = () => {
             errand.updated
           )}
         </Table.Column>
-        <Table.Column scope="row" className={isPT() && 'max-w-[190px] whitespace-nowrap overflow-x-hidden'}>
+        <Table.Column scope="row" className={isPT() ? 'max-w-[190px] whitespace-nowrap overflow-x-hidden' : undefined}>
           {isPT() ? (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
               <div className="font-bold">{getShortLabel(errand.caseType)}</div>
@@ -162,7 +163,7 @@ export const ErrandsTable: React.FC = () => {
             </div>
           ) : (
             <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
-              <div>{CaseLabels.ALL[errand.caseType] ?? ''}</div>
+              <div>{(CaseLabels.ALL as Record<string, string>)[errand.caseType] ?? ''}</div>
               <div>{errand.errandNumber}</div>
             </div>
           )}
@@ -193,54 +194,9 @@ export const ErrandsTable: React.FC = () => {
         </Table.Column>
         {!isPT() && (
           <Table.Column>
-            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType)} />
+            <CasedataStatusLabelComponent status={findStatusLabelForStatusKey(errand.status?.statusType ?? '')} />
           </Table.Column>
         )}
-        <Table.Column sticky>
-          <div className="w-full flex justify-end">
-            <NextLink
-              href={`/arende/${errand.errandNumber}`}
-              onClick={(e) => e.stopPropagation()}
-              target="_blank"
-              data-icon={isMaxMediumDevice}
-              title={isMaxMediumDevice ? `${isErrandClosed(errand) ? 'Visa' : 'Hantera'} ärende` : undefined}
-              className={cx(
-                'no-underline sk-btn max-lg:sk-btn-icon',
-                rowHeight === 'normal' && !isMaxMediumDevice && !isPT() ? 'sk-btn-md' : 'sk-btn-sm',
-                isPT() && 'sk-btn-sm bg-primary text-light-primary w-full hover:text-dark-secondary',
-                isErrandClosed(errand) && !isPT() ? 'sk-btn-secondary' : 'sk-btn-tertiary'
-              )}
-            >
-              <Button.Content rightIcon={!isMaxMediumDevice && !isPT() && <LucideIcon name="external-link" />}>
-                {isPT() ? (
-                  errand.administrator ? (
-                    <>
-                      <span className="hidden md:inline">Öppna</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="hidden md:inline">Visa</span>
-                    </>
-                  )
-                ) : (
-                  <>
-                    {isErrandClosed(errand) ? (
-                      <>
-                        <span className="hidden md:inline">Visa</span>
-                        <LucideIcon className="inline md:hidden" name="view" />
-                      </>
-                    ) : (
-                      <>
-                        <span className="hidden md:inline">Hantera</span>
-                        <LucideIcon className="inline md:hidden" name="pencil" />
-                      </>
-                    )}
-                  </>
-                )}
-              </Button.Content>
-            </NextLink>
-          </div>
-        </Table.Column>
       </Table.Row>
     );
   });
@@ -272,12 +228,7 @@ export const ErrandsTable: React.FC = () => {
           )}
           {data.errands.length > 0 && (
             <>
-              <Table.Header>
-                {headers}
-                <Table.HeaderColumn sticky>
-                  <span className="sr-only">Hantera</span>
-                </Table.HeaderColumn>
-              </Table.Header>
+              <Table.Header>{headers}</Table.Header>
               <Table.Body>{rows}</Table.Body>
             </>
           )}

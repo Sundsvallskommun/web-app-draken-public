@@ -1,9 +1,9 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
+import { RefreshCcw } from 'lucide-react';
 
 const BillingForm: React.FC<{
   resetManager?: () => void;
@@ -48,7 +48,7 @@ const BillingForm: React.FC<{
             const activity = isInternal
               ? selectedInvoiceType?.internal.accountInformation.activity
               : selectedInvoiceType?.external.accountInformation.activity;
-            handleChange(selectedDescription, customerId, defaultQuantity, costcenter, activity);
+            handleChange(selectedDescription, customerId, defaultQuantity, costcenter!, activity!);
             trigger();
           }}
           readOnly={getValues().status !== 'NEW'}
@@ -86,8 +86,8 @@ const BillingForm: React.FC<{
               getValues('invoice.description'),
               getValues('invoice.customerId'),
               parseFloat(e.target.value),
-              getValues('invoice.invoiceRows.0.accountInformation.0.costCenter'),
-              getValues('invoice.invoiceRows.0.accountInformation.0.activity')
+              getValues('invoice.invoiceRows.0.accountInformation.0.costCenter')!,
+              getValues('invoice.invoiceRows.0.accountInformation.0.activity')!
             );
           }}
           className="w-full text-dark-primary"
@@ -146,7 +146,7 @@ const BillingForm: React.FC<{
               {resetManager && getValues().status === 'NEW' ? (
                 <Input.RightAddin>
                   <Button iconButton variant="ghost" onClick={resetManager}>
-                    <LucideIcon name="refresh-ccw" />
+                    <RefreshCcw />
                   </Button>
                 </Input.RightAddin>
               ) : null}
@@ -194,11 +194,12 @@ const BillingForm: React.FC<{
                   const selectedIdentity = invoiceSettings.customers.external.find(
                     (identity) => identity.companyId.toString() === e.target.value
                   );
-                  setValue('recipient.organizationName', selectedIdentity.name);
-                  setValue('invoice.customerId', selectedIdentity.companyId.toString());
+                  setValue('recipient.organizationName', selectedIdentity!.name);
+                  setValue('invoice.customerId', selectedIdentity!.companyId.toString());
                   setIsLoading(true);
-                  getOrganization(selectedIdentity.orgNr, selectedIdentity.legalEntityAddressSource).then(
-                    ({ partyId, address }) => {
+                  getOrganization(selectedIdentity!.orgNr!, selectedIdentity!.legalEntityAddressSource!).then(
+                    (result) => {
+                      const { partyId, address } = result!;
                       setIsLoading(false);
                       setValue('recipient.partyId', partyId);
                       setValue('recipient.addressDetails', address);
@@ -206,14 +207,14 @@ const BillingForm: React.FC<{
                   );
                 } else {
                   setValue('invoice.customerId', e.target.value);
-                  setValue('recipient', undefined);
+                  setValue('recipient', undefined as any);
                 }
                 handleChange(
                   getValues('invoice.description'),
                   e.target.value,
                   1,
-                  getValues('invoice.invoiceRows.0.accountInformation.0.costCenter'),
-                  getValues('invoice.invoiceRows.0.accountInformation.0.activity')
+                  getValues('invoice.invoiceRows.0.accountInformation.0.costCenter')!,
+                  getValues('invoice.invoiceRows.0.accountInformation.0.activity')!
                 );
               }}
               placeholder={'0'}
@@ -227,7 +228,7 @@ const BillingForm: React.FC<{
                   ))
                 : getValues().type === 'EXTERNAL'
                 ? invoiceSettings.customers.external.map((identity) => (
-                    <Select.Option key={identity.orgNr || identity.companyId} value={identity.companyId}>
+                    <Select.Option key={identity.orgNr || identity.companyId} value={identity.companyId ?? ''}>
                       {identity.name}
                     </Select.Option>
                   ))
@@ -258,12 +259,12 @@ const BillingForm: React.FC<{
                 const customerId = getValues('invoice.customerId');
                 const costcenter = selectedActivity.costCenter;
                 const quantity = getValues('invoice.invoiceRows.0.quantity');
-                handleChange(selectedDescription, customerId, quantity, costcenter, selectedActivity.value);
+                handleChange(selectedDescription, customerId!, quantity!, costcenter!, selectedActivity.value!);
                 getValues('invoice.invoiceRows').forEach((row, index) => {
-                  row.accountInformation.forEach((accountInformation, accountIndex) => {
+                  row.accountInformation?.forEach((accountInformation, accountIndex) => {
                     setValue(
                       `invoice.invoiceRows.${index}.accountInformation.${accountIndex}.activity`,
-                      selectedActivity.value
+                      selectedActivity.value as string
                     );
                   });
                 });
@@ -274,7 +275,7 @@ const BillingForm: React.FC<{
             >
               <Select.Option value={''}>Välj aktivitet</Select.Option>
               {invoiceSettings.activities.map((activity) => (
-                <Select.Option key={activity.name} value={activity.value}>
+                <Select.Option key={activity.name} value={activity.value ?? undefined}>
                   {activity.name}
                 </Select.Option>
               ))}

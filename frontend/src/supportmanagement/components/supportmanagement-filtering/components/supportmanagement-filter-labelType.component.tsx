@@ -1,17 +1,17 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
+import { ChevronDown } from 'lucide-react';
 
 export interface LabelTypeFilter {
   labelType: string[];
 }
 
-export const LabelTypeValues = {
+export const LabelTypeValues: LabelTypeFilter = {
   labelType: [],
 };
 
@@ -23,33 +23,33 @@ export const SupportManagementFilterLabelType: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   // const [allTypes, setAllTypes] = useState<Label[]>();
   const [allStringTypes, setAllStringTypes] = useState<string[]>();
-  const { supportMetadata }: { supportMetadata: SupportMetadata } = useAppContext();
+  const { supportMetadata } = useAppContext();
 
   useEffect(() => {
     const _types: Label[] = [];
     if (labelCategories.length > 0) {
       labelCategories?.forEach((category) => {
-        const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.resourcePath === category)?.labels;
+        const categoryTypes = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
         if (categoryTypes) {
           _types.push(...categoryTypes);
         }
       });
     } else {
       supportMetadata?.labels?.labelStructure?.forEach((category) => {
-        _types.push(...category.labels);
+        _types.push(...(category.labels ?? []));
       });
     }
     // We need a list of displayNames, not objects and not names since the
     // labelType filter works with the displayName and not the names of the types
     //
     // See comment in ongoing-support-errands.component.tsx for more information
-    setAllStringTypes(Array.from(new Set(_types.map((l) => l.displayName))));
+    setAllStringTypes(Array.from(new Set(_types.map((l) => l.displayName).filter((d): d is string => d !== undefined))));
   }, [supportMetadata, labelCategories]);
 
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Ärendekategori-filter"
         variant="tertiary"
         showBackground={false}

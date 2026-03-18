@@ -16,13 +16,13 @@ import {
 } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { RelationsToTable } from './relation-tables/relations-to-table.component';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
+import { Link2 } from 'lucide-react';
 
 export const LinkedErrandsDisclosure: React.FC<{
   errand: SupportErrand | IErrand;
@@ -47,17 +47,17 @@ export const LinkedErrandsDisclosure: React.FC<{
 
   const handleLinkClick = (id: string) => {
     if (relations.some((relation) => relation.target.resourceId === id)) {
-      deleteRelation(municipalityId, relations.find((relation) => relation.target.resourceId === id)?.id)
+      deleteRelation(municipalityId, relations.find((relation) => relation.target.resourceId === id)!.id!)
         .then(async () => {
-          const relatedErrands = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
+          const relatedErrands = await getSourceRelations(municipalityId, errand.id!.toString(), sortOrder);
           setRelations(relatedErrands);
         })
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
       const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
-      createRelation(municipalityId, errand.id.toString(), errand.errandNumber, targetErrand)
+      createRelation(municipalityId, errand.id!.toString(), errand.errandNumber!, targetErrand!)
         .then(async () => {
-          const relatedErrands = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
+          const relatedErrands = await getSourceRelations(municipalityId, errand.id!.toString(), sortOrder);
           setRelations(relatedErrands);
         })
         .catch((e) => console.error('Failed to create relation:', e));
@@ -68,7 +68,7 @@ export const LinkedErrandsDisclosure: React.FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingToErrands(true);
-        const sourceRelations = await getSourceRelations(municipalityId, errand.id.toString(), sortOrder);
+        const sourceRelations = await getSourceRelations(municipalityId, errand.id!.toString(), sortOrder);
         setRelations(sourceRelations);
 
         if (appConfig.features.useStakeholderRelations) {
@@ -83,8 +83,8 @@ export const LinkedErrandsDisclosure: React.FC<{
               setIsLoadingToErrands(false);
               return;
             }
-            relatedPerson.id = supportStakeholder?.externalId;
-            relatedPerson.type = supportStakeholder?.stakeholderType;
+            relatedPerson.id = supportStakeholder?.externalId ?? '';
+            relatedPerson.type = supportStakeholder?.stakeholderType ?? '';
           }
           if (appConfig.isCaseData) {
             const caseDataStakeholder = getOwnerStakeholder(errand as IErrand);
@@ -92,7 +92,7 @@ export const LinkedErrandsDisclosure: React.FC<{
               setIsLoadingToErrands(false);
               return;
             }
-            relatedPerson.id = caseDataStakeholder?.personId || caseDataStakeholder?.organizationNumber;
+            relatedPerson.id = caseDataStakeholder?.personId || caseDataStakeholder?.organizationNumber || '';
             relatedPerson.type = caseDataStakeholder.stakeholderType;
           }
 
@@ -118,7 +118,7 @@ export const LinkedErrandsDisclosure: React.FC<{
       try {
         setIsLoadingFromErrands(true);
 
-        const relatedErrands = (await getTargetRelations(municipalityId, errand.id.toString(), sortOrder)) ?? [];
+        const relatedErrands = (await getTargetRelations(municipalityId, errand.id!.toString(), sortOrder)) ?? [];
         const relatedErrandStatuses = await Promise.all(
           relatedErrands?.map((relation) => getErrandStatus(municipalityId, relation.source.type))
         );
@@ -163,7 +163,7 @@ export const LinkedErrandsDisclosure: React.FC<{
       data-cy={`connected-errands-disclosure`}
     >
       <Disclosure.Header>
-        <Disclosure.Icon icon={<LucideIcon name="link-2" />} />
+        <Disclosure.Icon icon={<Link2 />} />
         <Disclosure.Title>Kopplade ärenden</Disclosure.Title>
         <Disclosure.Button />
       </Disclosure.Header>

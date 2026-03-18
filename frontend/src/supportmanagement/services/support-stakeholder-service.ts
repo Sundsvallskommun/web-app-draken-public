@@ -17,17 +17,17 @@ export const getApplicantName = (r: SupportErrand) => {
   return applicant ? `${applicant.firstName} ${applicant.lastName}` : '(saknas)';
 };
 
-export const getSupportOwnerStakeholder: (e: SupportErrand) => SupportStakeholderFormModel = (e) =>
-  e.customer?.filter((s) => s.role.includes('PRIMARY'))?.[0];
+export const getSupportOwnerStakeholder: (e: SupportErrand) => SupportStakeholderFormModel | undefined = (e) =>
+  e.customer?.filter((s) => s.role?.includes('PRIMARY'))?.[0];
 
-export const getSupportReporterStakeholder: (e: SupportErrand) => SupportStakeholderFormModel = (e) =>
-  e.contacts?.filter((s) => s.role.includes('REPORTER'))?.[0];
+export const getSupportReporterStakeholder: (e: SupportErrand) => SupportStakeholderFormModel | undefined = (e) =>
+  e.contacts?.filter((s) => s.role?.includes('REPORTER'))?.[0];
 
 const trimPhoneNumber = (s: string) => s.trim().replace('-', '');
 
 export const applicantHasContactChannel: (errand: SupportErrand) => boolean = (errand) => {
   const applicant = errand?.stakeholders?.find((s) => s.role === 'PRIMARY');
-  return applicant ? applicant.contactChannels.length > 0 : false;
+  return applicant ? (applicant.contactChannels?.length ?? 0) > 0 : false;
 };
 
 export const applicantContactChannel = (errand: SupportErrand) => {
@@ -36,9 +36,10 @@ export const applicantContactChannel = (errand: SupportErrand) => {
     return { contactMeans: ContactChannelType.EMAIL, values: [] };
   }
 
+  const channels = applicant.contactChannels ?? [];
   const contactChannel =
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email) ||
-    applicant.contactChannels.find((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone);
+    channels.find((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email) ||
+    channels.find((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone);
 
   if (!contactChannel) {
     return { contactMeans: ContactChannelType.EMAIL, values: [] };
@@ -46,17 +47,17 @@ export const applicantContactChannel = (errand: SupportErrand) => {
 
   return {
     contactMeans: contactChannel.type,
-    values: applicant.contactChannels.filter((c) => c.type === contactChannel.type),
+    values: channels.filter((c) => c.type === contactChannel.type),
   };
 };
 
 export const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
-  const primaryStakeholder = errand.stakeholders.find((primary) => primary.role === 'PRIMARY');
+  const primaryStakeholder = errand.stakeholders?.find((primary) => primary.role === 'PRIMARY');
   if (primaryStakeholder) {
     const { firstName, lastName, contactChannels } = primaryStakeholder;
     if (firstName && lastName) return `${firstName} ${lastName}`;
 
-    const emailChannel = contactChannels.find((channel) => channel.type === 'EMAIL');
+    const emailChannel = contactChannels?.find((channel) => channel.type === 'EMAIL');
     if (emailChannel?.value) return emailChannel.value;
   }
   return '';
@@ -130,7 +131,7 @@ export const buildStakeholdersList = (data: Partial<RegisterSupportErrandFormMod
     }
   }
   data.contacts?.forEach((c) => {
-    const stakeholder = buildStakeholder(c, c.role);
+    const stakeholder = buildStakeholder(c, c.role ?? 'CONTACT');
     if (stakeholder) {
       stakeholders.push(stakeholder);
     }

@@ -11,11 +11,11 @@ import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Divider, FormControl, Modal, PopupMenu, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
+import { Ellipsis, Pencil, Trash } from 'lucide-react';
 
 export const SidebarGenericNotes: React.FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
@@ -47,7 +47,7 @@ export const SidebarGenericNotes: React.FC<{
     let createNote = true;
 
     if (noteIsTjansteanteckning(noteType)) {
-      if (!isErrandAdmin(errand, user)) {
+      if (!isErrandAdmin(errand!, user)) {
         toastMessage({
           position: 'bottom',
           closeable: false,
@@ -70,7 +70,7 @@ export const SidebarGenericNotes: React.FC<{
       }
     }
     if (createNote) {
-      return saveErrandNote(municipalityId, errand.id?.toString(), newNote)
+      return saveErrandNote(municipalityId, errand!.id?.toString(), newNote)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -79,7 +79,7 @@ export const SidebarGenericNotes: React.FC<{
             })
           );
           setIsLoading(false);
-          getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+          getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
           setValue('text', '');
         })
         .catch(() => {
@@ -102,14 +102,14 @@ export const SidebarGenericNotes: React.FC<{
 
   useEffect(() => {
     setNotes(
-      errand?.notes
+      (errand?.notes ?? [])
         .sort((a, b) =>
           dayjs(a.updated).isAfter(dayjs(b.updated)) ? 1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? -1 : 0
         )
         .reverse()
     );
     if (selectedNote) {
-      setSelectedNote(errand?.notes.find((n) => n.id === selectedNote.id));
+      setSelectedNote(errand?.notes?.find((n) => n.id === selectedNote.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
@@ -131,7 +131,7 @@ export const SidebarGenericNotes: React.FC<{
       extraParameters: {},
     };
 
-    return saveErrandNote(municipalityId, errand.id?.toString(), editNote)
+    return saveErrandNote(municipalityId, errand!.id?.toString(), editNote)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -139,7 +139,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
         setEditNote(false);
       })
@@ -157,7 +157,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   const removeNote = (inNote: ErrandNote) => {
-    return deleteErrandNote(municipalityId, errand.id?.toString(), inNote.id?.toString())
+    return deleteErrandNote(municipalityId, errand!.id?.toString(), inNote.id?.toString())
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -165,7 +165,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         setValue('text', '');
       })
       .catch(() => {
@@ -219,7 +219,7 @@ export const SidebarGenericNotes: React.FC<{
                         ></p>
 
                         <p className="my-0 flex justify-between">
-                          <span className="text-xs">{dayjs(note.updated).format('D MMM, HH:mm')}</span>
+                          <span className="text-xs">{dayjs(note.updated).format('D MMM YYYY, HH:mm')}</span>
                         </p>
                       </div>
                     </div>
@@ -233,16 +233,16 @@ export const SidebarGenericNotes: React.FC<{
                             className="bg-transparent"
                             variant="ghost"
                           >
-                            <LucideIcon name="ellipsis" />
+                            <Ellipsis />
                           </PopupMenu.Button>
                           <PopupMenu.Panel>
                             <PopupMenu.Items>
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<LucideIcon name="pencil" />}
+                                    leftIcon={<Pencil />}
                                     disabled={
-                                      noteIsComment(note.noteType) && errand.status.statusType === 'Ärende avslutat'
+                                      noteIsComment(note.noteType) && errand?.status?.statusType === 'Ärende avslutat'
                                     }
                                     onClick={() => {
                                       updateNote(note);
@@ -255,7 +255,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
                                   <Button
-                                    leftIcon={<LucideIcon name="trash" />}
+                                    leftIcon={<Trash />}
                                     onClick={() => {
                                       removeNote(note);
                                     }}

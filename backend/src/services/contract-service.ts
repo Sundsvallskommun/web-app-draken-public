@@ -18,10 +18,10 @@ export const validateContractAction: (municipalityId: string, errandId: string, 
   const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}`;
   const baseURL = apiURL(SERVICE);
   const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
-  if (existingErrand.data.extraParameters?.find(p => p.key === 'process.displayPhase')?.values[0] === UiPhase.registrerad) {
+  if (existingErrand.data.extraParameters?.find(p => p.key === 'process.displayPhase')?.values?.[0] === UiPhase.registrerad) {
     allowed = true;
   }
-  if (user.username.toLocaleLowerCase() === getLastUpdatedAdministrator(existingErrand.data.stakeholders)?.adAccount.toLocaleLowerCase()) {
+  if (user.username.toLocaleLowerCase() === getLastUpdatedAdministrator(existingErrand.data.stakeholders ?? [])?.adAccount.toLocaleLowerCase()) {
     allowed = true;
   }
   return Promise.resolve(allowed);

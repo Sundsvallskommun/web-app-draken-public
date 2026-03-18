@@ -213,5 +213,5 @@ export const getOrCreateConversationId = async (
     conversationId = newConversation.data.id;
   }
 
-  return conversationId;
+  return conversationId ?? '';
 };

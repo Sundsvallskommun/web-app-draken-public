@@ -25,8 +25,10 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { CaseDataBillingForm } from './tabs/billing/casedata-billing-form';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { contractsEnabled } from '@common/services/feature-flag-service';
+import { appConfig } from '@config/appconfig';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -118,7 +120,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           });
     }
 
-    if (errand.id && phaseChangeInProgress(errand)) {
+    if (errand?.id && phaseChangeInProgress(errand)) {
       setTimeout(() => {
         getErrand(municipalityId, errand.id.toString())
           .then((res) => {
@@ -192,18 +194,18 @@ export const CasedataTabsWrapper: React.FC = () => {
         : [],
     },
     {
-      label: `Meddelanden (${countUnreadMessages(messages)})`,
+      label: `Meddelanden (${countUnreadMessages(messages ?? [])})`,
       content: errand?.id && (
         <CasedataMessagesTab
           setUnsaved={() => {}}
           update={() =>
             setTimeout(() => {
-              getErrand(municipalityId, errand.id.toString())
+              getErrand(municipalityId, errand!.id.toString())
                 .then((res) => {
                   setErrand(res.errand);
                   return res;
                 })
-                .then((res) => fetchMessagesTree(municipalityId, errand).then(setMessages))
+                .then((res) => fetchMessagesTree(municipalityId, errand!).then(setMessages))
                 .catch((e) => {
                   toastMessage({
                     position: 'bottom',
@@ -212,7 +214,7 @@ export const CasedataTabsWrapper: React.FC = () => {
                     status: 'error',
                   });
                 });
-              handleConversation(municipalityId, errand.id);
+              handleConversation(municipalityId, errand!.id);
             }, 500)
           }
         />
@@ -249,7 +251,24 @@ export const CasedataTabsWrapper: React.FC = () => {
           ]
         : [],
     },
-    ...(contractsEnabled()
+    {
+      label: 'Engångsfakturering',
+      content: <CaseDataBillingForm />,
+      disabled: false,
+      visibleFor:
+        appConfig?.features?.useBilling && errand?.id
+          ? [
+              ErrandPhase.utredning,
+              ErrandPhase.beslut,
+              ErrandPhase.hantera,
+              ErrandPhase.verkstalla,
+              ErrandPhase.uppfoljning,
+              ErrandPhase.canceled,
+              ErrandPhase.overklagad,
+            ]
+          : [],
+    },
+    ...(appConfig.features.useContracts
       ? [
           {
             label: 'Avtal',
@@ -310,7 +329,11 @@ export const CasedataTabsWrapper: React.FC = () => {
       content: errand?.id && <CasedataServicesTab />,
       disabled: !errand?.id,
       visibleFor:
-        isFTErrand(errand) && errand?.id && getUiPhase(errand) != UiPhase.registrerad && !!getOwnerStakeholder(errand)
+        errand &&
+        isFTErrand(errand) &&
+        errand.id &&
+        getUiPhase(errand) != UiPhase.registrerad &&
+        !!getOwnerStakeholder(errand)
           ? [
               ErrandPhase.aktualisering,
               ErrandPhase.utredning,
@@ -332,7 +355,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             decisionServicesRefetchRef.current = refetch;
           }}
           update={() =>
-            getErrand(municipalityId, errand.id.toString())
+            getErrand(municipalityId, errand!.id.toString())
               .then((res) => setErrand(res.errand))
               .catch((e) => {
                 toastMessage({
@@ -365,7 +388,7 @@ export const CasedataTabsWrapper: React.FC = () => {
   switch (uiPhase) {
     case UiPhase.granskning:
       tabs
-        .filter((t) => t.visibleFor.includes(errand.phase))
+        .filter((t) => t.visibleFor.includes(errand!.phase))
         .forEach((tab, idx) => {
           if (tab.label === 'Grunduppgifter') {
             currentTab = idx;
@@ -374,7 +397,7 @@ export const CasedataTabsWrapper: React.FC = () => {
       break;
     case UiPhase.utredning:
       tabs
-        .filter((t) => t.visibleFor.includes(errand.phase))
+        .filter((t) => t.visibleFor.includes(errand!.phase))
         .forEach((tab, idx) => {
           if (tab.label === 'Utredning') {
             currentTab = idx;
@@ -384,7 +407,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     case UiPhase.beslut:
     case UiPhase.slutfor:
       tabs
-        .filter((t) => t.visibleFor.includes(errand.phase))
+        .filter((t) => t.visibleFor.includes(errand!.phase))
         .forEach((tab, idx) => {
           if (tab.label === 'Beslut') {
             currentTab = idx;
@@ -400,7 +423,7 @@ export const CasedataTabsWrapper: React.FC = () => {
   const handleTabChange = (newTabIndex: number) => {
     setCurrent(newTabIndex);
 
-    const visibleTabs = tabs.filter((tab) => tab?.visibleFor?.includes(errand.phase) || !errand.phase);
+    const visibleTabs = tabs.filter((tab) => tab?.visibleFor?.includes(errand!.phase) || !errand?.phase);
     const activatedTab = visibleTabs[newTabIndex];
 
     if (activatedTab?.label === 'Beslut' && decisionServicesRefetchRef.current) {
@@ -426,7 +449,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           size={'sm'}
         >
           {tabs
-            .filter((tab) => tab?.visibleFor?.includes(errand.phase) || !errand.phase)
+            .filter((tab) => tab?.visibleFor?.includes(errand!.phase) || !errand?.phase)
             .map((tab, index) => (
               <Tabs.Item key={tab.label}>
                 <Tabs.Button disabled={tab.disabled} className="text-small">

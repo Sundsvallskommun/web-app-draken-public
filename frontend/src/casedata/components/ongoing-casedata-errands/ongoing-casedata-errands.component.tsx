@@ -55,7 +55,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
   const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
-  const initialFocus = useRef(null);
+  const initialFocus = useRef<HTMLElement>(null);
 
   const setInitialFocus = () => {
     setTimeout(() => {
@@ -91,7 +91,9 @@ export const OngoingCaseDataErrands: React.FC = () => {
         };
         const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
         setSelectedErrandStatuses(filterStatuses);
-        const selectedStatusLabel = getStatusLabel(filterStatuses.map((s) => ErrandStatus[s]));
+        const selectedStatusLabel = getStatusLabel(
+          filterStatuses.map((s: string) => (ErrandStatus as Record<string, string>)[s])
+        );
         setSidebarLabel(selectedStatusLabel);
       } catch (error) {
         store.set('filter', JSON.stringify({}));
@@ -153,18 +155,18 @@ export const OngoingCaseDataErrands: React.FC = () => {
   useEffect(() => {
     if (errands) {
       setErrand(undefined);
-      setTableValue('page', errands.page);
-      setTableValue('size', errands.size);
-      setTableValue('totalPages', errands.totalPages);
-      setTableValue('totalElements', errands.totalElements);
+      setTableValue('page', errands.page ?? 0);
+      setTableValue('size', errands.size ?? 0);
+      setTableValue('totalPages', errands.totalPages ?? 0);
+      setTableValue('totalElements', errands.totalElements ?? 0);
     }
     //eslint-disable-next-line
   }, [errands]);
 
   useDebounceEffect(
     () => {
-      const fObj = {};
-      const extraFilterObj = {};
+      const fObj: Record<string, string | boolean> = {};
+      const extraFilterObj: Record<string, string> = {};
       if (priorityFilter && priorityFilter.length > 0) {
         fObj['priority'] = priorityFilter.join(',');
       }
@@ -195,13 +197,13 @@ export const OngoingCaseDataErrands: React.FC = () => {
         extraFilterObj['propertyDesignation'] = propertyDesignation;
       }
       if (phaseFilter && phaseFilter.length > 0) {
-        fObj['phase'] = phaseFilter;
+        fObj['phase'] = phaseFilter.join(',');
       }
       if (channelFilter && channelFilter.length > 0) {
         fObj['channel'] = channelFilter.join(',');
       }
       if (stakeholderTypeFilter && stakeholderTypeFilter.length > 0) {
-        fObj['stakeholderType'] = stakeholderTypeFilter;
+        fObj['stakeholderType'] = stakeholderTypeFilter.join(',');
       }
       setFilterObject(fObj);
       setExtraFilter(extraFilterObj);
@@ -260,7 +262,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
         </div>
       </div>
 
-      <main className="px-24 md:px-40 pb-40 w-full h-full">
+      <main className="pl-40 pb-40 w-full h-full">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div className="flex justify-between">
