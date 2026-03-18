@@ -10,7 +10,6 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
@@ -25,7 +24,6 @@ import {
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -95,12 +93,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       }),
     })
     .required();
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  } = useAppContext();
+  const { municipalityId, errand, setErrand, user } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);

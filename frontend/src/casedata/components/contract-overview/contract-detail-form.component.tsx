@@ -85,7 +85,7 @@ const mapContractStakeholderToErrandStakeholder = (
       : contractStakeholder.type === ContractStakeholderType.PERSON ||
         contractStakeholder.type === ContractStakeholderType.OTHER
       ? ContractStakeholderType.PERSON
-      : ((contractStakeholder.type as unknown as StakeholderType) ?? 'PERSON');
+      : (contractStakeholder.type as unknown as StakeholderType) ?? 'PERSON';
 
   // Map phone numbers
   const phoneNumbers: { value: string }[] = [];
@@ -312,6 +312,7 @@ export const ContractDetailForm: React.FC<{
               sellers={sellers}
               lessees={lessees}
               lessors={lessors}
+              contractOveriewMode
             />
           </FormProvider>
         </div>
