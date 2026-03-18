@@ -210,97 +210,35 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
-}
-
-export interface StatusType {
   /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
+  status?: number;
 }
 
 export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
   /** @format uri */
   type?: string;
-  status?: StatusType;
+  /** @format int32 */
+  status?: number;
   violations?: Violation[];
   title?: string;
-  message?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, any>;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
-  cause?: any;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
+  /** @format int32 */
+  status?: number;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  /** @format uri */
+  instance?: string;
+  causeAsProblem?: any;
 }
 
 export interface Violation {
@@ -416,6 +354,13 @@ export interface Decision {
   municipalityId?: string;
   /** Namespace */
   namespace?: string;
+  /**
+   * The id of the errand
+   * @format int64
+   */
+  errandId?: number;
+  /** Errand number */
+  errandNumber?: string;
   /** Type of the decision */
   decisionType?: DecisionDecisionTypeEnum;
   /** Outcome of the decision */
@@ -627,7 +572,33 @@ export interface ExtraParameter {
   values?: string[];
 }
 
-export type JsonNode = any;
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  embeddedValue?: boolean;
+}
 
 export interface JsonParameter {
   /**
@@ -908,6 +879,17 @@ export interface KeyValues {
   values?: string[];
 }
 
+/** Readby model */
+export interface ReadBy {
+  /** The identifier of the person who read the message. */
+  identifier?: Identifier;
+  /**
+   * The timestamp when the message was read.
+   * @format date-time
+   */
+  readAt?: string;
+}
+
 /** ConversationAttachment model */
 export interface ConversationAttachment {
   /** ConversationAttachment ID */
@@ -948,19 +930,9 @@ export interface Message {
   content: string;
   readBy?: ReadBy[];
   attachments?: ConversationAttachment[];
+  attachmentIds?: number[];
   /** Type of message (user or system created) */
   type?: MessageTypeEnum;
-}
-
-/** Readby model */
-export interface ReadBy {
-  /** The identifier of the person who read the message. */
-  identifier?: Identifier;
-  /**
-   * The timestamp when the message was read.
-   * @format date-time
-   */
-  readAt?: string;
 }
 
 export interface PatchNotification {
@@ -1083,10 +1055,10 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1104,19 +1076,19 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
   sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1232,13 +1204,32 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
+  /** @format int32 */
+  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
   /** @format int32 */
-  totalPages?: number;
-  /** @format int32 */
   size?: number;
   content?: Message[];
+  /** @format int32 */
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  sort?: SortObject;
+  pageable?: PageableObject;
+  empty?: boolean;
+}
+
+export interface PageDecision {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  size?: number;
+  content?: Decision[];
   /** @format int32 */
   number?: number;
   first?: boolean;
@@ -1303,6 +1294,18 @@ export enum ErrandPriorityEnum {
   HIGH = "HIGH",
   MEDIUM = "MEDIUM",
   LOW = "LOW",
+}
+
+export enum JsonNodeNodeTypeEnum {
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }
 
 /** If the message is inbound or outbound from the perspective of case-data/e-service. */
