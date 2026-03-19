@@ -25,8 +25,8 @@ RUN mkdir -p /app && chown -R 1001:0 /app
 USER 1001
 WORKDIR /app
 COPY --from=deps --chown=1001:0 /app/node_modules ./node_modules
-COPY . .
-COPY .env-cicd .env.local
+COPY --chown=1001:0 . .
+COPY --chown=1001:0 .env-cicd .env.local
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
