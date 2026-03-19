@@ -36,97 +36,35 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
-}
-
-export interface StatusType {
   /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
+  status?: number;
 }
 
 export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
   /** @format uri */
   type?: string;
-  status?: StatusType;
+  /** @format int32 */
+  status?: number;
   violations?: Violation[];
   title?: string;
-  message?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, any>;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
-  cause?: any;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
+  /** @format int32 */
+  status?: number;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  /** @format uri */
+  instance?: string;
+  causeAsProblem?: any;
 }
 
 export interface Violation {
@@ -163,6 +101,45 @@ export interface NamespaceConfig {
   accessControl?: boolean;
   /** If set to true notification will be sent to the stakeholder when stakeholder with reporter role recieves an internal message. If no value is set it defaults to false. */
   notifyReporter?: boolean;
+}
+
+/** Errand action parameter model */
+export interface ActionParameter {
+  /**
+   * Parameter key
+   * @minLength 1
+   */
+  key: string;
+  /** Parameter values. Each value can have a maximum length of 2000 characters */
+  values?: string[];
+}
+
+/** Errand action config model */
+export interface Config {
+  /** Unique id for action config */
+  id?: string;
+  /**
+   * Name of the type of action. Must match an existing action definition
+   * @minLength 1
+   */
+  name: string;
+  /**
+   * If set to true, action will be active
+   * @default false
+   */
+  active?: boolean;
+  /**
+   * Conditions for when the action should be added to errand. Parameters must match action definition.
+   * @minItems 1
+   */
+  conditions: ActionParameter[];
+  /**
+   * Parameters for action. Must match action definition.
+   * @minItems 1
+   */
+  parameters: ActionParameter[];
+  /** Display value for this action. Will be mapped to each action on errands */
+  displayValue?: string;
 }
 
 /** Label model */
@@ -222,6 +199,10 @@ export interface EmailIntegration {
   stakeholderRole?: string | null;
   /** Channel set on created errands */
   errandChannel?: string | null;
+  /** If true, auto-reply emails (with Auto-Submitted header) will be ignored and not processed, except for delivery-status reports */
+  ignoreAutoReply: boolean;
+  /** If true, no confirmation email will be sent to no-reply addresses */
+  ignoreNoReply: boolean;
   /**
    * Timestamp when the configuration was created
    * @format date-time
@@ -264,6 +245,10 @@ export interface Status {
    * @minLength 1
    */
   name: string;
+  /** Display name for the status */
+  displayName?: string | null;
+  /** External display name for the status */
+  externalDisplayName?: string | null;
   /**
    * Timestamp when the status was created
    * @format date-time
@@ -304,6 +289,8 @@ export interface ExternalIdType {
    * @minLength 1
    */
   name: string;
+  /** Display name for the external id type */
+  displayName?: string | null;
   /**
    * Timestamp when the external id type was created
    * @format date-time
@@ -328,6 +315,8 @@ export interface ContactReason {
    * @minLength 1
    */
   reason: string;
+  /** Display name for the contact reason */
+  displayName?: string | null;
   /**
    * Timestamp when the contact reason was created
    * @format date-time
@@ -458,6 +447,8 @@ export interface Errand {
   labels?: ErrandLabel[];
   /** List of active notifications for the errand */
   activeNotifications?: Notification[];
+  /** List of pending actions for the errand */
+  actions?: ErrandAction[];
   /**
    * Timestamp when errand was created
    * @format date-time
@@ -473,6 +464,23 @@ export interface Errand {
    * @format date-time
    */
   touched?: string;
+}
+
+/** Errand action model */
+export interface ErrandAction {
+  /** Unique id for the action */
+  id?: string;
+  /** Name of the action */
+  actionName?: string;
+  /**
+   * Timestamp after which the action should be executed
+   * @format date-time
+   */
+  executeAfter?: string;
+  /** Id of the action config that created this action */
+  actionConfigId?: string;
+  /** Display value for the action */
+  displayValue?: string;
 }
 
 /** Errand label model */
@@ -497,7 +505,33 @@ export interface ExternalTag {
   value?: string;
 }
 
-export type JsonNode = any;
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  integralNumber?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  embeddedValue?: boolean;
+}
 
 /** JSON Parameter model */
 export interface JsonParameter {
@@ -573,7 +607,7 @@ export interface Parameter {
   displayName?: string;
   /** Parameter group name */
   group?: string;
-  /** Parameter values. Each value can have a maximum length of 2000 characters */
+  /** Parameter values. Each value can have a maximum length of 3000 characters */
   values?: string[];
 }
 
@@ -800,6 +834,7 @@ export interface MessageRequest {
    * @minLength 1
    */
   content: string;
+  attachmentIds?: string[];
 }
 
 /** UpdateErrandNoteRequest model */
@@ -870,6 +905,41 @@ export interface Conversation {
   metadata?: KeyValues[];
 }
 
+/** Action definition model describing an available action and its conditions/parameters */
+export interface ActionDefinition {
+  /** Name of the action */
+  name?: string;
+  /** Description of the action */
+  description?: string;
+  /** Definitions of conditions for this action */
+  conditionDefinitions?: Definition[];
+  /** Definitions of parameters for this action */
+  parameterDefinitions?: Definition[];
+}
+
+/** Definition of a condition or parameter for an action */
+export interface Definition {
+  /** Key for the definition */
+  key?: string;
+  /**
+   * Whether this definition is mandatory
+   * @default false
+   */
+  mandatory?: boolean;
+  /** Description of the definition */
+  description?: string;
+  /** List of possible values for this definition */
+  possibleValues?: PossibleValue[];
+}
+
+/** Possible value for an action definition parameter or condition */
+export interface PossibleValue {
+  /** The value */
+  value?: string;
+  /** Display name for the value */
+  displayName?: string;
+}
+
 /** Labels model */
 export interface Labels {
   labelStructure?: Label[];
@@ -896,31 +966,31 @@ export interface PageErrand {
   content?: Errand[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 /** Revision model */
@@ -1059,12 +1129,12 @@ export interface PageEvent {
   content?: Event[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1164,12 +1234,12 @@ export interface PageMessage {
   content?: Message[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1202,6 +1272,18 @@ export interface ErrandAttachment {
 export interface CountResponse {
   /** @format int64 */
   count?: number;
+}
+
+export enum JsonNodeNodeTypeEnum {
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }
 
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */

@@ -16,8 +16,10 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -29,12 +31,10 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
+  integralNumber?: boolean;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -92,10 +92,14 @@ export interface Violation {
 
 /** JsonSchemaRequest model */
 export interface JsonSchemaRequest {
-  /** Schema name */
+  /**
+   * Schema name
+   * @minLength 1
+   */
   name: string;
   /**
    * Schema version on the format [major version].[minor version]
+   * @minLength 1
    * @pattern ^(\d+\.)?(\d+)$
    */
   version: string;
@@ -167,8 +171,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {

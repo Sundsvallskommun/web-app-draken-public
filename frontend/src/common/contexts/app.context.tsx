@@ -263,7 +263,8 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
         setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),
 
         notifications,
-        setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => setNotifications(notifications),
+        setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) =>
+          setNotifications(notifications),
 
         administrators,
         setAdministrators: (admins: Admin[]) => {

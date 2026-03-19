@@ -144,13 +144,22 @@ export interface BillingRecord {
 
 /** Invoice model */
 export interface Invoice {
-  /** Customer number in Raindance */
+  /**
+   * Customer number in Raindance
+   * @minLength 1
+   */
   customerId: string;
-  /** Description of the invoice */
+  /**
+   * Description of the invoice
+   * @minLength 1
+   */
   description: string;
   /** Our reference */
   ourReference?: string;
-  /** Customer reference */
+  /**
+   * Customer reference
+   * @minLength 1
+   */
   customerReference: string;
   /**
    * Date for the invoice
@@ -219,40 +228,40 @@ export interface InvoiceFileStatus {
 }
 
 export interface PageBillingRecord {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
-  /** @format int32 */
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
-  sort?: SortObject;
+  /** @format int32 */
+  numberOfElements?: number;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {

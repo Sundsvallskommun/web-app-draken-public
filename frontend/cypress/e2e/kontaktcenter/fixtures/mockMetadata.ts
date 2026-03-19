@@ -526,18 +526,22 @@ export const mockMetaData = {
     {
       name: 'NEW',
       created: '2023-03-27T11:41:43.312+02:00',
+      displayName: 'Inkommet',
     },
     {
       name: 'ONGOING',
       created: '2023-03-27T11:41:52.26+02:00',
+      displayName: 'Pågående',
     },
     {
       name: 'SUSPENDED',
       created: '2023-03-27T11:41:56.59+02:00',
+      displayName: 'Parkerat',
     },
     {
       name: 'SOLVED',
       created: '2023-03-27T11:42:00.538+02:00',
+      displayName: 'Avslutat',
     },
   ],
   roles: [

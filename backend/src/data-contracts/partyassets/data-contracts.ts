@@ -66,7 +66,10 @@ export interface AssetCreateRequest {
   origin?: string;
   /** PartyId */
   partyId: string;
-  /** Asset type */
+  /**
+   * Asset type
+   * @minLength 1
+   */
   type: string;
   /**
    * Issued date
@@ -114,10 +117,10 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -129,10 +132,10 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  number?: boolean;
   embeddedValue?: boolean;
 }
 
