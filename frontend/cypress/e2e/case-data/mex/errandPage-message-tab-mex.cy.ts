@@ -64,6 +64,60 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
         'getEstateInfo'
       );
+
+      cy.intercept('GET', '**/templates?prefix=mex*', {
+        data: [
+          {
+            identifier: 'mex.email.default',
+            name: 'Standard e-postmall',
+            content: btoa('Mock email template'),
+            metadata: [
+              { key: 'templateType', value: 'email' },
+              { key: 'templateRole', value: 'default' },
+            ],
+          },
+          {
+            identifier: 'mex.email.signature',
+            name: 'Signatur',
+            content: btoa('Mock signature'),
+            metadata: [
+              { key: 'templateType', value: 'email' },
+              { key: 'templateRole', value: 'signature' },
+            ],
+          },
+          {
+            identifier: 'mex.sms.default',
+            name: 'Standard SMS',
+            content: btoa('Mock sms template'),
+            metadata: [
+              { key: 'templateType', value: 'sms' },
+              { key: 'templateRole', value: 'default' },
+            ],
+          },
+          {
+            identifier: 'mex.sms.signature',
+            name: 'SMS Signatur',
+            content: btoa('Mock sms signature'),
+            metadata: [
+              { key: 'templateType', value: 'sms' },
+              { key: 'templateRole', value: 'signature' },
+            ],
+          },
+        ],
+        message: 'success',
+      }).as('getTemplates');
+
+      cy.intercept('GET', '**/templates?prefix=internal*', {
+        data: [
+          {
+            identifier: 'internal.signature',
+            name: 'Intern signatur',
+            content: btoa('Mock internal signature'),
+            metadata: [],
+          },
+        ],
+        message: 'success',
+      }).as('getInternalTemplates');
     });
 
     const goToMessageTab = () => {

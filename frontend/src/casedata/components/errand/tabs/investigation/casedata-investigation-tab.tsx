@@ -6,6 +6,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
+  fetchInvestigationSkeleton,
   getProposedOrRecommendedDecision,
   getUtredningPhrases,
   lawMapping,
@@ -13,7 +14,6 @@ import {
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
-import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
@@ -243,8 +243,12 @@ export const CasedataInvestigationTab: React.FC<{
     });
     setValue('errandNumber', props.errand.errandNumber);
     if (isFTErrand(props.errand) && !decision) {
-      skipNextOnChange.current = true;
-      setValue('description', FT_INVESTIGATION_TEXT, { shouldDirty: false });
+      fetchInvestigationSkeleton(props.errand).then((skeleton) => {
+        if (skeleton) {
+          skipNextOnChange.current = true;
+          setValue('description', skeleton, { shouldDirty: false });
+        }
+      });
     }
     props.setUnsaved(false);
     trigger();
@@ -281,21 +285,19 @@ export const CasedataInvestigationTab: React.FC<{
         <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
           <h2 className="text-h4-sm md:text-h4-md">Utredning</h2>
         </div>
-        {!isFTErrand(props.errand) && (
-          <Button
-            type="button"
-            disabled={!formState.isValid || isErrandLocked(errand) || !allowed}
-            size="sm"
-            variant="primary"
-            color="vattjom"
-            inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<Download size={18} />}
-            onClick={getPdfPreview}
-            data-cy="preview-investigation-button"
-          >
-            Förhandsgranska PDF
-          </Button>
-        )}
+        <Button
+          type="button"
+          disabled={!formState.isValid || isErrandLocked(errand) || !allowed}
+          size="sm"
+          variant="primary"
+          color="vattjom"
+          inverted={!(isErrandLocked(errand) || !allowed)}
+          rightIcon={<Download size={18} />}
+          onClick={getPdfPreview}
+          data-cy="preview-investigation-button"
+        >
+          Förhandsgranska PDF
+        </Button>
       </div>
       <div className="mt-lg">
         {errand?.decisions && errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED') && (
@@ -435,7 +437,7 @@ export const CasedataInvestigationTab: React.FC<{
               onClick={handleSubmit(() => {
                 save(getValues());
               })}
-              disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
+              disabled={!allowed || isErrandLocked(errand) || !formState.isValid}
               leftIcon={<Check className="mr-sm" />}
               loading={isLoading}
               loadingText="Sparar"
@@ -454,9 +456,10 @@ export const CasedataInvestigationTab: React.FC<{
                       'info',
                       'info'
                     )
-                    .then((confirmed) => {
+                    .then(async (confirmed) => {
                       if (confirmed) {
-                        setValue('description', FT_INVESTIGATION_TEXT);
+                        const skeleton = await fetchInvestigationSkeleton(props.errand);
+                        setValue('description', skeleton);
                         save(getValues());
                       }
                       return confirmed ? () => true : () => {};

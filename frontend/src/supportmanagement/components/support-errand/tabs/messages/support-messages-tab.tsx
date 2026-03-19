@@ -2,10 +2,6 @@ import { MessageWrapper } from '@common/components/message/message-wrapper.compo
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
-import {
-  getDefaultEmailBody,
-  getDefaultSmsBody,
-} from '@supportmanagement/components/templates/default-message-template';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
