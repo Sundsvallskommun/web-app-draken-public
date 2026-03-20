@@ -8,7 +8,7 @@ import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
@@ -25,7 +25,7 @@ interface CasedataContactsProps {
 export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props) => {
   const [addContact, setAddContact] = useState(false);
   const [selectedContact, setSelectedContact] = useState<CasedataOwnerOrContact>();
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
@@ -366,7 +366,7 @@ export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props
                   </div>
                 )}
                 <SimplifiedContactForm
-                  key={Math.random()}
+                  key="new-contact-form"
                   allowOrganization={appConfig.features.useOrganizationStakeholders}
                   disabled={(errand ? isErrandLocked(errand) : false)}
                   setUnsaved={props.setUnsaved}

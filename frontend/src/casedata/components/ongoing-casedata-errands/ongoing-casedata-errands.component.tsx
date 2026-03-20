@@ -1,8 +1,8 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
-import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
-import { getMe } from '@common/services/user-service';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useUserQuery } from '@common/services/use-user-query';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
 import store from '@supportmanagement/services/storage-service';
@@ -24,21 +24,18 @@ export interface TableForm {
 
 export const OngoingCaseDataErrands: React.FC = () => {
   const filterForm = useForm<CaseDataFilter>({ defaultValues: CaseDataValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue, getValues } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues } = filterForm;
   const tableForm = useForm<TableForm>({ defaultValues: { sortColumn: 'updated', sortOrder: 'desc', pageSize: 12 } });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
-  const {
-    municipalityId,
-    setErrand,
-    administrators,
-    selectedErrandStatuses,
-    setSelectedErrandStatuses,
-    setSidebarLabel,
-    sidebarLabel,
-    closedErrands,
-  }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const setSelectedErrandStatuses = useCasedataStore((s) => s.setSelectedErrandStatuses);
+  const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
+  const sidebarLabel = useCasedataStore((s) => s.sidebarLabel);
+  const closedErrands = useCasedataStore((s) => s.closedErrands);
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
   const queryFilter = watchFilter('query');
@@ -63,13 +60,16 @@ export const OngoingCaseDataErrands: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    setValue('status', selectedErrandStatuses);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedErrandStatuses]);
-
   const router = useRouter();
-  const { user, setUser } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
+  const { data: userData } = useUserQuery();
+
+  useEffect(() => {
+    if (userData) {
+      setUser(userData);
+    }
+  }, [userData]);
 
   useEffect(() => {
     const filterdata = store.get('filter');
@@ -90,7 +90,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
           phase: filter?.phase !== '' ? filter?.phase?.split(',') || CaseDataValues.phase : CaseDataValues.phase,
         };
         const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
-        setSelectedErrandStatuses(filterStatuses);
         const selectedStatusLabel = getStatusLabel(
           filterStatuses.map((s: string) => (ErrandStatus as Record<string, string>)[s])
         );
@@ -143,11 +142,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe()
-      .then((user) => {
-        setUser(user);
-      })
-      .catch((e) => {});
     setErrand(undefined);
     //eslint-disable-next-line
   }, [router]);
@@ -207,6 +201,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
       }
       setFilterObject(fObj);
       setExtraFilter(extraFilterObj);
+      setSelectedErrandStatuses(statusFilter);
       store.set('filter', JSON.stringify(fObj));
     },
     200,

@@ -1,4 +1,4 @@
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
@@ -35,26 +35,18 @@ export const SupportTabsWrapper: React.FC<{
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
-  const {
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportAttachments,
-    setSupportAttachments,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const setSupportAttachments = useSupportStore((s) => s.setSupportAttachments);
 
-  const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [subFormUnsaved, setSubFormUnsaved] = useState(false);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
-  useEffect(() => {
-    if (methods?.getValues as unknown) {
-      // Need to define these variables for validation/dirty check to work??
-      const _ = Object.keys(methods.formState.dirtyFields).length;
-      const __ = methods.formState.isDirty;
-      setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
-    }
-  }, [methods]);
+  const { formState: { isDirty, dirtyFields } } = methods;
+  const unsavedChanges = (isDirty && Object.keys(dirtyFields).length > 0) || subFormUnsaved;
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -106,7 +98,7 @@ export const SupportTabsWrapper: React.FC<{
         <SupportErrandBasicsTab
           setUnsavedFacility={props.setUnsavedFacility}
           errand={supportErrand}
-          setUnsaved={setUnsavedChanges}
+          setUnsaved={setSubFormUnsaved}
           update={update}
         />
       ),
@@ -127,7 +119,7 @@ export const SupportTabsWrapper: React.FC<{
           messageTree={messageTree}
           supportConversations={supportConversations}
           conversationMessageTree={conversationMessageTree}
-          setUnsaved={setUnsavedChanges}
+          setUnsaved={setSubFormUnsaved}
           update={update}
           municipalityId={municipalityId}
         />
@@ -143,14 +135,14 @@ export const SupportTabsWrapper: React.FC<{
     },
     {
       label: 'Rekryteringsprocess',
-      content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
+      content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setSubFormUnsaved} update={update} />,
       disabled: false,
       visibleFor: appConfig.features.useRecruitment,
     },
     {
       label: 'Fakturering',
       content: supportErrand && (
-        <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
+        <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setSubFormUnsaved} update={update} />
       ),
       disabled: false,
       visibleFor: appConfig.features.useBilling,

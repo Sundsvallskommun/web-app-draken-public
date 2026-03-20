@@ -16,7 +16,7 @@ import {
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
-import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import dayjs from 'dayjs';
@@ -58,14 +58,13 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import dynamic from 'next/dynamic';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 import { ContractData } from '@casedata/interfaces/contract-data';
 import { Download, SendHorizontal } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -132,7 +131,10 @@ export const CasedataDecisionTab: React.FC<{
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
 }> = (props) => {
-  const { municipalityId, user, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);

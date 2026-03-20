@@ -1,7 +1,7 @@
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 import { RefreshCcw } from 'lucide-react';
 
@@ -21,7 +21,6 @@ const BillingForm: React.FC<{
     register,
     getValues,
     setValue,
-    trigger,
     watch,
     formState: { errors },
   } = useFormContext<CBillingRecord>();
@@ -30,45 +29,49 @@ const BillingForm: React.FC<{
     <>
       <FormControl>
         <FormLabel>Faktureringstyp</FormLabel>
-        <Select
-          {...register('invoice.description')}
-          data-cy="invoice-description-input"
-          className="w-full text-dark-primary"
-          size="md"
-          placeholder={'0'}
-          onChange={(e) => {
-            const selectedInvoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === e.target.value);
-            const selectedDescription = e.target.value;
-            const customerId = getValues().invoice.customerId;
-            const isInternal = getValues().type === 'INTERNAL';
-            const defaultQuantity = 1;
-            const costcenter = isInternal
-              ? selectedInvoiceType?.internal.accountInformation.costCenter
-              : selectedInvoiceType?.external.accountInformation.costCenter;
-            const activity = isInternal
-              ? selectedInvoiceType?.internal.accountInformation.activity
-              : selectedInvoiceType?.external.accountInformation.activity;
-            handleChange(selectedDescription, customerId, defaultQuantity, costcenter!, activity!);
-            trigger();
-          }}
-          readOnly={getValues().status !== 'NEW'}
-        >
-          <Select.Option value={''}>Välj faktureringstyp</Select.Option>
-          {invoiceSettings.invoiceTypes
-            .filter((i) => {
-              // Manager is either INTERNAL or EXTERNAL. Only show invoice types that
-              // have invoice rows for the current manager type
-              return (
-                (getValues().type === 'INTERNAL' && i?.internal?.invoiceRows?.length > 0) ||
-                (getValues().type === 'EXTERNAL' && i?.external?.invoiceRows?.length > 0)
-              );
-            })
-            .map((invoiceType) => (
-              <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
-                {invoiceType.invoiceType}
-              </Select.Option>
-            ))}
-        </Select>
+        <Controller
+          name="invoice.description"
+          control={control}
+          render={({ field }) => (
+            <Select
+              {...field}
+              data-cy="invoice-description-input"
+              className="w-full text-dark-primary"
+              size="md"
+              placeholder={'0'}
+              onChange={(e) => {
+                field.onChange(e.target.value);
+                const selectedInvoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === e.target.value);
+                const selectedDescription = e.target.value;
+                const customerId = getValues().invoice.customerId;
+                const isInternal = getValues().type === 'INTERNAL';
+                const defaultQuantity = 1;
+                const costcenter = isInternal
+                  ? selectedInvoiceType?.internal.accountInformation.costCenter
+                  : selectedInvoiceType?.external.accountInformation.costCenter;
+                const activity = isInternal
+                  ? selectedInvoiceType?.internal.accountInformation.activity
+                  : selectedInvoiceType?.external.accountInformation.activity;
+                handleChange(selectedDescription, customerId, defaultQuantity, costcenter!, activity!);
+              }}
+              readOnly={getValues().status !== 'NEW'}
+            >
+              <Select.Option value={''}>Välj faktureringstyp</Select.Option>
+              {invoiceSettings.invoiceTypes
+                .filter((i) => {
+                  return (
+                    (getValues().type === 'INTERNAL' && i?.internal?.invoiceRows?.length > 0) ||
+                    (getValues().type === 'EXTERNAL' && i?.external?.invoiceRows?.length > 0)
+                  );
+                })
+                .map((invoiceType) => (
+                  <Select.Option key={invoiceType.invoiceType} value={invoiceType.invoiceType}>
+                    {invoiceType.invoiceType}
+                  </Select.Option>
+                ))}
+            </Select>
+          )}
+        />
         {errors.invoice?.description && (
           <div className="text-error">
             <FormErrorMessage>{errors.invoice?.description.message}</FormErrorMessage>

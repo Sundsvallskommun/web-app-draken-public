@@ -16,7 +16,7 @@ import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -30,12 +30,11 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import dynamic from 'next/dynamic';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
@@ -75,8 +74,10 @@ export const CasedataInvestigationTab: React.FC<{
 }> = (props) => {
   const toastMessage = useSnackbar();
   const saveConfirm = useConfirm();
-  const { municipalityId, errand, user } = useAppContext();
-  const { setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [previewError, setPreviewError] = useState(false);

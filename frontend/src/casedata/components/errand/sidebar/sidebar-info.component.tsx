@@ -9,7 +9,7 @@ import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -27,7 +27,7 @@ import {
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { Controller, UseFormReturn, useFormContext } from 'react-hook-form';
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
@@ -36,14 +36,12 @@ import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/servic
 import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{}> = () => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-    administrators,
-    uiPhase,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
@@ -59,7 +57,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     setAllowed(_a);
   }, [user, errand]);
 
-  const { setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
+  const { control, setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   useEffect(() => {
     if (administrators && errand?.administrator?.adAccount) {
@@ -242,22 +240,27 @@ export const SidebarInfo: React.FC<{}> = () => {
                   Ta ärende
                 </Button>
               </div>
-              <Select
-                className="w-full"
-                size="sm"
-                data-cy="admin-input"
-                placeholder="Tilldela handläggare"
-                aria-label="Tilldela handläggare"
-                {...register('administratorName')}
-                value={getValues().administratorName}
-              >
-                {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-                {administrators
-                  .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                  .map((a) => (
-                    <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
-                  ))}
-              </Select>
+              <Controller
+                name="administratorName"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    className="w-full"
+                    size="sm"
+                    data-cy="admin-input"
+                    placeholder="Tilldela handläggare"
+                    aria-label="Tilldela handläggare"
+                  >
+                    {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
+                    {administrators
+                      .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
+                      .map((a) => (
+                        <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
+                      ))}
+                  </Select>
+                )}
+              />
             </FormControl>
             <FormControl
               id="status"
@@ -272,22 +275,27 @@ export const SidebarInfo: React.FC<{}> = () => {
               }
             >
               <FormLabel className="text-small">Ärendestatus</FormLabel>
-              <Select
-                className="w-full"
-                size="sm"
-                data-cy="status-input"
-                placeholder="Välj status"
-                aria-label="Välj status"
-                {...register('status.statusType')}
-                value={getValues().status?.statusType}
-              >
-                {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
-                {selectableStatuses.map((c: string, index) => (
-                  <Select.Option value={c} key={c}>
-                    {c}
-                  </Select.Option>
-                ))}
-              </Select>
+              <Controller
+                name="status.statusType"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    className="w-full"
+                    size="sm"
+                    data-cy="status-input"
+                    placeholder="Välj status"
+                    aria-label="Välj status"
+                  >
+                    {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
+                    {selectableStatuses.map((c: string, index) => (
+                      <Select.Option value={c} key={c}>
+                        {c}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                )}
+              />
             </FormControl>
             <SaveButtonComponent
               setUnsaved={() => {}}
