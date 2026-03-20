@@ -118,7 +118,7 @@ export const SupportErrandComponent: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, errandNumber]);
 
-  const isReady = !isLoading && !!supportErrand && !supportErrandIsEmpty(supportErrand) && !!supportMetadata;
+  const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 
   if (!isReady) {
     return (
@@ -147,16 +147,24 @@ export const SupportErrandComponent: React.FC = () => {
                 <section className="bg-transparent pt-24 pb-4">
                   <div className="container m-auto pl-0 pr-24 md:pr-40">
                     <div className="w-full flex flex-wrap flex-col justify-between gap-24">
-                      <>
-                        <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                          {appConfig.features.useThreeLevelCategorization
-                            ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
-                              '(Ärendetyp saknas)'
-                            : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                ?.displayName}
-                        </h1>
-                        {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
-                      </>
+                      {!supportErrandIsEmpty(supportErrand!) ? (
+                        <>
+                          <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
+                            {appConfig.features.useThreeLevelCategorization
+                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
+                                '(Ärendetyp saknas)'
+                              : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
+                                  ?.displayName}
+                          </h1>
+                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                        </>
+                      ) : (
+                        <div className="flex justify-between items-center pt-8">
+                          <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
+                            Registrera nytt ärende
+                          </h1>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
