@@ -10,7 +10,7 @@ import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -19,7 +19,9 @@ import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { getUiPhase } from '@casedata/services/process-service';
 import { ArrowRight } from 'lucide-react';
 
-export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
+export const CasedataErrandComponent: React.FC = () => {
+  const params = useParams<{ errandNumber?: string }>();
+  const errandNumber = params?.errandNumber;
   let formSchema = yup
     .object({
       caseType: yup
