@@ -23,6 +23,11 @@ export interface AdUser {
   schemaClassName?: string;
 }
 
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+let cachedAdmins: Pick<AdUser, 'displayName' | 'name' | 'guid'>[] | null = null;
+let cacheTimestamp = 0;
+
 @Controller()
 export class ActiveDirectoryController {
   private apiService = new ApiService();
@@ -31,13 +36,17 @@ export class ActiveDirectoryController {
   @OpenAPI({ summary: 'Return all users in configured admin group' })
   @UseBefore(authMiddleware)
   async usersInAdminGroup(@Req() req: RequestWithUser, @Res() response: any): Promise<ResponseData<AdUser>> {
-    // ÅNGE TODO
-    // Ny version (2.0) av activedirectory med kommunkod i urlen.
-    //
-    // Därtill har domän gjorts konfigurerbar i .env-filen.
-    //
+    const now = Date.now();
+
+    if (cachedAdmins && now - cacheTimestamp < CACHE_TTL_MS) {
+      return response.status(200).send({ data: cachedAdmins, message: 'ok' });
+    }
+
     const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
     const res = await this.apiService.get<AdUser[]>({ url }, req.user);
-    return response.status(200).send({ data: res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid })), message: 'ok' });
+    cachedAdmins = res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid }));
+    cacheTimestamp = now;
+
+    return response.status(200).send({ data: cachedAdmins, message: 'ok' });
   }
 }
