@@ -58,7 +58,7 @@ interface ClientApplicationProps {
   children: ReactNode;
 }
 
-function AppInitializer({ children }: { children: ReactNode }) {
+function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

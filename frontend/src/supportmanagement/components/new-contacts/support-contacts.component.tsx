@@ -44,7 +44,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setStakeholderContacts(supportErrand?.contacts ?? []);
     setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supportErrand]);
 
   const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 

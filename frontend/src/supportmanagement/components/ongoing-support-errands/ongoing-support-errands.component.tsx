@@ -47,6 +47,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
       sortColumn: sort?.sortColumn || 'touched',
       sortOrder: sort?.sortOrder || 'desc',
       pageSize: sort?.pageSize || 12,
+      page: 0,
     },
   });
   const { watch: watchTable, setValue: setTableValue } = tableForm;

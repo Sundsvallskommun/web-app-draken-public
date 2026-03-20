@@ -1,6 +1,6 @@
 export const appURL = (path?: string): string => {
   const origin =
-    typeof globalThis.window === 'undefined'
+    globalThis.window === undefined
       ? process.env.NEXT_PUBLIC_APP_URL || ''
       : globalThis.window.location.origin;
 

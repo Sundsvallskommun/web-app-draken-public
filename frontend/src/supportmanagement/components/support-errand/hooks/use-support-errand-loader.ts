@@ -46,7 +46,7 @@ export function useSupportErrandLoader(errandNumber?: string): LoaderResult {
             status: 'error',
           });
         });
-    } else if (municipalityId && supportErrand && supportErrandIsEmpty(supportErrand) && !isLoading) {
+    } else if (municipalityId && (!supportErrand || supportErrandIsEmpty(supportErrand)) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)

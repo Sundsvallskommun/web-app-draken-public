@@ -460,8 +460,8 @@ export const CasedataDecisionTab: React.FC<{
       .then(async (confirmed) => {
         if (confirmed) {
           setIsLoading(true);
-          await saveCasedataErrand();
           const data = getValues();
+          await saveCasedataErrand();
           await save(data);
 
           return Promise.resolve(true);

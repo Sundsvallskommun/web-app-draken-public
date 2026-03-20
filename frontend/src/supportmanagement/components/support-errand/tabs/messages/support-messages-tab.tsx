@@ -70,7 +70,7 @@ export const SupportMessagesTab: React.FC<{
       const filteredMessages = allMessages.filter(
         (message: Message) =>
           message.communicationType === sortChannelMessages &&
-          (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? message.direction === sortSendingTypeMessages : true)
+          (sortSendingTypeMessages === 'ALL_SEND_TYPES' ? true : message.direction === sortSendingTypeMessages)
       );
 
       if (sortSendingTypeMessages !== 'INBOUND' && sortSendingTypeMessages !== 'OUTBOUND') {
