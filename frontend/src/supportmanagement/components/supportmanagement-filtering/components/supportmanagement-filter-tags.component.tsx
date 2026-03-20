@@ -7,7 +7,7 @@ import { Admin } from '@common/services/user-service';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { useAppContext } from '@contexts/app.context';
 import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 interface SupportManagementFilterTagsProps {
@@ -30,8 +30,10 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
   const [allCategories, setAllCategories] = useState<Category[]>();
   const [allTypes, setAllTypes] = useState<SupportType[]>();
   const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
-  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
+  const {
+    supportMetadata,
+    selectedSupportErrandStatuses,
+  } = useAppContext();
 
   useEffect(() => {
     setAllCategories(supportMetadata?.categories);
@@ -212,9 +214,9 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
         ))}
 
       {hasTags && (
-        <Chip onClick={() => handleReset()}>
+        <button className="sk-chip" onClick={() => handleReset()}>
           Rensa alla
-        </Chip>
+        </button>
       )}
     </div>
   );
