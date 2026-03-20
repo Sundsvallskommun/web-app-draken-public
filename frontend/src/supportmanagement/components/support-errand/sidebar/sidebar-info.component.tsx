@@ -1,5 +1,5 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
@@ -33,7 +33,12 @@ export const SidebarInfo: React.FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
-  const { user, supportErrand, setSupportErrand, administrators, municipalityId, supportMetadata } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);

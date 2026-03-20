@@ -7,7 +7,7 @@ import {
   saveErrandNote,
 } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -22,7 +22,12 @@ export const SidebarGenericNotes: React.FC<{
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [selectedNote, setSelectedNote] = useState<ErrandNote>();
   const [notes, setNotes] = useState<ErrandNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);

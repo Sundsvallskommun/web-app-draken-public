@@ -1,7 +1,5 @@
-import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
+import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   ExternalIdType,
   SupportErrand,
@@ -9,7 +7,6 @@ import {
   emptyContact,
   isSupportErrandLocked,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
 import { useEffect, useState } from 'react';
 import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
@@ -25,16 +22,16 @@ interface SupportContactsProps {
 
 export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
-  const {
-    supportErrand,
-    user,
-    supportMetadata,
-  } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const user = useUserStore((s) => s.user);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
 
-  const { setStakeholderContacts, stakeholderContacts, setStakeholderCustomers, stakeholderCustomers } =
-    useAppContext();
+  const setStakeholderContacts = useSupportStore((s) => s.setStakeholderContacts);
+  const stakeholderContacts = useSupportStore((s) => s.stakeholderContacts);
+  const setStakeholderCustomers = useSupportStore((s) => s.setStakeholderCustomers);
+  const stakeholderCustomers = useSupportStore((s) => s.stakeholderCustomers);
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
   useEffect(() => {

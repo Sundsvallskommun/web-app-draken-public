@@ -4,7 +4,7 @@ import { apiService, Data } from '@common/services/api-service';
 import { isKC, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { useSnackbar } from '@sk-web-gui/react';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
@@ -393,21 +393,19 @@ export const useSupportErrands = (
   extraParameters?: { [key: string]: string }
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
-  const {
-    setIsLoading,
-    setSupportErrands,
-    supportErrands,
-    setNewSupportErrands,
-    newSupportErrands,
-    setOngoingSupportErrands,
-    ongoingSupportErrands,
-    setSuspendedSupportErrands,
-    suspendedSupportErrands,
-    setAssignedSupportErrands,
-    assignedSupportErrands,
-    setSolvedSupportErrands,
-    solvedSupportErrands,
-  } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setSupportErrands = useSupportStore((s) => s.setSupportErrands);
+  const supportErrands = useSupportStore((s) => s.supportErrands);
+  const setNewSupportErrands = useSupportStore((s) => s.setNewSupportErrands);
+  const newSupportErrands = useSupportStore((s) => s.newSupportErrands);
+  const setOngoingSupportErrands = useSupportStore((s) => s.setOngoingSupportErrands);
+  const ongoingSupportErrands = useSupportStore((s) => s.ongoingSupportErrands);
+  const setSuspendedSupportErrands = useSupportStore((s) => s.setSuspendedSupportErrands);
+  const suspendedSupportErrands = useSupportStore((s) => s.suspendedSupportErrands);
+  const setAssignedSupportErrands = useSupportStore((s) => s.setAssignedSupportErrands);
+  const assignedSupportErrands = useSupportStore((s) => s.assignedSupportErrands);
+  const setSolvedSupportErrands = useSupportStore((s) => s.setSolvedSupportErrands);
+  const solvedSupportErrands = useSupportStore((s) => s.solvedSupportErrands);
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {

@@ -1,6 +1,6 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
@@ -14,12 +14,10 @@ import { userMenuGroups } from './userMenuGroups';
 import { ExternalLink, Menu } from 'lucide-react';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
-  const {
-    user,
-    errand,
-    supportErrand,
-    supportMetadata,
-  } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
   const pathName = usePathname() ?? '';

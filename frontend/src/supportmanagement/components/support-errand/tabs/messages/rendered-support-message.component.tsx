@@ -1,7 +1,7 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized, { formatMessage } from '@common/services/sanitizer-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
@@ -25,7 +25,9 @@ export const RenderedSupportMessage: React.FC<{
   root?: boolean;
   children: any;
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
-  const { supportErrand: _supportErrand, municipalityId, user } = useAppContext();
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const supportErrand = _supportErrand!;
   const [allowed, setAllowed] = useState(false);
 

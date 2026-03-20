@@ -8,7 +8,7 @@ import {
   suspendedStatuses,
 } from '@casedata/services/casedata-errand-service';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { useMemo } from 'react';
@@ -19,16 +19,14 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{
   setShowContractTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showContractTable, setShowContractTable, iconButton }) => {
-  const {
-    setSelectedErrandStatuses,
-    selectedErrandStatuses,
-    setSidebarLabel,
-    newErrands,
-    ongoingErrands,
-    assignedErrands,
-    suspendedErrands,
-    closedErrands,
-  }: AppContextInterface = useAppContext();
+  const setSelectedErrandStatuses = useCasedataStore((s) => s.setSelectedErrandStatuses);
+  const selectedErrandStatuses = useCasedataStore((s) => s.selectedErrandStatuses);
+  const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
+  const newErrands = useCasedataStore((s) => s.newErrands);
+  const ongoingErrands = useCasedataStore((s) => s.ongoingErrands);
+  const assignedErrands = useCasedataStore((s) => s.assignedErrands);
+  const suspendedErrands = useCasedataStore((s) => s.suspendedErrands);
+  const closedErrands = useCasedataStore((s) => s.closedErrands);
 
   const updateStatusFilter = (ss: ErrandStatus[]) => {
     try {

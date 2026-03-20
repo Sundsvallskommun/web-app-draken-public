@@ -1,4 +1,4 @@
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import {
   Status,
@@ -14,7 +14,11 @@ export const StartProcessComponent: React.FC<{
   onSubmit: () => Promise<any>;
   onError: () => void;
 }> = ({ disabled, onSubmit, onError }) => {
-  const { user, supportErrand, administrators, municipalityId, setSupportErrand } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toast = useSnackbar();
   const { handleSubmit, reset } = useFormContext();
 

@@ -1,5 +1,5 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useAppContext } from '@contexts/app.context';
+import { useSupportStore } from '@stores/index';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import { Text } from 'lucide-react';
@@ -10,7 +10,7 @@ export const SupportErrandRecruitmentTab: React.FC<{
   update: () => void;
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {
-  const { supportErrand } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
   const [recruitmentParameterGroups, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
   const [loading, setLoading] = React.useState(false);
 

@@ -11,7 +11,7 @@ import {
   groupByConversationIdSortedTree,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
@@ -31,19 +31,17 @@ import { contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 
 export const CasedataTabsWrapper: React.FC = () => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    messages,
-    setMessages,
-    setConversation,
-    setConversationTree,
-    setMessageTree,
-    setAssets,
-    assets,
-    uiPhase,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const messages = useCasedataStore((s) => s.messages);
+  const setMessages = useCasedataStore((s) => s.setMessages);
+  const setConversation = useCasedataStore((s) => s.setConversation);
+  const setConversationTree = useCasedataStore((s) => s.setConversationTree);
+  const setMessageTree = useCasedataStore((s) => s.setMessageTree);
+  const setAssets = useCasedataStore((s) => s.setAssets);
+  const assets = useCasedataStore((s) => s.assets);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);

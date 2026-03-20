@@ -6,7 +6,7 @@ import {
   fetchMessagesTree,
   setMessageViewStatus,
 } from '@casedata/services/casedata-message-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import React, { useEffect, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
@@ -18,17 +18,15 @@ export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    errand,
-    messages,
-    messageTree,
-    setMessages,
-    setMessageTree,
-    conversation,
-    conversationTree,
-    user,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const messages = useCasedataStore((s) => s.messages);
+  const messageTree = useCasedataStore((s) => s.messageTree);
+  const setMessages = useCasedataStore((s) => s.setMessages);
+  const setMessageTree = useCasedataStore((s) => s.setMessageTree);
+  const conversation = useCasedataStore((s) => s.conversation);
+  const conversationTree = useCasedataStore((s) => s.conversationTree);
+  const user = useUserStore((s) => s.user);
   const [selectedMessage, setSelectedMessage] = useState<MessageNode>();
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [sortMessages, setSortMessages] = useState<number>(0);

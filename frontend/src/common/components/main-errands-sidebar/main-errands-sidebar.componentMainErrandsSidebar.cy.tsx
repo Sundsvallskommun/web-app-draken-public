@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { MainErrandsSidebar } from './main-errands-sidebar.component';
 import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
-import { useAppContext } from '@contexts/app.context';
+import { useUserStore } from '@stores/user-store';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { User } from '@common/interfaces/user';
 import { mockNotifications } from '@cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 
@@ -10,11 +12,9 @@ describe('<MainErrandsSidebar />', () => {
     const SidebarTestWrapper = () => {
       const [open, setOpen] = useState(false);
 
-      const { setUser, setNotifications, setMunicipalityId } = useAppContext();
-
-      setUser(mockMe.data as User);
-      setNotifications(mockNotifications);
-      setMunicipalityId('2281');
+      useUserStore.getState().setUser(mockMe.data as User);
+      useSupportStore.getState().setNotifications(mockNotifications);
+      useConfigStore.getState().setMunicipalityId('2281');
 
       return (
         <MainErrandsSidebar

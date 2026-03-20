@@ -12,7 +12,7 @@ import {
   usernamePattern,
 } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useConfigStore, useMetadataStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
 import {
@@ -142,7 +142,8 @@ export const SupportSimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { municipalityId, setSupportMetadata }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setSupportMetadata = useMetadataStore((s) => s.setSupportMetadata);
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);

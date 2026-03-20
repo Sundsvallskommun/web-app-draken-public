@@ -2,7 +2,7 @@ import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-ser
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import {
   Resolution,
@@ -42,7 +42,10 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
 };
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { administrators, municipalityId, supportErrand, setSupportErrand } = useAppContext();
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);

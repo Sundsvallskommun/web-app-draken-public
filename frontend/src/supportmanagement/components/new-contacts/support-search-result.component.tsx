@@ -1,7 +1,7 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
-import { useAppContext } from '@contexts/app.context';
+import { useSupportStore } from '@stores/index';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFormReturn } from 'react-hook-form';
@@ -26,7 +26,7 @@ export const SupportSearchResult: React.FC<SupportSearchResultProps> = ({
   onSubmit,
   label,
 }) => {
-  const { supportErrand } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   const username = form.watch('username');
   const administrationName = form.watch('administrationName');

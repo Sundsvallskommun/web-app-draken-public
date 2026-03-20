@@ -40,7 +40,7 @@ import {
   CasedataFilterStatus,
 } from './components/casedata-filter-status.component';
 import { CasedataFilterTags } from './components/casedata-filter-tags.component';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import {
   CasedataStakeholderType,
@@ -79,7 +79,7 @@ const CaseDataFiltering: React.FC<{
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);
-  const { selectedErrandStatuses } = useAppContext();
+  const selectedErrandStatuses = useCasedataStore((s) => s.selectedErrandStatuses);
 
   return (
     <>

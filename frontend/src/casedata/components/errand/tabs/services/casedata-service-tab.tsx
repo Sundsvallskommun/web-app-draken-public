@@ -15,7 +15,7 @@ import { ServicesObjectFieldTemplate } from '@common/components/json/fields/serv
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Modal, useSnackbar } from '@sk-web-gui/react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -53,7 +53,8 @@ function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSc
 }
 
 export const CasedataServicesTab: React.FC = () => {
-  const { municipalityId, errand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
   const [formData, setFormData] = useState<any>({});

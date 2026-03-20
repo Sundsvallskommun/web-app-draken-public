@@ -1,6 +1,6 @@
 import { isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useSupportStore } from '@stores/index';
 import { Button, cx, useGui } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { KeyboardEvent, useRef, useState } from 'react';
@@ -37,9 +37,7 @@ export const Sidebar: React.FC<{
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
 
-  const {
-    supportErrand,
-  } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   const updateScroll = () => {
     if (menuRef.current) {

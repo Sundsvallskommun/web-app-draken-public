@@ -2,7 +2,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
@@ -45,7 +45,8 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
   setSearchResultArray,
   replacePhonenumbers,
 }) => {
-  const { supportMetadata, supportErrand } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   const username = form.watch('username');
   const personNumber = form.watch('personNumber');

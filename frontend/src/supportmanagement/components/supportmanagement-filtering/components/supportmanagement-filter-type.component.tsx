@@ -1,6 +1,6 @@
-import { useAppContext } from '@contexts/app.context';
+import { useMetadataStore } from '@stores/index';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
+import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
@@ -21,7 +21,7 @@ export const SupportManagementFilterType: React.FC = () => {
   const { register } = useFormContext<TypeFilter>();
   const [query, setQuery] = useState<string>('');
   const [allTypes, setAllTypes] = useState<SupportType[]>();
-  const { supportMetadata } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   useEffect(() => {
     const _types: SupportType[] = [];
     if (categories.length > 0) {

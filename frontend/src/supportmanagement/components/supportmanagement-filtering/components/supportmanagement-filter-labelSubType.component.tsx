@@ -1,8 +1,7 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useAppContext } from '@contexts/app.context';
+import { useMetadataStore } from '@stores/index';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
@@ -24,7 +23,7 @@ export const SupportManagementFilterLabelSubType: React.FC = () => {
   const { register } = useFormContext<LabelSubTypeFilter>();
   const [query, setQuery] = useState<string>('');
   const [allStringSubTypes, setAllStringSubTypes] = useState<string[]>();
-  const { supportMetadata } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
   useEffect(() => {
     const _subTypes: Label[] = [];

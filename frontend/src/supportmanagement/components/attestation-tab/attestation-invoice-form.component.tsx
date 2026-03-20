@@ -1,5 +1,4 @@
-import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
+import { useConfigStore, useUserStore } from '@stores/index';
 import { maybe, prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
@@ -25,13 +24,8 @@ export const AttestationInvoiceForm: React.FC<{
   update: (recordId: string) => void;
   selectedrecord: CBillingRecord;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-  }: {
-    municipalityId: string;
-    user: User;
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
 
   const { selectedrecord: selectedRecord } = props;
 
