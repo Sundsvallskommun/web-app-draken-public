@@ -1,0 +1,46 @@
+'use client';
+
+import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
+import Layout from '@common/components/layout/layout.component';
+import { useConfigStore } from '@stores/index';
+import { appConfig } from '@config/appconfig';
+import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
+import { default as NextLink } from 'next/link';
+import { useRef } from 'react';
+
+interface ErrandPageClientProps {
+  errandNumber: string;
+}
+
+export function ErrandPageClient({ errandNumber }: ErrandPageClientProps) {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+
+  const initialFocus = useRef<HTMLBodyElement>(null);
+  const setInitalFocus = () => {
+    setTimeout(() => {
+      initialFocus.current && initialFocus.current.focus();
+    });
+  };
+
+  return (
+    <div className="bg-background-100 h-screen min-h-screen max-h-screen overflow-hidden w-full flex flex-col">
+      <Layout title={`${appConfig.applicationName} - Pågående ärende`}>
+        <NextLink
+          href="#content"
+          passHref
+          tabIndex={1}
+          onClick={() => setInitalFocus()}
+          className="sr-only focus:not-sr-only bg-primary-light border-2 border-black p-4 text-black inline-block focus:absolute focus:top-0 focus:left-0 focus:right-0 focus:m-auto focus:w-80 text-center"
+        >
+          Hoppa till innehåll
+        </NextLink>
+
+        {appConfig.isCaseData
+          ? <CasedataErrandComponent errandNumber={errandNumber} />
+          : appConfig.isSupportManagement
+          ? !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />
+          : null}
+      </Layout>
+    </div>
+  );
+}
