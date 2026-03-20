@@ -1,6 +1,5 @@
 'use client';
 
-import { appURL } from '@common/utils/app-url';
 import axios, { AxiosError } from 'axios';
 
 export interface Data {
@@ -13,11 +12,13 @@ export interface ApiResponse<T = unknown> {
 }
 
 export const handleError = (error: AxiosError<ApiResponse>) => {
-  //TODO: Refactor to be more compliant with NextJS routing standards
-  if (error?.response?.status === 401 && !window?.location.pathname.includes('login')) {
-    window.location.href = `${appURL()}/login?path=${window.location.pathname}&failMessage=${
-      error.response.data.message
-    }`;
+  if (typeof window !== 'undefined') {
+    if (error?.response?.status === 401 && !window.location.pathname.includes('login')) {
+      const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
+      window.location.href = `${window.location.origin}${basePath}/login?path=${window.location.pathname}&failMessage=${
+        error.response.data.message
+      }`;
+    }
   }
 
   throw error;
