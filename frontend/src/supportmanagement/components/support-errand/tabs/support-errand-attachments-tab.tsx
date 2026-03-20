@@ -1,6 +1,6 @@
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -61,7 +61,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportAttachments = useSupportStore((s) => s.supportAttachments);
-  const user = useUserStore((s) => s.user);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
   const [addNewAttachment, setAddNewAttachment] = useState(false);

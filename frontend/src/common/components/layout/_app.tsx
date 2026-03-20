@@ -59,6 +59,12 @@ interface ClientApplicationProps {
 }
 
 function AppInitializer({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
@@ -90,6 +96,10 @@ function AppInitializer({ children }: { children: ReactNode }) {
       });
     }
   }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return <>{children}</>;
 }

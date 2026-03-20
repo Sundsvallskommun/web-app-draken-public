@@ -5,6 +5,49 @@ import { useCasedataStore } from '@stores/index';
 import { Fragment } from 'react';
 import { estateToText } from './utils/estate-text';
 
+const getOwnerDisplayName = (errand: Parameters<typeof getOwnerStakeholder>[0]): string => {
+  const owner = getOwnerStakeholder(errand);
+  if (!owner) return '(saknas)';
+  if (owner.firstName && owner.lastName) {
+    return `${owner.firstName} ${owner.lastName}`;
+  }
+  if (owner.organizationName) {
+    return owner.organizationName;
+  }
+  return '(saknas)';
+};
+
+const OwnerIdentifier: React.FC<{ errand: Parameters<typeof getOwnerStakeholder>[0] }> = ({ errand }) => {
+  const owner = getOwnerStakeholder(errand);
+  const stakeholderType = owner?.stakeholderType;
+
+  if (stakeholderType === 'PERSON') {
+    return (
+      <>
+        <div className="font-bold" data-cy="errandPersonalNumberLabel">
+          Personnummer
+        </div>
+        <div data-cy="errandPersonalNumber">
+          {owner?.personalNumber ?? '(saknas)'}
+        </div>
+      </>
+    );
+  }
+
+  if (stakeholderType === 'ORGANIZATION') {
+    return (
+      <>
+        <div className="font-bold">Organisationsnummer</div>
+        <div>
+          {owner?.organizationNumber ?? '(saknas)'}
+        </div>
+      </>
+    );
+  }
+
+  return null;
+};
+
 export const CasedataMetadataBand: React.FC = () => {
   const errand = useCasedataStore((s) => s.errand);
 
@@ -41,17 +84,7 @@ export const CasedataMetadataBand: React.FC = () => {
             Ärendeägare
           </div>
           <div data-cy="errandStakeholder">
-            {(() => {
-              const owner = getOwnerStakeholder(errand);
-              if (!owner) return '(saknas)';
-              if (owner.firstName && owner.lastName) {
-                return `${owner.firstName} ${owner.lastName}`;
-              }
-              if (owner.organizationName) {
-                return owner.organizationName;
-              }
-              return '(saknas)';
-            })()}
+            {getOwnerDisplayName(errand)}
           </div>
         </div>
 
@@ -71,29 +104,7 @@ export const CasedataMetadataBand: React.FC = () => {
           </div>
         ) : (
           <div className="pr-sm w-[40%]">
-            <>
-              {getOwnerStakeholder(errand)?.stakeholderType === 'PERSON' ? (
-                <>
-                  <div className="font-bold" data-cy="errandPersonalNumberLabel">
-                    Personnummer
-                  </div>
-                  <div data-cy="errandPersonalNumber">
-                    {errand && getOwnerStakeholder(errand)?.personalNumber
-                      ? getOwnerStakeholder(errand)?.personalNumber
-                      : '(saknas)'}
-                  </div>
-                </>
-              ) : getOwnerStakeholder(errand)?.stakeholderType === 'ORGANIZATION' ? (
-                <>
-                  <div className="font-bold">Organisationsnummer</div>
-                  <div>
-                    {errand && getOwnerStakeholder(errand)?.organizationNumber
-                      ? getOwnerStakeholder(errand)?.organizationNumber
-                      : '(saknas)'}
-                  </div>
-                </>
-              ) : null}
-            </>
+            <OwnerIdentifier errand={errand} />
           </div>
         )}
       </div>

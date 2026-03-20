@@ -23,7 +23,7 @@ export const CasedataRegisterHeader: React.FC = () => {
           Avbryt
         </Button>
         <SaveButtonComponent
-          registeringNewErrand={typeof errand?.id === 'undefined'}
+          registeringNewErrand={errand?.id === undefined}
           setUnsaved={() => {}}
           update={() => {}}
           label="Registrera"

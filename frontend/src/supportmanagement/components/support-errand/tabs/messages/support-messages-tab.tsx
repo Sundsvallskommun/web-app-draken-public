@@ -42,7 +42,7 @@ export const SupportMessagesTab: React.FC<{
     [props.messageTree, props.conversationMessageTree]
   );
 
-  const allowed = useMemo(() => validateAction(supportErrand!, user), [user, supportErrand]);
+  const allowed = useMemo(() => supportErrand ? validateAction(supportErrand, user) : false, [user, supportErrand]);
 
   const onSelect = (message: Message) => {
     if (message.conversationId && message.conversationId !== '') {
@@ -73,14 +73,14 @@ export const SupportMessagesTab: React.FC<{
           (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? message.direction === sortSendingTypeMessages : true)
       );
 
-      if (sortSendingTypeMessages === 'INBOUND' || sortSendingTypeMessages === 'OUTBOUND') {
-        return filteredMessages;
+      if (sortSendingTypeMessages !== 'INBOUND' && sortSendingTypeMessages !== 'OUTBOUND') {
+        const filteredMessageTree = allMessagesTree.filter((m) =>
+          filteredMessages.find((x) => x.communicationType === m.communicationType)
+        );
+        return filteredMessageTree;
       }
 
-      const filteredMessageTree = allMessagesTree.filter((m) =>
-        filteredMessages.find((x) => x.communicationType === m.communicationType)
-      );
-      return filteredMessageTree;
+      return filteredMessages;
     }
 
     // No channel filter, apply direction filter

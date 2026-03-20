@@ -27,11 +27,15 @@ export function OversiktPageClient() {
           setShowContractTable={setShowContractTable}
           showContractTable={showContractTable}
         >
-          {appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations ? (
-            <AttestationTab />
-          ) : municipalityId ? (
-            <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />
-          ) : null}
+          {(() => {
+            if (appConfig.features.useBilling && showAttestationTable && user.permissions.canViewAttestations) {
+              return <AttestationTab />;
+            }
+            if (municipalityId) {
+              return <OngoingSupportErrands ongoing={{ errands: [], labels: [] }} />;
+            }
+            return null;
+          })()}
         </SidebarLayout>
       ) : null}
 

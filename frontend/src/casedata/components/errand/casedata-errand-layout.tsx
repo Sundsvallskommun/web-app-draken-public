@@ -28,14 +28,20 @@ export const CasedataErrandLayout: React.FC<Props> = ({ isLoading }) => {
                 <section className="bg-transparent pt-24 pb-4">
                   <div className="flex justify-between mb-md w-full">
                     <div className="w-full flex flex-wrap flex-col justify-between">
-                      {errand && errand.id ? (
-                        <>
-                          <CasedataErrandHeader />
-                          <CasedataMetadataBand />
-                        </>
-                      ) : errand ? (
-                        <CasedataRegisterHeader />
-                      ) : null}
+                      {(() => {
+                        if (errand?.id) {
+                          return (
+                            <>
+                              <CasedataErrandHeader />
+                              <CasedataMetadataBand />
+                            </>
+                          );
+                        }
+                        if (errand) {
+                          return <CasedataRegisterHeader />;
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                 </section>

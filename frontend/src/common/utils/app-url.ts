@@ -1,8 +1,8 @@
 export const appURL = (path?: string): string => {
   const origin =
-    typeof window !== 'undefined'
-      ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL || '';
+    typeof globalThis.window === 'undefined'
+      ? process.env.NEXT_PUBLIC_APP_URL || ''
+      : globalThis.window.location.origin;
 
   const base = process.env.NEXT_PUBLIC_BASEPATH || '';
 

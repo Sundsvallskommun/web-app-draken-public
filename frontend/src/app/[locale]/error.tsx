@@ -4,13 +4,13 @@ import { Button } from '@sk-web-gui/react';
 import { useEffect } from 'react';
 import { TriangleAlert } from 'lucide-react';
 
-export default function Error({
+export default function ErrorPage({
   error,
   reset,
-}: {
+}: Readonly<{
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}>) {
   useEffect(() => {
     // Logga felet till konsolen (ersätt med extern felrapportering vid behov)
     console.error('Ohanterat fel:', error);
@@ -37,7 +37,7 @@ export default function Error({
             <Button
               variant="tertiary"
               color="vattjom"
-              onClick={() => (window.location.href = '/')}
+              onClick={() => (globalThis.window.location.href = '/')}
             >
               Gå till översikten
             </Button>

@@ -5,20 +5,20 @@ import Layout from '@common/components/layout/layout.component';
 import { useConfigStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
-import { default as NextLink } from 'next/link';
+import NextLink from 'next/link';
 import { useRef } from 'react';
 
 interface ErrandPageClientProps {
   errandNumber: string;
 }
 
-export function ErrandPageClient({ errandNumber }: ErrandPageClientProps) {
+export function ErrandPageClient({ errandNumber }: Readonly<ErrandPageClientProps>) {
   const municipalityId = useConfigStore((s) => s.municipalityId);
 
   const initialFocus = useRef<HTMLBodyElement>(null);
   const setInitalFocus = () => {
     setTimeout(() => {
-      initialFocus.current && initialFocus.current.focus();
+      initialFocus.current?.focus();
     });
   };
 
@@ -28,18 +28,22 @@ export function ErrandPageClient({ errandNumber }: ErrandPageClientProps) {
         <NextLink
           href="#content"
           passHref
-          tabIndex={1}
+          tabIndex={0}
           onClick={() => setInitalFocus()}
           className="sr-only focus:not-sr-only bg-primary-light border-2 border-black p-4 text-black inline-block focus:absolute focus:top-0 focus:left-0 focus:right-0 focus:m-auto focus:w-80 text-center"
         >
           Hoppa till innehåll
         </NextLink>
 
-        {appConfig.isCaseData
-          ? <CasedataErrandComponent errandNumber={errandNumber} />
-          : appConfig.isSupportManagement
-          ? !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />
-          : null}
+        {(() => {
+          if (appConfig.isCaseData) {
+            return <CasedataErrandComponent errandNumber={errandNumber} />;
+          }
+          if (appConfig.isSupportManagement) {
+            return !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />;
+          }
+          return null;
+        })()}
       </Layout>
     </div>
   );

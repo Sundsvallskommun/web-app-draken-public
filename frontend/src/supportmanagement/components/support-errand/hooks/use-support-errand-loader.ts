@@ -46,8 +46,7 @@ export function useSupportErrandLoader(errandNumber?: string): LoaderResult {
             status: 'error',
           });
         });
-    } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !isLoading) {
+    } else if (municipalityId && supportErrand && supportErrandIsEmpty(supportErrand) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
         initiateSupportErrand(municipalityId)
@@ -66,7 +65,6 @@ export function useSupportErrandLoader(errandNumber?: string): LoaderResult {
               status: 'error',
             });
           });
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, errandNumber]);

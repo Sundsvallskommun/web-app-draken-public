@@ -12,10 +12,10 @@ export interface ApiResponse<T = unknown> {
 }
 
 export const handleError = (error: AxiosError<ApiResponse>) => {
-  if (typeof window !== 'undefined') {
-    if (error?.response?.status === 401 && !window.location.pathname.includes('login')) {
+  if (typeof globalThis.window !== 'undefined') {
+    if (error?.response?.status === 401 && !globalThis.window.location.pathname.includes('login')) {
       const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
-      window.location.href = `${window.location.origin}${basePath}/login?path=${window.location.pathname}&failMessage=${
+      globalThis.window.location.href = `${globalThis.window.location.origin}${basePath}/login?path=${globalThis.window.location.pathname}&failMessage=${
         error.response.data.message
       }`;
     }
