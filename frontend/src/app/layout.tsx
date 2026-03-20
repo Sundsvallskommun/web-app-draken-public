@@ -18,7 +18,7 @@ const RootLayout = async ({ children }: RootLayoutProps) => {
   const validLocale = i18nConfig.locales.find((locale) => path.startsWith(`/${locale}/`) || path === `/${locale}`);
   const locale = validLocale ?? i18nConfig.defaultLocale;
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body>
         <AppLayout>{children}</AppLayout>
       </body>

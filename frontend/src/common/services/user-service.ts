@@ -1,5 +1,4 @@
 import { User } from '@common/interfaces/user';
-import dayjs from 'dayjs';
 import { ApiResponse, apiService } from './api-service';
 
 export const emptyUser: User = {
@@ -9,7 +8,7 @@ export const emptyUser: User = {
   email: '',
   username: '',
   userSettings: {
-    readNotificationsClearedDate: dayjs().toISOString(),
+    readNotificationsClearedDate: '',
   },
   permissions: {
     canEditCasedata: false,
