@@ -1,6 +1,6 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import {
   getDefaultEmailBody,
@@ -9,7 +9,7 @@ import {
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
-import { useTranslation } from 'next-i18next';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
@@ -23,7 +23,9 @@ export const SupportMessagesTab: React.FC<{
   update: () => void;
   municipalityId: string;
 }> = (props) => {
-  const { supportErrand, municipalityId, user } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
   const [allowed, setAllowed] = useState(false);

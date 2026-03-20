@@ -25,6 +25,7 @@ const initLocalization = async (locale: string, namespaces: string[], i18nInstan
     fallbackNS: namespaces[0],
     ns: namespaces,
     preload: resources ? [] : i18nConfig.locales,
+    initImmediate: false,
   });
 
   return {
