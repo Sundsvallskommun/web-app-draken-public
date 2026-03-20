@@ -10,7 +10,7 @@ import {
   newStatuses,
 } from '@casedata/services/casedata-errand-service';
 import { Admin } from '@common/services/user-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { Chip } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useFormContext } from 'react-hook-form';
@@ -33,7 +33,7 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
   const channels = watch('channel');
   const stakeholderType = watch('stakeholderType');
 
-  const { selectedErrandStatuses }: { selectedErrandStatuses: string[] } = useAppContext();
+  const selectedErrandStatuses = useCasedataStore((s) => s.selectedErrandStatuses);
 
   const hasTags =
     types.length > 0 ||
@@ -182,9 +182,9 @@ export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administ
         ))}
 
       {hasTags && (
-        <button data-cy="tag-clearAll" className="sk-chip" onClick={() => handleReset()}>
+        <Chip data-cy="tag-clearAll" onClick={() => handleReset()}>
           Rensa alla
-        </button>
+        </Chip>
       )}
     </div>
   );

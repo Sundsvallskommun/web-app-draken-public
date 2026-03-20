@@ -63,9 +63,9 @@ export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps
       )}
 
       {hasTags && (
-        <button className="sk-chip" onClick={() => handleReset()}>
+        <Chip onClick={() => handleReset()}>
           Rensa alla
-        </button>
+        </Chip>
       )}
     </div>
   );
