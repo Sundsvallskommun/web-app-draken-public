@@ -13,7 +13,7 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
 
 export const RenderedSupportMessage: React.FC<{
@@ -29,16 +29,12 @@ export const RenderedSupportMessage: React.FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const user = useUserStore((s) => s.user);
   const supportErrand = _supportErrand!;
-  const [allowed, setAllowed] = useState(false);
 
   // Changed logic for expanded message to see if it solve problem with unread message counter
   // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    const _a = validateAction(supportErrand, user);
-    setAllowed(_a);
-  }, [user, supportErrand]);
+  const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
 
   const toastMessage = useSnackbar();
 

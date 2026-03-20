@@ -14,7 +14,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
 import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -56,11 +56,9 @@ export const SidebarUtredning: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {

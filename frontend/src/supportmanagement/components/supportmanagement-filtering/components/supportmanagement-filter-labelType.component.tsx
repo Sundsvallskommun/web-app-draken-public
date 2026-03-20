@@ -1,7 +1,7 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useMetadataStore } from '@stores/index';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 import { ChevronDown } from 'lucide-react';
@@ -20,11 +20,9 @@ export const SupportManagementFilterLabelType: React.FC = () => {
   const labelTypes = watch('labelType');
   const { register } = useFormContext<LabelTypeFilter>();
   const [query, setQuery] = useState<string>('');
-  // const [allTypes, setAllTypes] = useState<Label[]>();
-  const [allStringTypes, setAllStringTypes] = useState<string[]>();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  useEffect(() => {
+  const allStringTypes = useMemo(() => {
     const _types: Label[] = [];
     if (labelCategories.length > 0) {
       labelCategories?.forEach((category) => {
@@ -38,11 +36,7 @@ export const SupportManagementFilterLabelType: React.FC = () => {
         _types.push(...(category.labels ?? []));
       });
     }
-    // We need a list of displayNames, not objects and not names since the
-    // labelType filter works with the displayName and not the names of the types
-    //
-    // See comment in ongoing-support-errands.component.tsx for more information
-    setAllStringTypes(Array.from(new Set(_types.map((l) => l.displayName).filter((d): d is string => d !== undefined))));
+    return Array.from(new Set(_types.map((l) => l.displayName).filter((d): d is string => d !== undefined)));
   }, [supportMetadata, labelCategories]);
 
   return (

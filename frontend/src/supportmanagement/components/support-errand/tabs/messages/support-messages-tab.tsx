@@ -10,7 +10,7 @@ import { isSupportErrandLocked, Status, validateAction } from '@supportmanagemen
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
 
@@ -28,26 +28,21 @@ export const SupportMessagesTab: React.FC<{
   const user = useUserStore((s) => s.user);
   const [showMessageForm, setShowMessageForm] = useState<boolean>(false);
   const [selectedMessage, setSelectedMessage] = useState<Message>();
-  const [allowed, setAllowed] = useState(false);
   const [sortSendingTypeMessages, setSortSendingTypeMessages] = useState<string>('ALL_SEND_TYPES');
   const [sortChannelMessages, setSortChannelMessages] = useState<string>('all channels');
-  const [sortedMessages, setSortedMessages] = useState<Message[]>();
   const { t } = useTranslation();
 
-  const allMessages = React.useMemo(
+  const allMessages = useMemo(
     () => [...(props.messages || []), ...(props.supportConversations || [])],
     [props.messages, props.supportConversations]
   );
 
-  const allMessagesTree = React.useMemo(
+  const allMessagesTree = useMemo(
     () => [...(props.messageTree || []), ...(props.conversationMessageTree || [])],
     [props.messageTree, props.conversationMessageTree]
   );
 
-  useEffect(() => {
-    const _a = validateAction(supportErrand!, user);
-    setAllowed(_a);
-  }, [user, supportErrand]);
+  const allowed = useMemo(() => validateAction(supportErrand!, user), [user, supportErrand]);
 
   const onSelect = (message: Message) => {
     if (message.conversationId && message.conversationId !== '') {
@@ -67,109 +62,34 @@ export const SupportMessagesTab: React.FC<{
     });
   };
 
-  useEffect(() => {
-    if (allMessages && allMessagesTree) {
-      if (sortSendingTypeMessages === 'INBOUND') {
-        let filteredMessages = allMessages.filter(
-          (message: Message) =>
-            message.direction === 'INBOUND' &&
-            (sortChannelMessages !== 'allchannels'
-              ? message.communicationType === sortChannelMessages
-              : message.communicationType)
-        );
-        setSortedMessages(filteredMessages);
-      } else if (sortSendingTypeMessages === 'OUTBOUND') {
-        let filteredMessages = allMessages.filter(
-          (message: Message) =>
-            message.direction === 'OUTBOUND' &&
-            (sortChannelMessages !== 'allchannels'
-              ? message.communicationType === sortChannelMessages
-              : message.communicationType)
-        );
-        setSortedMessages(filteredMessages);
-      } else {
-        setSortedMessages(
-          sortChannelMessages !== 'allchannels'
-            ? allMessagesTree.filter((x) => x.communicationType === sortChannelMessages)
-            : allMessagesTree
-        );
-      }
-    }
-  }, [allMessages, allMessagesTree, sortSendingTypeMessages, sortChannelMessages]);
+  const sortedMessages = useMemo(() => {
+    if (!allMessages || !allMessagesTree) return [];
 
-  useEffect(() => {
-    if (allMessages && allMessagesTree) {
-      if (sortChannelMessages === CommunicationCommunicationTypeEnum.WEB_MESSAGE) {
-        let filteredMessages = allMessages.filter(
-          (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.WEB_MESSAGE
-        );
-        let filteredMessageTree = allMessagesTree.filter((m) => {
-          return filteredMessages.find(
-            (x) =>
-              x.communicationType === m.communicationType &&
-              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : x.direction)
-          );
-        });
-        setSortedMessages(filteredMessageTree);
-      } else if (sortChannelMessages === CommunicationCommunicationTypeEnum.EMAIL) {
-        let filteredMessages = allMessages.filter(
-          (message: Message) =>
-            message.communicationType === CommunicationCommunicationTypeEnum.EMAIL &&
-            (sortSendingTypeMessages !== 'ALL_SEND_TYPES'
-              ? message.direction === sortSendingTypeMessages
-              : message.direction)
-        );
-        let filteredMessageTree = allMessagesTree.filter((m) => {
-          return filteredMessages.find(
-            (x) =>
-              x.communicationType === m.communicationType &&
-              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : x.direction)
-          );
-        });
-        setSortedMessages(
-          sortSendingTypeMessages === 'INBOUND' || sortSendingTypeMessages === 'OUTBOUND'
-            ? filteredMessages
-            : filteredMessageTree
-        );
-      } else if (sortChannelMessages === CommunicationCommunicationTypeEnum.SMS) {
-        let filteredMessages = allMessages.filter(
-          (message: Message) => message.communicationType === CommunicationCommunicationTypeEnum.SMS
-        );
-        let filteredMessageTree = allMessagesTree.filter((m) => {
-          return filteredMessages.find(
-            (x) =>
-              x.communicationType === m.communicationType &&
-              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : x.direction)
-          );
-        });
-        setSortedMessages(filteredMessageTree);
-      } else if (sortChannelMessages === 'DRAKEN') {
-        let filteredMessages = allMessages.filter((message: Message) => message.communicationType === 'DRAKEN');
-        allMessagesTree.filter((m) => {
-          return filteredMessages.find(
-            (x) =>
-              x.communicationID === m.communicationID &&
-              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : true)
-          );
-        });
-      } else if (sortChannelMessages === 'MINASIDOR') {
-        let filteredMessages = allMessages.filter((message: Message) => message.communicationType === 'MINASIDOR');
-        allMessagesTree.filter((m) => {
-          return filteredMessages.find(
-            (x) =>
-              x.communicationID === m.communicationID &&
-              (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? x.direction === sortSendingTypeMessages : true)
-          );
-        });
-      } else {
-        setSortedMessages(
-          sortSendingTypeMessages !== 'ALL_SEND_TYPES'
-            ? allMessages.filter((x) => x.direction === sortSendingTypeMessages)
-            : allMessagesTree
-        );
+    // Apply channel filter
+    if (sortChannelMessages !== 'allchannels' && sortChannelMessages !== 'all channels') {
+      const filteredMessages = allMessages.filter(
+        (message: Message) =>
+          message.communicationType === sortChannelMessages &&
+          (sortSendingTypeMessages !== 'ALL_SEND_TYPES' ? message.direction === sortSendingTypeMessages : true)
+      );
+
+      if (sortSendingTypeMessages === 'INBOUND' || sortSendingTypeMessages === 'OUTBOUND') {
+        return filteredMessages;
       }
+
+      const filteredMessageTree = allMessagesTree.filter((m) =>
+        filteredMessages.find((x) => x.communicationType === m.communicationType)
+      );
+      return filteredMessageTree;
     }
-  }, [allMessages, allMessagesTree, sortChannelMessages, sortSendingTypeMessages]);
+
+    // No channel filter, apply direction filter
+    if (sortSendingTypeMessages === 'INBOUND' || sortSendingTypeMessages === 'OUTBOUND') {
+      return allMessages.filter((message: Message) => message.direction === sortSendingTypeMessages);
+    }
+
+    return allMessagesTree;
+  }, [allMessages, allMessagesTree, sortSendingTypeMessages, sortChannelMessages]);
 
   return (
     <>

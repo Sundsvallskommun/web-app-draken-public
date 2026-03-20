@@ -1,7 +1,7 @@
-import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useMetadataStore } from '@stores/index';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 import { ChevronDown } from 'lucide-react';
@@ -17,12 +17,9 @@ export const LabelCategoryValues: LabelCategoryFilter = {
 export const SupportManagementFilterLabelCategory: React.FC = () => {
   const { register, watch } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
-  const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  useEffect(() => {
-    setAllLabelCategories(supportMetadata?.labels?.labelStructure);
-  }, [supportMetadata]);
+  const allLabelCategories = supportMetadata?.labels?.labelStructure;
 
   return (
     <PopupMenu>

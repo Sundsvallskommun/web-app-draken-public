@@ -20,7 +20,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import { JSX, useEffect, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
@@ -35,11 +35,9 @@ export const PhaseChanger = () => {
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {

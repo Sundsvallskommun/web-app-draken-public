@@ -144,7 +144,6 @@ export const CasedataDecisionTab: React.FC<{
   const quillRef = useRef<any>(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
@@ -191,10 +190,9 @@ export const CasedataDecisionTab: React.FC<{
     }
   }, [props, refetchServices]);
 
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {

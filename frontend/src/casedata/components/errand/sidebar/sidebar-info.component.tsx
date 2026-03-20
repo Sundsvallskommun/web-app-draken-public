@@ -26,8 +26,8 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
-import { Controller, UseFormReturn, useFormContext } from 'react-hook-form';
+import { useEffect, useMemo, useState } from 'react';
+import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
@@ -42,22 +42,18 @@ export const SidebarInfo: React.FC<{}> = () => {
   const setErrand = useCasedataStore((s) => s.setErrand);
   const administrators = useUserStore((s) => s.administrators);
   const uiPhase = useCasedataStore((s) => s.uiPhase);
-  const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
-  const { control, setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
+  const { setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
   useEffect(() => {
     if (administrators && errand?.administrator?.adAccount) {
@@ -77,7 +73,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, administrators]);
 
-  useEffect(() => {
+  const selectableStatuses = useMemo(() => {
     const s = [ErrandStatus.VantarPaKomplettering, ErrandStatus.InterntAterkoppling, ErrandStatus.Tilldelat];
     if (errand?.phase === ErrandPhase.aktualisering) {
       s.unshift(ErrandStatus.ArendeInkommit);
@@ -97,9 +93,8 @@ export const SidebarInfo: React.FC<{}> = () => {
     if (!s.includes(errand?.status?.statusType as ErrandStatus)) {
       s.unshift(errand?.status?.statusType as ErrandStatus);
     }
-    setSelectableStatuses(s);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand]);
+    return s;
+  }, [errand, uiPhase]);
 
   const errandSave = useSaveCasedataErrand(false);
   const selfAssignErrand = async () => {
@@ -240,27 +235,21 @@ export const SidebarInfo: React.FC<{}> = () => {
                   Ta ärende
                 </Button>
               </div>
-              <Controller
-                name="administratorName"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    className="w-full"
-                    size="sm"
-                    data-cy="admin-input"
-                    placeholder="Tilldela handläggare"
-                    aria-label="Tilldela handläggare"
-                  >
-                    {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-                    {administrators
-                      .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                      .map((a) => (
-                        <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
-                      ))}
-                  </Select>
-                )}
-              />
+              <Select
+                {...register('administratorName')}
+                className="w-full"
+                size="sm"
+                data-cy="admin-input"
+                placeholder="Tilldela handläggare"
+                aria-label="Tilldela handläggare"
+              >
+                {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
+                {administrators
+                  .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
+                  .map((a) => (
+                    <Select.Option key={a.adAccount}>{a.displayName}</Select.Option>
+                  ))}
+              </Select>
             </FormControl>
             <FormControl
               id="status"
@@ -275,27 +264,21 @@ export const SidebarInfo: React.FC<{}> = () => {
               }
             >
               <FormLabel className="text-small">Ärendestatus</FormLabel>
-              <Controller
-                name="status.statusType"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    className="w-full"
-                    size="sm"
-                    data-cy="status-input"
-                    placeholder="Välj status"
-                    aria-label="Välj status"
-                  >
-                    {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
-                    {selectableStatuses.map((c: string, index) => (
-                      <Select.Option value={c} key={c}>
-                        {c}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                )}
-              />
+              <Select
+                {...register('status.statusType')}
+                className="w-full"
+                size="sm"
+                data-cy="status-input"
+                placeholder="Välj status"
+                aria-label="Välj status"
+              >
+                {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
+                {selectableStatuses.map((c: string, index) => (
+                  <Select.Option value={c} key={c}>
+                    {c}
+                  </Select.Option>
+                ))}
+              </Select>
             </FormControl>
             <SaveButtonComponent
               setUnsaved={() => {}}

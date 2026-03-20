@@ -39,13 +39,21 @@ export const SidebarInfo: React.FC<{
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
+  const selectablePriorities = useMemo(() => {
+    if (supportErrand?.priority && supportErrand?.status) {
+      return [
+        { key: 'LOW', label: Priority.LOW },
+        { key: 'MEDIUM', label: Priority.MEDIUM },
+        { key: 'HIGH', label: Priority.HIGH },
+      ];
+    }
+    return [];
+  }, [supportErrand]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
+  const allowed = useMemo(() => {
     if (!supportErrandIsEmpty(supportErrand!)) {
       let _a = validateAction(supportErrand!, user);
       if (supportErrand!.assignedUserId?.toLocaleLowerCase() === undefined) {
@@ -57,12 +65,11 @@ export const SidebarInfo: React.FC<{
           _a = true;
         }
       }
-      setAllowed(_a);
+      return _a;
     } else {
-      setAllowed(isAdmin());
+      return administrators.some((a) => a.adAccount === user.username);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, supportErrand]);
+  }, [user, supportErrand, administrators]);
 
   const toast = (kind: 'success' | 'error', label: string) =>
     toastMessage({
@@ -216,17 +223,6 @@ export const SidebarInfo: React.FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, administrators]);
-
-  useEffect(() => {
-    if (supportErrand?.priority && supportErrand?.status) {
-      const prio = [
-        { key: 'LOW', label: Priority.LOW },
-        { key: 'MEDIUM', label: Priority.MEDIUM },
-        { key: 'HIGH', label: Priority.HIGH },
-      ];
-      setSelectablePriorities(prio);
-    }
-  }, [supportErrand]);
 
   const handleAction = (action: () => Promise<boolean>, success: () => void, fail: () => void) => {
     return action()

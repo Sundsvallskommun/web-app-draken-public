@@ -47,7 +47,7 @@ import {
 } from '@sk-web-gui/react';
 import { useTranslation } from 'react-i18next';
 import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { File, Paperclip, X } from 'lucide-react';
@@ -172,12 +172,11 @@ export const MessageComposer: React.FC<{
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
   const { t } = useTranslation();
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user) && !!errand.administrator;
-    setAllowed(_a);
+
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user) && !!errand.administrator;
   }, [user, errand]);
 
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);

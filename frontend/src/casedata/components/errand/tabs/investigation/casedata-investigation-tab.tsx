@@ -31,7 +31,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
@@ -92,11 +92,9 @@ export const CasedataInvestigationTab: React.FC<{
     content: 'Vill du återställa den här mallen?',
   };
 
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user) && !!errand.administrator;
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user) && !!errand.administrator;
   }, [user, errand]);
   const {
     register,

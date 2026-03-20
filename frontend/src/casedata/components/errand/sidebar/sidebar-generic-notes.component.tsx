@@ -13,7 +13,7 @@ import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Avatar, Button, Divider, FormControl, Modal, PopupMenu, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
 
@@ -29,7 +29,6 @@ export const SidebarGenericNotes: React.FC<{
   const administrators = useUserStore((s) => s.administrators);
   const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [selectedNote, setSelectedNote] = useState<ErrandNote>();
-  const [notes, setNotes] = useState<ErrandNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [activePage, setActivePage] = useState(1);
@@ -105,14 +104,17 @@ export const SidebarGenericNotes: React.FC<{
     console.error('Something went wrong when saving note');
   };
 
-  useEffect(() => {
-    setNotes(
+  const notes = useMemo(
+    () =>
       (errand?.notes ?? [])
         .sort((a, b) =>
           dayjs(a.updated).isAfter(dayjs(b.updated)) ? 1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? -1 : 0
         )
-        .reverse()
-    );
+        .reverse(),
+    [errand?.notes]
+  );
+
+  useEffect(() => {
     if (selectedNote) {
       setSelectedNote(errand?.notes?.find((n) => n.id === selectedNote.id));
     }

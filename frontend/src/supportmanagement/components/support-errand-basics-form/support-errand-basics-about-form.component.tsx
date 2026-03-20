@@ -12,7 +12,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, UseFormReturn, useFormContext } from 'react-hook-form';
+import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -32,7 +32,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
 
   const {
-    control,
     register,
     watch,
     setValue,
@@ -109,34 +108,25 @@ export const SupportErrandBasicsAboutForm: React.FC<{
                   t('common:basics_tab.contactReason.default')
                 )}
               </FormLabel>
-              <Controller
-                name="contactReason"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    disabled={isSupportErrandLocked(supportErrand)}
-                    data-cy="contactReason-input"
-                    className="w-full text-dark-primary"
-                    variant="primary"
-                    size="md"
-                    onChange={(e) => {
-                      field.onChange(e.currentTarget.value);
-                    }}
-                  >
-                    <Select.Option value="">Välj orsak</Select.Option>
-                    {contactReasonList
-                      ?.sort((a, b) => a.reason.localeCompare(b.reason))
-                      .map((reason: ContactReason) => {
-                        return (
-                          <Select.Option value={reason.reason} key={`reason-${reason.reason}`}>
-                            {reason.reason}
-                          </Select.Option>
-                        );
-                      })}
-                  </Select>
-                )}
-              />
+              <Select
+                {...register('contactReason')}
+                disabled={isSupportErrandLocked(supportErrand)}
+                data-cy="contactReason-input"
+                className="w-full text-dark-primary"
+                variant="primary"
+                size="md"
+              >
+                <Select.Option value="">Välj orsak</Select.Option>
+                {contactReasonList
+                  ?.sort((a, b) => a.reason.localeCompare(b.reason))
+                  .map((reason: ContactReason) => {
+                    return (
+                      <Select.Option value={reason.reason} key={`reason-${reason.reason}`}>
+                        {reason.reason}
+                      </Select.Option>
+                    );
+                  })}
+              </Select>
               {errors.category && (
                 <div className="my-sm text-error">
                   <FormErrorMessage>{errors.category?.message}</FormErrorMessage>
@@ -149,37 +139,28 @@ export const SupportErrandBasicsAboutForm: React.FC<{
         <div className="flex gap-xl w-1/2">
           <FormControl id="channel" className="w-full">
             <FormLabel>Inkom via*</FormLabel>
-            <Controller
-              name="channel"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  disabled={isSupportErrandLocked(supportErrand)}
-                  data-cy="channel-input"
-                  className="w-full text-dark-primary"
-                  variant="primary"
-                  size="md"
-                  onChange={(e) => {
-                    field.onChange(e.currentTarget.value);
-                  }}
-                >
-                  {Object.entries(Channels).map((c: [string, string]) => {
-                    const id = c[0];
-                    const label = c[1];
-                    return (
-                      <Select.Option
-                        key={`channel-${id}`}
-                        value={id}
-                        className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                      >
-                        {label}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
-              )}
-            />
+            <Select
+              {...register('channel')}
+              disabled={isSupportErrandLocked(supportErrand)}
+              data-cy="channel-input"
+              className="w-full text-dark-primary"
+              variant="primary"
+              size="md"
+            >
+              {Object.entries(Channels).map((c: [string, string]) => {
+                const id = c[0];
+                const label = c[1];
+                return (
+                  <Select.Option
+                    key={`channel-${id}`}
+                    value={id}
+                    className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                  >
+                    {label}
+                  </Select.Option>
+                );
+              })}
+            </Select>
             {errors.channel && (
               <div className="my-sm text-error">
                 <FormErrorMessage>{errors.channel?.message}</FormErrorMessage>
@@ -204,20 +185,14 @@ export const SupportErrandBasicsAboutForm: React.FC<{
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">
               <FormLabel>{t('common:basics_tab.cause_description.title')}</FormLabel>
-              <Controller
-                name="contactReasonDescription"
-                control={control}
-                render={({ field }) => (
-                  <Textarea
-                    {...field}
-                    data-cy="contactReasonDescription-input"
-                    disabled={isSupportErrandLocked(supportErrand)}
-                    className="block w-full text-[1.6rem] h-full"
-                    placeholder="Beskriv orsaken"
-                    rows={7}
-                    id="causedescription"
-                  />
-                )}
+              <Textarea
+                {...register('contactReasonDescription')}
+                data-cy="contactReasonDescription-input"
+                disabled={isSupportErrandLocked(supportErrand)}
+                className="block w-full text-[1.6rem] h-full"
+                placeholder="Beskriv orsaken"
+                rows={7}
+                id="causedescription"
               />
             </FormControl>
           ) : (
