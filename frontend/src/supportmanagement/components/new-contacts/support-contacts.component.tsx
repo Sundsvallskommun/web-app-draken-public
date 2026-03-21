@@ -1,4 +1,4 @@
-import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import {
   ExternalIdType,
@@ -23,7 +23,6 @@ interface SupportContactsProps {
 export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const user = useUserStore((s) => s.user);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
@@ -36,9 +35,8 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
 
   useEffect(() => {
     setSelectedContact(undefined);
-    reset(supportErrand);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, supportErrand]);
+  }, [supportErrand]);
 
   useEffect(() => {
     setStakeholderContacts(supportErrand?.contacts ?? []);
@@ -46,7 +44,7 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
 
-  const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  const { control, setValue }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
   const contactsFieldArray = useFieldArray({
     control,

@@ -33,7 +33,7 @@ export interface TableForm {
 
 export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props) => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue: setFilterValue } = filterForm;
 
   const sortData = store.get('sort');
   let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number } | undefined;
@@ -58,6 +58,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const setSelectedSupportErrandStatuses = useSupportStore((s) => s.setSelectedSupportErrandStatuses);
+  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
   const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
   const sidebarLabel = useCasedataStore((s) => s.sidebarLabel);
   const solvedSupportErrands = useSupportStore((s) => s.solvedSupportErrands);
@@ -170,6 +171,17 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
+
+  useEffect(() => {
+    const currentStatus = getValues('status') as string[];
+    const storeStatus = selectedSupportErrandStatuses as string[];
+    const isSame =
+      currentStatus.length === storeStatus.length && currentStatus.every((s, i) => s === storeStatus[i]);
+    if (!isSame) {
+      setFilterValue('status', selectedSupportErrandStatuses);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSupportErrandStatuses]);
 
   useEffect(() => {
     const sortData = store.get('sort');

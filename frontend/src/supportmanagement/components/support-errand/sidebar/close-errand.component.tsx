@@ -200,7 +200,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                   <Checkbox
                     id="closingmessagecheckbox"
                     disabled={!applicantHasContactChannel(supportErrand!)}
-                    data-cy="show-contactReasonDescription-input"
+                    data-cy="show-closing-message-input"
                     className="w-full"
                     checked={applicantHasContactChannel(supportErrand!) && closingMessage}
                     onChange={() => setClosingMessage(!closingMessage)}
