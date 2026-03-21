@@ -48,8 +48,7 @@ export const ServiceListItem: React.FC<Props> = ({ service, onRemove, onEdit, re
           </div>
 
           <div
-            className="text-dark-secondary text-base break-words whitespace-pre-wrap leading-relaxed overflow-hidden"
-            style={{ wordBreak: 'break-word' }}
+            className="text-dark-secondary text-base break-words whitespace-pre-wrap leading-relaxed overflow-hidden [word-break:break-word]"
             dangerouslySetInnerHTML={{ __html: sanitized(service?.comment) }}
           />
 

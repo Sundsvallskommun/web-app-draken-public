@@ -7,7 +7,7 @@ import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -30,12 +30,11 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import dynamic from 'next/dynamic';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 import { Forward } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
   {
@@ -77,14 +76,12 @@ export interface ForwardFormProps {
 }
 
 export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    user,
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportMetadata,
-    supportAttachments,
-  } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
   const confirm = useConfirm();
   const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const [showModal, setShowModal] = useState(false);

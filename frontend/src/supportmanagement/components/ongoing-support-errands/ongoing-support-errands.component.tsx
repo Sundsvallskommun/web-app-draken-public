@@ -1,7 +1,7 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
-import { useAppContext } from '@common/contexts/app.context';
+import { useBillingStore, useCasedataStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { attestationEnabled } from '@common/services/feature-flag-service';
-import { getMe } from '@common/services/user-service';
+import { useUserQuery } from '@common/services/use-user-query';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import store from '@supportmanagement/services/storage-service';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
@@ -33,7 +33,7 @@ export interface TableForm {
 
 export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props) => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue: setFilterValue } = filterForm;
 
   const sortData = store.get('sort');
   let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number } | undefined;
@@ -47,23 +47,22 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
       sortColumn: sort?.sortColumn || 'touched',
       sortOrder: sort?.sortOrder || 'desc',
       pageSize: sort?.pageSize || 12,
+      page: 0,
     },
   });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
-  const {
-    supportMetadata,
-    setSupportErrand,
-    administrators,
-    municipalityId,
-    selectedSupportErrandStatuses,
-    setSelectedSupportErrandStatuses,
-    setSidebarLabel,
-    sidebarLabel,
-    solvedSupportErrands,
-    setBillingRecords,
-  } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setSelectedSupportErrandStatuses = useSupportStore((s) => s.setSelectedSupportErrandStatuses);
+  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
+  const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
+  const sidebarLabel = useCasedataStore((s) => s.sidebarLabel);
+  const solvedSupportErrands = useSupportStore((s) => s.solvedSupportErrands);
+  const setBillingRecords = useBillingStore((s) => s.setBillingRecords);
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -86,11 +85,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   const initialFocus = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    setValue('status', selectedSupportErrandStatuses);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSupportErrandStatuses]);
-
   const setInitialFocus = () => {
     setTimeout(() => {
       initialFocus.current && initialFocus.current.focus();
@@ -98,7 +92,15 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   };
 
   const router = useRouter();
-  const { user, setUser } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
+  const { data: userData } = useUserQuery();
+
+  useEffect(() => {
+    if (userData) {
+      setUser(userData);
+    }
+  }, [userData]);
 
   useEffect(() => {
     const filterdata = store.get('filter');
@@ -141,7 +143,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
               : [],
         };
         const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
-        setSelectedSupportErrandStatuses(filterStatuses);
         const selectedStatusLabel = getStatusLabel(
           filterStatuses.map((s: string) => (Status as Record<string, string>)[s])
         );
@@ -165,14 +166,22 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
       if (filter?.stakeholders === user.username) {
         setOwnerFilter(true);
       }
-      if (storedFilters.status) {
-        setSelectedSupportErrandStatuses(storedFilters.status || [Status.ONGOING]);
-      }
       resetFilter(storedFilters);
       triggerFilter();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
+
+  useEffect(() => {
+    const currentStatus = getValues('status') as string[];
+    const storeStatus = selectedSupportErrandStatuses as string[];
+    const isSame =
+      currentStatus.length === storeStatus.length && currentStatus.every((s, i) => s === storeStatus[i]);
+    if (!isSame) {
+      setFilterValue('status', selectedSupportErrandStatuses);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSupportErrandStatuses]);
 
   useEffect(() => {
     const sortData = store.get('sort');
@@ -204,11 +213,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe()
-      .then((user) => {
-        setUser(user);
-      })
-      .catch((e) => {});
     setSupportErrand(undefined as unknown as any);
     //eslint-disable-next-line
   }, [router]);
@@ -294,6 +298,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
       }
       setFilterObject(fObj);
       setExtraFilter(extraFilterObj);
+      setSelectedSupportErrandStatuses(statusFilter);
       store.set('filter', JSON.stringify(fObj));
     },
     200,

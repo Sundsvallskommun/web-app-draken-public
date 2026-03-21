@@ -1,6 +1,6 @@
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isROB } from '@common/services/application-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
@@ -29,16 +29,14 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
   setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
-  const {
-    setSidebarLabel,
-    setSelectedSupportErrandStatuses,
-    selectedSupportErrandStatuses,
-    newSupportErrands,
-    ongoingSupportErrands,
-    assignedSupportErrands,
-    suspendedSupportErrands,
-    solvedSupportErrands,
-  }: AppContextInterface = useAppContext();
+  const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
+  const setSelectedSupportErrandStatuses = useSupportStore((s) => s.setSelectedSupportErrandStatuses);
+  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
+  const newSupportErrands = useSupportStore((s) => s.newSupportErrands);
+  const ongoingSupportErrands = useSupportStore((s) => s.ongoingSupportErrands);
+  const assignedSupportErrands = useSupportStore((s) => s.assignedSupportErrands);
+  const suspendedSupportErrands = useSupportStore((s) => s.suspendedSupportErrands);
+  const solvedSupportErrands = useSupportStore((s) => s.solvedSupportErrands);
 
   const updateStatusFilter = (ss: Status[]) => {
     try {

@@ -7,20 +7,19 @@ import {
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import Facilities from '@common/components/facilities/facilities';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
-import dynamic from 'next/dynamic';
+import TextEditor from '@common/components/dynamic-text-editor';
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
 import { MapPin } from 'lucide-react';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -29,7 +28,9 @@ interface CasedataDetailsProps {
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const toastMessage = useSnackbar();
 

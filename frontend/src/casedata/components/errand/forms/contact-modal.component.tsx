@@ -3,7 +3,7 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal } from '@sk-web-gui/react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 import { ContactRelationSelect } from './contact-relation-select.component';
@@ -47,7 +47,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
 }) => {
   const { control, register, formState, watch, setValue, trigger } = form;
   const errors = formState.errors;
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
 
   return (
     <Modal

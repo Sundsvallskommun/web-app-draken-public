@@ -7,17 +7,16 @@ import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import { renderUtredningPdf, saveDecision } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import TextEditor from '@common/components/dynamic-text-editor';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
@@ -50,20 +49,16 @@ let formSchema = yup
   .required();
 
 export const SidebarUtredning: React.FC = () => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const user = useUserStore((s) => s.user);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {

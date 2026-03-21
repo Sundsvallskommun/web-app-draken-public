@@ -10,7 +10,7 @@ import {
   removeMunicipalityName,
 } from '@common/services/facilities-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import {
   Button,
   FormControl,
@@ -37,13 +37,8 @@ export const Facilities: React.FC<{
   const { setValue, setUnsaved } = props;
   const toastMessage = useSnackbar();
 
-  const {
-    supportErrand,
-    errand,
-  }: {
-    supportErrand: any;
-    errand: any;
-  } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand) as any;
+  const errand = useCasedataStore((s) => s.errand) as any;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('');

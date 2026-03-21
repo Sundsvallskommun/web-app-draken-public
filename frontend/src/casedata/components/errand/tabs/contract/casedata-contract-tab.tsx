@@ -25,7 +25,7 @@ import {
   saveContractToErrand,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
@@ -93,7 +93,10 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       }),
     })
     .required();
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const user = useUserStore((s) => s.user);
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);

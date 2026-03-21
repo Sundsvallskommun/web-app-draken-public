@@ -1,17 +1,9 @@
 import { PopupMenu, RadioButton, useGui } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
-import { useEffect } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 
 export const ColorSchemeItems = () => {
   const { setColorScheme, colorScheme } = useGui();
-
-  useEffect(() => {
-    const savedMode = store.get('colorScheme');
-    if (savedMode) {
-      setColorScheme(savedMode);
-    }
-  }, [setColorScheme]);
 
   const handleChangeColorScheme = (colorScheme: string) => {
     store.set('colorScheme', colorScheme);

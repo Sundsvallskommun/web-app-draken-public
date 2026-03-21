@@ -2,13 +2,15 @@ import { ErrandStatus, pausedStatuses } from '@casedata/interfaces/errand-status
 import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { sortBy } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useState } from 'react';
 import { CirclePlay } from 'lucide-react';
 
 export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);

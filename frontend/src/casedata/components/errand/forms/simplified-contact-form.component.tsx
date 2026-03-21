@@ -2,7 +2,7 @@ import { ContactModal } from '@casedata/components/errand/forms/contact-modal.co
 import { Channels } from '@casedata/interfaces/channels';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { isValidOrgNumber } from '@common/services/adress-service';
 import {
   invalidOrgNumberMessage,
@@ -186,7 +186,7 @@ export const SimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);

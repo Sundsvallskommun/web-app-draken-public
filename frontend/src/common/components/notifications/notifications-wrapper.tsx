@@ -6,7 +6,7 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { sortBy } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, Checkbox, Divider, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
@@ -21,8 +21,10 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
   show,
   setShow,
 }) => {
-  const { municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
-  const { user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const notifications = useSupportStore((s) => s.notifications);
+  const setNotifications = useSupportStore((s) => s.setNotifications);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAcknowledging, setIsAcknowledging] = useState(false);

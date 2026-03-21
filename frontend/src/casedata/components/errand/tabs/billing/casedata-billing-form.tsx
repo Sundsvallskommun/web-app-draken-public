@@ -10,7 +10,7 @@ import {
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -23,7 +23,10 @@ import { BillingTable } from './billing-table.component';
 import { Plus } from 'lucide-react';
 
 export const CaseDataBillingForm: React.FC = () => {
-  const { errand, municipalityId, user, setErrand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
 
   const [billingRecords, setBillingRecords] = useState<CBillingRecord[]>([]);

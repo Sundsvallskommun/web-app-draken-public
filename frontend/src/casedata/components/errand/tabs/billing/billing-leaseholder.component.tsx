@@ -1,7 +1,7 @@
 import { BillingRecipient } from '@casedata/interfaces/billing';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
 import { useState } from 'react';
 
@@ -10,7 +10,7 @@ interface BillingLeaseholderProps {
 }
 
 export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
 
   if (!errand) {

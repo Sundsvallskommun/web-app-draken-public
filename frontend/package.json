@@ -73,9 +73,9 @@
     "@sk-web-gui/core": "4.3.3",
     "@sk-web-gui/react": "3.0.9",
     "@sk-web-gui/text-editor": "2.0.2",
-    "lucide-react": "0.575.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.10",
+    "@tanstack/react-query": "^5.91.2",
     "ajv": "^8.17.1",
     "ajv-errors": "^3.0.0",
     "axios": "^1.11.0",
@@ -85,9 +85,9 @@
     "escape-string-regexp": "^5.0.0",
     "i18next": "^24.2.3",
     "i18next-resources-to-backend": "^1.2.1",
+    "lucide-react": "0.575.0",
     "next": "16.1.6",
     "next-i18n-router": "^5.5.6",
-    "next-i18next": "^15.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.2",
@@ -98,7 +98,8 @@
     "sharp": "^0.34.3",
     "underscore.string": "^3.3.6",
     "uuid": "^9.0.0",
-    "yup": "1.7.0"
+    "yup": "1.7.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@cypress/code-coverage": "^4.0.1",

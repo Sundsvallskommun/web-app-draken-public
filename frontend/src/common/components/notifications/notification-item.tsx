@@ -6,7 +6,7 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { prettyTime } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
@@ -29,7 +29,8 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   onToggleSelect,
   showCheckbox = false,
 }) => {
-  const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setNotifications = useSupportStore((s) => s.setNotifications);
   const toastMessage = useSnackbar();
 
   const handleAcknowledge = async () => {

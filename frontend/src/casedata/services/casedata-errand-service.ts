@@ -37,7 +37,7 @@ import { Role } from '@casedata/interfaces/role';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
@@ -392,20 +392,18 @@ export const useErrands = (
   extraParameters?: { [key: string]: string }
 ): ErrandsData => {
   const toastMessage = useSnackbar();
-  const {
-    setIsLoading,
-    setErrands,
-    setNewErrands,
-    setOngoingErrands,
-    setSuspendedErrands,
-    setAssignedErrands,
-    setClosedErrands,
-    errands,
-    newErrands,
-    ongoingErrands,
-    closedErrands,
-    suspendedErrands,
-  } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setErrands = useCasedataStore((s) => s.setErrands);
+  const setNewErrands = useCasedataStore((s) => s.setNewErrands);
+  const setOngoingErrands = useCasedataStore((s) => s.setOngoingErrands);
+  const setSuspendedErrands = useCasedataStore((s) => s.setSuspendedErrands);
+  const setAssignedErrands = useCasedataStore((s) => s.setAssignedErrands);
+  const setClosedErrands = useCasedataStore((s) => s.setClosedErrands);
+  const errands = useCasedataStore((s) => s.errands);
+  const newErrands = useCasedataStore((s) => s.newErrands);
+  const ongoingErrands = useCasedataStore((s) => s.ongoingErrands);
+  const closedErrands = useCasedataStore((s) => s.closedErrands);
+  const suspendedErrands = useCasedataStore((s) => s.suspendedErrands);
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {

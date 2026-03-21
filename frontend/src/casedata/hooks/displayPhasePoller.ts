@@ -1,10 +1,12 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { getErrand } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 
 function useDisplayPhasePoller() {
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const pollDisplayPhase = () => {
     if (!errand) return;
     let displayPhase = errand.extraParameters.find((p) => p.key === 'process.displayPhase')?.values?.[0] as UiPhase;

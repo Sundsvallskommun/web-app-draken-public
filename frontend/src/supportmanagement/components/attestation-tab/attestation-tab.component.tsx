@@ -1,7 +1,7 @@
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
-import { getMe } from '@common/services/user-service';
+import { useUserQuery } from '@common/services/use-user-query';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import AttestationsFilteringComponent, {
   AttestationFilter,
@@ -37,7 +37,10 @@ export const AttestationTab = () => {
   const [showSelectedRecord, setShowSelectedRecord] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState<CBillingRecord | undefined>(undefined);
 
-  const { setSupportErrand, setBillingRecords, administrators, municipalityId } = useAppContext();
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setBillingRecords = useBillingStore((s) => s.setBillingRecords);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -60,7 +63,15 @@ export const AttestationTab = () => {
     });
   };
   const router = useRouter();
-  const { user, setUser } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
+  const { data: userData } = useUserQuery();
+
+  useEffect(() => {
+    if (userData) {
+      setUser(userData);
+    }
+  }, [userData]);
 
   useEffect(() => {
     const filterdata = store.get('attestationFilter');
@@ -104,11 +115,6 @@ export const AttestationTab = () => {
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe()
-      .then((user) => {
-        setUser(user);
-      })
-      .catch(() => {});
     setSupportErrand(undefined as unknown as any);
     getBillingRecords(municipalityId);
     //eslint-disable-next-line
