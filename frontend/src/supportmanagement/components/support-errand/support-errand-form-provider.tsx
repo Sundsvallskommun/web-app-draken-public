@@ -33,7 +33,7 @@ export const SupportErrandFormProvider: React.FC<Props> = ({ children }) => {
   });
 
   useEffect(() => {
-    if (supportErrand) {
+    if (supportErrand && !methods.formState.isDirty) {
       methods.reset(supportErrand);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -249,7 +249,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
       {detail.formField.type === 'radio' && (
         <>
           <RadioButton.Group
-            defaultValue={getValues(fieldKey)}
+            defaultValue={getValues(detail.field)}
             data-cy={`${detail.field}-radio-button-group`}
             inline={!!detail.formField.inline}
           >
