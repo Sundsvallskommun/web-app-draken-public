@@ -187,6 +187,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
               <FormLabel>{t('common:basics_tab.cause_description.title')}</FormLabel>
               <Textarea
                 {...register('contactReasonDescription')}
+                value={watch('contactReasonDescription') ?? ''}
                 data-cy="contactReasonDescription-input"
                 disabled={isSupportErrandLocked(supportErrand)}
                 className="block w-full text-[1.6rem] h-full"

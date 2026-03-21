@@ -33,18 +33,20 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
   const stakeholderCustomers = useSupportStore((s) => s.stakeholderCustomers);
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
 
-  useEffect(() => {
-    setSelectedContact(undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportErrand]);
+  const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  const errandId = supportErrand?.id;
 
   useEffect(() => {
+    setSelectedContact(undefined);
+    if (supportErrand) {
+      reset(supportErrand);
+    }
     setStakeholderContacts(supportErrand?.contacts ?? []);
     setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportErrand]);
+  }, [errandId]);
 
-  const { control, setValue }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
   const contactsFieldArray = useFieldArray({
     control,
