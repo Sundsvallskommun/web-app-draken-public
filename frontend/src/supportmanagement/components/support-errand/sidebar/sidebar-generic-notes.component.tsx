@@ -63,15 +63,10 @@ export const SidebarGenericNotes: React.FC<{
 
   const {
     register,
-    control,
     handleSubmit,
     watch,
-    reset,
     setValue,
     getValues,
-    getFieldState,
-    trigger,
-    formState,
     formState: { errors },
   }: UseFormReturn<ErrandNotesTabFormModel, any, undefined> = useForm({
     resolver: yupResolver(formSchema) as any,
