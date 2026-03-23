@@ -541,10 +541,10 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                   return (
                     <Table.Row key={rowIndex}>
                       <Table.Column className="!overflow-visible">
-                        <div className="relative pt-24 pb-24">
+                        <div className="relative pt-16 pb-30">
                           <span className="font-bold">{row.descriptions?.join(', ') || '-'}</span>
                           {accountInfo && (
-                            <span className="text-small whitespace-nowrap absolute left-0 bottom-1">
+                            <span className="text-small whitespace-nowrap absolute left-0 bottom-8">
                               Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
                               Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
                               Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
@@ -552,34 +552,48 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                           )}
                         </div>
                       </Table.Column>
-                      <Table.Column>{row.detailedDescriptions?.join(', ') || '-'}</Table.Column>
-                      <Table.Column>{row.quantity || 0}</Table.Column>
-                      <Table.Column>{(row.costPerUnit || 0).toFixed(2)} kr</Table.Column>
-                      <Table.Column>{((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr</Table.Column>
+                      <Table.Column>
+                        <div className="relative pt-16 pb-30">{row.detailedDescriptions?.join(', ') || '-'}</div>
+                      </Table.Column>
+                      <Table.Column>
+                        <div className="relative pt-16 pb-30">{row.quantity || 0}</div>
+                      </Table.Column>
+                      <Table.Column>
+                        <div className="relative pt-16 pb-30">{(row.costPerUnit || 0).toFixed(2)} kr</div>
+                      </Table.Column>
+                      <Table.Column>
+                        <div className="relative pt-16 pb-30">
+                          {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
+                        </div>
+                      </Table.Column>
                       {isEditing && (
                         <>
                           <Table.Column>
-                            <Button
-                              size="sm"
-                              variant="tertiary"
-                              iconButton
-                              onClick={() => handleEditRow(rowIndex)}
-                              disabled={editingRowState !== null}
-                            >
-                              <Pen size={16} />
-                            </Button>
+                            <div className="relative pt-16 pb-30">
+                              <Button
+                                size="sm"
+                                variant="tertiary"
+                                iconButton
+                                onClick={() => handleEditRow(rowIndex)}
+                                disabled={editingRowState !== null}
+                              >
+                                <Pen size={16} />
+                              </Button>
+                            </div>
                           </Table.Column>
                           <Table.Column>
-                            <Button
-                              size="sm"
-                              inverted
-                              color="error"
-                              iconButton
-                              onClick={() => handleDeleteRow(rowIndex)}
-                              disabled={editingRowState !== null}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
+                            <div className="relative pt-16 pb-30">
+                              <Button
+                                size="sm"
+                                inverted
+                                color="error"
+                                iconButton
+                                onClick={() => handleDeleteRow(rowIndex)}
+                                disabled={editingRowState !== null}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
                           </Table.Column>
                         </>
                       )}
