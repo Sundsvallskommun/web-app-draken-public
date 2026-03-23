@@ -113,40 +113,40 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
           </RadioButton>
 
           {appConfig.features.useOrganizationStakeholders ? (
-            <>
-              <RadioButton
-                data-cy={`search-enterprise-${inName}-${contact.role}`}
-                size="sm"
-                className="mr-sm"
-                name={`stakeholderType-${id}`}
-                id={`searchEnterprise-${id}-${inName}`}
-                value={'ENTERPRISE'}
-                checked={searchMode === 'enterprise'}
-                onChange={() => {
-                  setSearchMode('enterprise');
-                  form.setValue(`externalIdType`, ExternalIdType.COMPANY);
-                  clearFields('ORGANIZATION');
-                }}
-              >
-                Företag
-              </RadioButton>
-              <RadioButton
-                data-cy={`search-organization-${inName}-${contact.role}`}
-                size="sm"
-                className="mr-sm"
-                name={`stakeholderType-${id}`}
-                id={`searchOrganization-${id}-${inName}`}
-                value={'ORGANIZATION'}
-                checked={searchMode === 'organization'}
-                onChange={() => {
-                  setSearchMode('organization');
-                  form.setValue(`externalIdType`, ExternalIdType.COMPANY);
-                  clearFields('ORGANIZATION');
-                }}
-              >
-                Förening
-              </RadioButton>
-            </>
+            <RadioButton
+              data-cy={`search-enterprise-${inName}-${contact.role}`}
+              size="sm"
+              className="mr-sm"
+              name={`stakeholderType-${id}`}
+              id={`searchEnterprise-${id}-${inName}`}
+              value={'ENTERPRISE'}
+              checked={searchMode === 'enterprise'}
+              onChange={() => {
+                setSearchMode('enterprise');
+                form.setValue(`externalIdType`, ExternalIdType.COMPANY);
+                clearFields('ORGANIZATION');
+              }}
+            >
+              Företag
+            </RadioButton>
+          ) : null}
+          {appConfig.features.useOrganizationStakeholders ? (
+            <RadioButton
+              data-cy={`search-organization-${inName}-${contact.role}`}
+              size="sm"
+              className="mr-sm"
+              name={`stakeholderType-${id}`}
+              id={`searchOrganization-${id}-${inName}`}
+              value={'ORGANIZATION'}
+              checked={searchMode === 'organization'}
+              onChange={() => {
+                setSearchMode('organization');
+                form.setValue(`externalIdType`, ExternalIdType.COMPANY);
+                clearFields('ORGANIZATION');
+              }}
+            >
+              Förening
+            </RadioButton>
           ) : null}
         </RadioButton.Group>
       </div>
