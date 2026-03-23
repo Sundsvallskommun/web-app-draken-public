@@ -225,7 +225,9 @@ export const Facilities: React.FC<{
           </Table.Header>
           <Table.Body data-cy={`facility-table`}>
             {realEstates === undefined || realEstates.length === 0 ? (
-              <Table.Column>Inga fastigheter tillagda</Table.Column>
+              <Table.Row>
+                <Table.Column>Inga fastigheter tillagda</Table.Column>
+              </Table.Row>
             ) : (
               <>
                 {realEstates.map((realEstate, index) => (
