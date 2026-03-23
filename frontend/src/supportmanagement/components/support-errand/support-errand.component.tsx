@@ -8,6 +8,7 @@ import {
   initiateSupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
+import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -31,6 +32,7 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setNotesCount = useSupportStore((s) => s.setNotesCount);
   const toastMessage = useSnackbar();
   const router = useRouter();
 
@@ -87,6 +89,14 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, errandNumber]);
+
+  useEffect(() => {
+    if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
+      getSupportNotesCount(supportErrand.id!, municipalityId!).then((res) => {
+        setNotesCount(res);
+      });
+    }
+  }, [supportErrand, municipalityId]);
 
   return (
     <FormProvider {...methods}>

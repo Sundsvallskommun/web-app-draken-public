@@ -43,8 +43,23 @@ export const getSupportNotes: (errandId: string, municipalityId: string) => Prom
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching notes');
+      console.error('Something went wrong when fetching notes', e);
       return { notes: [] } as unknown as SupportNoteData;
+    });
+};
+
+export const getSupportNotesCount: (errandId: string, municipalityId: string) => Promise<number> = (
+  errandId,
+  municipalityId
+) => {
+  return apiService
+    .get<SupportNoteData>(`supportnotes/${municipalityId}/${errandId}`)
+    .then((res) => {
+      return res.data.notes.length;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching notes', e);
+      return 0;
     });
 };
 

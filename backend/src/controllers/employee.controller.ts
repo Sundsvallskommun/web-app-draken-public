@@ -48,20 +48,22 @@ export class EmployeeController {
 
       const employments = employees[0].employments
         .filter((emp: Employment) => emp.orgId && emp.orgName)
-        .map((emp: Employment): UserEmploymentDTO => ({
-          orgId: emp.orgId,
-          orgName: emp.orgName ?? undefined,
-          topOrgId: emp.topOrgId,
-          isMainEmployment: emp.isMainEmployment,
-          manager: emp.manager
-            ? {
-                personId: emp.manager.personId,
-                givenname: emp.manager.givenname ?? undefined,
-                lastname: emp.manager.lastname ?? undefined,
-                emailAddress: emp.manager.emailAddress ?? undefined,
-              }
-            : undefined,
-        }))
+        .map(
+          (emp: Employment): UserEmploymentDTO => ({
+            orgId: emp.orgId,
+            orgName: emp.orgName ?? undefined,
+            topOrgId: emp.topOrgId,
+            isMainEmployment: emp.isMainEmployment,
+            manager: emp.manager
+              ? {
+                  personId: emp.manager.personId,
+                  givenname: emp.manager.givenname ?? undefined,
+                  lastname: emp.manager.lastname ?? undefined,
+                  emailAddress: emp.manager.emailAddress ?? undefined,
+                }
+              : undefined,
+          }),
+        )
         .sort((a: UserEmploymentDTO, b: UserEmploymentDTO) => {
           if (a.isMainEmployment && !b.isMainEmployment) return -1;
           if (!a.isMainEmployment && b.isMainEmployment) return 1;

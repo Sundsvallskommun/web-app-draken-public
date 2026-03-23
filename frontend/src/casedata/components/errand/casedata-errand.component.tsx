@@ -1,4 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
+import { getErrandNotes } from '@casedata/services/casedata-errand-notes-service';
 import { emptyErrand, getErrandByErrandNumber, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getUiPhase } from '@casedata/services/process-service';
 import { useCasedataStore, useConfigStore } from '@stores/index';
@@ -33,6 +34,8 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
   const errand = useCasedataStore((s) => s.errand);
   const setErrand = useCasedataStore((s) => s.setErrand);
   const setUiPhase = useCasedataStore((s) => s.setUiPhase);
+  const setNotesCount = useCasedataStore((s) => s.setNotesCount);
+  const setServiceNotesCount = useCasedataStore((s) => s.setServiceNotesCount);
   const toastMessage = useSnackbar();
   const router = useRouter();
 
@@ -76,6 +79,10 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
   useEffect(() => {
     if (errand) {
       setUiPhase(getUiPhase(errand));
+      getErrandNotes(errand.notes).then(({ comments, serviceNotes }) => {
+        setNotesCount(comments);
+        setServiceNotesCount(serviceNotes);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
