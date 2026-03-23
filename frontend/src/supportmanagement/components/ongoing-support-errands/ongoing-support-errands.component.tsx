@@ -173,7 +173,11 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
 
   useEffect(() => {
-    resetFilter({ ...getValues(), status: selectedSupportErrandStatuses }, { keepDirty: true });
+    const currentStatus = JSON.stringify(getValues('status'));
+    const storeStatus = JSON.stringify(selectedSupportErrandStatuses);
+    if (currentStatus !== storeStatus) {
+      setFilterValue('status', selectedSupportErrandStatuses);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSupportErrandStatuses]);
 
