@@ -237,6 +237,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               </div>
               <Select
                 {...register('administratorName')}
+                value={getValues().administratorName}
                 className="w-full"
                 size="sm"
                 data-cy="admin-input"
@@ -266,6 +267,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               <FormLabel className="text-small">Ärendestatus</FormLabel>
               <Select
                 {...register('status.statusType')}
+                value={getValues().status?.statusType}
                 className="w-full"
                 size="sm"
                 data-cy="status-input"
