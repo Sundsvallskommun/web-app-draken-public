@@ -11,6 +11,7 @@ import {
   initiateSupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
+import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -38,7 +39,7 @@ export const SupportErrandComponent: React.FC = () => {
   const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
-  const { municipalityId, supportErrand, setSupportErrand, supportMetadata } = useAppContext();
+  const { municipalityId, supportErrand, setSupportErrand, supportMetadata, setNotesCount } = useAppContext();
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
@@ -117,6 +118,14 @@ export const SupportErrandComponent: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, errandNumber]);
+
+  useEffect(() => {
+    if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
+      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+        setNotesCount(res);
+      });
+    }
+  }, [supportErrand, municipalityId]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 

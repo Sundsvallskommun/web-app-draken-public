@@ -52,11 +52,11 @@ const Arende: React.FC = () => {
           Hoppa till innehåll
         </NextLink>
 
-        {appConfig.isCaseData ? (
-          <CasedataErrandComponent />
-        ) : appConfig.isSupportManagement ? (
-          !!municipalityId && <SupportErrandComponent />
-        ) : null}
+        {appConfig.isCaseData
+          ? !!municipalityId && <CasedataErrandComponent />
+          : appConfig.isSupportManagement
+          ? !!municipalityId && <SupportErrandComponent />
+          : null}
       </Layout>
     </div>
   );
