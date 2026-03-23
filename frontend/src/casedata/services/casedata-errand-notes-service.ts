@@ -85,7 +85,7 @@ export const getErrandNotes: (notes: ErrandNote[]) => Promise<{ comments: number
   let comments = 0;
   let serviceNotes = 0;
 
-  notes.forEach((note) => {
+  notes?.forEach((note) => {
     if (noteIsComment(note.noteType)) {
       comments++;
     }
