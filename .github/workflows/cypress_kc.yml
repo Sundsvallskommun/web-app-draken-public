@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Cypress run KC
-        uses: cypress-io/github-action@e65cba2e7319696fc0fdc4d5a319b737aec4ba1c
+        uses: cypress-io/github-action@4c06c48f3ffea349b7189aa06dfcda47a9fa7b92
         with:
           working-directory: frontend
           install-command: yarn --frozen-lockfile --silent --network-timeout 1000000
