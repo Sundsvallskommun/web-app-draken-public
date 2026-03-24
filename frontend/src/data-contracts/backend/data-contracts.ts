@@ -463,6 +463,14 @@ export interface CSuspension {
   suspendedTo?: string;
 }
 
+export interface CErrandAction {
+  id?: string;
+  actionName?: string;
+  executeAfter?: string;
+  actionConfigId?: string;
+  displayValue?: string;
+}
+
 export interface CNotification {
   id?: string;
   created?: string;
@@ -508,6 +516,7 @@ export interface SupportErrandDto {
   created?: string;
   modified?: string;
   touched?: string;
+  actions?: CErrandAction[];
 }
 
 export interface ForwardFormDto {
