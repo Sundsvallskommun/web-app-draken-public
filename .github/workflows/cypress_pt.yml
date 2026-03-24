@@ -24,7 +24,7 @@ jobs:
     name: E2E in Chrome on ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cypress run PT
         uses: cypress-io/github-action@e65cba2e7319696fc0fdc4d5a319b737aec4ba1c
