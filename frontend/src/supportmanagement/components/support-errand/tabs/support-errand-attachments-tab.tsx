@@ -73,6 +73,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
   const modalFocus = useRef<HTMLButtonElement>(null);
   const setModalFocus = () => {
@@ -152,7 +153,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
       });
   };
 
-  const vals: SupportAttachmentFormModel = getValues();
   useEffect(() => {
     const vals: SupportAttachmentFormModel = getValues();
     trigger();
@@ -165,6 +165,57 @@ export const SupportErrandAttachmentsTab: React.FC<{
   useEffect(() => {
     setSizeError(false);
   }, [attachments]);
+
+  useEffect(() => {
+    if (!supportErrand?.id || !supportAttachments?.length) return;
+
+    const errandId = supportErrand.id.toString();
+    const imageAttachments = supportAttachments.filter(
+      (att) => imageMimeTypes.includes(att.mimeType) && !thumbnails[att.id]
+    );
+
+    if (imageAttachments.length === 0) return;
+
+    let isCancelled = false;
+
+    const fetchAttachmentThumbnail = async (att: SupportAttachment) => {
+      const res = await getSupportAttachment(errandId, municipalityId, att);
+      return {
+        id: att.id,
+        dataUrl: `data:${att.mimeType};base64,${res.base64EncodedString}`,
+      };
+    };
+
+    const fetchThumbnails = async () => {
+      const batchSize = 3;
+      for (let i = 0; i < imageAttachments.length; i += batchSize) {
+        if (isCancelled) break;
+
+        const batch = imageAttachments.slice(i, i + batchSize);
+        const results = await Promise.allSettled(batch.map(fetchAttachmentThumbnail));
+
+        if (isCancelled) break;
+
+        const newThumbnails: Record<string, string> = {};
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            newThumbnails[result.value.id] = result.value.dataUrl;
+          }
+        }
+
+        if (Object.keys(newThumbnails).length > 0) {
+          setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
+        }
+      }
+    };
+
+    fetchThumbnails();
+
+    return () => {
+      isCancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportErrand?.id, supportAttachments, municipalityId]);
 
   const openHandler = () => {
     setDragDrop(true);
@@ -397,17 +448,31 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     clickHandler(attachment);
                   }}
                 >
-                  <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
-                    {(() => { const DynIcon = iconMap[documentMimeTypes.find((d) => d.includes(attachment.mimeType)) ? 'file' : 'image']; return DynIcon ? <DynIcon
-                      className="block"
-                      size={24}
-                    /> : null; })()}
-                  </div>
+                  {imageMimeTypes.includes(attachment.mimeType) && thumbnails[attachment.id] ? (
+                    <Image
+                      src={thumbnails[attachment.id]}
+                      alt={attachment.fileName}
+                      className="w-[48px] h-[48px] object-cover rounded"
+                    />
+                  ) : (
+                    <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
+                      {(() => {
+                        const DynIcon =
+                          iconMap[documentMimeTypes.some((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'];
+                        return DynIcon ? <DynIcon className="block" size={24} /> : null;
+                      })()}
+                    </div>
+                  )}
                   <div>
                     <p>
                       <strong>{attachment.fileName}</strong>{' '}
                     </p>
-                    <p>Uppladdad den {dayjs((attachment as SupportAttachment & { created?: string }).created).format('YYYY-MM-DD HH:mm')}</p>
+                    <p>
+                      Uppladdad den{' '}
+                      {dayjs((attachment as SupportAttachment & { created?: string }).created).format(
+                        'YYYY-MM-DD HH:mm'
+                      )}
+                    </p>
                   </div>
                 </div>
 

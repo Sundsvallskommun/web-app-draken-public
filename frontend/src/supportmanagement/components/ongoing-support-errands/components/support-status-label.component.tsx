@@ -1,18 +1,15 @@
 import { isROB } from '@common/services/application-service';
 import { Label } from '@sk-web-gui/react';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import {
-  Resolution,
-  ResolutionLabelROB,
-  Status,
-  StatusLabel,
-  StatusLabelROB,
-} from '@supportmanagement/services/support-errand-service';
+import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
+import { useAppContext } from '@contexts/app.context';
 
 export const SupportStatusLabelComponent: React.FC<{ status: string; resolution: string }> = ({
   status,
   resolution,
 }) => {
+  const { supportMetadata } = useAppContext();
+
   const solvedErrandIcon = () => {
     if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
     else if (resolution === Resolution.CLOSED) return 'check';
@@ -109,9 +106,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
       }
     }
 
-    return isRob
-      ? (StatusLabelROB as Record<string, string>)[status] ?? 'Status saknas'
-      : (StatusLabel as Record<string, string>)[status] ?? 'Status saknas';
+    return supportMetadata?.statuses?.find((s) => s.name === status)?.displayName ?? status;
   };
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>

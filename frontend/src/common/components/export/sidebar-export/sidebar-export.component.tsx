@@ -84,9 +84,6 @@ export const SidebarExport: React.FC = () => {
         <Checkbox {...register('errandInformation')} key="errandInformation" data-cy="errandInformation">
           Inkludera ärendeuppgifter
         </Checkbox>
-        <Checkbox {...register('messages')} key="messages" data-cy="messages">
-          Inkludera meddelanden
-        </Checkbox>
         <Checkbox {...register('notes')} key="notes" data-cy="notes">
           Inkludera tjänsteanteckningar
         </Checkbox>
@@ -100,7 +97,7 @@ export const SidebarExport: React.FC = () => {
               'Exportera ärende?',
               `${
                 isErrandNotClosed()
-                  ? 'Detta ärende är inte avslutat. Är du säker på att du vill exportera? Exporten kommer att loggas.'
+                  ? 'Detta ärende är inte avslutat. Vill du ändå exportera ärendet?'
                   : 'Vill du exportera ärendet?'
               }`,
               'Ja',

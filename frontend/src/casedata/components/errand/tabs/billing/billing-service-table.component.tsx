@@ -47,9 +47,9 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
             return (
               <Table.Row key={service.id}>
                 <Table.Column className="!overflow-visible">
-                  <div className="relative pt-24 pb-24">
+                  <div className="relative pt-16 pb-30">
                     <span className="font-bold">{service.name}</span>
-                    <span className="text-small whitespace-nowrap absolute left-0 bottom-1">
+                    <span className="text-small whitespace-nowrap absolute left-0 bottom-8">
                       Ansvar: {service.accountInformation.costCenter || '-'}, Underkonto:{' '}
                       {service.accountInformation.subaccount || '-'}, Verksamhet:{' '}
                       {service.accountInformation.department || '-'}, Aktivitet:{' '}
@@ -58,32 +58,48 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
                     </span>
                   </div>
                 </Table.Column>
-                <Table.Column className="max-w-[14rem] whitespace-normal">{service.avitext || '-'}</Table.Column>
-                <Table.Column>{service.quantity}</Table.Column>
-                <Table.Column>{service.costPerUnit.toFixed(2)} kr</Table.Column>
-                <Table.Column>{service.totalAmount.toFixed(2)} kr</Table.Column>
-                <Table.Column>
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    iconButton
-                    onClick={() => onEditService(service.id)}
-                    disabled={editingServiceId !== null}
-                  >
-                    <Pen size={16} />
-                  </Button>
+                <Table.Column className="max-w-[14rem] whitespace-normal">
+                  {' '}
+                  <div className="relative pt-16 pb-30">{service.avitext || '-'} </div>
                 </Table.Column>
                 <Table.Column>
-                  <Button
-                    size="sm"
-                    inverted
-                    iconButton
-                    color="error"
-                    onClick={() => onRemoveService(service.id)}
-                    disabled={editingServiceId !== null}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                  {' '}
+                  <div className="relative pt-16 pb-30">{service.quantity}</div>
+                </Table.Column>
+                <Table.Column>
+                  {' '}
+                  <div className="relative pt-16 pb-30">{service.costPerUnit.toFixed(2)} kr</div>
+                </Table.Column>
+                <Table.Column>
+                  {' '}
+                  <div className="relative pt-16 pb-30">{service.totalAmount.toFixed(2)} kr</div>
+                </Table.Column>
+                <Table.Column>
+                  <div className="relative pt-16 pb-30">
+                    <Button
+                      size="sm"
+                      variant="tertiary"
+                      iconButton
+                      onClick={() => onEditService(service.id)}
+                      disabled={editingServiceId !== null}
+                    >
+                      <Pen size={16} />
+                    </Button>
+                  </div>
+                </Table.Column>
+                <Table.Column>
+                  <div className="relative pt-16 pb-30">
+                    <Button
+                      size="sm"
+                      inverted
+                      iconButton
+                      color="error"
+                      onClick={() => onRemoveService(service.id)}
+                      disabled={editingServiceId !== null}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </Table.Column>
               </Table.Row>
             );

@@ -2,6 +2,8 @@
 
 import {
   buildCreateAssetPayload,
+  buildRemoveParameterPayload,
+  buildReplaceParameterPayload,
   buildUpdateAssetPayload,
   createAsset,
   getAssets,
@@ -15,10 +17,9 @@ import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/js
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { useSnackbar } from '@sk-web-gui/react';
+import { Modal, useSnackbar } from '@sk-web-gui/react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ServiceListComponent } from './casedata-service-list.component';
-import { Service } from './casedata-service-mapper';
 import { useErrandServices } from './useErrandService';
 
 const fromCompositeId = (id: string) => {
@@ -56,7 +57,8 @@ export const CasedataServicesTab: React.FC = () => {
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
   const [formData, setFormData] = useState<any>({});
-  const [editing, setEditing] = useState<Service | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<any>(null);
   const [schemaId, setSchemaId] = useState<string>('');
   const toast = useSnackbar();
 
@@ -88,13 +90,19 @@ export const CasedataServicesTab: React.FC = () => {
     schema,
   });
 
+  const fetchAsset = useCallback(
+    async (assetUuid: string) => {
+      const res = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+      return (res?.data ?? []).find((a) => a.id === assetUuid) ?? null;
+    },
+    [municipalityId, partyId, errandNr, assetType]
+  );
+
   const removeService = useCallback(
     async (compositeId: string) => {
       try {
         const { assetUuid, paramIndex } = fromCompositeId(compositeId);
-
-        const res = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
-        const asset = (res?.data ?? []).find((a) => a.id === assetUuid);
+        const asset = await fetchAsset(assetUuid);
         if (!asset) {
           await refetch();
           return;
@@ -106,21 +114,7 @@ export const CasedataServicesTab: React.FC = () => {
           return;
         }
 
-        const newParams = params.filter((_, i) => i !== paramIndex);
-
-        await updateAsset(municipalityId, asset.id, {
-          origin: asset.origin,
-          partyId: asset.partyId,
-          assetId: asset.assetId,
-          type: asset.type,
-          issued: asset.issued ?? null,
-          validTo: asset.validTo ?? null,
-          status: asset.status,
-          description: asset.description ?? '',
-          additionalParameters: asset.additionalParameters ?? {},
-          jsonParameters: newParams,
-        });
-
+        await updateAsset(municipalityId, asset.id, buildRemoveParameterPayload(paramIndex, asset));
         await refetch();
         toast(
           getToastOptions({
@@ -137,7 +131,7 @@ export const CasedataServicesTab: React.FC = () => {
         );
       }
     },
-    [municipalityId, partyId, errandNr, assetType, refetch, toast]
+    [municipalityId, fetchAsset, refetch, toast]
   );
 
   const handleSubmit = useCallback(
@@ -147,25 +141,15 @@ export const CasedataServicesTab: React.FC = () => {
         const list = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
         const existingFull = (list?.data ?? [])[0];
 
-        if (editing || existingFull) {
-          const targetId = editing?.id ?? existingFull!.id;
-          const fullForMerge =
-            editing?.id === existingFull?.id && existingFull
-              ? existingFull
-              : existingFull ??
-                (await (async () => {
-                  const refetchFull = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
-                  return (refetchFull?.data ?? [])[0];
-                })());
-
+        if (existingFull) {
           await updateAsset(
             municipalityId,
-            targetId,
+            existingFull.id,
             buildUpdateAssetPayload(
               payload,
               schema,
               { schemaId, assetType, partyId, assetId: errandNr },
-              fullForMerge as any
+              existingFull
             )
           );
         } else {
@@ -178,17 +162,16 @@ export const CasedataServicesTab: React.FC = () => {
               assetId: errandNr,
             })
           );
-
-          toast(
-            getToastOptions({
-              message: 'Ny insats tillagd.',
-              status: 'success',
-            })
-          );
         }
 
+        toast(
+          getToastOptions({
+            message: existingFull ? 'Insatsen uppdaterades.' : 'Ny insats tillagd.',
+            status: 'success',
+          })
+        );
+
         await refetch();
-        setEditing(null);
         setFormData({});
       } catch (e: any) {
         toast(
@@ -199,7 +182,75 @@ export const CasedataServicesTab: React.FC = () => {
         );
       }
     },
-    [schema, municipalityId, editing, schemaId, assetType, partyId, errandNr, refetch, toast]
+    [schema, municipalityId, schemaId, assetType, partyId, errandNr, refetch, toast]
+  );
+
+  const startEdit = useCallback(
+    async (compositeId: string) => {
+      try {
+        const { assetUuid, paramIndex } = fromCompositeId(compositeId);
+        const asset = await fetchAsset(assetUuid);
+        if (!asset) {
+          toast(getToastOptions({ message: 'Kunde inte hitta insatsen.', status: 'error' }));
+          return;
+        }
+
+        const params = Array.isArray(asset.jsonParameters) ? asset.jsonParameters : [];
+        if (paramIndex < 0 || paramIndex >= params.length) {
+          toast(getToastOptions({ message: 'Kunde inte hitta insatsen.', status: 'error' }));
+          return;
+        }
+
+        let value = params[paramIndex]?.value;
+        if (typeof value === 'string') {
+          try {
+            value = JSON.parse(value);
+          } catch {
+            // keep as-is
+          }
+        }
+
+        setEditFormData(value);
+        setEditingId(compositeId);
+      } catch {
+        toast(getToastOptions({ message: 'Kunde inte hämta insatsdata.', status: 'error' }));
+      }
+    },
+    [fetchAsset, toast]
+  );
+
+  const closeEditModal = useCallback(() => {
+    setEditingId(null);
+    setEditFormData(null);
+  }, []);
+
+  const handleEditSubmit = useCallback(
+    async (payload: any) => {
+      if (!editingId || !schemaId) return;
+      try {
+        const { assetUuid, paramIndex } = fromCompositeId(editingId);
+        const asset = await fetchAsset(assetUuid);
+        if (!asset) {
+          toast(getToastOptions({ message: 'Kunde inte hitta insatsen.', status: 'error' }));
+          return;
+        }
+
+        const replacePayload = buildReplaceParameterPayload(
+          payload,
+          paramIndex,
+          { schemaId, assetType, partyId, assetId: errandNr },
+          asset
+        );
+
+        await updateAsset(municipalityId, assetUuid, replacePayload);
+        await refetch();
+        closeEditModal();
+        toast(getToastOptions({ message: 'Insatsen uppdaterades.', status: 'success' }));
+      } catch {
+        toast(getToastOptions({ message: 'Något gick fel när insatsen skulle uppdateras.', status: 'error' }));
+      }
+    },
+    [editingId, schemaId, municipalityId, partyId, errandNr, assetType, fetchAsset, refetch, closeEditModal, toast]
   );
 
   return (
@@ -232,9 +283,25 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} readOnly={(errand ? isErrandLocked(errand) : false)} />
+          <ServiceListComponent services={services} onRemove={removeService} onEdit={startEdit} readOnly={(errand ? isErrandLocked(errand) : false)} />
         )}
       </div>
+
+      <Modal show={editingId !== null} className="w-[80rem]" onClose={closeEditModal} label="Redigera insats">
+        <Modal.Content>
+          {editFormData && uiSchema && filteredSchema && (
+            <SchemaForm
+              schema={filteredSchema}
+              uiSchema={uiSchema}
+              formData={editFormData}
+              onChange={(fd) => setEditFormData(fd)}
+              onSubmit={handleEditSubmit}
+              objectFieldTemplate={ServicesObjectFieldTemplate}
+              submitButtonOptions={{ label: 'Spara', leadingIcon: false }}
+            />
+          )}
+        </Modal.Content>
+      </Modal>
     </div>
   );
 };

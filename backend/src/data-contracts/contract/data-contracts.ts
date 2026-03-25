@@ -158,9 +158,15 @@ export interface AttachmentMetadata {
   id?: number;
   /** Attachment category */
   category?: AttachmentCategory;
-  /** The attachment filename */
+  /**
+   * The attachment filename
+   * @minLength 1
+   */
   filename: string;
-  /** The attachment mime-type */
+  /**
+   * The attachment mime-type
+   * @minLength 1
+   */
   mimeType: string;
   /** Notes on the attachment */
   note?: string;
@@ -323,10 +329,7 @@ export interface Fees {
    * @format int32
    */
   indexYear?: number;
-  /**
-   * Index number
-   * @format int32
-   */
+  /** Index number */
   indexNumber?: number;
   /**
    * Specifies what proportion of the consumer price index should be used for invoicing.
@@ -588,6 +591,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -599,11 +605,8 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
@@ -613,10 +616,10 @@ export interface JsonNode {
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];

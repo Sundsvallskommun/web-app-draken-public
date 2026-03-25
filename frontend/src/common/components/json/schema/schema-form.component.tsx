@@ -34,6 +34,7 @@ type SchemaFormProps = {
   onSubmit?: (payload: any, e: IChangeEvent) => void;
   objectFieldTemplate?: React.ComponentType<any>;
   disabled?: boolean;
+  submitButtonOptions?: { label?: string; leadingIcon?: boolean };
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -88,6 +89,7 @@ export default function SchemaForm({
   onSubmit,
   objectFieldTemplate,
   disabled,
+  submitButtonOptions,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -117,7 +119,7 @@ export default function SchemaForm({
   const effectiveUiSchema = uiSchema ?? autoUi;
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
-  const formContext = useMemo(() => ({ originalSchema: schema }), [schema]);
+  const formContext = useMemo(() => ({ originalSchema: schema, submitButtonOptions }), [schema, submitButtonOptions]);
 
   const templates: any = {
     FieldTemplate,

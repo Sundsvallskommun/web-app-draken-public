@@ -149,7 +149,7 @@ export class BillingController {
   @Put('/billing/:municipalityId/billingrecords/:id/status')
   @OpenAPI({ summary: 'Set billing record status' })
   @ResponseSchema(CBillingRecord)
-  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'), hasPermissions(['canEditAttestations']))
+  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'), hasAnyPermission(['canEditAttestations', 'canEditCasedata']))
   async setBillingRecordStatus(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
@@ -157,6 +157,7 @@ export class BillingController {
     @Body() data: CBillingRecord,
     @Res() response: any,
   ): Promise<BillingRecord> {
+    data.approvedBy = `${req.user.firstName} ${req.user.lastName}`;
     const url = `${municipalityId}/billingrecords/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);

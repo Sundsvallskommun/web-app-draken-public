@@ -76,10 +76,11 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.get('[data-cy="investigation-law-select"]').should('exist').select('13 kap. 8 § trafikförordningen');
       cy.get('[data-cy="outcome-select"]').should('exist').select('REJECTION');
-      cy.get('button').should('exist').contains('Ja').click();
+      cy.get('.sk-dialog').should('be.visible');
+      cy.contains('.sk-dialog button', 'Ja').click();
+      cy.wait('@getPhrases');
       cy.get('[data-cy="utredning-richtext-wrapper"]').should('exist').clear().type('Mock text');
-      cy.get('[data-cy="save-utredning-button"]').should('exist').click();
-      cy.get('button').should('exist').contains('Ja').click();
+      cy.get('[data-cy="save-utredning-button"]').should('exist').should('be.enabled').click();
 
       const decidedBy = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.ADMINISTRATOR))!;
 

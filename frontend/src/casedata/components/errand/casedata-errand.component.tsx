@@ -1,23 +1,23 @@
 import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-wrapper';
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { UiPhase } from '@casedata/interfaces/errand-phase';
+import { getErrandNotes } from '@casedata/services/casedata-errand-notes-service';
 import { emptyErrand, getErrandByErrandNumber, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { getUiPhase } from '@casedata/services/process-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { ArrowRight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
-import { getUiPhase } from '@casedata/services/process-service';
-import { ArrowRight } from 'lucide-react';
 
 export const CasedataErrandComponent: React.FC = () => {
   const params = useParams<{ errandNumber?: string }>();
@@ -40,12 +40,7 @@ export const CasedataErrandComponent: React.FC = () => {
     .required();
 
   const [isLoading, setIsLoading] = useState(false);
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    setUiPhase,
-  } = useAppContext();
+  const { municipalityId, errand, setErrand, setUiPhase, setNotesCount, setServiceNotesCount } = useAppContext();
   const toastMessage = useSnackbar();
 
   const methods = useForm<IErrand>({
@@ -105,6 +100,10 @@ export const CasedataErrandComponent: React.FC = () => {
   useEffect(() => {
     if (errand) {
       setUiPhase(getUiPhase(errand));
+      getErrandNotes(errand.notes).then(({ comments, serviceNotes }) => {
+        setNotesCount(comments);
+        setServiceNotesCount(serviceNotes);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);

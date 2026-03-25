@@ -62,13 +62,15 @@ export const exportSingleErrand: (
       file: '',
     })),
     caseLabel: (MEXCaseLabel as Record<string, string>)[errand.caseType],
-    extraParameters: mappedParams.filter((ep): ep is NonNullable<typeof ep> => ep != null).map((ep) => ({
-      id: ep.field,
-      key: ep.field,
-      displayName: ep.label,
-      values: Array.isArray(ep.value) ? ep.value : [ep.value],
-      label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
-    })),
+    extraParameters: mappedParams
+      .filter((ep): ep is NonNullable<typeof ep> => ep != null)
+      .map((ep) => ({
+        id: ep.field,
+        key: ep.field,
+        displayName: ep.label,
+        values: Array.isArray(ep.value) ? ep.value : [ep.value],
+        label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
+      })),
   };
 
   return renderPdf(url, preparedErrand, includeParameters);

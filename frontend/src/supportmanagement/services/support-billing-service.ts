@@ -253,7 +253,6 @@ export const setBillingRecordStatus: (
   const url = `billing/${municipalityId}/billingrecords/${record.id}/status`;
   let data: CBillingRecord = {
     ...record,
-    ...(status === CBillingRecordStatusEnum.APPROVED && { approvedBy: `${user.firstName} ${user.lastName}` }),
     status,
   };
   data = satisfyApi(data);
