@@ -254,8 +254,8 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-city"]').clear();
     await page.locator('[data-cy="contact-city"]').fill('Teststaden');
 
-    await page.locator('[data-cy="new-email-input"]').filter({ visible: true }).fill('test@example.com');
-    await page.locator('[data-cy="add-new-email-button"]').filter({ visible: true }).click();
+    await page.locator('[data-cy="new-email-input"]').first().fill('test@example.com');
+    await page.locator('[data-cy="add-new-email-button"]').first().click();
     await page.locator('[data-cy="newPhoneNumber"]').clear();
     await page.locator('[data-cy="newPhoneNumber"]').fill('+46701740635');
     await page.locator('[data-cy="newPhoneNumber-button"]').click();

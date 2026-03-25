@@ -117,8 +117,9 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="law-select"]').getByText('13 kap. 8 § trafikförordningen').click();
     await expect(page.locator('[data-cy="validFrom-input"]')).toBeDisabled();
     await expect(page.locator('[data-cy="validTo-input"]')).toBeDisabled();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
 
     // Set up mock for getting errand with decisions after create
@@ -156,8 +157,9 @@ test.describe('Decisions tab', () => {
     await page.waitForResponse(
       (resp) => resp.url().includes(`/errand/${mockPTErrand_base.data.id}`) && resp.status() === 200
     );
-    await page.locator('[data-cy="decision-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
 
     const finalDecisionId = mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id;
@@ -183,8 +185,9 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="decision-outcome-select"]').selectOption('Avslag');
     await expect(page.locator('[data-cy="validFrom-input"]')).toBeDisabled();
     await expect(page.locator('[data-cy="validTo-input"]')).toBeDisabled();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
     await page.getByText('Ja').click();
 
@@ -229,8 +232,9 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="validFrom-input"]').fill('2024-07-11');
     await page.locator('[data-cy="validTo-input"]').clear();
     await page.locator('[data-cy="validTo-input"]').fill('2024-08-11');
-    await page.locator('[data-cy="decision-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
     await page.getByText('Ja').click();
 
@@ -278,8 +282,9 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="decision-outcome-select"]').selectOption('Välj utfall');
     await expect(page.locator('[data-cy="validFrom-input"]')).toBeDisabled();
     await expect(page.locator('[data-cy="validTo-input"]')).toBeDisabled();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
 
     await expect(page.getByText('Beslut måste anges')).toBeVisible();
@@ -299,8 +304,9 @@ test.describe('Decisions tab', () => {
 
     await page.locator('[data-cy="decision-outcome-select"]').selectOption('Bifall');
     await expect(page.locator('[data-cy="law-select"]')).toBeVisible();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
 
     await page.locator('[data-cy="validFrom-input"]').clear();
     await page.locator('[data-cy="validTo-input"]').clear();

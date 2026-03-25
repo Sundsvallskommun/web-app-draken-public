@@ -91,8 +91,9 @@ test.describe('Errand page', () => {
 
     // Change changeable values
     await page.locator('[data-cy="category-input"]').selectOption('BoU');
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').type('En ändrad beskrivning');
+    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('En ändrad beskrivning');
     await page.locator('[data-cy="contactReason-input"]').selectOption('Klagomål');
     await page.locator('[data-cy="channel-input"]').selectOption('Chatt');
     await page.locator('[data-cy="show-contactReasonDescription-input"]').check({ force: true });

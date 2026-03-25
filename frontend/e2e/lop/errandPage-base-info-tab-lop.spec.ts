@@ -79,8 +79,9 @@ test.describe('Errand page', () => {
 
     // Change changeable values
     await page.locator('[data-cy="labelCategory-input"]').selectOption('Elnät/Servanet');
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').fill('En ändrad beskrivning');
+    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('En ändrad beskrivning');
     await page.locator('[data-cy="channel-input"]').selectOption('Chatt');
 
     // Check changed values

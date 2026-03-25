@@ -100,8 +100,9 @@ test.describe('Investigation tab', () => {
     await page.locator('[data-cy="investigation-law-select"]').selectOption('13 kap. 8 § trafikförordningen');
     await page.locator('[data-cy="outcome-select"]').selectOption('REJECTION');
     await page.getByText('Ja').click();
-    await page.locator('[data-cy="utredning-richtext-wrapper"]').clear();
-    await page.locator('[data-cy="utredning-richtext-wrapper"]').fill('Mock text');
+    await page.locator('[data-cy="utredning-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-utredning-button"]').click();
     await page.getByText('Ja').click();
 
@@ -129,7 +130,9 @@ test.describe('Investigation tab', () => {
   });
 
   test('disables save button if investigation text is empty', async ({ page }) => {
-    await page.locator('[data-cy="utredning-richtext-wrapper"]').clear();
+    await page.locator('[data-cy="utredning-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Backspace');
     await expect(page.locator('[data-cy="save-utredning-button"]')).toBeDisabled();
   });
 });
