@@ -7,14 +7,13 @@
 
 # testing
 /coverage
-/cypress/videos
-/cypress/screenshots
-# Cypress visual regression - ignore failure artifacts
-cypress/snapshots/**/__diff_output__/
-cypress/snapshots/**/*.diff.png
-cypress/snapshots/**/*.actual.png
-/cypress/downloads
 .nyc_output
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # generated from raleway.scss.template
 /src/styles/raleway.scss
