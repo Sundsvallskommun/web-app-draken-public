@@ -241,7 +241,7 @@ export const RenderedSupportMessage: React.FC<{
                     if (message?.conversationId) {
                       getSupportConversationAttachment(
                         municipalityId,
-                        Number(supportErrand.id!),
+                        supportErrand.id!,
                         message.conversationId!,
                         message.messageId!,
                         a.id!

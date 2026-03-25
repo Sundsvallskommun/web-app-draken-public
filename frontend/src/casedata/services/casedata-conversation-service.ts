@@ -94,17 +94,27 @@ export const sendConversationMessage = (
   errandId: number,
   conversationId: string,
   message: string,
-  files?: FileList[]
+  files?: FileList[],
+  existingAttachments?: Attachment[]
 ) => {
   const url = `${municipalityId}/namespace/errand/${errandId}/communication/conversations/${conversationId}/messages`;
 
   const formData = new FormData();
-  formData.append(
-    'message',
-    JSON.stringify({
-      content: message,
-    })
-  );
+  const messageBody: { content: string; attachmentIds?: number[] } = {
+    content: message,
+  };
+
+  if (existingAttachments && existingAttachments.length > 0) {
+    const ids = existingAttachments
+      .map((a: any) => a.attachmentId ?? a.id)
+      .filter((id: any) => id != null)
+      .map((id: any) => Number(id));
+    if (ids.length > 0) {
+      messageBody.attachmentIds = ids;
+    }
+  }
+
+  formData.append('message', JSON.stringify(messageBody));
 
   if (files && files.length > 0) {
     files.forEach((fileList) => {

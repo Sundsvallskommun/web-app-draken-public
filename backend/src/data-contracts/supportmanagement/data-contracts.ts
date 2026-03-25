@@ -51,8 +51,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -282,6 +282,57 @@ export interface Role {
   modified?: string;
 }
 
+/** Phase model */
+export interface Phase {
+  /** Phase ID */
+  id?: string;
+  /**
+   * Phase name
+   * @minLength 1
+   */
+  name: string;
+  /** Display name for the phase */
+  displayName?: string;
+  /** Description of the phase */
+  description?: string;
+  /**
+   * Order of the phase in the process (0 = initial phase)
+   * @format int32
+   */
+  phaseOrder?: number;
+  /** Allowed statuses in this phase */
+  allowedStatuses?: string[];
+  /** Transitions from this phase */
+  transitions?: PhaseTransition[];
+  /**
+   * Timestamp when the phase was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the phase was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
+/** Phase transition model */
+export interface PhaseTransition {
+  /** Transition ID */
+  id?: string;
+  /**
+   * Target phase ID
+   * @minLength 1
+   */
+  targetPhaseId: string;
+  /** Target phase name */
+  targetPhaseName?: string;
+  /** Target phase display name */
+  targetPhaseDisplayName?: string;
+  /** Description of the transition */
+  description?: string;
+}
+
 /** ExternalIdType model */
 export interface ExternalIdType {
   /**
@@ -445,6 +496,8 @@ export interface Errand {
   businessRelated?: boolean;
   /** List of labels for the errand */
   labels?: ErrandLabel[];
+  /** List of phases for the errand */
+  phases?: ErrandPhase[];
   /** List of active notifications for the errand */
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
@@ -497,6 +550,26 @@ export interface ErrandLabel {
   resourceName?: string;
 }
 
+/** Errand phase model */
+export interface ErrandPhase {
+  /** Phase ID */
+  id?: string;
+  /** Phase name */
+  name?: string;
+  /** Phase display name */
+  displayName?: string;
+  /**
+   * Timestamp when the errand entered this phase
+   * @format date-time
+   */
+  started?: string;
+  /**
+   * Timestamp when the errand left this phase
+   * @format date-time
+   */
+  ended?: string;
+}
+
 /** External tag model */
 export interface ExternalTag {
   /** Key for external tag */
@@ -511,13 +584,13 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  integralNumber?: boolean;
+  number?: boolean;
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -529,7 +602,7 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -954,13 +1027,14 @@ export interface MetadataResponse {
   statuses?: Status[];
   roles?: Role[];
   contactReasons?: ContactReason[];
+  phases?: Phase[];
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -983,8 +1057,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1120,10 +1194,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1225,10 +1299,10 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
