@@ -152,6 +152,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   const [searchResultArray, setSearchResultArray] = useState<AddressResult[]>([]);
   const [selectedUser, setSelectedUser] = useState<AddressResult>();
   const [query, setQuery] = useState('');
+  const [searchFieldKey, setSearchFieldKey] = useState(0);
 
   const searchProps = {
     searchResult,
@@ -168,11 +169,12 @@ export const SupportSimplifiedContactForm: React.FC<{
     searchMode,
     setUnsaved,
     setSearchMode,
+    searchFieldKey,
   };
 
   const form = useForm<SupportStakeholderFormModel>({
     defaultValues: contact,
-    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    mode: 'onSubmit', // NOTE: Needed if we want to disable submit until valid
     resolver: yupResolver(yupContact) as unknown as Resolver<SupportStakeholderFormModel>,
   });
 
@@ -358,6 +360,16 @@ export const SupportSimplifiedContactForm: React.FC<{
             leftIcon={<Pen />}
             onClick={() => {
               reset({}, { keepErrors: false });
+              setQuery('');
+              setSearchFieldKey((prev) => prev + 1);
+              setValue('organizationNumber', '', { shouldDirty: false });
+              setValue('personNumber', '', { shouldDirty: false });
+              setValue(
+                'stakeholderType',
+                searchMode === 'person' || searchMode === 'employee'
+                  ? SupportStakeholderTypeEnum.PERSON
+                  : SupportStakeholderTypeEnum.ORGANIZATION
+              );
               setValue(
                 'externalIdType',
                 searchMode === 'person' || searchMode === 'employee' ? ExternalIdType.PRIVATE : ExternalIdType.COMPANY

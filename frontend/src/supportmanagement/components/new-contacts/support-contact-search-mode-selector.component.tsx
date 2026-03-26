@@ -82,7 +82,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
               data-cy={`search-employee-${inName}-${contact.role}`}
               size="sm"
               className="mr-sm"
-              name={`stakeholderType-${id}`}
+              name={`stakeholderType-${id}-${inName}`}
               id={`searchEmployee-${id}-${inName}`}
               value={'EMPLOYEE'}
               checked={searchMode === 'employee'}
@@ -99,7 +99,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
             data-cy={`search-person-${inName}-${contact.role}`}
             size="sm"
             className="mr-sm"
-            name={`stakeholderType-${id}`}
+            name={`stakeholderType-${id}-${inName}`}
             id={`searchPerson-${id}-${inName}`}
             value={'PERSON'}
             checked={searchMode === 'person'}
@@ -118,7 +118,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
                 data-cy={`search-enterprise-${inName}-${contact.role}`}
                 size="sm"
                 className="mr-sm"
-                name={`stakeholderType-${id}`}
+                name={`stakeholderType-${id}-${inName}`}
                 id={`searchEnterprise-${id}-${inName}`}
                 value={'ENTERPRISE'}
                 checked={searchMode === 'enterprise'}
@@ -134,7 +134,7 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
                 data-cy={`search-organization-${inName}-${contact.role}`}
                 size="sm"
                 className="mr-sm"
-                name={`stakeholderType-${id}`}
+                name={`stakeholderType-${id}-${inName}`}
                 id={`searchOrganization-${id}-${inName}`}
                 value={'ORGANIZATION'}
                 checked={searchMode === 'organization'}
