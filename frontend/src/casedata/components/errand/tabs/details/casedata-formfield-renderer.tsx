@@ -167,7 +167,7 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
   const isDisabled = isErrandLocked(errand) || isFTNotificationErrand(errand);
 
-  const handleChange = (e) => {
+  const handleChange = (e: any) => {
     setValue(fieldKey, e, {
       shouldDirty: true,
       shouldTouch: true,

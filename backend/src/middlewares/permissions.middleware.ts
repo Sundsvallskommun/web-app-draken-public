@@ -29,7 +29,11 @@ export const hasAnyPermission = (permissions: Array<keyof Permissions>) => async
 export const hasRoles = (roles: Array<KeyOfMap<InternalRoleMap>>) => async (req: Request, res: Response, next: NextFunction) => {
   const endpointPermissions = getPermissions(roles);
   const userPermissions = getPermissions(req.user?.groups || []);
-  if (Object.keys(endpointPermissions).every(permission => (endpointPermissions[permission] ? userPermissions[permission] : true))) {
+  if (
+    (Object.keys(endpointPermissions) as Array<keyof Permissions>).every(permission =>
+      endpointPermissions[permission] ? userPermissions[permission] : true,
+    )
+  ) {
     next();
   } else {
     logger.error('Missing permissions');

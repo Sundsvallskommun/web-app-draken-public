@@ -1,6 +1,5 @@
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
@@ -9,6 +8,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface AttestationTableForm {
   sortOrder: 'asc' | 'desc';
@@ -21,8 +21,8 @@ export interface AttestationTableForm {
 }
 
 export const AttestationsTable: React.FC<{
-  setSelectedRecord;
-  setShowSelectedRecord;
+  setSelectedRecord: (record: CBillingRecord | undefined) => void;
+  setShowSelectedRecord: (show: boolean) => void;
 }> = ({ setSelectedRecord, setShowSelectedRecord }) => {
   const { watch, setValue, register } = useFormContext<AttestationTableForm>();
   const { municipalityId, billingRecords }: AppContextInterface = useAppContext();
@@ -76,11 +76,11 @@ export const AttestationsTable: React.FC<{
     </Table.HeaderColumn>
   ));
 
-  const StatusButtonComponent = (record) => {
-    let color,
+  const StatusButtonComponent = (record: CBillingRecord) => {
+    let color: string,
       inverted = false,
-      icon = null,
-      variant = null;
+      icon: string | null = null,
+      variant: 'link' | 'primary' | 'secondary' | 'tertiary' | 'ghost' | null = null;
     switch (record.status) {
       case CBillingRecordStatusEnum.APPROVED:
         color = 'gronsta';
@@ -111,9 +111,20 @@ export const AttestationsTable: React.FC<{
     }
     return (
       <Button
-        variant={variant}
+        variant={variant as 'link' | 'primary' | 'secondary' | 'tertiary' | 'ghost'}
         inverted={inverted}
-        color={color}
+        color={
+          color as
+            | 'vattjom'
+            | 'gronsta'
+            | 'error'
+            | 'primary'
+            | 'info'
+            | 'success'
+            | 'warning'
+            | 'bjornstigen'
+            | 'juniskar'
+        }
         size="sm"
         className="w-full"
         onClick={() => {
@@ -121,7 +132,12 @@ export const AttestationsTable: React.FC<{
           setShowSelectedRecord(true);
         }}
       >
-        {icon ? <LucideIcon name={icon} size={16} /> : null}{' '}
+        {icon
+          ? (() => {
+              const DynIcon = iconMap[icon];
+              return DynIcon ? <DynIcon size={16} /> : undefined;
+            })()
+          : null}{' '}
         {findAttestationStatusLabelForAttestationStatusKey(record.status)}
       </Button>
     );
@@ -137,7 +153,7 @@ export const AttestationsTable: React.FC<{
           {maybe(record?.invoice?.description)}
         </Table.HeaderColumn>
         <Table.Column>{maybe(record?.invoice.invoiceRows?.[0]?.quantity)}</Table.Column>
-        <Table.Column>{formatCurrency(maybe(record.invoice?.totalAmount))}</Table.Column>
+        <Table.Column>{formatCurrency(record.invoice?.totalAmount as number)}</Table.Column>
         <Table.Column>{maybe(record.extraParameters?.['referenceName'])}</Table.Column>
         <Table.Column>{prettyTime(record.created)}</Table.Column>
         <Table.Column>{prettyTime(record.modified)}</Table.Column>
@@ -182,14 +198,14 @@ export const AttestationsTable: React.FC<{
             </caption>
           )
         )}*/}
-        {billingRecords?.numberOfElements > 0 && (
+        {(billingRecords?.numberOfElements ?? 0) > 0 && (
           <>
             <Table.Header>{headers}</Table.Header>
             <Table.Body>{rows}</Table.Body>
           </>
         )}
 
-        {billingRecords?.numberOfElements > 0 && (
+        {(billingRecords?.numberOfElements ?? 0) > 0 && (
           <Table.Footer>
             <div className="sk-table-bottom-section sk-table-pagination-mobile">
               <label className="sk-table-bottom-section-label" htmlFor="paginationSelect">

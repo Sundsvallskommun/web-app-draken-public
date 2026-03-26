@@ -25,7 +25,8 @@ export const RenderedSupportMessage: React.FC<{
   root?: boolean;
   children: any;
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
-  const { supportErrand, municipalityId, user }: AppContextInterface = useAppContext();
+  const { supportErrand: _supportErrand, municipalityId, user } = useAppContext();
+  const supportErrand = _supportErrand!;
   const [allowed, setAllowed] = useState(false);
 
   // Changed logic for expanded message to see if it solve problem with unread message counter
@@ -60,10 +61,10 @@ export const RenderedSupportMessage: React.FC<{
   const getMessageOwner = (msg: Message) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
       const ownerInfomration =
-        supportErrand.stakeholders?.filter((stakeholder) => stakeholder.role.includes('PRIMARY')) ?? [];
+        supportErrand.stakeholders?.filter((stakeholder) => stakeholder.role?.includes('PRIMARY')) ?? [];
       const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
-        stakeholder.contactChannels.some((value) => value.value === msg.sender)
+        stakeholder.contactChannels?.some((value) => value.value === msg.sender)
       );
 
       if (isWebMessageOpenE || isOwnerStakeholderEmail) {
@@ -72,7 +73,7 @@ export const RenderedSupportMessage: React.FC<{
     }
   };
 
-  function isInViewport(element) {
+  function isInViewport(element: Element) {
     const rect = element.getBoundingClientRect();
     return (
       rect.top >= 0 &&
@@ -85,8 +86,8 @@ export const RenderedSupportMessage: React.FC<{
   useEffect(() => {
     if (!message.viewed && supportErrand.assignedUserId === user.username) {
       expanded &&
-        isInViewport(document.querySelector(`.message-${message.communicationID}`)) &&
-        setMessageViewStatus(supportErrand.id, municipalityId, message.communicationID, true).then(() => {
+        isInViewport(document.querySelector(`.message-${message.communicationID}`)!) &&
+        setMessageViewStatus(supportErrand.id!, municipalityId, message.communicationID, true).then(() => {
           update();
         });
     }
@@ -240,16 +241,16 @@ export const RenderedSupportMessage: React.FC<{
                     if (message?.conversationId) {
                       getSupportConversationAttachment(
                         municipalityId,
-                        supportErrand.id,
-                        message.conversationId,
-                        message.messageId,
-                        a.id
+                        supportErrand.id!,
+                        message.conversationId!,
+                        message.messageId!,
+                        a.id!
                       )
                         .then((res) => {
                           if (res.data.length !== 0) {
                             const uri = `data:${a.mimeType};base64,${res.data}`;
                             const link = document.createElement('a');
-                            const filename = a.fileName;
+                            const filename = a.fileName ?? '';
                             link.href = uri;
                             link.setAttribute('download', filename);
                             document.body.appendChild(link);
@@ -272,12 +273,12 @@ export const RenderedSupportMessage: React.FC<{
                           });
                         });
                     } else {
-                      getMessageAttachment(municipalityId, supportErrand.id, message.communicationID, a.id)
+                      getMessageAttachment(municipalityId, supportErrand.id!, message.communicationID, a.id!)
                         .then((res) => {
                           if (res.data) {
                             const uri = `data:${a.mimeType};base64,${res.data}`;
                             const link = document.createElement('a');
-                            const filename = a.fileName;
+                            const filename = a.fileName ?? '';
                             link.href = uri;
                             link.setAttribute('download', filename);
                             document.body.appendChild(link);
@@ -303,7 +304,7 @@ export const RenderedSupportMessage: React.FC<{
                   }}
                   role="listitem"
                   // eslint-disable-next-line jsx-a11y/alt-text
-                  leftIcon={a.fileName.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
+                  leftIcon={a.fileName?.endsWith('pdf') ? <Icon icon={<Paperclip />} /> : <Icon icon={<Image />} />}
                   variant="tertiary"
                 >
                   {a.fileName}

@@ -12,23 +12,23 @@
 
 /** Type of event */
 export enum EventType {
-  CREATE = "CREATE",
-  UPDATE = "UPDATE",
-  DELETE = "DELETE",
-  UNKNOWN = "UNKNOWN",
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  UNKNOWN = 'UNKNOWN',
 }
 
 /** ConversationType model */
 export enum ConversationType {
-  INTERNAL = "INTERNAL",
-  EXTERNAL = "EXTERNAL",
+  INTERNAL = 'INTERNAL',
+  EXTERNAL = 'EXTERNAL',
 }
 
 /** Priority model */
 export enum Priority {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
 }
 
 export interface Problem {
@@ -336,19 +336,20 @@ export interface Status {
   /**
    * Name for the status
    * @minLength 1
-   * @example "statusName"
    */
   name: string;
+  /** Display name for the status */
+  displayName?: string | null;
+  /** External display name for the status */
+  externalDisplayName?: string | null;
   /**
    * Timestamp when the status was created
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   created?: string;
   /**
    * Timestamp when the status was last modified
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   modified?: string;
 }
@@ -543,6 +544,8 @@ export interface Errand {
   externalTags?: ExternalTag[];
   /** Parameters for the errand */
   parameters?: Parameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
   /** Classification model */
   classification?: Classification;
   /**
@@ -776,6 +779,25 @@ export interface Parameter {
   group?: string;
   /** Parameter values. Each value can have a maximum length of 2000 characters */
   values?: string[];
+}
+
+/** JSON Parameter model */
+export interface JsonParameter {
+  /**
+   * Parameter key/name
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * JSON structure value
+   * @example {"firstName":"Joe","lastName":"Doe"}
+   */
+  value: any;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
 }
 
 /** Stakeholder model */
@@ -1668,8 +1690,8 @@ export interface CountResponse {
  * @example "INBOUND"
  */
 export enum CommunicationDirectionEnum {
-  INBOUND = "INBOUND",
-  OUTBOUND = "OUTBOUND",
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
 }
 
 /**
@@ -1677,9 +1699,9 @@ export enum CommunicationDirectionEnum {
  * @example "EMAIL"
  */
 export enum CommunicationCommunicationTypeEnum {
-  SMS = "SMS",
-  EMAIL = "EMAIL",
-  WEB_MESSAGE = "WEB_MESSAGE",
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }
 
 /**
@@ -1687,6 +1709,6 @@ export enum CommunicationCommunicationTypeEnum {
  * @example "USER_CREATED"
  */
 export enum MessageTypeEnum {
-  USER_CREATED = "USER_CREATED",
-  SYSTEM_CREATED = "SYSTEM_CREATED",
+  USER_CREATED = 'USER_CREATED',
+  SYSTEM_CREATED = 'SYSTEM_CREATED',
 }

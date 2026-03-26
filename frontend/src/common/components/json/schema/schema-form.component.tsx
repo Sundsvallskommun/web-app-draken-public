@@ -1,24 +1,20 @@
 'use client';
 
+import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
+import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
 import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit-button-field-template.componant';
-import { globalWidgets } from '@common/components/json/widgets/index.componant';
+import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
-import type { RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
+import type { RegistryFieldsType, RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
 import validatorAjv8 from '@rjsf/validator-ajv8';
 import { useCallback, useMemo, useState } from 'react';
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
 
-const widgets: RegistryWidgetsType = {
-  TextWidget: globalWidgets.TextWidget,
-  SelectWidget: globalWidgets.SelectWidget,
-  RadioWidget: globalWidgets.RadiobuttonWidget,
-  RadiobuttonWidget: globalWidgets.RadiobuttonWidget,
-  CheckboxWidget: globalWidgets.CheckboxWidget,
-  DateWidget: globalWidgets.DateWidget,
-  ComboboxWidget: globalWidgets.ComboboxWidget,
-  TexteditorWidget: globalWidgets.TexteditorWidget,
-  TextareaWidget: globalWidgets.TextareaWidget,
+const widgets: RegistryWidgetsType = jsonWidgets as RegistryWidgetsType;
+
+const fields: RegistryFieldsType = {
+  FacilitySearchWidget: FacilitySearchField as any,
 };
 
 type AnyProp = {
@@ -37,6 +33,8 @@ type SchemaFormProps = {
   onChange?: (data: any, e?: IChangeEvent) => void;
   onSubmit?: (payload: any, e: IChangeEvent) => void;
   objectFieldTemplate?: React.ComponentType<any>;
+  disabled?: boolean;
+  submitButtonOptions?: { label?: string; leadingIcon?: boolean };
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -90,11 +88,13 @@ export default function SchemaForm({
   onChange,
   onSubmit,
   objectFieldTemplate,
+  disabled,
+  submitButtonOptions,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
 
-  const handleChange = useCallback<FormProps<any>['onChange']>(
+  const handleChange = useCallback<NonNullable<FormProps<any>['onChange']>>(
     (e) => {
       const fd = { ...e.formData };
       if (formData !== undefined) {
@@ -116,8 +116,14 @@ export default function SchemaForm({
     [onSubmit]
   );
 
+  const effectiveUiSchema = uiSchema ?? autoUi;
+
+  // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
+  const formContext = useMemo(() => ({ originalSchema: schema, submitButtonOptions }), [schema, submitButtonOptions]);
+
   const templates: any = {
     FieldTemplate,
+    ObjectFieldTemplate: SectionsObjectFieldTemplate,
     ButtonTemplates: { SubmitButton: SubmitButtonFieldTemplate },
   };
 
@@ -129,17 +135,22 @@ export default function SchemaForm({
     <div className="w-full max-w-full">
       <Form
         schema={schema || { type: 'object', properties: {} }}
-        uiSchema={uiSchema ?? autoUi}
+        uiSchema={effectiveUiSchema}
         formData={data}
+        formContext={formContext}
         onChange={handleChange}
         onSubmit={handleSubmit}
         validator={validatorAjv8}
+        fields={fields}
         widgets={widgets}
         templates={templates}
         transformErrors={createJsonErrorTransformer(schema)}
         noHtml5Validate
         showErrorList={false}
-      />
+        disabled={disabled}
+      >
+        {disabled ? <></> : undefined}
+      </Form>
     </div>
   );
 }

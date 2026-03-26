@@ -3,11 +3,11 @@ import { ValidationError, validate } from 'class-validator';
 import { HttpException } from '@exceptions/HttpException';
 import { plainToInstance } from 'class-transformer';
 
-export const getAllNestedErrors = (error: ValidationError) => {
+export const getAllNestedErrors = (error: ValidationError): string | string[] => {
   if (error.constraints) {
     return Object.values(error.constraints);
   }
-  return error.children.map(getAllNestedErrors).join(',');
+  return (error.children ?? []).map(getAllNestedErrors).join(',');
 };
 
 /**
@@ -33,7 +33,7 @@ export const validateObject = async (
  * @param schema Should be a `class-validator` object
  * @param body should be the object to validate
  */
-export const validateRequestBody = async (schema, body) => {
+export const validateRequestBody = async (schema: new (...args: unknown[]) => unknown, body: object) => {
   const errors = await validateObject(schema, body);
   if (errors.length > 0) {
     const message = errors.map(getAllNestedErrors).join(', ');

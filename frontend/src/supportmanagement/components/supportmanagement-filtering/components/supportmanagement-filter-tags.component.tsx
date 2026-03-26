@@ -1,7 +1,7 @@
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
 import { Chip } from '@sk-web-gui/react';
-import { Channels } from '@supportmanagement/services/support-errand-service';
+import { Channels, Status } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { Admin } from '@common/services/user-service';
 import { Priority } from '@supportmanagement/interfaces/priority';
@@ -33,16 +33,16 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
   const {
     supportMetadata,
     selectedSupportErrandStatuses,
-  }: { supportMetadata: SupportMetadata; selectedSupportErrandStatuses } = useAppContext();
+  } = useAppContext();
 
   useEffect(() => {
     setAllCategories(supportMetadata?.categories);
     const _types: SupportType[] = [];
     if (categories.length > 0) {
       categories?.forEach((category) => {
-        const categoryTypes = supportMetadata?.categories.find((c) => c.name === category)?.types;
+        const categoryTypes = supportMetadata?.categories?.find((c) => c.name === category)?.types;
         types.filter((type) => {
-          if (!categoryTypes.find((ct) => ct.name === type)) {
+          if (!categoryTypes?.find((ct) => ct.name === type)) {
             const newTypes = types.filter((_t) => _t !== type);
             setValue('type', newTypes);
           }
@@ -53,7 +53,7 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
       });
     } else {
       supportMetadata?.categories?.forEach((category) => {
-        _types.push(...category.types);
+        _types.push(...(category.types ?? []));
       });
     }
     setAllTypes(_types);
@@ -64,15 +64,15 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
       if (labelCategories.length > 0) {
         // Some labelCategory is selected, get labelTypes from those
         labelCategories?.forEach((category) => {
-          const categoryTypes = supportMetadata?.labels.labelStructure.find((c) => c.resourcePath === category)?.labels;
+          const categoryTypes = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
           if (categoryTypes) {
-            _labelTypes.push(...categoryTypes.map((l) => l.resourcePath));
+            _labelTypes.push(...categoryTypes.map((l) => l.resourcePath!));
           }
         });
       } else {
         // No selected labelCategory, get all label types
-        supportMetadata?.labels.labelStructure?.forEach((category) => {
-          _labelTypes.push(...category.labels.map((l) => l.resourcePath));
+        supportMetadata?.labels?.labelStructure?.forEach((category) => {
+          _labelTypes.push(...(category.labels ?? []).map((l) => l.resourcePath!));
         });
       }
     }
@@ -141,7 +141,7 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
 
   const handleReset = () => {
     reset(SupportManagementValues);
-    setValue('status', [selectedSupportErrandStatuses]);
+    setValue('status', selectedSupportErrandStatuses as Status[]);
   };
 
   return (
@@ -189,12 +189,12 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
       ))}
       {channels.map((channel, channelIndex) => (
         <Chip key={`caseChannel-${channelIndex}`} aria-label="Rensa Kanal" onClick={() => handleRemoveChannel(channel)}>
-          {Channels[channel]}
+          {(Channels as Record<string, string>)[channel]}
         </Chip>
       ))}
       {priorities.map((priority, prioIndex) => (
         <Chip key={`casePrio-${prioIndex}`} aria-label="Rensa prioritet" onClick={() => handleRemovePriority(priority)}>
-          {Priority[priority]} prioritet
+          {(Priority as Record<string, string>)[priority]} prioritet
         </Chip>
       ))}
 

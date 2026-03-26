@@ -43,7 +43,7 @@ export interface AddressResult {
 }
 
 const emptyaddress: AddressResult = {
-  personId: null,
+  personId: '',
   firstName: '',
   lastName: '',
   organizationName: '',
@@ -126,13 +126,13 @@ export const isValidPersonalNumber: (ssn: string) => boolean = (ssn) =>
   luhnCheck(ssn) && ((ssn.length === 12 && parseInt(ssn[4]) < 2) || (ssn.length === 10 && parseInt(ssn[2]) < 2));
 
 export const isValidOrgNumber: (ssn: string) => boolean = (ssn) => {
-  const nodashed = formatOrgNr(ssn, OrgNumberFormat.NODASH);
+  const nodashed = formatOrgNr(ssn, OrgNumberFormat.NODASH) ?? '';
   const passingLuhn = luhnCheck(nodashed);
-  const passingDigitTest = parseInt(nodashed?.[2]) > 1;
+  const passingDigitTest = parseInt(nodashed[2]) > 1;
   return passingLuhn && passingDigitTest;
 };
 
-export const searchPerson: (ssn: string) => Promise<AddressResult> = (ssn: string) => {
+export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> = (ssn: string) => {
   ssn = ssn.replace(/\D/g, '');
   return !isValidPersonalNumber(ssn)
     ? Promise.resolve(undefined)
@@ -155,7 +155,12 @@ export const searchPerson: (ssn: string) => Promise<AddressResult> = (ssn: strin
               careof: addressItem?.co || '',
               zip: addressItem?.postalCode || '',
               city: addressItem?.city || '',
-            };
+              loginName: '',
+              company: '',
+              administrationCode: '',
+              administrationName: '',
+              department: '',
+            } as AddressResult;
           }
         });
 };
@@ -236,12 +241,12 @@ const isValidOrganization = (org: CLegalEntity2WithId) =>
   ((org.address?.city && org.address?.postalCode && org.address.addressArea) ||
     (org.address?.addressArea && org.address?.city && org.address?.postalCode));
 
-export const searchOrganization: (orgNr: string) => Promise<AddressResult> = (orgNr: string) => {
-  return !isValidOrgNumber(formatOrgNr(orgNr))
+export const searchOrganization: (orgNr: string) => Promise<AddressResult | undefined> = (orgNr: string) => {
+  return !isValidOrgNumber(formatOrgNr(orgNr) ?? '')
     ? Promise.resolve(undefined)
     : apiService
         .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>('organization', {
-          orgNr: formatOrgNr(orgNr, OrgNumberFormat.NODASH),
+          orgNr: formatOrgNr(orgNr, OrgNumberFormat.NODASH) ?? '',
         })
         .then((res) => res.data.data)
         .then((res) => {
@@ -255,15 +260,20 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult> = (or
               street: res.address.addressArea,
             };
             return {
-              personId: undefined,
-              firstName: undefined,
-              lastName: undefined,
+              personId: '',
+              firstName: '',
+              lastName: '',
               organizationName: res.name,
               street: addressItem.street,
-              careof: undefined,
+              careof: '',
               zip: addressItem.postcode,
               city: addressItem.city,
               phone: res.phoneNumber || '',
+              loginName: '',
+              company: '',
+              administrationCode: '',
+              administrationName: '',
+              department: '',
             } as AddressResult;
           }
         });

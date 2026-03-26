@@ -31,7 +31,6 @@ import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/servi
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Chip,
@@ -51,6 +50,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { File, Paperclip, X } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
@@ -73,18 +73,18 @@ export interface CasedataMessageTabFormModel {
   headerReferences: string;
 }
 
-const defaultMessage = {
+const defaultMessage: Partial<CasedataMessageTabFormModel> = {
   contactMeans: 'email' as const,
-  emails: [],
+  emails: [] as { value: string }[],
   newEmail: '',
-  phoneNumbers: [],
+  phoneNumbers: [] as string[],
   newPhoneNumber: '',
   messageBody: '',
   messageBodyPlaintext: '',
   attachUtredning: false,
-  existingAttachments: [],
+  existingAttachments: [] as Attachment[],
   addExisting: '',
-  newAttachments: [],
+  newAttachments: [] as { file: FileList | undefined }[],
   newItem: undefined,
   headerReplyTo: '',
   headerReferences: '',
@@ -163,7 +163,7 @@ export const MessageComposer: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, user }: { municipalityId: string; errand: IErrand; user: User } = useAppContext();
+  const { municipalityId, errand, user } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -174,6 +174,7 @@ export const MessageComposer: React.FC<{
   const [allowed, setAllowed] = useState(false);
   const { t } = useTranslation();
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user) && !!errand.administrator;
     setAllowed(_a);
   }, [user, errand]);
@@ -249,14 +250,14 @@ export const MessageComposer: React.FC<{
     if (data.contactMeans === 'draken' || data.contactMeans === 'minasidor' || data.contactMeans === 'katla') {
       const conversationId = await getOrCreateConversationId(
         municipalityId,
-        errand,
+        errand!,
         contactMeans,
-        props?.message?.conversationId
+        props?.message?.conversationId ?? ''
       );
 
       sendConversationMessage(
         municipalityId,
-        errand.id,
+        errand!.id,
         conversationId,
         data.messageBody,
         data.messageAttachments.map((a) => a.file).filter((f): f is FileList => !!f)
@@ -285,7 +286,7 @@ export const MessageComposer: React.FC<{
           return;
         });
     } else {
-      apiCall(municipalityId, errand, data)
+      apiCall(municipalityId, errand!, data)
         .then(() => {
           toastMessage(
             getToastOptions({
@@ -322,13 +323,13 @@ export const MessageComposer: React.FC<{
         });
     }
     if (
-      errand.status.statusType !== ErrandStatus.VantarPaKomplettering &&
-      errand.status.statusType !== ErrandStatus.InterntAterkoppling
+      errand?.status?.statusType !== ErrandStatus.VantarPaKomplettering &&
+      errand?.status?.statusType !== ErrandStatus.InterntAterkoppling
     ) {
       if (typeOfMessage === 'infoCompletion') {
-        await setErrandStatus(errand.id, municipalityId, ErrandStatus.VantarPaKomplettering, null, null);
+        await setErrandStatus(errand!.id, municipalityId, ErrandStatus.VantarPaKomplettering, undefined, undefined);
       } else if (typeOfMessage === 'internalCompletion') {
-        await setErrandStatus(errand.id, municipalityId, ErrandStatus.InterntAterkoppling, null, null);
+        await setErrandStatus(errand!.id, municipalityId, ErrandStatus.InterntAterkoppling, undefined, undefined);
       }
     }
   };
@@ -350,7 +351,7 @@ export const MessageComposer: React.FC<{
   const { contactMeans, addExisting, existingAttachments, newAttachments, messageBody, messageBodyPlaintext } = watch();
 
   useEffect(() => {
-    if (contactMeans === 'sms') {
+    if (contactMeans === 'sms' && errand) {
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
     setValue('messageBody', defaultSignature());
@@ -393,15 +394,15 @@ export const MessageComposer: React.FC<{
       const replyTo = props.message?.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values[0];
       const references = props.message?.emailHeaders?.find((h) => h.header === 'REFERENCES')?.values || [];
       references.push(replyTo);
-      setValue('headerReplyTo', replyTo);
+      setValue('headerReplyTo', replyTo ?? '');
       setValue('headerReferences', references.join(','));
       setValue(
         'emails',
         props.message.direction === 'OUTBOUND'
-          ? props.message?.recipients?.map((email) => ({
+          ? (props.message?.recipients?.map((email) => ({
               value: email,
-            }))
-          : [{ value: props.message.email }]
+            })) ?? [])
+          : [{ value: props.message.email ?? '' }]
       );
       setValue(
         'contactMeans',
@@ -423,7 +424,7 @@ export const MessageComposer: React.FC<{
           historyHeader +
           (props.message.htmlMessage
             ? sanitizeHtmlMessageBody(props.message.htmlMessage)
-            : formatMessage(sanitized(props.message.message)))
+            : formatMessage(sanitized(props.message.message ?? '')))
       );
       trigger();
     } else {
@@ -482,10 +483,9 @@ export const MessageComposer: React.FC<{
                   tabIndex={props.show ? 0 : -1}
                   data-cy="useEmail-radiobutton-true"
                   className="mr-sm"
-                  name="useEmail"
                   id="useEmail"
                   value={'email'}
-                  defaultChecked={!errand.externalCaseId}
+                  defaultChecked={!errand?.externalCaseId}
                   {...register('contactMeans')}
                 >
                   E-post
@@ -494,7 +494,6 @@ export const MessageComposer: React.FC<{
                   tabIndex={props.show ? 0 : -1}
                   data-cy="useSms-radiobutton-true"
                   className="mr-sm"
-                  name="useSms"
                   id="useSms"
                   value={'sms'}
                   defaultChecked={false}
@@ -502,26 +501,24 @@ export const MessageComposer: React.FC<{
                 >
                   SMS
                 </RadioButton>
-                {appConfig.features.useMyPages && !!getOwnerStakeholder(errand)?.personalNumber && (
+                {appConfig.features.useMyPages && errand && !!getOwnerStakeholder(errand)?.personalNumber && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
                     data-cy="useMinaSidor-radiobutton-true"
                     className="mr-sm"
-                    name="useMinaSidor"
                     id="useMinaSidor"
                     value={'minasidor'}
-                    defaultChecked={!!errand.externalCaseId}
+                    defaultChecked={!!errand?.externalCaseId}
                     {...register('contactMeans')}
                   >
                     Mina sidor
                   </RadioButton>
                 )}
-                {errand.channel === Channels.ESERVICE_KATLA && (
+                {errand?.channel === Channels.ESERVICE_KATLA && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
                     data-cy="useKatla-radiobutton-true"
                     className="mr-sm"
-                    name="useKatla"
                     id="useKatla"
                     value={'katla'}
                     {...register('contactMeans')}
@@ -610,10 +607,10 @@ export const MessageComposer: React.FC<{
                 <TextEditor
                   className={cx(`mb-md h-[80%]`)}
                   onChange={(e) => {
-                    setValue('messageBody', e.target.value.markup, {
+                    setValue('messageBody', e.target.value.markup ?? '', {
                       shouldDirty: true,
                     });
-                    setValue('messageBodyPlaintext', e.target.value.plainText, { shouldDirty: true });
+                    setValue('messageBodyPlaintext', e.target.value.plainText ?? '', { shouldDirty: true });
                     trigger('messageBody');
                   }}
                   value={{ markup: messageBody, plainText: messageBodyPlaintext }}
@@ -630,8 +627,8 @@ export const MessageComposer: React.FC<{
             <>
               <FormControl id="messageEmail" className="w-full">
                 <CommonNestedEmailArrayV2
-                  errand={errand}
-                  disabled={isErrandLocked(errand)}
+                  errand={errand!}
+                  disabled={errand ? isErrandLocked(errand) : false}
                   data-cy="email-input"
                   key={`nested-email-array`}
                   {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
@@ -648,7 +645,7 @@ export const MessageComposer: React.FC<{
             <>
               <FormControl id="phoneNumbers" className="w-full mb-16">
                 <CommonNestedPhoneArrayV2
-                  disabled={isErrandLocked(errand)}
+                  disabled={errand ? isErrandLocked(errand) : false}
                   data-cy="newPhoneNumber"
                   required
                   error={!!formState.errors.phoneNumbers}
@@ -672,7 +669,7 @@ export const MessageComposer: React.FC<{
           contactMeans === 'katla' ? (
             <>
               {contactMeans === 'webmessage' || contactMeans === 'minasidor' || contactMeans === 'katla'
-                ? errand.stakeholders
+                ? (errand?.stakeholders ?? [])
                     .filter((o) => o.roles.indexOf(Role.APPLICANT) !== -1)
                     .map((filteredOwner, idx) => (
                       <div key={`owner-${idx}`}>
@@ -698,8 +695,8 @@ export const MessageComposer: React.FC<{
                       data-cy="select-errand-attachment"
                     >
                       <Select.Option value="">Välj bilaga</Select.Option>
-                      {errand.attachments
-                        ?.filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
+                      {(errand?.attachments ?? [])
+                        .filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
                         .map((att, idx) => {
                           const label = `${getAttachmentLabel(att)}: ${att.name}`;
                           return (
@@ -722,9 +719,9 @@ export const MessageComposer: React.FC<{
                       onClick={(e) => {
                         e.preventDefault();
                         if (addExisting) {
-                          const att = errand.attachments.find((a) => a.name === addExisting);
-                          append(att);
-                          setValue(`addExisting`, undefined);
+                          const att = (errand?.attachments ?? []).find((a) => a.name === addExisting);
+                          if (att) append(att);
+                          setValue(`addExisting`, '' as any);
                         }
                       }}
                       className="rounded"
@@ -765,7 +762,7 @@ export const MessageComposer: React.FC<{
                   <Button
                     variant="tertiary"
                     color="primary"
-                    leftIcon={<LucideIcon name="paperclip" />}
+                    leftIcon={<Paperclip />}
                     onClick={() => setIsAttachmentModalOpen(true)}
                     data-cy="add-attachment-button-email"
                   >
@@ -786,19 +783,19 @@ export const MessageComposer: React.FC<{
                         >
                           <div className="flex w-5/6 gap-10">
                             <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                              <LucideIcon name="file" size={25} />
+                              <File size={25} />
                             </div>
-                            <div className="self-center justify-start px-8">{attachment.file[0]?.name}</div>
+                            <div className="self-center justify-start px-8">{attachment.file?.[0]?.name}</div>
                           </div>
                           <div>
                             <Button
-                              aria-label={`Ta bort ${attachment.file[0]?.name}`}
+                              aria-label={`Ta bort ${attachment.file?.[0]?.name}`}
                               iconButton
                               inverted
                               className="self-end"
                               onClick={() => removeMessageAttachment(index)}
                             >
-                              <LucideIcon name="x" />
+                              <X />
                             </Button>
                           </div>
                         </div>

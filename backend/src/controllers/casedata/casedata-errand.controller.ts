@@ -40,7 +40,9 @@ export class CaseDataErrandController {
   CITIZEN_SERVICE = apiServiceName('citizen');
 
   preparedErrandResponse = async (errandData: ErrandDTO, req: any) => {
-    const applicant: StakeholderDTO & { personalNumber?: string } = errandData.stakeholders.find(s => s.roles.includes(Role.APPLICANT));
+    const applicant: (StakeholderDTO & { personalNumber?: string }) | undefined = errandData.stakeholders?.find(s =>
+      s.roles.includes(Role.APPLICANT),
+    );
     if (applicant && applicant.personId) {
       const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${applicant.personId}/personnumber`;
       const personNumberRes = await this.apiService
@@ -100,7 +102,7 @@ export class CaseDataErrandController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands?filter=errandNumber:'${errandNumber}'`;
     const baseURL = apiURL(this.SERVICE);
     const errandResponse = await this.apiService.get<PageErrandDTO>({ url, baseURL }, req.user);
-    const errandData = errandResponse.data.content[0];
+    const errandData = errandResponse.data.content![0];
     return response.send(await this.preparedErrandResponse(errandData, req));
   }
 
@@ -156,31 +158,31 @@ export class CaseDataErrandController {
       filterList.push(queryFilter);
     }
     if (priority) {
-      const priorityQuery = [];
+      const priorityQuery: string[] = [];
       priority.split(',').forEach(s => {
         priorityQuery.push(`priority:'${s}'`);
       });
       filterList.push(`(${priorityQuery.join(' or ')})`);
     }
     if (stakeholderType) {
-      const stakeholderTypeQuery = [];
+      const stakeholderTypeQuery: string[] = [];
       stakeholderType.split(',').forEach(s => {
         stakeholderTypeQuery.push(`exists(stakeholders.type:'${s}')`);
       });
       filterList.push(`(${stakeholderTypeQuery.join(' or ')})`);
     }
     if (phase) {
-      const phaseQuery = [];
+      const phaseQuery: string[] = [];
       phase.split(',').forEach(s => {
-        const label = ErrandPhase[s];
+        const label = ErrandPhase[s as keyof typeof ErrandPhase];
         phaseQuery.push(`phase:'${label}'`);
       });
       filterList.push(`(${phaseQuery.join(' or ')})`);
     }
     if (status) {
-      const statusQuery = [];
+      const statusQuery: string[] = [];
       status.split(',').forEach(s => {
-        const label = ErrandStatus[s];
+        const label = ErrandStatus[s as keyof typeof ErrandStatus];
         statusQuery.push(`status.statusType:'${label}'`);
       });
       filterList.push(`(${statusQuery.join(' or ')})`);
@@ -220,7 +222,7 @@ export class CaseDataErrandController {
     }
 
     if (channel) {
-      const channelQuery = [];
+      const channelQuery: string[] = [];
       channel.split(',').forEach(s => {
         channelQuery.push(`channel:'${s}'`);
       });
@@ -245,7 +247,7 @@ export class CaseDataErrandController {
     @Param('municipalityId') municipalityId: string,
     @Body() errandData: CreateErrandDto,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const data = makeErrandApiData(errandData, undefined);
+    const data = makeErrandApiData(errandData, '');
 
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands`;
     const baseURL = apiURL(this.SERVICE);
@@ -272,7 +274,6 @@ export class CaseDataErrandController {
     @Param('municipalityId') municipalityId: string,
     @Body() errandData: PatchErrandDTO,
   ): Promise<{ data: ErrandDTO; message: string }> {
-    const { user } = req;
     if (!errandId) {
       throw 'Id not found. Cannot patch errand without id.';
     }
@@ -282,7 +283,7 @@ export class CaseDataErrandController {
     const errandApiData = makeErrandApiData(administratorCheckedData, errandId.toString());
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}`;
     const baseURL = apiURL(this.SERVICE);
-    const strippedStakeholders = { ...errandApiData, stakeholders: [] };
+    const strippedStakeholders = { ...errandApiData, stakeholders: [] as StakeholderDTO[] };
     const patchResponse = await this.apiService
       .patch<ErrandDTO, Partial<PatchErrandDTO>>({ url, baseURL, data: strippedStakeholders }, req.user)
       .then(errandPatchResponse => {

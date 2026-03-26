@@ -23,15 +23,14 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import React, { useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-
+import { Pen } from 'lucide-react';
 export const SupportSimplifiedContactForm: React.FC<{
   contact: SupportStakeholderFormModel;
   editing: boolean;
@@ -60,7 +59,7 @@ export const SupportSimplifiedContactForm: React.FC<{
               schema
                 .trim()
                 .matches(ssnPattern, invalidSsnMessage)
-                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn) || !ssn),
+                .test('luhncheck', invalidSsnMessage, (ssn) => luhnCheck(ssn!) || !ssn),
           })
         : yup.string().when('stakeholderType', {
             is: (type: string) => {
@@ -92,7 +91,7 @@ export const SupportSimplifiedContactForm: React.FC<{
           schema
             .trim()
             .matches(orgNumberPattern, invalidOrgNumberMessage)
-            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr) || !orgNr),
+            .test('isValidOrgNr', invalidOrgNumberMessage, (orgNr) => isValidOrgNumber(orgNr!) || !orgNr),
       }),
       firstName: yup.string().when('organizationName', {
         is: (_: string) => searchMode === 'person' || searchMode === 'employee',
@@ -174,7 +173,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   const form = useForm<SupportStakeholderFormModel>({
     defaultValues: contact,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-    resolver: yupResolver(yupContact),
+    resolver: yupResolver(yupContact) as unknown as Resolver<SupportStakeholderFormModel>,
   });
 
   const { register, control, handleSubmit, watch, setValue, formState, reset } = form;
@@ -316,7 +315,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         <>
           <SupportContactSearchModeSelector
             inName={'form'}
-            disabled={props.disabled}
+            disabled={props.disabled!}
             form={form}
             contact={contact}
             id={id}
@@ -325,7 +324,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             {...searchProps}
           />
           <SupportContactSearchField
-            disabled={props.disabled}
+            disabled={props.disabled!}
             form={form}
             id={id}
             appendPhonenumber={appendPhonenumber}
@@ -338,9 +337,9 @@ export const SupportSimplifiedContactForm: React.FC<{
       {searchResult ? (
         <SupportSearchResult
           searchMode={searchMode}
-          disabled={props.disabled}
+          disabled={props.disabled!}
           form={form}
-          selectedUser={selectedUser}
+          selectedUser={selectedUser!}
           loading={loading}
           onSubmit={handleSubmit(onSubmit)}
           label={label}
@@ -356,7 +355,7 @@ export const SupportSimplifiedContactForm: React.FC<{
             color="vattjom"
             inverted
             size="sm"
-            leftIcon={<LucideIcon name="pen" />}
+            leftIcon={<Pen />}
             onClick={() => {
               reset({}, { keepErrors: false });
               setValue(
@@ -377,7 +376,7 @@ export const SupportSimplifiedContactForm: React.FC<{
         closeHandler={closeHandler}
         onSubmit={handleSubmit(onSubmit)}
         label={label}
-        disabled={props.disabled}
+        disabled={props.disabled!}
         loading={loading}
         contact={contact}
         form={form}

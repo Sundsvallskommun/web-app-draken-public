@@ -12,13 +12,13 @@ import {
 
 export class LawDTO implements Law {
   @IsString()
-  heading: string;
+  heading!: string;
   @IsString()
-  sfs: string;
+  sfs!: string;
   @IsString()
-  chapter: string;
+  chapter!: string;
   @IsString()
-  article: string;
+  article!: string;
 }
 
 // export type DecisionOutcome = 'APPROVAL' | 'REJECTION' | 'UNKNOWN';
@@ -26,11 +26,11 @@ export class LawDTO implements Law {
 export class DecisionDTO implements Decision {
   @IsNumber()
   @IsOptional()
-  id: number;
+  id!: number;
   @IsString()
-  decisionType: DecisionDecisionTypeEnum;
+  decisionType!: DecisionDecisionTypeEnum;
   @IsString()
-  decisionOutcome: DecisionDecisionOutcomeEnum;
+  decisionOutcome!: DecisionDecisionOutcomeEnum;
   @IsString()
   @IsOptional()
   description?: string;
@@ -45,16 +45,16 @@ export class DecisionDTO implements Decision {
   decidedAt?: string;
   @IsString()
   @IsOptional()
-  validFrom: string;
+  validFrom!: string;
   @IsString()
   @IsOptional()
-  validTo: string;
+  validTo!: string;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => Attachment)
-  attachments: Attachment[];
+  attachments!: Attachment[];
   @IsObject()
   @IsOptional()
-  extraParameters: GenericExtraParameters;
+  extraParameters!: GenericExtraParameters;
 }

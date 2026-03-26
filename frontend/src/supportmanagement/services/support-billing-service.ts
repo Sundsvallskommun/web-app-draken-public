@@ -85,9 +85,9 @@ export const billingFormSchema = yup.object({
           .number()
           .typeError('Ange i format 1,23')
           .test('isnumber', 'Ange i format 1,23', (q) => {
-            return /^\d*\.?\d{0,2}$/g.test(q.toString());
+            return /^\d*\.?\d{0,2}$/g.test(q!.toString());
           })
-          .test('positivt', 'Måste vara större än 0', (q) => q > 0)
+          .test('positivt', 'Måste vara större än 0', (q) => q! > 0)
           .required('Fyll i antal timmar'),
         costPerUnit: yup.string().required('Fyll i timpris'),
         totalAmount: yup.string().nullable(),
@@ -97,7 +97,7 @@ export const billingFormSchema = yup.object({
               .mixed<string>()
               .required('Välj aktivitet')
               .oneOf(
-                invoiceSettings.activities.map((a) => a.value),
+                invoiceSettings.activities.map((a) => a.value) as string[],
                 'Välj aktivitet'
               ),
           })
@@ -139,7 +139,7 @@ export const emptyBillingRecord: CBillingRecord = {
         accountInformation: [
           {
             costCenter: invoiceSettings.invoiceTypes[0].internal.accountInformation.costCenter,
-            activity: invoiceSettings.activities[0].value,
+            activity: invoiceSettings.activities[0].value ?? undefined,
           },
         ],
       },
@@ -178,7 +178,7 @@ export const getInvoiceRows = (
       if (accountInformationRow.amountFromParent) {
         amount = totalAmount;
       } else {
-        amount = isNaN(quantity) ? 0 : twoDecimals(quantity * accountInformationRow.amount);
+        amount = isNaN(quantity) ? 0 : twoDecimals(quantity * (accountInformationRow.amount ?? 0));
       }
       return {
         costCenter,
@@ -194,7 +194,7 @@ export const getInvoiceRows = (
     });
     return {
       descriptions: [invoiceRow.description.replace('<errandNumber>', errandNumber)],
-      detailedDescriptions: [],
+      detailedDescriptions: [] as string[],
       totalAmount,
       costPerUnit: invoiceRow.costPerUnit,
       quantity: isNaN(quantity) ? 0 : quantity,
@@ -211,11 +211,11 @@ const satisfyApi = (data: CBillingRecord) => {
   processed.recipient = data.type === 'EXTERNAL' ? data.recipient : undefined;
   processed.invoice = { ...data.invoice };
   delete processed.invoice.totalAmount;
-  processed.invoice.invoiceRows = data.invoice.invoiceRows.map((row) => {
+  processed.invoice!.invoiceRows = data.invoice.invoiceRows.map((row) => {
     delete row.totalAmount;
-    row.detailedDescriptions = row.detailedDescriptions.filter((d) => d !== '');
-    row.quantity = twoDecimals(parseFloat(row.quantity.toString()));
-    row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit.toString()));
+    row.detailedDescriptions = (row.detailedDescriptions ?? []).filter((d) => d !== '');
+    row.quantity = twoDecimals(parseFloat(row.quantity!.toString()));
+    row.costPerUnit = twoDecimals(parseFloat(row.costPerUnit!.toString()));
     return row;
   });
   processed.category = invoiceSettings.category;
@@ -253,7 +253,6 @@ export const setBillingRecordStatus: (
   const url = `billing/${municipalityId}/billingrecords/${record.id}/status`;
   let data: CBillingRecord = {
     ...record,
-    ...(status === CBillingRecordStatusEnum.APPROVED && { approvedBy: `${user.firstName} ${user.lastName}` }),
     status,
   };
   data = satisfyApi(data);
@@ -278,7 +277,7 @@ export const saveBillingRecord: (
   let data = satisfyApi(record);
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
-      return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id) : true;
+      return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id!) : true;
     })
     .catch((e) => {
       console.error('Something went wrong when updating invoice');
@@ -351,16 +350,16 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
 export const getEmployeeOrganizationId: (
   username: string,
   domain?: string
-) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string }> = async (username, domain) => {
+) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string } | undefined> = async (username, domain) => {
   if (!username || !domain) {
     return undefined;
   }
   const employeeData = await getEmployeeData(username, domain);
-  const orgData = parseInvoiceAdministrationInfo(employeeData?.orgTree);
+  const orgData = parseInvoiceAdministrationInfo(employeeData?.orgTree ?? '');
   return {
-    companyId: employeeData.companyId,
+    companyId: employeeData.companyId!,
     organizationId: orgData.is2849 ? '2849' : orgData.administrationCode,
-    referenceNumber: employeeData.referenceNumber,
+    referenceNumber: employeeData.referenceNumber ?? undefined,
   };
 };
 
@@ -386,7 +385,7 @@ export const getEmployeeCustomerIdentity: (
   const isInternal = employeeOrgData.companyId === 1;
   if (isInternal) {
     const identity = invoiceSettings.customers.internal.find((c) => c.orgId[0] === employeeOrgData.organizationId);
-    const referenceNumber = employeeOrgData?.referenceNumber ?? '';
+    const referenceNumber = employeeOrgData.referenceNumber ?? '';
     return {
       type: 'INTERNAL',
       identity,
@@ -414,7 +413,7 @@ export const getOrganization: (
     careOf: string;
     postalCode: string;
   };
-}> = async (orgNr, addressSource) => {
+} | undefined> = async (orgNr, addressSource) => {
   return apiService
     .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>(`organization/`, { orgNr })
     .then((res) => {
@@ -444,7 +443,7 @@ export const getOrganization: (
               },
       };
     })
-    .catch((e) => {
+    .catch((e): undefined => {
       console.error('Something went wrong when fetching organization');
       return undefined;
     });

@@ -4,7 +4,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   Divider,
@@ -36,6 +35,8 @@ import dayjs from 'dayjs';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface SingleAttachment {
   file: File | undefined;
@@ -72,8 +73,9 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
   const [dragDrop, setDragDrop] = useState<boolean>(false);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
-  const modalFocus = useRef(null);
+  const modalFocus = useRef<HTMLButtonElement>(null);
   const setModalFocus = () => {
     setTimeout(() => {
       modalFocus.current && modalFocus.current.focus();
@@ -81,7 +83,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   };
 
   const closeModal = async () => {
-    await getSupportErrandById(supportErrand.id.toString(), municipalityId)
+    await getSupportErrandById(supportErrand!.id!.toString(), municipalityId)
       .then((data) => setSupportErrand(data.errand))
       .catch((e) => {
         toastMessage({
@@ -137,7 +139,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const attachments = watch('attachments');
 
   const downloadDocument = (a: SupportAttachment) => {
-    getSupportAttachment(supportErrand.id.toString(), municipalityId, a)
+    getSupportAttachment(supportErrand!.id!.toString(), municipalityId, a)
       .then((att) => {
         const uri = `data:${a.mimeType};base64,${att.base64EncodedString}`;
         const link = document.createElement('a');
@@ -151,7 +153,6 @@ export const SupportErrandAttachmentsTab: React.FC<{
       });
   };
 
-  const vals: SupportAttachmentFormModel = getValues();
   useEffect(() => {
     const vals: SupportAttachmentFormModel = getValues();
     trigger();
@@ -165,6 +166,57 @@ export const SupportErrandAttachmentsTab: React.FC<{
     setSizeError(false);
   }, [attachments]);
 
+  useEffect(() => {
+    if (!supportErrand?.id || !supportAttachments?.length) return;
+
+    const errandId = supportErrand.id.toString();
+    const imageAttachments = supportAttachments.filter(
+      (att) => imageMimeTypes.includes(att.mimeType) && !thumbnails[att.id]
+    );
+
+    if (imageAttachments.length === 0) return;
+
+    let isCancelled = false;
+
+    const fetchAttachmentThumbnail = async (att: SupportAttachment) => {
+      const res = await getSupportAttachment(errandId, municipalityId, att);
+      return {
+        id: att.id,
+        dataUrl: `data:${att.mimeType};base64,${res.base64EncodedString}`,
+      };
+    };
+
+    const fetchThumbnails = async () => {
+      const batchSize = 3;
+      for (let i = 0; i < imageAttachments.length; i += batchSize) {
+        if (isCancelled) break;
+
+        const batch = imageAttachments.slice(i, i + batchSize);
+        const results = await Promise.allSettled(batch.map(fetchAttachmentThumbnail));
+
+        if (isCancelled) break;
+
+        const newThumbnails: Record<string, string> = {};
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            newThumbnails[result.value.id] = result.value.dataUrl;
+          }
+        }
+
+        if (Object.keys(newThumbnails).length > 0) {
+          setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
+        }
+      }
+    };
+
+    fetchThumbnails();
+
+    return () => {
+      isCancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportErrand?.id, supportAttachments, municipalityId]);
+
   const openHandler = () => {
     setDragDrop(true);
     setSelectedAttachment(undefined);
@@ -175,10 +227,10 @@ export const SupportErrandAttachmentsTab: React.FC<{
     setAddAttachmentWindowIsOpen(false);
   };
 
-  const clickHandler = (attachment) => {
+  const clickHandler = (attachment: SupportAttachment) => {
     if (imageMimeTypes.includes(attachment.mimeType)) {
       setModalFetching(true);
-      getSupportAttachment(supportErrand.id.toString(), municipalityId, attachment)
+      getSupportAttachment(supportErrand!.id!.toString(), municipalityId, attachment)
         .then((res) => setModalAttachment(res))
         .then(() => {
           setModalFetching(false);
@@ -192,13 +244,13 @@ export const SupportErrandAttachmentsTab: React.FC<{
   const onDelete = () => {
     removeConfirm.showConfirmation('Ta bort?', 'Vill du ta bort denna bilaga?').then((confirmed) => {
       if (confirmed) {
-        return deleteSupportAttachment(supportErrand?.id.toString(), municipalityId, selectedAttachment.id)
-          .then(() => {
+        return deleteSupportAttachment(supportErrand!.id!.toString(), municipalityId, selectedAttachment!.id!)
+          ?.then(() => {
             props.update();
             reset();
           })
           .then(() => {
-            setSelectedAttachment(null);
+            setSelectedAttachment(undefined);
           })
           .then(() => {
             toastMessage(
@@ -256,7 +308,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
             className="w-[43rem]"
             onClose={() => {
               closeHandler();
-              setSelectedAttachment(null);
+              setSelectedAttachment(undefined);
               setAddNewAttachment(false);
               reset();
             }}
@@ -305,13 +357,13 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     e.preventDefault();
                     const vals: SupportAttachmentFormModel = getValues();
                     const attachmentsData: { file: File }[] = vals.attachments.map((a) => ({
-                      file: a.file,
+                      file: a.file!,
                     }));
                     setIsLoading(true);
-                    saveSupportAttachments(supportErrand.id.toString(), municipalityId, attachmentsData)
+                    saveSupportAttachments(supportErrand!.id!.toString(), municipalityId, attachmentsData)
                       .then(() => props.update())
                       .then(() => setAddNewAttachment(false))
-                      .then(() => setSelectedAttachment(null))
+                      .then(() => setSelectedAttachment(undefined))
                       .then(() => setIsLoading(false))
                       .then(() => setError(false))
                       .then(() => setSizeError(false))
@@ -356,9 +408,9 @@ export const SupportErrandAttachmentsTab: React.FC<{
           </Modal>
           <Button
             data-cy="add-attachment-button"
-            disabled={isSupportErrandLocked(supportErrand) || supportErrandIsEmpty(supportErrand)}
+            disabled={isSupportErrandLocked(supportErrand!) || supportErrandIsEmpty(supportErrand!)}
             color="vattjom"
-            rightIcon={<LucideIcon name="upload" size={16} />}
+            rightIcon={<Upload size={16} />}
             inverted
             size="sm"
             onClick={() => {
@@ -396,18 +448,31 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     clickHandler(attachment);
                   }}
                 >
-                  <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
-                    <LucideIcon
-                      name={documentMimeTypes.find((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'}
-                      className="block"
-                      size={24}
+                  {imageMimeTypes.includes(attachment.mimeType) && thumbnails[attachment.id] ? (
+                    <Image
+                      src={thumbnails[attachment.id]}
+                      alt={attachment.fileName}
+                      className="w-[48px] h-[48px] object-cover rounded"
                     />
-                  </div>
+                  ) : (
+                    <div className={`self-center bg-vattjom-surface-accent p-12 rounded`}>
+                      {(() => {
+                        const DynIcon =
+                          iconMap[documentMimeTypes.some((d) => d.includes(attachment.mimeType)) ? 'file' : 'image'];
+                        return DynIcon ? <DynIcon className="block" size={24} /> : null;
+                      })()}
+                    </div>
+                  )}
                   <div>
                     <p>
                       <strong>{attachment.fileName}</strong>{' '}
                     </p>
-                    <p>Uppladdad den {dayjs(attachment.created).format('YYYY-MM-DD HH:mm')}</p>
+                    <p>
+                      Uppladdad den{' '}
+                      {dayjs((attachment as SupportAttachment & { created?: string }).created).format(
+                        'YYYY-MM-DD HH:mm'
+                      )}
+                    </p>
                   </div>
                 </div>
 
@@ -422,7 +487,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                       inverted
                       onClick={() => setSelectedAttachment(attachment)}
                     >
-                      <LucideIcon name="ellipsis" />
+                      <Ellipsis />
                     </PopupMenu.Button>
                     <PopupMenu.Panel>
                       <PopupMenu.Items>
@@ -430,7 +495,7 @@ export const SupportErrandAttachmentsTab: React.FC<{
                           <PopupMenu.Item>
                             <Button
                               data-cy={`open-attachment-${attachment.id}`}
-                              leftIcon={<LucideIcon name="eye" />}
+                              leftIcon={<Eye />}
                               onClick={() => {
                                 clickHandler(attachment);
                               }}
@@ -439,12 +504,12 @@ export const SupportErrandAttachmentsTab: React.FC<{
                             </Button>
                           </PopupMenu.Item>
                         </PopupMenu.Group>
-                        {!isSupportErrandLocked(supportErrand) && (
+                        {!isSupportErrandLocked(supportErrand!) && (
                           <PopupMenu.Group>
                             <PopupMenu.Item>
                               <Button
                                 data-cy={`delete-attachment-${attachment.id}`}
-                                leftIcon={<LucideIcon name="trash" />}
+                                leftIcon={<Trash />}
                                 onClick={onDelete}
                               >
                                 Ta bort

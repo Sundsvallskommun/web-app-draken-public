@@ -16,9 +16,8 @@ import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Button,
   cx,
@@ -35,6 +34,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
@@ -75,7 +75,7 @@ export const CasedataInvestigationTab: React.FC<{
 }> = (props) => {
   const toastMessage = useSnackbar();
   const saveConfirm = useConfirm();
-  const { municipalityId, errand, user }: AppContextInterface = useAppContext();
+  const { municipalityId, errand, user } = useAppContext();
   const { setErrand } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -86,10 +86,6 @@ export const CasedataInvestigationTab: React.FC<{
   const [phrasesAppended, setPhrasesAppended] = useState<boolean>(false);
   const skipNextOnChange = useRef(false);
 
-  const confirmContent = {
-    title: 'Spara utredning',
-    content: 'Vill du spara den här utredningen?',
-  };
   const confirmTemplateReset = {
     title: 'Återställ mall',
     content: 'Vill du återställa den här mallen?',
@@ -97,6 +93,7 @@ export const CasedataInvestigationTab: React.FC<{
 
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user) && !!errand.administrator;
     setAllowed(_a);
   }, [user, errand]);
@@ -133,12 +130,12 @@ export const CasedataInvestigationTab: React.FC<{
         data.outcome = 'APPROVAL';
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
       } else {
-        const rendered = await renderUtredningPdf(errand, data);
+        const rendered = await renderUtredningPdf(errand!, data);
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
       }
 
       setIsLoading(false);
-      setError(undefined);
+      setError(false);
       props.setUnsaved(false);
       toastMessage(
         getToastOptions({
@@ -146,7 +143,7 @@ export const CasedataInvestigationTab: React.FC<{
           status: 'success',
         })
       );
-      await getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+      await getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -156,7 +153,7 @@ export const CasedataInvestigationTab: React.FC<{
       });
     } finally {
       setIsLoading(false);
-      setError(undefined);
+      setError(false);
     }
   };
 
@@ -180,14 +177,14 @@ export const CasedataInvestigationTab: React.FC<{
     });
   };
 
-  const outcomeModalCallback = async (outcome) => {
+  const outcomeModalCallback = async (outcome: string) => {
     const { phrases } = await getUtredningPhrases(props.errand, outcome as DecisionOutcome);
     setValue('description', phrases);
     setTextIsDirty(true);
     props.setUnsaved(true);
   };
 
-  const handleOutcomeChange = (newOutcome) => {
+  const handleOutcomeChange = (newOutcome: string) => {
     if (newOutcome !== outcome) {
       saveConfirm
         .showConfirmation(
@@ -228,7 +225,7 @@ export const CasedataInvestigationTab: React.FC<{
     if (decision) {
       setValue('law', decision.law);
       if (decision?.decisionType === 'PROPOSED') {
-        setValue('id', decision?.id.toString());
+        setValue('id', decision?.id!.toString());
       }
       if (decision.decisionType === 'PROPOSED' || decision?.decisionOutcome === 'APPROVAL') {
         setValue('description', decision.description);
@@ -276,6 +273,8 @@ export const CasedataInvestigationTab: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description]);
 
+  if (!errand) return null;
+
   return (
     <div className="w-full py-24 px-32">
       <div className="w-full flex justify-between items-center flex-wrap h-40">
@@ -290,7 +289,7 @@ export const CasedataInvestigationTab: React.FC<{
             variant="primary"
             color="vattjom"
             inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<LucideIcon name="download" size={18} />}
+            rightIcon={<Download size={18} />}
             onClick={getPdfPreview}
             data-cy="preview-investigation-button"
           >
@@ -302,11 +301,11 @@ export const CasedataInvestigationTab: React.FC<{
         {errand?.decisions && errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED') && (
           <div className="bg-background-200 rounded-groups gap-12 flex py-10 px-16 mb-lg">
             <div>
-              <LucideIcon name="info" color="vattjom" />
+              <Info className="text-vattjom-surface-primary" />
             </div>
             <div>
               <p className="m-0 pr-24" data-cy="recommended-decision">
-                {errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED').description}
+                {errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED')?.description}
               </p>
             </div>
           </div>
@@ -316,7 +315,7 @@ export const CasedataInvestigationTab: React.FC<{
           <div className="pb-[1.5rem]">
             <Divider.Section orientation="horizontal">
               <div className="flex gap-sm items-center">
-                <LucideIcon name="clipboard-pen-line" />
+                <ClipboardPenLine />
                 <h3 className="text-h4-sm md:text-h4-md">Utredningsmall</h3>
               </div>
             </Divider.Section>
@@ -404,17 +403,17 @@ export const CasedataInvestigationTab: React.FC<{
             <Input type="hidden" {...register('id')} />
             <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
             <Input type="hidden" {...register('errandNumber')} />
-            <div className="h-[28rem]" data-cy="utredning-richtext-wrapper">
+            <div data-cy="utredning-richtext-wrapper">
               <TextEditor
-                className={cx(`mb-md h-[80%]`)}
+                className={cx(`mb-md h-[80%] text-editor-with-toolbar`)}
                 readOnly={isErrandLocked(errand) || !allowed}
                 onChange={(e) => {
                   // Skip the first onChange after template load (TextEditor normalizes HTML)
                   if (skipNextOnChange.current) {
                     skipNextOnChange.current = false;
-                    setValue('description', e.target.value.markup, { shouldDirty: false });
+                    setValue('description', e.target.value.markup ?? '', { shouldDirty: false });
                   } else {
-                    setValue('description', e.target.value.markup, { shouldDirty: true });
+                    setValue('description', e.target.value.markup ?? '', { shouldDirty: true });
                   }
                   trigger('description');
                 }}
@@ -434,17 +433,10 @@ export const CasedataInvestigationTab: React.FC<{
               color="primary"
               type="button"
               onClick={handleSubmit(() => {
-                return saveConfirm
-                  .showConfirmation(confirmContent.title, confirmContent.content, 'Ja', 'Nej', 'info', 'info')
-                  .then((confirmed) => {
-                    if (confirmed) {
-                      save(getValues());
-                    }
-                    return confirmed ? () => true : () => {};
-                  });
+                save(getValues());
               })}
               disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
-              leftIcon={<LucideIcon name="check" className="mr-sm" />}
+              leftIcon={<Check className="mr-sm" />}
               loading={isLoading}
               loadingText="Sparar"
             >

@@ -7,7 +7,6 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { sortBy } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, Divider, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
@@ -16,6 +15,7 @@ import {
 import { useEffect, useState } from 'react';
 import { NotificationItem } from './notification-item';
 import { getFilteredNotifications } from './notification-utils';
+import { Bell, X } from 'lucide-react';
 
 export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
   show,
@@ -37,7 +37,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
         })
         .catch((e) => {
           console.error('Something went wrong when fetching notifications');
-          return [];
+          return [] as (SupportNotification | CaseDataNotification)[];
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId, show]);
@@ -151,7 +151,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
           >
             <div className="py-16 px-40 w-full flex justify-between items-center shadow-lg h-[8rem]">
               <div className="text-h4-sm flex items-center gap-12">
-                <LucideIcon name="bell" /> Notiser
+                <Bell /> Notiser
               </div>
               <Button
                 tabIndex={show ? 0 : -1}
@@ -162,7 +162,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                   setShow(false);
                 }}
               >
-                <LucideIcon name="x" />
+                <X />
               </Button>
             </div>
           </div>

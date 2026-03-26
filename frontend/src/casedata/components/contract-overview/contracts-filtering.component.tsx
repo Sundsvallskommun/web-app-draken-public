@@ -1,10 +1,10 @@
 import { ContractType, Status } from '@casedata/interfaces/contracts';
 import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Checkbox, cx, DatePicker, PopupMenu, SearchField } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { ChevronDown } from 'lucide-react';
 
 export interface ContractFilter {
   query: string;
@@ -46,7 +46,7 @@ export const ContractFilterStatusComponent: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="contract-status-filter"
         variant="tertiary"
         showBackground={false}
@@ -81,7 +81,7 @@ export const ContractFilterTypeComponent: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="contract-type-filter"
         variant="tertiary"
         showBackground={false}
@@ -116,7 +116,7 @@ export const ContractFilterLeaseTypeComponent: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="contract-lease-type-filter"
         variant="tertiary"
         showBackground={false}
@@ -161,7 +161,7 @@ export const ContractFilterDatesComponent: React.FC = () => {
   return (
     <PopupMenu type="dialog" open={open} onToggleOpen={setOpen}>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="contract-dates-filter"
         variant="tertiary"
         showBackground={false}

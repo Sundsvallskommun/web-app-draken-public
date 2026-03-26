@@ -22,7 +22,7 @@ export const mockErrand_base = {
       'disability.canBeAloneWhileParking.note': '',
       'disability.duration': 'P6M',
     },
-    errandNumber: 'PRH-2022-000019',
+    errandNumber: 'SGP-2022-000019',
     externalCaseId: '2668',
     caseType: 'PARKING_PERMIT',
     priority: 'MEDIUM',

@@ -1,13 +1,12 @@
 import '@styles/tailwind.scss';
 import { ReactNode } from 'react';
-
-import i18nConfig from './i18nConfig';
-import { headers } from 'next/headers';
 import AppLayout from '@common/components/layout/_app';
+import { headers } from 'next/headers';
+import i18nConfig from './i18nConfig';
 
 interface RootLayoutProps {
   children: ReactNode;
-  params: Promise<{ locale: string }>;
+  params: Promise<{}>;
 }
 
 export const generateStaticParams = () => i18nConfig.locales.map((locale) => ({ locale }));

@@ -1,7 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Admin } from '@common/services/user-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
@@ -12,27 +10,15 @@ import {
   ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
-  StatusLabel,
-  SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
 import dayjs from 'dayjs';
+import { History } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
-  const {
-    municipalityId,
-    supportErrand,
-    supportMetadata,
-    administrators,
-  }: {
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    supportMetadata: SupportMetadata;
-    administrators: Admin[];
-  } = useAppContext();
+  const { municipalityId, supportErrand, supportMetadata, administrators } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -46,7 +32,7 @@ export const SidebarHistory: React.FC<{}> = () => {
     if (supportErrand && keyMapper && Object.keys(keyMapper).length > 1) {
       setError(false);
       setIsLoading(true);
-      getSupportErrandEvents(supportErrand?.id, municipalityId, keyMapper)
+      getSupportErrandEvents(supportErrand?.id!, municipalityId, keyMapper)
         .then((res) => {
           setEvents(res);
           setIsLoading(false);
@@ -57,9 +43,9 @@ export const SidebarHistory: React.FC<{}> = () => {
   }, [supportErrand, keyMapper]);
 
   useEffect(() => {
-    const _km = { NONE: 'Ingen' };
-    Object.entries(StatusLabel).forEach((e) => {
-      _km[e[0]] = e[1];
+    const _km: Record<string, string> = { NONE: 'Ingen' };
+    supportMetadata?.statuses?.forEach((e) => {
+      if (e.name && e.displayName) _km[e.name] = e.displayName;
     });
     [
       ...Object.entries(ResolutionLabelKS),
@@ -77,10 +63,10 @@ export const SidebarHistory: React.FC<{}> = () => {
     });
     _km['true'] = 'Ja';
     _km['false'] = 'Nej';
-    supportMetadata?.categories.forEach((c) => {
-      _km[c.name.replaceAll('.', '/')] = c.displayName;
-      c.types.forEach((t) => {
-        _km[t.name.replaceAll('.', '/')] = t.displayName;
+    supportMetadata?.categories?.forEach((c) => {
+      _km[c.name!.replaceAll('.', '/')] = c.displayName!;
+      c.types?.forEach((t) => {
+        _km[t.name.replaceAll('.', '/')] = t.displayName!;
       });
     });
     setKeyMapper(_km);
@@ -91,7 +77,7 @@ export const SidebarHistory: React.FC<{}> = () => {
       // setSelectedChangeDetails(selectedChange.parsed.diffList);
       // setIsOpen(true);
       // TODO Fetch revison diff on modal opening or when fetching events (slow)?
-      fetchRevisionDiff(supportErrand.id, selectedChange, municipalityId, keyMapper, administrators)
+      fetchRevisionDiff(supportErrand!.id!, selectedChange, municipalityId, keyMapper!, administrators)
         .then((res) => {
           setSelectedChangeDetails(res);
           setIsOpen(true);
@@ -161,7 +147,7 @@ export const SidebarHistory: React.FC<{}> = () => {
             show={isOpen}
             label={
               <div className="flex items-center gap-md">
-                <LucideIcon name="history" />
+                <History />
                 <h3 className="text-h3-sm md:text-h3-md xl:text-h3-lg">Detaljer</h3>
               </div>
             }

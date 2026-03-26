@@ -1,9 +1,10 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, cx, useGui } from '@sk-web-gui/react';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
+import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
@@ -36,11 +37,12 @@ export const Sidebar: React.FC<{
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
 
-  const {
-    supportErrand,
-  }: {
-    supportErrand: SupportErrand;
-  } = useAppContext();
+  const { supportErrand, notesCount, serviceNotesCount } = useAppContext();
+
+  const badgeCounts: Record<string, number> = {
+    'Kommentarer': notesCount,
+    'Tjänsteanteckningar': serviceNotesCount,
+  };
 
   const updateScroll = () => {
     if (menuRef.current) {
@@ -52,12 +54,12 @@ export const Sidebar: React.FC<{
     switch (event.key) {
       case 'ArrowUp':
         const prevIndex = index === 0 ? buttons.length : index - 1;
-        document.getElementById(`sidebar-button-${prevIndex}`).focus();
+        document.getElementById(`sidebar-button-${prevIndex}`)?.focus();
         setActive(prevIndex);
         break;
       case 'ArrowDown':
         const nextIndex = index === buttons.length ? 0 : index + 1;
-        document.getElementById(`sidebar-button-${nextIndex}`).focus();
+        document.getElementById(`sidebar-button-${nextIndex}`)?.focus();
         setActive(nextIndex);
         break;
       default:
@@ -107,7 +109,7 @@ export const Sidebar: React.FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand) : false}
+                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand!) : false}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}
@@ -117,10 +119,24 @@ export const Sidebar: React.FC<{
                   iconButton
                   leftIcon={
                     <>
-                      <LucideIcon name={b.icon as any} />
+                      {(() => {
+                        const DynIcon = iconMap[b.icon as any];
+                        return DynIcon ? <DynIcon /> : undefined;
+                      })()}
                     </>
                   }
-                />
+                >
+                  {badgeCounts[b.label] > 0 && (
+                    <Badge
+                      className="absolute -top-10 -right-10 text-white"
+                      rounded
+                      color="vattjom"
+                      inverted
+                      size="sm"
+                      counter={badgeCounts[b.label] > 99 ? '99+' : badgeCounts[b.label]}
+                    />
+                  )}
+                </Button>
               </div>
             )
           )}
@@ -134,7 +150,7 @@ export const Sidebar: React.FC<{
             aria-label={open ? 'Stäng sidomeny' : 'Öppna sidomeny'}
             iconButton
             tabIndex={active === buttons.length ? 0 : -1}
-            leftIcon={open ? <LucideIcon name="chevrons-right" /> : <LucideIcon name="chevrons-left" />}
+            leftIcon={open ? <ChevronsRight /> : <ChevronsLeft />}
             onClick={() => setOpen(!open)}
             onKeyDown={(e) => handleKeyboard(e, buttons.length)}
           />

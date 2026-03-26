@@ -73,7 +73,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.contains('TESTKOMMUN TESTFASTIGHET 1:1').should('exist');
           cy.contains('Testdistrikt Norra').should('exist');
           cy.contains('Arrende').should('exist');
-          cy.contains('Båtplats').should('exist');
+          cy.contains('Lägenhetsarrende').should('exist');
           cy.contains('2049-00001').should('exist');
           cy.contains('101').should('exist');
           cy.contains('Test Kommun AB').should('exist');
@@ -287,7 +287,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get('[data-cy="area-disclosure"]').click();
 
         // Property designations should be displayed
-        cy.get('[data-cy="property-designation-checkboxgroup"]').should('exist');
+        cy.get('[data-cy="contract-property-designation-checkboxgroup"]').should('exist');
       });
 
       it('displays avtalstid disclosure for lease agreement', () => {
@@ -526,7 +526,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         });
       });
 
-      describe('Ändra faktureringsuppgifter button', () => {
+      describe('Ändra avtalsuppgifter button', () => {
         // Full errand data with all required fields for mapErrandToIErrand
         const errandData = {
           id: 999,
@@ -541,7 +541,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           },
           statuses: [],
           municipalityId: '2281',
-          description: 'Ändra faktureringsuppgifter för avtal 2049-00010',
+          description: 'Ändra avtalsuppgifter för avtal 2049-00010',
           stakeholders: [],
           extraParameters: [],
           notes: [],
@@ -564,7 +564,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           data: errandData,
         };
 
-        it('displays the Ändra faktureringsuppgifter button in contract detail panel', () => {
+        it('displays the Ändra avtalsuppgifter button in contract detail panel', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           navigateToContractOverview();
 
@@ -572,7 +572,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
           cy.get('[data-cy="contract-detail-edit-button"]')
             .should('be.visible')
-            .and('contain.text', 'Ändra faktureringsuppgifter');
+            .and('contain.text', 'Ändra avtalsuppgifter');
         });
 
         it('button is enabled when contract has contractId', () => {
@@ -592,10 +592,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="contract-detail-edit-button"]').click();
 
           // Confirmation dialog should appear
-          cy.contains('Ändra faktureringsuppgifter').should('be.visible');
-          cy.contains('Vill du skapa ett nytt ärende för att ändra faktureringsuppgifter för avtal 2049-00010?').should(
-            'be.visible'
-          );
+          cy.contains('Ändra avtalsuppgifter').should('be.visible');
+          cy.contains('Vill du skapa ett nytt ärende för avtal 2049-00010?').should('be.visible');
           cy.contains('Ja, skapa ärende').should('be.visible');
           cy.contains('Avbryt').should('be.visible');
         });
@@ -612,7 +610,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.contains('Avbryt').click();
 
           // Dialog should close
-          cy.contains('Vill du skapa ett nytt ärende för att ändra faktureringsuppgifter').should('not.exist');
+          cy.contains('Vill du skapa ett nytt ärende för avtal').should('not.exist');
 
           // POST should not have been called
           cy.get('@postErrandSpy').should('not.have.been.called');
@@ -639,7 +637,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             expect(interception.request.body).to.have.property('channel', 'WEB_UI');
             expect(interception.request.body).to.have.property('phase', 'Aktualisering');
             expect(interception.request.body).to.have.property('priority', 'MEDIUM');
-            expect(interception.request.body.description).to.include('Ändra faktureringsuppgifter');
+            expect(interception.request.body.description).to.include('Ändra avtalsuppgifter');
             expect(interception.request.body.description).to.include('2049-00010');
 
             // Verify stakeholders from contract are included

@@ -1,6 +1,6 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, PopupMenu } from '@sk-web-gui/react';
 import { ColorSchemeItems } from './color-scheme-items.component';
+import { ChevronRight, LogOut, Palette } from 'lucide-react';
 
 export const userMenuGroups = [
   {
@@ -15,10 +15,10 @@ export const userMenuGroups = [
           <PopupMenu.Item>
             <PopupMenu position="right" align="start">
               <PopupMenu.Button className="justify-between w-full">
-                <LucideIcon name="palette" />
+                <Palette />
                 <span className="w-full flex justify-between">
                   Färgläge
-                  <LucideIcon name="chevron-right" />
+                  <ChevronRight />
                 </span>
               </PopupMenu.Button>
               <PopupMenu.Panel>
@@ -39,7 +39,7 @@ export const userMenuGroups = [
                 window.location.assign(`${process.env.NEXT_PUBLIC_BASEPATH}/logout`);
               }}
             >
-              <LucideIcon name="log-out" />
+              <LogOut />
               <span>Logga ut</span>
             </Button>
           </PopupMenu.Item>

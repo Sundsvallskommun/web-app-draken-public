@@ -60,3 +60,5 @@ jobs:
           NEXT_PUBLIC_USE_MY_PAGES: true
           NEXT_PUBLIC_USE_ERRAND_EXPORT: true
           NEXT_PUBLIC_USE_UI_PHASES: true
+          NEXT_PUBLIC_USE_UI_BILLING: true
+          NEXT_PUBLIC_USE_CONTRACTS: true

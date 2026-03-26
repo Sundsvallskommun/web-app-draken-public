@@ -1,15 +1,15 @@
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import { ChevronDown } from 'lucide-react';
 
 export interface AttestationStatusFilter {
   status: string[];
 }
 
-export const AttestationStatusValues = {
+export const AttestationStatusValues: AttestationStatusFilter = {
   status: [],
 };
 
@@ -28,7 +28,7 @@ export const AttestationFilterStatusComponent: React.FC = () => {
   return (
     <PopupMenu>
       <PopupMenu.Button
-        rightIcon={<LucideIcon name="chevron-down" />}
+        rightIcon={<ChevronDown />}
         data-cy="Ärendetyp-filter"
         variant="tertiary"
         showBackground={false}

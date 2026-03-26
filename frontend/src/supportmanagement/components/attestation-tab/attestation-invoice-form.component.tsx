@@ -2,7 +2,6 @@ import { useAppContext } from '@common/contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { maybe, prettyTime } from '@common/services/helper-service';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
 import {
   approveBillingRecord,
@@ -12,15 +11,17 @@ import {
   saveBillingRecord,
   setBillingRecordStatus,
 } from '@supportmanagement/services/support-billing-service';
+import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import BillingForm from '../billing/billing-form.component';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { Check, ThumbsDown } from 'lucide-react';
 
 export const AttestationInvoiceForm: React.FC<{
-  setUnsaved?: (boolean) => void;
+  setUnsaved?: (unsaved: boolean) => void;
   update: (recordId: string) => void;
   selectedrecord: CBillingRecord;
 }> = (props) => {
@@ -70,7 +71,7 @@ export const AttestationInvoiceForm: React.FC<{
     (description: string, identity: string, quantity: number, costCenter: string, activity: string) => {
       setValue('invoice.description', description);
       const formRows = getInvoiceRows(
-        selectedRecord.extraParameters['errandNumber'] || '(saknas)',
+        selectedRecord.extraParameters!['errandNumber'] || '(saknas)',
         description,
         getValues('type'),
         identity,
@@ -86,18 +87,18 @@ export const AttestationInvoiceForm: React.FC<{
   useEffect(() => {
     const description = selectedRecord.invoice.description;
     const identity = selectedRecord.invoice.customerId;
-    const quantity = selectedRecord.invoice.invoiceRows[0].quantity;
-    const costCenter = selectedRecord.invoice.invoiceRows[0].accountInformation[0].costCenter;
-    const activity = selectedRecord.invoice.invoiceRows[0].accountInformation[0].activity;
-    handleChange(description, identity, quantity, costCenter, activity);
+    const quantity = selectedRecord.invoice.invoiceRows[0].quantity!;
+    const costCenter = selectedRecord.invoice.invoiceRows[0].accountInformation![0].costCenter;
+    const activity = selectedRecord.invoice.invoiceRows[0].accountInformation![0].activity;
+    handleChange(description, identity!, quantity!, costCenter!, activity!);
   }, [handleChange, selectedRecord]);
 
-  const onError = (error) => {
+  const onError = (error: Record<string, unknown>) => {
     console.error('error', error);
   };
 
   const onSubmit = () => {
-    return saveBillingRecord(undefined, municipalityId, getValues())
+    return saveBillingRecord(undefined as unknown as SupportErrand, municipalityId, getValues())
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -105,7 +106,7 @@ export const AttestationInvoiceForm: React.FC<{
             status: 'success',
           })
         );
-        props.update(getValues().id);
+        props.update(getValues().id!);
       })
       .catch(() => {
         toastMessage({
@@ -147,7 +148,7 @@ export const AttestationInvoiceForm: React.FC<{
           onClick={() => {
             setValue('status', getValues().status);
             setBillingRecordStatus(municipalityId, getValues(), getValues().status, user).then(() => {
-              props.update(selectedRecord.id);
+              props.update(selectedRecord.id!);
               setShowDecisionComponent(false);
             });
           }}
@@ -211,7 +212,7 @@ export const AttestationInvoiceForm: React.FC<{
               color="error"
               className="mr-16"
               onClick={() =>
-                rejectBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
+                rejectBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id!))
               }
             >
               Avslå
@@ -220,7 +221,7 @@ export const AttestationInvoiceForm: React.FC<{
               variant="primary"
               color="gronsta"
               onClick={() =>
-                approveBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id))
+                approveBillingRecord(municipalityId, getValues(), user).then(() => props.update(selectedRecord.id!))
               }
             >
               Godkänn
@@ -234,7 +235,7 @@ export const AttestationInvoiceForm: React.FC<{
           <div>
             <div className="pt-16 gap-md flex justify-end">
               <Button inverted variant="primary" color="gronsta">
-                <LucideIcon name="check" /> Godkänd
+                <Check /> Godkänd
               </Button>
               <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
                 Ändra beslut
@@ -254,7 +255,7 @@ export const AttestationInvoiceForm: React.FC<{
           <div>
             <div className="pt-16 gap-md flex justify-end">
               <Button inverted variant="primary" color="error">
-                <LucideIcon name="thumbs-down" /> Avslag
+                <ThumbsDown /> Avslag
               </Button>
               <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
                 Ändra beslut
@@ -273,7 +274,7 @@ export const AttestationInvoiceForm: React.FC<{
         <div>
           <div className="pt-16 gap-md flex justify-end">
             <Button inverted variant="primary" color="vattjom">
-              <LucideIcon name="check" /> Fakturerad
+              <Check /> Fakturerad
             </Button>
             <Button variant="link" className="text-black" onClick={() => setShowDecisionComponent(true)}>
               Ändra beslut

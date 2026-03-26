@@ -56,6 +56,7 @@ export interface Employment {
   isMainEmployment?: boolean;
   isManager?: boolean | null;
   manager?: Manager;
+  hiringManager?: Manager;
   aid?: string | null;
   empRowId?: string | null;
 }
@@ -123,6 +124,7 @@ export interface NewEmployment {
   isMainEmployment?: boolean;
   isManager?: boolean | null;
   manager?: Manager;
+  hiringManager?: Manager;
   aid?: string | null;
   empRowId?: string | null;
   eventType?: string | null;

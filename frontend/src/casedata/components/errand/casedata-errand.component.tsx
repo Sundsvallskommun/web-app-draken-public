@@ -1,25 +1,27 @@
 import { CasedataTabsWrapper } from '@casedata/components/errand/casedata-tabs-wrapper';
 import { CaseLabels } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
-import { UiPhase } from '@casedata/interfaces/errand-phase';
+import { getErrandNotes } from '@casedata/services/casedata-errand-notes-service';
 import { emptyErrand, getErrandByErrandNumber, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { getUiPhase } from '@casedata/services/process-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
-import { useRouter } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
-import { getUiPhase } from '@casedata/services/process-service';
 
-export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
+export const CasedataErrandComponent: React.FC = () => {
+  const params = useParams<{ errandNumber?: string }>();
+  const errandNumber = params?.errandNumber;
   let formSchema = yup
     .object({
       caseType: yup
@@ -38,24 +40,14 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
     .required();
 
   const [isLoading, setIsLoading] = useState(false);
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    setUiPhase,
-  }: {
-    municipalityId: string;
-    errand: IErrand;
-    setErrand: any;
-    setUiPhase: (phase: UiPhase) => void;
-  } = useAppContext();
+  const { municipalityId, errand, setErrand, setUiPhase, setNotesCount, setServiceNotesCount } = useAppContext();
   const toastMessage = useSnackbar();
 
   const methods = useForm<IErrand>({
     resolver: yupResolver(formSchema) as unknown as Resolver<IErrand>, //Temporary bypass for resolver
     defaultValues: errand,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
-    disabled: isErrandLocked(errand),
+    disabled: errand ? isErrandLocked(errand) : false,
   });
 
   const initialFocus = useRef<HTMLBodyElement>(null);
@@ -100,7 +92,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
         });
     } else {
       // Registering new errand, show default values
-      setErrand(emptyErrand);
+      setErrand(emptyErrand as IErrand);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
@@ -108,6 +100,10 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
   useEffect(() => {
     if (errand) {
       setUiPhase(getUiPhase(errand));
+      getErrandNotes(errand.notes).then(({ comments, serviceNotes }) => {
+        setNotesCount(comments);
+        setServiceNotesCount(serviceNotes);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
@@ -263,7 +259,7 @@ export const CasedataErrandComponent: React.FC<{ errandNumber?: string }> = ({ e
                                 update={() => {}}
                                 label="Registrera"
                                 color="vattjom"
-                                icon={<LucideIcon name="arrow-right" size={18} />}
+                                icon={<ArrowRight size={18} />}
                               />
                             </div>
                           </div>

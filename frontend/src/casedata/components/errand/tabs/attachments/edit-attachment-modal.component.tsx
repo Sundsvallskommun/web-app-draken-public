@@ -1,18 +1,18 @@
 import React from 'react';
 import { Modal, Button, Image, Spinner } from '@sk-web-gui/react';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
 import { getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { IErrand } from '@casedata/interfaces/errand';
+import { Crop } from 'lucide-react';
 
 interface EditAttachmentModalProps {
   isOpen: boolean;
   isCropping: boolean;
   modalFetching: boolean;
   modalAttachment?: Attachment;
-  errand: IErrand;
+  errand: IErrand | undefined;
   onClose: () => void;
   onToggleCrop: () => void;
 }
@@ -35,7 +35,7 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
     >
       <div className="flex flex-col justify-center items-center my-lg">
         {isCropping ? (
-          <CommonImageCropper errand={errand} attachment={modalAttachment} onClose={onClose} />
+          <CommonImageCropper errand={errand!} attachment={modalAttachment!} onClose={onClose} />
         ) : (
           <>
             <div className="flex-grow-0 my-md">
@@ -44,7 +44,7 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
                   <Spinner size={24} />
                 ) : (
                   <Image
-                    alt={getAttachmentLabel(modalAttachment)}
+                    alt={getAttachmentLabel(modalAttachment!)}
                     key={modalAttachment?.id}
                     src={`data:${modalAttachment?.mimeType};base64,${modalAttachment?.file}`}
                   />
@@ -54,10 +54,10 @@ export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
             <div className="my-md">
               <Button
                 variant="primary"
-                disabled={isErrandLocked(errand)}
+                disabled={errand ? isErrandLocked(errand) : false}
                 color="primary"
                 onClick={onToggleCrop}
-                leftIcon={<LucideIcon name="crop" />}
+                leftIcon={<Crop />}
               >
                 {isCropping ? 'Spara' : 'Beskär bild'}
               </Button>

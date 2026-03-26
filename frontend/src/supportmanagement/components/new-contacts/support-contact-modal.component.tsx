@@ -21,7 +21,7 @@ interface SupportContactModalProps {
   contact: SupportStakeholderFormModel;
   id: string;
   setSearchMode: React.Dispatch<React.SetStateAction<string>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult>>;
+  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
   setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
   setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
   replacePhonenumbers: UseFieldArrayReplace<SupportStakeholderFormModel, 'phoneNumbers'>;
@@ -125,11 +125,11 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
                         Välj roll
                       </Select.Option>
                       {supportMetadata &&
-                        Object.entries(supportMetadata.roles)
+                        Object.entries(supportMetadata.roles ?? [])
                           .filter(
-                            ([, relation]) => !(contact.role === 'CONTACT' && ['PRIMARY'].includes(relation.name))
+                            ([, relation]) => !(contact.role === 'CONTACT' && ['PRIMARY'].includes(relation.name!))
                           )
-                          .sort((a, b) => (a[1].displayName > b[1].displayName ? 1 : -1))
+                          .sort((a, b) => ((a[1].displayName ?? '') > (b[1].displayName ?? '') ? 1 : -1))
                           .map(([key, relation]) => (
                             <Select.Option key={key} value={relation.name}>
                               {relation.displayName}

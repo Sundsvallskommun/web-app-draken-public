@@ -5,7 +5,6 @@ import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import {
   Avatar,
   Button,
@@ -32,6 +31,7 @@ import dayjs from 'dayjs';
 import { Fragment, useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+import { Ellipsis, Pencil, Trash } from 'lucide-react';
 
 let formSchema = yup
   .object({
@@ -63,15 +63,10 @@ export const SidebarGenericNotes: React.FC<{
 
   const {
     register,
-    control,
     handleSubmit,
     watch,
-    reset,
     setValue,
     getValues,
-    getFieldState,
-    trigger,
-    formState,
     formState: { errors },
   }: UseFormReturn<ErrandNotesTabFormModel, any, undefined> = useForm({
     resolver: yupResolver(formSchema) as any,
@@ -83,8 +78,8 @@ export const SidebarGenericNotes: React.FC<{
     let createNote = true;
 
     const apiCall = note.id
-      ? updateSupportNote(supportErrand.id, municipalityId, note.id, note.text)
-      : saveSupportNote(supportErrand.id, municipalityId, note.text, note.partyId);
+      ? updateSupportNote(supportErrand!.id!, municipalityId, note.id, note.text)
+      : saveSupportNote(supportErrand!.id!, municipalityId, note.text, note.partyId);
 
     return apiCall
       .then(() => {
@@ -95,7 +90,7 @@ export const SidebarGenericNotes: React.FC<{
           })
         );
         setIsLoading(false);
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
       })
       .catch((e) => {
@@ -116,7 +111,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   useEffect(() => {
-    getSupportNotes(supportErrand.id, municipalityId).then((res) => setNotes(res.notes));
+    getSupportNotes(supportErrand!.id!, municipalityId).then((res) => setNotes(res.notes));
     if (selectedNote) {
       setSelectedNote(notes.map(makeGeneric).find((n) => n.id === selectedNote.id));
     }
@@ -133,7 +128,7 @@ export const SidebarGenericNotes: React.FC<{
 
   const saveModifiedNote = () => {
     const note: ErrandNotesTabFormModel = getValues();
-    return updateSupportNote(supportErrand.id, municipalityId, note.id, note.text)
+    return updateSupportNote(supportErrand!.id!, municipalityId, note.id!, note.text)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -141,7 +136,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
         setValue('id', '');
         setEditNote(false);
@@ -158,8 +153,8 @@ export const SidebarGenericNotes: React.FC<{
       });
   };
 
-  const removeNote = (inNote) => {
-    return deleteSupportNote(supportErrand.id, municipalityId, inNote.id)
+  const removeNote = (inNote: GenericNote) => {
+    return deleteSupportNote(supportErrand!.id!, municipalityId, inNote.id)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -167,7 +162,7 @@ export const SidebarGenericNotes: React.FC<{
             status: 'success',
           })
         );
-        getSupportErrandById(supportErrand.id, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
         setValue('text', '');
       })
       .catch((e) => {
@@ -193,7 +188,7 @@ export const SidebarGenericNotes: React.FC<{
   };
 
   useEffect(() => {
-    const primaryStakeholder = supportErrand.customer.find((x) => x.role === 'PRIMARY');
+    const primaryStakeholder = supportErrand?.customer?.find((x) => x.role === 'PRIMARY');
     if (primaryStakeholder?.externalIdType === 'PRIVATE' && primaryStakeholder?.externalId) {
       setValue('partyId', primaryStakeholder?.externalId);
     } else {
@@ -255,7 +250,7 @@ export const SidebarGenericNotes: React.FC<{
                           className="bg-transparent"
                           variant="ghost"
                         >
-                          <LucideIcon name="ellipsis" />
+                          <Ellipsis />
                         </PopupMenu.Button>
                         <PopupMenu.Panel>
                           <PopupMenu.Items>
@@ -263,8 +258,8 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="edit-note-button"
-                                  disabled={noteIsComment(noteType) && supportErrand.status === 'SOLVED'}
-                                  leftIcon={<LucideIcon name="pencil" />}
+                                  disabled={noteIsComment(noteType) && supportErrand?.status === 'SOLVED'}
+                                  leftIcon={<Pencil />}
                                   onClick={() => {
                                     updateNote(note);
                                   }}
@@ -277,7 +272,7 @@ export const SidebarGenericNotes: React.FC<{
                               <PopupMenu.Item>
                                 <Button
                                   data-cy="delete-note-button"
-                                  leftIcon={<LucideIcon name="trash" />}
+                                  leftIcon={<Trash />}
                                   onClick={() => {
                                     confirm
                                       .showConfirmation(
@@ -338,7 +333,7 @@ export const SidebarGenericNotes: React.FC<{
             loading={isLoading}
             data-cy="save-newcomment"
             size="sm"
-            onClick={handleSubmit(onSubmit, onError)}
+            onClick={handleSubmit(onSubmit as any, onError)}
           >
             Spara
           </Button>

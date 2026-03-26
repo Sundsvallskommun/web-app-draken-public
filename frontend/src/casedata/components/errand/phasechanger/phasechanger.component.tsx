@@ -1,6 +1,5 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -14,33 +13,26 @@ import {
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
+import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
-import { Admin } from '@common/services/user-service';
+import { isPT } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
-import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 
 export const PhaseChanger = () => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-    administrators,
-    uiPhase,
-  }: { municipalityId: string; user: any; errand: IErrand; setErrand: any; administrators: Admin[]; uiPhase: UiPhase } =
-    useAppContext();
+  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
+    if (!errand) return;
     const _a = validateAction(errand, user);
     setAllowed(_a);
   }, [user, errand]);
@@ -67,6 +59,7 @@ export const PhaseChanger = () => {
     message: <p>Vill du byta fas?</p>,
   });
   useEffect(() => {
+    if (!errand) return;
     if (uiPhase === UiPhase.registrerad) {
       setPhaseChangeText({
         icon: 'lightbulb',
@@ -108,6 +101,18 @@ export const PhaseChanger = () => {
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ icon: 'lightbulb', button: 'N/A', title: 'N/A?', message: <></> });
+    } else if (isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt) {
+      setPhaseChangeText({
+        icon: 'folder-closed',
+        button: 'Avsluta ärende',
+        title: 'Avsluta ärendet?',
+        message: (
+          <p>
+            Kontrollera att du dokumenterat samtliga handlingar och uppgifter innan ärendet stängs. Vill du stänga
+            ärendet?
+          </p>
+        ),
+      });
     } else if (errand.phase === ErrandPhase.uppfoljning) {
       setPhaseChangeText({
         icon: 'folder-closed',
@@ -147,7 +152,7 @@ export const PhaseChanger = () => {
       showSaveError();
       return;
     }
-    return setAdministrator(municipalityId, errand, admin)
+    return setAdministrator(municipalityId, errand!, admin)
       .then(() => {
         toastMessage(
           getToastOptions({
@@ -156,7 +161,7 @@ export const PhaseChanger = () => {
           })
         );
         setIsLoading(false);
-        getErrand(municipalityId, errand.id.toString()).then((res) => setErrand(res.errand));
+        getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
         pollDisplayPhase();
       })
@@ -176,8 +181,8 @@ export const PhaseChanger = () => {
     try {
       setPhaseDialogOpen(false);
       await errandSave();
-      await triggerErrandPhaseChange(municipalityId, errand);
-      const res = await getErrand(municipalityId, errand.id.toString());
+      await triggerErrandPhaseChange(municipalityId, errand!);
+      const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
 
       toastMessage(
@@ -198,6 +203,8 @@ export const PhaseChanger = () => {
     }
   };
 
+  if (!errand) return null;
+
   return phaseChangeInProgress(errand) ? (
     <Button disabled variant="secondary" rightIcon={<Spinner size={2} />}>
       Fasbyte pågår
@@ -211,24 +218,24 @@ export const PhaseChanger = () => {
         await errandSave();
         handleSubmit(onSave, onError)();
       }}
-      rightIcon={<LucideIcon name="arrow-right" size={18} />}
+      rightIcon={<ArrowRight size={18} />}
     >
-      Inled granskning
+      Starta handläggning
     </Button>
   ) : uiPhase === UiPhase.beslut ||
-    errand.phase === ErrandPhase.verkstalla ||
+    (errand.phase === ErrandPhase.verkstalla && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
     errand.status?.statusType === ErrandStatus.ArendeAvslutat ? null : (
     <>
       <Button
         variant="primary"
-        disabled={isErrandLocked(errand) || !allowed || phaseChangeText.disabled}
+        disabled={(isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) || !allowed || phaseChangeText.disabled}
         color="vattjom"
         loadingText="Sparar"
         loading={isLoading}
         onClick={() => {
           setPhaseDialogOpen(true);
         }}
-        rightIcon={<LucideIcon name="arrow-right" size={18} />}
+        rightIcon={<ArrowRight size={18} />}
       >
         {phaseChangeText?.button}
       </Button>

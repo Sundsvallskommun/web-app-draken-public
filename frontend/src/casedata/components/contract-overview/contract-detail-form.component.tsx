@@ -13,8 +13,7 @@ import {
   contractTypes,
   leaseTypes,
 } from '@casedata/services/contract-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
-import { Button, Checkbox, FormControl, FormLabel, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
 import React, { useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
@@ -34,6 +33,7 @@ import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/st
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
 import { Admin } from '@common/services/user-service';
+import { ExternalLink } from 'lucide-react';
 
 const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
@@ -85,7 +85,7 @@ const mapContractStakeholderToErrandStakeholder = (
       : contractStakeholder.type === ContractStakeholderType.PERSON ||
         contractStakeholder.type === ContractStakeholderType.OTHER
       ? ContractStakeholderType.PERSON
-      : contractStakeholder.type;
+      : (contractStakeholder.type as unknown as StakeholderType) ?? 'PERSON';
 
   // Map phone numbers
   const phoneNumbers: { value: string }[] = [];
@@ -161,26 +161,23 @@ export const ContractDetailForm: React.FC<{
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
   const toastMessage = useSnackbar();
-  const confirm = useConfirm();
   const router = useRouter();
 
   const contractTypeLabel = getContractTypeLabel(selectedContract.type);
   const isDraft = selectedContract.status === Status.DRAFT;
 
+  const openConfirmModal = () => {
+    setIsConfirmModalOpen(true);
+  };
+
+  const closeConfirmModal = () => {
+    setIsConfirmModalOpen(false);
+  };
+
   const handleChangeBillingDetails = async () => {
-    const confirmed = await confirm.showConfirmation(
-      'Ändra faktureringsuppgifter',
-      `Vill du skapa ett nytt ärende för att ändra faktureringsuppgifter för avtal ${selectedContract.contractId}?`,
-      'Ja, skapa ärende',
-      'Avbryt',
-      'info'
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+    closeConfirmModal();
     setIsLoading(true);
 
     try {
@@ -195,7 +192,7 @@ export const ContractDetailForm: React.FC<{
         priority: Priority.MEDIUM,
         status: { statusType: ErrandStatus.ArendeInkommit },
         municipalityId: municipalityId,
-        description: `Ändra faktureringsuppgifter för avtal ${selectedContract.contractId}`,
+        description: `Ändra avtalsuppgifter för avtal ${selectedContract.contractId}`,
         stakeholders: mappedStakeholders,
       };
 
@@ -218,7 +215,7 @@ export const ContractDetailForm: React.FC<{
 
       const contractIdParam: ExtraParameter = {
         key: 'contractId',
-        values: [selectedContract.contractId],
+        values: [selectedContract.contractId ?? ''],
       };
 
       await saveExtraParameters(municipalityId, [contractIdParam], createdErrand.errand);
@@ -245,78 +242,113 @@ export const ContractDetailForm: React.FC<{
   };
 
   return (
-    <div className="px-40 my-lg gap-24">
-      <div className="flex flex-col gap-md mb-32">
-        <div className="flex justify-between items-center">
-          <h2 className="text-h4-sm m-0">{contractTypeLabel}</h2>
-          <Button
-            data-cy="contract-detail-edit-button"
-            color="vattjom"
-            variant="primary"
-            leftIcon={<LucideIcon name="external-link" />}
-            disabled={isLoading || !selectedContract.contractId}
-            loading={isLoading}
-            loadingText="Skapar ärende..."
-            onClick={handleChangeBillingDetails}
-          >
-            Ändra faktureringsuppgifter
-          </Button>
-        </div>
+    <>
+      <div className="px-40 my-lg gap-24">
+        <div className="flex flex-col gap-md mb-32">
+          <div className="flex justify-between items-center">
+            <h2 className="text-h4-sm m-0">{contractTypeLabel}</h2>
+            <Button
+              data-cy="contract-detail-edit-button"
+              color="vattjom"
+              variant="primary"
+              leftIcon={<ExternalLink />}
+              disabled={isLoading || !selectedContract.contractId}
+              loading={isLoading}
+              loadingText="Skapar ärende..."
+              onClick={openConfirmModal}
+            >
+              Ändra avtalsuppgifter
+            </Button>
+          </div>
 
-        <p className="text-small text-dark-secondary m-0">
-          Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i sin
-          ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som registrerats
-          under ärendeuppgifter.
-        </p>
+          <p className="text-small text-dark-secondary m-0">
+            Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i sin
+            ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som registrerats
+            under ärendeuppgifter.
+          </p>
 
-        <div className="flex gap-lg">
-          <FormControl id="contractType" className="flex-1">
-            <FormLabel>Välj avtalstyp</FormLabel>
-            <Select data-cy="contract-detail-type-select" className="w-full" value={selectedContract.type} disabled>
-              {contractTypes.map((ct) => (
-                <Select.Option key={ct.key} value={ct.key}>
-                  {ct.label}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-
-          {selectedContract.type === ContractType.LEASE_AGREEMENT && (
-            <FormControl id="contractSubType" className="flex-1">
-              <FormLabel>Undertyp</FormLabel>
-              <Select
-                data-cy="contract-detail-subtype-select"
-                className="w-full"
-                value={selectedContract.leaseType || ''}
-                disabled
-              >
-                {leaseTypes.map((lt) => (
-                  <Select.Option key={lt.key} value={lt.key}>
-                    {lt.label}
+          <div className="flex gap-lg">
+            <FormControl id="contractType" className="flex-1">
+              <FormLabel>Välj avtalstyp</FormLabel>
+              <Select data-cy="contract-detail-type-select" className="w-full" value={selectedContract.type} disabled>
+                {contractTypes.map((ct) => (
+                  <Select.Option key={ct.key} value={ct.key}>
+                    {ct.label}
                   </Select.Option>
                 ))}
               </Select>
             </FormControl>
-          )}
+
+            {selectedContract.type === ContractType.LEASE_AGREEMENT && (
+              <FormControl id="contractSubType" className="flex-1">
+                <FormLabel>Undertyp</FormLabel>
+                <Select
+                  data-cy="contract-detail-subtype-select"
+                  className="w-full"
+                  value={selectedContract.leaseType || ''}
+                  disabled
+                >
+                  {leaseTypes.map((lt) => (
+                    <Select.Option key={lt.key} value={lt.key}>
+                      {lt.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </div>
+
+          <Checkbox data-cy="contract-detail-draft-checkbox" checked={isDraft} disabled>
+            Markera som utkast
+          </Checkbox>
         </div>
 
-        <Checkbox data-cy="contract-detail-draft-checkbox" checked={isDraft} disabled>
-          Markera som utkast
-        </Checkbox>
+        <div className="flex flex-col gap-md mb-32">
+          <FormProvider {...formControls}>
+            <ContractForm
+              readOnly={true}
+              existingContract={contractData}
+              buyers={buyers}
+              sellers={sellers}
+              lessees={lessees}
+              lessors={lessors}
+              contractOveriewMode
+            />
+          </FormProvider>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-md mb-32">
-        <FormProvider {...formControls}>
-          <ContractForm
-            readOnly={true}
-            existingContract={contractData}
-            buyers={buyers}
-            sellers={sellers}
-            lessees={lessees}
-            lessors={lessors}
-          />
-        </FormProvider>
-      </div>
-    </div>
+      <Modal
+        show={isConfirmModalOpen}
+        onClose={closeConfirmModal}
+        label="Ändra avtalsuppgifter"
+        className="w-[60rem]"
+        data-cy="contract-detail-confirm-modal"
+      >
+        <Modal.Content>
+          <p>Vill du skapa ett nytt ärende för avtal {selectedContract.contractId}?</p>
+          <p>Du kan göra följande uppdateringar:</p>
+          <ul className="list-disc list-inside ml-4">
+            <li>Byta fakturaadress</li>
+            <li>Ladda upp tilläggsbilagor</li>
+            <li>Uppdatera fakturauppgifter och -referens</li>
+            <li>Säga upp avtal</li>
+          </ul>
+        </Modal.Content>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeConfirmModal} data-cy="contract-detail-confirm-cancel">
+            Avbryt
+          </Button>
+          <Button
+            variant="primary"
+            color="vattjom"
+            onClick={handleChangeBillingDetails}
+            data-cy="contract-detail-confirm-submit"
+          >
+            Ja, skapa ärende
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };

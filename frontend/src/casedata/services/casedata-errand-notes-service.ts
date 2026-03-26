@@ -44,6 +44,9 @@ export const signErrandNote: (
   if (!note || !note.id) {
     console.error('No note id found, cannot sign. Returning.');
   }
+  if (!note.extraParameters) {
+    note.extraParameters = {};
+  }
   note.extraParameters['signed'] = 'true';
   const url = `casedata/${municipalityId}/errands/${errandId}/notes/${note.id}`;
   return apiService.patch<boolean, CreateErrandNoteDto>(url, note).catch((e) => {
@@ -76,4 +79,20 @@ export const noteIsComment = (noteType: NoteType): boolean => {
 
 export const noteIsTjansteanteckning = (noteType: NoteType): boolean => {
   return noteType === 'PUBLIC';
+};
+
+export const getErrandNotes: (notes: ErrandNote[]) => Promise<{ comments: number; serviceNotes: number }> = (notes) => {
+  let comments = 0;
+  let serviceNotes = 0;
+
+  notes?.forEach((note) => {
+    if (noteIsComment(note.noteType)) {
+      comments++;
+    }
+    if (noteIsTjansteanteckning(note.noteType)) {
+      serviceNotes++;
+    }
+  });
+
+  return Promise.resolve({ comments, serviceNotes });
 };

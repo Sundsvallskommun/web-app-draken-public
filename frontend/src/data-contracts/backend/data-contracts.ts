@@ -109,6 +109,7 @@ export interface CExtraParameters {
   errandId: string;
   errandNumber: string;
   referenceName: string;
+  facilities?: string;
 }
 
 export interface CBillingRecord {
@@ -214,7 +215,7 @@ export interface DecisionDTO {
   decisionType: string;
   decisionOutcome: string;
   description?: string;
-  law: LawDTO[];
+  law?: LawDTO[];
   decidedBy?: any;
   decidedAt?: string;
   validFrom?: string;
@@ -430,6 +431,12 @@ export interface CContactChannel {
   value?: string;
 }
 
+export interface CJsonParameter {
+  key: string;
+  value?: any;
+  schemaId: string;
+}
+
 export interface CSupportStakeholder {
   externalId?: string;
   externalIdType?: string;
@@ -482,6 +489,7 @@ export interface SupportErrandDto {
   priority?: string;
   externalTags?: CExternalTag[];
   parameters?: CParameter[];
+  jsonParameters?: CJsonParameter[];
   classification?: Classification;
   status?: string;
   resolution?: string;

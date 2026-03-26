@@ -4,7 +4,7 @@ import { apiURL } from '@common/utils/api-url';
 import i18nConfig from './app/i18nConfig';
 import { protectedRoutes } from '@common/utils/protected-routes';
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const {
     nextUrl: { pathname, origin },
   } = req;
@@ -29,7 +29,9 @@ export async function middleware(req: NextRequest) {
   }
 
   req.headers.set('x-path', pathname);
-  return i18nRouter(req, i18nConfig);
+  const response = i18nRouter(req, i18nConfig);
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  return response;
 }
 
 export const config = {

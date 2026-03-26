@@ -1,21 +1,21 @@
+import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { useAppContext } from '@contexts/app.context';
 import { Table } from '@sk-web-gui/react';
 import { isOpenEErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useMemo, useState } from 'react';
-import { CParameter } from 'src/data-contracts/backend/data-contracts';
+import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const {
-    supportErrand,
-  }: {
-    supportErrand: SupportErrand;
+    supportErrand: _supportErrand,
+    municipalityId,
   } = useAppContext();
+  const supportErrand = _supportErrand!;
 
   const simpleParams = useMemo(
     () =>
       supportErrand.parameters?.filter((p) => {
         return typeof p.displayName === 'string' && !p.displayName.includes('|') && !p.key.includes('recruitment@');
-      }),
+      }) || [],
     [supportErrand.parameters]
   );
 
@@ -34,8 +34,8 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const tables: { label: string; header: string[]; rows: { key: string; value: string }[][] }[] = useMemo(
     () =>
       tableParams?.map((param) => {
-        const header = param.displayName.split('|');
-        const rows = param.values.map((row: string) => {
+        const header = param.displayName!.split('|');
+        const rows = param.values!.map((row: string) => {
           const columns = row?.split('|') || [];
           return columns.map((column, idx) => {
             return {
@@ -57,26 +57,25 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
     <div className="pt-xl pb-16 px-40 flex flex-col">
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
-        <div className="rounded-lg gap-md p-16">
-          {isOpenEErrand(supportErrand) || simpleParams.length > 0 ? (
+        {(isOpenEErrand(supportErrand) || simpleParams.length > 0) && (
+          <div className="rounded-lg gap-md p-16">
             <h3 className="text-h3-md mb-12">Grunduppgifter</h3>
-          ) : null}
-          {isOpenEErrand(supportErrand) ? (
-            <div className="flex flex-row gap-md">
-              <strong>Ärendenummer i e-tjänst</strong>
-              <span>{supportErrand.externalTags.find((tag) => tag.key === 'caseId')?.value}</span>
-            </div>
-          ) : null}
-          {simpleParams &&
-            simpleParams
-              .filter((param) => param.values?.length > 0)
+            {isOpenEErrand(supportErrand) ? (
+              <div className="flex flex-row gap-md">
+                <strong>Ärendenummer i e-tjänst</strong>
+                <span>{supportErrand.externalTags?.find((tag) => tag.key === 'caseId')?.value}</span>
+              </div>
+            ) : null}
+            {simpleParams
+              .filter((param) => (param.values?.length ?? 0) > 0)
               .map((param, idx) => (
                 <div key={`first-${param.key}-${idx}`} className="flex flex-row gap-md my-sm">
                   <div className="font-bold">{param.displayName}</div>
-                  <div>{param.values.join(', ')}</div>
+                  <div>{param.values?.join(', ')}</div>
                 </div>
               ))}
-        </div>
+          </div>
+        )}
 
         {tables.map((table, idx) => (
           <div key={`table-${idx}`} className="p-16">
@@ -103,7 +102,11 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        <div className="my-md gap-xl"></div>
+        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
+          <div className="p-16">
+            <JsonParametersDisplay jsonParameters={supportErrand.jsonParameters as any} municipalityId={municipalityId} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

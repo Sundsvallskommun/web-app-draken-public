@@ -12,11 +12,21 @@ export interface FacilitiesPayload {
   streets: string[];
 }
 
-export const saveFacilityInfo = (id, facilities) => {
+interface Facility {
+  address?: {
+    propertyDesignation?: string;
+    street?: string;
+  };
+  extraParameters?: {
+    districtname?: string;
+  };
+}
+
+export const saveFacilityInfo = (id: string, facilities: Facility[]) => {
   const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID;
   const url = `supporterrands/saveFacilities/${municipalityId}/${id}`;
   const payload: FacilitiesPayload = {
-    propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation) || [],
+    propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation || '') || [],
     districtnames: facilities?.map((f) => f.extraParameters?.districtname || '') || [],
     streets: facilities?.map((f) => f.address?.street || '') || [],
   };

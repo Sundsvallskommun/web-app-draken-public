@@ -21,7 +21,6 @@ import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
-import { mock } from 'node:test';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand page', () => {
@@ -132,7 +131,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       // Status
       cy.get(`[data-cy="status-input"]`).should('exist');
-      cy.get(`[data-cy="status-input"]`).select('PENDING').should('have.value', 'PENDING');
+      cy.get(`[data-cy="status-input"]`).select('SUSPENDED').should('have.value', 'SUSPENDED');
 
       // Priority
       cy.get(`[data-cy="priority-input"]`).should('exist');
@@ -141,7 +140,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.wait('@updateErrand').then((interception) => {
         expect(interception?.request.body.priority).to.eq('LOW');
-        expect(interception?.request.body.status).to.eq('PENDING');
+        expect(interception?.request.body.status).to.eq('SUSPENDED');
         expect(interception?.response?.statusCode).to.eq(200);
       });
     });
@@ -243,6 +242,85 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="solve-radiolist"] label').should('have.length', solveLables.length);
       cy.get('[data-cy="solve-radiolist"] label input').eq(1).should('have.value', solveLables[1].id).check();
       cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist').click();
+    });
+
+    it('Shows current resolution when errand already has one', () => {
+      const mockSupportErrandWithResolution = {
+        ...mockSupportErrand,
+        resolution: 'INFORMED',
+      };
+
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+        mockSupportErrandWithResolution
+      ).as('getErrand');
+
+      cy.visit('/arende/KC-00000001');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
+      cy.get('article.sk-modal-dialog').should('exist');
+      cy.get('article.sk-modal-dialog').contains('Aktuell avslutningskod');
+      cy.get('article.sk-modal-dialog').contains('Ändra lösningskod').should('exist');
+      cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist');
+    });
+
+    it('Can change resolution code when errand already has one', () => {
+      const mockSupportErrandWithResolution = {
+        ...mockSupportErrand,
+        resolution: 'INFORMED',
+      };
+
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+        mockSupportErrandWithResolution
+      ).as('getErrand');
+
+      cy.visit('/arende/KC-00000001');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
+      cy.get('article.sk-modal-dialog').should('exist');
+
+      // Click "Ändra lösningskod" to switch to resolution selection view
+      cy.get('article.sk-modal-dialog').contains('Ändra lösningskod').click();
+      cy.get('article.sk-modal-dialog').contains('Välj en lösning');
+      cy.get('[data-cy="solve-radiolist"]').should('exist');
+    });
+
+    it('Resets to current resolution view when modal is closed and reopened', () => {
+      const mockSupportErrandWithResolution = {
+        ...mockSupportErrand,
+        resolution: 'INFORMED',
+      };
+
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+        mockSupportErrandWithResolution
+      ).as('getErrand');
+
+      cy.visit('/arende/KC-00000001');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      // Open modal and switch to "Välj en lösning"
+      cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
+      cy.get('article.sk-modal-dialog').contains('Ändra lösningskod').click();
+      cy.get('article.sk-modal-dialog').contains('Välj en lösning');
+
+      // Close modal
+      cy.get('article.sk-modal-dialog .sk-modal-dialog-close').click();
+      cy.get('article.sk-modal-dialog').should('not.exist');
+
+      // Reopen modal - should show "Aktuell avslutningskod" again
+      cy.get(`[data-cy="solved-button"]`).contains('Avsluta ärende').click();
+      cy.get('article.sk-modal-dialog').should('exist');
+      cy.get('article.sk-modal-dialog').contains('Aktuell avslutningskod');
     });
 
     it('Can manage Kommentarer', () => {

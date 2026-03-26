@@ -1,18 +1,15 @@
 import { isROB } from '@common/services/application-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Label } from '@sk-web-gui/react';
-import {
-  Resolution,
-  ResolutionLabelROB,
-  Status,
-  StatusLabel,
-  StatusLabelROB,
-} from '@supportmanagement/services/support-errand-service';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
+import { useAppContext } from '@contexts/app.context';
 
 export const SupportStatusLabelComponent: React.FC<{ status: string; resolution: string }> = ({
   status,
   resolution,
 }) => {
+  const { supportMetadata } = useAppContext();
+
   const solvedErrandIcon = () => {
     if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
     else if (resolution === Resolution.CLOSED) return 'check';
@@ -94,7 +91,7 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
 
     if (status === Status.SOLVED && resolution) {
       if (isRob) {
-        return ResolutionLabelROB[resolution as Resolution] ?? 'Löst';
+        return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
       }
 
       switch (resolution) {
@@ -109,13 +106,17 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
       }
     }
 
-    return isRob
-      ? StatusLabelROB[status as Status] ?? 'Status saknas'
-      : StatusLabel[status as Status] ?? 'Status saknas';
+    return supportMetadata?.statuses?.find((s) => s.name === status)?.displayName ?? status;
   };
   return (
     <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-      {icon ? <LucideIcon name={icon} size={16} /> : null} {solvedErrandText()}
+      {icon
+        ? (() => {
+            const DynIcon = iconMap[icon];
+            return DynIcon ? <DynIcon size={16} /> : undefined;
+          })()
+        : null}{' '}
+      {solvedErrandText()}
     </Label>
   );
 };

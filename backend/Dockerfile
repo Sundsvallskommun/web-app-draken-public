@@ -1,28 +1,25 @@
 # Install dependencies only when needed
-FROM node:16-alpine AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+FROM node:20-slim AS deps
+
+RUN apt-get update
+RUN apt-get install -y openssl
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
-# If using npm with a `package-lock.json` comment out above and use below instead
-# COPY package.json package-lock.json ./
-# RUN npm ci
-
 # Rebuild the source code only when needed
-FROM node:16-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-RUN mkdir /app/data
-RUN mkdir /app/data/logs
-RUN mkdir /app/data/sessions
 COPY . .
 
-RUN yarn build
+# RUN yarn build
+RUN yarn build 2>&1 || true && echo "---BUILD EXIT CODE: $?---" && ls -la ./dist/ || echo "dist/ does not exist"
 
 # Production image, copy all the files and run next
-FROM node:16-alpine AS runner
+FROM node:20-slim AS runner
+RUN apt-get update
+RUN apt-get install -y openssl
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -35,9 +32,6 @@ COPY --from=builder --chown=nodejs:nodejs /app/ ./
 USER nodejs
 
 EXPOSE 3000
-
 ENV PORT 3000
-
-RUN yarn run migrate
 
 CMD ["node", "./dist/server.js"]

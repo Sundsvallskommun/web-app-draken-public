@@ -387,7 +387,7 @@ export const mockHistory = {
       property: 'errandNumber',
       propertyChangeType: 'PROPERTY_VALUE_CHANGED',
       left: null,
-      right: 'PRH-2022-000008',
+      right: 'SGP-2022-000008',
     },
     {
       changeType: 'InitialValueChange',

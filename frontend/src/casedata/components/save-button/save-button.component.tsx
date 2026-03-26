@@ -4,11 +4,11 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import LucideIcon from '@sk-web-gui/lucide-icon';
 import { Button } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { ArrowRight } from 'lucide-react';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;
@@ -19,13 +19,7 @@ export const SaveButtonComponent: React.FC<{
   icon?: JSX.Element;
   loading?: boolean;
 }> = (props) => {
-  const {
-    errand,
-    municipalityId,
-  }: {
-    errand: IErrand;
-    municipalityId: string;
-  } = useAppContext();
+  const { errand, municipalityId } = useAppContext();
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const router = useRouter();
   const [internalLoading, setInternalLoading] = useState(false);
@@ -50,10 +44,10 @@ export const SaveButtonComponent: React.FC<{
         className={registeringNewErrand ? 'w-min' : 'w-full mt-8'}
         data-cy="save-and-continue-button"
         disabled={
-          isErrandLocked(errand) ||
+          (errand ? isErrandLocked(errand) : false) ||
           !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
           !formState.isValid ||
-          errand.status?.statusType === ErrandStatus.Parkerad
+          errand?.status?.statusType === ErrandStatus.Parkerad
         }
         type="button"
         onClick={handleSubmit(async () => {
@@ -73,7 +67,7 @@ export const SaveButtonComponent: React.FC<{
             | 'bjornstigen'
             | 'juniskar') || 'primary'
         }
-        rightIcon={props.icon ? <LucideIcon name="arrow-right" size={18} /> : null}
+        rightIcon={props.icon ? <ArrowRight size={18} /> : undefined}
         loading={props.loading || internalLoading}
         loadingText="Sparar"
       >

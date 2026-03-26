@@ -89,7 +89,7 @@ export const sendSupportConversationMessage = (
   if (files && files.length > 0) {
     files.forEach((fileList) => {
       if (fileList) {
-        formData.append('attachments', fileList.file[0]);
+        formData.append('attachments', (fileList.file as unknown as FileList)[0]);
       }
     });
   }
@@ -107,7 +107,7 @@ export const sendSupportConversationMessage = (
 
 export const getSupportConversationAttachment: (
   municipalityId: string,
-  errandId: number,
+  errandId: string,
   conversationId: string,
   messageId: string,
   attachmentId: string
@@ -139,7 +139,7 @@ export const getOrCreateSupportConversationId = async (
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
   const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
 
-  const conversations = await getSupportConversations(municipalityId, supportErrand.id);
+  const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
     (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.id
@@ -169,7 +169,7 @@ export const getOrCreateSupportConversationId = async (
 
     const newConversation = await createSupportConversation(
       municipalityId,
-      supportErrand.id,
+      supportErrand.id!,
       topic,
       conversationType,
       selectedRelation?.id
@@ -177,5 +177,5 @@ export const getOrCreateSupportConversationId = async (
     conversationId = newConversation.data.id;
   }
 
-  return conversationId;
+  return conversationId!;
 };

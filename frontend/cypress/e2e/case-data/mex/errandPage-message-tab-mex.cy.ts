@@ -13,7 +13,12 @@ import { mockConversations, mockConversationMessages } from '../fixtures/mockCon
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
-import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import {
+  mockEstateInfo11,
+  mockEstateInfo12,
+  mockSingleEstateByPropertyDesignation11,
+  mockSingleEstateByPropertyDesignation12,
+} from '../fixtures/mockEstateInfo';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Message tab', () => {
@@ -47,13 +52,22 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/assets?**', mockAsset);
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
-      cy.intercept('GET', '**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }).as('getUiSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
       cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
       cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
+        'getEstateInfo'
+      );
     });
 
     const goToMessageTab = () => {
-      cy.visit('/arende/PRH-2022-000019');
+      cy.visit('/arende/SGP-2022-000019');
       cy.wait('@getErrandById');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
       cy.get('button').contains('Meddelanden').should('exist').click();
@@ -176,7 +190,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       // Add new attachment
       cy.get('input[type=file]').last().selectFile('cypress/e2e/case-data/files/attachment.txt', { force: true });
-      cy.get('[data-cy="attachment-wrapper"] .sk-icon').should('exist');
+      cy.get('[data-cy="attachment-wrapper"]').should('exist');
 
       cy.get('[data-cy="send-message-button"]').first().should('be.enabled').click({ force: true });
 

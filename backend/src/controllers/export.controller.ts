@@ -1,6 +1,6 @@
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Errand, MessageResponse as IMessageResponse, Stakeholder } from '@/data-contracts/case-data/data-contracts';
+import { Errand, ExtraParameter, MessageResponse as IMessageResponse, Stakeholder } from '@/data-contracts/case-data/data-contracts';
 import { RenderRequest, RenderResponse } from '@/data-contracts/templating/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -33,7 +33,7 @@ export class ExportController {
         errands: data.map(e => ({
           errandNumber: e.errandNumber,
           caseType: e.caseLabel,
-          status: e.status.statusType,
+          status: e.status?.statusType,
           created: e.created,
         })),
       },
@@ -55,16 +55,15 @@ export class ExportController {
     @Param('municipalityId') municipalityId: string,
     @QueryParam('include') include: string,
   ): Promise<any> {
-    const templateStakeholder = (
-      s: Stakeholder & { street: string; zip: string; city: string; phoneNumbers: { value: string }[]; emails: { value: string }[] },
-    ) => {
+    const templateStakeholder = (s: Stakeholder) => {
+      const extra = s as Stakeholder & { street: string; zip: string; city: string; phoneNumbers: { value: string }[]; emails: { value: string }[] };
       return {
-        name: s.firstName + ' ' + s.lastName,
-        street: s.street,
-        zip: s.zip,
-        city: s.city,
-        email: s.emails?.map(v => v.value).join(', ') ?? 'E-post saknas',
-        phone: s.phoneNumbers?.map(v => v.value).join(', ') ?? 'Telefonnummer saknas',
+        name: s.organizationName ?? s.firstName + ' ' + s.lastName,
+        street: extra.street,
+        zip: extra.zip,
+        city: extra.city,
+        email: extra.emails?.map(v => v.value).join(', ') ?? 'E-post saknas',
+        phone: extra.phoneNumbers?.map(v => v.value).join(', ') ?? 'Telefonnummer saknas',
       };
     };
 
@@ -78,15 +77,15 @@ export class ExportController {
         channel: data.channel,
         priority: data.priority,
         description: data.description,
-        facilities: data.facilities.map(f => f?.address?.propertyDesignation ?? 'Fastighetsbeteckning saknas') ?? [],
-        applicants: data.stakeholders.filter(s => s.roles.includes('APPLICANT'))?.map(templateStakeholder),
-        contacts: data.stakeholders.filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))?.map(templateStakeholder),
+        facilities: (data.facilities ?? []).map(f => f?.address?.propertyDesignation ?? 'Fastighetsbeteckning saknas'),
+        applicants: (data.stakeholders ?? []).filter(s => s.roles.includes('APPLICANT'))?.map(templateStakeholder),
+        contacts: (data.stakeholders ?? []).filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))?.map(templateStakeholder),
         created: dayjs(data.created).format('YYYY-MM-DD HH:mm:ss'),
         updated: dayjs(data.updated).format('YYYY-MM-DD HH:mm:ss'),
       };
     }
 
-    let messages = [];
+    let messages: IMessageResponse[] = [];
     if (include?.includes('messages')) {
       const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/messages`;
       const baseURL = apiURL(this.SERVICE);
@@ -97,9 +96,9 @@ export class ExportController {
       messages = res.data;
     }
 
-    let notes = [];
+    let notes: Record<string, unknown>[] = [];
     if (include?.includes('notes')) {
-      notes = data.notes
+      notes = (data.notes ?? [])
         .filter(n => n.noteType !== 'INTERNAL')
         .map(n => ({
           ...n,
@@ -107,14 +106,14 @@ export class ExportController {
         }));
     }
 
-    let extraParameters = [];
+    let extraParameters: ExtraParameter[] = [];
     if (include?.includes('errandInformation')) {
-      extraParameters = data.extraParameters.filter(p => !PROCESS_PARAMETER_KEYS.includes(p.key));
+      extraParameters = (data.extraParameters ?? []).filter(p => !PROCESS_PARAMETER_KEYS.includes(p.key));
     }
 
-    let decisions = [];
+    let decisions: Record<string, unknown>[] = [];
     if (include?.includes('investigationText')) {
-      decisions = data.decisions
+      decisions = (data.decisions ?? [])
         .filter(d => d.decisionType === 'PROPOSED')
         .map(d => ({
           ...d,
