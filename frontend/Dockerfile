@@ -56,9 +56,10 @@ COPY --from=builder --chown=0:0 --chmod=444 /app/package.json ./
 COPY --from=builder --chown=0:0 --chmod=555 /app/.next/standalone ./
 COPY --from=builder --chown=0:0 --chmod=555 /app/.next/static ./.next/static
 
-# Grant write only where OpenShift needs it
+# Grant write where entrypoint.sh needs to replace placeholders
 USER root
-RUN chown -R 1001:0 /app/.next && chmod -R g+w /app/.next
+RUN chown -R 1001:0 /app/.next && chmod -R g+w /app/.next \
+ && chown 1001:0 /app/server.js && chmod g+w /app/server.js
 USER 1001
 
 # Entrypoint — fix line endings before locking permissions
