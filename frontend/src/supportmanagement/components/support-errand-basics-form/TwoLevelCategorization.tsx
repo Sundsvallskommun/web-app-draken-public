@@ -22,7 +22,7 @@ export const TwoLevelCategorization: React.FC = () => {
   const { t } = useTranslation();
 
   const [categoriesList, setCategoriesList] = useState<Category[]>();
-  const [typesList, setTypesList] = useState<SupportType[]>();
+  const [typesList, setTypesList] = useState<SupportType[]>([]);
 
   useEffect(() => {
     if (supportMetadata) {
@@ -37,6 +37,19 @@ export const TwoLevelCategorization: React.FC = () => {
   useEffect(() => {
     setTypesList(categoriesList?.find((c) => c.name === category)?.types || []);
   }, [category, categoriesList]);
+
+  // Helper function to find type with fallback when typesList is not ready
+  const findType = (typeName: string): SupportType | undefined => {
+    if (typesList.length > 0) {
+      return typesList.find((t) => t.name === typeName);
+    }
+    // Fallback: search in metadata when typesList not ready yet
+    if (supportErrand?.type && supportMetadata?.categories) {
+      const existingCategory = supportMetadata.categories.find((c) => c.name === supportErrand.category);
+      return existingCategory?.types?.find((t) => t.name === typeName);
+    }
+    return undefined;
+  };
 
   return (
     <>
@@ -57,8 +70,10 @@ export const TwoLevelCategorization: React.FC = () => {
             size="md"
             value={getValues().category}
             onChange={(e) => {
-              setValue('category', e.currentTarget.value, { shouldDirty: true });
-              setValue('type', undefined as any, { shouldDirty: true });
+              const selectedCategory = e.currentTarget.value;
+              const isCategoryDirty = supportErrand?.category !== selectedCategory;
+              setValue('category', selectedCategory, { shouldDirty: isCategoryDirty });
+              setValue('type', undefined as any, { shouldDirty: isCategoryDirty });
               trigger('category');
               trigger('type');
             }}
@@ -96,7 +111,13 @@ export const TwoLevelCategorization: React.FC = () => {
             size="md"
             value={getValues().type}
             onChange={(e) => {
-              setValue('type', e.currentTarget.value, { shouldDirty: true });
+              const selectedType = e.currentTarget.value;
+              const type = findType(selectedType);
+              // Guard: don't process invalid selection (except for empty value)
+              if (!type && selectedType !== '') return;
+
+              const isTypeDirty = supportErrand?.type !== selectedType;
+              setValue('type', selectedType, { shouldDirty: isTypeDirty });
               trigger('type');
             }}
           >
