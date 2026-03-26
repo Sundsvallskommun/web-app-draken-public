@@ -107,7 +107,7 @@ export const sendSupportConversationMessage = (
 
 export const getSupportConversationAttachment: (
   municipalityId: string,
-  errandId: number,
+  errandId: string,
   conversationId: string,
   messageId: string,
   attachmentId: string
