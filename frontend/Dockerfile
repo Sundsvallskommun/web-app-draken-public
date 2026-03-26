@@ -58,9 +58,8 @@ COPY --from=builder --chown=0:0 --chmod=555 /app/.next/static ./.next/static
 
 # Grant write where entrypoint.sh needs to replace placeholders
 USER root
-RUN chown -R 1001:0 /app/.next && chmod -R g+w /app/.next \
- && chown 1001:0 /app/server.js && chmod g+w /app/server.js \
- && chmod g+w /app
+RUN chown 1001:0 /app && chown 1001:0 /app/server.js \
+ && chown -R 1001:0 /app/.next && chmod -R g+w /app/.next
 USER 1001
 
 # Entrypoint — fix line endings before locking permissions
