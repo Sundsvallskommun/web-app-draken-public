@@ -11,7 +11,7 @@ replace_env_var() {
     echo "Warning: ${placeholder} has no value, skipping..."
   else
     echo "Replacing ${placeholder} with ${value}..."
-    find /app/.next -type f -name "*.js" -exec sed -i \
+    find /app/.next -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec sed -i \
       "s|${placeholder}|${value}|g" {} +
   fi
 }
