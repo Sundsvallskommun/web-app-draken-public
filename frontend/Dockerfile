@@ -29,6 +29,7 @@ COPY --chown=1001:0 . .
 COPY --chown=1001:0 .env-cicd .env.local
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DOCKER_BUILD=true
 
 RUN npm install -g yarn \
  && yarn build
