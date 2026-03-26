@@ -11,10 +11,8 @@ import {
   groupByConversationIdSortedTree,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
-import { contractsEnabled } from '@common/services/feature-flag-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -27,8 +25,11 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
+import { CaseDataBillingForm } from './tabs/billing/casedata-billing-form';
+import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
+import { contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const CasedataTabsWrapper: React.FC = () => {
   const {
@@ -277,10 +278,9 @@ export const CasedataTabsWrapper: React.FC = () => {
             visibleFor:
               !isPT() && errand?.id
                 ? [
-                    //TODO: Change casetype when draken-3482 is done
-                    errand?.caseType === MEXCaseType.MEX_OTHER &&
-                      getUiPhase(errand) === UiPhase.granskning &&
-                      ErrandPhase.aktualisering,
+                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT && getUiPhase(errand) === UiPhase.granskning
+                      ? [ErrandPhase.aktualisering]
+                      : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,

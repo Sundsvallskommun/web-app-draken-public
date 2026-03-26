@@ -70,6 +70,7 @@ export enum MEXCaseLabel {
   'MEX_SMALL_BOAT_HARBOR_DOCK_PORT' = 'Småbåtshamn/Kaj/Hamn',
   'MEX_TRAINING_SEMINAR' = 'Utbildning/seminarium',
   'MEX_LAND_RESERVATION' = 'Markreservation',
+  'UPDATECONTRACT' = 'Uppdatera befintligt avtal',
 
   //Legacy
   'MEX_BUY_LAND_FROM_THE_MUNICIPALITY' = 'Köpa kommunal mark',
