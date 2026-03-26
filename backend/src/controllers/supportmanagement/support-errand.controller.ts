@@ -12,6 +12,7 @@ import {
 } from '@/data-contracts/case-data/data-contracts';
 import {
   ContactChannel,
+  ErrandAction,
   ErrandAttachment,
   ExternalTag,
   Label,
@@ -183,7 +184,23 @@ export class CSuspension implements Suspension {
   @IsOptional()
   suspendedTo!: string;
 }
-
+export class CErrandAction implements ErrandAction {
+  @IsString()
+  @IsOptional()
+  id?: string;
+  @IsString()
+  @IsOptional()
+  actionName?: string;
+  @IsString()
+  @IsOptional()
+  executeAfter?: string;
+  @IsString()
+  @IsOptional()
+  actionConfigId?: string;
+  @IsString()
+  @IsOptional()
+  displayValue?: string;
+}
 export class CNotification implements Notification {
   @IsString()
   @IsOptional()
@@ -321,6 +338,11 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @IsString()
   touched?: string;
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CErrandAction)
+  actions?: CErrandAction[];
 }
 
 class ForwardFormDto {
