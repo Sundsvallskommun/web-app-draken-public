@@ -13,6 +13,8 @@ replace_env_var() {
     echo "Replacing ${placeholder} with ${value}..."
     find /app/.next -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" \) -exec sed -i \
       "s|${placeholder}|${value}|g" {} +
+    # Also replace in server.js (standalone root, outside .next/)
+    sed -i "s|${placeholder}|${value}|g" /app/server.js 2>/dev/null || true
   fi
 }
 
