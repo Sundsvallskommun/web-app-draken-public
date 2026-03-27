@@ -1,5 +1,5 @@
 # Install dependencies only when needed
-FROM node:20-slim AS deps
+FROM node:22-slim AS deps
 
 RUN apt-get update
 RUN apt-get install -y openssl
