@@ -1,6 +1,6 @@
 import { Button, PopupMenu } from '@sk-web-gui/react';
 import { ColorSchemeItems } from './color-scheme-items.component';
-import { ChevronRight, LogOut, Palette } from 'lucide-react';
+import { Bug, ChevronRight, LogOut, Palette } from 'lucide-react';
 
 export const userMenuGroups = [
   {
@@ -25,6 +25,23 @@ export const userMenuGroups = [
                 <ColorSchemeItems />
               </PopupMenu.Panel>
             </PopupMenu>
+          </PopupMenu.Item>
+        ),
+      },
+      {
+        label: 'Rapportera fel',
+        element: () => (
+          <PopupMenu.Item>
+            <Button
+              type="button"
+              className="usermenu-item w-full text-left inline-flex items-center gap-2"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('open-error-report'));
+              }}
+            >
+              <Bug />
+              <span>Rapportera fel</span>
+            </Button>
           </PopupMenu.Item>
         ),
       },

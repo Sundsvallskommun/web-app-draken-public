@@ -37,6 +37,7 @@ import { ExtraParameterController } from './controllers/casedata/extraparameter.
 import { FeatureFlagController } from './controllers/featureflag.controller';
 import { EmployeeController } from './controllers/employee.controller';
 import { OrganizationController } from './controllers/organization.controller';
+import { ErrorReportController } from './controllers/error-report.controller';
 
 validateEnv();
 
@@ -77,6 +78,7 @@ const app = new App([
   ExtraParameterController,
   FeatureFlagController,
   EmployeeController,
+  ErrorReportController,
   OrganizationController,
 ]);
 
