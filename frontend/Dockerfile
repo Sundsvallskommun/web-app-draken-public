@@ -17,7 +17,7 @@ RUN npm install -g yarn \
 # =====================
 # Build
 # =====================
-FROM registry.access.redhat.com/ubi9/nodejs-20 AS builder
+FROM registry.access.redhat.com/ubi9/nodejs-22 AS builder
 
 RUN echo "Build step"
 USER root
