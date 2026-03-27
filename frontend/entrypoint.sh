@@ -34,15 +34,16 @@ env | grep '^NEXT_PUBLIC_' | while IFS='=' read -r name value; do
   replace_in_next "${name}_PLACEHOLDER" "$value"
 done
 
-# --- Build server.js with replacements (read-only source, write to /tmp) ---
+# --- Replace placeholders in server.js ---
+# sed -i can't write temp files in /app, so process via /tmp and copy back
 echo "Preparing server.js..."
 cp /app/server.js /tmp/server.js
+sed -i "s|DOMAIN_NAME_PLACEHOLDER|${DOMAIN_NAME}|g" /tmp/server.js
+sed -i "s|BASE_PATH_PLACEHOLDER|${BASE_PATH}|g" /tmp/server.js
 env | grep '^NEXT_PUBLIC_' | while IFS='=' read -r name value; do
   sed -i "s|${name}_PLACEHOLDER|${value}|g" /tmp/server.js
 done
-# Also replace non-NEXT_PUBLIC placeholders in server.js
-sed -i "s|DOMAIN_NAME_PLACEHOLDER|${DOMAIN_NAME}|g" /tmp/server.js
-sed -i "s|BASE_PATH_PLACEHOLDER|${BASE_PATH}|g" /tmp/server.js
+cp /tmp/server.js /app/server.js
 
 echo "Starting Next.js..."
-exec node /tmp/server.js
+exec node /app/server.js
