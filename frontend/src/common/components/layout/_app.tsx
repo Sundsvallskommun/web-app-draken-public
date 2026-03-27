@@ -1,6 +1,7 @@
 'use client';
 
 import { AppWrapper } from '@common/contexts/app.context';
+import { initErrorReporting } from '@common/services/error-report-service';
 import { getMe } from '@common/services/user-service';
 import {
   ColorSchemeMode,
@@ -15,6 +16,8 @@ import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ErrorBoundary } from '../error-boundary/error-boundary';
+import { ErrorReportProvider } from '../error-report/error-report-provider';
 import LoaderFullScreen from '../loader/loader-fullscreen';
 
 dayjs.extend(utc);
@@ -59,6 +62,7 @@ function AppLayout({ children }: ClientApplicationProps) {
   );
 
   useEffect(() => {
+    initErrorReporting();
     getMe().catch((e) => {});
     setMounted(true);
   }, [setMounted]);
@@ -70,7 +74,12 @@ function AppLayout({ children }: ClientApplicationProps) {
   return (
     <GuiProvider theme={theme} colorScheme={colorScheme as ColorSchemeMode}>
       <ConfirmationDialogContextProvider>
-        <AppWrapper>{children}</AppWrapper>
+        <AppWrapper>
+          <ErrorBoundary>
+            <ErrorReportProvider />
+            {children}
+          </ErrorBoundary>
+        </AppWrapper>
       </ConfirmationDialogContextProvider>
     </GuiProvider>
   );
