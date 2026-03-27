@@ -30,7 +30,7 @@ RUN adduser --system --uid 1001 nodejs
 COPY --from=builder --chown=nodejs:nodejs /app/ ./
 
 #Temporary folder for sessions before redis is implemeted
-RUN mkdir -p /app/data/sessions /app/data/logs && chown -R nodejs:nodejs /app/data
+RUN mkdir -p /app/data/sessions /app/data/logs /app/data/database && chown -R nodejs:nodejs /app/data
 
 USER nodejs
 
