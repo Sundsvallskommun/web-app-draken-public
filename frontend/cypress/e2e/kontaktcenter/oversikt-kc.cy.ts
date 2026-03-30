@@ -188,32 +188,32 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
     //SIDEBAR USE
     it('allows to switch between errand statuses in sidebar', () => {
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[1].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockOngoingSupportErrands).as('getOngoingErrands');
+      cy.get(`[aria-label="status-button-${mockMetaData.statuses[1].name}"]`).click();
       cy.wait('@getOngoingErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
         'have.length',
         mockOngoingSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[2].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSuspendedSupportErrands).as('getSuspendedErrands');
+      cy.get(`[aria-label="status-button-${mockMetaData.statuses[2].name}"]`).click();
       cy.wait('@getSuspendedErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
         'have.length',
         mockSuspendedSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[3].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSolvedSupportErrands).as('getSolvedErrands');
+      cy.get(`[aria-label="status-button-${mockMetaData.statuses[3].name}"]`).click();
       cy.wait('@getSolvedErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should(
         'have.length',
         mockSolvedSupportErrands.content.length
       );
 
-      cy.get(`[aria-label="status-button-${mockMetaData.statuses[0].name}"]`).click();
       cy.intercept('GET', `**/supporterrands/2281?page=0*`, mockSupportErrands).as('getNewErrands');
+      cy.get(`[aria-label="status-button-${mockMetaData.statuses[0].name}"]`).click();
       cy.wait('@getNewErrands');
       cy.get('[data-cy="main-table"] .sk-table-tbody-tr').should('have.length', mockSupportErrands.content.length);
     });
