@@ -4,7 +4,7 @@ import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
-import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { ApiSupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, SetStateAction } from 'react';
 
 export const SupportErrandBasicsTab: React.FC<{
@@ -13,9 +13,7 @@ export const SupportErrandBasicsTab: React.FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
   update: () => void;
 }> = (props) => {
-  const {
-    supportErrand,
-  } = useAppContext();
+  const { supportErrand } = useAppContext();
 
   return (
     <div className="pt-xl pb-64 px-40 flex flex-col">

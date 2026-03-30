@@ -1,4 +1,5 @@
-import { Dispatch, KeyboardEvent, SetStateAction, useRef, useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
+
 import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';

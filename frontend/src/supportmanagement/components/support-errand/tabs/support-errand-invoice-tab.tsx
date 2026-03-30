@@ -1,4 +1,3 @@
-import { User } from '@common/interfaces/user';
 import { prettyTime } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
@@ -19,12 +18,11 @@ import {
   ApiSupportErrand,
   getSupportErrandById,
   isSupportErrandLocked,
-  SupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
+import { Check, ThumbsDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
-import { Check, ThumbsDown } from 'lucide-react';
 import {
   CBillingRecord,
   CBillingRecordStatusEnum,
@@ -37,12 +35,7 @@ export const SupportErrandInvoiceTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const {
-    supportErrand,
-    user,
-    municipalityId,
-    setSupportErrand,
-  } = useAppContext();
+  const { supportErrand, user, municipalityId, setSupportErrand } = useAppContext();
 
   const [record, setRecord] = useState<CBillingRecord | undefined>(emptyBillingRecord);
   const [isLoading, setIsLoading] = useState<boolean>(false);

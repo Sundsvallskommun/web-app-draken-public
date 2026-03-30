@@ -17,8 +17,8 @@ import {
   AttestationStatusValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import { useState } from 'react';
 import { ListFilter } from 'lucide-react';
+import { useState } from 'react';
 
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
 export const AttestationValues = {

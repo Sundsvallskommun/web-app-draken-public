@@ -7,6 +7,7 @@ import { Message, setMessageViewStatus } from '@supportmanagement/services/suppo
 import { Mail } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
 import React, { useEffect, useState } from 'react';
+
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
 

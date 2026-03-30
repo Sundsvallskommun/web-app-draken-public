@@ -1,3 +1,4 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
@@ -8,7 +9,6 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface AttestationTableForm {
   sortOrder: 'asc' | 'desc';

@@ -3,19 +3,19 @@ import { ErrandsData, IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { emptyErrandList } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
+import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { Admin, emptyUser } from '@common/services/user-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
+  emptySupportErrandList,
   Status,
   SupportErrand,
   SupportErrandsData,
   SupportStakeholderFormModel,
-  emptySupportErrandList,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { createContext, useContext, useState } from 'react';
 import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
 

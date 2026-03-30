@@ -1,11 +1,12 @@
-import React, { Fragment, useState } from 'react';
-import { RenderedSupportMessage } from './rendered-support-message.component';
 import { Button, cx, Divider } from '@sk-web-gui/react';
 import {
-  MessageNode,
   countAllMessages,
   countUnreadMessages,
+  MessageNode,
 } from '@supportmanagement/services/support-message-service';
+import React, { Fragment, useState } from 'react';
+
+import { RenderedSupportMessage } from './rendered-support-message.component';
 
 interface MessageTreeProps {
   update: () => void;

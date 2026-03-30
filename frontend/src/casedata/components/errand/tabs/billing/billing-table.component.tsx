@@ -19,6 +19,7 @@ import {
 import { Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
+
 import { BillingStatusLabel } from './billing-status-label.component';
 
 interface BillingTableProps {

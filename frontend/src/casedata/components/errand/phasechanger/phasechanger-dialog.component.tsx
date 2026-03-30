@@ -1,6 +1,6 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Button, Dialog } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { JSX } from 'react';
 
 export const PhaseChangerDialogComponent: React.FC<{

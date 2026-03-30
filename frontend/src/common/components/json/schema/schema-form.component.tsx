@@ -9,6 +9,7 @@ import Form, { FormProps, IChangeEvent } from '@rjsf/core';
 import type { RegistryFieldsType, RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
 import validatorAjv8 from '@rjsf/validator-ajv8';
 import { useCallback, useMemo, useState } from 'react';
+
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
 
 const widgets: RegistryWidgetsType = jsonWidgets as RegistryWidgetsType;

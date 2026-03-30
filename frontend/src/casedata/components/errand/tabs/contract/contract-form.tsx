@@ -27,6 +27,7 @@ import {
 import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
+
 import { ContractAttachments } from './contract-attachments';
 
 export const ContractForm: React.FC<{
@@ -187,7 +188,6 @@ export const ContractForm: React.FC<{
         );
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
   const toPropertyDesignation = (pd: { name?: string } | string): string =>

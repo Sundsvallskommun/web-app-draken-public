@@ -1,5 +1,5 @@
-import { ArrowRightCircle } from 'lucide-react';
 import { Button, Dialog } from '@sk-web-gui/react';
+import { ArrowRightCircle } from 'lucide-react';
 
 export const SendDecisionDialogComponent: React.FC<{
   dialogIsOpen: boolean;

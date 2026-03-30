@@ -1,14 +1,11 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { useAppContext } from '@contexts/app.context';
 import { Table } from '@sk-web-gui/react';
-import { isOpenEErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
-  const {
-    supportErrand: _supportErrand,
-    municipalityId,
-  } = useAppContext();
+  const { supportErrand: _supportErrand, municipalityId } = useAppContext();
   const supportErrand = _supportErrand!;
 
   const simpleParams = useMemo(
@@ -104,7 +101,10 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
         ))}
         {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
           <div className="p-16">
-            <JsonParametersDisplay jsonParameters={supportErrand.jsonParameters as any} municipalityId={municipalityId} />
+            <JsonParametersDisplay
+              jsonParameters={supportErrand.jsonParameters as any}
+              municipalityId={municipalityId}
+            />
           </div>
         ) : null}
       </div>

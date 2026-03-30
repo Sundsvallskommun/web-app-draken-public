@@ -1,8 +1,8 @@
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { Channels } from '@supportmanagement/services/support-errand-service';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface ChannelFilter {
   channel: string[];

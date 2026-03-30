@@ -7,6 +7,7 @@ import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { KeyboardEvent, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
+
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
 
 export type SidebarButtonKey =
@@ -40,8 +41,8 @@ export const Sidebar: React.FC<{
   const { supportErrand, notesCount, serviceNotesCount } = useAppContext();
 
   const badgeCounts: Record<string, number> = {
-    'Kommentarer': notesCount,
-    'Tjänsteanteckningar': serviceNotesCount,
+    Kommentarer: notesCount,
+    Tjänsteanteckningar: serviceNotesCount,
   };
 
   const updateScroll = () => {

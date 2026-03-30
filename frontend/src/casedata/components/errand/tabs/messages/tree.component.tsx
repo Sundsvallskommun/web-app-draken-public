@@ -1,7 +1,8 @@
-import { MessageNode, countAllMessages, countUnreadMessages } from '@casedata/services/casedata-message-service';
-import React, { Fragment, useState } from 'react';
-import { RenderedMessage } from './rendered-message.component';
+import { countAllMessages, countUnreadMessages, MessageNode } from '@casedata/services/casedata-message-service';
 import { Button, cx, Divider } from '@sk-web-gui/react';
+import React, { Fragment, useState } from 'react';
+
+import { RenderedMessage } from './rendered-message.component';
 
 interface MessageTreeProps {
   nodes: MessageNode[];

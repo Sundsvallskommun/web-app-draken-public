@@ -1,11 +1,11 @@
-import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-import { ChevronDown } from 'lucide-react';
 
 export interface LabelCategoryFilter {
   labelCategory: string[];

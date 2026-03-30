@@ -1,6 +1,6 @@
 import { Priority as CasedataPriority } from '@casedata/interfaces/priority';
-import { Priority as SupportPriority } from '@supportmanagement/interfaces/priority';
 import { Badge } from '@sk-web-gui/react';
+import { Priority as SupportPriority } from '@supportmanagement/interfaces/priority';
 
 export const PriorityComponent: React.FC<{ priority?: string }> = ({ priority = '' }) => {
   const getPriorityColor = (priority: string) => {

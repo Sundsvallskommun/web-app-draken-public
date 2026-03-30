@@ -1,7 +1,7 @@
-import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent } from '@sk-web-gui/react';
 import NextLink from 'next/link';
 import { useEffect, useState } from 'react';
+
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
 export default function SidebarLayout({

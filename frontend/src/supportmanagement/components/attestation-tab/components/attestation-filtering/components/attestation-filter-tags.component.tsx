@@ -1,12 +1,12 @@
-import { useFormContext } from 'react-hook-form';
-import { Chip } from '@sk-web-gui/react';
-import dayjs from 'dayjs';
 import { Admin } from '@common/services/user-service';
+import { Chip } from '@sk-web-gui/react';
 import {
   AttestationFilter,
   AttestationValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/attestations-filtering.component';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
+import dayjs from 'dayjs';
+import { useFormContext } from 'react-hook-form';
 
 interface AttestationFilterTagsProps {
   administrators: Admin[];

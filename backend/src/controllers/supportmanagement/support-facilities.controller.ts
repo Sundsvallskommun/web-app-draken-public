@@ -1,3 +1,6 @@
+import { Body, Controller, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HttpException } from '@/exceptions/HttpException';
@@ -6,8 +9,6 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import { Body, Controller, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 type Parameters = {
   key: string;

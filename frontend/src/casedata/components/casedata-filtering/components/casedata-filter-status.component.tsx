@@ -1,9 +1,9 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isMEX } from '@common/services/application-service';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface CaseStatusFilter {
   status: string[];

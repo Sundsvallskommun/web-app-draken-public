@@ -1,9 +1,11 @@
+import { Role } from '@interfaces/role';
+
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import { User } from '@/interfaces/users.interface';
 import { latestBy } from '@/utils/util';
-import { Role } from '@interfaces/role';
+
 import ApiService from './api.service';
 
 const SERVICE = apiServiceName('case-data');

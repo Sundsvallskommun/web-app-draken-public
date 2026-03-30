@@ -1,3 +1,5 @@
+import 'react-image-crop/dist/ReactCrop.css';
+
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { getImageAspect } from '@casedata/services/casedata-attachment-service';
@@ -5,10 +7,9 @@ import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Image } from '@sk-web-gui/react';
+import { ArrowLeft, Check, CircleX } from 'lucide-react';
 import { useRef, useState } from 'react';
 import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-import { ArrowLeft, Check, CircleX } from 'lucide-react';
 
 export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
   props

@@ -5,10 +5,10 @@ import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Button } from '@sk-web-gui/react';
+import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { JSX, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
-import { ArrowRight } from 'lucide-react';
 
 export const SaveButtonComponent: React.FC<{
   registeringNewErrand?: boolean;

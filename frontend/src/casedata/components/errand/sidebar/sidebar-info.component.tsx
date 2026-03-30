@@ -9,9 +9,9 @@ import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
+import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
@@ -26,24 +26,17 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
+import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
-import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
-import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{}> = () => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-    administrators,
-    uiPhase,
-  } = useAppContext();
+  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);

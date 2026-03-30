@@ -1,10 +1,11 @@
+import authMiddleware from '@middlewares/auth.middleware';
+import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import ApiService from '@/services/api.service';
-import authMiddleware from '@middlewares/auth.middleware';
-import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export interface ResponseData<T> {
   data: T;

@@ -1,6 +1,7 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
 import { Button, Table } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
+
 import { AddBillingService } from './add-billing-service.component';
 
 interface BillingServiceTableProps {

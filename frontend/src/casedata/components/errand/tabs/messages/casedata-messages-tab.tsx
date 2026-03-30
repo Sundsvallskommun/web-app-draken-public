@@ -1,18 +1,19 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
-  MessageNode,
   fetchMessages,
   fetchMessagesTree,
+  MessageNode,
   setMessageViewStatus,
 } from '@casedata/services/casedata-message-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
+import { Mail } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
+
 import { MessageComposer } from './message-composer.component';
 import MessageTreeComponent from './tree.component';
-import { Mail } from 'lucide-react';
 
 export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;

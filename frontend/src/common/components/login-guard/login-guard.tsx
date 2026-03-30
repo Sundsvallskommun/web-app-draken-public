@@ -1,8 +1,8 @@
-import { getMe } from '@common/services/user-service';
-import { useEffect, useState } from 'react';
 import { useAppContext } from '@common/contexts/app.context';
-import { usePathname, useRouter } from 'next/navigation';
+import { getMe } from '@common/services/user-service';
 import { Spinner } from '@sk-web-gui/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 //POSSIBLE UNUSED
 export const LoginGuard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {

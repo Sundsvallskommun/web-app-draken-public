@@ -47,7 +47,11 @@ export const JsonParametersDisplay: React.FC<JsonParametersDisplayProps> = ({ js
   return (
     <div className="mt-16">
       {jsonParameters.map((param, idx) => (
-        <JsonParameterItem key={`${param.key}-${param.schemaId}-${idx}`} param={param} municipalityId={municipalityId} />
+        <JsonParameterItem
+          key={`${param.key}-${param.schemaId}-${idx}`}
+          param={param}
+          municipalityId={municipalityId}
+        />
       ))}
     </div>
   );

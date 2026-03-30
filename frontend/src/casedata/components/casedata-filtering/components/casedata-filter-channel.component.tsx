@@ -1,7 +1,7 @@
 import { AppChannels, Channels } from '@casedata/interfaces/channels';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CaseChannelFilter {
   channel: string[];

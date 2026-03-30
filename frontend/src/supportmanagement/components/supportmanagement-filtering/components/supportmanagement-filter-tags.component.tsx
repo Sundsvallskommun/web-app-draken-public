@@ -1,14 +1,15 @@
-import { useFormContext } from 'react-hook-form';
-import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
-import { Chip } from '@sk-web-gui/react';
-import { Channels, Status } from '@supportmanagement/services/support-errand-service';
-import dayjs from 'dayjs';
-import { Admin } from '@common/services/user-service';
-import { Priority } from '@supportmanagement/interfaces/priority';
-import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { useAppContext } from '@contexts/app.context';
 import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Admin } from '@common/services/user-service';
+import { useAppContext } from '@contexts/app.context';
+import { Chip } from '@sk-web-gui/react';
+import { Priority } from '@supportmanagement/interfaces/priority';
+import { Channels, Status } from '@supportmanagement/services/support-errand-service';
+import { SupportType } from '@supportmanagement/services/support-metadata-service';
+import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+
+import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
 
 interface SupportManagementFilterTagsProps {
   administrators: Admin[];
@@ -30,10 +31,7 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
   const [allCategories, setAllCategories] = useState<Category[]>();
   const [allTypes, setAllTypes] = useState<SupportType[]>();
   const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
-  const {
-    supportMetadata,
-    selectedSupportErrandStatuses,
-  } = useAppContext();
+  const { supportMetadata, selectedSupportErrandStatuses } = useAppContext();
 
   useEffect(() => {
     setAllCategories(supportMetadata?.categories);
@@ -64,7 +62,9 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
       if (labelCategories.length > 0) {
         // Some labelCategory is selected, get labelTypes from those
         labelCategories?.forEach((category) => {
-          const categoryTypes = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
+          const categoryTypes = supportMetadata?.labels?.labelStructure?.find(
+            (c) => c.resourcePath === category
+          )?.labels;
           if (categoryTypes) {
             _labelTypes.push(...categoryTypes.map((l) => l.resourcePath!));
           }

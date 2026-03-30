@@ -3,9 +3,10 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { useAppContext } from '@contexts/app.context';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
-import { UseFormReturn } from 'react-hook-form';
-import { ContactRelationSelect } from './contact-relation-select.component';
 import { Plus } from 'lucide-react';
+import { UseFormReturn } from 'react-hook-form';
+
+import { ContactRelationSelect } from './contact-relation-select.component';
 interface SearchResultProps {
   contact: CasedataOwnerOrContact;
   searchMode: string;

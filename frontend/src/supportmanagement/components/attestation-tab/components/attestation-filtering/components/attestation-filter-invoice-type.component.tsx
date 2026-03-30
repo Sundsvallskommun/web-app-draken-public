@@ -1,8 +1,8 @@
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
+import { ChevronDown } from 'lucide-react';
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface AttestationInvoiceTypeFilter {
   invoiceType: string[];

@@ -1,20 +1,21 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
+import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
-import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
+import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import {
   Channels,
   ContactChannelType,
-  SupportErrand,
   defaultSupportErrandInformation,
   isSupportErrandLocked,
+  SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useTranslation } from 'next-i18next';
+import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dynamic from 'next/dynamic';
+import { useTranslation } from 'next-i18next';
 import { useEffect, useRef, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -23,9 +24,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
   registeringNewErrand?: boolean;
 }> = (props) => {
-  const {
-    supportMetadata,
-  } = useAppContext();
+  const { supportMetadata } = useAppContext();
   const { supportErrand } = props;
   const { t } = useTranslation();
 
@@ -100,7 +99,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       <div className="flex my-24 gap-xl">
         <FormControl id="description" className="w-full" data-cy="errand-description-richtext-wrapper">
           <FormLabel>Ärendebeskrivning</FormLabel>
-          <div onFocusCapture={() => { userHasEditedDescription.current = true; }}>
+          <div
+            onFocusCapture={() => {
+              userHasEditedDescription.current = true;
+            }}
+          >
             <TextEditor
               className="w-full h-[15rem] case-description-editor"
               readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}

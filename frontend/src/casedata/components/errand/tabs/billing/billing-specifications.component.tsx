@@ -42,8 +42,7 @@ export const BillingSpecifications: React.FC = () => {
       <div>
         <FormControl>
           <FormLabel>
-            Ange vilka fastighet/er som fakturan gäller{' '}
-            <span className="font-normal">(hämtad från uppgifter)</span>
+            Ange vilka fastighet/er som fakturan gäller <span className="font-normal">(hämtad från uppgifter)</span>
           </FormLabel>
           {(errand?.facilities?.length ?? 0) > 0 ? (
             <Checkbox.Group data-cy="property-designation-checkboxgroup" name="propertyDesignations">

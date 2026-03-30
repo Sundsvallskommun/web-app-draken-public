@@ -6,6 +6,7 @@ import { useAppContext } from '@contexts/app.context';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
+
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 
 interface SupportContactModalProps {

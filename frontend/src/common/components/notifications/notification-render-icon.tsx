@@ -1,7 +1,7 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Avatar, cx } from '@sk-web-gui/react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 type Notification = SupportNotification | CaseDataNotification;
 
 interface NotificationRenderIconProps {

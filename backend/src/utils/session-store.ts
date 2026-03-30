@@ -1,8 +1,9 @@
-import session from 'express-session';
 import { RedisStore } from 'connect-redis';
+import session from 'express-session';
 import createFileStore from 'session-file-store';
-import { getRedisClient } from './redis';
+
 import { logger } from './logger';
+import { getRedisClient } from './redis';
 
 const SESSION_TTL = 4 * 24 * 60 * 60;
 

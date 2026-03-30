@@ -1,10 +1,10 @@
-import { ContractType, Status } from '@casedata/interfaces/contracts';
+import { Status } from '@casedata/interfaces/contracts';
 import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
-import { Button, Checkbox, cx, DatePicker, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { Button, Checkbox, DatePicker, PopupMenu, SearchField } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface ContractFilter {
   query: string;

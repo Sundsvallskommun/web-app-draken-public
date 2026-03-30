@@ -1,9 +1,9 @@
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
+import { ChevronDown } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
-import { ChevronDown } from 'lucide-react';
 
 export interface AttestationStatusFilter {
   status: string[];

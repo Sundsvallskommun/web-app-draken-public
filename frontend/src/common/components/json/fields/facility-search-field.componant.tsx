@@ -4,8 +4,8 @@ import { getUserEmployments, UserEmploymentDTO } from '@common/services/employee
 import { getOrgLeafNodes, OrgLeafNodeDTO } from '@common/services/organization-service';
 import type { FieldProps } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel } from '@sk-web-gui/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface FacilityInfo {
   orgId?: number;
@@ -44,11 +44,11 @@ export function FacilitySearchField(props: FieldProps) {
         orgName: employment.orgName,
         manager: employment.manager
           ? {
-            personId: employment.manager.personId ?? undefined,
-            givenname: employment.manager.givenname ?? undefined,
-            lastname: employment.manager.lastname ?? undefined,
-            emailAddress: employment.manager.emailAddress ?? undefined,
-          }
+              personId: employment.manager.personId ?? undefined,
+              givenname: employment.manager.givenname ?? undefined,
+              lastname: employment.manager.lastname ?? undefined,
+              emailAddress: employment.manager.emailAddress ?? undefined,
+            }
           : undefined,
       });
     },
@@ -165,7 +165,7 @@ export function FacilitySearchField(props: FieldProps) {
               </div>
 
               <div className="flex gap-8 items-center">
-                {disabled || readonly || isConfirmed ?
+                {disabled || readonly || isConfirmed ? (
                   <>
                     <span className="flex items-center gap-4 text-gronsta-surface-primary">
                       <Check size={16} />
@@ -177,7 +177,8 @@ export function FacilitySearchField(props: FieldProps) {
                       </Button>
                     )}
                   </>
-                  : <>
+                ) : (
+                  <>
                     <Button
                       type="button"
                       variant="primary"
@@ -197,7 +198,7 @@ export function FacilitySearchField(props: FieldProps) {
                       Ta bort
                     </Button>
                   </>
-                }
+                )}
               </div>
             </div>
           </div>

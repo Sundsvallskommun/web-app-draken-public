@@ -1,8 +1,6 @@
 'use client';
 
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import { User } from '@common/interfaces/user';
-import { isKA } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -22,19 +20,17 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   forwardSupportErrand,
   getSupportErrandById,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import { Forward } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import { Forward } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 const yupForwardForm = yup.object().shape(
@@ -77,14 +73,8 @@ export interface ForwardFormProps {
 }
 
 export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    user,
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportMetadata,
-    supportAttachments,
-  } = useAppContext();
+  const { user, municipalityId, supportErrand, setSupportErrand, supportMetadata, supportAttachments } =
+    useAppContext();
   const confirm = useConfirm();
   const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const [showModal, setShowModal] = useState(false);

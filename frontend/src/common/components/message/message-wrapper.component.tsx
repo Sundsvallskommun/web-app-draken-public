@@ -1,5 +1,5 @@
+import { Button, cx, Header } from '@sk-web-gui/react';
 import { Mail, X } from 'lucide-react';
-import { Button, Header, cx } from '@sk-web-gui/react';
 
 export const MessageWrapper: React.FC<{
   show: boolean;

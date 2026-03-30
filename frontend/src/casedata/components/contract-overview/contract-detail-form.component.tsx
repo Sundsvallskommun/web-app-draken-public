@@ -1,39 +1,39 @@
+import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
+import { Channels } from '@casedata/interfaces/channels';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
   Contract,
   ContractType,
-  StakeholderRole,
-  Status,
   Stakeholder as ContractStakeholder,
+  StakeholderRole,
   StakeholderType as ContractStakeholderType,
+  Status,
 } from '@casedata/interfaces/contracts';
+import { IErrand } from '@casedata/interfaces/errand';
+import { ErrandPhase } from '@casedata/interfaces/errand-phase';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { Priority } from '@casedata/interfaces/priority';
+import { Role } from '@casedata/interfaces/role';
+import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
+import { getErrand, saveErrand } from '@casedata/services/casedata-errand-service';
+import { saveExtraParameters } from '@casedata/services/casedata-extra-parameters-service';
+import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import {
   contractToKopeavtal,
   contractToLagenhetsArrende,
   contractTypes,
   leaseTypes,
 } from '@casedata/services/contract-service';
+import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { Admin } from '@common/services/user-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
+import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
+import { ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import React, { useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
-import { useRouter } from 'next/navigation';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
-import { Channels } from '@casedata/interfaces/channels';
-import { ErrandPhase } from '@casedata/interfaces/errand-phase';
-import { Priority } from '@casedata/interfaces/priority';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { IErrand } from '@casedata/interfaces/errand';
-import { saveErrand, getErrand } from '@casedata/services/casedata-errand-service';
-import { saveExtraParameters } from '@casedata/services/casedata-extra-parameters-service';
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Role } from '@casedata/interfaces/role';
-import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
-import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@contexts/app.context';
-import { Admin } from '@common/services/user-service';
-import { ExternalLink } from 'lucide-react';
 
 const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';

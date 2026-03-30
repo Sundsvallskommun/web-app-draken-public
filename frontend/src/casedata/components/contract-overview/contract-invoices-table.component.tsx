@@ -4,11 +4,11 @@ import {
   invoiceStatusColors,
   invoiceStatusLabels,
 } from '@casedata/services/contract-service';
-import { formatCurrency, prettyTime } from '@common/services/helper-service';
+import { formatCurrency } from '@common/services/helper-service';
 import { Button, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface ContractInvoicesTableProps {
   contractId?: string;

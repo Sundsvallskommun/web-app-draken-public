@@ -2,10 +2,11 @@ import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/cased
 import { EXTRAPARAMETER_SEPARATOR, UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button } from '@sk-web-gui/react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
-import { Plus, Trash2 } from 'lucide-react';
 
 interface RepeatableFieldGroupProps {
   groupName: string;
@@ -207,13 +208,7 @@ export const RepeatableFieldGroup: React.FC<RepeatableFieldGroupProps> = ({
 
       {!isReadOnly && (
         <div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={handleAdd}
-            leftIcon={<Plus size={16} />}
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={handleAdd} leftIcon={<Plus size={16} />}>
             {addButtonText}
           </Button>
         </div>

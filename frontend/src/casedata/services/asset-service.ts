@@ -129,10 +129,7 @@ export function buildUpdateAssetPayload(
   };
 }
 
-export function buildRemoveParameterPayload(
-  paramIndex: number,
-  existing: Asset
-): Partial<Asset> & Record<string, any> {
+export function buildRemoveParameterPayload(paramIndex: number, existing: Asset): Partial<Asset> & Record<string, any> {
   return {
     ...existing,
     origin: existing.origin,
@@ -166,7 +163,7 @@ export function buildReplaceParameterPayload(
     assetId: existing.assetId ?? assetId,
     type: existing.type,
     issued: formData?.validFrom ?? existing.issued,
-    validTo: formData?.validityType === 'tillsvidare' ? null : (formData?.validTo ?? existing.validTo),
+    validTo: formData?.validityType === 'tillsvidare' ? null : formData?.validTo ?? existing.validTo,
     status: existing.status,
     description: existing.description ?? '',
     additionalParameters: existing.additionalParameters ?? {},

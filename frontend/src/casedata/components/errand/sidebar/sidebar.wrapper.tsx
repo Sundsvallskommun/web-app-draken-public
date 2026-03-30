@@ -1,11 +1,12 @@
+import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
 import { Sidebar, SidebarButtonKey } from '@common/components/sidebar/sidebar.component';
+
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarGuide } from './sidebar-guide.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
 import { SidebarNotes } from './sidebar-notes.component';
 import { SidebarUtredning } from './sidebar-utredning.component';
-import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
 
 export const SidebarWrapper = () => {
   const buttons: {

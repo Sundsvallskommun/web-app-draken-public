@@ -16,6 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -24,13 +25,12 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useSnackbar,
 } from '@sk-web-gui/react';
 import {
+  getSupportAttachment,
   SingleSupportAttachment,
   SupportAttachment,
-  getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getOrCreateSupportConversationId,
@@ -38,10 +38,10 @@ import {
 } from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
-  Status,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
+  Status,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -51,6 +51,7 @@ import { useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
+
 import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 

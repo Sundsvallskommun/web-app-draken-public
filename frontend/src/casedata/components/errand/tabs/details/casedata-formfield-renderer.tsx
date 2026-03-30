@@ -8,16 +8,17 @@ import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-str
 import {
   Checkbox,
   Combobox,
+  cx,
   FormControl,
   FormLabel,
   Input,
   RadioButton,
   Select,
   Textarea,
-  cx,
 } from '@sk-web-gui/react';
 import React, { useMemo, useState } from 'react';
-import { UseFormReturn, get } from 'react-hook-form';
+import { get, UseFormReturn } from 'react-hook-form';
+
 import { RepeatableFieldGroup } from './repeatable-field-group';
 
 interface Props {
@@ -221,7 +222,12 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'select' && (
         <>
-          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`} readOnly={isDisabled}>
+          <Select
+            {...register(fieldKey, validationRules)}
+            className="w-full"
+            data-cy={`${detail.field}-select`}
+            readOnly={isDisabled}
+          >
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, i) => (
               <Select.Option key={`${o}-${i}`} value={o.value}>

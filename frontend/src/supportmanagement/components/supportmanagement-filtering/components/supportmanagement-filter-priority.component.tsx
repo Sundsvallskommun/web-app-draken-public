@@ -1,8 +1,8 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { useFormContext } from 'react-hook-form';
 
 export interface SupportManagementPriorityFilter {
   priority: string[];

@@ -30,11 +30,11 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {

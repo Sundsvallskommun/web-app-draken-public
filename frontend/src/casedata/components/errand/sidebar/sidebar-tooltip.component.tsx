@@ -1,4 +1,4 @@
-import { Tooltip, cx, useOnElementOutside } from '@sk-web-gui/react';
+import { cx, Tooltip, useOnElementOutside } from '@sk-web-gui/react';
 import { ReactNode, useRef, useState } from 'react';
 
 interface SidebarTooltipProps {

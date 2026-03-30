@@ -1,8 +1,8 @@
 import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface CaseDatesFilter {
   startdate: string;

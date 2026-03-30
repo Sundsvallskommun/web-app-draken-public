@@ -105,7 +105,9 @@ export const getPTAttachmentKey: (label: string) => PTAttachmentCategory | undef
 };
 
 export const getAttachmentLabel = (attachment: Attachment) =>
-  isMEX() ? (MEXAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt' : (PTAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt';
+  isMEX()
+    ? (MEXAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt'
+    : (PTAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt';
 
 export const getImageAspect: (attachment: Attachment) => number | undefined = (attachment) =>
   attachment?.category === 'PASSPORT_PHOTO'
@@ -125,7 +127,10 @@ const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATUR
 
 export const onlyOneAllowed: (cat: MEXAttachmentCategory | PTAttachmentCategory) => boolean = (
   cat: MEXAttachmentCategory | PTAttachmentCategory
-) => (isMEX() ? uniqueAttachments.includes(cat as MEXAttachmentCategory) : uniquePTAttachments.includes(cat as PTAttachmentCategory));
+) =>
+  isMEX()
+    ? uniqueAttachments.includes(cat as MEXAttachmentCategory)
+    : uniquePTAttachments.includes(cat as PTAttachmentCategory);
 
 export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (errand) => {
   // Errand may only have max one passport photo and max one signature before moving to Utredning phase

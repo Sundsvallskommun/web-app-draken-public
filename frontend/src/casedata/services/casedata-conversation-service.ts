@@ -1,7 +1,8 @@
-import { ApiResponse, apiService } from '@common/services/api-service';
-import { MessageNode } from './casedata-message-service';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
+import { ApiResponse, apiService } from '@common/services/api-service';
+
+import { MessageNode } from './casedata-message-service';
 
 export interface Identifier {
   type?: string;

@@ -1,10 +1,11 @@
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
+import { SupportType } from '@supportmanagement/services/support-metadata-service';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-import { ChevronDown } from 'lucide-react';
 
 export interface TypeFilter {
   type: string[];

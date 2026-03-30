@@ -10,6 +10,7 @@ import { isMEX } from '@common/services/application-service';
 import { Button, FileUpload, FormErrorMessage, Modal, useSnackbar } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { CasedataAttachmentFormModel } from './casedata-attachments.component';
 
 interface UploadAttachmentModalProps {

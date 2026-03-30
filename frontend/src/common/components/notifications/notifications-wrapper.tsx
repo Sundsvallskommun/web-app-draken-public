@@ -7,15 +7,16 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { sortBy } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Button, Checkbox, Divider, cx, useSnackbar } from '@sk-web-gui/react';
+import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
+import { Bell, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
 import { NotificationItem } from './notification-item';
 import { getFilteredNotifications } from './notification-utils';
-import { Bell, X } from 'lucide-react';
 
 export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
   show,

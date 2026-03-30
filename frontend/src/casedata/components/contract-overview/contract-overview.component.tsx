@@ -5,6 +5,7 @@ import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Button, Link, useSnackbar } from '@sk-web-gui/react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import { ContractDetailForm } from './contract-detail-form.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';

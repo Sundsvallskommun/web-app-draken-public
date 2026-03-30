@@ -1,6 +1,6 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
-import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
 import { casedataInvoiceSettings, CasedataService } from '@casedata/services/billing/casedata-invoice-settings';
+import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
 import { Button, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';

@@ -13,8 +13,9 @@ import {
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
 import NextLink from 'next/link';
+
 import { NotificationRenderIcon } from './notification-render-icon';
-import { NotificationType, getNotificationKey, labelBySubType, senderFallback } from './notification-utils';
+import { getNotificationKey, labelBySubType, NotificationType, senderFallback } from './notification-utils';
 
 interface NotificationItemProps {
   notification: NotificationType;

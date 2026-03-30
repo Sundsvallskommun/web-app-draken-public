@@ -1,3 +1,6 @@
+import { Controller, Get, Param, Req, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { apiServiceName } from '@/config/api-config';
 import { CaseStatusResponse } from '@/data-contracts/casestatus/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -5,8 +8,6 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 const allowedNamespaces: string[] = ['SBK_MEX', 'SBK_PARKING_PERMIT', 'CONTACTSUNDSVALL'];
 const namespaceIsallowed = (c: CaseStatusResponse) => !!c.namespace && allowedNamespaces.includes(c.namespace);

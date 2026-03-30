@@ -3,10 +3,9 @@ import { FacilityDTO } from '@common/interfaces/facilities';
 import { useAppContext } from '@contexts/app.context';
 import { Disclosure } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-
+import { MapPin } from 'lucide-react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { MapPin } from 'lucide-react';
 
 export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
   supportErrand: SupportErrand;
@@ -15,9 +14,7 @@ export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
   const [facilities, setFacilities] = useState<FacilityDTO[]>([]);
   const { setValue, watch, getValues } = useFormContext();
 
-  const {
-    supportErrand,
-  } = useAppContext();
+  const { supportErrand } = useAppContext();
 
   const fac = watch('facilities');
 

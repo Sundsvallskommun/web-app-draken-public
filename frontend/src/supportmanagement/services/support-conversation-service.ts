@@ -1,8 +1,9 @@
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
-import { SupportErrand } from './support-errand-service';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
+
 import { SingleSupportAttachment } from './support-attachment-service';
+import { SupportErrand } from './support-errand-service';
 
 export const getSupportConversations: (municipalityId: string, errandId: string) => Promise<ApiResponse<any[]>> = (
   municipalityId,

@@ -3,9 +3,9 @@ import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
+import { ArrowRight } from 'lucide-react';
 import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ArrowRight } from 'lucide-react';
 
 export interface ContractTableForm {
   sortOrder: 'asc' | 'desc';

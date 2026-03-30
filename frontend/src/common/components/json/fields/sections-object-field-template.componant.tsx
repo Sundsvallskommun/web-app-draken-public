@@ -1,9 +1,9 @@
 'use client';
 
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
 import React, { useState } from 'react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 interface ConditionalRule {
   if: {
@@ -107,7 +107,10 @@ function SectionDisclosure({ section, isReadonly, children }: SectionDisclosureP
       <Disclosure.Header>
         {section.icon && (
           <Disclosure.Icon
-            icon={(() => { const DynIcon = iconMap[section.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
+            icon={(() => {
+              const DynIcon = iconMap[section.icon as string];
+              return DynIcon ? <DynIcon /> : undefined;
+            })()}
           />
         )}
         <Disclosure.Title>{section.title}</Disclosure.Title>
@@ -194,11 +197,11 @@ function renderFields(
         <div key={rowKey} className={`flex ${row.gap || 'gap-32'}`}>
           {visibleRowFields.map((f) => {
             const prop = properties.find((p) => p.name === f);
-            return prop ?
-                <div key={f} className="flex-1">
-                  {prop.content}
-                </div>
-              : null;
+            return prop ? (
+              <div key={f} className="flex-1">
+                {prop.content}
+              </div>
+            ) : null;
           })}
         </div>
       );

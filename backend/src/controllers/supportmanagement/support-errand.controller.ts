@@ -1,17 +1,24 @@
+import { Type as TypeTransformer } from 'class-transformer';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import dayjs from 'dayjs';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AddressAddressCategoryEnum,
+  ContactInformationContactTypeEnum,
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
+  Facility as FacilityDTO,
   Stakeholder as CasedataStakeholderDTO,
   StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
-  ContactInformationContactTypeEnum,
-  Facility as FacilityDTO,
 } from '@/data-contracts/case-data/data-contracts';
 import {
   ContactChannel,
+  Errand as SupportErrand,
   ErrandAction,
   ErrandAttachment,
   ExternalTag,
@@ -19,7 +26,6 @@ import {
   Notification,
   PageErrand,
   Parameter,
-  Errand as SupportErrand,
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   Suspension,
@@ -39,11 +45,6 @@ import ApiService from '@/services/api.service';
 import { isIK, isKA, isKC, isLOP, isMSVA, isROB, isSE } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
-import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import dayjs from 'dayjs';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export enum CustomerType {
   PRIVATE,

@@ -4,11 +4,7 @@ import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
-import {
-  countAttachment,
-  getSupportAttachments,
-  SupportAttachment,
-} from '@supportmanagement/services/support-attachment-service';
+import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportConversationMessages,
   getSupportConversations,
@@ -23,6 +19,7 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
@@ -35,13 +32,8 @@ export const SupportTabsWrapper: React.FC<{
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
-  const {
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportAttachments,
-    setSupportAttachments,
-  } = useAppContext();
+  const { municipalityId, supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } =
+    useAppContext();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 

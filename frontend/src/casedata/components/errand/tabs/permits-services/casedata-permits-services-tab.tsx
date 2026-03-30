@@ -1,9 +1,8 @@
+import { assetStatusLabels, assetTypeLabels } from '@casedata/interfaces/asset';
+import { validateAction } from '@casedata/services/casedata-errand-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { AutoTable, AutoTableHeader } from '@sk-web-gui/react';
 import { useEffect, useState } from 'react';
-
-import { assetStatusLabels, assetTypeLabels } from '@casedata/interfaces/asset';
-import { validateAction } from '@casedata/services/casedata-errand-service';
 
 export const CasedataPermitServicesTab: React.FC<{}> = () => {
   const { errand, assets, user } = useAppContext();

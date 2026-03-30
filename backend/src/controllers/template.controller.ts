@@ -1,10 +1,11 @@
 import { RequestWithUser } from '@interfaces/auth.interface';
+import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
-import authMiddleware from '@middlewares/auth.middleware';
 import { IsObject, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 

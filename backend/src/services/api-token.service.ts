@@ -1,9 +1,9 @@
-import qs from 'qs';
-import axios from 'axios';
 import { HttpException } from '@exceptions/HttpException';
 import { logger } from '@utils/logger';
 import { getRedisClient } from '@utils/redis';
 import { apiURL } from '@utils/util';
+import axios from 'axios';
+import qs from 'qs';
 
 export interface Token {
   access_token: string;

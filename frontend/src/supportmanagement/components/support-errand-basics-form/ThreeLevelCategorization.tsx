@@ -2,9 +2,9 @@ import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
+import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
-import { useTranslation } from 'next-i18next';
 
 const CLASSIFICATIONS = {
   CATEGORY: 'CATEGORY',
@@ -62,7 +62,6 @@ export const ThreeLevelCategorization: React.FC<{
       (c) => c.id === getErrandLabelId(supportErrand, CLASSIFICATIONS.CATEGORY)
     );
     setTypesList(categoryItem?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriesList, supportErrand]);
 
   useEffect(() => {
@@ -78,7 +77,9 @@ export const ThreeLevelCategorization: React.FC<{
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCategory = categoriesList?.find((c) => c.id === e.currentTarget.value);
-    setTypesList(selectedCategory?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []);
+    setTypesList(
+      selectedCategory?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []
+    );
     setSelectedLabels({ CATEGORY: selectedCategory! });
     setValue('category', selectedCategory?.resourcePath ?? '', { shouldDirty: true });
     setValue('type', '' as any, { shouldDirty: true });

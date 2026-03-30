@@ -3,22 +3,23 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
-import { getApplicationEnvironment, isMEX } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
+import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
+import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import { userMenuGroups } from '../layout/userMenuGroups';
-import { AngeSymbol } from '@styles/ange-symbol';
-import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 
 export const MainErrandsSidebar: React.FC<{
   showAttestationTable: boolean;

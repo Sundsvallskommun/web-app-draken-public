@@ -1,17 +1,3 @@
-import { apiServiceName } from '@/config/api-config';
-import {
-  AttachmentResponse,
-  Classification,
-  EmailHeader,
-  Errand as ErrandDTO,
-  MessageResponse as IMessageResponse,
-  MessageResponseDirectionEnum,
-} from '@/data-contracts/case-data/data-contracts';
-import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
-import { isPT } from '@/services/application.service';
-import { logger } from '@/utils/logger';
-import { apiURL, base64Encode } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
@@ -29,10 +15,25 @@ import {
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
-import { IsArray, IsOptional, IsString, Validate, ValidateNested } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
+
+import { apiServiceName } from '@/config/api-config';
+import {
+  AttachmentResponse,
+  Classification,
+  EmailHeader,
+  Errand as ErrandDTO,
+  MessageResponse as IMessageResponse,
+  MessageResponseDirectionEnum,
+} from '@/data-contracts/case-data/data-contracts';
+import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
+import { isPT } from '@/services/application.service';
+import { logger } from '@/utils/logger';
+import { apiURL, base64Encode } from '@/utils/util';
 
 export enum MessageClassification {
   'Efterfrågan komplettering' = 'COMPLETION_REQUEST',

@@ -1,6 +1,7 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
   CaseStatusResponse,
   getErrandStatus,
@@ -19,10 +20,10 @@ import { useAppContext } from '@contexts/app.context';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
-import { useEffect, useState } from 'react';
-import { RelationsToTable } from './relation-tables/relations-to-table.component';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { Link2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { RelationsToTable } from './relation-tables/relations-to-table.component';
 
 export const LinkedErrandsDisclosure: React.FC<{
   errand: SupportErrand | IErrand;

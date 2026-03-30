@@ -1,8 +1,8 @@
 import { getCaseLabels } from '@casedata/services/casedata-errand-service';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface CaseTypeFilter {
   caseType: string[];

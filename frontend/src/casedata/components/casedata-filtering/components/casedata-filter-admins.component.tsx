@@ -1,8 +1,8 @@
 import { Admin } from '@common/services/user-service';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react';
 
 export interface CaseAdminsFilter {
   admins: string[];

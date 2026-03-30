@@ -2,6 +2,7 @@ import { ExportController } from '@controllers/export.controller';
 import { IndexController } from '@controllers/index.controller';
 import { createSessionStore } from '@utils/session-store';
 import validateEnv from '@utils/validateEnv';
+
 import App from './app';
 import { ActiveDirectoryController } from './controllers/active-directory.controller';
 import { AddressController } from './controllers/address.controller';
@@ -16,12 +17,16 @@ import { CaseDataHistoryController } from './controllers/casedata/casedata-histo
 import { CasedataNotesController } from './controllers/casedata/casedata-notes.controller';
 import { CasedataNotificationController } from './controllers/casedata/casedata-notification-controller';
 import { CasedataStakeholderController } from './controllers/casedata/casedata-stakeholder.controller';
+import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
 import { CaseStatusController } from './controllers/casestatus.controller';
 import { CasedataContractsController } from './controllers/contract.controller';
+import { EmployeeController } from './controllers/employee.controller';
 import { EstateInfoController } from './controllers/estateInfo.controller';
+import { FeatureFlagController } from './controllers/featureflag.controller';
 import { HealthController } from './controllers/health.controller';
-import { MessageController } from './controllers/message.controller';
 import { JsonSchemaController } from './controllers/jsonschema.controller';
+import { MessageController } from './controllers/message.controller';
+import { OrganizationController } from './controllers/organization.controller';
 import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
@@ -34,10 +39,6 @@ import { SupportNoteController } from './controllers/supportmanagement/support-n
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
-import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
-import { FeatureFlagController } from './controllers/featureflag.controller';
-import { EmployeeController } from './controllers/employee.controller';
-import { OrganizationController } from './controllers/organization.controller';
 
 validateEnv();
 

@@ -1,7 +1,6 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { AddressResult, searchOrganization, searchPerson } from '@common/services/adress-service';
-import { Button, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
-import { useState } from 'react';
+import { FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SearchFieldProps {
