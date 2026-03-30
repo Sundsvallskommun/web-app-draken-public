@@ -1,5 +1,5 @@
-import {
 import { FC } from 'react';
+import {
   ArchiveX,
   ArrowLeft,
   ArrowRight,
